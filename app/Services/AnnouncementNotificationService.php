@@ -24,7 +24,7 @@ class AnnouncementNotificationService
     ) {}
 
     /**
-     * ネイティブ（OneSignal/FCM）と LINE の両方へお知らせを配信する。
+     * ネイティブ（FCM）と LINE の両方へお知らせを配信する。
      *
      * @return array{
      *     target_tokens: int,

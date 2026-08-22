@@ -66,7 +66,7 @@ flowchart TB
     LINE[LINE]
     Wallet[Apple / Google Wallet]
     JP[日本郵便]
-    Push[OneSignal]
+    Push[FCM]
   end
 
   Customer --> LIFF

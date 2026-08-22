@@ -6,23 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2C13D4A7EA6404A8CC659D00 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 98AC0C263B25B71B187B26E8 /* FirebaseMessaging */; };
+		62350C8C4CD82C676301929C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F230817A0B50C750D5068BF9 /* GoogleService-Info.plist */; };
+		EC9C7EEE033E2475A520E995 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4AE3BBC5A5ACA5CF1AD29A14 /* FirebaseCore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		A10000000000000000000001 /* KitchenMonitor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KitchenMonitor.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F230817A0B50C750D5068BF9 /* GoogleService-Info.plist */ = {isa = PBXFileReference; explicitFileType = text.plist; lastKnownFileType = text.plist; name = "GoogleService-Info.plist"; path = "KitchenMonitor/GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		A10000000000000000000002 /* KitchenMonitor */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				A10000000000000000000010 /* Exceptions for "KitchenMonitor" folder in "KitchenMonitor" target */,
-			);
-			path = KitchenMonitor;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
-
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		A10000000000000000000010 /* Exceptions for "KitchenMonitor" folder in "KitchenMonitor" target */ = {
+		A10000000000000000000010 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -31,11 +27,24 @@
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A10000000000000000000002 /* KitchenMonitor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A10000000000000000000010 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			path = KitchenMonitor;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		A10000000000000000000003 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EC9C7EEE033E2475A520E995 /* FirebaseCore in Frameworks */,
+				2C13D4A7EA6404A8CC659D00 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -47,6 +56,7 @@
 			children = (
 				A10000000000000000000002 /* KitchenMonitor */,
 				A10000000000000000000005 /* Products */,
+				F230817A0B50C750D5068BF9 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -78,6 +88,8 @@
 			);
 			name = KitchenMonitor;
 			packageProductDependencies = (
+				4AE3BBC5A5ACA5CF1AD29A14 /* FirebaseCore */,
+				98AC0C263B25B71B187B26E8 /* FirebaseMessaging */,
 			);
 			productName = KitchenMonitor;
 			productReference = A10000000000000000000001 /* KitchenMonitor.app */;
@@ -108,6 +120,9 @@
 			);
 			mainGroup = A10000000000000000000004;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DE8C3C95AEE2F96DD793C776 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000005 /* Products */;
 			projectDirPath = "";
@@ -123,6 +138,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				62350C8C4CD82C676301929C /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -189,6 +205,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = gamechanger.IDNect.KitchenMonitor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -218,6 +237,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = gamechanger.IDNect.KitchenMonitor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -250,6 +272,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DE8C3C95AEE2F96DD793C776 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.18.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4AE3BBC5A5ACA5CF1AD29A14 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE8C3C95AEE2F96DD793C776 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		98AC0C263B25B71B187B26E8 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE8C3C95AEE2F96DD793C776 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A10000000000000000000009 /* Project object */;
 }

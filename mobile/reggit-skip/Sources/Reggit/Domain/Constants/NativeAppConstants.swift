@@ -2,14 +2,13 @@ import Foundation
 
 public enum NativeAppStorage {
     public static let pushTokenKey = "reggit_push_token"
-    public static let oneSignalAppIdKey = "reggit_onesignal_app_id"
     public static let deviceIdentifierKey = "mobile_order_device_identifier"
 }
 
 public extension Notification.Name {
-    static let oneSignalPushTokenDidUpdate = Notification.Name("OneSignalPushTokenDidUpdate")
-    static let oneSignalNotificationOpened = Notification.Name("OneSignalNotificationOpened")
-    static let oneSignalNotificationForeground = Notification.Name("OneSignalNotificationForeground")
+    static let pushTokenDidUpdate = Notification.Name("PushTokenDidUpdate")
+    static let pushNotificationOpened = Notification.Name("PushNotificationOpened")
+    static let pushNotificationForeground = Notification.Name("PushNotificationForeground")
     static let showNotificationDeniedAlert = Notification.Name("ShowNotificationDeniedAlert")
 }
 
