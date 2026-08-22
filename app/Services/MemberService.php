@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Domain\Member\Services\MemberRankResolver;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\MemberRegistrationMode;
@@ -35,6 +36,7 @@ class MemberService
         private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
+        private MemberRankResolver $memberRankResolver,
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
@@ -462,8 +464,21 @@ class MemberService
             $memberNumber = $this->generateMemberNumber($projectId);
             $smaregiCustomerId = null;
             $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
-            $defaultRank = collect($rankSettings)->first(fn ($r) => ($r['is_active'] ?? false) === true);
-            $defaultRankKey = is_array($defaultRank) ? ((string) ($defaultRank['key'] ?? 'bronze')) : 'bronze';
+            $resolved = $this->memberRankResolver->resolve(
+                $rankSettings,
+                $this->shopSettingRepository->getRankBasis($projectId),
+                0,
+                0,
+                null,
+            );
+            $defaultRankKey = (string) ($resolved['current_rank'] ?? 'bronze');
+            $defaultRank = null;
+            foreach ($rankSettings as $rank) {
+                if ((string) ($rank['key'] ?? '') === $defaultRankKey) {
+                    $defaultRank = $rank;
+                    break;
+                }
+            }
             $smaregiRankId = is_array($defaultRank) && isset($defaultRank['smaregi_rank_id'])
                 ? trim((string) $defaultRank['smaregi_rank_id'])
                 : '';
