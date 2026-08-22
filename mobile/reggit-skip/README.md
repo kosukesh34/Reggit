@@ -185,16 +185,12 @@ adb shell am start -n com.reggit.default/reggit.app.MainActivity
 
 `BUILT_PRODUCTS_DIR` の実際のパスは、Xcode でビルドしたあと `~/Library/Developer/Xcode/DerivedData/` 内の `Project-` で始まるフォルダを確認してください。
 
-### OneSignal プッシュ通知
+### プッシュ通知（FCM）
 
-- **App ID**: `Skip.env` の `ONE_SIGNAL_APP_ID` に OneSignal ダッシュボードの App ID（UUID）を設定済みです。iOS では `Darwin/Info.plist` の `OneSignalAppId` にも同じ値を入れてあります（App ID を変えた場合は両方揃える）。
-- **バックエンド**: プロジェクトルートの `.env` に `PUSH_ONESIGNAL_ENABLED=true`, `PUSH_ONESIGNAL_APP_ID`, `PUSH_ONESIGNAL_API_KEY` を設定し、お知らせ配信で OneSignal が使われます。
-- **iOS**: OneSignal SDK は Xcode の Swift Package で追加済み。
-  - **Push Notifications 権限**: `Darwin/Entitlements.plist` に `aps-environment`（development / production）を設定済み。実機で「Apple iOS (APNs)」の購読者として登録されるために必須です。
-  - **APNs の設定**: OneSignal ダッシュボードの「Settings → Platforms → Apple iOS (APNs)」で p8 キー（推奨）または証明書を設定してください。未設定だと iOS 購読者が 0 のままになります。
-- **Android**: OneSignal は FCM を使用します。`Android/app/google-services.json` の **package_name** と、アプリの **applicationId** を一致させてください。
-  - 現在の `google-services.json` は `com.reggit.default` 用です。このパッケージでビルドする場合は `Skip.env` の `ANDROID_APPLICATION_ID=com.reggit.default` と `PRODUCT_BUNDLE_IDENTIFIER=com.reggit.default` をそのまま使います。
-  - 別の applicationId でビルドする場合は、Firebase コンソールでそのパッケージを追加し、ダウンロードした `google-services.json` で差し替えてください。
+- **バックエンド**: `.env` で `PUSH_FCM_ENABLED=true`、`PUSH_FCM_PROJECT_ID=reggit-dbb5a`、`PUSH_FCM_CREDENTIALS=storage/app/firebase/reggit-dbb5a-adminsdk.json`。`PUSH_ONESIGNAL_ENABLED=false`。
+- **iOS**: `GoogleService-Info.plist` + Firebase Messaging。APNs `.p8` は Firebase Console（Cloud Messaging → Reggit Skip）に登録。
+- **Android**: `google-services.json` + Firebase Messaging。`push_token` には FCM registration token を保存。
+- **テスト**: `php artisan push:fcm-test --force`
 
 ### プッシュ通知のテスト手順（実際に通知が届くか確認する）
 
