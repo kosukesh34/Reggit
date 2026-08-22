@@ -168,5 +168,31 @@ class MemberRegisterSmaregiSyncTest extends TestCase
 
         $this->assertNull($member->smaregi_customer_id);
         $this->assertDatabaseHas('members', ['user_id' => $user->id]);
+        $this->assertSame('bronze', $member->rank);
+    }
+
+    public function test_register_member_初期ランクは_resolverと同じ判定になること(): void
+    {
+        ShopSettingStore::setMemberRankSettings([
+            ['key' => 'guest', 'label' => 'ゲスト', 'min_points' => 0, 'order' => 1, 'is_active' => true],
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 2, 'is_active' => true],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 3, 'is_active' => true],
+        ], (int) $this->project->id);
+
+        $user = User::factory()->create(['project_id' => $this->project->id]);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')->andReturn(null);
+        $couponIssue = Mockery::mock(CouponIssueService::class);
+        $couponIssue->shouldReceive('issueForFirstRegistration')->once();
+        $this->app->instance(SmaregiApiService::class, $smaregiApi);
+        $this->app->instance(CouponIssueService::class, $couponIssue);
+
+        $member = app(MemberService::class)->registerMember($user, [
+            'name' => '山田 太郎',
+        ]);
+
+        // metric=0 のとき Resolver は min_points=0 の最後（order 大）を採用する
+        $this->assertSame('bronze', $member->rank);
     }
 }

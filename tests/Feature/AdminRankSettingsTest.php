@@ -214,4 +214,58 @@ class AdminRankSettingsTest extends TestCase
         $this->assertFalse(ShopSettingStore::getUseTransactionStamps((int) $project->id));
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', (int) $project->id));
     }
+
+    public function test_ランク別付与率が未設定ならデフォルト値が保存されること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+                'rank_basis' => 'points',
+                'rank_aggregation_type' => RankAggregationType::TOTAL,
+                'rank_period_days' => 365,
+                'use_points' => '1',
+                'use_stamps' => '1',
+                'use_transaction_stamps' => '1',
+                'point_earn_rate' => 120,
+                'points_valid_days' => 365,
+                'stamp_earn_per_amount' => 800,
+                'ranks' => [
+                    [
+                        'key' => 'bronze',
+                        'label' => 'ブロンズ',
+                        'min_points' => 0,
+                        'is_active' => '1',
+                        'order' => 1,
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $ranks = ShopSettingStore::getMemberRankSettings((int) $project->id);
+        $this->assertCount(1, $ranks);
+        $this->assertSame(120, $ranks[0]['point_earn_rate']);
+        $this->assertSame(800, $ranks[0]['stamp_earn_per_amount']);
+        $this->assertSame(120, ShopSettingStore::getPointEarnRateForRank((int) $project->id, 'bronze'));
+        $this->assertSame(800, ShopSettingStore::getStampEarnPerAmountForRank((int) $project->id, 'bronze'));
+    }
+
+    public function test_ランク設定画面にデフォルト付与率が表示されること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.ranks', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('name="ranks[0][point_earn_rate]"', false)
+            ->assertSee('value="100"', false);
+    }
 }
