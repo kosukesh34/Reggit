@@ -15,28 +15,18 @@ class PushEnvCheckCommand extends Command
 
     public function handle(): int
     {
-        $ok = true;
         $fcm = new FcmHttpV1Client(new Client(['timeout' => 5]));
 
-        if ($fcm->isConfigured()) {
-            $this->info('FCM HTTP v1: 設定済み（project_id='.config('push.fcm.project_id').'）');
-        } else {
+        if (! $fcm->isConfigured()) {
             $this->error('FCM が未設定です。PUSH_FCM_ENABLED / PUSH_FCM_PROJECT_ID / PUSH_FCM_CREDENTIALS を確認してください。');
-            $ok = false;
+
+            return self::FAILURE;
         }
 
-        if ((bool) config('push.onesignal.enabled')) {
-            $this->warn('PUSH_ONESIGNAL_ENABLED=true ですが、FCM 有効時は OneSignal は使われません。');
-        } else {
-            $this->info('OneSignal: 無効（想定どおり）');
-        }
+        $this->info('FCM HTTP v1: 設定済み（project_id='.config('push.fcm.project_id').'）');
 
         $deviceCount = UserDevice::query()->whereNotNull('push_token')->where('push_token', '!=', '')->count();
         $this->info('登録端末（push_token あり）: '.$deviceCount.' 件');
-
-        if (! $ok) {
-            return self::FAILURE;
-        }
 
         $this->newLine();
         $this->comment('送信テスト: php artisan push:fcm-test --force');

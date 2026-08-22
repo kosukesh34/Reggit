@@ -162,10 +162,9 @@
 | JAPANPOST_API_HOST | そのまま可 | api.da.pf.japanpost.jp |
 | JAPANPOST_CLIENT_ID | そのまま可 | 本番でも同じ認証を使う場合 |
 | JAPANPOST_CLIENT_SECRET | そのまま可 | 同上 |
-| PUSH_ONESIGNAL_ENABLED | そのまま可 | true / false |
-| PUSH_ONESIGNAL_APP_ID | そのまま可 | モバイルアプリの OneSignalAppId と同一に |
-| PUSH_ONESIGNAL_API_KEY | そのまま可 | REST API Key |
-| PUSH_ONESIGNAL_API_URL | そのまま可 | https://api.onesignal.com/notifications |
+| PUSH_FCM_ENABLED | そのまま可 | true / false |
+| PUSH_FCM_PROJECT_ID | そのまま可 | Firebase プロジェクト ID（例: reggit-dbb5a） |
+| PUSH_FCM_CREDENTIALS | そのまま可 | サービスアカウント JSON のパス（サーバ上に配置） |
 
 **手順**: 上記の「名前」を EB の環境プロパティに 1 件ずつ追加し、「本番の値」に従って入力する。「そのまま可」は .env の値をそのままコピーしてよい（DB_* と APP_URL など「要変更」は除く）。
 
@@ -278,9 +277,6 @@
 | PUSH_FCM_ENABLED | true | FCM HTTP v1 を使う場合 |
 | PUSH_FCM_PROJECT_ID | reggit-dbb5a | Firebase プロジェクト ID |
 | PUSH_FCM_CREDENTIALS | storage/app/firebase/reggit-dbb5a-adminsdk.json | サービスアカウント JSON（git 外・サーバに配置） |
-| PUSH_ONESIGNAL_ENABLED | false | 顧客向けは FCM 優先時は false |
-| PUSH_ONESIGNAL_APP_ID | （OneSignal App ID） | Kitchen 等で残す場合のみ |
-| PUSH_ONESIGNAL_API_KEY | （REST API Key） | 同上 |
 
 **その他（使う場合のみ）**
 
@@ -296,7 +292,7 @@
 
 - **WALLET_PASS_***（Apple Wallet）
 - **GOOGLE_WALLET_***（Google Wallet）
-- **PUSH_FCM_*** / **PUSH_ONESIGNAL_***（プッシュ通知を使わない場合）
+- **PUSH_FCM_***（プッシュ通知を使わない場合）
 - **JAPANPOST_***（日本郵便 API を使わない場合）
 - **REDIS_***（Redis を使わない場合。キャッシュ・セッションは file のままなら不要）
 
