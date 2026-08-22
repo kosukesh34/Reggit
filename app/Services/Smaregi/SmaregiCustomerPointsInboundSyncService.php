@@ -29,7 +29,6 @@ class SmaregiCustomerPointsInboundSyncService
         private OrderRepository $orderRepository,
         private DomainEventDispatcher $domainEvents,
         private SmaregiContractProjectResolver $projectResolver,
-        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     /**
@@ -208,7 +207,7 @@ class SmaregiCustomerPointsInboundSyncService
                     $this->applyRemotePointsForMember($member, $remotePoints);
                     $fresh = $member->fresh();
                     if ($fresh !== null) {
-                        $this->memberRankSyncService->sync($fresh);
+                        resolve(MemberRankSyncService::class)->sync($fresh);
                     }
                 }
             }

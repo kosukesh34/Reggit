@@ -13,7 +13,6 @@
 <div class="page-header-row">
     <div class="page-header">
         <h1 class="page-header-title"><i class="fas fa-list-ol"></i> 順番待ち</h1>
-        <p class="page-header-desc">待ち番号の管理と案内</p>
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.settings.queue') }}" class="btn btn-outline-secondary">

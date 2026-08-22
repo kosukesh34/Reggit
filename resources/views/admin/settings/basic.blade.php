@@ -19,9 +19,7 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-sliders-h"></i> 基本設定</h1>
-    <p class="page-header-desc">店舗全体で共通となる運用設定を管理します。予約詳細は「予約設定」に分離しています。</p>
 </div>
-@include('admin.settings._context', ['pageKey' => 'basic'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
