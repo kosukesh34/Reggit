@@ -11,10 +11,7 @@ use GuzzleHttp\Client;
 
 class PushNotificationService
 {
-    /** OneSignal API: max subscription_ids per request */
-    private const ONESIGNAL_CHUNK_SIZE = 2000;
-
-    /** collapse_id の最大文字数（FCM apns-collapse-id / OneSignal 共通） */
+    /** collapse_id の最大文字数（FCM apns-collapse-id / android.collapse_key） */
     private const COLLAPSE_ID_MAX_LENGTH = 64;
 
     public const DATA_TYPE_ANNOUNCEMENT_CANCELLED = 'announcement_cancelled';
@@ -34,30 +31,23 @@ class PushNotificationService
             return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0, 'notification_ids' => []];
         }
 
-        if ($this->isFcmEnabled()) {
-            return $this->sendAnnouncementViaFcm($announcement, $tokens);
+        if (! $this->isFcmEnabled()) {
+            LogHelper::warning('[Push] FCM not configured', [
+                'announcement_id' => $announcement->id,
+                'project_id' => $announcement->project_id,
+                'target_tokens' => count($tokens),
+            ]);
+
+            return [
+                'target_tokens' => count($tokens),
+                'sent' => 0,
+                'failed' => 0,
+                'skipped' => count($tokens),
+                'notification_ids' => [],
+            ];
         }
 
-        if ($this->isOneSignalEnabled()) {
-            $result = $this->sendAnnouncementViaOneSignal($announcement, $tokens);
-            $this->persistAnnouncementNotificationIds($announcement, $result['notification_ids']);
-
-            return $result;
-        }
-
-        LogHelper::warning('[Push] No push provider configured (FCM/OneSignal)', [
-            'announcement_id' => $announcement->id,
-            'project_id' => $announcement->project_id,
-            'target_tokens' => count($tokens),
-        ]);
-
-        return [
-            'target_tokens' => count($tokens),
-            'sent' => 0,
-            'failed' => 0,
-            'skipped' => count($tokens),
-            'notification_ids' => [],
-        ];
+        return $this->sendAnnouncementViaFcm($announcement, $tokens);
     }
 
     /** 取消し ID を記憶し、端末へ取消しプッシュ（collapse 上書き）。失敗しても例外は投げない。 */
@@ -79,50 +69,25 @@ class PushNotificationService
             return;
         }
 
+        if (! $this->isFcmEnabled()) {
+            return;
+        }
+
         $title = trim((string) $announcement->title);
-        $data = [
-            'type' => self::DATA_TYPE_ANNOUNCEMENT_CANCELLED,
-            'announcement_id' => (string) $announcement->id,
-            'project_id' => (string) $announcement->project_id,
-            'original_title' => (string) $announcement->title,
-        ];
-        $collapseId = $this->buildAnnouncementCollapseId((int) $announcement->id);
-
-        if ($this->isFcmEnabled()) {
-            $this->sendViaFcm(
-                $tokens,
-                $title !== '' ? $title : 'お知らせ',
-                'このお知らせは取り消されました',
-                $data,
-                $collapseId,
-                true,
-                true,
-                (int) $announcement->project_id
-            );
-
-            return;
-        }
-
-        if (! $this->isOneSignalEnabled()) {
-            return;
-        }
-
-        foreach ($this->storedOneSignalNotificationIds($announcement) as $notificationId) {
-            $id = trim((string) $notificationId);
-            if ($id === '') {
-                continue;
-            }
-            $this->cancelOneSignalNotification($id, (int) $announcement->id, (int) $announcement->project_id);
-        }
-
-        $this->sendOneSignalPush(
+        $this->sendViaFcm(
             $tokens,
             $title !== '' ? $title : 'お知らせ',
             'このお知らせは取り消されました',
-            $data,
-            $collapseId,
+            [
+                'type' => self::DATA_TYPE_ANNOUNCEMENT_CANCELLED,
+                'announcement_id' => (string) $announcement->id,
+                'project_id' => (string) $announcement->project_id,
+                'original_title' => (string) $announcement->title,
+            ],
+            $this->buildAnnouncementCollapseId((int) $announcement->id),
             true,
-            true
+            true,
+            (int) $announcement->project_id
         );
     }
 
@@ -151,102 +116,72 @@ class PushNotificationService
             return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
         }
 
-        $resolvedCollapseId = $collapseId ?? $this->resolveCollapseIdFromData($projectId, $userId, $data);
-
-        if ($this->isFcmEnabled()) {
-            return $this->sendViaFcm($tokens, $title, $body, $data, $resolvedCollapseId, false, false, $projectId);
-        }
-
-        if ($this->isOneSignalEnabled()) {
-            $result = $this->sendOneSignalPush(
-                $tokens,
-                $title,
-                $body,
-                $data,
-                $resolvedCollapseId
-            );
-
+        if (! $this->isFcmEnabled()) {
             return [
-                'target_tokens' => $result['target_tokens'],
-                'sent' => $result['sent'],
-                'failed' => $result['failed'],
-                'skipped' => $result['skipped'],
+                'target_tokens' => count($tokens),
+                'sent' => 0,
+                'failed' => 0,
+                'skipped' => count($tokens),
             ];
         }
 
-        return [
-            'target_tokens' => count($tokens),
-            'sent' => 0,
-            'failed' => 0,
-            'skipped' => count($tokens),
-        ];
+        $resolvedCollapseId = $collapseId ?? $this->resolveCollapseIdFromData($projectId, $userId, $data);
+
+        return $this->sendViaFcm($tokens, $title, $body, $data, $resolvedCollapseId, false, false, $projectId);
     }
 
     /**
-     * subscription_id リストへ直接 push（キッチン端末など user 非紐付け向け）
+     * FCM registration token リストへ直接 push（キッチン端末など user 非紐付け向け）
      *
-     * @param  list<string>  $subscriptionIds
+     * @param  list<string>  $tokens
      * @param  array<string, string>  $data
-     * @return array{target_tokens:int,sent:int,failed:int,skipped:int,notification_ids:list<string>}
+     * @return array{target_tokens:int,sent:int,failed:int,skipped:int,notification_ids:list<string>,invalid_tokens:list<string>}
      */
     public function sendToSubscriptionIds(
-        array $subscriptionIds,
+        array $tokens,
         string $title,
         string $body,
         array $data = [],
         ?string $collapseId = null,
         bool $useKitchenProvider = false
     ): array {
-        if ($subscriptionIds === []) {
-            return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0, 'notification_ids' => []];
-        }
+        unset($useKitchenProvider);
 
-        if ($useKitchenProvider && $this->isKitchenOneSignalEnabled()) {
-            return $this->sendOneSignalPush(
-                $subscriptionIds,
-                $title,
-                $body,
-                $data,
-                $collapseId,
-                false,
-                false,
-                'kitchen_onesignal'
-            );
-        }
-
-        if ($this->isFcmEnabled()) {
-            $result = $this->sendViaFcm($subscriptionIds, $title, $body, $data, $collapseId);
-
+        if ($tokens === []) {
             return [
-                'target_tokens' => $result['target_tokens'],
-                'sent' => $result['sent'],
-                'failed' => $result['failed'],
-                'skipped' => $result['skipped'],
+                'target_tokens' => 0,
+                'sent' => 0,
+                'failed' => 0,
+                'skipped' => 0,
                 'notification_ids' => [],
+                'invalid_tokens' => [],
             ];
         }
 
-        if ($this->isOneSignalEnabled()) {
-            return $this->sendOneSignalPush(
-                $subscriptionIds,
-                $title,
-                $body,
-                $data,
-                $collapseId
-            );
+        if (! $this->isFcmEnabled()) {
+            LogHelper::info('[Push] sendToSubscriptionIds skipped (FCM not configured)', [
+                'target_tokens' => count($tokens),
+            ]);
+
+            return [
+                'target_tokens' => count($tokens),
+                'sent' => 0,
+                'failed' => 0,
+                'skipped' => count($tokens),
+                'notification_ids' => [],
+                'invalid_tokens' => [],
+            ];
         }
 
-        LogHelper::info('[Push] sendToSubscriptionIds skipped (provider not configured)', [
-            'target_tokens' => count($subscriptionIds),
-            'use_kitchen' => $useKitchenProvider,
-        ]);
+        $result = $this->sendViaFcm($tokens, $title, $body, $data, $collapseId);
 
         return [
-            'target_tokens' => count($subscriptionIds),
-            'sent' => 0,
-            'failed' => 0,
-            'skipped' => count($subscriptionIds),
+            'target_tokens' => $result['target_tokens'],
+            'sent' => $result['sent'],
+            'failed' => $result['failed'],
+            'skipped' => $result['skipped'],
             'notification_ids' => [],
+            'invalid_tokens' => $result['invalid_tokens'],
         ];
     }
 
@@ -269,209 +204,6 @@ class PushNotificationService
             $data,
             $this->buildQueueCollapseId($projectId, $userId)
         );
-    }
-
-    /**
-     * OneSignal でお知らせ配信（subscription_id は user_devices.push_token に保存されている想定）
-     *
-     * @param  list<string>  $subscriptionIds
-     * @return array{target_tokens:int,sent:int,failed:int,skipped:int,notification_ids:list<string>}
-     */
-    private function sendAnnouncementViaOneSignal(Announcement $announcement, array $subscriptionIds): array
-    {
-        return $this->sendOneSignalPush(
-            $subscriptionIds,
-            (string) $announcement->title,
-            (string) ($announcement->body ?? ''),
-            [
-                'announcement_id' => (string) $announcement->id,
-                'project_id' => (string) $announcement->project_id,
-                'delivery_type' => (string) $announcement->delivery_type,
-            ],
-            $this->buildAnnouncementCollapseId((int) $announcement->id)
-        );
-    }
-
-    /**
-     * @param  list<string>  $subscriptionIds
-     * @param  array<string,string>  $data
-     * @return array{target_tokens:int,sent:int,failed:int,skipped:int,notification_ids:list<string>}
-     */
-    private function sendOneSignalPush(
-        array $subscriptionIds,
-        string $title,
-        string $body,
-        array $data,
-        ?string $collapseId = null,
-        bool $contentAvailable = false,
-        bool $isAnnouncementCancel = false,
-        string $configKey = 'onesignal'
-    ): array {
-        $config = config('push.'.$configKey);
-        $appId = trim((string) ($config['app_id'] ?? ''));
-        $apiKey = trim((string) ($config['api_key'] ?? ''));
-        $apiUrl = rtrim((string) ($config['api_url'] ?? 'https://api.onesignal.com/notifications'), '/');
-
-        if ($appId === '' || $apiKey === '') {
-            return [
-                'target_tokens' => count($subscriptionIds),
-                'sent' => 0,
-                'failed' => 0,
-                'skipped' => count($subscriptionIds),
-                'notification_ids' => [],
-            ];
-        }
-
-        $totalSent = 0;
-        $totalFailed = 0;
-        $notificationIds = [];
-
-        $normalizedCollapseId = $this->normalizeCollapseId($collapseId);
-
-        foreach (array_chunk($subscriptionIds, self::ONESIGNAL_CHUNK_SIZE) as $chunk) {
-            try {
-                $payload = [
-                    'app_id' => $appId,
-                    'include_subscription_ids' => $chunk,
-                    'target_channel' => 'push',
-                    'data' => $data,
-                    'priority' => 10,
-                ];
-                if ($isAnnouncementCancel) {
-                    $payload['headings'] = ['en' => $title];
-                    $payload['contents'] = ['en' => $body];
-                    $payload['content_available'] = true;
-                    $payload['mutable_content'] = true;
-                } elseif ($contentAvailable) {
-                    $payload['content_available'] = true;
-                } else {
-                    $payload['headings'] = ['en' => $title];
-                    $payload['contents'] = ['en' => $body];
-                }
-                if ($normalizedCollapseId !== null) {
-                    $payload['collapse_id'] = $normalizedCollapseId;
-                    $payload['android_group'] = $normalizedCollapseId;
-                    $payload['thread_id'] = $normalizedCollapseId;
-                }
-
-                $response = $this->http->post($apiUrl, [
-                    'headers' => [
-                        'Authorization' => 'Key '.$apiKey,
-                        'Content-Type' => 'application/json',
-                    ],
-                    'json' => $payload,
-                ]);
-            } catch (\Throwable $e) {
-                LogHelper::error('[Push] OneSignal request failed', [
-                    'error' => $e->getMessage(),
-                    'chunk_size' => count($chunk),
-                    'title' => $title,
-                ]);
-                $totalFailed += count($chunk);
-
-                continue;
-            }
-
-            $responsePayload = json_decode((string) $response->getBody(), true);
-            if (! is_array($responsePayload)) {
-                $responsePayload = [];
-            }
-
-            $notificationId = trim((string) ($responsePayload['id'] ?? ''));
-            if ($notificationId !== '') {
-                $notificationIds[] = $notificationId;
-            }
-
-            // OneSignal は recipients を省略することがある。非空 id なら作成成功とみなす。
-            $chunkSent = 0;
-            if (array_key_exists('recipients', $responsePayload) && is_numeric($responsePayload['recipients'])) {
-                $chunkSent = max(0, (int) $responsePayload['recipients']);
-            } elseif ($notificationId !== '') {
-                $chunkSent = count($chunk);
-            }
-
-            $totalSent += $chunkSent;
-            $totalFailed += max(0, count($chunk) - $chunkSent);
-
-            $errors = $responsePayload['errors'] ?? null;
-            if ($notificationId === '' || $errors !== null) {
-                LogHelper::warning('[Push] OneSignal response incomplete', [
-                    'notification_id' => $notificationId !== '' ? $notificationId : null,
-                    'chunk_size' => count($chunk),
-                    'recipients' => $responsePayload['recipients'] ?? null,
-                    'errors' => $errors,
-                    'title' => $title,
-                ]);
-            }
-
-            if ($isAnnouncementCancel) {
-                LogHelper::info('[Push] announcement cancel push sent', [
-                    'notification_id' => $notificationId,
-                    'chunk_size' => count($chunk),
-                    'recipients' => $chunkSent,
-                    'errors' => $errors,
-                ]);
-            }
-        }
-
-        return [
-            'target_tokens' => count($subscriptionIds),
-            'sent' => $totalSent,
-            'failed' => $totalFailed,
-            'skipped' => 0,
-            'notification_ids' => $notificationIds,
-        ];
-    }
-
-    private function cancelOneSignalNotification(string $notificationId, int $announcementId, int $projectId): void
-    {
-        $appId = trim((string) config('push.onesignal.app_id'));
-        $apiKey = trim((string) config('push.onesignal.api_key'));
-        $apiUrl = rtrim((string) config('push.onesignal.api_url'), '/');
-
-        if ($appId === '' || $apiKey === '') {
-            return;
-        }
-
-        try {
-            $this->http->delete($apiUrl.'/'.$notificationId.'?app_id='.urlencode($appId), [
-                'headers' => [
-                    'Authorization' => 'Key '.$apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-            ]);
-        } catch (\Throwable $e) {
-            LogHelper::warning('[Push] OneSignal cancel failed', [
-                'announcement_id' => $announcementId,
-                'project_id' => $projectId,
-                'notification_id' => $notificationId,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /** @param  list<string>  $notificationIds */
-    private function persistAnnouncementNotificationIds(Announcement $announcement, array $notificationIds): void
-    {
-        if ($notificationIds === []) {
-            return;
-        }
-
-        $merged = array_values(array_unique(array_filter(
-            array_merge($this->storedOneSignalNotificationIds($announcement), $notificationIds),
-            fn ($id) => trim((string) $id) !== ''
-        )));
-
-        $announcement->onesignal_notification_ids = $merged;
-        $announcement->save();
-    }
-
-    /** @return list<string> */
-    private function storedOneSignalNotificationIds(Announcement $announcement): array
-    {
-        return is_array($announcement->onesignal_notification_ids)
-            ? $announcement->onesignal_notification_ids
-            : [];
     }
 
     /** @return list<string> */
@@ -557,24 +289,6 @@ class PushNotificationService
         return $normalized;
     }
 
-    private function isOneSignalEnabled(): bool
-    {
-        $config = config('push.onesignal');
-
-        return (bool) ($config['enabled'] ?? false)
-            && trim((string) ($config['app_id'] ?? '')) !== ''
-            && trim((string) ($config['api_key'] ?? '')) !== '';
-    }
-
-    private function isKitchenOneSignalEnabled(): bool
-    {
-        $config = config('push.kitchen_onesignal');
-
-        return (bool) ($config['enabled'] ?? false)
-            && trim((string) ($config['app_id'] ?? '')) !== ''
-            && trim((string) ($config['api_key'] ?? '')) !== '';
-    }
-
     /**
      * @param  list<string>  $tokens
      * @return array{target_tokens:int,sent:int,failed:int,skipped:int,notification_ids:list<string>}
@@ -608,7 +322,7 @@ class PushNotificationService
     /**
      * @param  list<string>  $tokens
      * @param  array<string, string>  $data
-     * @return array{target_tokens:int,sent:int,failed:int,skipped:int}
+     * @return array{target_tokens:int,sent:int,failed:int,skipped:int,invalid_tokens:list<string>}
      */
     private function sendViaFcm(
         array $tokens,
@@ -643,6 +357,7 @@ class PushNotificationService
             'sent' => $result['sent'],
             'failed' => $result['failed'],
             'skipped' => 0,
+            'invalid_tokens' => $result['invalid_tokens'],
         ];
     }
 

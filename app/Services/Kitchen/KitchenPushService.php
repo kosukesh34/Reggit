@@ -59,9 +59,16 @@ class KitchenPushService
                 'project_id' => (string) $projectId,
                 'order_number' => $refNumber,
             ],
-            'kitchen-order-'.(string) $order->id,
-            true
+            'kitchen-order-'.(string) $order->id
         );
+
+        $invalidTokens = $result['invalid_tokens'] ?? [];
+        if ($invalidTokens !== []) {
+            KitchenDevice::query()
+                ->where('project_id', $projectId)
+                ->whereIn('push_token', $invalidTokens)
+                ->update(['push_token' => null]);
+        }
 
         LogHelper::info('[Kitchen] push finished', [
             'order_id' => $orderId,

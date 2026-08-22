@@ -62,12 +62,9 @@ android {
         val liffProjectKeyAndroid = readSkipEnvValue("LIFF_PROJECT_KEY_ANDROID", liffProjectKey)
         val liffFixedTab = readSkipEnvValue("LIFF_FIXED_TAB", "products")
         val liffFixedTabAndroid = readSkipEnvValue("LIFF_FIXED_TAB_ANDROID", liffFixedTab)
-        val oneSignalAppId = ""
         // Android では Bundle 経由で共通キーを参照するケースがあるため、
         // 共通キーにも Android 向け URL を設定して白画面（ngrok エラーページ遷移）を防ぐ。
         manifestPlaceholders["LIFF_BASE_URL"] = liffBaseUrlAndroid
-        // 互換のためキーは残すが空（FCM 移行済み）
-        manifestPlaceholders["ONE_SIGNAL_APP_ID"] = oneSignalAppId
         manifestPlaceholders["LIFF_BASE_URL_ANDROID"] = liffBaseUrlAndroid
         manifestPlaceholders["LIFF_PROJECT_KEY"] = liffProjectKey
         manifestPlaceholders["LIFF_PROJECT_KEY_ANDROID"] = liffProjectKeyAndroid
