@@ -36,7 +36,7 @@ class SettingsRanksRequest extends FormRequest
             'member_card_design' => 'nullable|string|in:'.implode(',', MemberCardDesignMap::DESIGNS),
             'member_card_display_type' => 'nullable|string|in:card,sheet',
             'member_card_code_type' => 'nullable|string|in:barcode,qrcode',
-            'ranks' => 'array',
+            'ranks' => 'nullable|array',
             'ranks.*.key' => 'nullable|string|max:50',
             'ranks.*.label' => 'nullable|string|max:50',
             'ranks.*.min_points' => 'nullable|integer|min:0|max:10000000',
