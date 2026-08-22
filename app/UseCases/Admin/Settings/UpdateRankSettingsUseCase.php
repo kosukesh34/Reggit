@@ -45,27 +45,28 @@ class UpdateRankSettingsUseCase
     public function handle(int $projectId, array $payload): void
     {
         $defaultPointEarnRate = (int) $payload['point_earn_rate'];
+        $defaultStampEarnPerAmount = (int) ($payload['stamp_earn_per_amount'] ?? 0);
         $existingByKey = $this->existingRankMetaByKey($projectId);
 
         $rows = collect($payload['ranks'] ?? [])
             ->filter(fn ($row) => ! StrHelper::isEmptyStringOrNull($row['key'] ?? null))
-            ->map(function ($row, $index) use ($existingByKey) {
+            ->map(function ($row, $index) use ($existingByKey, $defaultPointEarnRate, $defaultStampEarnPerAmount) {
                 $isActive = $row['is_active'] ?? false;
                 $color = $row['card_color'] ?? null;
                 $key = (string) $row['key'];
                 $pointEarnRate = $row['point_earn_rate'] ?? null;
                 $pointEarnRate = ($pointEarnRate !== null && $pointEarnRate !== '')
                     ? (int) $pointEarnRate
-                    : null;
-                if ($pointEarnRate !== null && $pointEarnRate < 1) {
-                    $pointEarnRate = null;
+                    : $defaultPointEarnRate;
+                if ($pointEarnRate < 1) {
+                    $pointEarnRate = $defaultPointEarnRate;
                 }
                 $stampEarnPerAmount = $row['stamp_earn_per_amount'] ?? null;
                 $stampEarnPerAmount = ($stampEarnPerAmount !== null && $stampEarnPerAmount !== '')
                     ? (int) $stampEarnPerAmount
-                    : null;
-                if ($stampEarnPerAmount !== null && $stampEarnPerAmount < 0) {
-                    $stampEarnPerAmount = null;
+                    : $defaultStampEarnPerAmount;
+                if ($stampEarnPerAmount < 0) {
+                    $stampEarnPerAmount = $defaultStampEarnPerAmount;
                 }
                 $existing = $existingByKey[$key] ?? null;
 
@@ -90,14 +91,7 @@ class UpdateRankSettingsUseCase
         }
 
         if ($this->smaregiRankSync->hasSmaregiContract($projectId) && $rows !== []) {
-            $rowsForSync = array_map(function (array $row) use ($defaultPointEarnRate): array {
-                $effectiveRate = $row['point_earn_rate'] ?? $defaultPointEarnRate;
-
-                return array_merge($row, [
-                    'point_earn_rate' => max(1, (int) $effectiveRate),
-                ]);
-            }, $rows);
-            $rankIdsByKey = $this->smaregiRankSync->sync($projectId, $rowsForSync);
+            $rankIdsByKey = $this->smaregiRankSync->sync($projectId, $rows);
             foreach ($rows as $index => $row) {
                 $key = $row['key'];
                 if (isset($rankIdsByKey[$key]) && $rankIdsByKey[$key] !== '') {

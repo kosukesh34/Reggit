@@ -224,12 +224,16 @@
         {{-- ランク一覧 --}}
         <section class="ranks-settings-panel" id="panel-ranks" role="tabpanel" aria-labelledby="tab-ranks" hidden>
             <div class="card card-mb-24">
+                @php
+                    $defaultPointEarnRate = (int) old('point_earn_rate', $view->pointEarnRate ?? 100);
+                    $defaultStampEarnPerAmount = (int) old('stamp_earn_per_amount', $view->stampEarnPerAmount ?? 0);
+                @endphp
                 <div class="card-header ranks-card-header-with-action">
                     <h3 class="card-title"><i class="fas fa-medal"></i> ランク一覧</h3>
                     <button type="button" class="btn btn-primary btn-sm" id="addRankRow"><i class="fas fa-plus"></i> ランクを追加</button>
                 </div>
                 <div class="card-body">
-                    <p class="ranks-settings-lead">会員のランクを定義します。基準値は判定指標の累計または期間内獲得数です。付与レートはランクごとに設定でき、未入力時はデフォルトを使います。</p>
+                    <p class="ranks-settings-lead">会員のランクを定義します。基準値は判定指標の累計または期間内獲得数です。付与レートが未設定のランクにはデフォルト値が入ります。</p>
                     <div class="table-responsive">
                         <table class="table ranks-settings-table" id="rankSettingsTable">
                             <thead>
@@ -250,8 +254,8 @@
                                     <td><input type="text" name="ranks[{{ $i }}][key]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.key', $rank['key'] ?? '') }}" required placeholder="例: gold"></td>
                                     <td><input type="text" name="ranks[{{ $i }}][label]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.label', $rank['label'] ?? '') }}" placeholder="例: ゴールド"></td>
                                     <td><input type="number" name="ranks[{{ $i }}][min_points]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.min_points', $rank['min_points'] ?? 0) }}" min="0"></td>
-                                    <td><input type="number" name="ranks[{{ $i }}][point_earn_rate]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.point_earn_rate', $rank['point_earn_rate'] ?? '') }}" min="1" max="99999" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
-                                    <td><input type="number" name="ranks[{{ $i }}][stamp_earn_per_amount]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.stamp_earn_per_amount', $rank['stamp_earn_per_amount'] ?? '') }}" min="0" max="10000000" placeholder="{{ $view->stampEarnPerAmount ?? 0 }}"></td>
+                                    <td><input type="number" name="ranks[{{ $i }}][point_earn_rate]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.point_earn_rate', $rank['point_earn_rate'] ?? $defaultPointEarnRate) }}" min="1" max="99999"></td>
+                                    <td><input type="number" name="ranks[{{ $i }}][stamp_earn_per_amount]" class="form-control form-control-sm" value="{{ old('ranks.' . $i . '.stamp_earn_per_amount', $rank['stamp_earn_per_amount'] ?? $defaultStampEarnPerAmount) }}" min="0" max="10000000"></td>
                                     <td class="text-center"><input type="checkbox" name="ranks[{{ $i }}][is_active]" value="1" {{ ((bool) old('ranks.' . $i . '.is_active', $rank['is_active'] ?? true)) ? 'checked' : '' }}></td>
                                     <td>
                                         @php
@@ -421,8 +425,8 @@
         <td><input type="text" name="__NAME__[key]" class="form-control form-control-sm" required placeholder="例: gold"></td>
         <td><input type="text" name="__NAME__[label]" class="form-control form-control-sm" placeholder="例: ゴールド"></td>
         <td><input type="number" name="__NAME__[min_points]" class="form-control form-control-sm" value="0" min="0"></td>
-        <td><input type="number" name="__NAME__[point_earn_rate]" class="form-control form-control-sm" min="1" max="99999" placeholder="{{ $view->pointEarnRate ?? 100 }}"></td>
-        <td><input type="number" name="__NAME__[stamp_earn_per_amount]" class="form-control form-control-sm" min="0" max="10000000" placeholder="{{ $view->stampEarnPerAmount ?? 0 }}"></td>
+        <td><input type="number" name="__NAME__[point_earn_rate]" class="form-control form-control-sm js-rank-point-earn-rate" min="1" max="99999" value="{{ $defaultPointEarnRate }}"></td>
+        <td><input type="number" name="__NAME__[stamp_earn_per_amount]" class="form-control form-control-sm js-rank-stamp-earn" min="0" max="10000000" value="{{ $defaultStampEarnPerAmount }}"></td>
         <td class="text-center"><input type="checkbox" name="__NAME__[is_active]" value="1" checked></td>
         <td>
             <div class="color-input-row ranks-color-row">
@@ -519,7 +523,18 @@ document.getElementById('addRankRow')?.addEventListener('click', function() {
     var html = template.innerHTML.replaceAll('__NAME__', 'ranks[' + index + ']');
     var temp = document.createElement('tbody');
     temp.innerHTML = html.trim();
-    tableBody.appendChild(temp.firstElementChild);
+    var row = temp.firstElementChild;
+    var pointDefault = document.getElementById('point_earn_rate');
+    var stampDefault = document.getElementById('stamp_earn_per_amount');
+    var pointInput = row.querySelector('.js-rank-point-earn-rate');
+    var stampInput = row.querySelector('.js-rank-stamp-earn');
+    if (pointInput !== null && pointDefault !== null && pointDefault.value !== '') {
+        pointInput.value = pointDefault.value;
+    }
+    if (stampInput !== null && stampDefault !== null && stampDefault.value !== '') {
+        stampInput.value = stampDefault.value;
+    }
+    tableBody.appendChild(row);
 });
 
 (function() {
