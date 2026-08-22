@@ -1,6 +1,12 @@
 import Foundation
 import UIKit
 import UserNotifications
+#if canImport(FirebaseCore)
+import FirebaseCore
+#endif
+#if canImport(FirebaseMessaging)
+import FirebaseMessaging
+#endif
 
 extension Notification.Name {
     static let kitchenOrderPushReceived = Notification.Name("kitchenOrderPushReceived")
@@ -13,6 +19,15 @@ final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate 
     func configure() {
         guard !isConfigured else { return }
         isConfigured = true
+        #if canImport(FirebaseCore)
+        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil,
+           FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+        #endif
+        #if canImport(FirebaseMessaging)
+        Messaging.messaging().delegate = self
+        #endif
         let center = UNUserNotificationCenter.current()
         center.delegate = self
     }
@@ -26,6 +41,7 @@ final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate 
                     DispatchQueue.main.async {
                         UIApplication.shared.registerForRemoteNotifications()
                     }
+                    self.refreshFcmToken()
                 }
                 return
             }
@@ -34,13 +50,36 @@ final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate 
                 DispatchQueue.main.async {
                     UIApplication.shared.registerForRemoteNotifications()
                 }
+                self.refreshFcmToken()
             }
         }
     }
 
     func didRegister(deviceToken: Data) {
-        let token = deviceToken.map { String(format: "%02x", $0) }.joined()
+        #if canImport(FirebaseMessaging)
+        Messaging.messaging().apnsToken = deviceToken
+        #endif
+        refreshFcmToken()
+    }
+
+    private func refreshFcmToken() {
+        #if canImport(FirebaseMessaging)
+        Messaging.messaging().token { token, error in
+            if let error {
+                print("[Kitchen FCM] token error: \(error.localizedDescription)")
+                return
+            }
+            guard let token, !token.isEmpty else { return }
+            self.saveAndRegister(token: token)
+        }
+        #endif
+    }
+
+    private func saveAndRegister(token: String) {
+        let existing = UserDefaults.standard.string(forKey: AppConstants.Storage.pushTokenKey)
+        if token == existing { return }
         UserDefaults.standard.set(token, forKey: AppConstants.Storage.pushTokenKey)
+        print("[Kitchen FCM] Saved registration token (\(token.count) chars)")
         Task { @MainActor in
             let store = KitchenSettingsStore()
             let settings = store.load()
@@ -66,3 +105,12 @@ final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate 
         completionHandler()
     }
 }
+
+#if canImport(FirebaseMessaging)
+extension PushRegistrationManager: MessagingDelegate {
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let fcmToken, !fcmToken.isEmpty else { return }
+        saveAndRegister(token: fcmToken)
+    }
+}
+#endif

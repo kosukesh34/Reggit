@@ -310,7 +310,7 @@ private fun extrasFlatContains(extras: android.os.Bundle?, announcementId: Strin
 }
 
 private fun extrasAsJson(extras: android.os.Bundle): JSONObject? {
-    val candidates = listOf("onesignal_data", "custom", "data", "additionalData")
+    val candidates = listOf("custom", "data", "additionalData")
     for (key in candidates) {
         val raw = extras.getString(key) ?: continue
         try {
@@ -391,7 +391,7 @@ open class MainActivity: AppCompatActivity {
         AppDelegate.shared.onResume()
         // 既にログインしている場合も含め、アプリ表示のたびに通知許可を未取得ならリクエスト
         requestNotificationPermissionIfNeeded()
-        // OneSignal の restored_OS_notifications 復元に負けないよう即時＋遅延で掃除
+        // 取消し通知の復元に負けないよう即時＋遅延で掃除
         syncCancelledAnnouncementNotifications()
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             syncCancelledAnnouncementNotifications()

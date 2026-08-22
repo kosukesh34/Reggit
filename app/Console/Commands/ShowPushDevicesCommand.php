@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 class ShowPushDevicesCommand extends Command
 {
     protected $signature = 'push:show-devices
-                            {--full : push_token を全文表示（OneSignal で検索用）}';
+                            {--full : push_token を全文表示}';
 
     protected $description = 'user_devices の push_token 登録一覧を表示（tinker 不要）';
 
@@ -45,7 +45,7 @@ class ShowPushDevicesCommand extends Command
 
         if (! $showFull && $devices->isNotEmpty()) {
             $this->newLine();
-            $this->comment('OneSignal で ID 検索する場合: php artisan push:show-devices --full');
+            $this->comment('全文表示: php artisan push:show-devices --full');
         }
 
         return self::SUCCESS;

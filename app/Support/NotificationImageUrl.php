@@ -8,7 +8,7 @@ namespace App\Support;
  */
 class NotificationImageUrl
 {
-    /** プッシュ通知（OneSignal / FCM）向け。相対パスは APP_URL で絶対化する。 */
+    /** プッシュ通知（FCM）向け。相対パスは APP_URL で絶対化する。 */
     public static function forPush(?string $imageUrl): ?string
     {
         foreach (self::expandCandidates($imageUrl) as $candidate) {

@@ -59,7 +59,7 @@ SWIFT_EMIT_LOC_STRINGS = YES
 // the name of the product module; this can be anything, but cannot conflict with any Swift module names
 PRODUCT_MODULE_NAME = $(PRODUCT_NAME:c99extidentifier)App
 
-// Bundle ID は Skip.env の PRODUCT_BUNDLE_IDENTIFIER を使用。OneSignal p8 の Bundle ID と完全一致させること。
+// Bundle ID は Skip.env の PRODUCT_BUNDLE_IDENTIFIER を使用。Firebase / APNs の Bundle ID と一致させること。
 // PRODUCT_BUNDLE_IDENTIFIER[config=Debug][sdk=iphoneos*] = cool.beans.BundleIdentifer
 
 SDKROOT = auto
@@ -68,7 +68,6 @@ SWIFT_EMIT_LOC_STRINGS = YES
 
 SWIFT_VERSION = 6
 
-// OneSignal App ID (from Skip.env). Passed to Info.plist for runtime init.
 
 // Development team ID for on-device testing
 CODE_SIGNING_REQUIRED = NO
