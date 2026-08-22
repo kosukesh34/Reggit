@@ -61,8 +61,6 @@
     ];
 @endphp
 
-<p class="page-header-desc settings-hub-lead">よく使う画面は左のメニュー、設定はここにまとめています。</p>
-
 @foreach($sections as $section)
     @php
         $items = array_values(array_filter($section['items']));

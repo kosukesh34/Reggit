@@ -15,7 +15,6 @@
 @endphp
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-cog"></i> 店舗設定</h1>
-    <p class="page-header-desc">予約とLINEアプリの見た目を管理します</p>
 </div>
 
 @if(session('success'))
