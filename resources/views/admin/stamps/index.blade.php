@@ -12,7 +12,6 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-stamp"></i> スタンプ</h1>
-    <p class="page-header-desc">スタンプカードの設定と管理</p>
 </div>
 
 <div class="card">

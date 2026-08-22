@@ -12,9 +12,7 @@
 </nav>
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-dice"></i> ガチャ・スクラッチ設定</h1>
-    <p class="page-header-desc">取引後に付与する権利、景品クーポン、当選確率を設定します。景品には「ハズレ」も選べます。権利は画面を開いていなくてもDBに保存されます。ガチャ／スクラッチのON/OFFはこの画面のみで変更できます（機能設定の一覧には出ません）。</p>
 </div>
-@include('admin.settings._context', ['pageKey' => 'lottery'])
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
 @endif

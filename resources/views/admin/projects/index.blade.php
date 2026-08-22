@@ -4,9 +4,6 @@
 @section('page-title', 'プロジェクト管理')
 
 @section('content')
-<div class="page-header system-admin-page-header">
-    <p class="page-header-desc">店舗（プロジェクト）の作成・編集。各プロジェクトごとに商品・注文・会員データが分離されます。</p>
-</div>
 <div class="card">
     <div class="card-header card-header-with-action">
         <h3 class="card-title"><i class="fas fa-building"></i> プロジェクト一覧</h3>

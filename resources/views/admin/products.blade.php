@@ -7,7 +7,6 @@
 <div class="page-header-row">
     <div class="page-header">
         <h1 class="page-header-title"><i class="fas fa-utensils"></i> 商品管理</h1>
-        <p class="page-header-desc">商品の追加・編集・削除を行います</p>
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.products.create') }}" class="btn btn-primary">

@@ -14,9 +14,7 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-palette"></i> 配色</h1>
-    <p class="page-header-desc">成功・注意色を設定します。メイン色（ブランド色）は LIFFデザイン側が優先されます。</p>
 </div>
-@include('admin.settings._context', ['pageKey' => 'advanced'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
