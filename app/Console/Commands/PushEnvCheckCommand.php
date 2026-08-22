@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\UserDevice;
+use App\Services\FcmHttpV1Client;
+use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 
 class PushEnvCheckCommand extends Command
@@ -13,23 +15,20 @@ class PushEnvCheckCommand extends Command
 
     public function handle(): int
     {
-        $appId = trim((string) config('push.onesignal.app_id'));
-        $apiKey = trim((string) config('push.onesignal.api_key'));
-
         $ok = true;
+        $fcm = new FcmHttpV1Client(new Client(['timeout' => 5]));
 
-        if ($appId === '') {
-            $this->error('PUSH_ONESIGNAL_APP_ID が未設定です。.env に設定してください。');
-            $ok = false;
+        if ($fcm->isConfigured()) {
+            $this->info('FCM HTTP v1: 設定済み（project_id='.config('push.fcm.project_id').'）');
         } else {
-            $this->info('PUSH_ONESIGNAL_APP_ID: '.substr($appId, 0, 8).'...'.substr($appId, -4).' （iOS Info.plist の OneSignalAppId と一致させる）');
+            $this->error('FCM が未設定です。PUSH_FCM_ENABLED / PUSH_FCM_PROJECT_ID / PUSH_FCM_CREDENTIALS を確認してください。');
+            $ok = false;
         }
 
-        if ($apiKey === '') {
-            $this->error('PUSH_ONESIGNAL_API_KEY が未設定です。OneSignal Dashboard > Settings > Keys & IDs の REST API Key を .env に設定してください。');
-            $ok = false;
+        if ((bool) config('push.onesignal.enabled')) {
+            $this->warn('PUSH_ONESIGNAL_ENABLED=true ですが、FCM 有効時は OneSignal は使われません。');
         } else {
-            $this->info('PUSH_ONESIGNAL_API_KEY: 設定済み');
+            $this->info('OneSignal: 無効（想定どおり）');
         }
 
         $deviceCount = UserDevice::query()->whereNotNull('push_token')->where('push_token', '!=', '')->count();
@@ -40,7 +39,7 @@ class PushEnvCheckCommand extends Command
         }
 
         $this->newLine();
-        $this->comment('送信テスト: php artisan push:onesignal-test --force --segment');
+        $this->comment('送信テスト: php artisan push:fcm-test --force');
         $this->comment('端末削除: php artisan push:clear-devices --force');
 
         return self::SUCCESS;
