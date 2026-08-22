@@ -21,4 +21,17 @@ class MemberRankResolverTest extends TestCase
         $this->assertSame('ゴールド', $info['next_rank_label']);
         $this->assertSame(350, $info['points_to_next_rank']);
     }
+
+    public function test_resolve_同一min_pointsならorderが大きい方が選ばれること(): void
+    {
+        $ranks = [
+            ['key' => 'guest', 'label' => 'ゲスト', 'min_points' => 0, 'order' => 1, 'is_active' => true],
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 2, 'is_active' => true],
+            ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 3, 'is_active' => true],
+        ];
+
+        $info = (new MemberRankResolver)->resolve($ranks, 'points', 0, 0, null);
+
+        $this->assertSame('bronze', $info['current_rank']);
+    }
 }

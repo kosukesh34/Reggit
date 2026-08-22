@@ -10,6 +10,7 @@ use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Enums\SmaregiWebhookAction;
 use App\Models\Member;
+use App\Services\MemberRankSyncService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -28,6 +29,7 @@ class SmaregiCustomerPointsInboundSyncService
         private OrderRepository $orderRepository,
         private DomainEventDispatcher $domainEvents,
         private SmaregiContractProjectResolver $projectResolver,
+        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     /**
@@ -204,6 +206,10 @@ class SmaregiCustomerPointsInboundSyncService
                     ]);
                 } else {
                     $this->applyRemotePointsForMember($member, $remotePoints);
+                    $fresh = $member->fresh();
+                    if ($fresh !== null) {
+                        $this->memberRankSyncService->sync($fresh);
+                    }
                 }
             }
             $this->requestUnsyncedOrderPointsSync($member);
