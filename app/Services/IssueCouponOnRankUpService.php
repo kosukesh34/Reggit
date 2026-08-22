@@ -78,7 +78,7 @@ class IssueCouponOnRankUpService
         }
 
         if (! isset($orderByKey[$previousRank], $orderByKey[$newRank])) {
-            return $previousRank !== $newRank;
+            return false;
         }
 
         return $orderByKey[$newRank] > $orderByKey[$previousRank];
