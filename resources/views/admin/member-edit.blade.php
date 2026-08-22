@@ -13,7 +13,6 @@
 
 <div class="page-header">
     <h1 class="page-header-title">会員編集</h1>
-    <p class="page-header-desc">登録情報・ポイント・スタンプ・クーポン・来店を更新します</p>
 </div>
 
 @if($errors->any())

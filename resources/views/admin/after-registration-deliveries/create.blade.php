@@ -17,7 +17,6 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-plus"></i> スケジュール配信を追加</h1>
-    <p class="page-header-desc">条件達成または予約のタイミングで、お知らせやクーポンを自動配信します</p>
 </div>
 
 @if($errors->any())

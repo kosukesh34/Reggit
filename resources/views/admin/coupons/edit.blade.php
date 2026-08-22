@@ -9,9 +9,6 @@
     <span class="breadcrumb-sep">/</span>
     <span>編集</span>
 </nav>
-<div class="page-header">
-    <p class="page-header-desc">特典内容と利用条件を更新します。すでに配布したクーポンには影響しません。</p>
-</div>
 @if(session('error'))
 <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
 @endif

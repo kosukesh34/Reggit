@@ -108,11 +108,6 @@
 @endpush
 
 @section('content')
-<div class="page-header system-admin-page-header">
-    <p class="page-header-desc">
-        App Store 公式スクショとブランド調査から得た店舗アプリ UI の学習データです。App Studio テンプレ改善の根拠として参照できます。
-    </p>
-</div>
 
 <div class="stats-grid stats-grid--system">
     <div class="stat-card stat-card-primary">

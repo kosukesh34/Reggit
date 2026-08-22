@@ -6,9 +6,7 @@
 <nav class="breadcrumb"><a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a><span class="breadcrumb-sep">/</span><a href="{{ admin_route('admin.gallery.categories') }}">ギャラリー</a><span class="breadcrumb-sep">/</span><span>ギャラリー設定</span></nav>
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-images"></i> ギャラリー設定</h1>
-    <p class="page-header-desc">ギャラリー機能のON/OFFを設定します。</p>
 </div>
-@include('admin.settings._context', ['pageKey' => 'gallery'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 <form action="{{ admin_route('admin.settings.gallery.update') }}" method="POST">
     @csrf

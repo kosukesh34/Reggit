@@ -17,7 +17,6 @@
 <div class="page-header-row">
     <div class="page-header">
         <h1 class="page-header-title"><i class="fas fa-bullhorn"></i> お知らせ</h1>
-        <p class="page-header-desc">お客様へのお知らせの管理</p>
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.after-registration-deliveries.index') }}" class="btn btn-secondary"><i class="fas fa-clock"></i> スケジュール配信</a>

@@ -5,9 +5,6 @@
 
 @section('content')
 @if(request()->routeIs('system-admin.accounts.*'))
-<div class="page-header system-admin-page-header">
-    <p class="page-header-desc">システム管理者・プロジェクト管理者・店舗管理者・スタッフのアカウントを管理します。</p>
-</div>
 @endif
 <div class="card">
     <div class="card-header card-header-with-action">

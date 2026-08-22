@@ -12,9 +12,7 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fab fa-line"></i> LIFF設定</h1>
-    <p class="page-header-desc">このプロジェクトの LINE LIFF / Messaging API 接続情報を設定します。LINE Developers で発行した値を登録してください。</p>
 </div>
-@include('admin.settings._context', ['pageKey' => 'liff-connection'])
 
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>

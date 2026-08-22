@@ -45,7 +45,6 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-qrcode"></i> スタンプ付与QR</h1>
-    <p class="page-header-desc">{{ $view->stampCard->name }}の付与QRをその都度発行します。QR画像は発行直後だけ表示され、履歴には条件だけが残ります。</p>
 </div>
 
 <form method="POST" action="{{ admin_route('admin.stamps.grant-qr.store', ['id' => $view->stampCard->id]) }}" class="card stamp-grant-form">

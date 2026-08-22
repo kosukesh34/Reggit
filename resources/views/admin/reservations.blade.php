@@ -13,7 +13,6 @@
 <div class="page-header-row">
     <div class="page-header">
         <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約管理</h1>
-        <p class="page-header-desc">予約の確認・作成・管理を行います</p>
     </div>
     <div class="page-header-actions">
         <a href="{{ admin_route('admin.reservations.create') }}" class="btn btn-primary btn-large">
