@@ -14,7 +14,6 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-calendar-plus"></i> 予約を新規作成</h1>
-    <p class="page-header-desc">管理画面から直接予約を登録します</p>
 </div>
 
 <div class="card">

@@ -14,7 +14,6 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-clock"></i> スケジュール配信</h1>
-    <p class="page-header-desc">条件達成や予約日時に、お知らせとクーポンを自動で配信します</p>
 </div>
 
 @if(session('success'))

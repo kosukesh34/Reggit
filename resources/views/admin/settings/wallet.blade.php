@@ -10,9 +10,7 @@
 </nav>
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-wallet"></i> Wallet 画像設定</h1>
-    <p class="page-header-desc">iPhone（Apple Wallet）・Google Wallet の会員証カードに表示する画像を設定します。未設定の場合はデフォルトまたは .env の設定が使われます。</p>
 </div>
-@include('admin.settings._context', ['pageKey' => 'wallet'])
 @if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> 入力内容を確認してください。</div>@endif
 

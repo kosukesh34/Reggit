@@ -25,7 +25,6 @@
 
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-ticket-alt"></i> クーポン</h1>
-    <p class="page-header-desc">クーポンの内容と利用条件を管理します。</p>
 </div>
 
 <div class="card cp-list-card">

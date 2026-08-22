@@ -10,10 +10,6 @@
     <span>入力ホーム（編集）</span>
 </nav>
 
-<div class="page-header system-admin-page-header">
-    <p class="page-header-desc">プロジェクトの基本情報・LINE連携・初期表示をこの画面で一括更新できます。</p>
-</div>
-
 <form action="{{ route('system-admin.projects.update', $view->project->id) }}" method="POST" enctype="multipart/form-data">
     @csrf
     @method('PUT')
