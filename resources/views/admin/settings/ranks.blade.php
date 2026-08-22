@@ -34,7 +34,6 @@
                     <h3 class="card-title"><i class="fas fa-cog"></i> 基本設定</h3>
                 </div>
                 <div class="card-body">
-                    <p class="ranks-settings-lead">会員コード、機能の利用可否、ランクの判定方法、ポイント／スタンプの付与を設定します。</p>
 
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-toggle-on"></i> 機能の利用</h4>
@@ -169,7 +168,6 @@
                     <h3 class="card-title"><i class="fas fa-eye"></i> 会員証の表示</h3>
                 </div>
                 <div class="card-body">
-                    <p class="ranks-settings-lead">会員証の表示内容とデザインを設定します。</p>
 
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle">表示オプション</h4>
@@ -233,7 +231,6 @@
                     <button type="button" class="btn btn-primary btn-sm" id="addRankRow"><i class="fas fa-plus"></i> ランクを追加</button>
                 </div>
                 <div class="card-body">
-                    <p class="ranks-settings-lead">会員のランクを定義します。基準値は判定指標の累計または期間内獲得数です。付与レートが未設定のランクにはデフォルト値が入ります。</p>
                     <div class="table-responsive">
                         <table class="table ranks-settings-table" id="rankSettingsTable">
                             <thead>

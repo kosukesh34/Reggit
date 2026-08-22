@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 class LotteryAdminService
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private CouponAdminService $couponAdminService,
     ) {}
 
     public function getSettings(int $projectId): LotterySettingsData
@@ -36,7 +36,7 @@ class LotteryAdminService
         return new LotterySettingsData(
             $settings,
             $prizes,
-            $this->memberAdminService->getActiveCouponsForSelect($projectId),
+            $this->couponAdminService->getActiveCouponsForSelect($projectId),
             $this->getStats($projectId),
         );
     }

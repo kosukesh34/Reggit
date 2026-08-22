@@ -224,53 +224,6 @@
     color: var(--primary);
 }
 
-/* ===== 設定コンテキストカード ===== */
-.settings-context-card {
-    margin-bottom: 16px;
-    border-left: 3px solid var(--primary);
-}
-
-.settings-context-title {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.settings-context-title i {
-    color: var(--primary);
-}
-
-.settings-context-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px 20px;
-}
-
-.settings-context-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-}
-
-.settings-context-list {
-    margin: 0;
-    padding-left: 18px;
-    color: var(--text-primary);
-    font-size: 13px;
-    line-height: 1.65;
-}
-
-.settings-context-links {
-    margin-top: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
 /* ===== バッジ（subtle背景＋濃い文字） ===== */
 .badge {
     display: inline-flex;

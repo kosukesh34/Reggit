@@ -10,7 +10,6 @@
 @endphp
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-shopping-cart"></i> 注文管理</h1>
-    <p class="page-header-desc">モバイル注文・店内注文の確認とステータス管理を行います</p>
 </div>
 
 <div class="card">

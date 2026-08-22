@@ -7,16 +7,6 @@
 @php
     $isSystemContext = request()->routeIs('system-admin.*');
 @endphp
-<div class="page-header system-admin-page-header">
-    <p class="page-header-desc">
-        重要な操作の履歴を確認できます。
-        @if($isSystemContext)
-            （全プロジェクト）
-        @else
-            （現在のプロジェクトのみ）
-        @endif
-    </p>
-</div>
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-clipboard-list"></i> 管理操作ログ</h3>
