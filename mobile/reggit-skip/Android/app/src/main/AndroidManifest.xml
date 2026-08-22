@@ -33,10 +33,13 @@
         <meta-data android:name="LIFF_FIXED_TAB" android:value="${LIFF_FIXED_TAB}" />
         <meta-data android:name="LiffFixedTabAndroid" android:value="${LIFF_FIXED_TAB_ANDROID}" />
         <meta-data android:name="LIFF_FIXED_TAB_ANDROID" android:value="${LIFF_FIXED_TAB_ANDROID}" />
-        <meta-data android:name="ONE_SIGNAL_APP_ID" android:value="${ONE_SIGNAL_APP_ID}" />
-        <meta-data
-            android:name="com.onesignal.NotificationServiceExtension"
-            android:value="reggit.module.AnnouncementCancelNotificationExtension" />
+        <service
+            android:name=".ReggitFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -15,6 +15,7 @@ use App\Util\AdminContext;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\MockObject\MockObject;
 use Tests\TestCase;
 
@@ -22,9 +23,14 @@ class PushNotificationServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    private string $credentialsPath;
+
     protected function tearDown(): void
     {
         AdminContext::setCurrentProject(null);
+        if (isset($this->credentialsPath) && is_file($this->credentialsPath)) {
+            @unlink($this->credentialsPath);
+        }
         parent::tearDown();
     }
 
@@ -33,59 +39,75 @@ class PushNotificationServiceTest extends TestCase
         parent::setUp();
 
         AdminContext::setCurrentProject(null);
+        Cache::forget('push.fcm.access_token');
+
+        $this->credentialsPath = tempnam(sys_get_temp_dir(), 'fcmcred');
+        $key = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+        $this->assertNotFalse($key);
+        openssl_pkey_export($key, $pem);
+        file_put_contents($this->credentialsPath, json_encode([
+            'client_email' => 'fcm-test@reggit-dbb5a.iam.gserviceaccount.com',
+            'private_key' => $pem,
+            'token_uri' => 'https://oauth2.googleapis.com/token',
+        ]));
 
         config([
-            'push.onesignal.enabled' => true,
-            'push.onesignal.app_id' => 'test-app-id',
-            'push.onesignal.api_key' => 'test-api-key',
-            'push.onesignal.api_url' => 'https://api.onesignal.com/notifications',
+            'push.fcm.enabled' => true,
+            'push.fcm.project_id' => 'reggit-dbb5a',
+            'push.fcm.credentials' => $this->credentialsPath,
+            'push.onesignal.enabled' => false,
+            'push.onesignal.app_id' => '',
+            'push.onesignal.api_key' => '',
         ]);
     }
 
     public function test_send_queue_called_to_user_includes_collapse_id(): void
     {
         [$project, $user] = $this->createProjectAndUser();
-        $this->createUserDevice($project, $user, 'subscription-id-queue');
+        $this->createUserDevice($project, $user, 'fcm-token-queue');
 
-        $payload = $this->captureOneSignalPayload(function (PushNotificationService $service) use ($project, $user) {
+        $payload = $this->captureFcmMessage(function (PushNotificationService $service) use ($project, $user) {
             $service->sendQueueCalledToUser((int) $project->id, (int) $user->id, '42');
         });
 
-        $this->assertSame('reggit:queue:'.$project->id.':'.$user->id, $payload['collapse_id']);
+        $this->assertSame('reggit:queue:'.$project->id.':'.$user->id, $payload['android']['collapse_key'] ?? null);
         $this->assertSame('queue_called', $payload['data']['type']);
     }
 
     public function test_send_to_user_includes_collapse_id_for_coupon_issued(): void
     {
         [$project, $user] = $this->createProjectAndUser();
-        $this->createUserDevice($project, $user, 'subscription-id-coupon');
+        $this->createUserDevice($project, $user, 'fcm-token-coupon');
 
-        $payload = $this->captureOneSignalPayload(function (PushNotificationService $service) use ($project, $user) {
+        $payload = $this->captureFcmMessage(function (PushNotificationService $service) use ($project, $user) {
             $service->sendToUser((int) $project->id, (int) $user->id, 'クーポンが届きました', '本文', [
                 'type' => 'coupon_issued',
                 'tab' => 'coupons',
             ]);
         });
 
-        $this->assertSame('reggit:coupon:'.$project->id.':'.$user->id, $payload['collapse_id']);
+        $this->assertSame('reggit:coupon:'.$project->id.':'.$user->id, $payload['android']['collapse_key'] ?? null);
     }
 
     public function test_send_to_user_omits_collapse_id_when_type_is_unknown(): void
     {
         [$project, $user] = $this->createProjectAndUser();
-        $this->createUserDevice($project, $user, 'subscription-id-generic');
+        $this->createUserDevice($project, $user, 'fcm-token-generic');
 
-        $payload = $this->captureOneSignalPayload(function (PushNotificationService $service) use ($project, $user) {
+        $payload = $this->captureFcmMessage(function (PushNotificationService $service) use ($project, $user) {
             $service->sendToUser((int) $project->id, (int) $user->id, 'タイトル', '本文', ['type' => 'custom_event']);
         });
 
-        $this->assertArrayNotHasKey('collapse_id', $payload);
+        $this->assertArrayNotHasKey('collapse_key', $payload['android'] ?? []);
     }
 
-    public function test_send_announcement_persists_onesignal_notification_id(): void
+    public function test_send_announcement_via_fcm_counts_sent(): void
     {
         [$project, $user] = $this->createProjectAndUser();
-        $this->createUserDevice($project, $user, 'subscription-id-announcement');
+        $this->createUserDevice($project, $user, 'fcm-token-announcement');
         Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         AdminContext::setCurrentProject($project);
 
@@ -97,29 +119,20 @@ class PushNotificationServiceTest extends TestCase
             'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
         ]);
 
-        /** @var Client&MockObject $http */
-        $http = $this->createMock(Client::class);
-        $http->expects($this->once())
-            ->method('post')
-            ->willReturn(new Response(200, [], json_encode([
-                'id' => 'onesignal-notification-uuid-1',
-                'recipients' => 1,
-            ])));
+        $http = $this->mockFcmHttpClient();
+        $result = (new PushNotificationService($http))->sendAnnouncement($announcement);
 
-        $service = new PushNotificationService($http);
-        $result = $service->sendAnnouncement($announcement);
-
-        $this->assertSame(['onesignal-notification-uuid-1'], $result['notification_ids']);
-        $announcement->refresh();
-        $this->assertSame(['onesignal-notification-uuid-1'], $announcement->onesignal_notification_ids);
+        $this->assertSame(1, $result['target_tokens']);
+        $this->assertSame(1, $result['sent']);
+        $this->assertSame([], $result['notification_ids']);
     }
 
     public function test_send_announcement_filters_push_tokens_by_notification_preference(): void
     {
         [$project, $couponOnlyUser] = $this->createProjectAndUser();
         $noneUser = User::factory()->create(['project_id' => $project->id]);
-        $this->createUserDevice($project, $couponOnlyUser, 'subscription-id-coupon-only');
-        $this->createUserDevice($project, $noneUser, 'subscription-id-none');
+        $this->createUserDevice($project, $couponOnlyUser, 'fcm-token-coupon-only');
+        $this->createUserDevice($project, $noneUser, 'fcm-token-none');
         $couponOnlyMember = Member::factory()->create([
             'project_id' => $project->id,
             'user_id' => $couponOnlyUser->id,
@@ -137,27 +150,21 @@ class PushNotificationServiceTest extends TestCase
             'target_member_ids' => [$couponOnlyMember->id, $noneMember->id],
         ]);
 
-        /** @var Client&MockObject $http */
-        $http = $this->createMock(Client::class);
-        $http->expects($this->once())
-            ->method('post')
-            ->with(
-                'https://api.onesignal.com/notifications',
-                $this->callback(function (array $options): bool {
-                    return ($options['json']['include_subscription_ids'] ?? []) === ['subscription-id-coupon-only'];
-                })
-            )
-            ->willReturn(new Response(200, [], json_encode(['id' => 'preference-id', 'recipients' => 1])));
+        $capturedToken = null;
+        $http = $this->mockFcmHttpClient(function (array $message) use (&$capturedToken): void {
+            $capturedToken = $message['token'] ?? null;
+        });
 
         $result = (new PushNotificationService($http))->sendAnnouncement($announcement);
 
         $this->assertSame(1, $result['target_tokens']);
+        $this->assertSame('fcm-token-coupon-only', $capturedToken);
     }
 
-    public function test_cancel_announcement_push_deletes_and_sends_collapse_cancel(): void
+    public function test_cancel_announcement_push_sends_fcm_collapse_cancel(): void
     {
         [$project, $user] = $this->createProjectAndUser();
-        $this->createUserDevice($project, $user, 'subscription-id-cancel');
+        $this->createUserDevice($project, $user, 'fcm-token-cancel');
         Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         AdminContext::setCurrentProject($project);
 
@@ -167,64 +174,33 @@ class PushNotificationServiceTest extends TestCase
             'body' => '本文',
             'delivery_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
             'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
-            'onesignal_notification_ids' => ['stored-notification-id'],
         ]);
 
-        $deleteCalled = false;
         $cancelPayload = null;
+        $http = $this->mockFcmHttpClient(function (array $message) use (&$cancelPayload): void {
+            $cancelPayload = $message;
+        });
 
-        /** @var Client&MockObject $http */
-        $http = $this->createMock(Client::class);
-        $http->expects($this->once())
-            ->method('delete')
-            ->with(
-                'https://api.onesignal.com/notifications/stored-notification-id?app_id=test-app-id',
-                $this->callback(function (array $options): bool {
-                    return ($options['headers']['Authorization'] ?? null) === 'Key test-api-key';
-                })
-            )
-            ->willReturnCallback(function () use (&$deleteCalled) {
-                $deleteCalled = true;
+        (new PushNotificationService($http))->cancelAnnouncementPush($announcement);
 
-                return new Response(200, [], json_encode(['success' => true]));
-            });
-        $http->expects($this->once())
-            ->method('post')
-            ->with(
-                'https://api.onesignal.com/notifications',
-                $this->callback(function (array $options) use (&$cancelPayload): bool {
-                    $cancelPayload = $options['json'] ?? null;
-
-                    return is_array($cancelPayload);
-                })
-            )
-            ->willReturn(new Response(200, [], json_encode(['id' => 'cancel-push-id', 'recipients' => 1])));
-
-        $service = new PushNotificationService($http);
-        $service->cancelAnnouncementPush($announcement);
-
-        $this->assertTrue($deleteCalled);
         $this->assertIsArray($cancelPayload);
-        $this->assertSame('reggit:announcement:'.$announcement->id, $cancelPayload['collapse_id']);
-        $this->assertSame('reggit:announcement:'.$announcement->id, $cancelPayload['android_group']);
-        $this->assertSame('reggit:announcement:'.$announcement->id, $cancelPayload['thread_id']);
-        $this->assertSame(PushNotificationService::DATA_TYPE_ANNOUNCEMENT_CANCELLED, $cancelPayload['data']['type']);
-        $this->assertSame((string) $announcement->id, $cancelPayload['data']['announcement_id']);
-        $this->assertSame('取消対象', $cancelPayload['data']['original_title']);
-        $this->assertSame(['en' => '取消対象'], $cancelPayload['headings']);
-        $this->assertSame(['en' => 'このお知らせは取り消されました'], $cancelPayload['contents']);
-        $this->assertTrue($cancelPayload['mutable_content']);
-        $this->assertTrue($cancelPayload['content_available']);
-        $this->assertSame(10, $cancelPayload['priority']);
+        $this->assertSame('reggit:announcement:'.$announcement->id, $cancelPayload['android']['collapse_key'] ?? null);
+        $this->assertSame(
+            PushNotificationService::DATA_TYPE_ANNOUNCEMENT_CANCELLED,
+            $cancelPayload['data']['type'] ?? null
+        );
         $this->assertSame(
             [(int) $announcement->id],
             app(CancelledAnnouncementIdStore::class)->list((int) $project->id)
         );
     }
 
-    public function test_cancel_announcement_push_stores_cancelled_id_even_when_onesignal_disabled(): void
+    public function test_cancel_announcement_push_stores_cancelled_id_even_when_providers_disabled(): void
     {
-        config(['push.onesignal.enabled' => false]);
+        config([
+            'push.fcm.enabled' => false,
+            'push.onesignal.enabled' => false,
+        ]);
         [$project] = $this->createProjectAndUser();
         AdminContext::setCurrentProject($project);
 
@@ -238,10 +214,8 @@ class PushNotificationServiceTest extends TestCase
         /** @var Client&MockObject $http */
         $http = $this->createMock(Client::class);
         $http->expects($this->never())->method('post');
-        $http->expects($this->never())->method('delete');
 
-        $service = new PushNotificationService($http);
-        $service->cancelAnnouncementPush($announcement);
+        (new PushNotificationService($http))->cancelAnnouncementPush($announcement);
 
         $this->assertSame(
             [(int) $announcement->id],
@@ -249,77 +223,81 @@ class PushNotificationServiceTest extends TestCase
         );
     }
 
-    public function test_send_to_user_counts_sent_when_onesignal_omits_recipients(): void
+    public function test_send_to_user_counts_failed_when_fcm_rejects_token(): void
     {
         [$project, $user] = $this->createProjectAndUser();
-        $this->createUserDevice($project, $user, 'subscription-id-no-recipients');
+        $this->createUserDevice($project, $user, 'fcm-token-bad');
 
         /** @var Client&MockObject $http */
         $http = $this->createMock(Client::class);
-        $http->expects($this->once())
+        $http->expects($this->exactly(2))
             ->method('post')
-            ->willReturn(new Response(200, [], json_encode([
-                'id' => 'onesignal-notification-without-recipients',
-                'external_id' => null,
-            ])));
+            ->willReturnOnConsecutiveCalls(
+                new Response(200, [], json_encode(['access_token' => 'test-access', 'expires_in' => 3600])),
+                new Response(404, [], json_encode([
+                    'error' => [
+                        'status' => 'NOT_FOUND',
+                        'message' => 'Requested entity was not found.',
+                        'details' => [['errorCode' => 'UNREGISTERED']],
+                    ],
+                ]))
+            );
 
-        $service = new PushNotificationService($http);
-        $result = $service->sendQueueCalledToUser((int) $project->id, (int) $user->id, '7');
-
-        $this->assertSame(1, $result['target_tokens']);
-        $this->assertSame(1, $result['sent']);
-        $this->assertSame(0, $result['failed']);
-    }
-
-    public function test_send_to_user_counts_failed_when_onesignal_id_empty(): void
-    {
-        [$project, $user] = $this->createProjectAndUser();
-        $this->createUserDevice($project, $user, 'subscription-id-empty');
-
-        /** @var Client&MockObject $http */
-        $http = $this->createMock(Client::class);
-        $http->expects($this->once())
-            ->method('post')
-            ->willReturn(new Response(200, [], json_encode([
-                'id' => '',
-                'errors' => ['All included players are not subscribed'],
-            ])));
-
-        $service = new PushNotificationService($http);
-        $result = $service->sendQueueCalledToUser((int) $project->id, (int) $user->id, '8');
+        $result = (new PushNotificationService($http))->sendQueueCalledToUser((int) $project->id, (int) $user->id, '8');
 
         $this->assertSame(1, $result['target_tokens']);
         $this->assertSame(0, $result['sent']);
         $this->assertSame(1, $result['failed']);
+        $this->assertNull(
+            UserDevice::query()->where('user_id', $user->id)->value('push_token')
+        );
     }
 
     /**
      * @param  callable(PushNotificationService): void  $callback
      * @return array<string, mixed>
      */
-    private function captureOneSignalPayload(callable $callback): array
+    private function captureFcmMessage(callable $callback): array
     {
-        $capturedPayload = null;
+        $captured = null;
+        $http = $this->mockFcmHttpClient(function (array $message) use (&$captured): void {
+            $captured = $message;
+        });
+        $callback(new PushNotificationService($http));
+        $this->assertIsArray($captured);
 
+        return $captured;
+    }
+
+    /**
+     * @param  (callable(array<string, mixed>): void)|null  $onMessage
+     */
+    private function mockFcmHttpClient(?callable $onMessage = null): Client
+    {
         /** @var Client&MockObject $http */
         $http = $this->createMock(Client::class);
-        $http->expects($this->once())
+        $http->expects($this->atLeastOnce())
             ->method('post')
-            ->with(
-                'https://api.onesignal.com/notifications',
-                $this->callback(function (array $options) use (&$capturedPayload): bool {
-                    $capturedPayload = $options['json'] ?? null;
+            ->willReturnCallback(function (string $url, array $options = []) use ($onMessage) {
+                if (str_contains($url, 'oauth2.googleapis.com/token')) {
+                    return new Response(200, [], json_encode([
+                        'access_token' => 'test-access-token',
+                        'expires_in' => 3600,
+                    ]));
+                }
 
-                    return is_array($capturedPayload);
-                })
-            )
-            ->willReturn(new Response(200, [], json_encode(['id' => 'payload-capture-id', 'recipients' => 1])));
+                $message = $options['json']['message'] ?? null;
+                $this->assertIsArray($message);
+                if ($onMessage !== null) {
+                    $onMessage($message);
+                }
 
-        $callback(new PushNotificationService($http));
+                return new Response(200, [], json_encode([
+                    'name' => 'projects/reggit-dbb5a/messages/0:test',
+                ]));
+            });
 
-        $this->assertIsArray($capturedPayload);
-
-        return $capturedPayload;
+        return $http;
     }
 
     private function createUserDevice(Project $project, User $user, string $pushToken): void

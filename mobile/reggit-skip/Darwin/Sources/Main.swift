@@ -1,7 +1,10 @@
 import SwiftUI
 import Reggit
-#if canImport(OneSignalFramework)
-import OneSignalFramework
+#if canImport(FirebaseCore)
+import FirebaseCore
+#endif
+#if canImport(FirebaseMessaging)
+import FirebaseMessaging
 #endif
 #if canImport(UserNotifications)
 import UserNotifications
@@ -21,7 +24,6 @@ private typealias AppType = NSApplication
 #endif
 
 private let kPushTokenUserDefaultsKey = NativeAppStorage.pushTokenKey
-private let kOneSignalAppIdUserDefaultsKey = NativeAppStorage.oneSignalAppIdKey
 
 @main
 struct AppMain: App {
@@ -46,7 +48,6 @@ struct AppMain: App {
             }
             #endif
             .onAppear {
-                // onChange(scenePhase) は初回 .active では発火しないため、起動時にも掃除する
                 #if canImport(UserNotifications)
                 AnnouncementPushCancel.removeOrphanCancelledNotifications()
                 AnnouncementPushCancel.syncCancelledAnnouncementNotifications()
@@ -65,13 +66,12 @@ struct AppMain: App {
             switch newPhase {
             case .active:
                 AppDelegate.shared.onResume()
-                #if canImport(OneSignalFramework)
+                #if canImport(UIKit)
                 requestNotificationPermissionIfNeeded()
                 #endif
                 #if canImport(UserNotifications)
                 AnnouncementPushCancel.removeOrphanCancelledNotifications()
                 AnnouncementPushCancel.syncCancelledAnnouncementNotifications()
-                // OneSignal 復元タイミングに備え遅延でも再掃除
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     AnnouncementPushCancel.syncCancelledAnnouncementNotifications()
                 }
@@ -103,9 +103,7 @@ private func openAppNotificationSettings() {
         UIApplication.shared.open(url)
     }
 }
-#endif
 
-#if canImport(OneSignalFramework) && canImport(UserNotifications)
 private func showNotificationDeniedAlertIfStillDenied() {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
@@ -124,46 +122,32 @@ func requestNotificationPermissionIfNeeded() {
             showNotificationDeniedAlertIfStillDenied()
             return
         case .authorized, .provisional, .ephemeral:
-            registerRemoteAndOptIn()
+            DispatchQueue.main.async {
+                UIApplication.shared.registerForRemoteNotifications()
+            }
             return
         case .notDetermined:
             break
         @unknown default:
             break
         }
-        OneSignal.Notifications.requestPermission({ granted in
-            print("[OneSignal] Notification permission: \(granted ? "granted" : "denied")")
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+            print("[FCM] Notification permission: \(granted ? "granted" : "denied")")
             if granted {
-                DispatchQueue.main.async { registerRemoteAndOptIn() }
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
             } else {
                 showNotificationDeniedAlertIfStillDenied()
             }
-        }, fallbackToSettings: false)
+        }
     }
-}
-
-private func registerRemoteAndOptIn() {
-    DispatchQueue.main.async {
-        #if canImport(UIKit)
-        UIApplication.shared.registerForRemoteNotifications()
-        #endif
-        OneSignal.User.pushSubscription.optIn()
-    }
-}
-#elseif canImport(OneSignalFramework)
-func requestNotificationPermissionIfNeeded() {
-    OneSignal.Notifications.requestPermission({ _ in }, fallbackToSettings: false)
 }
 #endif
 
 @MainActor
 final class AppMainDelegate: NSObject, AppMainDelegateBase {
     let application = AppType.shared
-    #if canImport(OneSignalFramework)
-    private var oneSignalPushObserver: OneSignalPushObserver?
-    private var oneSignalForegroundObserver: OneSignalForegroundObserver?
-    private var oneSignalClickObserver: OneSignalNotificationClickObserver?
-    #endif
 
     #if canImport(UIKit)
     func application(_ application: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
@@ -173,12 +157,9 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        #if canImport(OneSignalFramework)
-        setupOneSignalIfNeeded(launchOptions: launchOptions)
-        #endif
+        setupFirebaseMessagingIfNeeded()
         AppDelegate.shared.onLaunch()
         #if canImport(UserNotifications)
-        // コールドスタート時にも取消し同期（scenePhase.onChange は初回 active を逃す）
         AnnouncementPushCancel.syncCancelledAnnouncementNotifications()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             AnnouncementPushCancel.syncCancelledAnnouncementNotifications()
@@ -190,88 +171,47 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
         return true
     }
 
-    #if canImport(OneSignalFramework)
-    private func setupOneSignalIfNeeded(launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
-        guard let appId = (Bundle.main.object(forInfoDictionaryKey: "OneSignalAppId") as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-              !appId.isEmpty else {
-            print("[OneSignal] Skip: OneSignalAppId not set in Info.plist")
+    private func setupFirebaseMessagingIfNeeded() {
+        #if canImport(FirebaseCore) && canImport(FirebaseMessaging)
+        guard Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil else {
+            print("[FCM] GoogleService-Info.plist missing from bundle")
             return
         }
-        resetStoredPushTokenIfAppIdChanged(currentAppId: appId)
-        print("[OneSignal] Initializing with App ID: \(appId.prefix(8))...\(appId.suffix(4)) (Bundle ID: \(Bundle.main.bundleIdentifier ?? "?"))")
-        OneSignal.initialize(appId, withLaunchOptions: launchOptions)
-        bindOneSignalNotificationClickListenerIfNeeded()
-        bindOneSignalForegroundListenerIfNeeded()
-        bindOneSignalPushObserverIfNeeded()
-        OneSignal.User.pushSubscription.optIn()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            #if canImport(UIKit)
-            UIApplication.shared.registerForRemoteNotifications()
-            #endif
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
         }
+        Messaging.messaging().delegate = self
+        UNUserNotificationCenter.current().delegate = self
         requestNotificationPermissionIfNeeded()
-        for delay in [2.0, 5.0, 10.0, 15.0, 20.0] as [Double] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.saveOneSignalSubscriptionIdIfNeeded(loggingDelay: delay)
+        for delay in [2.0, 5.0, 10.0] as [Double] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                Messaging.messaging().token { token, error in
+                    if let error {
+                        print("[FCM] token error: \(error.localizedDescription)")
+                        return
+                    }
+                    guard let token, !token.isEmpty else { return }
+                    Self.saveFcmToken(token)
+                }
             }
         }
+        #else
+        print("[FCM] FirebaseMessaging not linked")
+        #endif
     }
 
-    private func bindOneSignalNotificationClickListenerIfNeeded() {
-        guard oneSignalClickObserver == nil else { return }
-        let observer = OneSignalNotificationClickObserver()
-        oneSignalClickObserver = observer
-        OneSignal.Notifications.addClickListener(observer)
-    }
-
-    private func bindOneSignalForegroundListenerIfNeeded() {
-        guard oneSignalForegroundObserver == nil else { return }
-        let observer = OneSignalForegroundObserver()
-        oneSignalForegroundObserver = observer
-        OneSignal.Notifications.addForegroundLifecycleListener(observer)
-    }
-
-    private func bindOneSignalPushObserverIfNeeded() {
-        guard oneSignalPushObserver == nil else { return }
-        let observer = OneSignalPushObserver { [weak self] state in
-            guard let self else { return }
-            let currentId = state.current.id ?? "nil"
-            let previousId = state.previous.id ?? "nil"
-            print("[OneSignal] pushSubscription changed: previous=\(previousId), current=\(currentId), optedIn=\(state.current.optedIn ? "1" : "0")")
-            saveOneSignalSubscriptionIdIfNeeded(loggingDelay: 0)
-        }
-        oneSignalPushObserver = observer
-        OneSignal.User.pushSubscription.addObserver(observer)
-    }
-
-    private func resetStoredPushTokenIfAppIdChanged(currentAppId: String) {
-        let defaults = UserDefaults.standard
-        let previousAppId = defaults.string(forKey: kOneSignalAppIdUserDefaultsKey)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let prev = previousAppId, prev != currentAppId {
-            defaults.removeObject(forKey: kPushTokenUserDefaultsKey)
-            print("[OneSignal] App ID changed (\(prev) → \(currentAppId)). Cleared cached subscription ID.")
-        }
-        defaults.set(currentAppId, forKey: kOneSignalAppIdUserDefaultsKey)
-    }
-
-    private func saveOneSignalSubscriptionIdIfNeeded(loggingDelay: Double = 0) {
-        guard let id = OneSignal.User.pushSubscription.id, !id.isEmpty else {
-            print("[OneSignal] @\(Int(loggingDelay))s: pushSubscription.id is nil or empty → OneSignal に購読が作られていません。Dashboard の APNs (p8/Bundle ID) を確認してください")
-            return
-        }
+    private static func saveFcmToken(_ token: String) {
         let existing = UserDefaults.standard.string(forKey: kPushTokenUserDefaultsKey)
-        if id == existing { return }
-        UserDefaults.standard.set(id, forKey: kPushTokenUserDefaultsKey)
-        let preview = id.count > 12 ? "\(id.prefix(8))...\(id.suffix(4))" : id
-        print("[OneSignal] Saved subscription ID (\(id.count) chars): \(preview) → will be sent to backend as push_token")
+        if token == existing { return }
+        UserDefaults.standard.set(token, forKey: kPushTokenUserDefaultsKey)
+        let preview = token.count > 12 ? "\(token.prefix(8))...\(token.suffix(4))" : token
+        print("[FCM] Saved registration token (\(token.count) chars): \(preview)")
         NotificationCenter.default.post(
             name: .oneSignalPushTokenDidUpdate,
             object: nil,
-            userInfo: ["token": id]
+            userInfo: ["token": token]
         )
     }
-    #endif
 
     func applicationWillTerminate(_ application: UIApplication) {
         AppDelegate.shared.onDestroy()
@@ -282,7 +222,10 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        print("[OneSignal] APNs device token received (\(deviceToken.count) bytes) → OneSignal will register; subscription ID may appear after a few seconds")
+        #if canImport(FirebaseMessaging)
+        Messaging.messaging().apnsToken = deviceToken
+        #endif
+        print("[FCM] APNs device token received (\(deviceToken.count) bytes)")
         NotificationCenter.default.post(
             name: NSNotification.Name("didRegisterForRemoteNotificationsWithDeviceToken"),
             object: application,
@@ -291,7 +234,7 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: any Error) {
-        print("[OneSignal] APNs registration FAILED: \(error.localizedDescription) (simulator or missing capability?)")
+        print("[FCM] APNs registration FAILED: \(error.localizedDescription)")
         NotificationCenter.default.post(
             name: NSNotification.Name("didFailToRegisterForRemoteNotificationsWithError"),
             object: application,
@@ -331,6 +274,66 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
     }
     #endif
 }
+
+#if canImport(FirebaseMessaging) && canImport(UIKit)
+extension AppMainDelegate: MessagingDelegate {
+    nonisolated func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let fcmToken, !fcmToken.isEmpty else { return }
+        Task { @MainActor in
+            Self.saveFcmToken(fcmToken)
+        }
+    }
+}
+#endif
+
+#if canImport(UIKit) && canImport(UserNotifications)
+extension AppMainDelegate: UNUserNotificationCenterDelegate {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        let userInfo = notification.request.content.userInfo
+        let type = AnnouncementPushCancel.additionalDataStringPublic(from: userInfo, key: "type") ?? ""
+        let title = notification.request.content.title
+        let body = notification.request.content.body
+        let isBlank = AnnouncementPushCancel.isBlankText(title) && AnnouncementPushCancel.isBlankText(body)
+        let isCancelMessage = body == "このお知らせは取り消されました"
+        if type == AnnouncementPushCancel.cancelledType || isBlank || isCancelMessage {
+            AnnouncementPushCancel.removeDeliveredAnnouncementNotifications(
+                announcementId: AnnouncementPushCancel.additionalDataStringPublic(from: userInfo, key: "announcement_id") ?? "",
+                originalTitle: AnnouncementPushCancel.additionalDataStringPublic(from: userInfo, key: "original_title") ?? ""
+            )
+            AnnouncementPushCancel.removeOrphanCancelledNotifications()
+            completionHandler([])
+            return
+        }
+        if type == "coupon_issued" {
+            Task { @MainActor in
+                AppDelegate.shared.onNotificationForeground(type)
+            }
+        }
+        completionHandler([.banner, .sound, .badge])
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        let tab = AnnouncementPushCancel.additionalDataStringPublic(from: userInfo, key: "tab")
+        let type = AnnouncementPushCancel.additionalDataStringPublic(from: userInfo, key: "type") ?? ""
+        if let tab, !tab.isEmpty {
+            Task { @MainActor in
+                AppDelegate.shared.onNotificationOpened(tab, notificationType: type)
+            }
+        }
+        completionHandler()
+    }
+}
+#endif
+
 
 #if canImport(UserNotifications)
 private enum AnnouncementPushCancel {
@@ -561,6 +564,10 @@ private enum AnnouncementPushCancel {
         return ""
     }
 
+    static func additionalDataStringPublic(from userInfo: [AnyHashable: Any], key: String) -> String? {
+        additionalDataString(from: userInfo, key: key)
+    }
+
     private static func additionalDataString(from userInfo: [AnyHashable: Any], key: String) -> String? {
         if let value = stringValueIfPresent(userInfo[key]) {
             return value
@@ -601,58 +608,6 @@ private enum AnnouncementPushCancel {
     private static func stringValueIfPresent(_ value: Any?) -> String? {
         let trimmed = stringValue(value)
         return trimmed.isEmpty ? nil : trimmed
-    }
-}
-#endif
-
-#if canImport(OneSignalFramework)
-private final class OneSignalPushObserver: NSObject, OSPushSubscriptionObserver {
-    private let onChange: (OSPushSubscriptionChangedState) -> Void
-
-    init(onChange: @escaping (OSPushSubscriptionChangedState) -> Void) {
-        self.onChange = onChange
-        super.init()
-    }
-
-    func onPushSubscriptionDidChange(state: OSPushSubscriptionChangedState) {
-        onChange(state)
-    }
-}
-
-private final class OneSignalForegroundObserver: NSObject, OSNotificationLifecycleListener {
-    func onWillDisplay(event: OSNotificationWillDisplayEvent) {
-        let additionalData = event.notification.additionalData ?? [:]
-        #if canImport(UserNotifications)
-        let type = AnnouncementPushCancel.stringValue(additionalData["type"])
-        let title = event.notification.title ?? ""
-        let body = event.notification.body ?? ""
-        let isBlank = AnnouncementPushCancel.isBlankText(title) && AnnouncementPushCancel.isBlankText(body)
-        let isCancelMessage = body == "このお知らせは取り消されました"
-        if type == AnnouncementPushCancel.cancelledType || isBlank || isCancelMessage {
-            event.preventDefault()
-            AnnouncementPushCancel.removeDeliveredAnnouncementNotifications(
-                announcementId: AnnouncementPushCancel.stringValue(additionalData["announcement_id"]),
-                originalTitle: AnnouncementPushCancel.stringValue(additionalData["original_title"])
-            )
-            AnnouncementPushCancel.removeOrphanCancelledNotifications()
-            return
-        }
-        #else
-        let type = (additionalData["type"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        #endif
-        if type == "coupon_issued" {
-            AppDelegate.shared.onNotificationForeground(type)
-        }
-    }
-}
-
-private final class OneSignalNotificationClickObserver: NSObject, OSNotificationClickListener {
-    func onClick(event: OSNotificationClickEvent) {
-        let additionalData = event.notification.additionalData ?? [:]
-        let tab = additionalData["tab"] as? String
-        let type = additionalData["type"] as? String ?? ""
-        guard let tab, !tab.isEmpty else { return }
-        AppDelegate.shared.onNotificationOpened(tab, notificationType: type)
     }
 }
 #endif
