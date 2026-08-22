@@ -69,7 +69,6 @@ SWIFT_EMIT_LOC_STRINGS = YES
 SWIFT_VERSION = 6
 
 // OneSignal App ID (from Skip.env). Passed to Info.plist for runtime init.
-INFOPLIST_KEY_OneSignalAppId = $(ONE_SIGNAL_APP_ID)
 
 // Development team ID for on-device testing
 CODE_SIGNING_REQUIRED = NO

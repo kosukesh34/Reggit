@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>OneSignalAppId</key>
-	<string>56c917d6-5297-415c-b4c4-67640702e10b</string>
 	<key>LiffBaseUrl</key>
 	<string>https://reggit.jp</string>
 	<key>LiffBaseUrlIos</key>

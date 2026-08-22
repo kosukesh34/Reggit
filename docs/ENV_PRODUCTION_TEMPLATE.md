@@ -275,11 +275,12 @@
 
 | 名前 | 値 | 備考 |
 |------|-----|------|
-| PUSH_FCM_ENABLED | true | FCM を使う場合 |
-| PUSH_FCM_SERVER_KEY | （FCM サーバーキー） | Firebase コンソールから |
-| PUSH_ONESIGNAL_ENABLED | true | OneSignal を使う場合 |
-| PUSH_ONESIGNAL_APP_ID | （OneSignal App ID） | モバイルアプリの OneSignalAppId と同一に |
-| PUSH_ONESIGNAL_API_KEY | （REST API Key） | OneSignal Dashboard → Keys & IDs |
+| PUSH_FCM_ENABLED | true | FCM HTTP v1 を使う場合 |
+| PUSH_FCM_PROJECT_ID | reggit-dbb5a | Firebase プロジェクト ID |
+| PUSH_FCM_CREDENTIALS | storage/app/firebase/reggit-dbb5a-adminsdk.json | サービスアカウント JSON（git 外・サーバに配置） |
+| PUSH_ONESIGNAL_ENABLED | false | 顧客向けは FCM 優先時は false |
+| PUSH_ONESIGNAL_APP_ID | （OneSignal App ID） | Kitchen 等で残す場合のみ |
+| PUSH_ONESIGNAL_API_KEY | （REST API Key） | 同上 |
 
 **その他（使う場合のみ）**
 

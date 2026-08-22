@@ -62,10 +62,11 @@ android {
         val liffProjectKeyAndroid = readSkipEnvValue("LIFF_PROJECT_KEY_ANDROID", liffProjectKey)
         val liffFixedTab = readSkipEnvValue("LIFF_FIXED_TAB", "products")
         val liffFixedTabAndroid = readSkipEnvValue("LIFF_FIXED_TAB_ANDROID", liffFixedTab)
-        val oneSignalAppId = readSkipEnvValue("ONE_SIGNAL_APP_ID", "")
+        val oneSignalAppId = ""
         // Android では Bundle 経由で共通キーを参照するケースがあるため、
         // 共通キーにも Android 向け URL を設定して白画面（ngrok エラーページ遷移）を防ぐ。
         manifestPlaceholders["LIFF_BASE_URL"] = liffBaseUrlAndroid
+        // 互換のためキーは残すが空（FCM 移行済み）
         manifestPlaceholders["ONE_SIGNAL_APP_ID"] = oneSignalAppId
         manifestPlaceholders["LIFF_BASE_URL_ANDROID"] = liffBaseUrlAndroid
         manifestPlaceholders["LIFF_PROJECT_KEY"] = liffProjectKey
@@ -124,8 +125,8 @@ android {
 }
 
 dependencies {
-    // OneSignal push notifications (FCM is used under the hood; configure google-services.json)
-    implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    implementation("com.google.firebase:firebase-messaging")
 }
 
 // Skip plugin adds implementation("reggit.app:Reggit"), but skipstone publishes
