@@ -207,7 +207,7 @@ final class AppMainDelegate: NSObject, AppMainDelegateBase {
         let preview = token.count > 12 ? "\(token.prefix(8))...\(token.suffix(4))" : token
         print("[FCM] Saved registration token (\(token.count) chars): \(preview)")
         NotificationCenter.default.post(
-            name: .oneSignalPushTokenDidUpdate,
+            name: .pushTokenDidUpdate,
             object: nil,
             userInfo: ["token": token]
         )
@@ -430,7 +430,7 @@ private enum AnnouncementPushCancel {
         }
     }
 
-    /// お知らせプッシュっぽい届済みか（クーポン/順番待ち以外の OneSignal 通知）
+    /// お知らせプッシュっぽい届済みか（クーポン/順番待ち以外の プッシュ通知）
     private static func looksLikeAnnouncementNotification(_ notification: UNNotification) -> Bool {
         let userInfo = notification.request.content.userInfo
         let type = additionalDataString(from: userInfo, key: "type") ?? ""
@@ -451,7 +451,7 @@ private enum AnnouncementPushCancel {
         if flat.contains("announcement_id") || flat.contains("reggit:announcement:") || flat.contains("delivery_type") {
             return true
         }
-        // OneSignal 通知かつ type 不明 → お知らせ取消し同期中は候補にする
+        // プッシュ通知かつ type 不明 → お知らせ取消し同期中は候補にする
         if userInfo["custom"] != nil, type.isEmpty, !notification.request.content.title.isEmpty {
             return true
         }

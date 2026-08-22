@@ -58,9 +58,6 @@ class PushNotificationServiceTest extends TestCase
             'push.fcm.enabled' => true,
             'push.fcm.project_id' => 'reggit-dbb5a',
             'push.fcm.credentials' => $this->credentialsPath,
-            'push.onesignal.enabled' => false,
-            'push.onesignal.app_id' => '',
-            'push.onesignal.api_key' => '',
         ]);
     }
 
@@ -199,7 +196,6 @@ class PushNotificationServiceTest extends TestCase
     {
         config([
             'push.fcm.enabled' => false,
-            'push.onesignal.enabled' => false,
         ]);
         [$project] = $this->createProjectAndUser();
         AdminContext::setCurrentProject($project);

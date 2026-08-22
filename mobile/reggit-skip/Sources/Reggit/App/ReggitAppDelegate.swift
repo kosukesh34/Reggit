@@ -39,7 +39,7 @@ import SkipFuse
         guard let trimmed = token.trimmedNonEmpty else { return }
         UserDefaults.standard.set(trimmed, forKey: NativeAppStorage.pushTokenKey)
         NotificationCenter.default.post(
-            name: .oneSignalPushTokenDidUpdate,
+            name: .pushTokenDidUpdate,
             object: nil,
             userInfo: ["token": trimmed]
         )
@@ -48,7 +48,7 @@ import SkipFuse
     /* SKIP @bridge */public func onNotificationForeground(_ notificationType: String) {
         guard let type = notificationType.trimmedNonEmpty else { return }
         NotificationCenter.default.post(
-            name: .oneSignalNotificationForeground,
+            name: .pushNotificationForeground,
             object: nil,
             userInfo: ["type": type]
         )
@@ -61,7 +61,7 @@ import SkipFuse
             userInfo["type"] = type
         }
         NotificationCenter.default.post(
-            name: .oneSignalNotificationOpened,
+            name: .pushNotificationOpened,
             object: nil,
             userInfo: userInfo
         )
