@@ -11,13 +11,11 @@ use GuzzleHttp\Client;
 
 class PushNotificationService
 {
-    private const INVALID_TOKEN_ERRORS = ['NotRegistered', 'InvalidRegistration'];
-
     /** OneSignal API: max subscription_ids per request */
     private const ONESIGNAL_CHUNK_SIZE = 2000;
 
-    /** OneSignal collapse_id の最大文字数 */
-    private const ONESIGNAL_COLLAPSE_ID_MAX_LENGTH = 64;
+    /** collapse_id の最大文字数（FCM apns-collapse-id / OneSignal 共通） */
+    private const COLLAPSE_ID_MAX_LENGTH = 64;
 
     public const DATA_TYPE_ANNOUNCEMENT_CANCELLED = 'announcement_cancelled';
 
@@ -36,6 +34,10 @@ class PushNotificationService
             return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0, 'notification_ids' => []];
         }
 
+        if ($this->isFcmEnabled()) {
+            return $this->sendAnnouncementViaFcm($announcement, $tokens);
+        }
+
         if ($this->isOneSignalEnabled()) {
             $result = $this->sendAnnouncementViaOneSignal($announcement, $tokens);
             $this->persistAnnouncementNotificationIds($announcement, $result['notification_ids']);
@@ -43,33 +45,22 @@ class PushNotificationService
             return $result;
         }
 
-        if (! $this->isFcmEnabled()) {
-            LogHelper::warning('[Push] No push provider configured (FCM/OneSignal)', [
-                'announcement_id' => $announcement->id,
-                'project_id' => $announcement->project_id,
-                'target_tokens' => count($tokens),
-            ]);
+        LogHelper::warning('[Push] No push provider configured (FCM/OneSignal)', [
+            'announcement_id' => $announcement->id,
+            'project_id' => $announcement->project_id,
+            'target_tokens' => count($tokens),
+        ]);
 
-            return [
-                'target_tokens' => count($tokens),
-                'sent' => 0,
-                'failed' => 0,
-                'skipped' => count($tokens),
-                'notification_ids' => [],
-            ];
-        }
-
-        $result = ['target_tokens' => count($tokens), 'sent' => 0, 'failed' => 0, 'skipped' => 0, 'notification_ids' => []];
-        foreach (array_chunk($tokens, 500) as $chunk) {
-            $chunkResult = $this->sendFcmChunk($announcement, $chunk);
-            $result['sent'] += $chunkResult['sent'];
-            $result['failed'] += $chunkResult['failed'];
-        }
-
-        return $result;
+        return [
+            'target_tokens' => count($tokens),
+            'sent' => 0,
+            'failed' => 0,
+            'skipped' => count($tokens),
+            'notification_ids' => [],
+        ];
     }
 
-    /** 未配信は Cancel API、届済みは取消しプッシュで端末側除去。失敗しても例外は投げない。 */
+    /** 取消し ID を記憶し、端末へ取消しプッシュ（collapse 上書き）。失敗しても例外は投げない。 */
     public function cancelAnnouncementPush(Announcement $announcement): void
     {
         app(CancelledAnnouncementIdStore::class)->remember(
@@ -77,6 +68,40 @@ class PushNotificationService
             (int) $announcement->id,
             (string) $announcement->title
         );
+
+        $tokens = $this->resolveTargetTokens($announcement);
+        if ($tokens === []) {
+            LogHelper::warning('[Push] cancelAnnouncementPush skipped (no target tokens)', [
+                'announcement_id' => $announcement->id,
+                'project_id' => $announcement->project_id,
+            ]);
+
+            return;
+        }
+
+        $title = trim((string) $announcement->title);
+        $data = [
+            'type' => self::DATA_TYPE_ANNOUNCEMENT_CANCELLED,
+            'announcement_id' => (string) $announcement->id,
+            'project_id' => (string) $announcement->project_id,
+            'original_title' => (string) $announcement->title,
+        ];
+        $collapseId = $this->buildAnnouncementCollapseId((int) $announcement->id);
+
+        if ($this->isFcmEnabled()) {
+            $this->sendViaFcm(
+                $tokens,
+                $title !== '' ? $title : 'お知らせ',
+                'このお知らせは取り消されました',
+                $data,
+                $collapseId,
+                true,
+                true,
+                (int) $announcement->project_id
+            );
+
+            return;
+        }
 
         if (! $this->isOneSignalEnabled()) {
             return;
@@ -90,28 +115,12 @@ class PushNotificationService
             $this->cancelOneSignalNotification($id, (int) $announcement->id, (int) $announcement->project_id);
         }
 
-        $tokens = $this->resolveTargetTokens($announcement);
-        if ($tokens === []) {
-            LogHelper::warning('[Push] cancelAnnouncementPush skipped (no target tokens)', [
-                'announcement_id' => $announcement->id,
-                'project_id' => $announcement->project_id,
-            ]);
-
-            return;
-        }
-
-        $title = trim((string) $announcement->title);
         $this->sendOneSignalPush(
             $tokens,
             $title !== '' ? $title : 'お知らせ',
             'このお知らせは取り消されました',
-            [
-                'type' => self::DATA_TYPE_ANNOUNCEMENT_CANCELLED,
-                'announcement_id' => (string) $announcement->id,
-                'project_id' => (string) $announcement->project_id,
-                'original_title' => (string) $announcement->title,
-            ],
-            $this->buildAnnouncementCollapseId((int) $announcement->id),
+            $data,
+            $collapseId,
             true,
             true
         );
@@ -142,13 +151,19 @@ class PushNotificationService
             return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
         }
 
+        $resolvedCollapseId = $collapseId ?? $this->resolveCollapseIdFromData($projectId, $userId, $data);
+
+        if ($this->isFcmEnabled()) {
+            return $this->sendViaFcm($tokens, $title, $body, $data, $resolvedCollapseId, false, false, $projectId);
+        }
+
         if ($this->isOneSignalEnabled()) {
             $result = $this->sendOneSignalPush(
                 $tokens,
                 $title,
                 $body,
                 $data,
-                $collapseId ?? $this->resolveCollapseIdFromData($projectId, $userId, $data)
+                $resolvedCollapseId
             );
 
             return [
@@ -159,23 +174,12 @@ class PushNotificationService
             ];
         }
 
-        if (! $this->isFcmEnabled()) {
-            return [
-                'target_tokens' => count($tokens),
-                'sent' => 0,
-                'failed' => 0,
-                'skipped' => count($tokens),
-            ];
-        }
-
-        $result = ['target_tokens' => count($tokens), 'sent' => 0, 'failed' => 0, 'skipped' => 0];
-        foreach (array_chunk($tokens, 500) as $chunk) {
-            $chunkResult = $this->sendFcmChunkToUser($projectId, $chunk, $title, $body, $data);
-            $result['sent'] += $chunkResult['sent'];
-            $result['failed'] += $chunkResult['failed'];
-        }
-
-        return $result;
+        return [
+            'target_tokens' => count($tokens),
+            'sent' => 0,
+            'failed' => 0,
+            'skipped' => count($tokens),
+        ];
     }
 
     /**
@@ -208,6 +212,18 @@ class PushNotificationService
                 false,
                 'kitchen_onesignal'
             );
+        }
+
+        if ($this->isFcmEnabled()) {
+            $result = $this->sendViaFcm($subscriptionIds, $title, $body, $data, $collapseId);
+
+            return [
+                'target_tokens' => $result['target_tokens'],
+                'sent' => $result['sent'],
+                'failed' => $result['failed'],
+                'skipped' => $result['skipped'],
+                'notification_ids' => [],
+            ];
         }
 
         if ($this->isOneSignalEnabled()) {
@@ -534,8 +550,8 @@ class PushNotificationService
             return null;
         }
 
-        if (strlen($normalized) > self::ONESIGNAL_COLLAPSE_ID_MAX_LENGTH) {
-            return substr($normalized, 0, self::ONESIGNAL_COLLAPSE_ID_MAX_LENGTH);
+        if (strlen($normalized) > self::COLLAPSE_ID_MAX_LENGTH) {
+            return substr($normalized, 0, self::COLLAPSE_ID_MAX_LENGTH);
         }
 
         return $normalized;
@@ -559,141 +575,79 @@ class PushNotificationService
             && trim((string) ($config['api_key'] ?? '')) !== '';
     }
 
-    /** @param list<string> $tokens */
-    private function sendFcmChunk(Announcement $announcement, array $tokens): array
+    /**
+     * @param  list<string>  $tokens
+     * @return array{target_tokens:int,sent:int,failed:int,skipped:int,notification_ids:list<string>}
+     */
+    private function sendAnnouncementViaFcm(Announcement $announcement, array $tokens): array
     {
-        try {
-            $response = $this->http->post((string) config('push.fcm.endpoint'), [
-                'headers' => [
-                    'Authorization' => 'key='.(string) config('push.fcm.server_key'),
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'registration_ids' => $tokens,
-                    'priority' => 'high',
-                    'notification' => [
-                        'title' => (string) $announcement->title,
-                        'body' => (string) ($announcement->body ?? ''),
-                    ],
-                    'data' => [
-                        'announcement_id' => (string) $announcement->id,
-                        'project_id' => (string) $announcement->project_id,
-                        'delivery_type' => (string) $announcement->delivery_type,
-                    ],
-                ],
-            ]);
-        } catch (\Throwable $e) {
-            LogHelper::error('[Push] FCM request failed', [
-                'announcement_id' => $announcement->id,
-                'project_id' => $announcement->project_id,
-                'error' => $e->getMessage(),
-                'target_tokens' => count($tokens),
-            ]);
+        $result = $this->sendViaFcm(
+            $tokens,
+            (string) $announcement->title,
+            (string) ($announcement->body ?? ''),
+            [
+                'announcement_id' => (string) $announcement->id,
+                'project_id' => (string) $announcement->project_id,
+                'delivery_type' => (string) $announcement->delivery_type,
+            ],
+            $this->buildAnnouncementCollapseId((int) $announcement->id),
+            false,
+            false,
+            (int) $announcement->project_id
+        );
 
-            return ['sent' => 0, 'failed' => count($tokens)];
-        }
-
-        $payload = json_decode((string) $response->getBody(), true);
-        $results = is_array($payload['results'] ?? null) ? $payload['results'] : [];
-
-        $sent = 0;
-        $failed = 0;
-        $invalidTokens = [];
-        foreach ($tokens as $index => $token) {
-            $item = $results[$index] ?? null;
-            $error = is_array($item) ? ($item['error'] ?? null) : null;
-            if ($error === null) {
-                $sent++;
-
-                continue;
-            }
-            $failed++;
-            if (in_array((string) $error, self::INVALID_TOKEN_ERRORS, true)) {
-                $invalidTokens[] = $token;
-            }
-        }
-
-        if ($invalidTokens !== []) {
-            UserDevice::where('project_id', (int) $announcement->project_id)
-                ->whereIn('push_token', $invalidTokens)
-                ->update(['push_token' => null]);
-        }
-
-        if ($failed > 0) {
-            LogHelper::warning('[Push] FCM partial failure', [
-                'announcement_id' => $announcement->id,
-                'project_id' => $announcement->project_id,
-                'sent' => $sent,
-                'failed' => $failed,
-            ]);
-        }
-
-        return ['sent' => $sent, 'failed' => $failed];
+        return [
+            'target_tokens' => $result['target_tokens'],
+            'sent' => $result['sent'],
+            'failed' => $result['failed'],
+            'skipped' => $result['skipped'],
+            'notification_ids' => [],
+        ];
     }
 
     /**
      * @param  list<string>  $tokens
-     * @param  array<string,string>  $data
+     * @param  array<string, string>  $data
+     * @return array{target_tokens:int,sent:int,failed:int,skipped:int}
      */
-    private function sendFcmChunkToUser(int $projectId, array $tokens, string $title, string $body, array $data): array
-    {
-        try {
-            $response = $this->http->post((string) config('push.fcm.endpoint'), [
-                'headers' => [
-                    'Authorization' => 'key='.(string) config('push.fcm.server_key'),
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'registration_ids' => $tokens,
-                    'priority' => 'high',
-                    'notification' => [
-                        'title' => $title,
-                        'body' => $body,
-                    ],
-                    'data' => $data,
-                ],
-            ]);
-        } catch (\Throwable $e) {
-            LogHelper::error('[Push] FCM user push failed', [
-                'project_id' => $projectId,
-                'error' => $e->getMessage(),
-                'target_tokens' => count($tokens),
-            ]);
+    private function sendViaFcm(
+        array $tokens,
+        string $title,
+        string $body,
+        array $data,
+        ?string $collapseId = null,
+        bool $contentAvailable = false,
+        bool $mutableContent = false,
+        ?int $projectId = null
+    ): array {
+        $client = new FcmHttpV1Client($this->http);
+        $result = $client->sendToTokens(
+            $tokens,
+            $title,
+            $body,
+            $data,
+            $this->normalizeCollapseId($collapseId),
+            $contentAvailable,
+            $mutableContent
+        );
 
-            return ['sent' => 0, 'failed' => count($tokens)];
-        }
-
-        $payload = json_decode((string) $response->getBody(), true);
-        $results = is_array($payload['results'] ?? null) ? $payload['results'] : [];
-
-        $sent = 0;
-        $failed = 0;
-        $invalidTokens = [];
-        foreach ($tokens as $index => $token) {
-            $item = $results[$index] ?? null;
-            $error = is_array($item) ? ($item['error'] ?? null) : null;
-            if ($error === null) {
-                $sent++;
-
-                continue;
-            }
-            $failed++;
-            if (in_array((string) $error, self::INVALID_TOKEN_ERRORS, true)) {
-                $invalidTokens[] = $token;
-            }
-        }
-
-        if ($invalidTokens !== []) {
-            UserDevice::where('project_id', $projectId)
-                ->whereIn('push_token', $invalidTokens)
+        if ($projectId !== null && $result['invalid_tokens'] !== []) {
+            UserDevice::query()
+                ->where('project_id', $projectId)
+                ->whereIn('push_token', $result['invalid_tokens'])
                 ->update(['push_token' => null]);
         }
 
-        return ['sent' => $sent, 'failed' => $failed];
+        return [
+            'target_tokens' => count($tokens),
+            'sent' => $result['sent'],
+            'failed' => $result['failed'],
+            'skipped' => 0,
+        ];
     }
 
     private function isFcmEnabled(): bool
     {
-        return (bool) config('push.fcm.enabled') && trim((string) config('push.fcm.server_key')) !== '';
+        return (new FcmHttpV1Client($this->http))->isConfigured();
     }
 }

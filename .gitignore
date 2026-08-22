@@ -23,7 +23,15 @@ deploy-docker.zip
 
 # Skip / Android ビルド成果物（大容量）
 mobile/reggit-skip/.build/
+mobile/reggit-skip/.spm-checkouts/
 mobile/reggit-skip/Android/.gradle/
+
+# Firebase App Distribution ビルド成果物
+firebase/dist/
+
+# Firebase Admin / FCM 秘密鍵
+storage/app/firebase/
+*.p8
 
 # Playwright E2E
 /e2e/web/test-results/

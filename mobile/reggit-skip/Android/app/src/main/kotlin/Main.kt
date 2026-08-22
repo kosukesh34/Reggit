@@ -14,13 +14,9 @@ import android.graphics.Color as AndroidColor
 import android.os.Build
 import android.util.Log
 import androidx.annotation.Keep
-import com.onesignal.OneSignal
-import com.onesignal.notifications.INotificationClickEvent
-import com.onesignal.notifications.INotificationClickListener
-import com.onesignal.notifications.INotificationLifecycleListener
-import com.onesignal.notifications.INotificationReceivedEvent
-import com.onesignal.notifications.INotificationServiceExtension
-import com.onesignal.notifications.INotificationWillDisplayEvent
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.FirebaseMessagingService
+import com.google.firebase.messaging.RemoteMessage
 import org.json.JSONObject
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -51,7 +47,7 @@ internal val logger: SkipLogger = SkipLogger(subsystem = "reggit.app", category 
 private typealias AppRootView = ReggitRootView
 private typealias AppDelegate = ReggitAppDelegate
 
-/// Key for OneSignal subscription ID. Must match `NativeAppStorage.pushTokenKey` in the Skip module.
+/// Key for FCM registration token. Must match `NativeAppStorage.pushTokenKey` in the Skip module.
 private const val PUSH_TOKEN_PREFS_KEY = "reggit_push_token"
 /// SharedPreferences name used so Skip's device provider can read the token (Skip UserDefaults on Android).
 private const val PUSH_TOKEN_PREFS_NAME = "UserDefaults"
@@ -65,73 +61,42 @@ open class AndroidAppMain: Application {
         super.onCreate()
         logger.info("starting app")
         ProcessInfo.launch(applicationContext)
-        initOneSignalIfConfigured()
+        initFirebaseMessaging()
         AppDelegate.shared.onInit()
     }
 
-    private fun initOneSignalIfConfigured() {
-        val appId = try {
-            (packageManager.getApplicationInfo(packageName, android.content.pm.PackageManager.GET_META_DATA).metaData?.getString("ONE_SIGNAL_APP_ID"))?.trim()
-        } catch (_: Exception) {
-            null
-        }
-        if (appId.isNullOrEmpty()) return
-        OneSignal.initWithContext(this, appId)
-        bindOneSignalNotificationClickListener()
-        bindOneSignalForegroundListener()
-        // 通知権限は SDK が初回表示。subscription id は遅延で保存
-        // トークン取得後に保存（2秒・5秒後にポーリング）
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ saveOneSignalSubscriptionIdIfNeeded() }, 2000)
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ saveOneSignalSubscriptionIdIfNeeded() }, 5000)
-    }
-
-    private fun bindOneSignalNotificationClickListener() {
-        OneSignal.Notifications.addClickListener(object : INotificationClickListener {
-            override fun onClick(event: INotificationClickEvent) {
-                val additionalData = event.notification.additionalData
-                val tab = additionalData?.optString("tab")?.trim()?.takeIf { it.isNotEmpty() } ?: return
-                val type = additionalData?.optString("type")?.trim().orEmpty()
-                AppDelegate.shared.onNotificationOpened(tab, notificationType = type)
-            }
-        })
-    }
-
-    private fun bindOneSignalForegroundListener() {
-        OneSignal.Notifications.addForegroundLifecycleListener(object : INotificationLifecycleListener {
-            override fun onWillDisplay(event: INotificationWillDisplayEvent) {
-                val additionalData = event.notification.additionalData
-                val type = additionalData?.optString("type")?.trim().orEmpty()
-                val announcementId = additionalData?.optString("announcement_id")?.trim().orEmpty()
-                val title = event.notification.title?.trim().orEmpty()
-                    .replace("\u200B", "")
-                    .replace("\u00A0", "")
-                val body = event.notification.body?.trim().orEmpty()
-                    .replace("\u200B", "")
-                    .replace("\u00A0", "")
-                if (type == "announcement_cancelled" || (title.isEmpty() && body.isEmpty())) {
-                    event.preventDefault()
-                    val originalTitle = additionalData?.optString("original_title")?.trim().orEmpty()
-                    cancelDeliveredAnnouncementNotifications(applicationContext, announcementId, originalTitle)
-                    return
-                }
-                if (type == "coupon_issued") {
-                    AppDelegate.shared.onNotificationForeground(notificationType = type)
+    private fun initFirebaseMessaging() {
+        FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { token ->
+                if (!token.isNullOrBlank()) {
+                    saveFcmToken(token)
                 }
             }
-        })
+            .addOnFailureListener { error ->
+                Log.w("ReggitFcm", "token fetch failed: ${error.message}")
+            }
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ refreshFcmToken() }, 2000)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ refreshFcmToken() }, 5000)
     }
 
-    private fun saveOneSignalSubscriptionIdIfNeeded() {
-        val id = OneSignal.User.pushSubscription.id?.takeIf { it.isNotBlank() } ?: return
+    private fun refreshFcmToken() {
+        FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { token ->
+                if (!token.isNullOrBlank()) {
+                    saveFcmToken(token)
+                }
+            }
+    }
+
+    private fun saveFcmToken(token: String) {
         val prefs = applicationContext.getSharedPreferences(PUSH_TOKEN_PREFS_NAME, Context.MODE_PRIVATE)
-        if (id == prefs.getString(PUSH_TOKEN_PREFS_KEY, null)) return
-        prefs.edit().putString(PUSH_TOKEN_PREFS_KEY, id).apply()
-        // WebView にトークンを注入し、ウェブ側から /api/devices/register で送信されるようにする
-        AppDelegate.shared.onPushTokenReceived(id)
+        if (token == prefs.getString(PUSH_TOKEN_PREFS_KEY, null)) return
+        prefs.edit().putString(PUSH_TOKEN_PREFS_KEY, token).apply()
+        AppDelegate.shared.onPushTokenReceived(token)
     }
 
-    fun saveOneSignalSubscriptionIdIfNeededPublic() {
-        saveOneSignalSubscriptionIdIfNeeded()
+    fun saveFcmTokenPublic() {
+        refreshFcmToken()
     }
 
     companion object {
@@ -139,45 +104,33 @@ open class AndroidAppMain: Application {
 }
 
 /**
- * お知らせ取消し通知を抑止し、同一お知らせの届済み通知を消す。
- * 配信時は android_group を揃えておき、取消し時に removeGroupedNotifications で消す。
- * AndroidManifest の com.onesignal.NotificationServiceExtension から参照される。
+ * FCM data メッセージでお知らせ取消しを受け取り、届済みを消す。
  */
 @Keep
-class AnnouncementCancelNotificationExtension : INotificationServiceExtension {
-    override fun onNotificationReceived(event: INotificationReceivedEvent) {
-        val notification = event.notification
-        val additionalData = notification.additionalData
-        val announcementId = additionalData?.optString("announcement_id")?.trim().orEmpty()
-        val type = additionalData?.optString("type")?.trim().orEmpty()
-        val collapseId = announcementCollapseId(announcementId)
-        val title = notification.title?.trim().orEmpty()
-            .replace("\u200B", "")
-            .replace("\u00A0", "")
-        val body = notification.body?.trim().orEmpty()
-            .replace("\u200B", "")
-            .replace("\u00A0", "")
+class ReggitFirebaseMessagingService : FirebaseMessagingService() {
+    override fun onNewToken(token: String) {
+        val prefs = applicationContext.getSharedPreferences(PUSH_TOKEN_PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(PUSH_TOKEN_PREFS_KEY, token).apply()
+        AppDelegate.shared.onPushTokenReceived(token)
+    }
 
-        if (collapseId != null) {
-            notification.setExtender { builder ->
-                builder.setGroup(collapseId).setOnlyAlertOnce(true)
-            }
-        }
-
+    override fun onMessageReceived(message: RemoteMessage) {
+        val data = message.data
+        val type = data["type"].orEmpty()
+        val announcementId = data["announcement_id"].orEmpty()
+        val title = message.notification?.title.orEmpty()
+        val body = message.notification?.body.orEmpty()
         val isCancel = type == "announcement_cancelled"
             || body == "このお知らせは取り消されました"
             || (title.isEmpty() && body.isEmpty() && announcementId.isNotEmpty())
-
-        if (!isCancel) {
+        if (isCancel) {
+            val originalTitle = data["original_title"].orEmpty().ifEmpty { title }
+            cancelDeliveredAnnouncementNotifications(applicationContext, announcementId, originalTitle)
             return
         }
-
-        // 取消し通知自体は表示せず、同一お知らせの届済みを消す
-        event.preventDefault(true)
-        val context = event.context ?: return
-        val originalTitle = additionalData?.optString("original_title")?.trim().orEmpty()
-            .ifEmpty { title }
-        cancelDeliveredAnnouncementNotifications(context, announcementId, originalTitle)
+        if (type == "coupon_issued") {
+            AppDelegate.shared.onNotificationForeground(notificationType = type)
+        }
     }
 }
 
@@ -194,17 +147,11 @@ internal fun cancelDeliveredAnnouncementNotifications(
     originalTitle: String = ""
 ) {
     val collapseId = announcementCollapseId(announcementId)
-
-    if (collapseId != null) {
-        runCatching { OneSignal.Notifications.removeGroupedNotifications(collapseId) }
-            .onFailure { Log.w("ReggitPushCancel", "removeGroupedNotifications failed: ${it.message}") }
-        runCatching { OneSignal.Notifications.removeNotification(collapseId.hashCode()) }
-    }
-
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
         return
     }
     val notificationManager = context.getSystemService(NotificationManager::class.java) ?: return
+
     if (collapseId != null) {
         notificationManager.cancel(collapseId.hashCode())
         notificationManager.cancel(collapseId, collapseId.hashCode())
@@ -243,7 +190,6 @@ internal fun cancelDeliveredAnnouncementNotifications(
             || (collapseId != null && extrasFlatContains(extras, collapseId))
     }
     matched.forEach { statusBarNotification ->
-        runCatching { OneSignal.Notifications.removeNotification(statusBarNotification.id) }
         notificationManager.cancel(statusBarNotification.tag, statusBarNotification.id)
         notificationManager.cancel(statusBarNotification.id)
     }
@@ -508,7 +454,7 @@ open class MainActivity: AppCompatActivity {
         logger.info("onRequestPermissionsResult: ${requestCode}")
         if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                (application as? AndroidAppMain)?.saveOneSignalSubscriptionIdIfNeededPublic()
+                (application as? AndroidAppMain)?.saveFcmTokenPublic()
             }, 1000)
         }
     }
