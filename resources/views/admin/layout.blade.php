@@ -69,14 +69,28 @@
                 @else
                     <p class="sidebar-kicker">店舗管理</p>
                     @if($navProjects->count() > 1)
-                        <label class="sidebar-store-switcher">
-                            <span class="sr-only">店舗を切り替え</span>
-                            <select class="sidebar-store-select" onchange="window.location.href=this.value">
-                                @foreach($navProjects as $navProject)
-                                    <option value="{{ route('admin.dashboard', ['project_key' => $navProject->project_key]) }}" @selected((int) $navProject->id === (int) ($currentProjectId ?? 0))>{{ $navProject->name }}</option>
-                                @endforeach
-                            </select>
-                        </label>
+                        <details class="sidebar-store-switcher" data-store-switcher>
+                            <summary class="sidebar-store-switcher-toggle">
+                                <span class="sidebar-store-switcher-current">{{ $navStoreName }}</span>
+                                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                            </summary>
+                            <div class="sidebar-store-switcher-panel">
+                                <label class="sr-only" for="sidebar-store-switcher-search">店舗を検索</label>
+                                <input type="search" id="sidebar-store-switcher-search" class="sidebar-store-switcher-search" placeholder="店舗名で検索" autocomplete="off">
+                                <ul class="sidebar-store-switcher-list">
+                                    @foreach($navProjects as $navProject)
+                                        <li class="sidebar-store-switcher-item" data-store-search="{{ $navProject->name }} {{ $navProject->project_key }}">
+                                            <a
+                                                href="{{ route('admin.dashboard', ['project_key' => $navProject->project_key]) }}"
+                                                class="sidebar-store-switcher-option{{ (int) $navProject->id === (int) ($currentProjectId ?? 0) ? ' is-current' : '' }}"
+                                                @if((int) $navProject->id === (int) ($currentProjectId ?? 0)) aria-current="page" @endif
+                                            >{{ $navProject->name }}</a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                                <p class="sidebar-store-switcher-empty" hidden>該当する店舗がありません</p>
+                            </div>
+                        </details>
                     @else
                         <h1>{{ $navStoreName }}</h1>
                     @endif
@@ -96,17 +110,9 @@
                         <i class="fas fa-user-cog"></i>
                         <span>アカウント</span>
                     </a>
-                    <a href="{{ route('system-admin.api-tokens.index') }}" class="nav-item {{ request()->routeIs('system-admin.api-tokens*') ? 'active' : '' }}">
-                        <i class="fas fa-key"></i>
-                        <span>APIトークン</span>
-                    </a>
                     <a href="{{ route('system-admin.audit-logs.index') }}" class="nav-item {{ request()->routeIs('system-admin.audit-logs*') ? 'active' : '' }}">
                         <i class="fas fa-clipboard-list"></i>
                         <span>監査ログ</span>
-                    </a>
-                    <a href="{{ route('system-admin.shop-app-ui-research') }}" class="nav-item {{ request()->routeIs('system-admin.shop-app-ui-research*') ? 'active' : '' }}">
-                        <i class="fas fa-lightbulb"></i>
-                        <span>店舗アプリUI学習</span>
                     </a>
                     @if($navProjects->isNotEmpty())
                     <div class="nav-separator" role="presentation"></div>

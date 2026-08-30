@@ -8,7 +8,6 @@ use App\Http\Controllers\Admin\Account\AccountUpdateController;
 use App\Http\Controllers\Admin\AfterRegistrationDeliveryController as AdminAfterRegistrationDeliveryController;
 use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
-use App\Http\Controllers\Admin\ApiTokenController as AdminApiTokenController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\Admin\Auth\LogoutController;
@@ -43,7 +42,6 @@ use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksControll
 use App\Http\Controllers\Admin\Settings\ReservationsController;
 use App\Http\Controllers\Admin\Settings\SmaregiController;
 use App\Http\Controllers\Admin\Settings\WalletController;
-use App\Http\Controllers\Admin\ShopAppUiResearchController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
@@ -361,19 +359,6 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
     Route::put('/accounts/{id}', [AccountUpdateController::class, '__invoke'])->name('system-admin.accounts.update');
     Route::delete('/accounts/{id}', [AccountDestroyController::class, '__invoke'])->name('system-admin.accounts.destroy');
 
-    Route::get('/api-tokens', [AdminApiTokenController::class, 'index'])->name('system-admin.api-tokens.index');
-    Route::get('/api-tokens/create', [AdminApiTokenController::class, 'create'])->name('system-admin.api-tokens.create');
-    Route::get('/api-tokens/{id}/edit', [AdminApiTokenController::class, 'edit'])->name('system-admin.api-tokens.edit');
-    Route::post('/api-tokens', [AdminApiTokenController::class, 'store'])->name('system-admin.api-tokens.store');
-    Route::put('/api-tokens/{id}', [AdminApiTokenController::class, 'update'])->name('system-admin.api-tokens.update');
-    Route::post('/api-tokens/{id}/revoke', [AdminApiTokenController::class, 'revoke'])->name('system-admin.api-tokens.revoke');
-    Route::post('/api-tokens/{id}/rotate', [AdminApiTokenController::class, 'rotate'])->name('system-admin.api-tokens.rotate');
-
     Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('system-admin.audit-logs.index');
     Route::get('/audit-logs/{id}', [AdminAuditLogController::class, 'show'])->name('system-admin.audit-logs.show');
-
-    Route::get('/shop-app-ui-research', [ShopAppUiResearchController::class, 'index'])->name('system-admin.shop-app-ui-research');
-    Route::get('/shop-app-ui-research/asset/{path}', [ShopAppUiResearchController::class, 'asset'])
-        ->where('path', '.*')
-        ->name('system-admin.shop-app-ui-research.asset');
 });
