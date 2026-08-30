@@ -2,6 +2,7 @@
 
 namespace App\Services\Smaregi;
 
+use App\Support\NotificationImageUrl;
 use App\Util\StrHelper;
 use Illuminate\Support\Facades\Log;
 
@@ -117,7 +118,7 @@ class SmaregiProductRegisterService
     }
 
     /**
-     * 商品画像をスマレジへ登録する（非同期）。imageUrl はスマレジから取得可能な公開URLであること。
+     * 商品画像をスマレジへ登録する（非同期）。スマレジが取得できる公開HTTPSのJPEG/PNG/GIFのみ送る。
      */
     public function registerProductImage(int $projectId, string $smaregiProductId, string $imageUrl, ?string $callbackUrl = null): bool
     {
@@ -126,17 +127,37 @@ class SmaregiProductRegisterService
             return true;
         }
 
-        $trimmedUrl = trim($imageUrl);
-        if ($trimmedUrl === '') {
+        $publicUrl = $this->resolvePublicImageUrl($imageUrl);
+        if ($publicUrl === null) {
+            Log::warning('[Smaregi] product image skipped: URL is not publicly fetchable or unsupported format', [
+                'project_id' => $projectId,
+                'smaregi_product_id' => $smaregiProductId,
+            ]);
+
             return false;
         }
 
-        $body = ['imageUrl' => mb_substr($trimmedUrl, 0, 511)];
+        $body = ['imageUrl' => mb_substr($publicUrl, 0, 511)];
         if ($callbackUrl !== null && trim($callbackUrl) !== '') {
             $body['callbackUrl'] = mb_substr(trim($callbackUrl), 0, 511);
         }
 
         $result = $this->smaregiApi->putProductImage($contractId, $smaregiProductId, $body);
+
+        return $result !== null;
+    }
+
+    /**
+     * 商品画像をスマレジから削除する。
+     */
+    public function deleteProductImage(int $projectId, string $smaregiProductId): bool
+    {
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
+            return true;
+        }
+
+        $result = $this->smaregiApi->deleteProductImage($contractId, $smaregiProductId);
 
         return $result !== null;
     }
@@ -305,5 +326,24 @@ class SmaregiProductRegisterService
         }
 
         return null;
+    }
+
+    /**
+     * スマレジが取得できる公開HTTPS URLに正規化する。JPEG/PNG/GIF以外（WebP等）は送らない。
+     */
+    private function resolvePublicImageUrl(string $imageUrl): ?string
+    {
+        $publicUrl = NotificationImageUrl::forPush($imageUrl);
+        if ($publicUrl === null) {
+            return null;
+        }
+
+        $path = (string) parse_url($publicUrl, PHP_URL_PATH);
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if ($ext === 'webp') {
+            return null;
+        }
+
+        return $publicUrl;
     }
 }
