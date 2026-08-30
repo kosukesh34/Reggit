@@ -437,6 +437,12 @@ class SmaregiApiService
         return $this->request($contractId, 'PUT', 'pos/products/'.$productId.'/image', $body);
     }
 
+    /** 商品画像削除（pos.products:write） */
+    public function deleteProductImage(string $contractId, string $productId): ?array
+    {
+        return $this->request($contractId, 'DELETE', 'pos/products/'.$productId.'/image');
+    }
+
     /** 在庫一覧取得（pos.stock:read） */
     public function getStocks(string $contractId, array $query = []): ?array
     {
