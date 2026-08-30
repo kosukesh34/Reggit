@@ -31,13 +31,7 @@ class ProductAdminService
             $result = $this->smaregiProductRegister->registerToSmaregi($projectId, $data);
             if ($result !== null) {
                 $data['smaregi_product_id'] = $result['smaregi_product_id'];
-                if (array_key_exists('stock', $data) && $data['stock'] !== null) {
-                    $this->smaregiProductRegister->syncStockToSmaregi(
-                        $projectId,
-                        $result['smaregi_product_id'],
-                        (int) $data['stock']
-                    );
-                }
+                $this->syncExtrasToSmaregi($projectId, $result['smaregi_product_id'], $data);
             } else {
                 Log::warning('[ProductAdmin] スマレジへの商品登録はスキップしましたが、DBには保存します。', ['project_id' => $projectId]);
             }
@@ -74,20 +68,14 @@ class ProductAdminService
                 $ok = $this->smaregiProductRegister->updateOnSmaregi($projectId, $smaregiId, $data);
                 if (! $ok) {
                     Log::warning('[ProductAdmin] スマレジの商品更新はスキップしましたが、DBは更新します。', ['project_id' => $projectId, 'product_id' => $id]);
-                } elseif (array_key_exists('stock', $data) && $data['stock'] !== null) {
-                    $this->smaregiProductRegister->syncStockToSmaregi($projectId, $smaregiId, (int) $data['stock']);
+                } else {
+                    $this->syncExtrasToSmaregi($projectId, $smaregiId, $data);
                 }
             } else {
                 $result = $this->smaregiProductRegister->registerToSmaregi($projectId, array_merge($data, ['project_id' => $projectId]));
                 if ($result !== null) {
                     $data['smaregi_product_id'] = $result['smaregi_product_id'];
-                    if (array_key_exists('stock', $data) && $data['stock'] !== null) {
-                        $this->smaregiProductRegister->syncStockToSmaregi(
-                            $projectId,
-                            $result['smaregi_product_id'],
-                            (int) $data['stock']
-                        );
-                    }
+                    $this->syncExtrasToSmaregi($projectId, $result['smaregi_product_id'], $data);
                 } else {
                     Log::warning('[ProductAdmin] スマレジへの商品登録（更新時）はスキップしましたが、DBは更新します。', ['project_id' => $projectId, 'product_id' => $id]);
                 }
@@ -116,5 +104,35 @@ class ProductAdminService
         }
 
         $product->delete();
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|null>  $data
+     */
+    private function syncExtrasToSmaregi(int $projectId, string $smaregiProductId, array $data): void
+    {
+        if (array_key_exists('stock', $data) && $data['stock'] !== null) {
+            $this->smaregiProductRegister->syncStockToSmaregi($projectId, $smaregiProductId, (int) $data['stock']);
+        }
+        $this->syncImageToSmaregi($projectId, $smaregiProductId, $data);
+    }
+
+    /**
+     * @param  array<string, string|int|float|bool|null>  $data
+     */
+    private function syncImageToSmaregi(int $projectId, string $smaregiProductId, array $data): void
+    {
+        if (! array_key_exists('image_url', $data)) {
+            return;
+        }
+
+        $imageUrl = trim((string) ($data['image_url'] ?? ''));
+        if ($imageUrl === '') {
+            $this->smaregiProductRegister->deleteProductImage($projectId, $smaregiProductId);
+
+            return;
+        }
+
+        $this->smaregiProductRegister->registerProductImage($projectId, $smaregiProductId, $imageUrl);
     }
 }
