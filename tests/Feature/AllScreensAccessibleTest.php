@@ -6,7 +6,6 @@ use App\Models\AdminAuditLog;
 use App\Models\AdminUser;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Announcement;
-use App\Models\ApiToken;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Order;
@@ -229,12 +228,8 @@ class AllScreensAccessibleTest extends TestCase
             'accounts.index' => ['system-admin.accounts.index', []],
             'accounts.create' => ['system-admin.accounts.create', []],
             'accounts.edit' => ['system-admin.accounts.edit', ['id' => 1]],
-            'api-tokens.index' => ['system-admin.api-tokens.index', []],
-            'api-tokens.create' => ['system-admin.api-tokens.create', []],
-            'api-tokens.edit' => ['system-admin.api-tokens.edit', ['id' => 1]],
             'audit-logs.index' => ['system-admin.audit-logs.index', []],
             'audit-logs.show' => ['system-admin.audit-logs.show', ['id' => 1]],
-            'shop-app-ui-research' => ['system-admin.shop-app-ui-research', []],
         ];
     }
 
@@ -277,8 +272,6 @@ class AllScreensAccessibleTest extends TestCase
 
         $projectId = $this->project->id;
         $accountId = $this->storeAdmin->id;
-        $token = ApiToken::issue($this->project, 'Test');
-        $tokenId = $token['token']->id;
         $auditLog = AdminAuditLog::create([
             'admin_user_id' => $systemAdmin->id,
             'project_id' => null,
@@ -293,7 +286,6 @@ class AllScreensAccessibleTest extends TestCase
         $resolved['id'] = match ($routeName) {
             'system-admin.projects.edit' => $projectId,
             'system-admin.accounts.edit' => $accountId,
-            'system-admin.api-tokens.edit' => $tokenId,
             'system-admin.audit-logs.show' => $auditLog->id,
             default => $resolved['id'],
         };
