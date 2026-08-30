@@ -197,6 +197,29 @@ class SmaregiApiTest extends TestCase
         });
     }
 
+    public function test_put_product_image_商品画像を登録できること(): void
+    {
+        $this->createProjectWithContract();
+        $this->fakeSmaregiHttp([
+            'put_pos_product_image' => [
+                'productId' => '8000177',
+            ],
+        ]);
+
+        $service = app(SmaregiApiService::class);
+        $result = $service->putProductImage(self::CONTRACT_ID, '8000177', [
+            'imageUrl' => 'https://cdn.example.com/latte.png',
+        ]);
+
+        $this->assertNotNull($result);
+        $this->assertSame('8000177', $result['productId']);
+
+        Http::assertSent(function ($request) {
+            return strtoupper($request->method()) === 'PUT'
+                && str_contains($request->url(), '/pos/products/8000177/image');
+        });
+    }
+
     /** 会員削除で 404（既に存在しない）は成功扱いになること */
     public function test_delete_customer_404は既に削除済みとして成功扱いになること(): void
     {
@@ -296,6 +319,9 @@ class SmaregiApiTest extends TestCase
             }
             if ($method === 'PATCH' && preg_match('#/pos/stock/\d+#', $url)) {
                 return Http::response($responses['patch_pos_stock'] ?? ['productId' => '1', 'storeId' => '1', 'stockAmount' => '0'], 200);
+            }
+            if ($method === 'PUT' && preg_match('#/pos/products/[^/]+/image#', $url)) {
+                return Http::response($responses['put_pos_product_image'] ?? ['productId' => '1'], 200);
             }
 
             return Http::response([], 404);
