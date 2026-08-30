@@ -400,6 +400,51 @@ class SmaregiProductSyncService
     }
 
     /**
+     * DB 上の商品画像をスマレジへ反映する。
+     *
+     * @return array{synced: int, failed: int, errors: list<string>}
+     */
+    public function syncAllImagesToSmaregi(int $projectId): array
+    {
+        if (! $this->smaregiProductRegister->hasSmaregiContract($projectId)) {
+            return ['synced' => 0, 'failed' => 0, 'errors' => []];
+        }
+
+        $synced = 0;
+        $failed = 0;
+        $errors = [];
+
+        $products = Product::withoutGlobalScopes()
+            ->where('project_id', $projectId)
+            ->whereNotNull('smaregi_product_id')
+            ->where('smaregi_product_id', '!=', '')
+            ->whereNotNull('image_url')
+            ->where('image_url', '!=', '')
+            ->get(['id', 'project_id', 'name', 'image_url', 'smaregi_product_id']);
+
+        foreach ($products as $product) {
+            $smaregiId = trim((string) $product->smaregi_product_id);
+            $ok = $this->smaregiProductRegister->registerProductImage(
+                $projectId,
+                $smaregiId,
+                (string) $product->image_url
+            );
+            if ($ok) {
+                $synced++;
+            } else {
+                $failed++;
+                $errors[] = sprintf('画像同期失敗 product_id=%d smaregi=%s name=%s', $product->id, $smaregiId, $product->name);
+            }
+        }
+
+        return [
+            'synced' => $synced,
+            'failed' => $failed,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
      * スマレジ商品を DB に取り込む。smaregi_product_id または商品名で既存行に紐付け、同名の重複行を作らない。
      *
      * @param  array<string, string|int|float|bool|null>  $attrs
