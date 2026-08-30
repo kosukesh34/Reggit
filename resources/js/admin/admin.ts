@@ -121,6 +121,61 @@ function initLoadingStates(): void {
     // click で disabled にするとブラウザがフォーム送信をキャンセルするため、ここには置かない。
 }
 
+function initStoreSwitcher(): void {
+    const root = document.querySelector('[data-store-switcher]');
+    if (!(root instanceof HTMLDetailsElement)) {
+        return;
+    }
+    const search = root.querySelector<HTMLInputElement>('.sidebar-store-switcher-search');
+    const empty = root.querySelector<HTMLElement>('.sidebar-store-switcher-empty');
+    const items = Array.from(root.querySelectorAll<HTMLElement>('.sidebar-store-switcher-item'));
+    if (search === null || empty === null) {
+        return;
+    }
+
+    const applyFilter = (): void => {
+        const query = search.value.trim().toLowerCase();
+        let visibleCount = 0;
+        items.forEach((item) => {
+            const haystack = (item.dataset.storeSearch ?? item.textContent ?? '').toLowerCase();
+            const isMatch = query === '' || haystack.includes(query);
+            item.hidden = !isMatch;
+            if (isMatch) {
+                visibleCount += 1;
+            }
+        });
+        empty.hidden = visibleCount !== 0;
+    };
+
+    root.addEventListener('toggle', () => {
+        if (!root.open) {
+            search.value = '';
+            applyFilter();
+            return;
+        }
+        search.focus();
+    });
+    search.addEventListener('input', applyFilter);
+    document.addEventListener('click', (event) => {
+        if (!root.open || !(event.target instanceof Node) || root.contains(event.target)) {
+            return;
+        }
+        root.open = false;
+    });
+    root.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        if (search.value !== '') {
+            search.value = '';
+            applyFilter();
+            event.preventDefault();
+            return;
+        }
+        root.open = false;
+    });
+}
+
 function initSidebarScrollRestore(): void {
     const nav = document.querySelector('.sidebar-nav') as HTMLElement | null;
     if (nav === null) {
@@ -234,6 +289,7 @@ export function bootstrapAdminCommon(): void {
         initTooltips();
         initFormValidation();
         initLoadingStates();
+        initStoreSwitcher();
         initSidebarScrollRestore();
         initImageUploads();
     };
