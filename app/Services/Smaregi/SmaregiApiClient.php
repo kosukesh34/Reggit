@@ -191,7 +191,7 @@ class SmaregiApiClient
                 'status' => $response->status(),
                 'response_body' => $responseBody !== '' ? $responseBody : null,
             ];
-            if ($body !== [] && in_array(strtolower($method), ['post', 'patch'], true)) {
+            if ($body !== [] && in_array(strtolower($method), ['post', 'patch', 'put'], true)) {
                 if ($path === 'pos/coupons' || str_starts_with($path, 'pos/products')) {
                     $context['request_body_sent'] = $body;
                 }
