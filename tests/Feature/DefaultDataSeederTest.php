@@ -26,7 +26,7 @@ class DefaultDataSeederTest extends TestCase
         $seeder->seedProductsOnly($project);
         $seeder->seedProductsOnly($project);
 
-        $this->assertSame(16, Product::withoutGlobalScopes()->where('project_id', $project->id)->count());
+        $this->assertSame(8, Product::withoutGlobalScopes()->where('project_id', $project->id)->count());
     }
 
     public function test_deduplicate_for_project_同名商品を1件に統合すること(): void
