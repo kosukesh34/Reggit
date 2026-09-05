@@ -3,25 +3,14 @@ import {
   ArrowLeft,
   ArrowUp,
   Check,
-  Bell,
-  CalendarDays,
   Eye,
   ExternalLink,
-  CreditCard,
-  Home,
   LayoutGrid,
   Palette,
   Plus,
-  Menu,
-  MoreHorizontal,
-  QrCode,
   RotateCcw,
-  ShoppingBag,
   Settings2,
   SlidersHorizontal,
-  Stamp,
-  Ticket,
-  UserRound,
   Trash2,
   X,
   ChevronDown,
@@ -30,10 +19,9 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { appConfig } from "../config/appConfig";
-import { designerTemplates, templatesByGroup } from "../config/appTemplates";
+import { designerTemplates, studioDesignerTemplates, templatesByGroup } from "../config/appTemplates";
 import { designPresets } from "../config/designPresets";
 import { appTemplatePatch, designPresetLayoutPatch, resolveAppBrand, resolveHomeLayout } from "../config/customization";
-import { industryBlockLabels, resolveIndustryGalleryTemplate } from "../config/industryGallery";
 import { tabLabelMap, tabOptions } from "../config/navigation";
 import { useAppConfig } from "../context/AppConfigContext";
 import { themeMap } from "../themes/themes";
@@ -57,6 +45,8 @@ const sectionLinks = [
   { id: "navigation", label: "ナビゲーション", icon: Settings2 },
 ] as const;
 
+const ADVANCED_STORAGE_KEY = "reggit-designer-advanced";
+
 const headerShortcutOptions: Array<{
   value: HeaderShortcut;
   label: string;
@@ -79,18 +69,18 @@ const headerButtonModeOptions: Array<{ value: HeaderButtonMode; label: string }>
   { value: "none", label: "表示しない" },
 ];
 
-const headerButtonIconOptions: Array<{ value: HeaderButtonIcon; label: string; icon: JSX.Element }> = [
-  { value: "bell", label: "お知らせ", icon: <Bell size={14} /> },
-  { value: "userRound", label: "プロフィール", icon: <UserRound size={14} /> },
-  { value: "creditCard", label: "会員証", icon: <CreditCard size={14} /> },
-  { value: "ticket", label: "クーポン", icon: <Ticket size={14} /> },
-  { value: "stamp", label: "スタンプ", icon: <Stamp size={14} /> },
-  { value: "calendarDays", label: "予約", icon: <CalendarDays size={14} /> },
-  { value: "qrCode", label: "順番待ち", icon: <QrCode size={14} /> },
-  { value: "shoppingBag", label: "モバイル注文", icon: <ShoppingBag size={14} /> },
-  { value: "menu", label: "メニュー", icon: <Menu size={14} /> },
-  { value: "home", label: "ホーム", icon: <Home size={14} /> },
-  { value: "moreHorizontal", label: "その他", icon: <MoreHorizontal size={14} /> },
+const headerButtonIconOptions: Array<{ value: HeaderButtonIcon; label: string }> = [
+  { value: "bell", label: "お知らせ" },
+  { value: "userRound", label: "プロフィール" },
+  { value: "creditCard", label: "会員証" },
+  { value: "ticket", label: "クーポン" },
+  { value: "stamp", label: "スタンプ" },
+  { value: "calendarDays", label: "予約" },
+  { value: "qrCode", label: "順番待ち" },
+  { value: "shoppingBag", label: "モバイル注文" },
+  { value: "menu", label: "メニュー" },
+  { value: "home", label: "ホーム" },
+  { value: "moreHorizontal", label: "その他" },
 ];
 
 const saveStateLabels: Record<DesignerSaveState, string> = {
@@ -141,10 +131,23 @@ export function AdminCustomizePage({
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const embeddedPreviewUrl = buildEmbeddedPreviewUrl(appPreviewHref);
   const brand = resolveAppBrand(activeStore, customization);
-  const isGalleryHome = experienceId === "industry-gallery";
-  const galleryTemplate = isGalleryHome
-    ? resolveIndustryGalleryTemplate(activeStore.storeId, customization.appTemplateId)
-    : null;
+  const projectKey = String(window.__PROJECT_KEY__ || "default");
+  const galleryItemsHref = `/admin/${encodeURIComponent(projectKey)}/gallery/items`;
+  const [isAdvanced, setIsAdvanced] = useState(() => {
+    try {
+      return window.localStorage.getItem(ADVANCED_STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const setAdvancedMode = (next: boolean) => {
+    setIsAdvanced(next);
+    try {
+      window.localStorage.setItem(ADVANCED_STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  };
 
   const sendCustomizationToPreview = useCallback(() => {
     previewFrameRef.current?.contentWindow?.postMessage({
@@ -228,7 +231,13 @@ export function AdminCustomizePage({
   }, [customization.header.rightButton, customization.header.shortcut, updateCustomization]);
 
   const isStandardHome = experienceId === "standard";
-  const templateGroups = templatesByGroup(designerTemplates(appConfig.stores));
+  const templateGroups = templatesByGroup(isAdvanced ? designerTemplates(appConfig.stores) : studioDesignerTemplates(appConfig.stores));
+  const studioPresetOrder = ["luxury", "minimal", "editorial", "natural"] as const;
+  const visiblePresets = isAdvanced
+    ? designPresets
+    : studioPresetOrder
+      .map((id) => designPresets.find((item) => item.id === id))
+      .filter((item): item is (typeof designPresets)[number] => item !== undefined);
   const selectedTemplateId = customization.appTemplateId;
 
   const requestReset = () => {
@@ -279,15 +288,23 @@ export function AdminCustomizePage({
 
       <main className="admin-main">
         <div className="admin-main__heading">
-          <div><span>店舗アプリ設定</span><h1>{activeStore.storeName}</h1><p>項目を変更し、プレビューを確認してから店舗へ保存します。</p></div>
+          <div>
+            <span>店舗アプリ設定</span>
+            <h1>{activeStore.storeName}</h1>
+            <p>{isAdvanced ? "テンプレート・配色・レイアウトを細かく調整できます。" : "こだわらない場合は配色はそのままで使えます。写真を追加するとホームのおすすめに並びます。"}</p>
+          </div>
           <div className="admin-main__status">
+            <label className="admin-mode-toggle">
+              <input type="checkbox" checked={isAdvanced} onChange={(event) => setAdvancedMode(event.target.checked)} />
+              <span>こだわり設定</span>
+            </label>
             <div className={`admin-save-state is-${saveState}`} aria-live="polite"><Check size={15} />{saveStateLabels[saveState]}</div>
             <button type="button" className="admin-preview-toggle" aria-expanded={isPreviewOpen} onClick={() => setPreviewOpen(true)}><Eye size={16} />プレビュー</button>
           </div>
         </div>
 
         <section className="admin-section" id="design">
-          <SectionHead number="01" title="アプリテンプレート" description="ホームと同じデザインから選びます。業態テンプレは画面構成ごと切り替わります。" />
+          <SectionHead number="01" title="アプリテンプレート" description="会員アプリの基本デザインを選びます。" />
           {templateGroups.map((group) => (
             <div className="template-group" key={group.group}>
               <p className="template-group__title">{group.label}</p>
@@ -337,7 +354,7 @@ export function AdminCustomizePage({
 
           <p className="template-group__title">配色</p>
           <div className="preset-grid preset-grid--compact" aria-label="配色を選択">
-            {designPresets.map((item) => (
+            {visiblePresets.map((item) => (
               <button type="button" className={`preset-card preset-card--${item.id}${customization.designPreset === item.id ? " is-active" : ""}`} key={item.id} title={item.description} aria-label={`${item.name}：${item.description}`} aria-pressed={customization.designPreset === item.id} onClick={() => updateCustomization(designPresetLayoutPatch(item.id))}>
                 <span className="preset-card__visual" style={{ "--preset-a": item.palette[0], "--preset-b": item.palette[1], "--preset-c": item.palette[2] } as CSSProperties}><span /><span /><span /></span>
                 <span className="preset-card__body"><strong>{item.name}</strong></span>
@@ -346,6 +363,7 @@ export function AdminCustomizePage({
             ))}
           </div>
 
+          {isAdvanced ? (
           <div className="admin-panel">
             <div className="admin-panel__title"><h3>カスタムカラー</h3><p>カラーピッカーまたはHEXコードで、画面の各色を自由に上書きします。</p></div>
             <div className="color-grid">
@@ -359,9 +377,10 @@ export function AdminCustomizePage({
             </div>
             <Button variant="ghost" size="sm" onClick={() => updateCustomization({ colors: { primary: undefined, secondary: undefined, accent: undefined, background: undefined, surface: undefined, textPrimary: undefined, textSecondary: undefined } })}>プリセットの色に戻す</Button>
           </div>
+          ) : null}
 
           <div className="admin-panel">
-            <div className="admin-panel__title"><h3>ブランド</h3><p>アプリ名・画像・角丸はすべてのテンプレートで編集できます。</p></div>
+            <div className="admin-panel__title"><h3>ブランド</h3><p>{isAdvanced ? "アプリ名・画像・角丸はすべてのテンプレートで編集できます。" : "アプリ名を変更できます。"}</p></div>
             <label className="admin-select">
               <span>アプリ名</span>
               <input
@@ -370,6 +389,8 @@ export function AdminCustomizePage({
                 onChange={(event) => updateCustomization({ brand: { appName: event.target.value } })}
               />
             </label>
+            {isAdvanced ? (
+              <>
             <label className="admin-select">
               <span>メイン画像</span>
               <input
@@ -388,68 +409,55 @@ export function AdminCustomizePage({
                 onChange={(event) => updateCustomization({ brand: { radius: Number(event.target.value) } })}
               />
             </label>
+              </>
+            ) : null}
           </div>
         </section>
 
         <section className="admin-section" id="layout">
-          <SectionHead number="02" title="レイアウトとボタン" description="情報量、主要ボタンの位置、ホーム画面の構成を調整できます。" />
+          <SectionHead number="02" title="ホームの表示" description={isAdvanced ? "情報量、並び、ホームに出すブロックを調整できます。" : "ホームに出すブロックを切り替えます。"} />
           <div className="admin-settings-grid">
-            {isStandardHome ? (
-              <SettingsGroup title="ホームのレイアウト" description="ホーム画面の情報の並びを選びます。右のプレビューへ即時反映されます" defaultOpen>
+            {isAdvanced && isStandardHome ? (
+              <SettingsGroup title="ホームのレイアウト" description="ホーム画面の情報の並びを選びます" defaultOpen>
                 <HomeLayoutPicker value={resolveHomeLayout(customization.home.layout)} onChange={(layout) => updateCustomization({ home: { layout } })} />
               </SettingsGroup>
             ) : null}
-
-            <SettingsGroup title="画面スタイル" description="全体の密度とボタン表現">
-              <SelectRow label="コンテンツ密度" value={customization.appearance.density} onChange={(density) => updateCustomization({ appearance: { density: density as AppCustomization["appearance"]["density"] } })}><option value="compact">コンパクト</option><option value="standard">標準</option><option value="relaxed">ゆったり</option></SelectRow>
-              <SelectRow label="ボタンスタイル" value={customization.appearance.buttonStyle} onChange={(buttonStyle) => updateCustomization({ appearance: { buttonStyle: buttonStyle as AppCustomization["appearance"]["buttonStyle"] } })}><option value="filled">塗り</option><option value="soft">ソフト</option><option value="outline">アウトライン</option></SelectRow>
-              {isStandardHome ? (
-                <>
-                  <SelectRow label="主要ボタンの位置" value={customization.home.primaryActionPlacement} onChange={(primaryActionPlacement) => updateCustomization({ home: { primaryActionPlacement: primaryActionPlacement as AppCustomization["home"]["primaryActionPlacement"] } })}><option value="hero">メイン画像内</option><option value="belowHero">メイン画像の下</option><option value="floating">画面下に固定</option></SelectRow>
-                  <SelectRow label="サービス列数" value={String(customization.home.quickActionColumns)} onChange={(quickActionColumns) => updateCustomization({ home: { quickActionColumns: Number(quickActionColumns) as 2 | 3 | 4 } })}><option value="2">2列</option><option value="3">3列</option><option value="4">4列</option></SelectRow>
-                </>
-              ) : null}
-            </SettingsGroup>
-
-            {galleryTemplate !== null ? (
-              <SettingsGroup title="ホームの機能" description="この業種テンプレで表示するブロックを切り替えます">
-                {galleryTemplate.blocks.map((block) => {
-                  const enabled = (customization.home.blocks ?? galleryTemplate.blocks).includes(block);
-                  return (
-                    <ToggleRow
-                      key={block}
-                      label={industryBlockLabels[block]}
-                      checked={enabled}
-                      onChange={(checked) => {
-                        const current = customization.home.blocks ?? galleryTemplate.blocks;
-                        const next = galleryTemplate.blocks.filter((id) => (
-                          id === block ? checked : current.includes(id)
-                        ));
-                        updateCustomization({ home: { blocks: next } });
-                      }}
-                    />
-                  );
-                })}
+            {isAdvanced && isStandardHome ? (
+              <SettingsGroup title="画面スタイル" description="全体の密度とボタン表現">
+                <SelectRow label="コンテンツ密度" value={customization.appearance.density} onChange={(density) => updateCustomization({ appearance: { density: density as AppCustomization["appearance"]["density"] } })}><option value="compact">コンパクト</option><option value="standard">標準</option><option value="relaxed">ゆったり</option></SelectRow>
+                <SelectRow label="ボタンスタイル" value={customization.appearance.buttonStyle} onChange={(buttonStyle) => updateCustomization({ appearance: { buttonStyle: buttonStyle as AppCustomization["appearance"]["buttonStyle"] } })}><option value="filled">塗り</option><option value="soft">ソフト</option><option value="outline">アウトライン</option></SelectRow>
+                <SelectRow label="サービスボタン列数" value={String(customization.home.quickActionColumns)} onChange={(quickActionColumns) => updateCustomization({ home: { quickActionColumns: Number(quickActionColumns) as 2 | 3 | 4 } })}><option value="2">2列</option><option value="3">3列</option><option value="4">4列</option></SelectRow>
               </SettingsGroup>
             ) : null}
-
             {isStandardHome ? (
-              <SettingsGroup title="ホームの表示内容" description="不要なセクションを非表示">
-                <ToggleRow label="メイン画像" checked={customization.home.showHeroImage} onChange={(showHeroImage) => updateCustomization({ home: { showHeroImage } })} />
-                <ToggleRow label="営業状況" checked={customization.home.showHeroStatus} onChange={(showHeroStatus) => updateCustomization({ home: { showHeroStatus } })} />
-                <ToggleRow label="会員サマリー" checked={customization.home.showMembership} onChange={(showMembership) => updateCustomization({ home: { showMembership } })} />
+              <SettingsGroup title="ホームの表示内容" description="不要なセクションを非表示" defaultOpen>
+                <ToggleRow label="会員カード" checked={customization.home.showMembership} onChange={(showMembership) => updateCustomization({ home: { showMembership } })} />
                 <ToggleRow label="サービスボタン" checked={customization.home.showQuickActions} onChange={(showQuickActions) => updateCustomization({ home: { showQuickActions } })} />
-                <ToggleRow label="おすすめ" checked={customization.home.showFeatured} onChange={(showFeatured) => updateCustomization({ home: { showFeatured } })} />
-                <ToggleRow label="クーポン" checked={customization.home.showCoupons} onChange={(showCoupons) => updateCustomization({ home: { showCoupons } })} />
+                <ToggleRow label="おすすめ商品" checked={customization.home.showGallery} onChange={(showGallery) => updateCustomization({ home: { showGallery } })} />
                 <ToggleRow label="お知らせ" checked={customization.home.showNews} onChange={(showNews) => updateCustomization({ home: { showNews } })} />
-                <ToggleRow label="店舗情報" checked={customization.home.showStoreInfo} onChange={(showStoreInfo) => updateCustomization({ home: { showStoreInfo } })} />
+                {isAdvanced ? (
+                  <>
+                    <ToggleRow label="メイン画像" checked={customization.home.showHeroImage} onChange={(showHeroImage) => updateCustomization({ home: { showHeroImage } })} />
+                    <ToggleRow label="営業状況" checked={customization.home.showHeroStatus} onChange={(showHeroStatus) => updateCustomization({ home: { showHeroStatus } })} />
+                    <ToggleRow label="クーポン" checked={customization.home.showCoupons} onChange={(showCoupons) => updateCustomization({ home: { showCoupons } })} />
+                    <ToggleRow label="店舗情報" checked={customization.home.showStoreInfo} onChange={(showStoreInfo) => updateCustomization({ home: { showStoreInfo } })} />
+                  </>
+                ) : null}
               </SettingsGroup>
-            ) : null}
+            ) : (
+              <SettingsGroup title="ホームの表示内容" description="このテンプレートでは構成が固定です" defaultOpen>
+                <p className="admin-panel__note">シンプル構成のテンプレートでは、ホームのブロックはテンプレート側で決まっています。</p>
+              </SettingsGroup>
+            )}
+            <SettingsGroup title="おすすめ商品の写真" description="店舗で使う写真だけを登録します" defaultOpen>
+              <p className="admin-panel__note">追加した写真がホームのおすすめ商品とギャラリー画面に表示されます。テンプレートのサンプル写真は使いません。</p>
+              <a className="button button--outline button--md" href={galleryItemsHref}>写真を追加・編集</a>
+            </SettingsGroup>
           </div>
         </section>
 
         <section className="admin-section" id="features">
-          <SectionHead number="03" title="機能ごとの表示設定" description="状態分類、画像、確認画面など、機能の細部まで設定できます。" />
+          <SectionHead number="03" title="機能ごとの表示設定" description="クーポン・会員証・スタンプの表示を調整します。" />
           <div className="admin-settings-grid">
             <div id="coupon" className="admin-settings-anchor">
             <SettingsGroup title="クーポン" description="利用済み・期限切れは「利用終了」に統一" defaultOpen>
@@ -465,92 +473,85 @@ export function AdminCustomizePage({
             </SettingsGroup>
             </div>
 
-            <SettingsGroup title="ヘッダー" description="店舗切替と右上ボタンの表示">
+            <SettingsGroup title="ヘッダー" description="右上ボタンの表示">
               <ToggleRow label="店舗ロゴ" checked={customization.header.showLogo} onChange={(showLogo) => updateCustomization({ header: { showLogo } })} />
-              <ToggleRow label="会員アプリ表記" checked={customization.header.showSubtitle} onChange={(showSubtitle) => updateCustomization({ header: { showSubtitle } })} />
+              {isAdvanced ? (
+                <>
+                  <ToggleRow label="会員アプリ表記" checked={customization.header.showSubtitle} onChange={(showSubtitle) => updateCustomization({ header: { showSubtitle } })} />
+                  <SelectRow
+                    label="右上ボタンの種類"
+                    value={customization.header.rightButton.mode}
+                    onChange={(value) => {
+                      const mode = value as HeaderButtonMode;
+                      if (mode === "shortcut") {
+                        updateHeaderRightButton({ mode, shortcut: customization.header.rightButton.shortcut });
+                        return;
+                      }
+                      updateHeaderRightButton({ mode });
+                    }}
+                  >
+                    {headerButtonModeOptions.map((option) => (
+                      <option value={option.value} key={option.value}>{option.label}</option>
+                    ))}
+                  </SelectRow>
+                  {customization.header.rightButton.mode === "shortcut" ? (
+                    <SelectRow
+                      label="右上ショートカット"
+                      value={customization.header.rightButton.shortcut}
+                      onChange={(value) => updateHeaderRightButton({ shortcut: value as Exclude<HeaderShortcut, "none"> })}
+                    >
+                      {headerShortcutOptions.filter((option) => option.value !== "none").map((option) => (
+                        <option value={option.value} disabled={option.feature !== undefined && !activeStore.features[option.feature]} key={option.value}>
+                          {option.label}{option.feature !== undefined && !activeStore.features[option.feature] ? "（機能OFF）" : ""}
+                        </option>
+                      ))}
+                    </SelectRow>
+                  ) : null}
+                  {customization.header.rightButton.mode === "custom" ? (
+                    <>
+                      <label className="admin-select">
+                        <span>ボタンラベル</span>
+                        <input type="text" value={customization.header.rightButton.label} placeholder="プロフィール" onChange={(event) => updateHeaderRightButton({ label: event.target.value })} />
+                      </label>
+                      <label className="admin-select">
+                        <span>遷移先パス</span>
+                        <input type="text" value={customization.header.rightButton.path} placeholder="/profile" onChange={(event) => updateHeaderRightButton({ path: event.target.value })} />
+                      </label>
+                      <SelectRow label="アイコン" value={customization.header.rightButton.icon} onChange={(icon) => updateHeaderRightButton({ icon: icon as HeaderButtonIcon })}>
+                        {headerButtonIconOptions.map((option) => (
+                          <option value={option.value} key={option.value}>{option.label}</option>
+                        ))}
+                      </SelectRow>
+                    </>
+                  ) : null}
+                  <ToggleRow label="店舗切替にデザイン名" checked={customization.header.showStoreTheme} onChange={(showStoreTheme) => updateCustomization({ header: { showStoreTheme } })} />
+                </>
+              ) : (
               <SelectRow
-                label="右上ボタンの種類"
-                value={customization.header.rightButton.mode}
+                label="右上ボタン"
+                value={customization.header.rightButton.mode === "none" ? "none" : customization.header.rightButton.shortcut}
                 onChange={(value) => {
-                  const mode = value as HeaderButtonMode;
-                  if (mode === "shortcut") {
-                    updateHeaderRightButton({ mode, shortcut: customization.header.rightButton.shortcut });
+                  if (value === "none") {
+                    updateHeaderRightButton({ mode: "none" });
                     return;
                   }
-                  if (mode === "custom") {
-                    updateHeaderRightButton({ mode });
-                    return;
-                  }
-                  updateHeaderRightButton({ mode });
+                  updateHeaderRightButton({ mode: "shortcut", shortcut: value as Exclude<HeaderShortcut, "none"> });
                 }}
               >
-                {headerButtonModeOptions.map((option) => (
-                  <option value={option.value} key={option.value}>
-                    {option.label}
+                {headerShortcutOptions.map((option) => (
+                  <option
+                    value={option.value}
+                    disabled={option.feature !== undefined && !activeStore.features[option.feature]}
+                    key={option.value}
+                  >
+                    {option.label}{option.feature !== undefined && !activeStore.features[option.feature] ? "（機能OFF）" : ""}
                   </option>
                 ))}
               </SelectRow>
-
-              {customization.header.rightButton.mode === "shortcut" ? (
-                <SelectRow
-                  label="右上ショートカット"
-                  value={customization.header.rightButton.shortcut}
-                  onChange={(value) => {
-                    const shortcut = value as Exclude<HeaderShortcut, "none">;
-                    updateHeaderRightButton({ shortcut });
-                  }}
-                >
-                  {headerShortcutOptions
-                    .filter((option) => option.value !== "none")
-                    .map((option) => (
-                    <option
-                      value={option.value}
-                      disabled={option.feature !== undefined && !activeStore.features[option.feature]}
-                      key={option.value}
-                    >
-                      {option.label}{option.feature !== undefined && !activeStore.features[option.feature] ? "（機能OFF）" : ""}
-                    </option>
-                  ))}
-                </SelectRow>
-              ) : null}
-
-              {customization.header.rightButton.mode === "custom" ? (
-                <>
-                  <label className="admin-select">
-                    <span>ボタンラベル</span>
-                    <input
-                      type="text"
-                      value={customization.header.rightButton.label}
-                      placeholder="プロフィール"
-                      onChange={(event) => updateHeaderRightButton({ label: event.target.value })}
-                    />
-                  </label>
-                  <label className="admin-select">
-                    <span>遷移先パス</span>
-                    <input
-                      type="text"
-                      value={customization.header.rightButton.path}
-                      placeholder="/profile"
-                      onChange={(event) => updateHeaderRightButton({ path: event.target.value })}
-                    />
-                  </label>
-                  <SelectRow
-                    label="アイコン"
-                    value={customization.header.rightButton.icon}
-                    onChange={(icon) => updateHeaderRightButton({ icon: icon as HeaderButtonIcon })}
-                  >
-                    {headerButtonIconOptions.map((option) => (
-                      <option value={option.value} key={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </SelectRow>
-                </>
-              ) : null}
-
-              <ToggleRow label="店舗切替にデザイン名" checked={customization.header.showStoreTheme} onChange={(showStoreTheme) => updateCustomization({ header: { showStoreTheme } })} />
+              )}
             </SettingsGroup>
 
+            {isAdvanced ? (
             <div id="order" className="admin-settings-anchor">
             <SettingsGroup title="モバイルオーダー" description="商品を探しやすく、カートへ追加しやすい表示">
               <SelectRow label="商品表示" value={customization.order.catalogLayout} onChange={(catalogLayout) => updateCustomization({ order: { catalogLayout: catalogLayout as AppCustomization["order"]["catalogLayout"] } })}><option value="cards">商品カード</option><option value="compact">コンパクトリスト</option></SelectRow>
@@ -560,6 +561,7 @@ export function AdminCustomizePage({
               <SelectRow label="注文確認ボタン" value={customization.order.ctaPosition} onChange={(ctaPosition) => updateCustomization({ order: { ctaPosition: ctaPosition as AppCustomization["order"]["ctaPosition"] } })}><option value="inline">コンテンツ内</option><option value="sticky">画面下部に固定</option></SelectRow>
             </SettingsGroup>
             </div>
+            ) : null}
 
             <div id="membership" className="admin-settings-anchor">
             <SettingsGroup title="会員証" description="レイアウト・表示形式・ランク色はランク設定で管理" defaultOpen>
@@ -581,7 +583,7 @@ export function AdminCustomizePage({
         </section>
 
         <section className="admin-section" id="navigation">
-          <SectionHead number="04" title="タブとナビゲーション" description="2〜6個の範囲で、タブの種類・順番・配置を自由に変更できます。" />
+          <SectionHead number="04" title="タブとナビゲーション" description="下部タブの種類と順番を変更できます。" />
           <div className="admin-settings-grid">
             <SettingsGroup title="タブ構成" description="矢印で並び替え、プルダウンで機能を変更できます。" defaultOpen>
             <TabEditor
@@ -614,9 +616,13 @@ export function AdminCustomizePage({
                 />
               </label>
             ))}
-            <SelectRow label="ナビゲーション配置" value={customization.navigation.position} onChange={(position) => updateCustomization({ navigation: { position: position as AppCustomization["navigation"]["position"] } })}><option value="bottom">画面下</option><option value="floating">フローティング</option><option value="top">ヘッダー下</option></SelectRow>
             <ToggleRow label="タブ名を表示" checked={customization.navigation.showLabels} onChange={(showLabels) => updateCustomization({ navigation: { showLabels } })} />
-            <ToggleRow label="中央タブを強調" checked={customization.navigation.emphasizeCenterTab} onChange={(emphasizeCenterTab) => updateCustomization({ navigation: { emphasizeCenterTab } })} />
+            {isAdvanced ? (
+              <>
+                <SelectRow label="ナビゲーション配置" value={customization.navigation.position} onChange={(position) => updateCustomization({ navigation: { position: position as AppCustomization["navigation"]["position"] } })}><option value="bottom">画面下</option><option value="floating">フローティング</option><option value="top">ヘッダー下</option></SelectRow>
+                <ToggleRow label="中央タブを強調" checked={customization.navigation.emphasizeCenterTab} onChange={(emphasizeCenterTab) => updateCustomization({ navigation: { emphasizeCenterTab } })} />
+              </>
+            ) : null}
             </SettingsGroup>
           </div>
         </section>
@@ -678,6 +684,7 @@ function SelectRow({ label, value, onChange, children }: { label: string; value:
 }
 
 const homeLayouts: Array<{ id: HomeLayout; name: string; description: string }> = [
+  { id: "crm", name: "会員CRM", description: "会員証・ポイント・ギャラリーの順" },
   { id: "standard", name: "スタンダード", description: "挨拶・メイン画像・会員情報の順" },
   { id: "wallet", name: "ウォレット", description: "会員証とサービスを先頭に表示" },
   { id: "magazine", name: "マガジン", description: "メイン画像とおすすめを大きく" },
@@ -691,7 +698,7 @@ function HomeLayoutPicker({ value, onChange }: { value: HomeLayout; onChange: (v
       <div className="membership-layout-grid">
         {homeLayouts.map((layout) => (
           <button type="button" className={`membership-layout-option${value === layout.id ? " is-active" : ""}`} aria-pressed={value === layout.id} onClick={() => onChange(layout.id)} key={layout.id}>
-            <span className={`membership-layout-option__preview home-layout-preview home-layout-preview--${layout.id}`}><span /><span /><span /><span /></span>
+            <span className={`membership-layout-option__preview home-layout-preview home-layout-preview--${layout.id}`}><i /><i /><i /><i /></span>
             <span><strong>{layout.name}</strong><small>{layout.description}</small></span>
             {value === layout.id ? <Check size={13} /> : null}
           </button>

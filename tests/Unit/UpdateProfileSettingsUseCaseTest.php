@@ -111,6 +111,31 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
 
         $settings = ShopSettingStore::getProfileFieldSettings((int) $project->id);
         $this->assertSame(4, $settings['custom_fields'][0]['smaregi_no']);
+        $this->assertFalse($settings['custom_fields'][0]['required']);
+    }
+
+    public function test_handle_追加項目は99件まで保存し100件目は捨てること(): void
+    {
+        $project = Project::factory()->create();
+        $fields = [];
+        for ($i = 1; $i <= 100; $i++) {
+            $fields[] = ['key' => 'f'.$i, 'label' => '項目'.$i, 'required' => '0'];
+        }
+
+        $this->useCase()->handle(new UpdateProfileSettingsInput(
+            projectId: (int) $project->id,
+            rawSmaregiFields: [
+                'name' => ['enabled' => '1', 'required' => '1'],
+            ],
+            rawCustomFields: $fields,
+            memberRegistrationMode: 'optional',
+        ));
+
+        $settings = ShopSettingStore::getProfileFieldSettings((int) $project->id);
+        $this->assertCount(99, $settings['custom_fields']);
+        $this->assertSame('f1', $settings['custom_fields'][0]['key']);
+        $this->assertSame('f99', $settings['custom_fields'][98]['key']);
+        $this->assertFalse($settings['custom_fields'][0]['required']);
     }
 
     public function test_handle_会員登録モードをforceで保存できること(): void

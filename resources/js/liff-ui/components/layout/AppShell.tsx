@@ -5,6 +5,7 @@ import { useRuntimeData } from "../../context/RuntimeDataContext";
 import { themeMap } from "../../themes/themes";
 import { themeToCssVars } from "../../utils/theme";
 import { contrastCssVars, customizationToCssVars } from "../../utils/customization";
+import { resolveHomeLayout } from "../../config/customization";
 import { Header } from "./Header";
 import { BottomNavigation } from "./BottomNavigation";
 
@@ -40,6 +41,7 @@ export function AppShell({ children, gateSettled = true }: PropsWithChildren<{ g
       className="app-shell"
       data-store-id={activeStore.storeId}
       data-design-preset={customization.designPreset}
+      data-home-layout={resolveHomeLayout(customization.home.layout)}
       data-app-experience={experienceId}
       data-visual-style={customization.brand?.visualStyle ?? ""}
       data-nav-position={customization.navigation.position}

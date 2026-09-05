@@ -70,7 +70,7 @@ export function useMembershipGate(
                 if (typeof mm.ensureIdentityReady === 'function') {
                     await mm.ensureIdentityReady(1500);
                 }
-                if (window.__IS_LIFF__ === true && !window.__LINE_USER_ID__) {
+                if (window.__IS_LIFF__ === true && !window.__LINE_USER_ID__ && !shouldAutoCreateMember()) {
                     const mode = getMemberRegistrationMode();
                     if (mode === 'popup' || mode === 'prompt' || mode === 'force') {
                         emitLoginPopup(mode === 'force');
@@ -83,7 +83,7 @@ export function useMembershipGate(
                     await mm.fetchMemberContext({});
                 }
             } catch {
-                if (window.__IS_LIFF__ === true && !window.__LINE_USER_ID__) {
+                if (window.__IS_LIFF__ === true && !window.__LINE_USER_ID__ && !shouldAutoCreateMember()) {
                     const mode = getMemberRegistrationMode();
                     if (mode === 'popup' || mode === 'prompt' || mode === 'force') {
                         emitLoginPopup(mode === 'force');

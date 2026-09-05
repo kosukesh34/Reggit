@@ -69,16 +69,4 @@ make deploy
 - **未コミット変更**: 先に commit / stash。どうしても送るなら `--allow-dirty`
 - **SSH 鍵なし**: `REGGIT_DEPLOY_SSH_KEY` のパスに鍵があるか確認
 - **`REGGIT_ROOT` 不一致**: 別ディレクトリを触っている場合は変数を合わせる
-- **本番の `.env`**: rsync 対象外。環境変数の変更はサーバ側で行う
-
----
-
-## AWS Elastic Beanstalk 向け（別経路）
-
-EB 用 zip を作る場合のみ:
-
-```bash
-make build-deploy
-```
-
-詳細は [AWS_DEPLOYMENT.md](./AWS_DEPLOYMENT.md)。日常の本番反映は **`reggit deploy`** を使う。
+- **本番の `.env`**: rsync 対象外。環境変数の変更はサーバ側で行う（項目の一覧は [ENV_PRODUCTION_TEMPLATE.md](./ENV_PRODUCTION_TEMPLATE.md)）

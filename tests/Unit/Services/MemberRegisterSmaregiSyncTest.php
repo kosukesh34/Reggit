@@ -148,6 +148,29 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         }
     }
 
+    public function test_register_member_ゲスト自動作成はスマレジ失敗でも採番して会員を作ること(): void
+    {
+        $user = User::factory()->create(['project_id' => $this->project->id]);
+
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('sb_test_contract');
+        $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
+        $smaregiApi->shouldReceive('createCustomer')->once()->andReturn(null);
+        $smaregiApi->shouldReceive('getLastErrorDetail')->andReturn('smaregi down');
+
+        $couponIssue = Mockery::mock(CouponIssueService::class);
+        $couponIssue->shouldReceive('issueForFirstRegistration')->once();
+
+        $this->app->instance(SmaregiApiService::class, $smaregiApi);
+        $this->app->instance(CouponIssueService::class, $couponIssue);
+
+        $member = app(MemberService::class)->registerMember($user, [], false);
+
+        $this->assertNull($member->smaregi_customer_id);
+        $this->assertNotSame('', trim((string) $member->member_number));
+        $this->assertDatabaseHas('members', ['user_id' => $user->id]);
+    }
+
     public function test_register_member_契約未設定ならローカルのみ登録すること(): void
     {
         $user = User::factory()->create(['project_id' => $this->project->id]);

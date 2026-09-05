@@ -17,9 +17,21 @@ class RootRouteTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('landing');
-        $response->assertSee('screen-register.png', false);
-        $response->assertSee('会員登録画面');
-        $response->assertSee('会員登録');
+        $response->assertSee('lp-hero-reggit-v2.webp', false);
+        $response->assertSee('actual-home.webp', false);
+        $response->assertSee('actual-order.webp', false);
+        $response->assertSee('actual-member.webp', false);
+        $response->assertSee('actual-point.webp', false);
+        $response->assertSee('actual-coupon.webp', false);
+        $response->assertSee('actual-queue.webp', false);
+        $response->assertSee('actual-admin.webp', false);
+        $response->assertSee('brand-02.svg', false);
+        $response->assertSee('lp-marquee', false);
+        $response->assertSee('LINEミニアプリ');
+        $response->assertSee('ネイティブアプリ');
+        $response->assertSee('スタンプ');
+        $response->assertSee('MacBook 14インチ想定');
+        $response->assertSee('16:10ディスプレイ比率');
     }
 
     public function test_root_ログイン済みは管理画面へリダイレクトすること(): void

@@ -15,7 +15,8 @@ class ShopSettingKeys
 
     public const LIFF_SAVED_SCREENS_MAX = 10;
 
-    public const PROFILE_CUSTOM_FIELD_MAX = 5;
+    /** スマレジ会員自由項目と同じ上限 */
+    public const PROFILE_CUSTOM_FIELD_MAX = 99;
 
     public const FEATURE_FLAGS = [
         'feature_home_enabled' => true,

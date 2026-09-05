@@ -3,6 +3,7 @@ import { industryGalleryCoupons, industryGalleryMemberProfiles, industryGalleryN
 
 export const additionalMemberProfiles: Record<string, MemberProfile> = {
   ...industryGalleryMemberProfiles(),
+  store_member_crm: { name: "田中 太郎", number: "0001234567", rank: "GOLD MEMBER", points: 12480, expiration: "2026-12-31", nextRankLabel: "あと 2,520pt で PLATINUM MEMBER", isMember: true },
   store_landing_showcase: { name: "Alex", number: "1234567890123456", rank: "GREEN", points: 2450, expiration: "2099-12-31", nextRankLabel: "あと550ポイントでGold", isMember: true },
   store_simple_rewards: { name: "山田 花子", number: "1000 2345", rank: "メンバー", points: 0, expiration: "2027-12-31", nextRankLabel: "", isMember: true },
   store_simple_home: { name: "山田 花子", number: "1000 2345", rank: "メンバー", points: 0, expiration: "2027-12-31", nextRankLabel: "", isMember: true },
@@ -22,6 +23,11 @@ export const additionalMemberProfiles: Record<string, MemberProfile> = {
 
 export const additionalCoupons: Record<string, CouponItem[]> = {
   ...industryGalleryCoupons(),
+  store_member_crm: [
+    { id: "crm1", title: "500円OFFクーポン", description: "5,000円以上のお買い物で利用可能", validUntil: "2026-09-30", featured: true },
+    { id: "crm2", title: "バースデークーポン", description: "お好きな商品を10%OFF", validUntil: "2026-09-30" },
+    { id: "crm3", title: "会員限定 10%OFF", description: "対象商品に利用可能", validUntil: "2026-10-15" },
+  ],
   store_landing_showcase: [
     { id: "lp1", title: "Welcome Drink", description: "会員登録でドリンクを1杯プレゼント", validUntil: "2027-12-31", image: "/images/liff/coupon-drink.jpg", featured: true },
     { id: "lp2", title: "Pastry 10% OFF", description: "お好きなペストリーに利用できます", validUntil: "2027-12-31", image: "/images/liff/coupon-dessert.jpg" },
@@ -85,6 +91,10 @@ export const additionalCoupons: Record<string, CouponItem[]> = {
 
 export const additionalNews: Record<string, NewsItem[]> = {
   ...industryGalleryNews(),
+  store_member_crm: [
+    { id: "crmn1", title: "秋の新作コレクションが入荷しました。", date: "2026-08-28", category: "NEWS" },
+    { id: "crmn2", title: "会員限定キャンペーン開催中です。", date: "2026-08-20", category: "CAMPAIGN" },
+  ],
   store_landing_showcase: [{ id: "lpn1", title: "LPスマホUIデモを公開しました", date: "2026-08-12", category: "DEMO" }],
   store_counter_operations: [{ id: "con1", title: "受取時間をリアルタイム表示しています", date: "2026-08-12", category: "店舗状況" }],
   store_appointment_operations: [{ id: "aon1", title: "8月後半の予約枠を公開しました", date: "2026-08-12", category: "予約案内" }],
@@ -102,6 +112,7 @@ export const additionalNews: Record<string, NewsItem[]> = {
 
 export const additionalStoreSummaries: Record<string, StoreSummary> = {
   ...industryGalleryStoreSummaries(),
+  store_member_crm: { name: "天神店", address: "福岡市中央区天神 1-1-1", openHours: "10:00 - 20:00", access: "天神駅 徒歩5分", phone: "092-1000-0001" },
   store_landing_showcase: { name: "Laurel & Ivy", address: "東京都渋谷区神南1-2-3", openHours: "08:00 - 20:00", access: "渋谷駅 徒歩5分", phone: "03-1234-5678" },
   store_simple_rewards: { name: "SIMPLE PASS 本店", address: "東京都渋谷区神南1-1-1", openHours: "10:00 - 19:00", access: "渋谷駅 徒歩5分", phone: "03-1000-2345" },
   store_simple_home: { name: "シンプルホーム本店", address: "東京都渋谷区神南1-1-2", openHours: "10:00 - 19:00", access: "渋谷駅 徒歩5分", phone: "03-1000-2346" },
