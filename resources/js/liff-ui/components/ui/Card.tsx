@@ -1,11 +1,9 @@
-import type { PropsWithChildren } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 
-interface CardProps {
-  className?: string;
+interface CardProps extends ComponentPropsWithoutRef<"section"> {
   padding?: "sm" | "md" | "lg";
 }
 
-export function Card({ children, className = "", padding = "md" }: PropsWithChildren<CardProps>) {
-  return <section className={`card card--${padding} ${className}`.trim()}>{children}</section>;
+export function Card({ children, className = "", padding = "md", ...props }: CardProps) {
+  return <section {...props} className={`card card--${padding} ${className}`.trim()}>{children}</section>;
 }
-

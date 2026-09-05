@@ -117,9 +117,24 @@ class MemberControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('is_member', true);
-        $this->assertTrue(
-            Member::query()->where('project_id', $project->id)->exists()
-        );
+        $member = Member::query()->where('project_id', $project->id)->first();
+        $this->assertNotNull($member);
+        $this->assertNotSame('', trim((string) $member->member_number));
+    }
+
+    public function test_me_ゲスト可能なら_line未連携でも会員番号を採番して作成すること(): void
+    {
+        $project = $this->createProject();
+        config(['smaregi.contract_id' => '']);
+        ShopSettingStore::setMemberRegistrationMode('optional', (int) $project->id);
+
+        $response = $this->get('/api/members/me?project_key=default');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('is_member', true);
+        $member = Member::query()->where('project_id', $project->id)->first();
+        $this->assertNotNull($member);
+        $this->assertNotSame('', trim((string) $member->member_number));
     }
 
     public function test_me_会員必須では未会員のまま返すこと(): void

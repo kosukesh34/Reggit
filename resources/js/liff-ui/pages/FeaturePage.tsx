@@ -20,6 +20,7 @@ import { GalleryView } from "../../frontend/features/gallery/GalleryView";
 import { OrdersView } from "../../frontend/features/orders/OrdersView";
 import { pathForLegacyTab } from "../navigation/tabPath";
 import { isLinkTabType } from "../types/app";
+import { resolveHomeLayout } from "../config/customization";
 import { LinkSitePage } from "./LinkSitePage";
 import { LandingShowcaseFeature } from "./LandingShowcasePage";
 import { SimpleRewardsFeature } from "./SimpleRewardsPage";
@@ -55,6 +56,7 @@ export function FeaturePage() {
   const activeVenue = stores[0];
   const orderPath = activeStore.features.mobileOrder ? "/mobileOrder" : activeStore.features.dineInOrder ? "/dineInOrder" : "/reservation";
   const isLiveBound = mode === "live";
+  const isCrm = resolveHomeLayout(customization.home.layout) === "crm";
 
   if (rawFeature === undefined || rawFeature === "") {
     return <Navigate to="/home" replace />;
@@ -138,7 +140,7 @@ export function FeaturePage() {
   if (isLiveBound) {
     if (feature === "coupon") {
       return (
-        <div className="page feature-page">
+        <div className={`page feature-page${isCrm ? " feature-page--crm" : ""}`}>
           <div id="couponsSection" className="coupons-section">
             <CouponsView />
           </div>
@@ -213,8 +215,8 @@ export function FeaturePage() {
   }
 
   return (
-    <div className={`page feature-page stack stack--lg${isNewsArticle ? " feature-page--news-article" : ""}`}>
-      {isNewsArticle ? null : (
+    <div className={`page feature-page stack stack--lg${isNewsArticle ? " feature-page--news-article" : ""}${isCrm ? " feature-page--crm" : ""}`}>
+      {isNewsArticle || isCrm ? null : (
         <section className="feature-intro">
           <span className="feature-intro__icon"><Icon size={22} /></span>
           <div><h1>{definition.label}</h1><p>{definition.description}</p></div>

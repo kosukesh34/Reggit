@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin\Settings;
 
+use App\Domain\Settings\ShopSettingKeys;
 use App\Enums\MemberRegistrationMode;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Http\Support\AdminSettingsInputFactory;
+use App\Services\Smaregi\SmaregiCustomerCustomFieldLabelSyncService;
 use App\UseCases\Admin\Settings\GetProfileSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateProfileSettingsUseCase;
 use Illuminate\Http\Request;
@@ -45,9 +47,9 @@ class ProfileController extends AdminBaseController
             'smaregi_fields' => 'required|array',
             'smaregi_fields.*.enabled' => 'nullable|boolean',
             'smaregi_fields.*.required' => 'nullable|boolean',
-            'custom_fields' => 'nullable|array',
+            'custom_fields' => 'nullable|array|max:'.ShopSettingKeys::PROFILE_CUSTOM_FIELD_MAX,
             'custom_fields.*.key' => 'nullable|string|max:64|regex:/^[a-z0-9_]+$/',
-            'custom_fields.*.label' => 'required|string|max:100',
+            'custom_fields.*.label' => 'required|string|max:'.SmaregiCustomerCustomFieldLabelSyncService::LABEL_MAX,
             'custom_fields.*.required' => 'nullable|boolean',
             'custom_fields.*.input_type' => ['nullable', 'string', Rule::in(array_keys(ProfileCustomFieldInputType::getValues()))],
             'custom_fields.*.values' => 'nullable',

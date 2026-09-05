@@ -256,7 +256,7 @@ export function StampDemo({ config, storeId, brandName }: { config: AppCustomiza
 }
 
 export function PointDemo({ initialPoints }: { initialPoints: number }) {
-  const { redeemPoints } = useRuntimeData();
+  const { member, redeemPoints } = useRuntimeData();
   const [points, setPoints] = useState(initialPoints);
   const [message, setMessage] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
@@ -280,9 +280,9 @@ export function PointDemo({ initialPoints }: { initialPoints: number }) {
     <div className="stack stack--lg">
       <Card className="point-balance" padding="lg">
         <Coins size={24} />
-        <span>利用可能ポイント</span>
+        <span>保有ポイント</span>
         <strong>{points.toLocaleString()}<small> pt</small></strong>
-        <p>通常ポイント 1pt = 1円として利用できます</p>
+        {member.nextRankLabel !== "" ? <p>{member.nextRankLabel}</p> : <p>通常ポイント 1pt = 1円として利用できます</p>}
         <Button variant="soft" disabled={points < 500 || submitting} onClick={() => void redeem()}>{submitting ? "交換中…" : "500ptをクーポンに交換"}</Button>
         {error ? <div className="form-error" role="alert">{error}</div> : null}
         {message ? <div className="inline-success"><Check size={15} />{message}</div> : null}

@@ -76,10 +76,9 @@
 .system-admin-welcome {
     margin-bottom: 20px;
     padding: 16px 20px;
-    background: var(--bg-primary);
+    background: color-mix(in srgb, var(--primary) 6%, var(--bg-primary));
     border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--primary);
+    border: 2px solid var(--primary);
 }
 
 .system-admin-welcome-text {

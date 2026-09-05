@@ -1,30 +1,30 @@
 # 本番環境用の環境変数テンプレート
 
-このファイルは **Elastic Beanstalk の環境プロパティ** や、手元で管理する `.env` のメモ用です。  
+このファイルは **Xserver 上の本番 `.env`** や、手元で管理する環境変数のメモ用です。
 **実際のパスワードやシークレットが含まれる場合はこのファイルをコミットしないでください。**（必要なら `docs/ENV_PRODUCTION_TEMPLATE.md` を .gitignore に追加）
 
 - **ローカル用**: プロジェクト直下の `.env` で管理（このファイルでは変更しない）
-- **AWS（本番）用**: 以下および EB の環境プロパティで管理
+- **本番用（Xserver）**: サーバー上のプロジェクト直下 `.env` で管理
 
 ---
 
-## ベースURL・エンドポイント（ローカル vs AWS）
+## ベースURL・エンドポイント（ローカル vs 本番）
 
-| 用途 | ローカル用（.env） | AWS・本番用（EB 環境プロパティ） |
-|------|-------------------|----------------------------------|
-| **APP_URL** | `http://localhost:8080` | `https://reggit.jp`（独自ドメイン運用時） |
+| 用途 | ローカル用（.env） | 本番用（Xserver の .env） |
+|------|-------------------|---------------------------|
+| **APP_URL** | `http://localhost:8080` | `https://reggit.jp` |
 | **アプリURL**（スマレジ画面） | `http://localhost:8080` | `https://reggit.jp` |
 | **利用者契約通知先URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.jp/api/smaregi/idp` |
 | **Webhook送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.jp/api/smaregi/webhook` |
 | **リダイレクトURI** | `urn:ietf:wg:oauth:2.0:oob`（共通） | `urn:ietf:wg:oauth:2.0:oob`（共通） |
 
-※ スマレジ・デベロッパーズでは「開発環境」をローカル用URL or AWS用URL のどちらかに合わせて切り替えて利用する。
+※ スマレジ・デベロッパーズでは「開発環境」をローカル用 URL or 本番用 URL のどちらかに合わせて切り替えて利用する。
 
 ---
 
 ## アクセスポイント一覧（本番: https://reggit.jp）
 
-本番のベースURLを **https://reggit.jp** とするときの主要な URL 一覧。**https://www.reggit.jp** でも同じパスでアクセス可能（DNS で www も同一 ALB に向けている場合）。
+本番のベース URL を **https://reggit.jp** とするときの主要な URL 一覧。**https://www.reggit.jp** でも同じパスでアクセス可能（DNS で www も同一サーバーに向けている場合）。
 
 | 用途 | URL（本番） |
 |------|-------------|
@@ -40,72 +40,85 @@
 | **Stripe Webhook** | https://reggit.jp/api/payment/webhook |
 | **デバイス登録** | https://reggit.jp/api/devices/register |
 
-**EB 環境プロパティ**の **APP_URL** は `https://reggit.jp` に設定する。スマレジ・LINE・Stripe の管理画面で登録する URL も上記のとおり。
+**`.env` の `APP_URL`** は `https://reggit.jp` に設定する。スマレジ・LINE・Stripe の管理画面で登録する URL も上記のとおり。
 
 ---
 
-## AWS（Elastic Beanstalk 環境プロパティで設定）
+## 本番インフラ（Xserver）
+
+| 項目 | 説明 |
+|------|------|
+| ホスティング | エックスサーバー |
+| アプリ配置 | ドキュメントルート配下（例: `public/` を公開ディレクトリに設定） |
+| DB | Xserver の MySQL（同一サーバー内。`DB_HOST` は通常 `localhost` またはサーバーパネル記載のホスト名） |
+| メール送信 | Xserver の SMTP（同一サーバー内から送信。後述） |
+| キュー | `QUEUE_CONNECTION=database` + cron または常駐で `php artisan queue:work` |
+| 環境変数 | サーバー上の `.env` に記載 |
+
+---
+
+## 本番の基本設定（.env）
 
 | 名前 | 説明 | 例（値は伏せてメモ） |
 |------|------|----------------------|
 | APP_ENV | 環境 | production |
 | APP_DEBUG | デバッグ | false |
 | APP_KEY | Laravel 鍵 | base64:... |
-| APP_URL | 本番URL | https://reggit.jp（独自ドメイン）または http://Reggit...（EB のまま） |
-| DB_HOST | RDS エンドポイント | xxx.rds.amazonaws.com |
+| APP_URL | 本番 URL | https://reggit.jp |
+| DB_HOST | MySQL ホスト | localhost（または Xserver パネル記載のホスト名） |
 | DB_PORT | 3306 |
 | DB_DATABASE | reggit |
-| DB_USERNAME | RDS ユーザー | （メモ用） |
-| DB_PASSWORD | RDS パスワード | （メモ用・EB にだけ入力） |
+| DB_USERNAME | MySQL ユーザー | （サーバーパネルで作成したユーザー） |
+| DB_PASSWORD | MySQL パスワード | （メモ用・サーバー上の .env にだけ入力） |
 
 ---
 
-## スマレジ（ローカル vs AWS）
+## スマレジ（ローカル vs 本番）
 
-**管理画面では設定できません。** ローカルは `.env`、AWS は EB の環境プロパティで設定。
+**管理画面では設定できません。** ローカルは `.env`、本番は Xserver 上の `.env` で設定。
 
-| 名前 | ローカル用（.env） | AWS・本番用（EB 環境プロパティ） |
-|------|-------------------|----------------------------------|
-| SMAREGI_CLIENT_ID | ローカル用の値（そのまま） | `d613e480ff3c7165b1386734345ff700` |
-| SMAREGI_CLIENT_SECRET | ローカル用の値（そのまま） | `0859bbcccef9f14ca054bca24bc484852a241451f03e4998b4756f2aaa7d37c6` |
-| **SMAREGI_CONTRACT_ID** | ローカル用契約ID（例: `sb_skx928r2` または未設定で config デフォルト） | **`sb_skp835t6`** |
+| 名前 | ローカル用（.env） | 本番用（Xserver の .env） |
+|------|-------------------|---------------------------|
+| SMAREGI_CLIENT_ID | ローカル用の値（そのまま） | `（本番用クライアント ID）` |
+| SMAREGI_CLIENT_SECRET | ローカル用の値（そのまま） | `（本番用クライアントシークレット）` |
+| **SMAREGI_CONTRACT_ID** | ローカル用契約 ID（例: `sb_skx928r2` または未設定で config デフォルト） | **`sb_skp835t6`** |
 
-※ SMAREGI_ID_BASE_URL / SMAREGI_API_BASE_URL / SMAREGI_SCOPE はローカル・AWSとも .env.example のままで可。  
+※ SMAREGI_ID_BASE_URL / SMAREGI_API_BASE_URL / SMAREGI_SCOPE はローカル・本番とも .env.example のままで可。
 ※ SMAREGI_WEBHOOK_SECRET は必要に応じてそれぞれの環境で設定。
 
 ---
 
-## スマレジ（AWS・本番用）EB に追加する一覧
+## スマレジ（本番用）.env に追加する一覧
 
-**Reggit-env** の「環境のプロパティ」に以下を追加する。
+本番サーバー上の `.env` に以下を設定する。
 
-| 名前 | 値（AWS用） |
+| 名前 | 値（本番用） |
 |------|-------------|
-| SMAREGI_CLIENT_ID | `d613e480ff3c7165b1386734345ff700` |
-| SMAREGI_CLIENT_SECRET | `0859bbcccef9f14ca054bca24bc484852a241451f03e4998b4756f2aaa7d37c6` |
+| SMAREGI_CLIENT_ID | `（本番用クライアント ID）` |
+| SMAREGI_CLIENT_SECRET | `（本番用クライアントシークレット）` |
 | SMAREGI_CONTRACT_ID | `sb_skp835t6` |
 
 ---
 
-## スマレジ・デベロッパーズで入力するURL（切り替え用）
+## スマレジ・デベロッパーズで入力する URL（切り替え用）
 
-**ローカルでテストするとき** → 左のURLを入力。**AWS（本番）で使うとき** → 右のURLを入力。
+**ローカルでテストするとき** → 左の URL を入力。**本番で使うとき** → 右の URL を入力。
 
-| 項目 | ローカル用 | AWS・本番用 |
-|------|------------|-------------|
-| **アプリURL** | `http://localhost:8080` | `https://reggit.jp` |
-| **利用者契約通知先URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.jp/api/smaregi/idp` |
-| **Webhook送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.jp/api/smaregi/webhook` |
-| **リダイレクトURI** | `urn:ietf:wg:oauth:2.0:oob` | `urn:ietf:wg:oauth:2.0:oob` |
+| 項目 | ローカル用 | 本番用 |
+|------|------------|--------|
+| **アプリ URL** | `http://localhost:8080` | `https://reggit.jp` |
+| **利用者契約通知先 URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.jp/api/smaregi/idp` |
+| **Webhook 送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.jp/api/smaregi/webhook` |
+| **リダイレクト URI** | `urn:ietf:wg:oauth:2.0:oob` | `urn:ietf:wg:oauth:2.0:oob` |
 
-このファイルはあくまでメモ用です。本番の秘密情報は EB の環境プロパティまたは手元の .env にだけ入れ、リポジトリには上げないでください。
+このファイルはあくまでメモ用です。本番の秘密情報はサーバー上の `.env` にだけ入れ、リポジトリには上げないでください。
 
 ---
 
-## .env の項目を本番（EB）に持っていく一覧
+## .env の項目を本番（Xserver）に持っていく一覧
 
-**いま .env に書かれている項目は、本番でも EB の環境プロパティに設定してください。**  
-下記は .env の並びに合わせた一覧です。「本番の値」が「要変更」のものだけ、本番用の値に差し替えてから EB に追加します。
+**いま .env に書かれている項目は、本番でもサーバー上の `.env` に設定してください。**
+下記は .env の並びに合わせた一覧です。「本番の値」が「要変更」のものだけ、本番用の値に差し替えてから反映します。
 
 | .env の名前 | 本番の値 | 備考 |
 |-------------|----------|------|
@@ -113,18 +126,18 @@
 | APP_ENV | **要変更** | `production` にする |
 | APP_KEY | そのまま可 | 同じ鍵を本番でも使う場合 |
 | APP_DEBUG | **要変更** | 必ず `false` |
-| APP_URL | **要変更** | `https://reggit.jp`（独自ドメイン）または EB の URL |
+| APP_URL | **要変更** | `https://reggit.jp` |
 | APP_API_BASE | そのまま可 | `/api` |
 | DEMO_SEED | 要変更推奨 | 本番では `false` が無難。デモ用なら `true` のまま |
-| DEMO_SYSTEM_LOGIN_ID 〜 DEMO_STORE_NAME | そのまま可 or 省略可 | デモ用アカウントを使う場合のみ EB に追加 |
+| DEMO_SYSTEM_LOGIN_ID 〜 DEMO_STORE_NAME | そのまま可 or 省略可 | デモ用アカウントを使う場合のみ本番 .env に追加 |
 | LOG_CHANNEL | そのまま可 | `stack` |
 | LOG_LEVEL | 要変更推奨 | 本番は `error` や `warning`。デバッグ時は `debug` |
 | DB_CONNECTION | そのまま可 | `mysql` |
-| DB_HOST | **要変更** | RDS のエンドポイント（例: xxx.rds.amazonaws.com） |
+| DB_HOST | **要変更** | Xserver の MySQL ホスト（通常 `localhost`） |
 | DB_PORT | そのまま可 | `3306` |
-| DB_DATABASE | そのまま可 | `reggit`（RDS で作成した DB 名） |
-| DB_USERNAME | **要変更** | RDS のマスターユーザー名 |
-| DB_PASSWORD | **要変更** | RDS のパスワード |
+| DB_DATABASE | そのまま可 | `reggit`（Xserver で作成した DB 名） |
+| DB_USERNAME | **要変更** | Xserver の MySQL ユーザー名 |
+| DB_PASSWORD | **要変更** | Xserver の MySQL パスワード |
 | ADMIN_EMAIL | そのまま可 | 未設定なら login_id に使われる |
 | ADMIN_PASSWORD | **要変更推奨** | 本番では強めのパスワードに |
 | ADMIN_NAME | そのまま可 | 任意 |
@@ -135,30 +148,30 @@
 | STRIPE_KEY | **要変更** | 本番は Live 公開キー `pk_live_...` |
 | STRIPE_SECRET | **要変更** | 本番は Live シークレット `sk_live_...` |
 | STRIPE_WEBHOOK_SECRET | **要変更** | 本番用 Webhook の `whsec_...`（Stripe で本番 URL 登録後に取得） |
-| SMAREGI_CLIENT_ID | **要変更（AWS用）** | AWS 用は別の値（例: d613e480ff3c7165...）。ローカルと同じならそのまま |
-| SMAREGI_CLIENT_SECRET | **要変更（AWS用）** | 同上 |
+| SMAREGI_CLIENT_ID | **要変更（本番用）** | 本番用の値に差し替える。ローカルと同じならそのまま |
+| SMAREGI_CLIENT_SECRET | **要変更（本番用）** | 同上 |
 | SMAREGI_ID_BASE_URL | そのまま可 | https://id.smaregi.dev |
 | SMAREGI_API_BASE_URL | そのまま可 | https://api.smaregi.dev |
 | SMAREGI_SCOPE | そのまま可 | pos.stores:read pos.stores:write ...（1行で） |
 | SMAREGI_WEBHOOK_SECRET | 任意 | 使う場合はデベロッパーズで設定した値と一致させる |
 | SMAREGI_WEBHOOK_SECRET_HEADER | そのまま可 | X-Smaregi-Webhook-Secret |
-| SMAREGI_CONTRACT_ID | **要変更（AWS用）** | 本番は `sb_skp835t6` など AWS 用契約ID（.env に無ければ EB で追加） |
+| SMAREGI_CONTRACT_ID | **要変更（本番用）** | 本番は `sb_skp835t6` など本番用契約 ID |
 | WALLET_PASS_ENABLED | そのまま可 | true / false |
-| WALLET_PASS_TEAM_ID 〜 WALLET_PASS_ASSETS_PATH | そのまま可 | 証明書・キーはイメージに含めるか S3 等から取得する運用にすること |
+| WALLET_PASS_TEAM_ID 〜 WALLET_PASS_ASSETS_PATH | そのまま可 | 証明書・キーはサーバー上に配置する |
 | GOOGLE_WALLET_ENABLED | そのまま可 | true / false |
 | GOOGLE_WALLET_ISSUER_ID | そのまま可 | 本番用 Issuer なら差し替え |
-| GOOGLE_WALLET_CREDENTIALS_PATH | 要確認 | 本番ではパスを合わせるか S3 等から取得 |
+| GOOGLE_WALLET_CREDENTIALS_PATH | 要確認 | 本番ではパスを合わせる |
 | GOOGLE_WALLET_ORIGINS | **要変更** | `https://reggit.jp` を追加（カンマ区切り） |
 | GOOGLE_WALLET_CLASS_SUFFIX | そのまま可 | membership 等 |
 | GOOGLE_WALLET_ALLOW_DEMO_USER | 要変更推奨 | 本番では `false` が無難 |
 | BROADCAST_DRIVER | そのまま可 | log |
 | CACHE_DRIVER | そのまま可 | file |
 | FILESYSTEM_DISK | そのまま可 | local |
-| QUEUE_CONNECTION | **要変更（本番）** | 開発のみ `sync`。Xserver は `database` + `queue:work`、AWS は `sqs` + ワーカー |
+| QUEUE_CONNECTION | **要変更（本番）** | 開発のみ `sync`。本番は `database` + `queue:work`（cron 等で常駐） |
 | SESSION_DRIVER | そのまま可 | file |
 | SESSION_LIFETIME | そのまま可 | 120 |
-| REDIS_HOST, REDIS_PASSWORD, REDIS_PORT | 省略可 | Redis を使う場合のみ EB に追加 |
-| MAIL_MAILER 〜 MAIL_FROM_NAME | **要変更（本番で送信する場合）** | 本番用 SMTP（例: AWS SES）に差し替え。使わないなら省略可 |
+| REDIS_HOST, REDIS_PASSWORD, REDIS_PORT | 省略可 | Redis を使う場合のみ .env に追加 |
+| MAIL_MAILER 〜 MAIL_FROM_NAME | **要変更（本番で送信する場合）** | Xserver の SMTP に差し替え（後述）。使わないなら省略可 |
 | JAPANPOST_API_HOST | そのまま可 | api.da.pf.japanpost.jp |
 | JAPANPOST_CLIENT_ID | そのまま可 | 本番でも同じ認証を使う場合 |
 | JAPANPOST_CLIENT_SECRET | そのまま可 | 同上 |
@@ -166,14 +179,14 @@
 | PUSH_FCM_PROJECT_ID | そのまま可 | Firebase プロジェクト ID（例: reggit-dbb5a） |
 | PUSH_FCM_CREDENTIALS | そのまま可 | サービスアカウント JSON のパス（サーバ上に配置） |
 
-**手順**: 上記の「名前」を EB の環境プロパティに 1 件ずつ追加し、「本番の値」に従って入力する。「そのまま可」は .env の値をそのままコピーしてよい（DB_* と APP_URL など「要変更」は除く）。
+**手順**: ローカルの `.env` をベースに、上記の「要変更」項目を本番用の値に差し替えて Xserver 上の `.env` に配置する。「そのまま可」はローカルの値をそのままコピーしてよい（DB_* と APP_URL など「要変更」は除く）。
 
 ---
 
-## EB 環境プロパティ 設定一覧（全項目）
+## 本番 .env 設定一覧（全項目）
 
-**Reggit-env** → **設定** → **更新、モニタリング、ログ記録** → **編集** → **環境プロパティ** で、以下を **1件ずつ「追加」** して設定する。  
-値はあなたの環境（RDS・APP_KEY・独自ドメインなど）に合わせて置き換える。
+Xserver 上のプロジェクト直下 `.env` に、以下を設定する。
+値は環境（MySQL ユーザー・APP_KEY・独自ドメインなど）に合わせて置き換える。
 
 ### 必須（アプリ起動に必要）
 
@@ -185,13 +198,13 @@
 | APP_ENV | production | 本番用 |
 | APP_DEBUG | false | 本番では必ず false |
 | APP_KEY | base64:xxxxxxxx... | ローカルで `php artisan key:generate --show` で表示した値。既に使っている鍵があればそのまま |
-| APP_URL | http://Reggit.ap-northeast-3.elasticbeanstalk.com | 独自ドメイン運用時は `https://reggit.jp` に変更 |
+| APP_URL | https://reggit.jp | 独自ドメイン |
 | DB_CONNECTION | mysql | そのまま |
-| DB_HOST | database-1.cpi8emy64hbe.ap-northeast-3.rds.amazonaws.com | あなたの RDS エンドポイント |
+| DB_HOST | localhost | Xserver の MySQL ホスト（パネル記載を確認） |
 | DB_PORT | 3306 | |
-| DB_DATABASE | reggit | RDS で作成した DB 名 |
-| DB_USERNAME | admin | RDS のマスターユーザー名 |
-| DB_PASSWORD | （RDS のパスワード） | 手入力。画面ではマスクされる |
+| DB_DATABASE | reggit | Xserver で作成した DB 名 |
+| DB_USERNAME | （MySQL ユーザー名） | サーバーパネルで作成したユーザー |
+| DB_PASSWORD | （MySQL パスワード） | 手入力。リポジトリには上げない |
 
 ### 管理画面ログイン（初回システム管理者）
 
@@ -203,18 +216,18 @@
 
 ※ ADMIN_LOGIN_ID を設定すると、login_id はその値になる（未設定なら ADMIN_EMAIL）。
 
-### スマレジ（AWS 用）
+### スマレジ（本番用）
 
 | 名前 | 値（例） | 備考 |
 |------|----------|------|
-| SMAREGI_CLIENT_ID | d613e480ff3c7165b1386734345ff700 | 上記「スマレジ（AWS・本番用）」参照 |
-| SMAREGI_CLIENT_SECRET | 0859bbcccef9f14ca054bca24bc484852a241451f03e4998b4756f2aaa7d37c6 | 同上 |
-| SMAREGI_CONTRACT_ID | sb_skp835t6 | AWS 用契約ID |
+| SMAREGI_CLIENT_ID | （本番用クライアント ID） | 上記「スマレジ（本番用）」参照 |
+| SMAREGI_CLIENT_SECRET | （本番用クライアントシークレット） | 同上 |
+| SMAREGI_CONTRACT_ID | sb_skp835t6 | 本番用契約 ID |
 | SMAREGI_ID_BASE_URL | https://id.smaregi.dev | そのままで可 |
 | SMAREGI_API_BASE_URL | https://api.smaregi.dev | そのままで可 |
 | SMAREGI_SCOPE | pos.stores:read pos.stores:write pos.products:read pos.products:write pos.transactions:read pos.transactions:write pos.customers:read pos.customers:write pos.stock:read pos.stock:write pos.staffs:read pos.suppliers:read pos.terminals:notify | そのままで可 |
 
-### ログ・キャッシュ・セッション（そのままで可）
+### ログ・キャッシュ・セッション・キュー（そのままで可）
 
 | 名前 | 値 | 備考 |
 |------|-----|------|
@@ -224,29 +237,29 @@
 | SESSION_DRIVER | file | |
 | SESSION_LIFETIME | 120 | |
 | FILESYSTEM_DISK | local | |
-| QUEUE_CONNECTION | database（Xserver）または sqs（AWS） | 予約配信・スマレジ同期 Job はワーカー必須。`sync` は開発のみ |
-| BROADCAST_CONNECTION | reverb | LIFF 会員証の即時反映。`php artisan reverb:start` と nginx の `/app` WebSocket プロキシが必要 |
+| QUEUE_CONNECTION | database | 予約配信・スマレジ同期 Job はワーカー必須。`sync` は開発のみ。cron で `php artisan queue:work --stop-when-empty` または常駐プロセスを設定 |
+| BROADCAST_CONNECTION | reverb | LIFF 会員証の即時反映。`php artisan reverb:start` と WebSocket プロキシが必要 |
 | BROADCAST_DRIVER | reverb | `BROADCAST_CONNECTION` と同じ値 |
 | REVERB_APP_ID | 1001 | ローカル `.env.example` と同じでよい。変えるなら `npm run build` 前に合わせる |
 | REVERB_APP_KEY | reggit-reverb-key | LIFF の `window.__REVERB_APP_KEY__` と一致させる |
 | REVERB_APP_SECRET | （本番用に生成） | サーバ間の署名用。公開しない |
-| REVERB_HOST | 127.0.0.1 | Laravel から Reverb への接続先。Docker なら `reverb` |
+| REVERB_HOST | 127.0.0.1 | Laravel から Reverb への接続先 |
 | REVERB_PORT | 8081 | Reverb の待受ポート |
-| REVERB_SCHEME | http | nginx が TLS 終端するなら http のまま |
+| REVERB_SCHEME | http | リバースプロキシが TLS 終端するなら http のまま |
 | REVERB_SERVER_HOST | 0.0.0.0 | |
 | REVERB_SERVER_PORT | 8081 | |
 
 ### 使う場合だけ設定（Stripe・LINE・メール・プッシュなど）
 
-**決済（Stripe）** — オンライン決済を使う場合に EB に追加する。
+**決済（Stripe）** — オンライン決済を使う場合に .env に追加する。
 
 | 名前 | 値 | 備考 |
 |------|-----|------|
 | STRIPE_KEY | （Stripe 公開キー `pk_live_...`） | フロントの Stripe.js 用。本番は Live キー |
 | STRIPE_SECRET | （Stripe シークレット `sk_live_...`） | サーバー側の決済処理用。本番は Live キー |
-| STRIPE_WEBHOOK_SECRET | （Webhook 署名シークレット `whsec_...`） | Stripe ダッシュボードで「開発者 → Webhook」でエンドポイント登録後に表示。本番用エンドポイントは `https://reggit.jp/api/...` など |
+| STRIPE_WEBHOOK_SECRET | （Webhook 署名シークレット `whsec_...`） | Stripe ダッシュボードで「開発者 → Webhook」でエンドポイント登録後に表示。本番用エンドポイントは `https://reggit.jp/api/payment/webhook` |
 
-※ Stripe ダッシュボードで本番用のキーと Webhook エンドポイント（`https://reggit.jp` ベース）を用意し、その値を EB の環境プロパティに設定する。
+※ Stripe ダッシュボードで本番用のキーと Webhook エンドポイント（`https://reggit.jp` ベース）を用意し、その値を本番 `.env` に設定する。
 
 **LINE（LIFF・メッセージ）** — LINE 連携・LIFF を使う場合。
 
@@ -258,17 +271,20 @@
 | LINE_LIFF_URL | 未設定で可 | 必要なら `https://reggit.jp/...` を指定 |
 
 **メール送信** — 本番でメールを送る場合（注文通知・パスワードリセット等）。
+アプリが Xserver 上で動くため、**Xserver の SMTP** を使う（1日数件程度なら追加サービス不要）。
 
 | 名前 | 値 | 備考 |
 |------|-----|------|
 | MAIL_MAILER | smtp | |
-| MAIL_HOST | （SMTP ホスト。例: email-smtp.ap-northeast-1.amazonaws.com） | AWS SES を使う場合はリージョンに合わせる |
-| MAIL_PORT | 587 | TLS の場合 |
-| MAIL_USERNAME | （SMTP ユーザー） | SES の場合は IAM の SMTP 認証情報 |
-| MAIL_PASSWORD | （SMTP パスワード） | 同上 |
-| MAIL_ENCRYPTION | tls | |
-| MAIL_FROM_ADDRESS | （送信元アドレス。SES で検証済みのアドレス） | |
+| MAIL_HOST | sv***.xserver.jp | サーバーパネル「送信メール(SMTP)サーバー」のホスト名 |
+| MAIL_PORT | 465 | SSL の場合 |
+| MAIL_USERNAME | info@reggit.jp | Xserver で作成したメールアカウント（フルアドレス） |
+| MAIL_PASSWORD | （メールアカウントのパスワード） | サーバーパネルで設定した値 |
+| MAIL_ENCRYPTION | ssl | ポート 465 の場合。587 + STARTTLS なら `tls` |
+| MAIL_FROM_ADDRESS | info@reggit.jp | `MAIL_USERNAME` と同じドメインのアドレスにする |
 | MAIL_FROM_NAME | Reggit | 任意 |
+
+※ Xserver でメールアカウントを事前に作成すること。送信元アドレスは作成済みのアドレスを使う。
 
 **プッシュ通知** — 使う場合のみ。
 
@@ -284,7 +300,7 @@
 |------|-----|------|
 | SANCTUM_STATEFUL_DOMAINS | reggit.jp | 独自ドメインで SPA/API 認証を使う場合。複数はカンマ区切り |
 | JAPANPOST_API_HOST | （日本郵便 API ホスト） | 日本郵便 API を使う場合 |
-| JAPANPOST_CLIENT_ID | （クライアントID） | 同上 |
+| JAPANPOST_CLIENT_ID | （クライアント ID） | 同上 |
 | JAPANPOST_CLIENT_SECRET | （クライアントシークレット） | 同上 |
 | SMAREGI_WEBHOOK_SECRET | （任意の文字列） | スマレジ Webhook の署名検証用。デベロッパーズで設定した値と一致させる |
 
@@ -298,4 +314,4 @@
 
 ---
 
-**設定の流れ**: まず「必須」をすべて追加 → 保存・適用。その後、スマレジ・LINE・Stripe など必要なブロックだけ追加する。
+**設定の流れ**: Xserver にデプロイ → サーバー上で `.env` を作成 → まず「必須」をすべて設定 → `php artisan migrate` 等で動作確認 → スマレジ・LINE・Stripe など必要なブロックを追加 → キューワーカー（cron）を設定。

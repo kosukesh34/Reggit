@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { MembershipCardConfig, MemberProfile } from "../../types/app";
 import { MembershipBarcode } from "./MembershipBarcode";
+import { MembershipQr } from "./MembershipQr";
 import { PointSummary } from "./PointSummary";
 import { RankBadge } from "./RankBadge";
 import type { AppCustomization, DesignPreset, MembershipTemplate } from "../../types/customization";
@@ -13,13 +14,14 @@ interface MembershipCardProps {
   logoText: string;
   customization: AppCustomization["membership"];
   designPreset: DesignPreset;
+  codeType?: "barcode" | "qrcode";
 }
 
 function usesLightSurface(template: MembershipTemplate): boolean {
   return template === "simple" || template === "ticket";
 }
 
-export function MembershipCard({ cardConfig, member, brandName, logoText, customization, designPreset }: MembershipCardProps) {
+export function MembershipCard({ cardConfig, member, brandName, logoText, customization, designPreset, codeType = "barcode" }: MembershipCardProps) {
   const template = customization.template;
   const lightSurface = usesLightSurface(template);
 
@@ -62,6 +64,9 @@ export function MembershipCard({ cardConfig, member, brandName, logoText, custom
   const showBarcode = cardConfig.barcodeVisible && customization.showBarcode;
   const showExpiry = customization.showExpiry;
   const showNextRank = customization.showNextRank && member.nextRankLabel !== "";
+  const memberCode = codeType === "qrcode"
+    ? <MembershipQr value={member.number} />
+    : <MembershipBarcode value={member.number} />;
 
   if (template === "simple") {
     return (
@@ -72,7 +77,7 @@ export function MembershipCard({ cardConfig, member, brandName, logoText, custom
         </div>
         {showBarcode ? (
           <div className="membership-card__visuals membership-card__visuals--plain">
-            <MembershipBarcode value={member.number} />
+            {memberCode}
           </div>
         ) : null}
         {showName ? <h2 className="membership-card__name">{member.name}</h2> : null}
@@ -100,7 +105,7 @@ export function MembershipCard({ cardConfig, member, brandName, logoText, custom
           {showNumber ? <div className="membership-card__number">No. {member.number}</div> : null}
           {showBarcode ? (
             <div className="membership-card__visuals membership-card__visuals--plain">
-              <MembershipBarcode value={member.number} />
+              {memberCode}
             </div>
           ) : null}
           {showNextRank ? <div className="membership-card__next-rank">{member.nextRankLabel}</div> : null}
@@ -120,7 +125,7 @@ export function MembershipCard({ cardConfig, member, brandName, logoText, custom
         {showName ? <h2 className="membership-card__name">{member.name}</h2> : null}
         {showBarcode ? (
           <div className="membership-card__visuals">
-            <MembershipBarcode value={member.number} />
+            {memberCode}
           </div>
         ) : null}
         <div className="membership-card__wallet-chips">
@@ -156,7 +161,7 @@ export function MembershipCard({ cardConfig, member, brandName, logoText, custom
         {showPoints ? <PointSummary points={member.points} /> : null}
         {showBarcode ? (
           <div className="membership-card__visuals">
-            <MembershipBarcode value={member.number} />
+            {memberCode}
           </div>
         ) : null}
       </div>
