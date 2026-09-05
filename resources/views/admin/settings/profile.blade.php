@@ -21,7 +21,11 @@
         $memberRegistrationMode = $view->settings['member_registration_mode'] ?? \App\Enums\MemberRegistrationMode::OPTIONAL;
         $modeOptions = $view->memberRegistrationModeOptions ?? \App\Enums\MemberRegistrationMode::getValues();
         $customFieldMax = \App\Domain\Settings\ShopSettingKeys::PROFILE_CUSTOM_FIELD_MAX;
+        $customFieldLabelMax = \App\Services\Smaregi\SmaregiCustomerCustomFieldLabelSyncService::LABEL_MAX;
         $inputTypeOptions = $view->customFieldInputTypeOptions ?? \App\Enums\ProfileCustomFieldInputType::getValues();
+        $inputTypeDescriptions = \App\Enums\ProfileCustomFieldInputType::descriptions();
+        $customFields = array_values($view->settings['custom_fields'] ?? []);
+        $customFieldCount = count($customFields);
     @endphp
     <div class="card mb-4">
         <div class="card-header">
@@ -41,42 +45,49 @@
 
     <div class="card mb-4">
         <div class="card-header">
-            <h2 class="card-title">スマレジ連携用項目</h2>
+            <h2 class="card-title">プロフィール項目</h2>
         </div>
         <div class="card-body">
+            <p class="profile-switch-legend">緑の<strong>オン</strong>＝使う、グレーの<strong>オフ</strong>＝使わない、です。「アプリに表示」をオンにすると会員のプロフィール画面に出ます。「入力必須」をオンにすると空欄のまま保存できません。</p>
             <table class="table">
                 <thead>
                     <tr>
                         <th>項目</th>
-                        <th>表示する</th>
-                        <th>必須</th>
+                        <th class="profile-switch-cell">アプリに表示</th>
+                        <th class="profile-switch-cell">入力必須</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($view->settings['smaregi_fields'] ?? [] as $key => $field)
                     @php
                         $isName = $key === 'name';
-                        $isLinked = \App\Domain\Settings\ShopSettingKeys::isSmaregiLinkedProfileField($key);
+                        $fieldLabel = $field['label'] ?? $key;
                     @endphp
                     <tr>
                         <td>
-                            {{ $field['label'] ?? $key }}
-                            @if($isLinked)
-                                <i class="fas fa-link text-muted" title="スマレジ会員情報と連携"></i>
+                            {{ $fieldLabel }}
+                            @if($isName)
+                                <div class="text-muted small">お名前は常に表示・必須です</div>
                             @endif
                         </td>
-                        <td>
+                        <td class="profile-switch-cell">
                             <input type="hidden" name="smaregi_fields[{{ $key }}][enabled]" value="{{ $isName ? '1' : '0' }}">
                             <label class="profile-switch profile-switch--small">
-                                <input type="checkbox" name="smaregi_fields[{{ $key }}][enabled]" value="1" {{ ($field['enabled'] ?? true) ? 'checked' : '' }} {{ $isName ? 'disabled' : '' }}>
-                                <span aria-hidden="true"></span>
+                                <input type="checkbox" name="smaregi_fields[{{ $key }}][enabled]" value="1" {{ ($field['enabled'] ?? true) ? 'checked' : '' }} {{ $isName ? 'disabled' : '' }} aria-label="{{ $fieldLabel }}をアプリに表示">
+                                <span class="profile-switch-ui" aria-hidden="true">
+                                    <span class="profile-switch-on">オン</span>
+                                    <span class="profile-switch-off">オフ</span>
+                                </span>
                             </label>
                         </td>
-                        <td>
+                        <td class="profile-switch-cell">
                             <input type="hidden" name="smaregi_fields[{{ $key }}][required]" value="{{ $isName ? '1' : '0' }}">
                             <label class="profile-switch profile-switch--small">
-                                <input type="checkbox" name="smaregi_fields[{{ $key }}][required]" value="1" {{ !empty($field['required']) ? 'checked' : '' }} {{ $isName ? 'disabled' : '' }}>
-                                <span aria-hidden="true"></span>
+                                <input type="checkbox" name="smaregi_fields[{{ $key }}][required]" value="1" {{ !empty($field['required']) ? 'checked' : '' }} {{ $isName ? 'disabled' : '' }} aria-label="{{ $fieldLabel }}を入力必須にする">
+                                <span class="profile-switch-ui" aria-hidden="true">
+                                    <span class="profile-switch-on">オン</span>
+                                    <span class="profile-switch-off">オフ</span>
+                                </span>
                             </label>
                         </td>
                     </tr>
@@ -89,58 +100,65 @@
     <div class="card mb-4">
         <div class="card-header card-header-with-action">
             <h2 class="card-title">任意の追加項目</h2>
-            <button type="button" class="btn btn-sm btn-outline-primary" id="addCustomField"><i class="fas fa-plus"></i> 項目を追加</button>
+            <div class="custom-field-header-actions">
+                <span id="customFieldCount" class="custom-field-count">{{ $customFieldCount }} / {{ $customFieldMax }} 件</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="addCustomField"><i class="fas fa-plus"></i> 項目を追加</button>
+            </div>
         </div>
         <div class="card-body">
-            <p class="text-muted small mb-3">保存するとスマレジの会員自由項目として登録・更新され、会員の入力値が連携されます（最大 {{ $customFieldMax }} 件）。</p>
+            <p class="text-muted small mb-3">会員プロフィールに、お店独自の質問を追加できます。最大 {{ $customFieldMax }} 件まで追加できます。</p>
+            <div id="customFieldsEmpty" class="empty-state custom-field-empty" @if($customFieldCount > 0) hidden @endif>
+                <i class="fas fa-list"></i>
+                <p>まだ追加項目はありません</p>
+                <p class="empty-state-hint">「項目を追加」から作成してください。例: 配信を受け取る店舗、興味のあるジャンル</p>
+            </div>
             <div id="customFieldsContainer" class="custom-field-list">
-                @foreach($view->settings['custom_fields'] ?? [] as $i => $cf)
+                @foreach($customFields as $i => $cf)
                 @php
                     $inputType = $cf['input_type'] ?? \App\Enums\ProfileCustomFieldInputType::TEXT;
                     $needsValues = \App\Enums\ProfileCustomFieldInputType::needsValues($inputType);
                     $values = array_values(array_filter(array_map('trim', $cf['values'] ?? []), static fn ($value) => $value !== ''));
+                    $isRequired = !empty($cf['required']);
                 @endphp
                 <div
-                    class="custom-field-row card mb-3"
+                    class="custom-field-row"
                     data-index="{{ $i }}"
                     data-key="{{ $cf['key'] ?? '' }}"
                     data-label="{{ $cf['label'] ?? '' }}"
                     data-input-type="{{ $inputType }}"
-                    data-required="{{ !empty($cf['required']) ? '1' : '0' }}"
+                    data-required="{{ $isRequired ? '1' : '0' }}"
                     data-smaregi-no="{{ $cf['smaregi_no'] ?? '' }}"
                     data-values="{{ e(json_encode($values, JSON_UNESCAPED_UNICODE)) }}"
                 >
-                    <div class="card-body">
-                        <input type="hidden" name="custom_fields[{{ $i }}][key]" value="{{ $cf['key'] ?? '' }}">
-                        <input type="hidden" name="custom_fields[{{ $i }}][label]" value="{{ $cf['label'] ?? '' }}">
-                        <input type="hidden" name="custom_fields[{{ $i }}][input_type]" value="{{ $inputType }}">
-                        <input type="hidden" name="custom_fields[{{ $i }}][required]" value="{{ !empty($cf['required']) ? '1' : '0' }}">
-                        <input type="hidden" name="custom_fields[{{ $i }}][description]" value="{{ $cf['description'] ?? '' }}">
-                        <input type="hidden" name="custom_fields[{{ $i }}][smaregi_no]" value="{{ $cf['smaregi_no'] ?? '' }}">
-                        <textarea name="custom_fields[{{ $i }}][values]" class="d-none" aria-hidden="true">{{ implode("\n", $values) }}</textarea>
-                        <div class="d-flex align-items-start justify-content-between gap-3">
-                            <div class="flex-grow-1">
-                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                    <strong class="custom-field-name">{{ $cf['label'] ?? ('項目'.($i + 1)) }}</strong>
-                                    <span class="badge badge-light">{{ $inputTypeOptions[$inputType] ?? $inputType }}</span>
-                                    <span class="badge {{ !empty($cf['required']) ? 'badge-danger' : 'badge-secondary' }}">{{ !empty($cf['required']) ? '必須' : '任意' }}</span>
-                                </div>
+                    <input type="hidden" name="custom_fields[{{ $i }}][key]" value="{{ $cf['key'] ?? '' }}">
+                    <input type="hidden" name="custom_fields[{{ $i }}][label]" value="{{ $cf['label'] ?? '' }}">
+                    <input type="hidden" name="custom_fields[{{ $i }}][input_type]" value="{{ $inputType }}">
+                    <input type="hidden" name="custom_fields[{{ $i }}][required]" value="{{ $isRequired ? '1' : '0' }}">
+                    <input type="hidden" name="custom_fields[{{ $i }}][description]" value="{{ $cf['description'] ?? '' }}">
+                    <input type="hidden" name="custom_fields[{{ $i }}][smaregi_no]" value="{{ $cf['smaregi_no'] ?? '' }}">
+                    <textarea name="custom_fields[{{ $i }}][values]" hidden aria-hidden="true">{{ implode("\n", $values) }}</textarea>
+                    <div class="custom-field-body">
+                        <div class="custom-field-main">
+                            <div class="custom-field-title">
+                                <strong class="custom-field-name">{{ $cf['label'] ?? ('項目'.($i + 1)) }}</strong>
+                                <span class="custom-field-chip {{ $isRequired ? 'is-required' : 'is-optional' }}">{{ $isRequired ? '必須' : '任意' }}</span>
+                                <span class="custom-field-chip custom-field-type">{{ $inputTypeOptions[$inputType] ?? $inputType }}</span>
+                            </div>
+                            @if($needsValues)
                                 <div class="custom-field-values">
-                                    @if($needsValues && !empty($values))
+                                    @if($values !== [])
                                         @foreach($values as $value)
-                                            <span class="badge badge-light">{{ $value }}</span>
+                                            <span class="custom-field-option">{{ $value }}</span>
                                         @endforeach
-                                    @elseif($needsValues)
-                                        <span class="text-muted small">選択肢が未設定です</span>
                                     @else
-                                        <span class="text-muted small">テキスト入力</span>
+                                        <span class="custom-field-values-empty">選択肢がまだありません</span>
                                     @endif
                                 </div>
-                            </div>
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-secondary edit-custom-field"><i class="fas fa-pen"></i> 編集</button>
-                                <button type="button" class="btn btn-outline-danger remove-custom-field"><i class="fas fa-times"></i> 削除</button>
-                            </div>
+                            @endif
+                        </div>
+                        <div class="custom-field-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary edit-custom-field">編集</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-custom-field">削除</button>
                         </div>
                     </div>
                 </div>
@@ -158,44 +176,152 @@
             </div>
             <div class="custom-field-modal__body">
                 <div class="form-group mb-3">
-                    <label class="form-label">項目名</label>
-                    <input type="text" class="form-control" id="customFieldModalLabel" maxlength="100" placeholder="例: 配信を受け取る店舗">
-                    <small class="text-muted">プロフィール画面に表示される名前です。</small>
+                    <label class="form-label" for="customFieldModalLabel">項目名</label>
+                    <input type="text" class="form-control" id="customFieldModalLabel" maxlength="{{ $customFieldLabelMax }}" placeholder="例: 配信を受け取る店舗">
+                    <small class="text-muted">プロフィール画面に表示される名前です（{{ $customFieldLabelMax }}文字まで）。</small>
                 </div>
                 <div class="form-group mb-3">
-                    <label class="form-label">入力タイプ</label>
+                    <label class="form-label" for="customFieldModalInputType">入力タイプ</label>
                     <select class="form-control" id="customFieldModalInputType">
                         @foreach($inputTypeOptions as $typeValue => $typeLabel)
                             <option value="{{ $typeValue }}">{{ $typeLabel }}</option>
                         @endforeach
                     </select>
+                    <small class="text-muted d-block mt-1" id="customFieldModalInputTypeHint"></small>
                 </div>
                 <div class="form-group mb-3">
                     <label class="profile-switch profile-switch--required" for="customFieldModalRequired">
                         <input type="checkbox" id="customFieldModalRequired" value="1">
-                        <span aria-hidden="true"></span>
-                        <span class="profile-switch-label">必須にする</span>
+                        <span class="profile-switch-ui" aria-hidden="true">
+                            <span class="profile-switch-on">オン</span>
+                            <span class="profile-switch-off">オフ</span>
+                        </span>
+                        <span class="profile-switch-label">入力必須にする</span>
                     </label>
+                    <small class="text-muted d-block mt-1">オンにすると、会員はこの項目を空欄のまま保存できません。</small>
                 </div>
                 <div class="form-group mb-0" id="customFieldModalValuesWrap">
                     <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                         <label class="form-label mb-0">選択肢</label>
                     </div>
+                    <p class="text-muted small mb-2">会員が選ぶ候補です。1件ずつ追加してください。</p>
                     <div id="customFieldModalOptions" class="custom-field-option-list"></div>
                     <div class="mt-3">
                         <button type="button" class="btn btn-outline-primary btn-block" id="addCustomFieldOption"><i class="fas fa-plus"></i> 選択肢を追加</button>
                     </div>
-                    <small class="text-muted d-block mt-2">選択肢は1件ずつ追加してください。Enterでも次の行を追加できます。</small>
+                    <small class="text-muted d-block mt-2">Enterでも次の行を追加できます。</small>
                 </div>
             </div>
             <div class="custom-field-modal__footer">
                 <button type="button" class="btn btn-secondary" data-action="close-modal">キャンセル</button>
-                <button type="button" class="btn btn-primary" id="saveCustomFieldModal"><i class="fas fa-check"></i> 保存</button>
+                <button type="button" class="btn btn-primary" id="saveCustomFieldModal"><i class="fas fa-check"></i> この内容で追加</button>
             </div>
         </div>
     </div>
 
     <style>
+        .profile-switch-legend {
+            margin: 0 0 16px;
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.6;
+        }
+        .profile-switch-cell {
+            width: 132px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .custom-field-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .custom-field-count {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            white-space: nowrap;
+        }
+        .custom-field-empty {
+            padding: 32px 16px;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            background: var(--bg-secondary);
+        }
+        .custom-field-empty[hidden] {
+            display: none !important;
+        }
+        .custom-field-list {
+            display: grid;
+            gap: 8px;
+        }
+        .custom-field-row {
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-primary);
+        }
+        .custom-field-body {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .custom-field-main {
+            min-width: 0;
+            flex: 1;
+        }
+        .custom-field-title {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .custom-field-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .custom-field-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+        .custom-field-chip.is-required {
+            background: var(--danger-bg);
+            color: var(--danger-hover);
+        }
+        .custom-field-values {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .custom-field-option {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .custom-field-values-empty {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+        .custom-field-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
         .custom-field-modal {
             position: fixed;
             inset: 0;
@@ -238,8 +364,8 @@
         .custom-field-modal__body {
             padding: 20px;
         }
-        .custom-field-list .custom-field-row:last-child {
-            margin-bottom: 0 !important;
+        .custom-field-row textarea {
+            display: none !important;
         }
         .custom-field-option-list {
             display: grid;
@@ -277,18 +403,18 @@
             opacity: 0;
             pointer-events: none;
         }
-        .profile-switch span:first-of-type {
+        .profile-switch-ui {
             display: inline-flex;
             position: relative;
-            width: 48px;
+            width: 68px;
             height: 28px;
             border-radius: 999px;
-            background: #cbd5e1;
-            border: 1px solid #cbd5e1;
+            background: #64748b;
+            border: 1px solid #64748b;
             transition: background-color .15s ease, border-color .15s ease;
             flex-shrink: 0;
         }
-        .profile-switch span:first-of-type::after {
+        .profile-switch-ui::after {
             content: "";
             position: absolute;
             top: 3px;
@@ -297,34 +423,60 @@
             height: 20px;
             border-radius: 50%;
             background: #fff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
             transition: transform .15s ease;
         }
-        .profile-switch:hover span:first-of-type {
-            border-color: #94a3b8;
+        .profile-switch-on,
+        .profile-switch-off {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            pointer-events: none;
         }
-        .profile-switch input:checked + span:first-of-type {
+        .profile-switch-off {
+            right: 8px;
+            color: #fff;
+        }
+        .profile-switch-on {
+            display: none;
+            left: 8px;
+            color: #fff;
+        }
+        .profile-switch:hover .profile-switch-ui {
+            border-color: #475569;
+        }
+        .profile-switch input:checked + .profile-switch-ui {
             background: #16a34a;
             border-color: #16a34a;
         }
-        .profile-switch input:checked + span:first-of-type::after {
-            transform: translateX(20px);
+        .profile-switch input:checked + .profile-switch-ui::after {
+            transform: translateX(40px);
         }
-        .profile-switch input:disabled + span:first-of-type {
+        .profile-switch input:checked + .profile-switch-ui .profile-switch-on {
+            display: block;
+        }
+        .profile-switch input:checked + .profile-switch-ui .profile-switch-off {
+            display: none;
+        }
+        .profile-switch input:disabled + .profile-switch-ui {
             opacity: .55;
             cursor: not-allowed;
         }
-        .profile-switch--small span:first-of-type {
-            width: 44px;
+        .profile-switch--small .profile-switch-ui {
+            width: 64px;
             height: 26px;
         }
-        .profile-switch--small span:first-of-type::after {
+        .profile-switch--small .profile-switch-ui::after {
             width: 18px;
             height: 18px;
             top: 3px;
             left: 3px;
         }
-        .profile-switch--small input:checked + span:first-of-type::after {
-            transform: translateX(18px);
+        .profile-switch--small input:checked + .profile-switch-ui::after {
+            transform: translateX(38px);
         }
         .profile-switch--required {
             min-width: 44px;
@@ -354,11 +506,14 @@
 <script>
 (function() {
     var container = document.getElementById('customFieldsContainer');
+    var emptyEl = document.getElementById('customFieldsEmpty');
+    var countEl = document.getElementById('customFieldCount');
     var addBtn = document.getElementById('addCustomField');
     var modal = document.getElementById('customFieldModal');
     var modalTitle = document.getElementById('customFieldModalTitle');
     var modalLabel = document.getElementById('customFieldModalLabel');
     var modalInputType = document.getElementById('customFieldModalInputType');
+    var modalInputTypeHint = document.getElementById('customFieldModalInputTypeHint');
     var modalRequired = document.getElementById('customFieldModalRequired');
     var modalValuesWrap = document.getElementById('customFieldModalValuesWrap');
     var modalOptions = document.getElementById('customFieldModalOptions');
@@ -366,6 +521,7 @@
     var saveBtn = document.getElementById('saveCustomFieldModal');
     var maxFields = {{ (int) $customFieldMax }};
     var inputTypeOptions = @json($inputTypeOptions);
+    var inputTypeDescriptions = @json($inputTypeDescriptions);
     var needsValuesTypes = @json($needsValuesTypes);
     var valuesMax = {{ (int) $valuesMax }};
     var editingRow = null;
@@ -381,11 +537,26 @@
         return String(value || '').toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
     }
 
+    function fieldCount() {
+        return container ? container.querySelectorAll('.custom-field-row').length : 0;
+    }
+
     function syncAddButton() {
         if (!addBtn || !container) return;
-        var count = container.querySelectorAll('.custom-field-row').length;
+        var count = fieldCount();
         addBtn.disabled = count >= maxFields;
         addBtn.title = count >= maxFields ? ('追加項目は' + maxFields + '個までです') : '';
+        if (countEl) {
+            countEl.textContent = count + ' / ' + maxFields + ' 件';
+        }
+        if (emptyEl) {
+            emptyEl.hidden = count > 0;
+        }
+    }
+
+    function syncInputTypeHint() {
+        if (!modalInputType || !modalInputTypeHint) return;
+        modalInputTypeHint.textContent = inputTypeDescriptions[modalInputType.value] || '';
     }
 
     function syncValuesVisibility() {
@@ -397,6 +568,7 @@
         } else if (modalOptions.querySelectorAll('.custom-field-option-row').length === 0) {
             appendOptionRow('');
         }
+        syncInputTypeHint();
     }
 
     function getOptionRowCount() {
@@ -460,6 +632,11 @@
         if (modalTitle) {
             modalTitle.textContent = editingRow ? '追加項目を編集' : '追加項目を追加';
         }
+        if (saveBtn) {
+            saveBtn.innerHTML = editingRow
+                ? '<i class="fas fa-check"></i> この内容で更新'
+                : '<i class="fas fa-check"></i> この内容で追加';
+        }
         if (editingRow) {
             modalLabel.value = editingRow.dataset.label || '';
             modalInputType.value = editingRow.dataset.inputType || 'text';
@@ -492,48 +669,47 @@
 
     function buildValues(values) {
         return values.map(function(value) {
-            return '<span class="badge badge-light">' + escapeHtml(value) + '</span>';
+            return '<span class="custom-field-option">' + escapeHtml(value) + '</span>';
         }).join('');
+    }
+
+    function valuesHtml(inputType, values) {
+        if (needsValuesTypes.indexOf(inputType) === -1) {
+            return '';
+        }
+        var inner = values.length > 0
+            ? buildValues(values)
+            : '<span class="custom-field-values-empty">選択肢がまだありません</span>';
+        return '<div class="custom-field-values">' + inner + '</div>';
     }
 
     function buildRow(index, data) {
         var inputTypeLabel = inputTypeOptions[data.input_type] || data.input_type || 'text';
         var values = Array.isArray(data.values) ? data.values : [];
         var valueText = values.join('\n');
-        var valueChips = '';
-        if (needsValuesTypes.indexOf(data.input_type) !== -1) {
-            valueChips = values.length > 0 ? buildValues(values) : '<span class="text-muted small">選択肢が未設定です</span>';
-        } else {
-            valueChips = '<span class="text-muted small">テキスト入力</span>';
-        }
+        var requiredLabel = data.required ? '必須' : '任意';
+        var requiredClass = data.required ? 'is-required' : 'is-optional';
         return '' +
-            '<div class="custom-field-row card mb-3" data-index="' + index + '" data-key="' + escapeHtml(data.key) + '" data-label="' + escapeHtml(data.label) + '" data-input-type="' + escapeHtml(data.input_type) + '" data-required="' + (data.required ? '1' : '0') + '" data-smaregi-no="' + escapeHtml(data.smaregi_no) + '" data-description="' + escapeHtml(data.description) + '" data-values=\'' + escapeHtml(JSON.stringify(values)) + '\'>' +
-                '<div class="card-body">' +
-                    '<input type="hidden" name="custom_fields[' + index + '][key]" value="' + escapeHtml(data.key) + '">' +
-                    '<input type="hidden" name="custom_fields[' + index + '][label]" value="' + escapeHtml(data.label) + '">' +
-                    '<input type="hidden" name="custom_fields[' + index + '][input_type]" value="' + escapeHtml(data.input_type) + '">' +
-                    '<input type="hidden" name="custom_fields[' + index + '][required]" value="' + (data.required ? '1' : '0') + '">' +
-                    '<input type="hidden" name="custom_fields[' + index + '][description]" value="' + escapeHtml(data.description) + '">' +
-                    '<input type="hidden" name="custom_fields[' + index + '][smaregi_no]" value="' + escapeHtml(data.smaregi_no) + '">' +
-                    '<textarea name="custom_fields[' + index + '][values]" class="d-none" aria-hidden="true">' + escapeHtml(valueText) + '</textarea>' +
-                    '<div class="d-flex align-items-start justify-content-between gap-3">' +
-                        '<div class="flex-grow-1">' +
-                            '<div class="d-flex flex-wrap align-items-center gap-2 mb-2">' +
-                                '<strong class="custom-field-name">' + escapeHtml(data.label) + '</strong>' +
-                                '<span class="badge badge-light">' + escapeHtml(inputTypeLabel) + '</span>' +
-                            '</div>' +
-                            '<div class="custom-field-values">' + valueChips + '</div>' +
+            '<div class="custom-field-row" data-index="' + index + '" data-key="' + escapeHtml(data.key) + '" data-label="' + escapeHtml(data.label) + '" data-input-type="' + escapeHtml(data.input_type) + '" data-required="' + (data.required ? '1' : '0') + '" data-smaregi-no="' + escapeHtml(data.smaregi_no) + '" data-description="' + escapeHtml(data.description) + '" data-values=\'' + escapeHtml(JSON.stringify(values)) + '\'>' +
+                '<input type="hidden" name="custom_fields[' + index + '][key]" value="' + escapeHtml(data.key) + '">' +
+                '<input type="hidden" name="custom_fields[' + index + '][label]" value="' + escapeHtml(data.label) + '">' +
+                '<input type="hidden" name="custom_fields[' + index + '][input_type]" value="' + escapeHtml(data.input_type) + '">' +
+                '<input type="hidden" name="custom_fields[' + index + '][required]" value="' + (data.required ? '1' : '0') + '">' +
+                '<input type="hidden" name="custom_fields[' + index + '][description]" value="' + escapeHtml(data.description) + '">' +
+                '<input type="hidden" name="custom_fields[' + index + '][smaregi_no]" value="' + escapeHtml(data.smaregi_no) + '">' +
+                '<textarea name="custom_fields[' + index + '][values]" hidden aria-hidden="true">' + escapeHtml(valueText) + '</textarea>' +
+                '<div class="custom-field-body">' +
+                    '<div class="custom-field-main">' +
+                        '<div class="custom-field-title">' +
+                            '<strong class="custom-field-name">' + escapeHtml(data.label) + '</strong>' +
+                            '<span class="custom-field-chip ' + requiredClass + '">' + requiredLabel + '</span>' +
+                            '<span class="custom-field-chip custom-field-type">' + escapeHtml(inputTypeLabel) + '</span>' +
                         '</div>' +
-                        '<div class="d-flex align-items-center gap-2">' +
-                            '<label class="profile-switch profile-switch--small">' +
-                                '<input type="checkbox" class="required-toggle" data-required-toggle' + (data.required ? ' checked' : '') + '>' +
-                                '<span aria-hidden="true"></span>' +
-                            '</label>' +
-                            '<div class="btn-group btn-group-sm">' +
-                                '<button type="button" class="btn btn-outline-secondary edit-custom-field"><i class="fas fa-pen"></i> 編集</button>' +
-                                '<button type="button" class="btn btn-outline-danger remove-custom-field"><i class="fas fa-times"></i> 削除</button>' +
-                            '</div>' +
-                        '</div>' +
+                        valuesHtml(data.input_type, values) +
+                    '</div>' +
+                    '<div class="custom-field-actions">' +
+                        '<button type="button" class="btn btn-sm btn-outline-secondary edit-custom-field">編集</button>' +
+                        '<button type="button" class="btn btn-sm btn-outline-danger remove-custom-field">削除</button>' +
                     '</div>' +
                 '</div>' +
             '</div>';
@@ -569,45 +745,13 @@
             return;
         }
         var data = collectRowData();
+        var wrap = document.createElement('div');
         if (editingRow) {
-            editingRow.dataset.key = data.key;
-            editingRow.dataset.label = data.label;
-            editingRow.dataset.inputType = data.input_type;
-            editingRow.dataset.required = data.required ? '1' : '0';
-            editingRow.dataset.description = data.description;
-            editingRow.dataset.smaregiNo = data.smaregi_no;
-            editingRow.dataset.values = JSON.stringify(data.values);
-            var hiddenKey = editingRow.querySelector('input[name$="[key]"]');
-            var hiddenLabel = editingRow.querySelector('input[name$="[label]"]');
-            var hiddenInputType = editingRow.querySelector('input[name$="[input_type]"]');
-            var hiddenRequired = editingRow.querySelector('input[name$="[required]"]');
-            var hiddenDescription = editingRow.querySelector('input[name$="[description]"]');
-            var hiddenSmaregiNo = editingRow.querySelector('input[name$="[smaregi_no]"]');
-            var hiddenValues = editingRow.querySelector('textarea[name$="[values]"]');
-            if (hiddenKey) hiddenKey.value = data.key;
-            if (hiddenLabel) hiddenLabel.value = data.label;
-            if (hiddenInputType) hiddenInputType.value = data.input_type;
-            if (hiddenRequired) hiddenRequired.value = data.required ? '1' : '0';
-            if (hiddenDescription) hiddenDescription.value = data.description;
-            if (hiddenSmaregiNo) hiddenSmaregiNo.value = data.smaregi_no;
-            if (hiddenValues) hiddenValues.value = data.values.join('\n');
-            var nameEl = editingRow.querySelector('.custom-field-name');
-            var valuesEl = editingRow.querySelector('.custom-field-values');
-            var requiredToggle = editingRow.querySelector('.required-toggle');
-            if (nameEl) nameEl.textContent = data.label;
-            if (valuesEl) {
-                valuesEl.innerHTML = needsValuesTypes.indexOf(data.input_type) !== -1
-                    ? (data.values.length > 0 ? buildValues(data.values) : '<span class="text-muted small">選択肢が未設定です</span>')
-                    : '<span class="text-muted small">テキスト入力</span>';
-            }
-            if (requiredToggle instanceof HTMLInputElement) {
-                requiredToggle.checked = data.required;
-            }
+            wrap.innerHTML = buildRow(Number(editingRow.getAttribute('data-index') || '0'), data);
+            editingRow.replaceWith(wrap.firstElementChild);
         } else {
-            var nextIndexCandidate = nextIndex;
-            var row = document.createElement('div');
-            row.innerHTML = buildRow(nextIndexCandidate, data);
-            container.appendChild(row.firstElementChild);
+            wrap.innerHTML = buildRow(nextIndex, data);
+            container.appendChild(wrap.firstElementChild);
             nextIndex += 1;
         }
         syncAddButton();
@@ -625,7 +769,7 @@
 
     if (addBtn) {
         addBtn.addEventListener('click', function() {
-            if (container && container.querySelectorAll('.custom-field-row').length >= maxFields) {
+            if (container && fieldCount() >= maxFields) {
                 syncAddButton();
                 return;
             }
@@ -650,25 +794,6 @@
             }
             if (target.closest('.edit-custom-field')) {
                 openModal(row);
-            }
-        });
-        container.addEventListener('change', function(event) {
-            var target = event.target;
-            if (!(target instanceof HTMLElement)) {
-                return;
-            }
-            if (!target.closest('.required-toggle')) {
-                return;
-            }
-            var row = target.closest('.custom-field-row');
-            if (!(row instanceof HTMLElement)) {
-                return;
-            }
-            var requiredToggle = row.querySelector('.required-toggle');
-            var hiddenRequired = row.querySelector('input[name$="[required]"]');
-            if (requiredToggle instanceof HTMLInputElement && hiddenRequired instanceof HTMLInputElement) {
-                hiddenRequired.value = requiredToggle.checked ? '1' : '0';
-                row.dataset.required = requiredToggle.checked ? '1' : '0';
             }
         });
     }

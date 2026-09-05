@@ -1,4 +1,4 @@
-import { CalendarDays, Coins, Coffee, Heart, Image as ImageIcon, MapPinned, Stamp, Ticket, ShoppingBag } from "lucide-react";
+import { CalendarDays, Coins, Coffee, Heart, Image as ImageIcon, MapPinned, QrCode, Stamp, Ticket, ShoppingBag } from "lucide-react";
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import type { QuickAction } from "../../types/app";
@@ -12,6 +12,7 @@ const actionIconMap = {
   heart: Heart,
   calendar: CalendarDays,
   image: ImageIcon,
+  qr: QrCode,
 } as const;
 
 interface QuickActionsProps {

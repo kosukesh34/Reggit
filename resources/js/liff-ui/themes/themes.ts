@@ -191,6 +191,25 @@ export const operationsCounterTheme: ThemeConfig = {
   appearance: { cardStyle: "border", buttonStyle: "solid", iconStyle: "filled", density: "compact" },
 };
 
+export const memberCrmTheme: ThemeConfig = {
+  id: "member-crm",
+  name: "Member CRM",
+  colors: {
+    primary: "#3e2723",
+    secondary: "#756354",
+    accent: "#c9a227",
+    background: "#f7f3ec",
+    surface: "#fffcf7",
+    elevated: "#ffffff",
+    textPrimary: "#2c231d",
+    textSecondary: "#776b61",
+    border: "#e8dfd2",
+  },
+  radius: { button: 12, card: 16, image: 12 },
+  typography: { headingWeight: 700, bodyWeight: 500 },
+  appearance: { cardStyle: "shadow", buttonStyle: "solid", iconStyle: "outline", density: "normal" },
+};
+
 export const operationsBookingTheme: ThemeConfig = {
   id: "operations-booking",
   name: "Appointment Operations",
@@ -222,6 +241,7 @@ export const allThemes = [
   simpleRewardsTheme,
   operationsCounterTheme,
   operationsBookingTheme,
+  memberCrmTheme,
   ...industryGalleryThemes,
 ] satisfies ThemeConfig[];
 

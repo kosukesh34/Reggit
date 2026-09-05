@@ -400,6 +400,9 @@ export class MemberManager {
         if (typeof window === 'undefined' || !window.__IS_LIFF__) {
             return false;
         }
+        if (shouldAutoCreateMember()) {
+            return false;
+        }
         return !this._getLineUserIdForMemberApi();
     }
 
@@ -605,10 +608,10 @@ export class MemberManager {
     canAutoRegister() {
         if (typeof window === 'undefined') return false;
         if (this.memberData && this.memberData.is_member === true) return false;
-        if (!this._getLineUserIdForMemberApi()) return false;
         if (shouldAutoCreateMember()) {
             return true;
         }
+        if (!this._getLineUserIdForMemberApi()) return false;
         if (!this._lastMemberFetchWasNonMember) return false;
         return !!(window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName);
     }

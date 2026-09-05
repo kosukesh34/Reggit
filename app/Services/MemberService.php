@@ -19,7 +19,6 @@ use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
-use App\Support\MemberChannel;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\Cache;
@@ -110,10 +109,6 @@ class MemberService
         if ($user->member !== null) {
             return;
         }
-        $lineUserId = is_string($user->line_user_id) ? trim($user->line_user_id) : '';
-        if ($lineUserId === '' || ! MemberChannel::isValidLineUserId($lineUserId)) {
-            return;
-        }
         $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
         if (! MemberRegistrationMode::shouldAutoCreateMember(
             $this->shopSettingRepository->getMemberRegistrationMode($projectId)
@@ -126,7 +121,7 @@ class MemberService
             $payload['line_name'] = $lineName;
         }
         try {
-            $this->registerMember($user, $payload);
+            $this->registerMember($user, $payload, false);
         } catch (\Exception $e) {
             if ($e->getMessage() !== '既に会員登録済みです') {
                 LogHelper::warning('[Member] auto create on login failed', [
@@ -451,9 +446,12 @@ class MemberService
         return $out;
     }
 
-    public function registerMember(User $user, array $data): Member
+    /**
+     * @param  array<string, string|int|float|bool|null>  $data
+     */
+    public function registerMember(User $user, array $data, bool $requireSmaregi = true): Member
     {
-        return DB::transaction(function () use ($user, $data): Member {
+        return DB::transaction(function () use ($user, $data, $requireSmaregi): Member {
             User::query()->whereKey($user->id)->lockForUpdate()->first();
 
             if (Member::query()->where('user_id', $user->id)->exists()) {
@@ -502,12 +500,14 @@ class MemberService
                         'member_number' => $memberNumber,
                         'detail' => $this->smaregiApi->getLastErrorDetail(),
                     ]);
-
-                    throw new \RuntimeException(
-                        'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
-                    );
+                    if ($requireSmaregi) {
+                        throw new \RuntimeException(
+                            'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
+                        );
+                    }
+                } else {
+                    $smaregiCustomerId = (string) $result['customerId'];
                 }
-                $smaregiCustomerId = (string) $result['customerId'];
             }
 
             $member = Member::create([

@@ -1,7 +1,9 @@
 import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useState } from "react";
-import { Info, Maximize2 } from "lucide-react";
+import { Crown, Info, Maximize2 } from "lucide-react";
 import { useAppConfig } from "../context/AppConfigContext";
 import { MembershipCard } from "../components/membership/MembershipCard";
+import { MembershipQr } from "../components/membership/MembershipQr";
+import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { BarcodeEnlargeView } from "../components/membership/BarcodeEnlargeView";
 import { CenterPopup } from "../components/ui/CenterPopup";
 import { Card } from "../components/ui/Card";
@@ -10,9 +12,11 @@ import { GuestInviteCard } from "../components/membership/GuestInviteCard";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { Skeleton } from "../components/ui/Skeleton";
 import { formatDisplayDate } from "../utils/date";
+import { resolveHomeLayout } from "../config/customization";
 import {
   getMemberManager,
   openProfileEdit,
+  resolveCardDesign,
   shouldShowAppleWallet,
   shouldShowGoogleWallet,
   startLineLogin,
@@ -20,7 +24,7 @@ import {
   type MemberPayload,
 } from "../../frontend/features/member/api";
 import { MemberRegisterHost } from "../../frontend/features/member/MemberRegisterHost";
-import { getMemberRegistrationMode } from "../../frontend/utils/membershipPolicy";
+import { getMemberRegistrationMode, shouldAutoCreateMember } from "../../frontend/utils/membershipPolicy";
 import type { MemberProfile } from "../types/app";
 import { isDemoDataMode } from "../../frontend/demo/demoMode";
 import type { DataMode } from "../types/runtime";
@@ -219,12 +223,24 @@ function LiveMembershipPage(): JSX.Element {
     () => toMemberProfile(managerPayload, runtimeMember),
     [managerPayload, runtimeMember],
   );
+  const memberCodeType = resolveCardDesign(managerPayload ?? {}, null).codeType === "qrcode" ? "qrcode" : "barcode";
 
   if (booting) {
     return <MembershipPageSkeleton />;
   }
 
   if (!member.isMember && mode === "live") {
+    if (shouldAutoCreateMember()) {
+      return (
+        <div className="page membership-page stack stack--lg">
+          <Card padding="lg" className="feature-success">
+            <h1>会員証を発行できませんでした</h1>
+            <p>通信状況を確認して、もう一度お試しください。</p>
+            <Button variant="solid" onClick={() => window.location.reload()}>再読み込みする</Button>
+          </Card>
+        </div>
+      );
+    }
     const hasIdentity = Boolean(window.__LINE_USER_ID__);
     return (
       <div
@@ -250,23 +266,25 @@ function LiveMembershipPage(): JSX.Element {
     );
   }
 
-  return <MembershipMemberBody member={member} allowProfileEdit />;
+  return <MembershipMemberBody member={member} allowProfileEdit codeType={memberCodeType} />;
 }
 
 function MembershipMemberBody({
   member,
   allowProfileEdit,
+  codeType = "barcode",
 }: {
   member: MemberProfile;
   allowProfileEdit: boolean;
+  codeType?: "barcode" | "qrcode";
 }) {
   const { activeStore, customization } = useAppConfig();
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const m = customization.membership;
   const barcodeValue = member.number !== "" && member.number !== "未発行" ? member.number : "";
-  const showBarcodeEnlarge = m.showBarcodeEnlarge && m.showBarcode && barcodeValue !== "";
+  const showCodeEnlarge = m.showBarcodeEnlarge && m.showBarcode && barcodeValue !== "";
   const showProfileEdit = allowProfileEdit && m.showProfileEdit && member.isMember;
-  const showActions = showBarcodeEnlarge || showProfileEdit;
+  const showActions = showCodeEnlarge || showProfileEdit;
   const showDetailNumber = m.showMemberNumber;
   const hasDetailRows =
     showDetailNumber
@@ -274,6 +292,78 @@ function MembershipMemberBody({
     || m.showPoints
     || m.showRank
     || (m.showNextRank && member.nextRankLabel !== "");
+  const isCrm = resolveHomeLayout(customization.home.layout) === "crm";
+
+  if (isCrm) {
+    return (
+      <div className="page membership-page membership-page--crm stack stack--lg" id="memberSection" data-react-owned="1">
+        <article className="membership-crm-sheet">
+          <div className="membership-crm-pass">
+            {m.showRank ? (
+              <div className="membership-summary__rank">
+                <Crown size={18} aria-hidden="true" />
+                <h1>{member.rank || "MEMBER"}</h1>
+              </div>
+            ) : null}
+            <p>{activeStore.brandName}</p>
+          </div>
+          {barcodeValue !== "" && (m.showBarcode || m.showMemberNumber) ? (
+            <div className="membership-crm-codes">
+              {m.showMemberNumber ? <p className="membership-crm-number">NO. {member.number}</p> : null}
+              {m.showBarcode ? (
+                <div className={codeType === "qrcode" ? "membership-crm-qr" : "membership-summary__barcode"}>
+                  {codeType === "qrcode"
+                    ? <MembershipQr value={barcodeValue} />
+                    : <MembershipBarcode value={barcodeValue} />}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </article>
+        {m.showDetailSection && hasDetailRows ? (
+          <Card padding="lg">
+            <dl className="membership-crm-stats">
+              {m.showRank ? (
+                <div>
+                  <dt>現在のランク</dt>
+                  <dd>{member.rank}</dd>
+                </div>
+              ) : null}
+              {m.showPoints ? (
+                <div>
+                  <dt>保有ポイント</dt>
+                  <dd>{Number(member.points || 0).toLocaleString()} pt</dd>
+                </div>
+              ) : null}
+              {m.showExpiry ? (
+                <div>
+                  <dt>有効期限</dt>
+                  <dd>{formatDisplayDate(member.expiration, "yyyy.MM.dd")}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </Card>
+        ) : null}
+        {showActions ? (
+          <div className="actions-row">
+            {showCodeEnlarge ? (
+              <Button variant="outline" onClick={() => setBarcodeOpen(true)}>
+                <Maximize2 size={16} /> {codeType === "qrcode" ? "QRコード" : "バーコード"}を拡大
+              </Button>
+            ) : null}
+            {showProfileEdit ? (
+              <Button variant="ghost" onClick={() => openProfileEdit()}>プロフィール編集</Button>
+            ) : null}
+          </div>
+        ) : null}
+        {showCodeEnlarge ? (
+          <CenterPopup open={barcodeOpen} onClose={() => setBarcodeOpen(false)} title={codeType === "qrcode" ? "会員QRコード" : "会員バーコード"}>
+            {codeType === "qrcode" ? <MembershipQr value={barcodeValue} /> : <BarcodeEnlargeView value={barcodeValue} />}
+          </CenterPopup>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="page membership-page stack stack--lg">
@@ -285,6 +375,7 @@ function MembershipMemberBody({
           logoText={activeStore.logoText}
           customization={m}
           designPreset={customization.designPreset}
+          codeType={codeType}
         />
       </div>
 
@@ -330,9 +421,9 @@ function MembershipMemberBody({
           </div>
           {showActions ? (
             <div className="actions-row">
-              {showBarcodeEnlarge ? (
+              {showCodeEnlarge ? (
                 <Button variant="solid" onClick={() => setBarcodeOpen(true)}>
-                  <Maximize2 size={17} /> バーコードを拡大
+                  <Maximize2 size={17} /> {codeType === "qrcode" ? "QRコード" : "バーコード"}を拡大
                 </Button>
               ) : null}
               {showProfileEdit ? (
@@ -343,9 +434,9 @@ function MembershipMemberBody({
         </Card>
       ) : showActions ? (
         <div className="actions-row">
-          {showBarcodeEnlarge ? (
+          {showCodeEnlarge ? (
             <Button variant="solid" onClick={() => setBarcodeOpen(true)}>
-              <Maximize2 size={17} /> バーコードを拡大
+              <Maximize2 size={17} /> {codeType === "qrcode" ? "QRコード" : "バーコード"}を拡大
             </Button>
           ) : null}
           {showProfileEdit ? (
@@ -355,11 +446,11 @@ function MembershipMemberBody({
       ) : null}
 
       {m.showUsageNote && m.showBarcode ? (
-        <p className="page-note"><Info size={15} /> お会計時に会員証のバーコードをご提示ください。</p>
+        <p className="page-note"><Info size={15} /> お会計時に会員証の{codeType === "qrcode" ? "QRコード" : "バーコード"}をご提示ください。</p>
       ) : null}
 
-      <CenterPopup open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title="会員バーコード" className="barcode-popup">
-        <BarcodeEnlargeView value={barcodeValue} />
+      <CenterPopup open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title={codeType === "qrcode" ? "会員QRコード" : "会員バーコード"} className="barcode-popup">
+        {codeType === "qrcode" ? <MembershipQr value={barcodeValue} /> : <BarcodeEnlargeView value={barcodeValue} />}
       </CenterPopup>
     </div>
   );

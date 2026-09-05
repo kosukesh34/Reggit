@@ -82,7 +82,7 @@ class UpdateProfileSettingsUseCase
                 $custom[] = [
                     'key' => $key,
                     'label' => (string) ($row['label'] ?? '項目'.($i + 1)),
-                    'required' => (bool) ($row['required'] ?? false),
+                    'required' => in_array($row['required'] ?? false, [1, '1', true], true),
                     'input_type' => $inputType,
                     'values' => $values,
                     'description' => trim((string) ($row['description'] ?? '')),

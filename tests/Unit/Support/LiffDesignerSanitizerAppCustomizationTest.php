@@ -57,6 +57,26 @@ class LiffDesignerSanitizerAppCustomizationTest extends TestCase
         $this->assertSame('gallery-retail', $result['_global']['app_customization']['themeId']);
     }
 
+    public function test_crmレイアウトのapp_customizationが保持されること(): void
+    {
+        $result = LiffDesignerSanitizer::sanitizeTabSettings([
+            '_global' => [
+                'app_customization' => [
+                    'designPreset' => 'luxury',
+                    'appTemplateId' => 'store_member_crm',
+                    'themeId' => 'member-crm',
+                    'home' => ['layout' => 'crm', 'showGallery' => true],
+                ],
+            ],
+        ]);
+
+        $this->assertSame('luxury', $result['_global']['app_customization']['designPreset']);
+        $this->assertSame('store_member_crm', $result['_global']['app_customization']['appTemplateId']);
+        $this->assertSame('member-crm', $result['_global']['app_customization']['themeId']);
+        $this->assertSame('crm', $result['_global']['app_customization']['home']['layout']);
+        $this->assertTrue($result['_global']['app_customization']['home']['showGallery']);
+    }
+
     public function test_不正なapp_customizationは捨てられること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeTabSettings([

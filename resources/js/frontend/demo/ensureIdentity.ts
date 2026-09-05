@@ -1,3 +1,5 @@
+import { shouldAutoCreateMember } from '../utils/membershipPolicy';
+
 /** LIFF / ネイティブアプリの identity 準備（Manager 間で共有） */
 
 declare const MemberManager: {
@@ -64,6 +66,9 @@ export async function ensureLiffIdentityForLoad(options?: {
     }
 
     if (typeof window !== 'undefined' && window.__IS_LIFF__) {
+        if (shouldAutoCreateMember()) {
+            return true;
+        }
         return !!window.__LINE_USER_ID__;
     }
 

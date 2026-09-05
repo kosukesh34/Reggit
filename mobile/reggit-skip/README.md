@@ -39,12 +39,12 @@ ngrok のURLを変更したときは、次のいずれかを実行してくだ�
    ```
 2. 手動で `mobile/reggit-skip/Skip.env` の `LIFF_BASE_URL` を `.env` の `APP_URL` と同じ値に編集する。
 
-### AWS（本番）向けに接続して起動する
+### 本番（Xserver）向けに接続して起動する
 
-接続先を **AWS EB**（ngrok ではなく）にして iPad や実機で動作確認する手順です。
+接続先を **本番**（ngrok ではなく）にして iPad や実機で動作確認する手順です。
 
-1. **接続先を AWS EB にしておく**  
-   `Skip.env` の `LIFF_BASE_URL` / `LIFF_BASE_URL_IOS` が **http://Reggit.ap-northeast-3.elasticbeanstalk.com** になっていることを確認。独自ドメイン運用時は `https://reggit.jp` に変更可。
+1. **接続先を本番にしておく**
+   `Skip.env` の `LIFF_BASE_URL` / `LIFF_BASE_URL_IOS` を **`https://reggit.jp`** に設定する。
 
 2. **パッケージ解決**
    ```bash
@@ -63,8 +63,8 @@ ngrok のURLを変更したときは、次のいずれかを実行してくだ�
    - 実機は **開発元を信頼**（設定 → 一般 → VPNとデバイス管理）が必要な場合があります。
 
 5. **動作確認**
-   - アプリ起動後、WebView が `LIFF_BASE_URL`（http://Reggit.ap-northeast-3.elasticbeanstalk.com）の LIFF を表示する。
-   - 商品一覧・注文・会員などが表示されれば AWS 接続は成功。
+   - アプリ起動後、WebView が `LIFF_BASE_URL`（`https://reggit.jp`）の LIFF を表示する。
+   - 商品一覧・注文・会員などが表示されれば本番接続は成功。
 
 ローカル（ngrok）に戻すときは、`Skip.env` の `LIFF_BASE_URL` を `.env` の `APP_URL`（ngrok の URL）に戻し、再度ビルドする。
 

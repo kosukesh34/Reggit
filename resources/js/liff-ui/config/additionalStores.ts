@@ -49,6 +49,31 @@ function actions(items: Array<[QuickAction["feature"], string, string]>): QuickA
 
 export const additionalStores: StoreAppConfig[] = [
   {
+    storeId: "store_member_crm",
+    storeName: "会員CRM",
+    brandName: "MEMBER APP",
+    logoText: "MC",
+    themeId: "member-crm",
+    heroTitle: "会員メニュー",
+    heroSubtitle: "会員証・ポイント・クーポンをご利用ください。",
+    home: {
+      heroImage: "",
+      heroEyebrow: "MEMBER",
+      statusLabel: "会員メニュー",
+      primaryActionLabel: "会員証を表示",
+      primaryActionFeature: "membership",
+      featuredImage: "",
+      featuredTitle: "",
+      featuredDescription: "",
+      featuredActionLabel: "",
+      featuredFeature: "gallery",
+    },
+    features: { ...disabledFeatures, membership: true, coupon: true, stamp: true, point: true, gallery: true, news: true, storeSearch: true, purchaseHistory: true },
+    tabs: tabs([["home", "ホーム"], ["membership", "会員証"], ["point", "ポイント"], ["coupon", "クーポン"], ["more", "その他"]]),
+    quickActions: actions([["membership", "会員証を表示", "qr"], ["point", "ポイント", "coins"], ["coupon", "クーポン", "ticket"], ["purchaseHistory", "購入履歴", "image"]]),
+    membershipCard: membershipCard("#3e2723", "#5d4037"),
+  },
+  {
     storeId: "store_landing_showcase",
     storeName: "Reggit LPスマホUI",
     brandName: "注文・会員デモ",

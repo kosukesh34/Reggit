@@ -30,4 +30,18 @@ class ProfileCustomFieldInputType extends EnumBase
     {
         return in_array($inputType, [self::RADIO, self::SELECTBOX, self::CHECKBOX], true);
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function descriptions(): array
+    {
+        return [
+            self::TEXT => '短い文章を入力してもらいます',
+            self::TEXTAREA => '長い文章を入力してもらいます',
+            self::RADIO => '選択肢から1つだけ選んでもらいます',
+            self::SELECTBOX => 'リストから1つ選んでもらいます',
+            self::CHECKBOX => '選択肢から複数選んでもらいます',
+        ];
+    }
 }

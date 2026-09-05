@@ -1,13 +1,15 @@
-import { ArrowUpRight, ScanLine } from "lucide-react";
+import { ChevronRight, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { MemberProfile } from "../../types/app";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
 import { MembershipBarcode } from "../membership/MembershipBarcode";
-import { getMemberManager, openRegister } from "../../../frontend/features/member/api";
+import { MembershipQr } from "../membership/MembershipQr";
+import { getMemberManager, openRegister, resolveCardDesign } from "../../../frontend/features/member/api";
 
 interface MembershipSummaryProps {
   member: MemberProfile;
+  variant?: "default" | "crm";
   showRank?: boolean;
   showPoints?: boolean;
   showNextRank?: boolean;
@@ -33,6 +35,7 @@ function resolveMemberNumber(member: MemberProfile): string {
 
 export function MembershipSummary({
   member,
+  variant = "default",
   showRank = true,
   showPoints = true,
   showNextRank = true,
@@ -66,6 +69,51 @@ export function MembershipSummary({
   const memberName = typeof member.name === "string" && member.name !== "" ? member.name : "会員";
   const memberNumber = resolveMemberNumber(member);
   const title = showRank ? (member.rank || "MEMBER") : (showMemberName ? memberName : "MEMBER");
+  const isCrm = variant === "crm";
+  const codeType = resolveCardDesign({}, null).codeType === "qrcode" ? "qrcode" : "barcode";
+  const memberCode = codeType === "qrcode"
+    ? <MembershipQr value={memberNumber} />
+    : <MembershipBarcode value={memberNumber} />;
+
+  if (isCrm) {
+    return (
+      <Card className="membership-summary membership-summary--crm" padding="md">
+        <div className="membership-summary__head">
+          {showRank ? (
+            <div className="membership-summary__rank">
+              <Crown size={16} aria-hidden="true" />
+              <h2 className="membership-summary__name">{member.rank || "MEMBER"}</h2>
+            </div>
+          ) : null}
+          {showNextRank && member.nextRankLabel !== "" ? (
+            <div className="membership-summary__next">
+              <p>{member.nextRankLabel}</p>
+              <div className="membership-summary__track" aria-hidden="true">
+                <span style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+          ) : null}
+        </div>
+        {showPoints ? (
+          <div className="membership-summary__hold">
+            <span className="membership-summary__pmark" aria-hidden="true">P</span>
+            <div>
+              <span>保有ポイント</span>
+              <div className="membership-summary__points">{points.toLocaleString()} <span>pt</span></div>
+            </div>
+          </div>
+        ) : null}
+        <Link className="membership-summary__open" to="/membership">
+          会員証を表示する <ChevronRight size={16} aria-hidden="true" />
+        </Link>
+        {showBarcode && memberNumber !== "" ? (
+          <div className={codeType === "qrcode" ? "membership-crm-qr" : "membership-summary__barcode"}>
+            {memberCode}
+          </div>
+        ) : null}
+      </Card>
+    );
+  }
 
   return (
     <Card className="membership-summary" padding="md">
@@ -84,13 +132,12 @@ export function MembershipSummary({
           ) : null}
         </div>
         <Link className="membership-summary__link" to="/membership" aria-label="会員証を表示">
-          <ScanLine size={23} aria-hidden="true" />
-          <ArrowUpRight size={14} aria-hidden="true" />
+          会員証を表示
         </Link>
       </div>
       {showBarcode && memberNumber !== "" ? (
         <div className="membership-summary__barcode">
-          <MembershipBarcode value={memberNumber} />
+          {memberCode}
         </div>
       ) : null}
       {showNextRank || showPoints ? (
