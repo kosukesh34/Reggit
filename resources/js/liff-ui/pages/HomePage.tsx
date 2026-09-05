@@ -2,7 +2,7 @@ import { ArrowRight, CloudOff, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CouponCarousel } from "../components/home/CouponCarousel";
-import { FeaturedContent } from "../components/home/FeaturedContent";
+import { HomeGallery } from "../components/home/HomeGallery";
 import { HeroBanner } from "../components/home/HeroBanner";
 import { MembershipSummary } from "../components/home/MembershipSummary";
 import { NewsSection } from "../components/home/NewsSection";
@@ -19,10 +19,11 @@ import { OperationalHomePage } from "./OperationalHomePage";
 import { SimpleRewardsHome } from "./SimpleRewardsPage";
 
 const HOME_SECTION_ORDER: Record<HomeLayout, string[]> = {
-  standard: ["lead", "notice", "hero", "primaryBelow", "membership", "quick", "featured", "coupons", "news", "store", "floating"],
-  wallet: ["lead", "notice", "membership", "quick", "hero", "primaryBelow", "featured", "coupons", "news", "store", "floating"],
-  magazine: ["notice", "hero", "featured", "membership", "quick", "coupons", "news", "store", "primaryBelow", "floating"],
-  minimal: ["lead", "notice", "membership", "quick", "hero", "primaryBelow", "coupons", "news", "store", "floating"],
+  standard: ["lead", "notice", "hero", "primaryBelow", "membership", "quick", "gallery", "coupons", "news", "store", "floating"],
+  wallet: ["lead", "notice", "membership", "quick", "hero", "primaryBelow", "gallery", "coupons", "news", "store", "floating"],
+  magazine: ["notice", "hero", "gallery", "membership", "quick", "coupons", "news", "store", "primaryBelow", "floating"],
+  minimal: ["lead", "notice", "membership", "quick", "hero", "primaryBelow", "gallery", "coupons", "news", "store", "floating"],
+  crm: ["notice", "membership", "news", "gallery"],
 };
 
 function HomePageSkeleton(): JSX.Element {
@@ -109,6 +110,7 @@ export function HomePage() {
         <MembershipSummary
           key="membership"
           member={member}
+          variant={layout === "crm" ? "crm" : "default"}
           showRank={customization.membership.showRank}
           showPoints={customization.membership.showPoints}
           showNextRank={customization.membership.showNextRank}
@@ -120,14 +122,14 @@ export function HomePage() {
     quick: home.showQuickActions && activeStore.quickActions.length > 0
       ? <QuickActions key="quick" actions={activeStore.quickActions} columns={home.quickActionColumns} />
       : null,
-    featured: home.showFeatured && activeStore.features[activeStore.home.featuredFeature]
-      ? <FeaturedContent key="featured" content={activeStore.home} />
+    gallery: (home.showGallery || home.showFeatured) && activeStore.features.gallery
+      ? <HomeGallery key="gallery" />
       : null,
     coupons: home.showCoupons && activeStore.features.coupon
       ? <CouponCarousel key="coupon" coupons={coupons} config={customization.coupon} />
       : null,
     news: home.showNews && activeStore.features.news
-      ? <NewsSection key="news" news={news} />
+      ? <NewsSection key="news" news={news} compact={layout === "crm"} />
       : null,
     store: home.showStoreInfo && summary
       ? <StoreSummaryCard key="store" summary={summary} />

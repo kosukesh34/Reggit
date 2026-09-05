@@ -28,6 +28,7 @@ const supportItems = [
 export function MorePage() {
   const { activeStore, experienceId } = useAppConfig();
   const { member, mode, refresh } = useRuntimeData();
+  const isMember = member.isMember;
 
   if (experienceId === "landing-showcase") {
     return <LandingShowcaseRegister />;
@@ -79,16 +80,16 @@ export function MorePage() {
       <Link className="card card--lg account-card" to="/membership" aria-label="会員情報を確認・変更">
         <div className="account-card__monogram">{activeStore.logoText}</div>
         <div>
-          <div className="account-card__label">{member.isMember ? "会員情報" : "ゲスト"}</div>
-          <h2 className="account-card__title">{member.isMember ? `${member.name.trim() !== "" ? member.name : "会員"} 様` : "ゲストで閲覧中"}</h2>
-          <div className="account-card__meta">{member.isMember ? "会員証・プロフィールを確認" : "会員パスを発行すると、ポイントやクーポンを店舗で使えます"}</div>
+          <div className="account-card__label">{isMember ? "会員情報" : "ゲスト"}</div>
+          <h2 className="account-card__title">{isMember ? `${member.name.trim() !== "" ? member.name : "会員"} 様` : "ゲストで閲覧中"}</h2>
+          <div className="account-card__meta">{isMember ? "会員証・プロフィールを確認" : "会員パスを発行すると、ポイントやクーポンを店舗で使えます"}</div>
         </div>
         <ChevronRight size={18} />
       </Link>
 
       {mode !== "preview" ? (
         <Card className="menu-list" padding="sm">
-          {member.isMember ? (
+          {isMember ? (
             <button type="button" className="menu-list__item" onClick={() => openProfileEdit()}>
               <span className="menu-list__icon"><UserRound size={19} /></span>
               <span>プロフィール編集</span>
@@ -177,7 +178,7 @@ export function MorePage() {
           <Button variant="outline" disabled={busy} onClick={() => void runLogout()}>
             <LogOut size={17} /> {busy ? "処理中…" : "ログアウト"}
           </Button>
-          {member.isMember ? (
+          {isMember ? (
             <Button variant="soft" disabled={busy} onClick={() => void runWithdraw()}>
               退会する
             </Button>

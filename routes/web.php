@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryController;
 use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
+use App\Http\Controllers\Admin\MailTestController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
 use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
@@ -361,4 +362,7 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
 
     Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('system-admin.audit-logs.index');
     Route::get('/audit-logs/{id}', [AdminAuditLogController::class, 'show'])->name('system-admin.audit-logs.show');
+
+    Route::get('/mail-test', [MailTestController::class, 'show'])->name('system-admin.mail-test.show');
+    Route::post('/mail-test', [MailTestController::class, 'send'])->name('system-admin.mail-test.send')->middleware('throttle:10,1');
 });

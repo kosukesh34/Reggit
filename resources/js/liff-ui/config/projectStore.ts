@@ -1,6 +1,6 @@
 import { appConfig } from './appConfig';
 import { isLinkTabType, type FeatureConfig, type FeatureType, type QuickAction, type StoreAppConfig, type TabConfig, type TabType } from '../types/app';
-import { createDefaultCustomization } from './customization';
+import { createDefaultCustomization, MEMBER_CRM_STORE_ID } from './customization';
 import type { AppCustomizationPatch, MembershipTemplate } from '../types/customization';
 
 function headerTitle(): string {
@@ -149,16 +149,34 @@ function buildTabs(features: FeatureConfig, homeEnabled: boolean): TabConfig[] {
 const quickActionIconMap: Partial<Record<FeatureType, string>> = {
   mobileOrder: 'cup',
   dineInOrder: 'cup',
-  membership: 'coins',
+  membership: 'qr',
   coupon: 'ticket',
   stamp: 'stamp',
   queue: 'calendar',
   reservation: 'calendar',
   gallery: 'image',
   news: 'image',
+  point: 'coins',
+  purchaseHistory: 'image',
 };
 
 function buildQuickActions(tabs: TabConfig[], features: FeatureConfig): QuickAction[] {
+  const crm: Array<[FeatureType, string, string]> = [
+    ['membership', '会員証を表示', 'qr'],
+    ['point', 'ポイント', 'coins'],
+    ['coupon', 'クーポン', 'ticket'],
+    ['purchaseHistory', '購入履歴', 'image'],
+  ];
+  const fromCrm = crm.filter(([feature]) => features[feature]);
+  if (fromCrm.length >= 2) {
+    return fromCrm.map(([feature, label, icon], index) => ({
+      id: feature,
+      feature,
+      label,
+      icon,
+      order: index + 1,
+    }));
+  }
   const actions: QuickAction[] = [];
   tabs.forEach((tab) => {
     const feature = tabFeatureMap[tab.type];
@@ -186,7 +204,7 @@ export function buildProjectStore(): StoreAppConfig {
   const projectKey = typeof window !== 'undefined' && window.__PROJECT_KEY__
     ? String(window.__PROJECT_KEY__)
     : 'default';
-  const template = appConfig.stores[0];
+  const template = appConfig.stores.find((store) => store.storeId === MEMBER_CRM_STORE_ID) ?? appConfig.stores[0];
   const name = headerTitle();
   const logoUrl = headerLogoUrl();
   const features = buildFeatures();
@@ -251,8 +269,14 @@ export function buildProjectStore(): StoreAppConfig {
     quickActions,
     home: {
       ...template.home,
+      heroImage: '',
+      featuredImage: '',
+      featuredTitle: '',
+      featuredDescription: '',
+      featuredActionLabel: '',
       primaryActionFeature,
       primaryActionLabel: primaryActionFeature === 'membership' ? '会員証を開く' : 'サービスを開く',
+      featuredFeature: features.gallery ? 'gallery' : template.home.featuredFeature,
     },
   };
 }
