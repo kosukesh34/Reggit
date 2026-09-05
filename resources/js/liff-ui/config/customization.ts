@@ -1,8 +1,9 @@
-import { isLinkTabType, type StoreAppConfig } from "../types/app";
+import { isLinkTabType, type StoreAppConfig, type TabType } from "../types/app";
 import { isIndustryGalleryStoreId, resolveIndustryGalleryTemplate } from "./industryGallery";
 import type { AppCustomization, AppCustomizationPatch, AppExperienceId, DesignPreset, HomeLayout } from "../types/customization";
 
 export const SIMPLE_HOME_STORE_ID = "store_simple_home";
+export const MEMBER_CRM_STORE_ID = "store_member_crm";
 
 const STORE_EXPERIENCE: Record<string, AppExperienceId> = {
   store_simple_rewards: "simple-rewards",
@@ -41,12 +42,29 @@ const SIMPLE_HOME_HOME: AppCustomization["home"] = {
   showMembership: true,
   showQuickActions: true,
   showFeatured: false,
+  showGallery: false,
   showCoupons: true,
   showNews: false,
   showStoreInfo: false,
 };
 
+export const MEMBER_CRM_HOME: AppCustomization["home"] = {
+  layout: "crm",
+  primaryActionPlacement: "belowHero",
+  quickActionColumns: 4,
+  showHeroImage: false,
+  showHeroStatus: false,
+  showMembership: true,
+  showQuickActions: false,
+  showFeatured: false,
+  showGallery: true,
+  showCoupons: false,
+  showNews: true,
+  showStoreInfo: false,
+};
+
 const extraHomeByStore: Record<string, Partial<AppCustomization["home"]>> = {
+  [MEMBER_CRM_STORE_ID]: MEMBER_CRM_HOME,
   [SIMPLE_HOME_STORE_ID]: SIMPLE_HOME_HOME,
   store_apparel: {
     layout: "magazine",
@@ -174,6 +192,7 @@ export const defaultCustomization: AppCustomization = {
     showMembership: true,
     showQuickActions: true,
     showFeatured: true,
+    showGallery: false,
     showCoupons: true,
     showNews: true,
     showStoreInfo: true,
@@ -242,7 +261,7 @@ export const defaultCustomization: AppCustomization = {
 };
 
 export function resolveHomeLayout(value: string | undefined): HomeLayout {
-  if (value === "wallet" || value === "magazine" || value === "minimal") {
+  if (value === "wallet" || value === "magazine" || value === "minimal" || value === "crm") {
     return value;
   }
   return "standard";
@@ -265,6 +284,7 @@ const storePresetMap: Record<string, DesignPreset> = {
   store_landing_showcase: "editorial",
   store_simple_rewards: "minimal",
   store_simple_home: "minimal",
+  store_member_crm: "luxury",
   store_counter_operations: "airy",
   store_appointment_operations: "airy",
 };
@@ -296,6 +316,7 @@ const storeExperienceMap: Record<string, {
   store_landing_showcase: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "hero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "circles", stampGoal: 10 },
   store_simple_rewards: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "simple", stampStyle: "squares", stampGoal: 10 },
   store_simple_home: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "simple", stampStyle: "squares", stampGoal: 10 },
+  store_member_crm: { buttonStyle: "filled", density: "standard", primaryActionPlacement: "belowHero", quickActionColumns: 4, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "classic", stampStyle: "circles", stampGoal: 10 },
   store_counter_operations: { buttonStyle: "filled", density: "compact", primaryActionPlacement: "belowHero", quickActionColumns: 2, navigationPosition: "top", emphasizeCenterTab: false, membershipTemplate: "pointFocus", stampStyle: "progress", stampGoal: 5 },
   store_appointment_operations: { buttonStyle: "soft", density: "relaxed", primaryActionPlacement: "belowHero", quickActionColumns: 3, navigationPosition: "bottom", emphasizeCenterTab: false, membershipTemplate: "pass", stampStyle: "circles", stampGoal: 5 },
 };
@@ -317,7 +338,7 @@ const designPresetExperienceMap: Record<DesignPreset, (typeof storeExperienceMap
   bold: storeExperienceMap.store_market,
   airy: storeExperienceMap.store_flower,
   minimal: storeExperienceMap.store_apparel,
-  luxury: storeExperienceMap.store_salon,
+  luxury: storeExperienceMap.store_member_crm,
   pop: storeExperienceMap.store_pets,
   natural: storeExperienceMap.store_bakery,
   monochrome: storeExperienceMap.store_clinic,
@@ -346,6 +367,7 @@ export function designPresetLayoutPatch(designPreset: DesignPreset): AppCustomiz
     home: {
       primaryActionPlacement: experience.primaryActionPlacement,
       quickActionColumns: experience.quickActionColumns,
+      ...(designPreset === "luxury" ? { layout: "crm" as const } : {}),
     },
     membership: {
       template: experience.membershipTemplate,
@@ -362,6 +384,38 @@ export function designPresetLayoutPatch(designPreset: DesignPreset): AppCustomiz
   };
 }
 
+export const MEMBER_CRM_HEADER: AppCustomization["header"] = {
+  showLogo: false,
+  showSubtitle: false,
+  showNotifications: true,
+  showStoreTheme: false,
+  shortcut: "news",
+  rightButton: {
+    mode: "shortcut",
+    shortcut: "news",
+    label: "お知らせ",
+    path: "/news",
+    icon: "bell",
+  },
+};
+
+export const MEMBER_CRM_NAV_TABS: TabType[] = ["home", "membership", "point", "coupon", "more"];
+const OPERATIONAL_TABS: TabType[] = ["mobileOrder", "dineInOrder", "queue", "reservation"];
+const LEGACY_DEFAULT_TABS: TabType[] = ["home", "membership", "profile", "mobileOrder", "coupon", "more"];
+
+export function memberCrmNavigationTabs(savedTabs?: TabType[]): TabType[] {
+  if (savedTabs === undefined || savedTabs.length === 0) {
+    return [...MEMBER_CRM_NAV_TABS];
+  }
+  if (savedTabs.join(",") === LEGACY_DEFAULT_TABS.join(",")) {
+    return [...MEMBER_CRM_NAV_TABS];
+  }
+  if (savedTabs.some((tab) => OPERATIONAL_TABS.includes(tab))) {
+    return [...MEMBER_CRM_NAV_TABS];
+  }
+  return savedTabs.slice(0, 6);
+}
+
 export function createDefaultCustomization(store: StoreAppConfig): AppCustomization {
   const tabs = [...store.tabs]
     .filter((tab) => tab.enabled)
@@ -370,6 +424,7 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
     .slice(0, 6);
   const experience = storeExperienceMap[store.storeId]
     ?? (isIndustryGalleryStoreId(store.storeId) ? GALLERY_EXPERIENCE : storeExperienceMap.store_cafe);
+  const useMemberCrm = store.storeId === MEMBER_CRM_STORE_ID;
 
   return {
     ...defaultCustomization,
@@ -387,7 +442,7 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
       ...(extraHomeByStore[store.storeId] ?? {}),
       ...galleryHome(store),
     },
-    header: { ...defaultCustomization.header },
+    header: { ...(useMemberCrm ? MEMBER_CRM_HEADER : defaultCustomization.header) },
     coupon: { ...defaultCustomization.coupon },
     order: {
       ...defaultCustomization.order,
@@ -404,7 +459,7 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
     stamp: { ...defaultCustomization.stamp, style: experience.stampStyle, goal: experience.stampGoal },
     navigation: {
       ...defaultCustomization.navigation,
-      tabs: tabs.length > 0 ? tabs : defaultCustomization.navigation.tabs,
+      tabs: useMemberCrm ? [...MEMBER_CRM_NAV_TABS] : (tabs.length > 0 ? tabs : defaultCustomization.navigation.tabs),
       position: experience.navigationPosition,
       emphasizeCenterTab: experience.emphasizeCenterTab,
       linkUrls: Object.fromEntries(

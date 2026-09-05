@@ -57,6 +57,16 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
         $response->assertSee('ポップアップを表示する');
         $response->assertSee('登録画面を表示する（任意登録）');
         $response->assertSee('会員必須');
+        $response->assertSee('プロフィール項目');
+        $response->assertSee('アプリに表示');
+        $response->assertSee('入力必須');
+        $response->assertSee('オン');
+        $response->assertSee('オフ');
+        $response->assertSee('最大 99 件');
+        $response->assertSee('0 / 99 件');
+        $response->assertSee('まだ追加項目はありません');
+        $response->assertDontSee('スマレジ連携用項目');
+        $response->assertDontSee('スマレジ会員情報と連携');
     }
 
     public function test_会員登録モードをforceで保存できること(): void
