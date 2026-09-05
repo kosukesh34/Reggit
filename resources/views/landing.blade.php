@@ -3,434 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reggit — 店舗に必要な機能を簡単に</title>
-    <meta name="description" content="注文・ポイント・スタンプ・順番待ちを、LINEミニアプリと管理画面でひとつに。">
+    <title>Reggit — 会員証・注文・スタンプ・順番待ちを、ひとつの店舗アプリで</title>
+    <meta name="description" content="LINEミニアプリで会員証、ポイント、スタンプ、クーポン、モバイルオーダー、順番待ち、予約を提供。必要なら同じ画面をiOS・Androidの専用アプリとしても配布できます。店舗運用はひとつの管理画面に集約します。">
+    <meta name="theme-color" content="#163d34">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=39">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=56">
 </head>
 <body class="lp">
-    <header class="lp-nav">
-        <div class="lp-nav__inner">
-            <a class="lp-nav__brand" href="/" aria-label="Reggit">
-                <img
-                    src="{{ asset('images/landing/logos/reggit-app-icon.png') }}?v=2"
-                    alt="Reggit"
-                    width="40"
-                    height="40"
-                >
-                <span class="lp-nav__brand-text">Reggit</span>
+    <header class="lp-header">
+        <div class="lp-container lp-header__inner">
+            <a class="lp-brand" href="/" aria-label="Reggit トップへ">
+                <img src="{{ asset('images/landing/logos/reggit-app-icon.png') }}?v=2" alt="" width="36" height="36">
+                <span>Reggit</span>
             </a>
-            <div class="lp-nav__right">
-                <nav class="lp-nav__links" aria-label="ページ内ナビ">
-                    <a class="lp-nav__link" href="#features">機能</a>
-                    <a class="lp-nav__link" href="#flow">使い方</a>
-                    <a class="lp-nav__link" href="#screens">画面</a>
-                    <a class="lp-nav__link" href="#platform">プラットフォーム</a>
-                    <a class="lp-nav__link" href="#faq">FAQ</a>
-                </nav>
-                <a class="lp-nav__app" href="/liff" aria-label="アプリを体験する">
-                    <span class="lp-nav__label lp-nav__label--full" aria-hidden="true">アプリを体験する</span>
-                    <span class="lp-nav__label lp-nav__label--short" aria-hidden="true">体験する</span>
-                </a>
-                <a class="lp-nav__cta" href="{{ route('admin.login') }}" aria-label="管理画面ログイン">
-                    <span class="lp-nav__label lp-nav__label--full" aria-hidden="true">管理画面ログイン</span>
-                    <span class="lp-nav__label lp-nav__label--short" aria-hidden="true">管理ログイン</span>
-                </a>
+            <nav class="lp-header__nav" aria-label="ページ内ナビゲーション">
+                <a href="#plans">提供プラン</a>
+                <a href="#features">機能</a>
+                <a href="#screens">実際の画面</a>
+                <a href="#admin">管理画面</a>
+                <a href="#faq">FAQ</a>
+            </nav>
+            <div class="lp-header__actions">
+                <a class="lp-text-link" href="/liff">LINE版を体験</a>
+                <a class="lp-button lp-button--small lp-button--dark" href="{{ route('admin.login') }}">管理画面ログイン</a>
             </div>
         </div>
     </header>
 
-    <section class="lp-hero" aria-label="ヒーロー">
-        <div class="lp-hero__media" aria-hidden="true">
-            <img
-                class="lp-hero__image"
-                src="{{ asset('images/landing/lp-hero-cafe.jpg') }}?v=6"
-                alt=""
-                width="1600"
-                height="900"
-                fetchpriority="high"
-            >
-        </div>
-        <div class="lp-hero__scrim" aria-hidden="true"></div>
-        <div class="lp-hero__content">
-            <p class="lp-hero__brand">
-                <img
-                    class="lp-hero__brand-icon"
-                    src="{{ asset('images/landing/logos/reggit-app-icon-lg.png') }}?v=2"
-                    alt=""
-                    width="72"
-                    height="72"
-                >
-                <span class="lp-hero__brand-name">Reggit</span>
-            </p>
-            <h1 class="lp-hero__title">店舗に必要な機能を<br>簡単に</h1>
-            <p class="lp-hero__lead">注文・ポイント・スタンプ・順番待ちを、LINEミニアプリと管理画面でひとつに。</p>
-            <div class="lp-hero__actions">
-                <a class="lp-btn lp-btn--primary" href="{{ route('admin.login') }}">管理画面ログイン</a>
-                <a class="lp-btn lp-btn--ghost" href="#features">サービス概要へ</a>
-            </div>
-        </div>
-    </section>
-
-    @php
-        // 上下でブランドを分ける（重複なし）
-        $logoBrandFilesTop = [
-            '01', '02', '03', '04', '05', '20', '07', '08', '09',
-            '23', '24', '25', '26', '28', '29',
-        ];
-        $logoBrandFilesBottom = [
-            '10', '11', '12', '13', '14', '15', '16', '17', '18',
-            '06', '30', '32', '33', '34', '35',
-        ];
-    @endphp
-    <section class="lp-logos" aria-label="導入イメージ">
-        <p class="lp-logos__label">導入イメージ（架空ブランド）</p>
-        <div class="lp-marquee" aria-hidden="true">
-            <div class="lp-marquee__track">
-                @foreach ([1, 2] as $loopCopy)
-                    <ul class="lp-marquee__group">
-                        @foreach ($logoBrandFilesTop as $file)
-                            <li class="lp-marquee__item">
-                                <img
-                                    class="lp-brand-logo"
-                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=30"
-                                    alt=""
-                                    height="56"
-                                    loading="eager"
-                                    decoding="async"
-                                >
-                            </li>
-                        @endforeach
-                    </ul>
-                @endforeach
-            </div>
-        </div>
-        <div class="lp-marquee lp-marquee--reverse" aria-hidden="true">
-            <div class="lp-marquee__track">
-                @foreach ([1, 2] as $loopCopy)
-                    <ul class="lp-marquee__group">
-                        @foreach ($logoBrandFilesBottom as $file)
-                            <li class="lp-marquee__item">
-                                <img
-                                    class="lp-brand-logo"
-                                    src="{{ asset('images/landing/logos/brand-'.$file.'.png') }}?v=30"
-                                    alt=""
-                                    height="56"
-                                    loading="eager"
-                                    decoding="async"
-                                >
-                            </li>
-                        @endforeach
-                    </ul>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
     <main>
-        <section id="features" class="lp-section">
-            <p class="lp-section__eyebrow">Product</p>
-            <h2 class="lp-section__title">店舗オペレーションと顧客接点を、<br>ひとつの基盤で</h2>
-            <p class="lp-section__lead">LINEを起点に、来店前後の体験と店舗側の管理を途切れさせません。</p>
+        <section class="lp-container lp-hero" aria-labelledby="hero-title">
+            <div class="lp-hero__copy">
+                <p class="lp-eyebrow">店舗アプリ運営プラットフォーム</p>
+                <h1 id="hero-title"><span>お店のアプリを、</span><span>LINEでも、</span><em>ネイティブでも。</em></h1>
+                <p class="lp-hero__lead">会員証、ポイント、スタンプ、クーポン、モバイルオーダー、順番待ち、予約。お客様の接点はLINEミニアプリですぐ始められ、必要なら同じ画面をiOS・Androidの専用アプリとしても配布できます。店舗側の運用は、ひとつの管理画面に集約します。</p>
+                <div class="lp-hero__actions">
+                    <a class="lp-button lp-button--primary" href="/liff">実際のLINE版UIを体験 <span aria-hidden="true">→</span></a>
+                    <a class="lp-button lp-button--outline" href="#plans">2つのプランを見る</a>
+                </div>
+                <p class="lp-hero__note"><span></span> 掲載画面はデモ店舗で動作している実装UIです</p>
+            </div>
+
+            <figure class="lp-hero__media">
+                <img class="lp-hero__photo" src="{{ asset('images/landing/lp-hero-reggit-v2.webp') }}" alt="タブレットで店舗を運営するカフェスタッフとスマートフォンを利用するお客様" width="1774" height="887" fetchpriority="high">
+                <div class="lp-phone lp-phone--hero" aria-label="実装済みのReggitアプリホーム画面">
+                    <img src="{{ asset('images/landing/app/actual-home.webp') }}?v=5" alt="デモ店舗のアプリホーム画面" width="390" height="844">
+                </div>
+                <figcaption>店舗での利用イメージ <span>／</span> 実装済みアプリ画面</figcaption>
+            </figure>
         </section>
 
-        <section class="lp-feature lp-feature--order lp-reveal">
-            <div class="lp-feature__media">
-                <img
-                    src="{{ asset('images/landing/lp-feature-order.jpg') }}?v=6"
-                    alt="店舗でのモバイルオーダーの風景"
-                    width="1600"
-                    height="900"
-                    loading="eager"
-                    decoding="async"
-                >
-            </div>
-            <div class="lp-feature__copy">
-                <p class="lp-feature__label">01 / Order</p>
-                <h2 class="lp-feature__title">モバイルオーダー</h2>
-                <p class="lp-feature__text">LINE内でメニュー閲覧から注文まで完結。待ち時間を減らし、オペレーションをなめらかにします。</p>
-            </div>
-        </section>
-
-        <section class="lp-feature lp-feature--member lp-reveal">
-            <div class="lp-feature__media">
-                <img
-                    src="{{ asset('images/landing/lp-feature-member.jpg') }}?v=6"
-                    alt="会員証を使う店舗の風景"
-                    width="1600"
-                    height="900"
-                    loading="eager"
-                    decoding="async"
-                >
-            </div>
-            <div class="lp-feature__copy">
-                <p class="lp-feature__label">02 / Membership</p>
-                <h2 class="lp-feature__title">会員証・ポイント・スタンプ</h2>
-                <p class="lp-feature__text">デジタル会員証でポイントとスタンプを管理。クーポン配信やランク設計でリピートを育てます。</p>
+        <section class="lp-proof" aria-label="Reggitの提供形態">
+            <div class="lp-container lp-proof__grid">
+                <div><span>01</span><p><strong>LINEミニアプリ</strong>インストールせず、LINEから利用</p></div>
+                <div><span>02</span><p><strong>iOS・Android</strong>同じ画面を専用アプリとして配布</p></div>
+                <div><span>03</span><p><strong>共通の管理画面</strong>会員・注文・店舗運営を一元化</p></div>
             </div>
         </section>
 
-        <section class="lp-feature lp-feature--queue lp-reveal">
-            <div class="lp-feature__media">
-                <img
-                    src="{{ asset('images/landing/lp-feature-queue.jpg') }}?v=6"
-                    alt="順番待ちのある店舗の風景"
-                    width="1600"
-                    height="900"
-                    loading="eager"
-                    decoding="async"
-                >
+        @php
+            $logoBrandFilesTop = ['02', '06', '08', '12', '15', '18', '20', '24', '26', '28', '30', '32', '34'];
+            $logoBrandFilesBottom = ['03', '07', '10', '14', '16', '23', '25', '29', '33', '01', '05', '13', '17'];
+        @endphp
+        <section class="lp-logos" aria-label="導入イメージ">
+            <p class="lp-logos__label">導入イメージ（架空の店舗ブランド）</p>
+            <div class="lp-marquee" aria-hidden="true">
+                <div class="lp-marquee__track">
+                    @foreach ([1, 2] as $loopCopy)
+                        <ul class="lp-marquee__group">
+                            @foreach ($logoBrandFilesTop as $file)
+                                <li class="lp-marquee__item">
+                                    <img class="lp-brand-logo" src="{{ asset('images/landing/logos/brand-'.$file.'.svg') }}" alt="" height="56" loading="eager" decoding="async">
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endforeach
+                </div>
             </div>
-            <div class="lp-feature__copy">
-                <p class="lp-feature__label">03 / Queue &amp; Booking</p>
-                <h2 class="lp-feature__title">順番待ち・予約</h2>
-                <p class="lp-feature__text">順番登録から呼び出し、予約枠まで。店舗側の管理画面で状況を一元管理できます。</p>
+            <div class="lp-marquee lp-marquee--reverse" aria-hidden="true">
+                <div class="lp-marquee__track">
+                    @foreach ([1, 2] as $loopCopy)
+                        <ul class="lp-marquee__group">
+                            @foreach ($logoBrandFilesBottom as $file)
+                                <li class="lp-marquee__item">
+                                    <img class="lp-brand-logo" src="{{ asset('images/landing/logos/brand-'.$file.'.svg') }}" alt="" height="56" loading="eager" decoding="async">
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endforeach
+                </div>
             </div>
         </section>
 
-        <section id="flow" class="lp-flow lp-reveal">
-            <div class="lp-section lp-section--compact">
-                <p class="lp-section__eyebrow">How it works</p>
-                <h2 class="lp-section__title">導入から日常運用まで、<br>シンプルな流れ</h2>
-                <p class="lp-section__lead">まずは管理画面で店舗を整え、LINEから顧客体験を届けます。</p>
+        <section id="plans" class="lp-container lp-section lp-plans" aria-labelledby="plans-title">
+            <header class="lp-section-heading">
+                <div>
+                    <p class="lp-eyebrow">提供プラン</p>
+                    <h2 id="plans-title">入口は2つ。<br>運営基盤はひとつ。</h2>
+                </div>
+                <p>まずはLINEで始めるか、同じ画面を専用アプリとしても配布するか。事業のフェーズに合わせて選択できます。</p>
+            </header>
+
+            <div class="lp-plan-list">
+                <article class="lp-plan">
+                    <div class="lp-plan__index">01</div>
+                    <div class="lp-plan__title">
+                        <p>LINE PLAN</p>
+                        <h3>LINEミニアプリ</h3>
+                        <span>インストール不要</span>
+                    </div>
+                    <div class="lp-plan__description">
+                        <p>普段使っているLINEの中で、会員証・注文・スタンプ・順番待ちをすぐに提供できます。</p>
+                        <ul>
+                            <li>短期間で導入しやすい</li>
+                            <li>LINE通知・友だち導線と連携</li>
+                            <li>アプリストア申請が不要</li>
+                        </ul>
+                    </div>
+                    <a class="lp-plan__action lp-plan__action--line" href="/liff">LINE版UIを体験 <span aria-hidden="true">→</span></a>
+                </article>
+
+                <article class="lp-plan lp-plan--native">
+                    <div class="lp-plan__index">02</div>
+                    <div class="lp-plan__title">
+                        <p>NATIVE PLAN</p>
+                        <h3>ネイティブアプリ</h3>
+                        <span>iOS / Android</span>
+                    </div>
+                    <div class="lp-plan__description">
+                        <p>LINE版と同じ画面を、アプリストアから入れる専用アプリとして配布できます。中身はWeb画面で、プッシュ通知に対応します。</p>
+                        <ul>
+                            <li>App Store・Google Playで配布</li>
+                            <li>プッシュ通知（FCM）に対応</li>
+                            <li>画面・機能はLINE版と共通</li>
+                        </ul>
+                    </div>
+                    <a class="lp-plan__action" href="#screens">共通UIを見る <span aria-hidden="true">→</span></a>
+                </article>
             </div>
-            <ol class="lp-flow__steps">
-                <li class="lp-flow__step">
-                    <span class="lp-flow__num">01</span>
-                    <h3>プロジェクトを作成</h3>
-                    <p>店舗情報・メニュー・会員設定を管理画面から登録します。</p>
-                </li>
-                <li class="lp-flow__step">
-                    <span class="lp-flow__num">02</span>
-                    <h3>LINEミニアプリを公開</h3>
-                    <p>LIFF連携で、お客様は友だち追加後すぐに利用を開始できます。</p>
-                </li>
-                <li class="lp-flow__step">
-                    <span class="lp-flow__num">03</span>
-                    <h3>注文・会員・順番を運用</h3>
-                    <p>来店前後の接点をひとつの画面で把握し、スタッフが迷わず対応できます。</p>
-                </li>
-                <li class="lp-flow__step">
-                    <span class="lp-flow__num">04</span>
-                    <h3>データで改善する</h3>
-                    <p>ポイント・クーポン・リピート施策を続けながら、体験を磨いていけます。</p>
-                </li>
-            </ol>
+
+            <div class="lp-shared">
+                <strong>両プラン共通</strong>
+                <span>管理画面</span>
+                <span>顧客・会員データ</span>
+                <span>注文・予約・順番待ち</span>
+                <span>ポイント・スタンプ・クーポン</span>
+                <span>店舗別のデザイン設定</span>
+            </div>
         </section>
 
-        <section id="screens" class="lp-screens lp-reveal">
-            <div class="lp-section lp-section--compact">
-                <p class="lp-section__eyebrow">App</p>
-                <h2 class="lp-section__title">お客様の手元で完結する体験</h2>
-                <p class="lp-section__lead">ホーム・注文・会員登録・会員証・スタンプ・順番待ちまで、LINE内の画面でつながります。</p>
-                <a class="lp-screens__app-link" href="/liff">アプリを体験する</a>
+        <section id="features" class="lp-features" aria-labelledby="features-title">
+            <div class="lp-container">
+                <header class="lp-section-heading lp-section-heading--light">
+                    <div>
+                        <p class="lp-eyebrow">主な機能</p>
+                        <h2 id="features-title">来店前から、<br>次の来店まで。</h2>
+                    </div>
+                    <p>機能を別々のサービスで増やすのではなく、顧客体験と店舗運営をひとつの流れにまとめます。</p>
+                </header>
+
+                <div class="lp-feature-list">
+                    <article class="lp-feature">
+                        <div class="lp-feature__visual">
+                            <img src="{{ asset('images/landing/lp-order-v2.webp') }}" alt="モバイルオーダーで商品を受け取るお客様" width="1536" height="1024" loading="lazy">
+                        </div>
+                        <div class="lp-feature__copy">
+                            <p class="lp-feature__number">01</p>
+                            <h3>モバイルオーダー</h3>
+                            <p>メニュー閲覧から注文、受け取りまでアプリ内で完結。ピーク時のレジ待ちを減らします。</p>
+                            <dl><div><dt>お客様</dt><dd>好きな場所から事前注文</dd></div><div><dt>店舗</dt><dd>注文状況と商品を一元管理</dd></div></dl>
+                        </div>
+                    </article>
+
+                    <article class="lp-feature lp-feature--reverse">
+                        <div class="lp-feature__visual">
+                            <img src="{{ asset('images/landing/lp-membership-v2.webp') }}" alt="店舗でデジタル会員証を利用するお客様" width="1536" height="1024" loading="lazy">
+                        </div>
+                        <div class="lp-feature__copy">
+                            <p class="lp-feature__number">02</p>
+                            <h3>会員証・ポイント・スタンプ</h3>
+                            <p>デジタル会員証、ポイント、スタンプ、クーポンをひとつに。来店履歴を次の接点につなげます。</p>
+                            <dl><div><dt>お客様</dt><dd>会員情報と特典をすぐ確認</dd></div><div><dt>店舗</dt><dd>会員情報と利用履歴を把握</dd></div></dl>
+                        </div>
+                    </article>
+
+                    <article class="lp-feature">
+                        <div class="lp-feature__visual">
+                            <img src="{{ asset('images/landing/lp-queue-v2.webp') }}" alt="タブレットで順番待ちを管理する店舗スタッフ" width="1731" height="909" loading="lazy">
+                        </div>
+                        <div class="lp-feature__copy">
+                            <p class="lp-feature__number">03</p>
+                            <h3>予約・順番待ち</h3>
+                            <p>受付から呼び出しまでオンラインで管理。お客様は店頭を離れて待つことができます。</p>
+                            <dl><div><dt>お客様</dt><dd>待ち組数と呼び出しを確認</dd></div><div><dt>店舗</dt><dd>予約枠と来店状況を管理</dd></div></dl>
+                        </div>
+                    </article>
+                </div>
             </div>
-            <div class="lp-screens__rail">
-                <figure class="lp-screens__item">
-                    <img src="{{ asset('images/landing/app/screen-home.png') }}?v=2" alt="ホーム画面" width="390" height="844" loading="lazy">
-                    <figcaption>ホーム</figcaption>
+        </section>
+
+        <section id="screens" class="lp-container lp-section lp-screens" aria-labelledby="screens-title">
+            <header class="lp-section-heading">
+                <div>
+                    <p class="lp-eyebrow">実際のアプリ画面</p>
+                    <h2 id="screens-title">提供先が変わっても、<br>迷わない共通UI。</h2>
+                </div>
+                <p>LINEプランとネイティブプランは同じ機能基盤を使います。以下はデモ店舗で動作している画面です。ホームから注文、会員証、ポイント、クーポン、順番待ちまでつながります。</p>
+            </header>
+            <div class="lp-screens__labels" aria-label="対応プラン"><span>LINE PLAN</span><i></i><span>NATIVE PLAN（同じ画面）</span></div>
+            <div class="lp-screens__grid">
+                <figure class="lp-app-screen"><div class="lp-phone lp-phone--gallery"><img src="{{ asset('images/landing/app/actual-home.webp') }}?v=5" alt="デモ店舗のホーム画面" width="390" height="844" loading="lazy"></div><figcaption><span>01</span>ホーム</figcaption></figure>
+                <figure class="lp-app-screen"><div class="lp-phone lp-phone--gallery"><img src="{{ asset('images/landing/app/actual-order.webp') }}?v=5" alt="デモ店舗のモバイルオーダー画面" width="390" height="844" loading="lazy"></div><figcaption><span>02</span>注文</figcaption></figure>
+                <figure class="lp-app-screen"><div class="lp-phone lp-phone--gallery"><img src="{{ asset('images/landing/app/actual-member.webp') }}?v=5" alt="デモ店舗の会員証画面" width="390" height="844" loading="lazy"></div><figcaption><span>03</span>会員証</figcaption></figure>
+                <figure class="lp-app-screen"><div class="lp-phone lp-phone--gallery"><img src="{{ asset('images/landing/app/actual-point.webp') }}?v=5" alt="デモ店舗のポイント画面" width="390" height="844" loading="lazy"></div><figcaption><span>04</span>ポイント</figcaption></figure>
+                <figure class="lp-app-screen"><div class="lp-phone lp-phone--gallery"><img src="{{ asset('images/landing/app/actual-coupon.webp') }}?v=5" alt="デモ店舗のクーポン画面" width="390" height="844" loading="lazy"></div><figcaption><span>05</span>クーポン</figcaption></figure>
+                <figure class="lp-app-screen"><div class="lp-phone lp-phone--gallery"><img src="{{ asset('images/landing/app/actual-queue.webp') }}?v=5" alt="デモ店舗の順番待ち画面" width="390" height="844" loading="lazy"></div><figcaption><span>06</span>順番待ち</figcaption></figure>
+            </div>
+        </section>
+
+        <section id="admin" class="lp-admin" aria-labelledby="admin-title">
+            <div class="lp-container">
+                <header class="lp-section-heading">
+                    <div>
+                        <p class="lp-eyebrow">共通の店舗管理画面</p>
+                        <h2 id="admin-title">すべての運用を、<br>ひとつの画面から。</h2>
+                    </div>
+                    <p>LINEとネイティブ、どちらの利用状況も同じ管理画面に集約。注文、予約、順番待ち、会員、クーポンを確認できます。</p>
+                </header>
+                <figure class="lp-laptop">
+                    <div class="lp-laptop__screen">
+                        <img src="{{ asset('images/landing/app/actual-admin.webp') }}?v=2" alt="現在動作しているReggit店舗管理ダッシュボード。注文、予約、順番待ち、売上、会員数を表示" width="1512" height="982" loading="lazy">
+                    </div>
+                    <div class="lp-laptop__base" aria-hidden="true"><span></span></div>
+                    <figcaption><strong>MacBook 14インチ想定</strong><span>16:10ディスプレイ比率</span><span>デモ店舗の実際の管理画面</span></figcaption>
                 </figure>
-                <figure class="lp-screens__item">
-                    <img src="{{ asset('images/landing/app/screen-order.png') }}?v=2" alt="注文画面" width="390" height="844" loading="lazy">
-                    <figcaption>注文</figcaption>
-                </figure>
-                <figure class="lp-screens__item">
-                    <img src="{{ asset('images/landing/app/screen-register.png') }}?v=1" alt="会員登録画面" width="390" height="844" loading="lazy">
-                    <figcaption>会員登録</figcaption>
-                </figure>
-                <figure class="lp-screens__item">
-                    <img src="{{ asset('images/landing/app/screen-member.png') }}?v=2" alt="会員証画面" width="390" height="844" loading="lazy">
-                    <figcaption>会員証</figcaption>
-                </figure>
-                <figure class="lp-screens__item">
-                    <img src="{{ asset('images/landing/app/screen-stamps.png') }}?v=2" alt="スタンプ画面" width="390" height="844" loading="lazy">
-                    <figcaption>スタンプ</figcaption>
-                </figure>
-                <figure class="lp-screens__item">
-                    <img src="{{ asset('images/landing/app/screen-queue.png') }}?v=2" alt="順番待ち画面" width="390" height="844" loading="lazy">
-                    <figcaption>順番待ち</figcaption>
-                </figure>
             </div>
         </section>
 
-        <section id="benefits" class="lp-benefits lp-reveal">
-            <div class="lp-section lp-section--compact">
-                <p class="lp-section__eyebrow">Benefits</p>
-                <h2 class="lp-section__title">現場と顧客の両方に効く設計</h2>
-                <p class="lp-section__lead">待ち時間・リピート・店舗横断の管理まで、日常の課題に直接向き合います。</p>
+        <section class="lp-container lp-integrations" aria-labelledby="integrations-title">
+            <div>
+                <p class="lp-eyebrow">対応プラットフォーム</p>
+                <h2 id="integrations-title">お客様の入口から、<br>店舗の会計まで。</h2>
+                <p>LINE、アプリストア、スマレジとの連携を前提に、運用を分断しない構成です。</p>
             </div>
-            <div class="lp-benefits__grid">
-                <article class="lp-benefits__item">
-                    <h3>待ち時間を減らす</h3>
-                    <p>事前注文と順番待ちで、店頭の混雑と説明コストを下げます。</p>
-                </article>
-                <article class="lp-benefits__item">
-                    <h3>リピートを育てる</h3>
-                    <p>ポイント・スタンプ・クーポンで、次回来店のきっかけをつくります。</p>
-                </article>
-                <article class="lp-benefits__item">
-                    <h3>スタッフの迷いを減らす</h3>
-                    <p>注文状況と会員情報を同じ基盤で見られるので、引き継ぎが楽になります。</p>
-                </article>
-                <article class="lp-benefits__item">
-                    <h3>多店舗でも崩れない</h3>
-                    <p>プロジェクト単位の権限と設定で、拡大しても運用ルールを保てます。</p>
-                </article>
-            </div>
+            <ul aria-label="対応サービス">
+                <li><img src="{{ asset('images/landing/partners/line.png') }}?v=4" alt="LINE" width="72" height="72" loading="lazy"></li>
+                <li><img src="{{ asset('images/landing/partners/apple.png') }}?v=4" alt="App Store" height="54" loading="lazy"></li>
+                <li><img src="{{ asset('images/landing/partners/android.png') }}?v=4" alt="Google Play" height="54" loading="lazy"></li>
+                <li><img src="{{ asset('images/landing/partners/smaregi.png') }}?v=4" alt="スマレジ" height="54" loading="lazy"></li>
+            </ul>
         </section>
 
-        <section id="usecases" class="lp-usecases lp-reveal">
-            <div class="lp-section lp-section--compact">
-                <p class="lp-section__eyebrow">Use cases</p>
-                <h2 class="lp-section__title">業態ごとの使い方</h2>
-                <p class="lp-section__lead">カフェから食堂まで、店舗のリズムに合わせて機能を組み合わせられます。</p>
-            </div>
-            <div class="lp-usecases__list">
-                <article class="lp-usecases__item">
-                    <h3>カフェ・ベーカリー</h3>
-                    <p>モバイルオーダーとスタンプで、ピーク時の回転と常連づくりを両立します。</p>
-                </article>
-                <article class="lp-usecases__item">
-                    <h3>レストラン・食堂</h3>
-                    <p>順番待ちと予約で来店の波を整え、会員証で再来店につなげます。</p>
-                </article>
-                <article class="lp-usecases__item">
-                    <h3>多店舗ブランド</h3>
-                    <p>店舗横断の権限管理と設定分離で、ブランド全体の運用を一本化します。</p>
-                </article>
-            </div>
-        </section>
-
-        <section id="platform" class="lp-platform lp-reveal">
-            <div class="lp-platform__intro">
-                <p class="lp-section__eyebrow">Platform</p>
-                <h2 class="lp-section__title">エンタープライズ運用を見据えた構成</h2>
-                <p class="lp-section__lead">店舗展開と権限管理を前提に、運用しやすい管理画面を提供します。</p>
-            </div>
-            <div class="lp-platform__list">
-                <article class="lp-platform__item">
-                    <h3>マルチ店舗管理</h3>
-                    <p>プロジェクト単位で店舗・権限・設定を分離し、拡大時も運用を崩しません。</p>
-                </article>
-                <article class="lp-platform__item">
-                    <h3>LINE / POS 連携</h3>
-                    <p>LIFFとスマレジ連携により、会員・ポイント・会計の流れをつなげます。</p>
-                </article>
-                <article class="lp-platform__item">
-                    <h3>セキュアな管理画面</h3>
-                    <p>HTTPS前提の管理ログインと、役割に応じた操作権限で安全に運用できます。</p>
-                </article>
-            </div>
-            <div class="lp-platform__partners" aria-label="連携・対応">
-                <p class="lp-platform__partners-label">連携・対応</p>
-                <ul class="lp-platform__partners-list">
-                    <li>
-                        <img
-                            class="lp-platform__partner-logo lp-platform__partner-logo--line"
-                            src="{{ asset('images/landing/partners/line.png') }}?v=4"
-                            alt="LINE"
-                            width="80"
-                            height="80"
-                            loading="lazy"
-                        >
-                    </li>
-                    <li>
-                        <img
-                            class="lp-platform__partner-logo lp-platform__partner-logo--smaregi"
-                            src="{{ asset('images/landing/partners/smaregi.png') }}?v=4"
-                            alt="スマレジ"
-                            height="64"
-                            loading="lazy"
-                        >
-                    </li>
-                    <li>
-                        <img
-                            class="lp-platform__partner-logo lp-platform__partner-logo--store"
-                            src="{{ asset('images/landing/partners/apple.png') }}?v=4"
-                            alt="Download on the App Store"
-                            height="64"
-                            loading="lazy"
-                        >
-                    </li>
-                    <li>
-                        <img
-                            class="lp-platform__partner-logo lp-platform__partner-logo--store"
-                            src="{{ asset('images/landing/partners/android.png') }}?v=4"
-                            alt="Google Play で手に入れよう"
-                            height="64"
-                            loading="lazy"
-                        >
-                    </li>
-                </ul>
-            </div>
-        </section>
-
-        <section id="faq" class="lp-faq lp-reveal">
-            <div class="lp-section lp-section--compact">
-                <p class="lp-section__eyebrow">FAQ</p>
-                <h2 class="lp-section__title">よくある質問</h2>
-                <p class="lp-section__lead">導入前に気になりやすい点をまとめました。</p>
-            </div>
+        <section id="faq" class="lp-container lp-section lp-faq" aria-labelledby="faq-title">
+            <header class="lp-section-heading lp-section-heading--compact"><div><p class="lp-eyebrow">よくあるご質問</p><h2 id="faq-title">導入前に知っておきたいこと。</h2></div></header>
             <div class="lp-faq__list">
-                <details class="lp-faq__item">
-                    <summary>専用アプリのダウンロードは必要ですか？</summary>
-                    <p>お客様はLINEミニアプリから利用できます。店舗側は管理画面から運用します。</p>
-                </details>
-                <details class="lp-faq__item">
-                    <summary>複数店舗でも使えますか？</summary>
-                    <p>はい。プロジェクト単位で店舗・権限・設定を分けて運用できます。</p>
-                </details>
-                <details class="lp-faq__item">
-                    <summary>既存のPOSや会員施策と連携できますか？</summary>
-                    <p>スマレジ連携をはじめ、会員・ポイント・会計の流れをつなぐ構成を想定しています。</p>
-                </details>
-                <details class="lp-faq__item">
-                    <summary>まずは一部機能だけ使えますか？</summary>
-                    <p>モバイルオーダー・会員証・順番待ちを組み合わせて、必要な範囲から始められます。</p>
-                </details>
+                <details><summary><span>01</span>LINEプランとネイティブプランの違いは何ですか？</summary><p>LINEプランはダウンロード不要で、友だち追加後すぐに使えます。ネイティブプランは同じ画面をiOS・Androidの専用アプリ（WebView）として配布し、アプリストア掲載とプッシュ通知に対応します。</p></details>
+                <details><summary><span>02</span>プランごとに管理画面は変わりますか？</summary><p>管理画面と基本の運用フローは共通です。会員・注文・予約・順番待ち・スタンプ・クーポンを同じ画面から確認できます。</p></details>
+                <details><summary><span>03</span>複数店舗でも利用できますか？</summary><p>はい。店舗ごとに権限や設定を分けながら、同じ運用品質で管理できます。</p></details>
+                <details><summary><span>04</span>LINEからネイティブへ展開できますか？</summary><p>同じ管理基盤を利用するため、既存の店舗運用や顧客データを活かしながら提供形態を広げられます。具体的な移行範囲は導入時に設計します。</p></details>
             </div>
         </section>
 
-        <section class="lp-cta lp-reveal">
-            <div class="lp-cta__inner">
-                <h2 class="lp-cta__title">店舗のデジタル接点を、今日から整える</h2>
-                <p class="lp-cta__lead">管理画面からプロジェクト設定・メニュー・会員運用を開始できます。</p>
-                <a class="lp-btn lp-btn--on-dark" href="{{ route('admin.login') }}">管理画面ログイン</a>
+        <section class="lp-container lp-cta">
+            <div>
+                <p class="lp-eyebrow">LINE PLAN / NATIVE PLAN</p>
+                <h2>お店に合う形で、<br>アプリをはじめる。</h2>
+            </div>
+            <div>
+                <p>まずは実際のLINE版UIと、両プラン共通の管理画面をお確かめください。</p>
+                <div class="lp-cta__actions">
+                    <a class="lp-button lp-button--light" href="/liff">LINE版UIを体験 <span aria-hidden="true">→</span></a>
+                    <a class="lp-button lp-button--ghost" href="{{ route('admin.login') }}">管理画面を見る</a>
+                </div>
             </div>
         </section>
     </main>
 
     <footer class="lp-footer">
-        <a class="lp-footer__brand" href="/" aria-label="Reggit">
-            <img
-                src="{{ asset('images/landing/logos/reggit-app-icon.png') }}?v=2"
-                alt="Reggit"
-                width="40"
-                height="40"
-            >
-        </a>
-        <p class="lp-footer__copy">&copy; {{ date('Y') }} Reggit</p>
+        <div class="lp-container lp-footer__inner">
+            <a class="lp-brand" href="/" aria-label="Reggit トップへ"><img src="{{ asset('images/landing/logos/reggit-app-icon.png') }}?v=2" alt="" width="36" height="36"><span>Reggit</span></a>
+            <p>店舗アプリを、LINEでも、専用アプリでも。</p>
+            <p>&copy; {{ date('Y') }} Reggit</p>
+        </div>
     </footer>
-
-    <script>
-        (function () {
-            const nodes = document.querySelectorAll('.lp-reveal');
-            if (!('IntersectionObserver' in window) || nodes.length === 0) {
-                nodes.forEach(function (el) { el.classList.add('is-visible'); });
-                return;
-            }
-            const observer = new IntersectionObserver(function (entries) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('is-visible');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.12 });
-            nodes.forEach(function (el) { observer.observe(el); });
-        })();
-    </script>
 </body>
 </html>

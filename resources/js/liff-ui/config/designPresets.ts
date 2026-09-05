@@ -12,7 +12,7 @@ export const designPresets: DesignPresetDefinition[] = [
   { id: "bold", name: "高コントラスト", description: "売場で見やすい太字と明確なボタン", palette: ["#17130f", "#ef542f", "#f1eadf"] },
   { id: "airy", name: "クリーン", description: "美容・花店に合う明るく清潔な構成", palette: ["#174b55", "#d66f55", "#edf5f3"] },
   { id: "minimal", name: "ミニマル", description: "商品写真を引き立てる無彩色の構成", palette: ["#151515", "#151515", "#f7f7f5"] },
-  { id: "luxury", name: "プレミアム", description: "サロンや専門店向けの上質な構成", palette: ["#31251d", "#ad8650", "#f4efe6"] },
+  { id: "luxury", name: "プレミアム", description: "会員アプリの標準配色。こだわらない場合はこのまま使えます", palette: ["#3e2723", "#c9a227", "#f7f3ec"] },
   { id: "pop", name: "カジュアル", description: "ファミリー業態に合う親しみやすい構成", palette: ["#5527d7", "#f2509d", "#fff3aa"] },
   { id: "natural", name: "ナチュラル", description: "食品・ベーカリー向けの穏やかな構成", palette: ["#35543b", "#b86543", "#eeeadd"] },
   { id: "monochrome", name: "モノクロ", description: "業務情報を端的に見せる整理された構成", palette: ["#050505", "#050505", "#eeeeee"] },

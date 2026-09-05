@@ -1,6 +1,7 @@
 import { Home, CreditCard, CircleEllipsis, Ticket, Sparkles, CalendarDays, ShoppingBag, MapPinned, Stamp, ScanSearch, ExternalLink, UserRound } from "lucide-react";
 import type { CSSProperties } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { resolveHomeLayout } from "../../config/customization";
 import { tabLabelMap } from "../../config/navigation";
 import { useAppConfig } from "../../context/AppConfigContext";
 import type { TabConfig, TabType } from "../../types/app";
@@ -77,12 +78,13 @@ export function BottomNavigation() {
     return feature === undefined || activeStore.features[feature];
   });
   const safeTypes: TabType[] = visibleTypes.length > 0 ? visibleTypes : ["home", "more"];
+  const crmNav = resolveHomeLayout(customization.home.layout) === "crm";
   const tabs: TabConfig[] = safeTypes.slice(0, 6).map((type, index) => {
     const storeTab = activeStore.tabs.find((tab) => tab.type === type);
     return {
       id: `${type}-${index}`,
       type,
-      label: (storeTab?.label?.trim() || tabLabelMap[type]),
+      label: crmNav ? tabLabelMap[type] : (storeTab?.label?.trim() || tabLabelMap[type]),
       url: storeTab?.url,
       enabled: true,
       order: index,

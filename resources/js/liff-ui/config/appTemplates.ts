@@ -4,6 +4,8 @@ import { industryGalleryTemplates } from "./industryGallery";
 
 export type TemplateGroup = "simple" | "gallery" | "brand" | "operations" | "industry";
 
+const STUDIO_TEMPLATE_IDS = ["store_member_crm", "store_simple_home", "store_simple_rewards"] as const;
+
 export interface AppTemplate {
   store: StoreAppConfig;
   group: TemplateGroup;
@@ -15,7 +17,7 @@ export interface AppTemplate {
 const GROUP_ORDER: TemplateGroup[] = ["simple", "gallery", "brand", "operations", "industry"];
 
 export const TEMPLATE_GROUP_LABELS: Record<TemplateGroup, string> = {
-  simple: "シンプル",
+  simple: "会員アプリ",
   gallery: "業種ギャラリー",
   brand: "ブランド",
   operations: "店舗運営",
@@ -23,6 +25,7 @@ export const TEMPLATE_GROUP_LABELS: Record<TemplateGroup, string> = {
 };
 
 const TEMPLATE_META: Record<string, { group: TemplateGroup; description: string; shortName?: string; thumb: string }> = {
+  store_member_crm: { group: "simple", description: "会員証・ポイント・クーポンの標準会員アプリ", shortName: "会員CRM", thumb: "crm" },
   store_simple_rewards: { group: "simple", description: "会員証・クーポン・スタンプだけの最小構成", shortName: "シンプルリワード", thumb: "simple" },
   store_simple_home: { group: "simple", description: "会員証とサービスボタン中心の簡潔な標準ホーム", shortName: "シンプルホーム", thumb: "minimal" },
   store_landing_showcase: { group: "brand", description: "LP掲載と同じスマホ画面", shortName: "LPスマホUI", thumb: "landing" },
@@ -69,6 +72,13 @@ export function designerTemplates(stores: StoreAppConfig[]): AppTemplate[] {
       thumb: meta?.thumb ?? "standard",
     };
   });
+}
+
+export function studioDesignerTemplates(stores: StoreAppConfig[]): AppTemplate[] {
+  const byId = new Map(designerTemplates(stores).map((item) => [item.store.storeId, item]));
+  return STUDIO_TEMPLATE_IDS
+    .map((id) => byId.get(id))
+    .filter((item): item is AppTemplate => item !== undefined);
 }
 
 export function templatesByGroup(templates: AppTemplate[]): Array<{ group: TemplateGroup; label: string; items: AppTemplate[] }> {

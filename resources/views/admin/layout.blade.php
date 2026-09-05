@@ -114,6 +114,10 @@
                         <i class="fas fa-clipboard-list"></i>
                         <span>監査ログ</span>
                     </a>
+                    <a href="{{ route('system-admin.mail-test.show') }}" class="nav-item {{ request()->routeIs('system-admin.mail-test.*') ? 'active' : '' }}">
+                        <i class="fas fa-envelope"></i>
+                        <span>メール送信テスト</span>
+                    </a>
                     @if($navProjects->isNotEmpty())
                     <div class="nav-separator" role="presentation"></div>
                     <a href="{{ route('admin.dashboard', ['project_key' => $navProjects->first()->project_key]) }}" class="nav-item">

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { appConfig } from '../config/appConfig';
-import { createDefaultCustomization, resolveAppExperience } from '../config/customization';
+import { createDefaultCustomization, memberCrmNavigationTabs, MEMBER_CRM_HEADER, MEMBER_CRM_HOME, MEMBER_CRM_STORE_ID, resolveAppExperience } from '../config/customization';
 import { buildProjectStore, readServerCustomizationPatch } from '../config/projectStore';
 import { themeMap } from '../themes/themes';
 import type { StoreAppConfig } from '../types/app';
@@ -9,11 +9,11 @@ import type { AppCustomization, AppCustomizationPatch, AppExperienceId, CouponSt
 const customizationStorageKey = 'reggit-app-customization-v3';
 const showcaseStoreStorageKey = 'reggit-showcase-store-id-v2';
 const SHOWCASE_DEFAULT_STORE_ID = 'store_cafe';
-const experienceVersion = 12;
+const experienceVersion = 15;
 
 interface PersistedCustomizations {
   version: 3;
-  experienceVersion: 12;
+  experienceVersion: 15;
   byStore: Record<string, AppCustomizationPatch>;
 }
 
@@ -38,6 +38,27 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
     return base;
   }
   const savedDefaultStatus = patch.coupon?.defaultStatus as CouponStatus | 'used' | 'expired' | undefined;
+  const appTemplateId = patch.appTemplateId ?? base.appTemplateId;
+  const isMemberCrm = appTemplateId === MEMBER_CRM_STORE_ID;
+  const savedLayout = patch.home?.layout;
+  const isLegacyStandard = savedLayout === "standard";
+  const home = isMemberCrm && isLegacyStandard
+    ? { ...base.home, ...patch.home, ...MEMBER_CRM_HOME }
+    : { ...base.home, ...patch.home };
+  const header = isMemberCrm && isLegacyStandard
+    ? { ...MEMBER_CRM_HEADER, rightButton: { ...MEMBER_CRM_HEADER.rightButton } }
+    : {
+      ...base.header,
+      ...patch.header,
+      rightButton: {
+        ...base.header.rightButton,
+        ...patch.header?.rightButton,
+      },
+    };
+  const savedTabs = patch.navigation?.tabs;
+  const tabs = isMemberCrm
+    ? memberCrmNavigationTabs(savedTabs)
+    : (savedTabs !== undefined && savedTabs.length > 0 ? savedTabs.slice(0, 6) : base.navigation.tabs);
 
   return {
     ...base,
@@ -45,19 +66,12 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
     designPreset: patch.designPreset ?? base.designPreset,
     experienceId: patch.experienceId ?? base.experienceId,
     themeId: patch.themeId ?? base.themeId,
-    appTemplateId: patch.appTemplateId ?? base.appTemplateId,
+    appTemplateId,
     colors: { ...base.colors, ...patch.colors },
     appearance: { ...base.appearance, ...patch.appearance },
     brand: { ...base.brand, ...patch.brand },
-    home: { ...base.home, ...patch.home },
-    header: {
-      ...base.header,
-      ...patch.header,
-      rightButton: {
-        ...base.header.rightButton,
-        ...patch.header?.rightButton,
-      },
-    },
+    home,
+    header,
     coupon: {
       ...base.coupon,
       ...patch.coupon,
@@ -71,7 +85,7 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
     navigation: {
       ...base.navigation,
       ...patch.navigation,
-      tabs: patch.navigation?.tabs?.length ? patch.navigation.tabs.slice(0, 6) : base.navigation.tabs,
+      tabs,
       linkUrls: { ...base.navigation.linkUrls, ...patch.navigation?.linkUrls },
     },
   };
