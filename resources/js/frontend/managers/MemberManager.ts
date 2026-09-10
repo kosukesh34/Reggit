@@ -3145,6 +3145,31 @@ export class MemberManager {
         }
     }
 
+    async saveProfileImage(file: File) {
+        const body = new FormData();
+        body.append('image', file);
+        const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_PROFILE_IMAGE, {
+            method: 'POST',
+            body,
+        });
+        if (!result.success || !result.data || typeof result.data !== 'object') {
+            throw new Error(result.success ? '画像の更新に失敗しました' : result.error);
+        }
+        this.setMemberData(result.data);
+        return result.data;
+    }
+
+    async deleteProfileImage() {
+        const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_PROFILE_IMAGE, {
+            method: 'DELETE',
+        });
+        if (!result.success || !result.data || typeof result.data !== 'object') {
+            throw new Error(result.success ? '画像の削除に失敗しました' : result.error);
+        }
+        this.setMemberData(result.data);
+        return result.data;
+    }
+
     async saveProfileEdit(e: any) {
         if (e) e.preventDefault();
         const form = document.getElementById('profileEditForm') as HTMLFormElement | null;

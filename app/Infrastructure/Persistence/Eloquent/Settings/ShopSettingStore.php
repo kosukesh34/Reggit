@@ -719,7 +719,7 @@ class ShopSettingStore
             $smaregi[$key] = [
                 'label' => $label,
                 // 案内メールは既存会員の未設定上書きを避けるため、管理者が明示ONするまで非表示
-                'enabled' => $key !== 'mail_receive_flag',
+                'enabled' => ! in_array($key, ['profile_image', 'mail_receive_flag'], true),
                 'required' => in_array($key, ['name', 'phone'], true),
             ];
         }

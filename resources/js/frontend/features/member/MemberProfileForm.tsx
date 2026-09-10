@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { getMemberManager, type MemberPayload } from './api';
 
 export type ProfileFieldSetting = {
@@ -82,6 +82,67 @@ function FieldHint({ description }: { description?: string }): JSX.Element | nul
         return null;
     }
     return <p className="member-form-field-hint">{description}</p>;
+}
+
+function ProfileImageField({ profile }: { profile: Record<string, unknown> }): JSX.Element {
+    const fallback = '/images/no-image-profile.svg';
+    const [imageUrl, setImageUrl] = useState(String(profile.profile_image_url || fallback));
+    const [hasImage, setHasImage] = useState(profile.has_profile_image === true);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+
+    const syncFromPayload = (payload: MemberPayload): void => {
+        const nextProfile = payload.profile && typeof payload.profile === 'object' ? payload.profile : {};
+        setImageUrl(String(nextProfile.profile_image_url || fallback));
+        setHasImage(nextProfile.has_profile_image === true);
+    };
+
+    const upload = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setBusy(true);
+        setError('');
+        try {
+            const payload = await getMemberManager()?.saveProfileImage?.(file);
+            if (payload) syncFromPayload(payload);
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : '画像の更新に失敗しました');
+        } finally {
+            setBusy(false);
+            event.target.value = '';
+        }
+    };
+
+    const remove = async (): Promise<void> => {
+        setBusy(true);
+        setError('');
+        try {
+            const payload = await getMemberManager()?.deleteProfileImage?.();
+            if (payload) syncFromPayload(payload);
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : '画像の削除に失敗しました');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="member-profile-image-field">
+            <span className="member-form-group-label">プロフィール画像</span>
+            <div className="member-profile-image-row">
+                <img src={imageUrl} alt={hasImage ? '現在のプロフィール画像' : '画像未登録'} />
+                <div className="member-profile-image-actions">
+                    <label className="member-btn member-btn--secondary" aria-disabled={busy}>
+                        {busy ? '処理中...' : hasImage ? '画像を変更' : '画像を登録'}
+                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void upload(event)} disabled={busy} />
+                    </label>
+                    {hasImage ? <button type="button" className="member-btn member-btn--text" onClick={() => void remove()} disabled={busy}>画像を削除</button> : null}
+                    <p>JPEG・PNG・WebP、5MBまで</p>
+                </div>
+            </div>
+            {error ? <p className="member-profile-image-error" role="alert">{error}</p> : null}
+        </div>
+    );
 }
 
 function ChoiceSelect({
@@ -539,6 +600,7 @@ export function MemberProfileForm({
                 {title}
             </h3>
             <form id={formId} className="member-form" ref={formRef} onSubmit={onSubmit}>
+                {!isRegister && memberData?.profile_image_enabled === true ? <ProfileImageField profile={profile} /> : null}
                 <ProfileFieldRows fields={fields} profile={profile} birthdayFallback={birthdayFallback} />
                 {fullScreen ? null : actions}
             </form>

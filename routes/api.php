@@ -37,6 +37,7 @@ use App\Http\Controllers\Member\MemberMeController;
 use App\Http\Controllers\Member\MemberPointCardController;
 use App\Http\Controllers\Member\MemberPointHistoryController;
 use App\Http\Controllers\Member\MemberPointsController;
+use App\Http\Controllers\Member\MemberProfileImageController;
 use App\Http\Controllers\Member\MemberRegisterController;
 use App\Http\Controllers\Member\MemberSessionClearController;
 use App\Http\Controllers\Member\MemberUpdateController;
@@ -119,6 +120,8 @@ Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->
     Route::get('/orders/{id}', [ApiV1OrderController::class, 'show']);
     Route::get('/members/me', [ApiV1MemberMeController::class, '__invoke']);
     Route::put('/members/me', ApiV1MemberUpdateController::class);
+    Route::post('/members/me/profile-image', [MemberProfileImageController::class, 'store']);
+    Route::delete('/members/me/profile-image', [MemberProfileImageController::class, 'destroy']);
     Route::post('/members/register', ApiV1MemberRegisterController::class);
     Route::get('/members/points', [ApiV1MemberPointsController::class, '__invoke']);
     Route::get('/members/points/card', [ApiV1MemberPointCardController::class, '__invoke']);
@@ -151,6 +154,8 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::c
     Route::get('/{project_key}/orders/{id}', [ApiV1OrderController::class, 'show']);
     Route::get('/{project_key}/members/me', [ApiV1MemberMeController::class, '__invoke']);
     Route::put('/{project_key}/members/me', ApiV1MemberUpdateController::class);
+    Route::post('/{project_key}/members/me/profile-image', [MemberProfileImageController::class, 'store']);
+    Route::delete('/{project_key}/members/me/profile-image', [MemberProfileImageController::class, 'destroy']);
     Route::post('/{project_key}/members/register', ApiV1MemberRegisterController::class);
     Route::get('/{project_key}/members/points', [ApiV1MemberPointsController::class, '__invoke']);
     Route::get('/{project_key}/members/points/card', [ApiV1MemberPointCardController::class, '__invoke']);
@@ -191,6 +196,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 
     Route::get('/members/me', [MemberMeController::class, '__invoke']);
     Route::put('/members/me', [MemberUpdateController::class, '__invoke']);
+    Route::post('/members/me/profile-image', [MemberProfileImageController::class, 'store']);
+    Route::delete('/members/me/profile-image', [MemberProfileImageController::class, 'destroy']);
     Route::get('/postal-code', [PostalCodeController::class, '__invoke']);
     Route::get('/members/me/wallet-pass', [WalletPassController::class, '__invoke']);
     Route::get('/members/me/wallet-pass-url', [WalletPassUrlController::class, '__invoke']);

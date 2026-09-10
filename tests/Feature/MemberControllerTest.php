@@ -8,6 +8,8 @@ use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MemberControllerTest extends TestCase
@@ -104,6 +106,45 @@ class MemberControllerTest extends TestCase
             ->get('/api/members/me?project_key=default');
         $response->assertStatus(200)
             ->assertJsonPath('member_registration_mode', 'prompt');
+    }
+
+    public function test_プロフィール画像は店舗設定が有効なとき登録と削除ができること(): void
+    {
+        Storage::fake('public');
+        $project = $this->createProject();
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => $project->id]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+
+        $headers = ['X-Line-User-Id' => self::LINE_USER_ID, 'Accept' => 'application/json'];
+
+        $disabled = $this->withHeaders($headers)
+            ->post('/api/members/me/profile-image?project_key=default', [
+                'image' => UploadedFile::fake()->image('avatar.png', 300, 300),
+            ]);
+        $disabled->assertStatus(422);
+
+        $settings = ShopSettingStore::getProfileFieldSettings((int) $project->id);
+        $settings['smaregi_fields']['profile_image']['enabled'] = true;
+        ShopSettingStore::setProfileFieldSettings($settings, (int) $project->id);
+
+        $uploaded = $this->withHeaders($headers)
+            ->post('/api/members/me/profile-image?project_key=default', [
+                'image' => UploadedFile::fake()->image('avatar.png', 300, 300),
+            ]);
+        $uploaded->assertOk()
+            ->assertJsonPath('profile_image_enabled', true)
+            ->assertJsonPath('profile.has_profile_image', true);
+        $path = $user->fresh()->profile_image_path;
+        $this->assertNotNull($path);
+        Storage::disk('public')->assertExists($path);
+
+        $deleted = $this->withHeaders($headers)
+            ->delete('/api/members/me/profile-image?project_key=default');
+        $deleted->assertOk()
+            ->assertJsonPath('profile.has_profile_image', false)
+            ->assertJsonPath('profile.profile_image_url', asset('images/no-image-profile.svg'));
+        $this->assertNull($user->fresh()->profile_image_path);
+        Storage::disk('public')->assertMissing($path);
     }
 
     public function test_me_ゲスト可能ならログイン時に会員を自動作成すること(): void
