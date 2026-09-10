@@ -537,3 +537,51 @@ body.member-screen-overlay .member-register-fullscreen {
     justify-content: center;
     gap: 8px;
 }
+.member-profile-image-field {
+    margin-bottom: 24px;
+}
+
+.member-profile-image-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.member-profile-image-row img {
+    width: 88px;
+    height: 88px;
+    flex: 0 0 88px;
+    object-fit: cover;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 20px;
+    background: #f5f7fa;
+}
+
+.member-profile-image-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.member-profile-image-actions input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+}
+
+.member-profile-image-actions p {
+    width: 100%;
+    margin: 0;
+    color: var(--text-secondary, #667085);
+    font-size: 12px;
+}
+
+.member-profile-image-error {
+    margin: 8px 0 0;
+    color: #b42318;
+    font-size: 12px;
+}
