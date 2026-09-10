@@ -21,10 +21,13 @@ use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class MemberService
 {
@@ -54,6 +57,7 @@ class MemberService
                 'show_member_card_for_guest' => $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
                 'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
                 'profile_field_settings' => $profileFormFields,
+                'profile_image_enabled' => $this->profileImageEnabled($profileSettings),
                 'profile' => [],
             ];
         }
@@ -76,6 +80,7 @@ class MemberService
             'member' => $member->load('user'),
             'user' => $member->user,
             'profile_field_settings' => $profileFormFields,
+            'profile_image_enabled' => $this->profileImageEnabled($profileSettings),
             'profile' => $profileValues,
             'points' => $member->getTotalPointsFromTransactions(),
             'current_rank' => $rankInfo['current_rank'],
@@ -199,6 +204,9 @@ class MemberService
             if ((bool) ($field['enabled'] ?? false) === false) {
                 continue;
             }
+            if ($key === 'profile_image') {
+                continue;
+            }
             $rule = [(bool) ($field['required'] ?? false) === true ? 'required' : 'nullable'];
             foreach ($formatRules[$key] ?? ['string', 'max:'.ProfileValidationRules::CUSTOM_TEXT_MAX] as $formatRule) {
                 $rule[] = $formatRule;
@@ -270,6 +278,9 @@ class MemberService
             if ((bool) ($field['enabled'] ?? false) === false) {
                 continue;
             }
+            if ($key === 'profile_image') {
+                continue;
+            }
             $out[] = [
                 'key' => $key,
                 'label' => $field['label'] ?? $key,
@@ -314,10 +325,31 @@ class MemberService
         };
     }
 
+    private function profileImageEnabled(array $profileSettings): bool
+    {
+        return (bool) ($profileSettings['smaregi_fields']['profile_image']['enabled'] ?? false);
+    }
+
+    private function assertProfileImageAvailable(User $user): void
+    {
+        $projectId = $user->member?->project_id;
+        if ($projectId === null) {
+            throw ValidationException::withMessages(['image' => '会員登録が必要です']);
+        }
+        $settings = $this->shopSettingRepository->getProfileFieldSettings((int) $projectId);
+        if ($this->profileImageEnabled($settings) !== true) {
+            throw ValidationException::withMessages(['image' => 'プロフィール画像の設定は現在利用できません']);
+        }
+    }
+
     /** 会員・ユーザーからプロフィール値を配列で取得 */
     private function getProfileValues(User $user, Member $member): array
     {
         $profile = [
+            'profile_image_url' => $user->profile_image_path
+                ? asset('storage/'.ltrim($user->profile_image_path, '/'))
+                : asset('images/no-image-profile.svg'),
+            'has_profile_image' => $user->profile_image_path !== null && $user->profile_image_path !== '',
             'name' => $user->name,
             'kana' => $user->kana ?? null,
             'phone' => $user->phone,
@@ -342,6 +374,34 @@ class MemberService
         }
 
         return $profile;
+    }
+
+    public function saveProfileImage(User $user, UploadedFile $image): array
+    {
+        $this->assertProfileImageAvailable($user);
+        $oldPath = $user->profile_image_path;
+        $path = $image->store('member-profile-images/'.(int) $user->project_id, 'public');
+        if ($path === false) {
+            throw new \RuntimeException('Failed to store image');
+        }
+        $user->update(['profile_image_path' => $path]);
+        if ($oldPath !== null && $oldPath !== '' && $oldPath !== $path) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return $this->getMemberData($user->fresh(['member']));
+    }
+
+    public function deleteProfileImage(User $user): array
+    {
+        $this->assertProfileImageAvailable($user);
+        $oldPath = $user->profile_image_path;
+        $user->update(['profile_image_path' => null]);
+        if ($oldPath !== null && $oldPath !== '') {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return $this->getMemberData($user->fresh(['member']));
     }
 
     public function updateProfile(User $user, array $data): array

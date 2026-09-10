@@ -64,6 +64,14 @@ function initAnnouncementDelivery(): void {
     if (pageKind !== 'announcement-delivery' && pageKind !== 'coupon-delivery') return;
     const isCouponDelivery = pageKind === 'coupon-delivery';
 
+    // Chrome のスクロール復元でフォームが画面外になり、右パネルだけ見えるのを防ぐ
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+    if (window.location.hash === '') {
+        window.scrollTo(0, 0);
+    }
+
     const form = document.getElementById('deliveryForm') as HTMLFormElement | null;
     const configElement = document.getElementById('announcementDeliveryConfig');
     if (!form || !configElement?.textContent) return;
