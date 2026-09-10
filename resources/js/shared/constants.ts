@@ -23,6 +23,7 @@ export const AppConstants = {
         PRODUCTS: `${API_BASE}/products`,
         ORDERS: `${API_BASE}/orders`,
         MEMBERS_ME: `${API_BASE}/members/me`,
+        MEMBERS_PROFILE_IMAGE: `${API_BASE}/members/me/profile-image`,
         MEMBERS_REGISTER: `${API_BASE}/members/register`,
         MEMBERS_WITHDRAW: `${API_BASE}/members/withdraw`,
         MEMBERS_SESSION_CLEAR: `${API_BASE}/members/session/clear`,

@@ -23,7 +23,6 @@
     $pointsExpiryLabel = $pointsExpiry['expires_at_label'] ?? '—';
     $recentOrders = $view->purchaseSummary['recent_orders'] ?? collect();
     $orderListTotal = (int) ($view->purchaseSummary['order_list_total'] ?? $recentOrders->count());
-    $avatarChar = mb_substr($memberName !== '' ? $memberName : (string) $view->member->member_number, 0, 1);
     $sexLabel = match ((string) ($view->member->sex ?? '')) {
         '1' => '男性',
         '2' => '女性',
@@ -36,6 +35,9 @@
         $displayAddress,
     ], fn ($part) => $part !== null && $part !== ''));
     $firstStamp = $view->member->memberStamps->first();
+    $profileImageUrl = $user?->profile_image_path
+        ? asset('storage/'.ltrim($user->profile_image_path, '/'))
+        : asset('images/no-image-profile.svg');
     $hasProfileExtras = $view->member->birthday !== null
         || ($sexLabel !== '—' && $sexLabel !== '未設定')
         || $addressLabel !== ''
@@ -58,7 +60,7 @@
 </nav>
 
 <section class="member-identity" aria-labelledby="member-identity-name">
-    <div class="member-avatar" aria-hidden="true">{{ $avatarChar }}</div>
+    <img class="member-avatar" src="{{ $profileImageUrl }}" alt="{{ $memberName }}のプロフィール画像">
     <div class="member-identity-main">
         <div class="member-identity-top">
             <div>
@@ -66,9 +68,9 @@
                 @if($kana !== '')
                 <p class="member-identity-kana">{{ $kana }}</p>
                 @endif
-                <p class="member-identity-registered">登録 {{ $view->member->created_at->format('Y/m/d') }}</p>
                 <div class="member-identity-meta">
-                    <code class="member-number">{{ $view->member->member_number }}</code>
+                    <span class="member-identity-registered">登録 {{ $view->member->created_at->format('Y/m/d') }}</span>
+                    <span class="member-number-label">会員番号</span><code class="member-number">{{ $view->member->member_number }}</code>
                     <span class="member-rank-chip" data-rank="{{ $view->member->rank ?? '' }}">{{ $rankLabel }}</span>
                     <span class="badge badge-{{ $isActive ? 'success' : 'danger' }}">{{ $statusLabel }}</span>
                     @if($lineName !== '')
@@ -82,13 +84,9 @@
             @if($canManage)
             <div class="member-identity-actions">
                 <a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-edit"></i> 編集
+                    <i class="fas fa-edit" aria-hidden="true"></i> 会員情報を編集
                 </a>
-                <form action="{{ admin_route('admin.members.delete', ['id' => $view->member->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $memberName }}">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger btn-sm no-loading"><i class="fas fa-trash"></i> 削除</button>
-                </form>
+
             </div>
             @endif
         </div>
@@ -104,7 +102,7 @@
         @endif
         <div class="member-identity-stats">
             <div class="member-identity-stat">
-                <div class="member-identity-stat-label">ポイント</div>
+                <div class="member-identity-stat-label">保有ポイント</div>
                 <div class="member-identity-stat-value">{{ number_format($view->member->points) }}<span>pt</span></div>
                 @if($pointsExpiring > 0)
                 <div class="member-identity-stat-sub">{{ $pointsExpiryLabel }}に {{ number_format($pointsExpiring) }}pt 期限切れ</div>
@@ -166,102 +164,9 @@
     </div>
 </div>
 
-<div class="member-detail-split{{ $hasProfileExtras ? '' : ' member-detail-split--single' }}">
-@if($hasProfileExtras)
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-id-card"></i> プロフィール</h3>
-    </div>
-    <div class="card-body">
-        <dl class="member-dl">
-            @if($view->member->birthday)
-            <div class="member-dl-row">
-                <dt>生年月日</dt>
-                <dd>{{ $view->member->birthday->format('Y/m/d') }}</dd>
-            </div>
-            @endif
-            @if($sexLabel !== '—' && $sexLabel !== '未設定')
-            <div class="member-dl-row">
-                <dt>性別</dt>
-                <dd>{{ $sexLabel }}</dd>
-            </div>
-            @endif
-            @if($addressLabel !== '')
-            <div class="member-dl-row">
-                <dt>住所</dt>
-                <dd>{{ $addressLabel }}</dd>
-            </div>
-            @endif
-            <div class="member-dl-row">
-                <dt>お知らせ通知</dt>
-                <dd>{{ \App\Enums\MemberNotificationPreference::getLabel(\App\Enums\MemberNotificationPreference::normalize($view->member->notification_preference)) }}</dd>
-            </div>
-        </dl>
-    </div>
-</div>
-@endif
-
-<div class="card member-staff-card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-tags"></i> タグ・メモ</h3>
-        <a href="{{ admin_route('admin.member-tags') }}" class="btn btn-sm btn-secondary">
-            <i class="fas fa-cog"></i> タグ管理
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="member-tag-section">
-            <div class="member-tag-label-row">
-                <span class="form-label">付与中のタグ</span>
-            </div>
-            <div class="member-tag-list" id="member-tag-list">
-                @forelse($view->member->tags as $tag)
-                <span class="member-tag-item">
-                    <span class="member-tag-badge" style="background: {{ $tag->color }}">{{ $tag->name }}</span>
-                    @if($canManage)
-                    <form action="{{ admin_route('admin.members.tags.detach', ['id' => $view->member->id, 'tagId' => $tag->id]) }}" method="POST" class="d-inline">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="member-tag-remove" title="解除"><i class="fas fa-times"></i></button>
-                    </form>
-                    @endif
-                </span>
-                @empty
-                <span class="text-muted small">タグなし</span>
-                @endforelse
-            </div>
-            @if($canManage && $allTags->isNotEmpty())
-            <form action="{{ admin_route('admin.members.tags.attach', ['id' => $view->member->id]) }}" method="POST" class="member-tag-attach-form">
-                @csrf
-                <select name="tag_id" class="form-control form-control-sm" required>
-                    <option value="">タグを付与...</option>
-                    @foreach($allTags as $tag)
-                    @if(!$view->member->tags->contains('id', $tag->id))
-                    <option value="{{ $tag->id }}">{{ $tag->name }}</option>
-                    @endif
-                    @endforeach
-                </select>
-                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> 付与</button>
-            </form>
-            @endif
-        </div>
-        <div class="member-memo-section">
-            <div class="form-label">スタッフメモ</div>
-            @if($canManage)
-            <form action="{{ admin_route('admin.members.memo', ['id' => $view->member->id]) }}" method="POST">
-                @csrf @method('PUT')
-                <textarea name="memo" class="form-control member-memo-input" rows="5" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $view->member->memo) }}</textarea>
-                <div class="form-actions member-memo-save">
-                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> メモを保存</button>
-                </div>
-            </form>
-            @else
-            <div class="form-control-static">{{ $view->member->memo ?? '—' }}</div>
-            @endif
-        </div>
-    </div>
-</div>
-</div>
-
+<div class="member-workspace">
 <section class="member-history-shell" aria-label="履歴">
+    <div class="member-section-heading"><div><h2>利用履歴</h2><p>購入や来店、特典の利用状況を確認できます。</p></div></div>
     <div class="member-history-tablist" role="tablist" aria-label="履歴の種類">
         @foreach($historyTabs as $tab)
         <button
@@ -417,6 +322,113 @@
     'historyFilters' => $view->historyFilters,
 ])
 </section>
+<aside class="member-detail-sidebar" aria-label="会員プロフィールとスタッフメモ">
+@if($hasProfileExtras)
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-id-card"></i> プロフィール</h3>
+    </div>
+    <div class="card-body">
+        <dl class="member-dl">
+            @if($view->member->birthday)
+            <div class="member-dl-row">
+                <dt>生年月日</dt>
+                <dd>{{ $view->member->birthday->format('Y/m/d') }}</dd>
+            </div>
+            @endif
+            @if($sexLabel !== '—' && $sexLabel !== '未設定')
+            <div class="member-dl-row">
+                <dt>性別</dt>
+                <dd>{{ $sexLabel }}</dd>
+            </div>
+            @endif
+            @if($addressLabel !== '')
+            <div class="member-dl-row">
+                <dt>住所</dt>
+                <dd>{{ $addressLabel }}</dd>
+            </div>
+            @endif
+            <div class="member-dl-row">
+                <dt>お知らせ通知</dt>
+                <dd>{{ \App\Enums\MemberNotificationPreference::getLabel(\App\Enums\MemberNotificationPreference::normalize($view->member->notification_preference)) }}</dd>
+            </div>
+        </dl>
+    </div>
+</div>
+@endif
+
+<div class="card member-staff-card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-tags"></i> タグ・メモ</h3>
+        <a href="{{ admin_route('admin.member-tags') }}" class="btn btn-sm btn-secondary">
+            <i class="fas fa-cog"></i> タグ管理
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="member-tag-section">
+            <div class="member-tag-label-row">
+                <label class="form-label" for="member-tag-select">付与中のタグ</label>
+            </div>
+            <div class="member-tag-list" id="member-tag-list">
+                @forelse($view->member->tags as $tag)
+                <span class="member-tag-item">
+                    <span class="member-tag-badge" style="background: {{ $tag->color }}">{{ $tag->name }}</span>
+                    @if($canManage)
+                    <form action="{{ admin_route('admin.members.tags.detach', ['id' => $view->member->id, 'tagId' => $tag->id]) }}" method="POST" class="d-inline">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="member-tag-remove" title="解除"><i class="fas fa-times"></i></button>
+                    </form>
+                    @endif
+                </span>
+                @empty
+                <span class="text-muted small">タグなし</span>
+                @endforelse
+            </div>
+            @if($canManage && $allTags->isNotEmpty())
+            <form action="{{ admin_route('admin.members.tags.attach', ['id' => $view->member->id]) }}" method="POST" class="member-tag-attach-form">
+                @csrf
+                <select id="member-tag-select" name="tag_id" class="form-control form-control-sm" required>
+                    <option value="">タグを付与...</option>
+                    @foreach($allTags as $tag)
+                    @if(!$view->member->tags->contains('id', $tag->id))
+                    <option value="{{ $tag->id }}">{{ $tag->name }}</option>
+                    @endif
+                    @endforeach
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> 付与</button>
+            </form>
+            @endif
+        </div>
+        <div class="member-memo-section">
+            <label class="form-label" for="member-staff-memo">スタッフメモ</label>
+            <p class="member-field-help">会員には表示されません。</p>
+            @if($canManage)
+            <form action="{{ admin_route('admin.members.memo', ['id' => $view->member->id]) }}" method="POST">
+                @csrf @method('PUT')
+                <textarea id="member-staff-memo" name="memo" class="form-control member-memo-input" rows="3" maxlength="2000" placeholder="スタッフ向けのメモを入力（会員には表示されません）">{{ old('memo', $view->member->memo) }}</textarea>
+                <div class="form-actions member-memo-save">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> メモを保存</button>
+                </div>
+            </form>
+            @else
+            <div class="form-control-static">{{ $view->member->memo ?? '—' }}</div>
+            @endif
+        </div>
+    </div>
+</div>
+    @if($canManage)
+    <details class="member-danger-zone">
+        <summary>会員の削除</summary>
+        <p>この会員を削除する場合はこちらから操作してください。</p>
+                <form action="{{ admin_route('admin.members.delete', ['id' => $view->member->id]) }}" method="POST" class="d-inline delete-form" data-item-name="{{ $memberName }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger btn-sm no-loading"><i class="fas fa-trash"></i> 削除</button>
+                </form>
+    </details>
+    @endif
+</aside>
+</div>
 @endsection
 
 @push('scripts')
@@ -467,10 +479,23 @@ window.MemberDetailHistoryConfig = {
     }
     activate(initial);
     buttons.forEach((button) => {
+        button.addEventListener('keydown', (event) => {
+            const current = buttons.indexOf(button);
+            let next;
+            if (event.key === 'ArrowRight') next = (current + 1) % buttons.length;
+            if (event.key === 'ArrowLeft') next = (current + buttons.length - 1) % buttons.length;
+            if (event.key === 'Home') next = 0;
+            if (event.key === 'End') next = buttons.length - 1;
+            if (next === undefined) return;
+            event.preventDefault();
+            buttons[next].click();
+            buttons[next].focus();
+        });
         button.addEventListener('click', () => {
             const id = button.getAttribute('data-history-tab-btn');
             if (id) {
                 activate(id);
+                window.history.replaceState(null, '', window.location.pathname + window.location.search + '#' + id);
             }
         });
     });

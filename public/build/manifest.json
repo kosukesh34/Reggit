@@ -1,6 +1,6 @@
 {
-  "_browser-YzQ7TRIP.js": {
-    "file": "assets/browser-YzQ7TRIP.js",
+  "_browser-BRWAQupN.js": {
+    "file": "assets/browser-BRWAQupN.js",
     "name": "browser"
   },
   "resources/css/app.css": {
@@ -8,27 +8,27 @@
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-BPrWrstm.js",
+    "file": "assets/main-SGya-KB5.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-YzQ7TRIP.js"
+      "_browser-BRWAQupN.js"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-DVvk31QW.js",
+    "file": "assets/main-Ckr9G6zG.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_browser-YzQ7TRIP.js"
+      "_browser-BRWAQupN.js"
     ],
     "css": [
-      "assets/main-CgxY7UJR.css",
+      "assets/main-CaGWElG9.css",
       "assets/app-BRqf0F5f.css",
       "assets/tokens-CJDqh8yr.css",
-      "assets/globals-BW4D3qXf.css",
+      "assets/globals-B8Tm50yV.css",
       "assets/design-layout-variants-DsFha61Q.css"
     ]
   },
@@ -37,7 +37,7 @@
     "src": "resources/js/liff-ui/styles/design-layout-variants.css"
   },
   "resources/js/liff-ui/styles/globals.css": {
-    "file": "assets/globals-BW4D3qXf.css",
+    "file": "assets/globals-B8Tm50yV.css",
     "src": "resources/js/liff-ui/styles/globals.css"
   },
   "resources/js/liff-ui/styles/tokens.css": {
