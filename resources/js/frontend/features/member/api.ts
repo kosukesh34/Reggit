@@ -38,6 +38,7 @@ export type MemberPayload = Record<string, unknown> & {
     member_card_code_type?: string;
     profile_field_settings?: unknown[];
     profile?: Record<string, unknown>;
+    profile_image_enabled?: boolean;
 };
 
 export type MemberLoadResult =
@@ -75,6 +76,8 @@ type MemberManagerLike = {
     paintProfileEditInto?: (container: HTMLElement) => Promise<void>;
     saveRegisterForm?: (e: Event) => void | Promise<void>;
     saveProfileEdit?: (e: Event) => void | Promise<void>;
+    saveProfileImage?: (file: File) => Promise<MemberPayload>;
+    deleteProfileImage?: () => Promise<MemberPayload>;
     _setupPostalCodeLookup?: (container: HTMLElement) => void;
     _syncMemberScreenOverlay?: () => void;
     bindMemberCardEffects?: (container: HTMLElement, data: MemberPayload, codeId: string, isQR: boolean, isSheet: boolean) => void;

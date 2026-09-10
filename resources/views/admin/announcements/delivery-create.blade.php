@@ -56,7 +56,7 @@
         @csrf
         <div class="ad-studio">
             <div class="ad-studio-main">
-                <section class="ad-card" id="delivery-content" aria-label="お知らせの内容">
+                <div class="andel-card" role="region" id="delivery-content" aria-label="お知らせの内容">
                     <div class="form-group">
                         <div class="ad-label-row">
                             <label for="title" class="form-label">タイトル <span class="ad-required">必須</span></label>
@@ -95,9 +95,9 @@
                             </div>
                         </details>
                     </div>
-                </section>
+                </div>
 
-                <section class="ad-card" id="delivery-audience" aria-label="届け先と配信タイミング">
+                <div class="andel-card" role="region" id="delivery-audience" aria-label="届け先と配信タイミング">
                     <fieldset class="ad-delivery-fieldset ad-timing-fieldset">
                         <legend>配信タイミング <span class="ad-required">必須</span></legend>
                         <div class="ad-timing-types">
@@ -326,9 +326,9 @@
                             </div>
                         </div>
                     </details>
-                </section>
+                </div>
 
-                <section class="ad-card" id="delivery-coupon" aria-label="クーポン設定">
+                <div class="andel-card" role="region" id="delivery-coupon" aria-label="クーポン設定">
                     @if(($view->coupons ?? collect())->isEmpty())
                         <div class="ad-empty-coupon">
                             <span><i class="fas fa-ticket-alt" aria-hidden="true"></i></span>
@@ -364,9 +364,9 @@
                             </div>
                         </div>
                     @endif
-                </section>
+                </div>
 
-                <section class="ad-card" id="delivery-options" aria-label="掲載設定">
+                <div class="andel-card" role="region" id="delivery-options" aria-label="掲載設定">
                     <div class="ad-option-grid">
                         <label class="ad-pin-option">
                             <input type="hidden" name="is_pinned" value="0">
@@ -396,11 +396,8 @@
                             </div>
                         </div>
                     </div>
-                </section>
-
-                <div class="ad-form-footer">
-                    <a href="{{ admin_route('admin.announcements') }}" class="btn btn-secondary">キャンセル</a>
                 </div>
+
             </div>
 
             <aside class="ad-studio-aside" aria-label="配信内容の確認">
@@ -423,10 +420,13 @@
                         <p><i class="fas fa-circle-info" aria-hidden="true"></i> すべての条件に一致する会員へ配信します</p>
                     </section>
                     <div id="deliveryFormError" class="ad-form-error" role="alert" hidden></div>
-                    <button type="submit" class="btn btn-primary ad-submit no-loading" id="deliverySubmitButton">
-                        <span><i class="fas fa-eye" aria-hidden="true"></i> <span id="deliverySubmitLabel">確認画面へ</span></span>
-                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                    </button>
+                    <div class="ad-form-footer">
+                        <a href="{{ admin_route('admin.announcements') }}" class="btn btn-secondary">キャンセル</a>
+                        <button type="submit" class="btn btn-primary ad-submit no-loading" id="deliverySubmitButton">
+                            <span><i class="fas fa-eye" aria-hidden="true"></i> <span id="deliverySubmitLabel">確認画面へ</span></span>
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <p class="ad-submit-note"><i class="fas fa-circle-info" aria-hidden="true"></i> 確認画面で内容を最終チェックしてから配信します</p>
                 </div>
             </aside>

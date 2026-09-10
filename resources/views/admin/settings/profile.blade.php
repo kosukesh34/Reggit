@@ -61,6 +61,7 @@
                     @foreach($view->settings['smaregi_fields'] ?? [] as $key => $field)
                     @php
                         $isName = $key === 'name';
+                        $isProfileImage = $key === 'profile_image';
                         $fieldLabel = $field['label'] ?? $key;
                     @endphp
                     <tr>
@@ -68,6 +69,8 @@
                             {{ $fieldLabel }}
                             @if($isName)
                                 <div class="text-muted small">お名前は常に表示・必須です</div>
+                            @elseif($isProfileImage)
+                                <div class="text-muted small">オンにすると会員本人が画像を登録・変更・削除できます</div>
                             @endif
                         </td>
                         <td class="profile-switch-cell">
@@ -82,6 +85,9 @@
                         </td>
                         <td class="profile-switch-cell">
                             <input type="hidden" name="smaregi_fields[{{ $key }}][required]" value="{{ $isName ? '1' : '0' }}">
+                            @if($isProfileImage)
+                                <span class="text-muted small">—</span>
+                            @else
                             <label class="profile-switch profile-switch--small">
                                 <input type="checkbox" name="smaregi_fields[{{ $key }}][required]" value="1" {{ !empty($field['required']) ? 'checked' : '' }} {{ $isName ? 'disabled' : '' }} aria-label="{{ $fieldLabel }}を入力必須にする">
                                 <span class="profile-switch-ui" aria-hidden="true">
@@ -89,6 +95,7 @@
                                     <span class="profile-switch-off">オフ</span>
                                 </span>
                             </label>
+                            @endif
                         </td>
                     </tr>
                     @endforeach

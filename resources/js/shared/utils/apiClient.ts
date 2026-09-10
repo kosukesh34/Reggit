@@ -174,6 +174,10 @@ export class ApiClient {
             ...this.baseHeaders,
             ...headers,
         };
+        const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+        if (isFormData) {
+            delete requestHeaders['Content-Type'];
+        }
         const projectKey =
             typeof window !== 'undefined' && window.__PROJECT_KEY__
                 ? window.__PROJECT_KEY__
@@ -220,7 +224,9 @@ export class ApiClient {
         };
 
         if (body) {
-            config.body = typeof body === 'string' ? body : JSON.stringify(body);
+            config.body = typeof body === 'string' || isFormData
+                ? body as BodyInit
+                : JSON.stringify(body);
         }
 
         const url =
