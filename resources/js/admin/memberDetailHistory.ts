@@ -83,7 +83,7 @@ function initMemberDetailHistory(): void {
             ].forEach((key) => params.delete(key));
             const qs = params.toString();
             const next = qs === '' ? window.location.pathname : `${window.location.pathname}?${qs}`;
-            window.history.replaceState({}, '', next);
+            window.history.replaceState({}, '', next + window.location.hash);
         };
 
         const load = async (keyword: string, from: string, to: string, page: number): Promise<void> => {

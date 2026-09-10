@@ -51,6 +51,7 @@ class ShopSettingKeys
     ];
 
     public const PROFILE_SMAREGI_FIELDS = [
+        'profile_image' => 'プロフィール画像',
         'name' => 'お名前（姓・名）',
         'kana' => 'フリガナ（姓・名）',
         'phone' => '電話番号',
