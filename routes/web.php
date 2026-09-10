@@ -46,6 +46,9 @@ use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
+use App\Http\Controllers\Landing\LandingRegistrationEmailController;
+use App\Http\Controllers\Landing\LandingRegistrationFormController;
+use App\Http\Controllers\Landing\LandingRegistrationVerifyController;
 use App\Http\Controllers\LiffController;
 use App\Http\Controllers\Onboarding\OnboardingPageController;
 use App\Http\Controllers\Queue\QueueOpenController;
@@ -67,6 +70,19 @@ Route::get('/', function () {
 
     return view('landing');
 });
+
+Route::post('/lp/register/email', LandingRegistrationEmailController::class)
+    ->middleware('throttle:5,1')
+    ->name('landing.register.email');
+Route::get('/lp/register/{registration}/verify', LandingRegistrationVerifyController::class)
+    ->middleware('signed')
+    ->name('landing.register.verify');
+Route::get('/lp/register/{registration}/form', [LandingRegistrationFormController::class, 'show'])
+    ->middleware('signed')
+    ->name('landing.register.form');
+Route::post('/lp/register/{registration}/form', [LandingRegistrationFormController::class, 'store'])
+    ->middleware('signed')
+    ->name('landing.register.form.submit');
 
 Route::get('/api', function () {
     return response()->json(['message' => 'Reggit API']);
