@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=56">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=57">
 </head>
 <body class="lp">
     <header class="lp-header">
@@ -27,6 +27,7 @@
             </nav>
             <div class="lp-header__actions">
                 <a class="lp-text-link" href="/liff">LINE版を体験</a>
+                <a class="lp-button lp-button--small lp-button--outline" href="#register">導入登録</a>
                 <a class="lp-button lp-button--small lp-button--dark" href="{{ route('admin.login') }}">管理画面ログイン</a>
             </div>
         </div>
@@ -263,6 +264,28 @@
                 <details><summary><span>03</span>複数店舗でも利用できますか？</summary><p>はい。店舗ごとに権限や設定を分けながら、同じ運用品質で管理できます。</p></details>
                 <details><summary><span>04</span>LINEからネイティブへ展開できますか？</summary><p>同じ管理基盤を利用するため、既存の店舗運用や顧客データを活かしながら提供形態を広げられます。具体的な移行範囲は導入時に設計します。</p></details>
             </div>
+        </section>
+
+        <section id="register" class="lp-container lp-register" aria-labelledby="register-title">
+            <div class="lp-register__copy">
+                <p class="lp-eyebrow">導入登録</p>
+                <h2 id="register-title">まずはメールアドレスから。</h2>
+                <p>認証メールをお送りします。認証が完了すると入力フォームのURLをご案内し、送信後すぐに管理画面と店舗アプリ（LIFF）のURLをお渡しします。システム管理者の操作は不要です。</p>
+            </div>
+            <form class="lp-register__form" method="POST" action="{{ route('landing.register.email') }}">
+                @csrf
+                @if (session('status'))
+                    <p class="lp-alert lp-alert--success" role="status">{{ session('status') }}</p>
+                @endif
+                @if ($errors->has('email'))
+                    <p class="lp-alert lp-alert--error" role="alert">{{ $errors->first('email') }}</p>
+                @endif
+                <label class="lp-field">
+                    <span>メールアドレス</span>
+                    <input type="email" name="email" value="{{ old('email') }}" autocomplete="email" required maxlength="255" placeholder="you@example.com">
+                </label>
+                <button type="submit" class="lp-button lp-button--primary">認証メールを送る</button>
+            </form>
         </section>
 
         <section class="lp-container lp-cta">
