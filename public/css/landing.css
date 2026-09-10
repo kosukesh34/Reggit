@@ -66,6 +66,7 @@ body.lp h3 {
 }
 
 body.lp a:focus-visible,
+body.lp button:focus-visible,
 body.lp summary:focus-visible {
     outline: 3px solid #dc744f;
     outline-offset: 4px;
@@ -75,7 +76,8 @@ body.lp summary:focus-visible {
 #features,
 #screens,
 #admin,
-#faq {
+#faq,
+#register {
     scroll-margin-top: 76px;
 }
 
@@ -155,11 +157,18 @@ body.lp summary:focus-visible {
     padding: 0.78rem 1.2rem;
     border: 1px solid transparent;
     border-radius: 7px;
+    font-family: inherit;
     font-size: 0.82rem;
     font-weight: 700;
     line-height: 1.4;
     text-decoration: none;
+    cursor: pointer;
     transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+button.lp-button {
+    appearance: none;
+    width: auto;
 }
 
 .lp-button:hover {
@@ -978,6 +987,141 @@ body.lp summary:focus-visible {
     font-size: 0.84rem;
 }
 
+.lp-register {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+    align-items: end;
+    gap: clamp(2rem, 5vw, 4.5rem);
+    margin-bottom: clamp(3rem, 6vw, 5.5rem);
+    padding: clamp(2.4rem, 5vw, 4rem);
+    border: 1px solid var(--lp-line);
+    border-radius: 12px;
+    background: var(--lp-surface);
+}
+
+.lp-register h2 {
+    margin-bottom: 0.8rem;
+    font-family: var(--lp-display);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+}
+
+.lp-register__copy > p:last-of-type {
+    margin: 0;
+    color: var(--lp-muted);
+    font-size: 0.88rem;
+}
+
+.lp-register__form,
+.lp-inquiry__form {
+    display: grid;
+    gap: 1rem;
+}
+
+.lp-field {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.lp-field span {
+    color: var(--lp-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.lp-field input,
+.lp-field select,
+.lp-field textarea {
+    width: 100%;
+    padding: 0.78rem 0.9rem;
+    border: 1px solid var(--lp-line);
+    border-radius: 7px;
+    background: var(--lp-bg);
+    color: var(--lp-text);
+    font-family: inherit;
+    font-size: 0.92rem;
+}
+
+.lp-field textarea {
+    resize: vertical;
+    min-height: 8rem;
+}
+
+.lp-alert {
+    margin: 0;
+    padding: 0.7rem 0.9rem;
+    border-radius: 7px;
+    font-size: 0.82rem;
+}
+
+.lp-alert--success {
+    background: #e8f6ee;
+    color: #166344;
+}
+
+.lp-alert--error {
+    background: #fdecea;
+    color: #9b2c2c;
+}
+
+.lp-sub main {
+    padding: 3.5rem 0 5rem;
+}
+
+.lp-status,
+.lp-inquiry {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.lp-status h1,
+.lp-inquiry h1 {
+    margin-bottom: 0.8rem;
+    font-family: var(--lp-display);
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    line-height: 1.3;
+}
+
+.lp-status p,
+.lp-inquiry__lead {
+    margin-bottom: 1.6rem;
+    color: var(--lp-muted);
+}
+
+.lp-ready__list {
+    display: grid;
+    gap: 1rem;
+    margin: 0 0 1.8rem;
+}
+
+.lp-ready__list > div {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.lp-ready__list dt {
+    color: var(--lp-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.lp-ready__list dd {
+    margin: 0;
+    word-break: break-all;
+    font-size: 0.92rem;
+}
+
+.lp-ready__list a {
+    color: var(--lp-cta);
+    text-decoration: underline;
+}
+
+.lp-ready__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+}
+
 .lp-cta {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(300px, 0.65fr);
@@ -1160,6 +1304,17 @@ body.lp summary:focus-visible {
 
     .lp-button {
         width: 100%;
+    }
+
+    .lp-header__actions .lp-button {
+        width: auto;
+    }
+
+    .lp-register {
+        grid-template-columns: 1fr;
+        gap: 1.6rem;
+        margin-bottom: 3rem;
+        padding: 1.6rem 1.2rem;
     }
 
     .lp-hero__media {
