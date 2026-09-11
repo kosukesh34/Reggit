@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=58">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=60">
 </head>
 <body class="lp">
     <a class="lp-skip" href="#main">本文へスキップ</a>
@@ -260,7 +260,7 @@
         </section>
 
         <section id="faq" class="lp-container lp-section lp-faq" aria-labelledby="faq-title">
-            <header class="lp-section-heading lp-section-heading--compact"><div><p class="lp-eyebrow">よくあるご質問</p><h2 id="faq-title">導入前に知っておきたいこと。</h2></div></header>
+            <header class="lp-section-heading lp-section-heading--compact"><div><p class="lp-eyebrow">よくあるご質問</p><h2 id="faq-title">導入前に<br>知っておきたいこと。</h2></div></header>
             <div class="lp-faq__list">
                 <details><summary><span>01</span>LINEプランとネイティブプランの違いは何ですか？</summary><p>LINEプランはダウンロード不要で、友だち追加後すぐに使えます。ネイティブプランは同じ画面をiOS・Androidの専用アプリ（WebView）として配布し、アプリストア掲載とプッシュ通知に対応します。</p></details>
                 <details><summary><span>02</span>プランごとに管理画面は変わりますか？</summary><p>管理画面と基本の運用フローは共通です。会員・注文・予約・順番待ち・スタンプ・クーポンを同じ画面から確認できます。</p></details>

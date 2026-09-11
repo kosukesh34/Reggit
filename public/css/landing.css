@@ -69,15 +69,12 @@ body.lp h1,
 body.lp h2,
 body.lp h3 {
     letter-spacing: -0.03em;
-    text-wrap: balance;
+    line-break: strict;
 }
 
 body.lp a:focus-visible,
 body.lp button:focus-visible,
-body.lp summary:focus-visible,
-body.lp input:focus-visible,
-body.lp select:focus-visible,
-body.lp textarea:focus-visible {
+body.lp summary:focus-visible {
     outline: 3px solid var(--lp-focus);
     outline-offset: 3px;
 }
@@ -544,6 +541,10 @@ button.lp-button {
     max-width: 40rem;
 }
 
+.lp-plans {
+    overflow-x: clip;
+}
+
 .lp-plan-list {
     border-top: 1px solid var(--lp-line);
 }
@@ -558,9 +559,18 @@ button.lp-button {
 }
 
 .lp-plan--native {
+    position: relative;
+    isolation: isolate;
     background: #fff;
-    box-shadow: 0 0 0 100vmax #fff;
-    clip-path: inset(0 -100vmax);
+}
+
+.lp-plan--native::before {
+    content: "";
+    position: absolute;
+    inset: 0 -100vw;
+    z-index: -1;
+    background: #fff;
+    pointer-events: none;
 }
 
 .lp-plan__index {
@@ -777,6 +787,7 @@ button.lp-button {
     font-weight: 600;
     line-height: 1.35;
     letter-spacing: -0.04em;
+    word-break: keep-all;
 }
 
 .lp-feature__copy > p:not(.lp-feature__number) {
@@ -854,8 +865,8 @@ button.lp-button {
 
 .lp-app-screen figcaption {
     display: flex;
-    justify-content: space-between;
-    gap: 1rem;
+    justify-content: flex-start;
+    gap: 0.75rem;
     margin-top: 0.9rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--lp-line);
@@ -1018,7 +1029,7 @@ button.lp-button {
     position: relative;
     display: grid;
     grid-template-columns: 44px 1fr;
-    align-items: center;
+    align-items: start;
     gap: 0.85rem;
     padding: 1.45rem 2.75rem 1.45rem 0;
     cursor: pointer;
@@ -1037,6 +1048,7 @@ button.lp-button {
 }
 
 .lp-faq summary span {
+    padding-top: 0.28rem;
     color: var(--lp-green);
     font-family: var(--lp-display);
     font-size: 0.72rem;
@@ -1045,13 +1057,12 @@ button.lp-button {
 .lp-faq summary::after {
     content: "+";
     position: absolute;
-    top: 50%;
+    top: 1.35rem;
     right: 0;
     color: var(--lp-green);
     font-family: var(--lp-display);
     font-size: 1.25rem;
     font-weight: 500;
-    transform: translateY(-50%);
 }
 
 .lp-faq details[open] summary {
@@ -1103,6 +1114,17 @@ button.lp-button {
     gap: 0.9rem;
 }
 
+@media (min-width: 1041px) {
+    .lp-register__form {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+    }
+
+    .lp-register__form .lp-alert {
+        grid-column: 1 / -1;
+    }
+}
+
 .lp-register__form .lp-button {
     justify-self: start;
     min-width: 10.5rem;
@@ -1140,8 +1162,11 @@ button.lp-button {
 }
 
 .lp-field input:focus,
+.lp-field input:focus-visible,
 .lp-field select:focus,
-.lp-field textarea:focus {
+.lp-field select:focus-visible,
+.lp-field textarea:focus,
+.lp-field textarea:focus-visible {
     border-color: var(--lp-cta);
     background: #fff;
     box-shadow: 0 0 0 3px rgba(22, 99, 68, 0.16);
@@ -1393,6 +1418,17 @@ button.lp-button {
     .lp-screens__grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1.5rem 1.25rem;
+    }
+
+    .lp-section-heading {
+        grid-template-columns: 1fr;
+        align-items: start;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .lp-laptop__base {
+        width: 100%;
     }
 
     .lp-integrations {
