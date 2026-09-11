@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reggit — 会員証・注文・スタンプ・順番待ちを、ひとつの店舗アプリで</title>
     <meta name="description" content="LINEミニアプリで会員証、ポイント、スタンプ、クーポン、モバイルオーダー、順番待ち、予約を提供。必要なら同じ画面をiOS・Androidの専用アプリとしても配布できます。店舗運用はひとつの管理画面に集約します。">
-    <meta name="theme-color" content="#163d34">
+    <meta name="theme-color" content="#3d2b26">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=57">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=58">
 </head>
 <body class="lp">
+    <a class="lp-skip" href="#main">本文へスキップ</a>
     <header class="lp-header">
         <div class="lp-container lp-header__inner">
             <a class="lp-brand" href="/" aria-label="Reggit トップへ">
@@ -33,11 +34,11 @@
         </div>
     </header>
 
-    <main>
+    <main id="main">
         <section class="lp-container lp-hero" aria-labelledby="hero-title">
             <div class="lp-hero__copy">
                 <p class="lp-eyebrow">店舗アプリ運営プラットフォーム</p>
-                <h1 id="hero-title"><span>お店のアプリを、</span><span>LINEでも、</span><em>ネイティブでも。</em></h1>
+                <h1 id="hero-title">お店のアプリを、<br>LINEでも、<br><em>ネイティブでも。</em></h1>
                 <p class="lp-hero__lead">会員証、ポイント、スタンプ、クーポン、モバイルオーダー、順番待ち、予約。お客様の接点はLINEミニアプリですぐ始められ、必要なら同じ画面をiOS・Androidの専用アプリとしても配布できます。店舗側の運用は、ひとつの管理画面に集約します。</p>
                 <div class="lp-hero__actions">
                     <a class="lp-button lp-button--primary" href="/liff">実際のLINE版UIを体験 <span aria-hidden="true">→</span></a>
@@ -146,11 +147,13 @@
 
             <div class="lp-shared">
                 <strong>両プラン共通</strong>
-                <span>管理画面</span>
-                <span>顧客・会員データ</span>
-                <span>注文・予約・順番待ち</span>
-                <span>ポイント・スタンプ・クーポン</span>
-                <span>店舗別のデザイン設定</span>
+                <ul>
+                    <li>管理画面</li>
+                    <li>顧客・会員データ</li>
+                    <li>注文・予約・順番待ち</li>
+                    <li>ポイント・スタンプ・クーポン</li>
+                    <li>店舗別のデザイン設定</li>
+                </ul>
             </div>
         </section>
 
@@ -212,7 +215,7 @@
                 </div>
                 <p>LINEプランとネイティブプランは同じ機能基盤を使います。以下はデモ店舗で動作している画面です。ホームから注文、会員証、ポイント、クーポン、順番待ちまでつながります。</p>
             </header>
-            <div class="lp-screens__labels" aria-label="対応プラン"><span>LINE PLAN</span><i></i><span>NATIVE PLAN（同じ画面）</span></div>
+            <p class="lp-screens__labels" aria-label="対応プラン"><span>LINE PLAN</span><i></i><span>NATIVE PLAN（同じ画面）</span></p>
             <div class="lp-screens__grid">
                 <figure class="lp-app-screen"><div class="lp-phone lp-phone--gallery"><img src="{{ asset('images/landing/app/actual-home.webp') }}?v=5" alt="デモ店舗のホーム画面" width="390" height="844" loading="lazy"></div><figcaption><span>01</span>ホーム</figcaption></figure>
                 <figure class="lp-app-screen"><div class="lp-phone lp-phone--gallery"><img src="{{ asset('images/landing/app/actual-order.webp') }}?v=5" alt="デモ店舗のモバイルオーダー画面" width="390" height="844" loading="lazy"></div><figcaption><span>02</span>注文</figcaption></figure>

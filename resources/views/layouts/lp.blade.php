@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title') — Reggit</title>
-    <meta name="theme-color" content="#163d34">
+    <meta name="theme-color" content="#3d2b26">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=57">
+    <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=58">
 </head>
 <body class="lp lp-sub">
+    <a class="lp-skip" href="#main">本文へスキップ</a>
     <header class="lp-header">
         <div class="lp-container lp-header__inner">
             <a class="lp-brand" href="/" aria-label="Reggit トップへ">
@@ -24,7 +25,7 @@
             </div>
         </div>
     </header>
-    <main>
+    <main id="main">
         @yield('content')
     </main>
     <footer class="lp-footer">
