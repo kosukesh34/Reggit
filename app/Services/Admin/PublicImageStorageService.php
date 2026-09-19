@@ -21,6 +21,10 @@ class PublicImageStorageService
 
     public const DIR_COUPON_DEFAULT = 'coupon_defaults';
 
+    public const DIR_NAVIGATION_HEADER = 'navigation_headers';
+
+    public const DIR_HOME_IMAGE = 'home_images';
+
     public function store(UploadedFile $file, int $projectId, string $directory): string
     {
         $path = $file->store($directory.'/'.$projectId, 'public');

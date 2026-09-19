@@ -35,6 +35,13 @@ class ProductStoreRequest extends FormRequest
             'is_available' => 'nullable|boolean',
             'stock_unlimited' => 'nullable|boolean',
             'stock' => $stockRules,
+            'option_groups' => 'nullable|array|max:10',
+            'option_groups.*.name' => 'required|string|max:100',
+            'option_groups.*.selection_type' => 'required|in:single,multiple',
+            'option_groups.*.is_required' => 'nullable|boolean',
+            'option_groups.*.options' => 'required|array|min:1|max:20',
+            'option_groups.*.options.*.name' => 'required|string|max:100',
+            'option_groups.*.options.*.price_delta' => 'required|numeric|min:0|max:999999',
         ];
     }
 }

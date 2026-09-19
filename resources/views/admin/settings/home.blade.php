@@ -25,27 +25,68 @@
     <h1 class="page-header-title"><i class="fas fa-home"></i> ホーム設定</h1>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
-@endif
-@if(session('info'))
-    <div class="alert alert-info"><i class="fas fa-info-circle"></i> {{ session('info') }}</div>
-@endif
-
-<form action="{{ admin_route('admin.settings.home.update') }}" method="POST" id="home-settings-form">
+<form action="{{ admin_route('admin.settings.home.update') }}" method="POST" enctype="multipart/form-data" id="home-settings-form">
     @csrf
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title"><i class="fas fa-th-large"></i> 表示するタブ</h2>
+            <h2 class="card-title"><i class="fas fa-window-maximize"></i> アプリのナビゲーションバー</h2>
         </div>
         <div class="card-body">
-            <p class="form-text mb-3">表示するタブにチェックを入れ、行をドラッグして並び順を変更できます。ラベルとアイコンもここで編集できます。表示していないタブは灰色で表示されます。</p>
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoInputName' => 'navigation_header_image',
+                'logoClearName' => 'navigation_header_image_clear',
+                'logoFieldId' => 'navigation_header_image',
+                'logoCurrentUrl' => (string) old('navigation_header_image_url', $navigationHeaderImageUrl ?? ''),
+                'logoLabel' => 'ナビゲーションバー中央の画像',
+                'logoHelp' => '全タブ共通のナビゲーションバー中央に表示します。推奨サイズは 600 × 120px（比率5:1）、PNG・WebPの透過画像が適しています。',
+            ])
+            <div class="form-group mt-3">
+                <label for="navigation_header_background_color" class="form-label">ヘッダー背景色</label>
+                <div style="display:flex;align-items:center;gap:12px;max-width:360px">
+                    <input type="color" id="navigation_header_background_color_picker" value="{{ old('navigation_header_background_color', $navigationHeaderBackgroundColor ?? '#FFFFFF') }}" style="width:52px;height:42px;padding:3px">
+                    <input type="text" class="form-control" id="navigation_header_background_color" name="navigation_header_background_color" value="{{ old('navigation_header_background_color', $navigationHeaderBackgroundColor ?? '#FFFFFF') }}" pattern="^#[0-9A-Fa-f]{6}$" maxlength="7">
+                </div>
+                <p class="form-text">ステータスバー直下から各タブの上部まで共通して使用する色です。</p>
+            </div>
+            <div class="form-group mt-3">
+                <label class="form-label">ホームメニュー</label>
+                <select name="home_menu_layout" class="form-control" style="max-width:360px" required>
+                    <option value="grid_3x2" {{ old('home_menu_layout', $homeMenuLayout ?? 'grid_3x2') === 'grid_3x2' ? 'selected' : '' }}>横3列 × 縦2行</option>
+                    <option value="grid_2_columns" {{ old('home_menu_layout', $homeMenuLayout ?? '') === 'grid_2_columns' ? 'selected' : '' }}>2列</option>
+                    <option value="list" {{ old('home_menu_layout', $homeMenuLayout ?? '') === 'list' ? 'selected' : '' }}>説明付きリスト</option>
+                </select>
+                <p class="form-text">ホーム画面の画像下に表示するメニューのレイアウトを選択します。表示項目は下の一覧で設定できます。</p>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-image"></i> ホーム画面の画像</h2>
+        </div>
+        <div class="card-body">
+            @include('admin.partials._frontend_logo_dropzone', [
+                'logoInputName' => 'home_image',
+                'logoClearName' => 'home_image_clear',
+                'logoFieldId' => 'home_image',
+                'logoCurrentUrl' => (string) old('home_image_url', $homeImageUrl ?? ''),
+                'logoLabel' => 'ホーム上部のメイン画像',
+                'logoHelp' => '推奨サイズは 1200 × 660px（約20:11）です。JPEG・PNG・WebP、8MB以下の画像を設定できます。',
+            ])
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-th-large"></i> ホームメニューの表示設定</h2>
+        </div>
+        <div class="card-body">
+            <p class="form-text mb-3">ホームメニューに表示する項目へチェックを入れ、行をドラッグして並び順を変更できます。有効な項目のうち先頭6件を表示します。</p>
             <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
                         <tr>
                             <th style="width:44px" aria-label="並び替え"></th>
                             <th style="width:80px">表示</th>
+                            <th style="width:90px">表示順</th>
                             <th style="width:100px">タブ（キー）</th>
                             <th>ラベル</th>
                             <th style="width:180px">アイコン</th>
@@ -59,11 +100,18 @@
                             </td>
                             <td>
                                 <input type="hidden" name="tabs[{{ $index }}][tab]" value="{{ $tab['tab'] }}">
-                                <input type="hidden" class="home-settings-order-input" name="tabs[{{ $index }}][order]" value="{{ $tab['order'] }}">
                                 <label class="checkbox-label">
+                                    <input type="hidden" name="tabs[{{ $index }}][enabled]" value="0">
                                     <input type="checkbox" name="tabs[{{ $index }}][enabled]" value="1" {{ $tab['enabled'] ? 'checked' : '' }} class="home-settings-enabled-cb">
                                     <span>表示</span>
                                 </label>
+                            </td>
+                            <td>
+                                <select class="form-control home-settings-order-input" name="tabs[{{ $index }}][order]">
+                                    @for($position = 0; $position < count($tabs); $position++)
+                                        <option value="{{ $position }}" {{ (int) $tab['order'] === $position ? 'selected' : '' }}>{{ $position + 1 }}</option>
+                                    @endfor
+                                </select>
                             </td>
                             <td>
                                 <span class="text-muted">{{ $tab['tab'] }}</span>
@@ -150,6 +198,15 @@
     tbody.addEventListener('drop', function(e) {
         e.preventDefault();
     });
+
+    var colorPicker = document.getElementById('navigation_header_background_color_picker');
+    var colorText = document.getElementById('navigation_header_background_color');
+    if (colorPicker && colorText) {
+        colorPicker.addEventListener('input', function() { colorText.value = colorPicker.value.toUpperCase(); });
+        colorText.addEventListener('input', function() {
+            if (/^#[0-9A-Fa-f]{6}$/.test(colorText.value)) colorPicker.value = colorText.value;
+        });
+    }
 })();
 </script>
 @endsection
