@@ -149,6 +149,7 @@ docker compose exec app php artisan admin:sync-password
 
 ## ドキュメント
 
+- [Reggit を作る理由・プロダクト判断の基準](docs/WHY.md)
 - [本番デプロイ（`reggit deploy`）](docs/DEPLOY.md)
 - [機能一覧・仕様](docs/FEATURES_SPEC.md)
 - [スタンプカード・達成特典・取引キャンセル（CS / Q&A）](docs/STAMP_RALLY_CS_FAQ.md)
