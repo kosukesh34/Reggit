@@ -40,7 +40,7 @@ class CouponControllerTest extends TestCase
         ]);
 
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
-            ->get('/api/members/me/coupons?project_key=default');
+            ->get('/api/member-coupons?project_key=default');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['coupons', 'default_image_url'])
@@ -65,7 +65,7 @@ class CouponControllerTest extends TestCase
         ]);
 
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
-            ->post('/api/members/me/coupons/'.$memberCoupon->id.'/use?project_key=default');
+            ->post('/api/member-coupons/'.$memberCoupon->id.'/redeem?project_key=default');
 
         $response->assertStatus(200)
             ->assertJsonPath('success', true)

@@ -30,15 +30,29 @@ use App\Infrastructure\Persistence\Eloquent\Order\EloquentProductStockRepository
 use App\Infrastructure\Persistence\Eloquent\Queue\EloquentQueueEntryRepository;
 use App\Infrastructure\Persistence\Eloquent\Reservation\EloquentReservationRepository;
 use App\Infrastructure\Persistence\Eloquent\Settings\EloquentShopSettingRepository;
+use App\Models\Announcement;
+use App\Models\Coupon;
+use App\Models\CouponRedemption;
+use App\Models\GalleryCategory;
+use App\Models\GalleryItem;
 use App\Models\MemberCoupon;
 use App\Models\MemberLotteryEntitlement;
 use App\Models\MemberStamp;
+use App\Models\MemberStampTransaction;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PointTransaction;
+use App\Models\Product;
+use App\Models\ProductOption;
+use App\Models\ProductOptionGroup;
 use App\Models\Project;
+use App\Models\QueueEntry;
+use App\Models\Reservation;
 use App\Observers\MemberCouponObserver;
 use App\Observers\MemberLotteryEntitlementObserver;
 use App\Observers\MemberStampObserver;
 use App\Observers\PointTransactionObserver;
+use App\Observers\ProjectDataRealtimeObserver;
 use App\Observers\ProjectObserver;
 use App\Repositories\Contracts\AdminUserRepository;
 use App\Repositories\Contracts\ProjectRepository;
@@ -108,6 +122,26 @@ class AppServiceProvider extends ServiceProvider
         MemberCoupon::observe(MemberCouponObserver::class);
         PointTransaction::observe(PointTransactionObserver::class);
         MemberLotteryEntitlement::observe(MemberLotteryEntitlementObserver::class);
+        foreach ([
+            Announcement::class,
+            Coupon::class,
+            CouponRedemption::class,
+            GalleryCategory::class,
+            GalleryItem::class,
+            MemberCoupon::class,
+            MemberStamp::class,
+            MemberStampTransaction::class,
+            Order::class,
+            OrderItem::class,
+            PointTransaction::class,
+            Product::class,
+            ProductOption::class,
+            ProductOptionGroup::class,
+            QueueEntry::class,
+            Reservation::class,
+        ] as $realtimeModel) {
+            $realtimeModel::observe(ProjectDataRealtimeObserver::class);
+        }
         require base_path('routes/channels.php');
 
         if ($this->app->runningInConsole() === false) {
