@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Scopes\ProjectScope;
 use App\Services\Smaregi\SmaregiProductRegisterService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProductAdminService
@@ -25,6 +26,8 @@ class ProductAdminService
      */
     public function create(int $projectId, array $data): Product
     {
+        $optionGroups = $data['option_groups'] ?? [];
+        unset($data['option_groups']);
         $data['project_id'] = $projectId;
 
         if ($this->smaregiProductRegister->hasSmaregiContract($projectId)) {
@@ -37,7 +40,12 @@ class ProductAdminService
             }
         }
 
-        return Product::create($data);
+        return DB::transaction(function () use ($data, $optionGroups, $projectId) {
+            $product = Product::create($data);
+            $this->syncOptionGroups($product, $optionGroups, $projectId);
+
+            return $product->load('optionGroups.options');
+        });
     }
 
     public function findOrFail(int $id): Product
@@ -50,6 +58,7 @@ class ProductAdminService
     {
         return Product::withoutGlobalScope(ProjectScope::class)
             ->where('project_id', $projectId)
+            ->with('optionGroups.options')
             ->findOrFail($id);
     }
 
@@ -61,6 +70,8 @@ class ProductAdminService
     {
         $product = Product::findOrFail($id);
         $projectId = (int) $product->project_id;
+        $optionGroups = $data['option_groups'] ?? [];
+        unset($data['option_groups']);
 
         if ($this->smaregiProductRegister->hasSmaregiContract($projectId)) {
             $smaregiId = $product->smaregi_product_id ?? '';
@@ -82,9 +93,12 @@ class ProductAdminService
             }
         }
 
-        $product->update($data);
+        DB::transaction(function () use ($product, $data, $optionGroups, $projectId) {
+            $product->update($data);
+            $this->syncOptionGroups($product, $optionGroups, $projectId);
+        });
 
-        return $product;
+        return $product->load('optionGroups.options');
     }
 
     /**
@@ -134,5 +148,33 @@ class ProductAdminService
         }
 
         $this->smaregiProductRegister->registerProductImage($projectId, $smaregiProductId, $imageUrl);
+    }
+
+    /** @param array<int, array<string, mixed>> $groups */
+    private function syncOptionGroups(Product $product, array $groups, int $projectId): void
+    {
+        $product->optionGroups()->delete();
+        foreach (array_values($groups) as $groupIndex => $groupData) {
+            $selectionType = (string) ($groupData['selection_type'] ?? 'single');
+            $required = (bool) ($groupData['is_required'] ?? false);
+            $group = $product->optionGroups()->create([
+                'project_id' => $projectId,
+                'name' => (string) $groupData['name'],
+                'selection_type' => $selectionType,
+                'is_required' => $required,
+                'min_select' => $required ? 1 : 0,
+                'max_select' => $selectionType === 'single' ? 1 : null,
+                'sort_order' => $groupIndex,
+            ]);
+            foreach (array_values($groupData['options'] ?? []) as $optionIndex => $optionData) {
+                $group->options()->create([
+                    'project_id' => $projectId,
+                    'name' => (string) $optionData['name'],
+                    'price_delta' => (float) ($optionData['price_delta'] ?? 0),
+                    'is_default' => false,
+                    'sort_order' => $optionIndex,
+                ]);
+            }
+        }
     }
 }
