@@ -19,4 +19,35 @@ struct AppConfig {
     let projectName: String
     let tabs: [AppTabItem]
     let primaryColor: String
+    let navigationHeaderImageURL: String?
+    let navigationHeaderBackgroundColor: String
+    let homeImageURL: String?
+    let homeMenuLayout: String
+    let memberShowRankProgress: Bool
+    let memberShowPointHistory: Bool
+    let memberShowCouponActivity: Bool
+
+    init(
+        projectName: String,
+        tabs: [AppTabItem],
+        primaryColor: String,
+        navigationHeaderImageURL: String? = nil,
+        navigationHeaderBackgroundColor: String = "#FFFFFF",
+        homeImageURL: String? = nil,
+        homeMenuLayout: String = "grid_3x2",
+        memberShowRankProgress: Bool = true,
+        memberShowPointHistory: Bool = true,
+        memberShowCouponActivity: Bool = true
+    ) {
+        self.projectName = projectName
+        self.tabs = tabs
+        self.primaryColor = primaryColor
+        self.navigationHeaderImageURL = navigationHeaderImageURL
+        self.navigationHeaderBackgroundColor = navigationHeaderBackgroundColor
+        self.homeImageURL = homeImageURL
+        self.homeMenuLayout = homeMenuLayout
+        self.memberShowRankProgress = memberShowRankProgress
+        self.memberShowPointHistory = memberShowPointHistory
+        self.memberShowCouponActivity = memberShowCouponActivity
+    }
 }

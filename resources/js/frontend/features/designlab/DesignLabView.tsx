@@ -182,9 +182,10 @@ export function DesignLabView(): JSX.Element {
 
     if (!ready) {
         return (
-            <div className="loading">
-                <i className="fas fa-spinner fa-spin" />
-                <p>読み込み中...</p>
+            <div className="design-lab-skeleton" aria-busy="true" aria-label="ガチャを読み込み中">
+                <div className="skeleton design-lab-skeleton__title" />
+                <div className="skeleton design-lab-skeleton__card" />
+                <div className="skeleton design-lab-skeleton__card design-lab-skeleton__card--short" />
             </div>
         );
     }

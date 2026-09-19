@@ -5,10 +5,9 @@ import FoundationNetworking
 
 struct NetworkShellURLReachabilityChecker: ShellURLReachabilityChecking {
     func isReachable(_ urlString: String) async -> Bool {
-        #if os(Android)
-        // Android では URLSession.shared がハングし、スプラッシュから抜けなくなる。
-        return true
-        #else
+        if PlatformRuntime.shouldSkipNetworkReachabilityProbe {
+            return true
+        }
         guard let url = URL(string: urlString) else { return false }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -22,7 +21,6 @@ struct NetworkShellURLReachabilityChecker: ShellURLReachabilityChecking {
             logger.warning("Shell URL reachability check failed: \(error.localizedDescription)")
             return false
         }
-        #endif
     }
 
     func unreachableMessage(for urlString: String) -> String {

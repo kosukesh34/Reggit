@@ -193,12 +193,12 @@ export const reggitApi = {
   async bootstrap(_storeId: string): Promise<RuntimeBootstrap> {
     await ensureIdentity();
     const [memberRes, couponRes, newsRes, productRes, stampRes, queueRes, orderRes, reservationRes] = await Promise.allSettled([
-      getJson(AppConstants.API_ENDPOINTS.MEMBERS_ME),
-      getJson(AppConstants.API_ENDPOINTS.MY_COUPONS),
+      getJson(AppConstants.API_ENDPOINTS.MEMBER_PROFILE),
+      getJson(AppConstants.API_ENDPOINTS.MEMBER_COUPONS),
       getJson(AppConstants.API_ENDPOINTS.ANNOUNCEMENTS),
       getJson(AppConstants.API_ENDPOINTS.PRODUCTS),
       getJson(AppConstants.API_ENDPOINTS.STAMPS),
-      getJson(AppConstants.API_ENDPOINTS.QUEUE_ME),
+      getJson(AppConstants.API_ENDPOINTS.CURRENT_QUEUE),
       getJson(AppConstants.API_ENDPOINTS.ORDERS),
       getJson(AppConstants.API_ENDPOINTS.RESERVATIONS_AVAILABLE_DATES),
     ]);
@@ -342,7 +342,7 @@ export const reggitApi = {
   },
 
   async useCoupon(_storeId: string, couponId: string): Promise<OperationReceipt> {
-    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MY_COUPON_USE(couponId)), {});
+    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBER_COUPON_REDEEM(couponId)), {});
     if (!result.success) {
       throw new Error(result.error || 'クーポンを利用できませんでした');
     }

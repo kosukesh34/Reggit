@@ -1,7 +1,7 @@
 import { ChevronRight, CircleHelp, FileText, Heart, History, LogOut, MapPin, MessageCircle, Settings, ShoppingBag, Sparkles, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { LandingShowcaseRegister } from "./LandingShowcasePage";
+import { LandingShowcaseMore } from "./LandingShowcasePage";
 import { useAppConfig } from "../context/AppConfigContext";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -31,7 +31,7 @@ export function MorePage() {
   const isMember = member.isMember;
 
   if (experienceId === "landing-showcase") {
-    return <LandingShowcaseRegister />;
+    return <LandingShowcaseMore />;
   }
   const availableFeatures = featureDefinitions.filter((feature) => activeStore.features[feature.type]);
   const lotteryServices = shouldShowLotteryEntry()

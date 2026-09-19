@@ -86,7 +86,7 @@ export async function loadReservations(): Promise<ReservationsLoadResult> {
     }
 
     try {
-        const memberResult = await client().get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+        const memberResult = await client().get(AppConstants.API_ENDPOINTS.MEMBER_PROFILE);
         if (memberResult.success === true) {
             const memberPayload = memberResult.data as { is_member?: boolean } | null | undefined;
             if (memberPayload?.is_member === true && mm !== undefined && typeof mm.setMemberData === 'function') {

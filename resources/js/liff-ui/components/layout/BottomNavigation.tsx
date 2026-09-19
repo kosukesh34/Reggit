@@ -79,7 +79,14 @@ export function BottomNavigation() {
   });
   const safeTypes: TabType[] = visibleTypes.length > 0 ? visibleTypes : ["home", "more"];
   const crmNav = resolveHomeLayout(customization.home.layout) === "crm";
-  const tabs: TabConfig[] = safeTypes.slice(0, 6).map((type, index) => {
+  const isShowcase = activeStore.storeId === "store_landing_showcase";
+  // The demo exposes every feature from Home / More, while the persistent bar
+  // stays intentionally small enough to scan and tap with one hand.
+  const navigationTypes: TabType[] = isShowcase
+    ? (["home", "mobileOrder", "membership", "coupon", "more"] as TabType[])
+      .filter((type) => safeTypes.includes(type))
+    : safeTypes.slice(0, 6);
+  const tabs: TabConfig[] = navigationTypes.map((type, index) => {
     const storeTab = activeStore.tabs.find((tab) => tab.type === type);
     return {
       id: `${type}-${index}`,

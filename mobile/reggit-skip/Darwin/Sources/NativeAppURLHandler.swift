@@ -1,26 +1,11 @@
 #if canImport(UIKit)
 import Reggit
-import SkipWeb
 import UIKit
 
 enum NativeAppURLHandler {
     @MainActor
     static func install() {
-        NativeWebNavigationBridge.handleCustomURL = { url in
-            handle(url)
-        }
-        #if canImport(PassKit)
-        NativeWebNavigationBridge.handleDownload = { request in
-            guard let url = request.url else { return }
-            let mime = request.mimeType?.lowercased() ?? ""
-            let isPkPass = mime.contains("pkpass")
-                || mime.contains("application/zip")
-                || url.pathExtension.lowercased() == "pkpass"
-                || url.path.contains("wallet-pass")
-            guard isPkPass else { return }
-            AppleWalletPassAddHelper.shared.addPass(from: url.absoluteString)
-        }
-        #endif
+        // WebView 橋渡しは不要。ディープリンクは Main / QueueDeepLinkHandler で処理する。
     }
 
     @MainActor
@@ -28,6 +13,9 @@ enum NativeAppURLHandler {
     static func handle(_ url: URL) -> Bool {
         guard url.scheme == NativeAppIdentity.urlScheme else { return false }
         if QueueDeepLinkHandler.handle(url) {
+            return true
+        }
+        if PaymentDeepLinkHandler.handle(url) {
             return true
         }
         if url.host == "openExternal" {

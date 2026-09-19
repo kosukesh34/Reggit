@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SkipFuse
 
 @MainActor
 @Observable
@@ -17,19 +18,26 @@ final class ShellLaunchReachabilityGate {
     var showAlert = false
 
     private let reachabilityChecker: any ShellURLReachabilityChecking
-    private let liffURLString: String
+    private let healthURLString: String
     private let activityMinimum: TimeInterval
     private let reachabilityTimeout: TimeInterval
 
     init(
         reachabilityChecker: any ShellURLReachabilityChecking = NetworkShellURLReachabilityChecker(),
-        liffURLString: String? = nil,
+        healthURLString: String? = nil,
         activityMinimum: TimeInterval = WebShellTiming.splashActivityMinimum,
         reachabilityTimeout: TimeInterval = WebShellTiming.reachabilityTimeout
     ) {
         self.reachabilityChecker = reachabilityChecker
-        self.liffURLString = liffURLString
-            ?? BundleMobileWebConfigRepository().resolveConfig().liffURLString
+        if let healthURLString {
+            self.healthURLString = healthURLString
+        } else {
+            let config = BundleMobileWebConfigRepository().resolveConfig()
+            self.healthURLString = ReggitAPIClient.apiHealthURL(
+                baseURL: config.baseUrl,
+                projectKey: config.projectKey
+            )
+        }
         self.activityMinimum = activityMinimum
         self.reachabilityTimeout = reachabilityTimeout
     }
@@ -47,9 +55,9 @@ final class ShellLaunchReachabilityGate {
 
         if result == false {
             phase = .unreachable
-            alertMessage = reachabilityChecker.unreachableMessage(for: liffURLString)
+            alertMessage = reachabilityChecker.unreachableMessage(for: healthURLString)
             showAlert = true
-            logger.error("Launch shell unreachable url=\(self.liffURLString)")
+            logger.error("Launch API unreachable url=\(self.healthURLString)")
             return
         }
         phase = .reachable
@@ -62,8 +70,8 @@ final class ShellLaunchReachabilityGate {
     /// `nil` = タイムアウト（到達不能とはみなさず起動を進める）
     private func checkReachabilityWithTimeout() async -> Bool? {
         await withTaskGroup(of: Bool?.self) { group in
-            group.addTask { [reachabilityChecker, liffURLString] in
-                await reachabilityChecker.isReachable(liffURLString)
+            group.addTask { [reachabilityChecker, healthURLString] in
+                await reachabilityChecker.isReachable(healthURLString)
             }
             group.addTask { [reachabilityTimeout] in
                 let nanos = UInt64(reachabilityTimeout * 1_000_000_000)
