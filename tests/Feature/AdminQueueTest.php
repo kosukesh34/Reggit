@@ -2,12 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MemberNotificationPreference;
 use App\Enums\QueueStatus;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
+use App\Models\Member;
 use App\Models\Project;
 use App\Models\QueueCallLog;
 use App\Models\QueueEntry;
+use App\Models\User;
+use App\Services\Line\LineService;
+use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class AdminQueueTest extends TestCase
@@ -159,5 +166,43 @@ class AdminQueueTest extends TestCase
         $callLog->refresh();
         $this->assertTrue($callLog->called_at->gt(now()->subMinute()));
         $this->assertSame(QueueStatus::CALLED, $entry->fresh()->status);
+    }
+
+    public function test_admin_呼び出し通知は通常通知オフでも送信対象になること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project->id);
+        ShopSettingStore::setLineChannelAccessToken('queue-test-token', $project->id);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'U'.str_repeat('a', 32),
+        ]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'notification_preference' => MemberNotificationPreference::NONE,
+        ]);
+        $entry = QueueEntry::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'user_id' => $user->id,
+            'status' => QueueStatus::WAITING,
+        ]);
+        $push = Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendQueueCalledToUser')
+            ->once()
+            ->with((int) $project->id, (int) $user->id, Mockery::type('string'))
+            ->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
+        $this->app->instance(PushNotificationService::class, $push);
+        $line = Mockery::mock(LineService::class);
+        $line->shouldReceive('pushMessage')->once()->andReturn([]);
+        $this->app->instance(LineService::class, $line);
+
+        $this->actingAs($admin, 'admin')
+            ->postJson(route('admin.queue.status', ['project_key' => $project->project_key, 'id' => $entry->id]), [
+                'status' => QueueStatus::CALLED,
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true);
     }
 }
