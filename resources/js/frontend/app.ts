@@ -1930,7 +1930,7 @@ class ReggitApp {
             return;
         }
         try {
-            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_PROFILE);
             if (result.success === true) {
                 const memberPayload = result.data as { is_member?: boolean } | null | undefined;
                 if (memberPayload?.is_member) {
@@ -2020,7 +2020,7 @@ if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
         return false;
     }
 
-    // フォールバック: 5秒以内にliff-readyが来なければ起動（LIFFでは LINE ID 確定後のみ members/me を叩く）
+    // フォールバック: 5秒以内にliff-readyが来なければ起動（LIFFでは LINE ID 確定後のみ member-profile を叩く）
     setTimeout(() => {
         if (!window.app && typeof ReggitApp !== 'undefined' && canBootstrapWithoutLiffReady()) {
             createApp();

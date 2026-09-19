@@ -17,7 +17,7 @@ enum NativeAppTabs {
         "home", "products", "orders", "stamps", "coupons",
         "queue", "member", "reservations", "gallery",
     ]
-    static let defaultFixedTab = "products"
+    static let defaultFixedTab = "home"
 }
 
 enum WebShellTiming {

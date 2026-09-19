@@ -5,6 +5,7 @@ import { isDemoDataMode, isFeatureUiShell } from '../../demo/demoMode';
 import { ensureLiffIdentityForLoad } from '../../demo/ensureIdentity';
 import { isMembershipRequired } from '../../utils/membershipPolicy';
 import { LIFF_COUPONS_RELOAD, LIFF_COUPONS_UPDATED } from '../products/types';
+import { subscribeProjectDataUpdates } from '../../realtime/liffEcho';
 import {
     type CouponRecord,
     formatCouponDate,
@@ -33,6 +34,14 @@ type CouponsManagerLike = {
 };
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'login' | 'error';
+
+type DeviceCoupon = {
+    id: number;
+    name: string;
+    description?: string;
+    image_url?: string | null;
+    valid_until?: string | null;
+};
 
 const COUPON_FORM_PREVIEW_ID = '__reggit_coupon_form_preview__';
 
@@ -87,7 +96,7 @@ async function fetchCoupons(): Promise<{
         return { state: 'error', coupons: [], defaultImage: null, message: 'APIクライアントが未初期化です' };
     }
 
-    const result = await apiClient.get(AppConstants.API_ENDPOINTS.MY_COUPONS);
+    const result = await apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_COUPONS);
     if (result.success !== true) {
         return {
             state: 'error',
@@ -391,6 +400,8 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         && window.__COUPON_FORM_PREVIEW__ === true;
     const [loadState, setLoadState] = useState<LoadState>('idle');
     const [coupons, setCoupons] = useState<CouponRecord[]>([]);
+    const [deviceCoupons, setDeviceCoupons] = useState<DeviceCoupon[]>([]);
+    const [claimingDeviceCouponId, setClaimingDeviceCouponId] = useState<number | null>(null);
     const [formPreviewCoupon, setFormPreviewCoupon] = useState<CouponRecord | null>(null);
     const [defaultImage, setDefaultImage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState('');
@@ -403,13 +414,21 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         setLoadState('loading');
         try {
             const result = await fetchCoupons();
+            let deviceOffers: DeviceCoupon[] = [];
+            const apiClient = window.app?.apiClient as { get?: (url: string) => Promise<{ success?: boolean; data?: unknown }> } | undefined;
+            if (apiClient?.get !== undefined) {
+                const available = await apiClient.get(AppConstants.API_ENDPOINTS.DEVICE_COUPONS);
+                const payload = available.data as { data?: { coupons?: DeviceCoupon[] }; coupons?: DeviceCoupon[] } | undefined;
+                deviceOffers = payload?.data?.coupons ?? payload?.coupons ?? [];
+                setDeviceCoupons(deviceOffers);
+            }
             setCoupons(result.coupons);
             setDefaultImage(result.defaultImage);
             setErrorMessage(result.message);
             setLoadState(result.state);
             const groups = groupCoupons(result.coupons);
             const visible = sortVisibleCoupons(groups.available.concat(groups.upcoming));
-            setActiveTab(visible.length > 0 ? 'available' : 'history');
+            setActiveTab(visible.length > 0 || deviceOffers.length > 0 ? 'available' : 'history');
             document.dispatchEvent(new CustomEvent(LIFF_COUPONS_UPDATED, {
                 detail: { coupons: result.coupons, defaultImage: result.defaultImage },
             }));
@@ -419,6 +438,36 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         }
         return true;
     }, []);
+
+    const claimDeviceCoupon = useCallback(async (coupon: DeviceCoupon): Promise<void> => {
+        const apiClient = window.app?.apiClient as { post?: (url: string, body: unknown) => Promise<{ success?: boolean; error?: string }> } | undefined;
+        if (apiClient?.post === undefined || claimingDeviceCouponId !== null) return;
+        setClaimingDeviceCouponId(coupon.id);
+        const result = await apiClient.post(AppConstants.API_ENDPOINTS.DEVICE_COUPON_CLAIM(coupon.id), {});
+        setClaimingDeviceCouponId(null);
+        if (result.success !== true) {
+            window.alert(result.error || 'クーポンを獲得できませんでした');
+            return;
+        }
+        await reload();
+    }, [claimingDeviceCouponId, reload]);
+
+    const deviceCouponPanel = deviceCoupons.length > 0 ? (
+        <section className="device-coupon-panel" aria-label="この端末で獲得できるクーポン">
+            <h3><i className="fas fa-gift" aria-hidden="true" /> この端末で獲得できるクーポン</h3>
+            {deviceCoupons.map((coupon) => (
+                <div className="device-coupon-offer" key={coupon.id}>
+                    <div>
+                        <strong>{coupon.name}</strong>
+                        <small>{coupon.description || '1端末につき1回だけ獲得できます'}</small>
+                    </div>
+                    <button type="button" className="btn btn-primary" disabled={claimingDeviceCouponId !== null} onClick={() => { void claimDeviceCoupon(coupon); }}>
+                        {claimingDeviceCouponId === coupon.id ? '獲得中…' : '獲得'}
+                    </button>
+                </div>
+            ))}
+        </section>
+    ) : null;
 
     useEffect(() => {
         let cancelled = false;
@@ -450,9 +499,15 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         const onReload = (): void => {
             void reload();
         };
+        const unsubscribeRealtime = subscribeProjectDataUpdates((payload) => {
+            if (payload.topic === 'coupons' || payload.topic === 'all') {
+                void reload();
+            }
+        });
         document.addEventListener(LIFF_COUPONS_RELOAD, onReload);
         return () => {
             cancelled = true;
+            unsubscribeRealtime();
             document.removeEventListener(LIFF_COUPONS_RELOAD, onReload);
         };
     }, [reload]);
@@ -559,7 +614,7 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
         );
     }
 
-    if (displayCoupons.length === 0) {
+    if (displayCoupons.length === 0 && deviceCoupons.length === 0) {
         if (fixed) {
             return (
                 <div className={className} data-react-coupons="1">
@@ -614,6 +669,7 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
                     </button>
                 </div>
                 <div className={`coupons-tab-panel${activeTab === 'available' ? ' is-active' : ''}`} data-panel="available" role="tabpanel">
+                    {deviceCouponPanel}
                     {visibleCoupons.length > 0 ? (
                         <div className="ios-coupon-stack">
                             {visibleCoupons.map((cp, i) => (
@@ -675,6 +731,7 @@ export function CouponsView({ className = 'coupons-data-mount' }: CouponsViewPro
                 </button>
             </div>
             <div className={`coupons-tab-panel${activeTab === 'available' ? ' is-active' : ''}`} data-panel="available" role="tabpanel">
+                {deviceCouponPanel}
                 {visibleCoupons.length > 0 ? (
                     <div className="coupons-list">
                         {visibleCoupons.map((cp) => (

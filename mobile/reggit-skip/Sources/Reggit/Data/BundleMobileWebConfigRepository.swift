@@ -4,7 +4,7 @@ import Foundation
 /// - Debug ビルド: 開発用（ngrok）に接続
 /// - Release ビルド: Skip.env / Info.plist の LIFF_BASE_URL（本番: reggit.jp）を使用
 #if DEBUG
-private let useDevelopmentServer = false
+private let useDevelopmentServer = true
 #else
 private let useDevelopmentServer = false
 #endif
@@ -80,13 +80,7 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
     }
 
     private func readPlatformMetaString(iosKeys: [String], androidKeys: [String]) -> String? {
-        #if os(Android)
-        return normalizeValue(readMetaString(keys: androidKeys)) ?? normalizeValue(readMetaString(keys: iosKeys))
-        #elseif os(iOS)
-        return normalizeValue(readMetaString(keys: iosKeys)) ?? normalizeValue(readMetaString(keys: androidKeys))
-        #else
-        return normalizeValue(readMetaString(keys: iosKeys)) ?? normalizeValue(readMetaString(keys: androidKeys))
-        #endif
+        normalizeValue(readMetaString(keys: iosKeys + androidKeys))
     }
 
     private func normalizeValue(_ value: String?) -> String? {
@@ -99,7 +93,7 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
     }
 
     private static let fallbackBaseUrlIOS = "https://reggit.jp"
-    private static let fallbackProjectKey = "sb_skt733n4"
+    private static let fallbackProjectKey = "sb_skp835t6"
 
     private func defaultBaseUrl() -> String {
         Self.fallbackBaseUrlIOS
