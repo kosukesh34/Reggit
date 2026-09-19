@@ -34,6 +34,14 @@ class QueueController extends AdminBaseController
         $status = $request->validated('status');
         $this->updateStatusUseCase->handle($id, $status);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'status' => $status,
+                'message' => 'ステータスを更新しました',
+            ]);
+        }
+
         return redirect()->back()
             ->with('success', 'ステータスを「'.AdminStatusLabels::queueStatusLabel($status).'」に更新しました');
     }

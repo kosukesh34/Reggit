@@ -646,7 +646,7 @@ class QueueApiTest extends TestCase
 
         $response = $this->withHeaders([
             'X-Device-Identifier' => 'native-device-member-me-1',
-        ])->get('/api/queue/me?project_key=default');
+        ])->get('/api/queue/current?project_key=default');
 
         $response->assertStatus(200)
             ->assertJsonPath('queue_entry.id', $entry->id)

@@ -188,6 +188,7 @@ class PushNotificationService
     /** @return array{target_tokens:int,sent:int,failed:int,skipped:int} */
     public function sendQueueCalledToUser(int $projectId, int $userId, string $queueNumber): array
     {
+        // 呼び出しは販促通知ではなく来店運用に必要な通知のため、会員の通常通知設定では抑止しない。
         $title = '順番待ちのお知らせ';
         $body = sprintf('順番が近づきました。受付番号: %s', $queueNumber);
         $data = [

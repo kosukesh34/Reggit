@@ -16,6 +16,10 @@ class CouponStoreRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->merge([
+            'is_active' => $this->boolean('is_active'),
+            'device_once_enabled' => $this->boolean('device_once_enabled'),
+        ]);
         foreach (['min_order_amount', 'max_order_amount', 'usage_limit'] as $field) {
             if ($this->input($field) === '') {
                 $this->merge([$field => null]);
@@ -49,6 +53,7 @@ class CouponStoreRequest extends FormRequest
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date|after_or_equal:start_at',
             'is_active' => 'nullable|boolean',
+            'device_once_enabled' => 'nullable|boolean',
         ];
     }
 

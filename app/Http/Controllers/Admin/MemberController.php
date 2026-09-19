@@ -194,7 +194,12 @@ class MemberController extends AdminBaseController
         $validated = $request->validate([
             'coupon_id' => ['required', 'integer', Rule::exists('coupons', 'id')->where('project_id', $projectId)],
         ]);
-        $this->issueCouponUseCase->handle($projectId, $id, (int) $validated['coupon_id']);
+        try {
+            $this->issueCouponUseCase->handle($projectId, $id, (int) $validated['coupon_id']);
+        } catch (InvalidArgumentException $e) {
+            return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
+                ->with('error', $e->getMessage());
+        }
 
         return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
             ->with('success', 'クーポンを配布しました');

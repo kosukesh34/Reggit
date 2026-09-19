@@ -51,6 +51,7 @@ use App\Http\Controllers\Landing\LandingRegistrationFormController;
 use App\Http\Controllers\Landing\LandingRegistrationVerifyController;
 use App\Http\Controllers\LiffController;
 use App\Http\Controllers\Onboarding\OnboardingPageController;
+use App\Http\Controllers\Payment\PaymentReturnController;
 use App\Http\Controllers\Queue\QueueOpenController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
@@ -382,3 +383,5 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
     Route::get('/mail-test', [MailTestController::class, 'show'])->name('system-admin.mail-test.show');
     Route::post('/mail-test', [MailTestController::class, 'send'])->name('system-admin.mail-test.send')->middleware('throttle:10,1');
 });
+Route::get('/mobile/payment/return', PaymentReturnController::class)
+    ->name('mobile.payment.return');

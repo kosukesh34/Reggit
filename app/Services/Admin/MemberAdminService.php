@@ -34,7 +34,6 @@ use App\Support\MemberChannel;
 use App\Util\DateUtil;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -332,6 +331,9 @@ class MemberAdminService
     {
         return Coupon::where('project_id', $projectId)
             ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('end_at')->orWhere('end_at', '>=', now());
+            })
             ->orderBy('name')
             ->get();
     }
@@ -357,8 +359,11 @@ class MemberAdminService
     ): MemberCoupon {
         $coupon = Coupon::where('project_id', $member->project_id)->findOrFail($couponId);
         $now = now();
-        $validFrom = $validFrom ?? $now;
-        $validUntil = $validUntil ?? $coupon->end_at ?? Carbon::now()->addDays(30);
+        if ($coupon->end_at !== null && $coupon->end_at->lt($now)) {
+            throw new \InvalidArgumentException('このクーポンは期限切れです');
+        }
+        $validFrom = $validFrom ?? $coupon->start_at ?? $now;
+        $validUntil = $validUntil ?? $coupon->end_at;
 
         $this->memberCouponRepository->issue(new PendingIssuedCoupon(
             (int) $member->project_id,
@@ -400,7 +405,10 @@ class MemberAdminService
             $query->whereIn('id', $memberIds);
         }
         $members = $query->get();
-        $validUntil = $coupon->end_at ?? Carbon::now()->addDays(30);
+        if ($coupon->end_at !== null && $coupon->end_at->lt(now())) {
+            throw new \InvalidArgumentException('このクーポンは期限切れです');
+        }
+        $validUntil = $coupon->end_at;
         $now = now();
         $issuedMemberIds = [];
         foreach ($members as $member) {

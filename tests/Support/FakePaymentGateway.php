@@ -8,6 +8,8 @@ class FakePaymentGateway implements PaymentGateway
 {
     public array $created = [];
 
+    public array $checkoutCreated = [];
+
     public array $intent = [];
 
     public array $event = [];
@@ -19,6 +21,20 @@ class FakePaymentGateway implements PaymentGateway
         return [
             'client_secret' => 'cs_test_123',
             'id' => 'pi_test_123',
+        ];
+    }
+
+    public function createCheckoutSession(
+        int $amount,
+        int $orderId,
+        string $successUrl,
+        string $cancelUrl,
+    ): array {
+        $this->checkoutCreated = compact('amount', 'orderId', 'successUrl', 'cancelUrl');
+
+        return [
+            'url' => 'https://checkout.stripe.test/session',
+            'id' => 'cs_test_123',
         ];
     }
 

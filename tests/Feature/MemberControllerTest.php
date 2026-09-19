@@ -89,21 +89,21 @@ class MemberControllerTest extends TestCase
         $this->assertSame(1, User::query()->where('line_user_id', self::LINE_USER_ID)->count());
     }
 
-    public function test_me_会員データを返すこと(): void
+    public function test_member_profile_会員データを返すこと(): void
     {
         $project = $this->createProject();
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
 
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
-            ->get('/api/members/me?project_key=default');
+            ->get('/api/member-profile?project_key=default');
 
         $response->assertStatus(200)
             ->assertJsonPath('is_member', true);
 
         ShopSettingStore::setMemberRegistrationMode('prompt', (int) $project->id);
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
-            ->get('/api/members/me?project_key=default');
+            ->get('/api/member-profile?project_key=default');
         $response->assertStatus(200)
             ->assertJsonPath('member_registration_mode', 'prompt');
     }
