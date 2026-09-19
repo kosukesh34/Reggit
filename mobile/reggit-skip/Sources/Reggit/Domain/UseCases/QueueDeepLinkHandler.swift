@@ -1,6 +1,6 @@
 import Foundation
 
-/// `reggit://queue?project_key=...&queue_token=...` を解釈して WebView 側へ渡す。
+/// `reggit://queue?project_key=...&queue_token=...` を解釈してネイティブ待ち順タブへ渡す。
 @MainActor
 public enum QueueDeepLinkHandler {
     @discardableResult
@@ -14,7 +14,7 @@ public enum QueueDeepLinkHandler {
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !queueToken.isEmpty else { return false }
 
-        MobileWebShellSession.viewModel().handleQueueDeepLink(queueToken: queueToken)
+        NativeAppSession.rootViewModel().handleQueueDeepLink(queueToken: queueToken)
         return true
     }
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { BuilderBlock } from './blocks/BuilderBlock';
 import { handleBuilderNavClick } from './blocks/builderNav';
-import { resetMemberMeCache } from './blocks/memberBind';
+import { resetMemberProfileCache } from './blocks/memberBind';
 import type { BuilderBlockData } from './blocks/types';
 
 type BuilderLayoutProps = {
@@ -100,7 +100,7 @@ function BuilderLayoutInner({ tab, blocks }: BuilderLayoutProps): JSX.Element {
         section.dataset.reactOwned = '1';
         section.dataset.layoutRendered = '1';
         applyTabSettings(section, tab);
-        resetMemberMeCache();
+        resetMemberProfileCache();
 
         const onClick = (e: MouseEvent): void => {
             handleBuilderNavClick(e);

@@ -204,7 +204,9 @@ export function buildProjectStore(): StoreAppConfig {
   const projectKey = typeof window !== 'undefined' && window.__PROJECT_KEY__
     ? String(window.__PROJECT_KEY__)
     : 'default';
-  const template = appConfig.stores.find((store) => store.storeId === MEMBER_CRM_STORE_ID) ?? appConfig.stores[0];
+  const template = appConfig.stores.find((store) => store.storeId === 'store_landing_showcase')
+    ?? appConfig.stores.find((store) => store.storeId === MEMBER_CRM_STORE_ID)
+    ?? appConfig.stores[0];
   const name = headerTitle();
   const logoUrl = headerLogoUrl();
   const features = buildFeatures();

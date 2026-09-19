@@ -1,8 +1,12 @@
 import Foundation
 
 extension String {
+    var trimmed: String {
+        trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var trimmedNonEmpty: String? {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
+        let value = trimmed
+        return value.isEmpty ? nil : value
     }
 }

@@ -3,8 +3,8 @@
 LIFF_BASE_URL = https:/$()/reggit.jp
 LIFF_BASE_URL_IOS = https:/$()/reggit.jp
 LIFF_BASE_URL_ANDROID = https:/$()/reggit.jp
-LIFF_PROJECT_KEY = sb_skt733n4
-LIFF_FIXED_TAB = products
+LIFF_PROJECT_KEY = sb_skp835t6
+LIFF_FIXED_TAB = home
 #include "../Skip.env"
 
 // LIFF のベースURL（Skip.env の LIFF_BASE_URL を Info.plist に渡す）
