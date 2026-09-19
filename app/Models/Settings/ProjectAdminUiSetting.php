@@ -22,6 +22,13 @@ class ProjectAdminUiSetting extends Model
         'stamp_default_image_url',
         'coupon_default_image_url',
         'frontend_logo_url',
+        'navigation_header_image_url',
+        'navigation_header_background_color',
+        'home_image_url',
+        'home_menu_layout',
+        'member_show_rank_progress',
+        'member_show_point_history',
+        'member_show_coupon_activity',
         'frontend_header_text',
     ];
 

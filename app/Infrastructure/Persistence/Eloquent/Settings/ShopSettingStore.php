@@ -79,6 +79,13 @@ class ShopSettingStore
         'stamp_default_image_url' => ProjectAdminUiSetting::class,
         'coupon_default_image_url' => ProjectAdminUiSetting::class,
         'frontend_logo_url' => ProjectAdminUiSetting::class,
+        'navigation_header_image_url' => ProjectAdminUiSetting::class,
+        'navigation_header_background_color' => ProjectAdminUiSetting::class,
+        'home_image_url' => ProjectAdminUiSetting::class,
+        'home_menu_layout' => ProjectAdminUiSetting::class,
+        'member_show_rank_progress' => ProjectAdminUiSetting::class,
+        'member_show_point_history' => ProjectAdminUiSetting::class,
+        'member_show_coupon_activity' => ProjectAdminUiSetting::class,
         'frontend_header_text' => ProjectAdminUiSetting::class,
         'profile_field_settings' => ProjectProfileSmaregiSetting::class,
         'member_registration_mode' => ProjectProfileSmaregiSetting::class,
@@ -267,7 +274,7 @@ class ShopSettingStore
         foreach ($defaults as $tab => $default) {
             $item = $saved->get($tab);
             $row = $item !== null ? array_merge($default, $item) : $default;
-            if (isset($row['enabled']) && $row['enabled'] === false) {
+            if (array_key_exists('enabled', $row) && ! filter_var($row['enabled'], FILTER_VALIDATE_BOOLEAN)) {
                 continue;
             }
             $row['icon'] = self::normalizeFrontendMenuIcon((string) $tab, (string) ($row['icon'] ?? ''));
@@ -281,7 +288,7 @@ class ShopSettingStore
                 continue;
             }
             if ($isLinkTab) {
-                if (isset($item['enabled']) && $item['enabled'] === false) {
+                if (array_key_exists('enabled', $item) && ! filter_var($item['enabled'], FILTER_VALIDATE_BOOLEAN)) {
                     continue;
                 }
                 if (! isset($item['url']) || preg_match('/^https:\/\//i', (string) $item['url']) !== 1) {

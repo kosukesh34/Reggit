@@ -40,6 +40,9 @@ class GetRankSettingsUseCase
             $this->shopSettingRepository->getRankAggregationType($projectId),
             $this->shopSettingRepository->getRankPeriodDays($projectId),
             $this->shopSettingRepository->getIsRankDownEnabled($projectId),
+            (bool) $this->shopSettingRepository->getValue('member_show_rank_progress', true, $projectId),
+            (bool) $this->shopSettingRepository->getValue('member_show_point_history', true, $projectId),
+            (bool) $this->shopSettingRepository->getValue('member_show_coupon_activity', true, $projectId),
         );
     }
 

@@ -33,6 +33,9 @@ class SettingsRanksRequest extends FormRequest
             'show_points_display' => 'nullable|boolean',
             'show_rank_progress' => 'nullable|boolean',
             'show_member_card_for_guest' => 'nullable|boolean',
+            'member_show_rank_progress' => 'nullable|boolean',
+            'member_show_point_history' => 'nullable|boolean',
+            'member_show_coupon_activity' => 'nullable|boolean',
             'member_card_design' => 'nullable|string|in:'.implode(',', MemberCardDesignMap::DESIGNS),
             'member_card_display_type' => 'nullable|string|in:card,sheet',
             'member_card_code_type' => 'nullable|string|in:barcode,qrcode',
@@ -55,6 +58,11 @@ class SettingsRanksRequest extends FormRequest
         $v['show_points_display'] = $this->boolean('show_points_display', true);
         $v['show_rank_progress'] = $this->boolean('show_rank_progress', true);
         $v['show_member_card_for_guest'] = $this->boolean('show_member_card_for_guest', true);
+        foreach (['member_show_rank_progress', 'member_show_point_history', 'member_show_coupon_activity'] as $settingKey) {
+            if ($this->has($settingKey)) {
+                $v[$settingKey] = $this->boolean($settingKey);
+            }
+        }
         $v['use_stamps'] = $this->boolean('use_stamps', true);
         $v['use_transaction_stamps'] = $this->boolean('use_transaction_stamps', true);
         $v['use_points'] = $this->boolean('use_points', true);

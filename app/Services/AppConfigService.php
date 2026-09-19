@@ -106,9 +106,20 @@ class AppConfigService
             ],
             'header' => [
                 'logo_url' => $repo->getFrontendLogoUrl($projectId),
+                'image_url' => (string) $repo->getValue('navigation_header_image_url', '', $projectId),
+                'background_color' => (string) $repo->getValue('navigation_header_background_color', '#FFFFFF', $projectId),
                 'text' => trim((string) ($global['app_display_name'] ?? '')) !== ''
                     ? (string) $global['app_display_name']
                     : $repo->getFrontendHeaderText($projectId),
+            ],
+            'home' => [
+                'menu_layout' => (string) $repo->getValue('home_menu_layout', 'grid_3x2', $projectId),
+                'image_url' => (string) $repo->getValue('home_image_url', '', $projectId),
+            ],
+            'member_screen' => [
+                'show_rank_progress' => (bool) $repo->getValue('member_show_rank_progress', true, $projectId),
+                'show_point_history' => (bool) $repo->getValue('member_show_point_history', true, $projectId),
+                'show_coupon_activity' => (bool) $repo->getValue('member_show_coupon_activity', true, $projectId),
             ],
             'line' => [
                 'liff_id' => $repo->getLineLiffId($projectId),
