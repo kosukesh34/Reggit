@@ -93,8 +93,8 @@ export function getSampleQueueEntry(): QueueEntry {
     return { ...buildBuiltinSampleQueueEntry(), is_sample_preview: true };
 }
 
-export async function fetchQueueMe(): Promise<{ success: true; data: QueueStats } | { success: false; error: string }> {
-    const result = await client().get(AppConstants.API_ENDPOINTS.QUEUE_ME);
+export async function fetchCurrentQueue(): Promise<{ success: true; data: QueueStats } | { success: false; error: string }> {
+    const result = await client().get(AppConstants.API_ENDPOINTS.CURRENT_QUEUE);
     if (result.success !== true) {
         return { success: false, error: result.error || '順番待ちの情報を取得できませんでした。' };
     }

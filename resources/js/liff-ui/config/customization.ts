@@ -417,11 +417,12 @@ export function memberCrmNavigationTabs(savedTabs?: TabType[]): TabType[] {
 }
 
 export function createDefaultCustomization(store: StoreAppConfig): AppCustomization {
+  const tabLimit = store.storeId === "store_landing_showcase" ? 16 : 6;
   const tabs = [...store.tabs]
     .filter((tab) => tab.enabled)
     .sort((a, b) => a.order - b.order)
     .map((tab) => tab.type)
-    .slice(0, 6);
+    .slice(0, tabLimit);
   const experience = storeExperienceMap[store.storeId]
     ?? (isIndustryGalleryStoreId(store.storeId) ? GALLERY_EXPERIENCE : storeExperienceMap.store_cafe);
   const useMemberCrm = store.storeId === MEMBER_CRM_STORE_ID;

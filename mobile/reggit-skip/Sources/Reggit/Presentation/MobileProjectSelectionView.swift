@@ -1,5 +1,5 @@
-import Foundation
 import Observation
+import SkipFuse
 import SwiftUI
 
 @MainActor
@@ -28,8 +28,7 @@ final class MobileProjectSelectionViewModel {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            let baseURL = configRepository.resolveConfig().baseUrl
-            let fetched = try await apiClient.fetchProjects(baseURL: baseURL)
+            let fetched = try await apiClient.fetchProjects(baseURL: configRepository.resolveConfig().baseUrl)
             projects = fetched
             if selectedProjectKey.isEmpty || !fetched.contains(where: { $0.projectKey == selectedProjectKey }) {
                 selectedProjectKey = fetched.first?.projectKey ?? ""
@@ -40,7 +39,7 @@ final class MobileProjectSelectionViewModel {
     }
 
     func confirmSelection() -> Bool {
-        let key = selectedProjectKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = selectedProjectKey.trimmed
         guard !key.isEmpty else {
             errorMessage = "プロジェクトを選択してください"
             return false
@@ -56,48 +55,81 @@ struct MobileProjectSelectionView: View {
     let onCompleted: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("プロジェクトを選択")
-                .font(.title2.bold())
-            Text("利用する店舗（プロジェクト）を選んでください")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            if viewModel.isLoading {
-                ProgressView()
-            } else if viewModel.projects.isEmpty {
-                Text(viewModel.errorMessage ?? "プロジェクトを取得できませんでした")
-                    .foregroundStyle(.secondary)
-                Button("再読み込み") {
-                    Task { await viewModel.loadProjects() }
+        SkipRefreshing {
+            VStack(spacing: 20) {
+                VStack(spacing: 8) {
+                    Text("店舗を選択")
+                        .font(.title2.bold())
+                    Text("利用する店舗を選んでください")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-            } else {
-                Picker("プロジェクト", selection: $viewModel.selectedProjectKey) {
-                    ForEach(viewModel.projects) { project in
-                        Text(project.name).tag(project.projectKey)
+
+                if viewModel.isLoading {
+                    VStack(spacing: 12) {
+                        SkeletonBlock(height: 48, cornerRadius: 12)
+                        SkeletonBlock(height: 48, cornerRadius: 12)
+                        SkeletonBlock(height: 48, cornerRadius: 12)
                     }
-                }
-                #if !os(Android)
-                .pickerStyle(.wheel)
-                #endif
-            }
+                } else if viewModel.projects.isEmpty {
+                    AppEmptyState(
+                        title: "店舗を取得できませんでした",
+                        subtitle: viewModel.errorMessage ?? "通信環境をご確認ください",
+                        systemImage: "building.2",
+                        actionTitle: "再読み込み",
+                        action: { Task { await viewModel.loadProjects() } }
+                    )
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(viewModel.projects) { project in
+                            Button {
+                                viewModel.selectedProjectKey = project.projectKey
+                            } label: {
+                                HStack {
+                                    Text(project.name)
+                                        .foregroundStyle(AppDesign.ink)
+                                    Spacer()
+                                    if viewModel.selectedProjectKey == project.projectKey {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(AppDesign.ink)
+                                    }
+                                }
+                                .padding(14)
+                                .background(AppDesign.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous)
+                                        .stroke(
+                                            viewModel.selectedProjectKey == project.projectKey
+                                                ? AppDesign.ink
+                                                : AppDesign.hairline,
+                                            lineWidth: 1
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
 
-            if let errorMessage = viewModel.errorMessage, !viewModel.projects.isEmpty {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            }
+                    if let errorMessage = viewModel.errorMessage {
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .foregroundStyle(AppDesign.danger)
+                    }
 
-            Button("このプロジェクトで開始") {
-                if viewModel.confirmSelection() {
-                    onCompleted()
+                    AppPrimaryButton(title: "この店舗ではじめる") {
+                        if viewModel.confirmSelection() {
+                            onCompleted()
+                        }
+                    }
+                    .disabled(viewModel.selectedProjectKey.isEmpty)
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.selectedProjectKey.isEmpty)
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(AppDesign.canvas.ignoresSafeArea())
         }
-        .padding(24)
         .task {
             await viewModel.loadProjects()
         }

@@ -12,13 +12,7 @@ struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     }
 
     var platform: NativePlatform {
-        #if os(iOS)
-        return .ios
-        #elseif os(Android)
-        return .android
-        #else
-        return .unknown
-        #endif
+        PlatformRuntime.nativePlatform
     }
 
     var deviceIdentifier: String {

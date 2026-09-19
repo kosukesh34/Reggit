@@ -4,7 +4,7 @@ import { industryGalleryCoupons, industryGalleryMemberProfiles, industryGalleryN
 export const additionalMemberProfiles: Record<string, MemberProfile> = {
   ...industryGalleryMemberProfiles(),
   store_member_crm: { name: "田中 太郎", number: "0001234567", rank: "GOLD MEMBER", points: 12480, expiration: "2026-12-31", nextRankLabel: "あと 2,520pt で PLATINUM MEMBER", isMember: true },
-  store_landing_showcase: { name: "Alex", number: "1234567890123456", rank: "GREEN", points: 2450, expiration: "2099-12-31", nextRankLabel: "あと550ポイントでGold", isMember: true },
+  store_landing_showcase: { name: "山田 太郎", number: "1234567890123456", rank: "GREEN", points: 2450, expiration: "2099-12-31", nextRankLabel: "あと550ポイントでゴールド", isMember: true },
   store_simple_rewards: { name: "山田 花子", number: "1000 2345", rank: "メンバー", points: 0, expiration: "2027-12-31", nextRankLabel: "", isMember: true },
   store_simple_home: { name: "山田 花子", number: "1000 2345", rank: "メンバー", points: 0, expiration: "2027-12-31", nextRankLabel: "", isMember: true },
   store_counter_operations: { name: "佐藤 直樹", number: "5000 0138", rank: "REGULAR", points: 1380, expiration: "2027-12-31", nextRankLabel: "あと120ptでドリンク特典", isMember: true },
@@ -29,8 +29,10 @@ export const additionalCoupons: Record<string, CouponItem[]> = {
     { id: "crm3", title: "会員限定 10%OFF", description: "対象商品に利用可能", validUntil: "2026-10-15" },
   ],
   store_landing_showcase: [
-    { id: "lp1", title: "Welcome Drink", description: "会員登録でドリンクを1杯プレゼント", validUntil: "2027-12-31", image: "/images/liff/coupon-drink.jpg", featured: true },
-    { id: "lp2", title: "Pastry 10% OFF", description: "お好きなペストリーに利用できます", validUntil: "2027-12-31", image: "/images/liff/coupon-dessert.jpg" },
+    { id: "lp1", title: "ウェルカムドリンク無料", description: "会員登録のお礼に、お好きなドリンクを1杯プレゼント", validUntil: "2027-12-31", image: "/images/liff/coupon-drink.jpg", featured: true },
+    { id: "lp2", title: "ペストリー 10% OFF", description: "お好きな焼き菓子・ペストリーに利用できます", validUntil: "2027-12-31", image: "/images/liff/coupon-dessert.jpg" },
+    { id: "lp3", title: "秋の新作ブレンド先行券", description: "来週から利用できる先行配信クーポン", validFrom: "2026-10-01", validUntil: "2026-10-31", image: "/images/liff/menu-matcha.jpg" },
+    { id: "lp4", title: "モーニングセット 100円OFF", description: "先月のご来店のお礼クーポン", validUntil: "2026-08-31", image: "/images/liff/menu-croissant.jpg" },
   ],
   store_simple_rewards: [
     { id: "sr1", title: "お会計 100円OFF", description: "税込1,000円以上のお会計で使えます", validUntil: "2027-12-31", featured: true },
@@ -95,7 +97,10 @@ export const additionalNews: Record<string, NewsItem[]> = {
     { id: "crmn1", title: "秋の新作コレクションが入荷しました。", date: "2026-08-28", category: "NEWS" },
     { id: "crmn2", title: "会員限定キャンペーン開催中です。", date: "2026-08-20", category: "CAMPAIGN" },
   ],
-  store_landing_showcase: [{ id: "lpn1", title: "LPスマホUIデモを公開しました", date: "2026-08-12", category: "DEMO" }],
+  store_landing_showcase: [
+    { id: "lpn1", title: "秋限定ブレンドの先行販売を始めました", date: "2026-09-18", category: "新商品", body: "香ばしいナッツとカカオの余韻を楽しめる、秋だけのブレンドです。" },
+    { id: "lpn2", title: "モバイルオーダーの受取時間を選べます", date: "2026-09-12", category: "お知らせ", body: "ご注文時に希望の受取時間を選択できるようになりました。" },
+  ],
   store_counter_operations: [{ id: "con1", title: "受取時間をリアルタイム表示しています", date: "2026-08-12", category: "店舗状況" }],
   store_appointment_operations: [{ id: "aon1", title: "8月後半の予約枠を公開しました", date: "2026-08-12", category: "予約案内" }],
   store_bakery: [{ id: "bn1", title: "秋の焼き上がりスケジュール", date: "2026-08-10", category: "BAKE" }, { id: "bn2", title: "パンの取り置きを開始しました", date: "2026-08-05", category: "INFO" }],
@@ -113,7 +118,7 @@ export const additionalNews: Record<string, NewsItem[]> = {
 export const additionalStoreSummaries: Record<string, StoreSummary> = {
   ...industryGalleryStoreSummaries(),
   store_member_crm: { name: "天神店", address: "福岡市中央区天神 1-1-1", openHours: "10:00 - 20:00", access: "天神駅 徒歩5分", phone: "092-1000-0001" },
-  store_landing_showcase: { name: "Laurel & Ivy", address: "東京都渋谷区神南1-2-3", openHours: "08:00 - 20:00", access: "渋谷駅 徒歩5分", phone: "03-1234-5678" },
+  store_landing_showcase: { name: "Reggit Café 渋谷店", address: "東京都渋谷区神南1-2-3", openHours: "08:00 - 20:00", access: "渋谷駅 徒歩5分", phone: "03-1234-5678" },
   store_simple_rewards: { name: "SIMPLE PASS 本店", address: "東京都渋谷区神南1-1-1", openHours: "10:00 - 19:00", access: "渋谷駅 徒歩5分", phone: "03-1000-2345" },
   store_simple_home: { name: "シンプルホーム本店", address: "東京都渋谷区神南1-1-2", openHours: "10:00 - 19:00", access: "渋谷駅 徒歩5分", phone: "03-1000-2346" },
   store_counter_operations: { name: "渋谷駅前カウンター", address: "東京都渋谷区道玄坂1-2-3", openHours: "08:00 - 21:00", access: "渋谷駅 徒歩1分", phone: "03-5000-0138" },

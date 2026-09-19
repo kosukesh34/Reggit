@@ -16,8 +16,8 @@
 		496BDBEE2B8A7E9C00C09264 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 496BDBED2B8A7E9C00C09264 /* Localizable.xcstrings */; };
 		499CD43B2AC5B799001AE8D8 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49F90C2B2A52156200F06D93 /* Main.swift */; };
 		499CD4402AC5B799001AE8D8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49F90C2F2A52156300F06D93 /* Assets.xcassets */; };
-		49AWLP012F01000000000001 /* AppleWalletPassAddHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49AWLP002F01000000000001 /* AppleWalletPassAddHelper.swift */; };
-		49NAUH012F02000000000001 /* NativeAppURLHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49NAUH002F02000000000001 /* NativeAppURLHandler.swift */; };
+		49A001012F01000000000001 /* AppleWalletPassAddHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A001002F01000000000001 /* AppleWalletPassAddHelper.swift */; };
+		49A002012F02000000000001 /* NativeAppURLHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A002002F02000000000001 /* NativeAppURLHandler.swift */; };
 		BE26A638EB0F11C71DCC2239 /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 86A764DD0DDF76194EB5120B /* OneSignalNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F92AE356670C2E844842AF44 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 36FA31182FC72B45177D75A8 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
@@ -67,11 +67,11 @@
 		496EB72F2A6AE4DE00C1253B /* Reggit.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Reggit.xcconfig; sourceTree = "<group>"; };
 		496EB72F2A6AE4DE00C1253C /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		499AB9082B0581F4005E8330 /* plugins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = plugins; path = ../../Intermediates.noindex/BuildToolPluginIntermediates; sourceTree = BUILT_PRODUCTS_DIR; };
-		49AWLP002F01000000000001 /* AppleWalletPassAddHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleWalletPassAddHelper.swift; path = Sources/AppleWalletPassAddHelper.swift; sourceTree = SOURCE_ROOT; };
+		49A001002F01000000000001 /* AppleWalletPassAddHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppleWalletPassAddHelper.swift; path = Sources/AppleWalletPassAddHelper.swift; sourceTree = SOURCE_ROOT; };
 		49F90C2B2A52156200F06D93 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Main.swift; path = Sources/Main.swift; sourceTree = SOURCE_ROOT; };
 		49F90C2F2A52156300F06D93 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		49F90C312A52156300F06D93 /* Entitlements.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Entitlements.plist; sourceTree = "<group>"; };
-		49NAUH002F02000000000001 /* NativeAppURLHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NativeAppURLHandler.swift; path = Sources/NativeAppURLHandler.swift; sourceTree = SOURCE_ROOT; };
+		49A002002F02000000000001 /* NativeAppURLHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NativeAppURLHandler.swift; path = Sources/NativeAppURLHandler.swift; sourceTree = SOURCE_ROOT; };
 		5011DED8D6119BC39F651B3A /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		548F733AEA816F0B3C7D77D6 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		86A764DD0DDF76194EB5120B /* OneSignalNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OneSignalNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -137,8 +137,8 @@
 			isa = PBXGroup;
 			children = (
 				49F90C2B2A52156200F06D93 /* Main.swift */,
-				49AWLP002F01000000000001 /* AppleWalletPassAddHelper.swift */,
-				49NAUH002F02000000000001 /* NativeAppURLHandler.swift */,
+				49A001002F01000000000001 /* AppleWalletPassAddHelper.swift */,
+				49A002002F02000000000001 /* NativeAppURLHandler.swift */,
 				49F90C2F2A52156300F06D93 /* Assets.xcassets */,
 				49F90C312A52156300F06D93 /* Entitlements.plist */,
 				4900101C2BACEA710000DE33 /* Info.plist */,
@@ -322,8 +322,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				499CD43B2AC5B799001AE8D8 /* Main.swift in Sources */,
-				49AWLP012F01000000000001 /* AppleWalletPassAddHelper.swift in Sources */,
-				49NAUH012F02000000000001 /* NativeAppURLHandler.swift in Sources */,
+				49A001012F01000000000001 /* AppleWalletPassAddHelper.swift in Sources */,
+				49A002012F02000000000001 /* NativeAppURLHandler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,7 +506,6 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		};
 		6771E2D5ED207DE03D3F6E7C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";

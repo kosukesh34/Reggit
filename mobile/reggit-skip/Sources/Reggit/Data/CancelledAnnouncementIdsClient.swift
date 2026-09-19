@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// 削除済みお知らせの通知取消し情報。
 public struct CancelledAnnouncementItem: Equatable {
@@ -22,11 +25,8 @@ public struct CancelledAnnouncementIdsClient {
         self.projectKey = projectKey ?? shellConfig.projectKey
     }
 
-    /// iOS: URLSession で取得。Android では空配列（ネイティブ側で HttpURLConnection を使う）。
+    /// 削除済みお知らせ ID を取得する。
     public func fetchItems() async -> [CancelledAnnouncementItem] {
-        #if os(Android)
-        return []
-        #else
         let encodedKey = projectKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? projectKey
         let urlString = "\(baseUrl)/api/v1/announcements/cancelled-ids?project_key=\(encodedKey)"
         guard let url = URL(string: urlString) else { return [] }
@@ -51,7 +51,6 @@ public struct CancelledAnnouncementIdsClient {
             logger.warning("CancelledAnnouncementIds fetch failed: \(error.localizedDescription)")
             return []
         }
-        #endif
     }
 
     public static func parseItems(_ data: Data) -> [CancelledAnnouncementItem] {

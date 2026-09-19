@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import { baseStyleObject, marginBottomStyle, mergeStyles } from './blockStyles';
 import { isExternalHref } from './builderNav';
 import { DataBlockMount } from './DataBlockMount';
-import { fetchMemberMe, formatBannerPointsToNext, formatStatsValue, resolveStatsField } from './memberBind';
+import { fetchMemberProfile, formatBannerPointsToNext, formatStatsValue, resolveStatsField } from './memberBind';
 import { MemberSummaryBlock } from './MemberSummaryBlock';
 import { SliderBlock } from './SliderBlock';
 import type { BuilderBlockData, BuilderNavItem } from './types';
@@ -277,7 +277,7 @@ function BannerBlock({ block }: BuilderBlockProps): JSX.Element {
             return;
         }
         let cancelled = false;
-        void fetchMemberMe().then((data) => {
+        void fetchMemberProfile().then((data) => {
             if (!cancelled) {
                 setText(formatBannerPointsToNext(data));
             }
@@ -440,7 +440,7 @@ function StatsRowBlock({ block }: BuilderBlockProps): JSX.Element {
             return;
         }
         let cancelled = false;
-        void fetchMemberMe().then((data) => {
+        void fetchMemberProfile().then((data) => {
             if (cancelled) {
                 return;
             }

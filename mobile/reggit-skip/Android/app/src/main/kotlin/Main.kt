@@ -485,10 +485,11 @@ internal fun SyncSystemBarsWithTheme() {
 }
 
 /// Android: Skip の Compose が親の制約を正しく受け取らない場合があるため、
-/// BoxWithConstraints で明示的なサイズを渡し、WebView が確実に画面全体を描画するようにする。
+/// BoxWithConstraints で明示的なサイズを渡して画面全体を描画する。
 @Composable
 internal fun PresentationRootView(context: ComposeContext) {
-    val colorScheme = if (isSystemInDarkTheme()) ColorScheme.dark else ColorScheme.light
+    // SwiftUI 側と同じライトテーマを明示し、端末設定による色差をなくす。
+    val colorScheme = ColorScheme.light
     PresentationRoot(defaultColorScheme = colorScheme, context = context) { ctx ->
         SyncSystemBarsWithTheme()
         val contentContext = ctx.content()
@@ -497,7 +498,7 @@ internal fun PresentationRootView(context: ComposeContext) {
                 Box(
                     modifier = Modifier
                         .size(maxWidth, maxHeight.coerceAtLeast(400.dp))
-                        .background(Color(0xFFF5F5F5))
+                        .background(Color(0xFFF9F6ED))
                 ) {
                     AppRootView().Compose(context = contentContext)
                 }

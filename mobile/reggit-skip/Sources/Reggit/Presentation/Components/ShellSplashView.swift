@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 起動〜WebView 読み込み中に表示する Reggit アイコン付きスプラッシュ。
+/// 起動〜API ブートストラップ中に表示する Reggit アイコン付きスプラッシュ。
 struct ShellSplashView: View {
     var showsActivityIndicator = false
 
