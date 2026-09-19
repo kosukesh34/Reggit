@@ -66,7 +66,7 @@ class WalletPassUrlIssueUseCase
             return null;
         }
 
-        return rtrim($requestOrigin, '/').'/api/members/me/wallet-pass?'.http_build_query([
+        return rtrim($requestOrigin, '/').'/api/member-wallet/pass?'.http_build_query([
             'project_key' => $projectKey,
             'token' => $token,
         ]);

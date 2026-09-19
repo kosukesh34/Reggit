@@ -50,12 +50,6 @@
         <span>新規配信</span>
     </nav>
 
-    @if(session('error'))
-        <div class="alert alert-danger" role="alert"><i class="fas fa-exclamation-triangle"></i> {{ session('error') }}</div>
-    @endif
-    @if(session('success'))
-        <div class="alert alert-success" role="alert">{{ session('success') }}</div>
-    @endif
     @if($errors->any())
         <div class="alert alert-error" role="alert">
             <strong>入力内容を確認してください</strong>
@@ -84,12 +78,13 @@
                                 <option value="">選択してください</option>
                                 @foreach($view->coupons as $coupon)
                                     @php
+                                        $isExpired = $coupon->end_at !== null && $coupon->end_at->isPast();
                                         $benefit = $coupon->type === 'percent'
                                             ? rtrim(rtrim((string) $coupon->value, '0'), '.').'％OFF'
                                             : number_format((float) $coupon->value).'円OFF';
                                         $period = $coupon->end_at ? $coupon->end_at->format('Y/m/d').'まで' : '期限なし';
                                     @endphp
-                                    <option value="{{ $coupon->id }}" data-benefit="{{ $benefit }}" data-period="{{ $period }}" {{ $selectedCouponId === (int) $coupon->id ? 'selected' : '' }}>{{ $coupon->name ?? '—' }}（{{ $coupon->code }}）</option>
+                                    <option value="{{ $coupon->id }}" data-benefit="{{ $benefit }}" data-period="{{ $period }}" {{ $selectedCouponId === (int) $coupon->id ? 'selected' : '' }} {{ $isExpired ? 'disabled' : '' }}>{{ $coupon->name ?? '—' }}（{{ $coupon->code }}）{{ $isExpired ? ' — 期限切れです' : '' }}</option>
                                 @endforeach
                             </select>
                             <p class="ad-field-help"><a href="{{ admin_route('admin.coupons.create') }}">新規作成</a></p>

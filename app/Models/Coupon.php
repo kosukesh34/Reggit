@@ -93,7 +93,7 @@ class Coupon extends Model
     protected $fillable = [
         'project_id', 'code', 'name', 'description', 'image_url', 'image_fit', 'design_template', 'theme_color', 'use_display',
         'type', 'value', 'min_order_amount', 'apply_condition_division', 'max_order_amount', 'combine_division',
-        'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'issue_trigger', 'stamp_card_id',
+        'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'device_once_enabled', 'issue_trigger', 'stamp_card_id',
         'smaregi_coupon_id',
     ];
 
@@ -107,6 +107,7 @@ class Coupon extends Model
         'start_at' => 'datetime',
         'end_at' => 'datetime',
         'is_active' => 'boolean',
+        'device_once_enabled' => 'boolean',
     ];
 
     public function project()

@@ -11,12 +11,6 @@
     <i class="fas fa-exclamation-triangle"></i> {{ session('warning') }}
 </div>
 @endif
-@if(session('success'))
-<div class="alert alert-success" role="alert">{{ session('success') }}</div>
-@endif
-@if(session('error'))
-<div class="alert alert-danger" role="alert"><i class="fas fa-exclamation-triangle"></i> {{ session('error') }}</div>
-@endif
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
     <span class="breadcrumb-sep">/</span>
