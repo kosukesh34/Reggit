@@ -23,8 +23,12 @@ class AdminCouponBulkIssueUseCase
      */
     public function handle(int $projectId, int $couponId, array $validated): array
     {
-        if (Coupon::query()->where('project_id', $projectId)->whereKey($couponId)->doesntExist()) {
+        $coupon = Coupon::query()->where('project_id', $projectId)->whereKey($couponId)->first();
+        if ($coupon === null) {
             throw new \InvalidArgumentException('クーポンが見つかりません');
+        }
+        if ($coupon->end_at !== null && $coupon->end_at->lt(now())) {
+            throw new \InvalidArgumentException('このクーポンは期限切れです');
         }
 
         $deliveryType = (string) ($validated['delivery_type'] ?? CouponDeliveryType::IMMEDIATE_ALL);

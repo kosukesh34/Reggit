@@ -522,6 +522,55 @@ class AdminCouponsTest extends TestCase
         $response->assertSee('配布クーポン12');
     }
 
+    public function test_bulk_issue_期限切れクーポンを表示して配布を拒否すること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'name' => '期限切れクーポン',
+            'end_at' => now()->subMinute(),
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('期限切れです');
+
+        $this->actingAs($admin, 'admin')
+            ->from(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]))
+            ->post(route('admin.coupons.bulk-issue.store', ['project_key' => $project->project_key]), [
+                'coupon_id' => $coupon->id,
+                'delivery_type' => CouponDeliveryType::IMMEDIATE_ALL,
+            ])
+            ->assertSessionHas('error', 'このクーポンは期限切れです');
+    }
+
+    public function test_bulk_issue_期間未設定クーポンは無期限で配布できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'start_at' => null,
+            'end_at' => null,
+        ]);
+        $member = Member::factory()->create(['project_id' => $project->id]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.bulk-issue.store', ['project_key' => $project->project_key]), [
+                'coupon_id' => $coupon->id,
+                'delivery_type' => CouponDeliveryType::IMMEDIATE_ALL,
+            ])
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertDatabaseHas('member_coupons', [
+            'member_id' => $member->id,
+            'coupon_id' => $coupon->id,
+            'valid_until' => null,
+        ]);
+    }
+
     public function test_bulk_issue_rfmセグメントで配布できること(): void
     {
         $project = $this->createProject();

@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Payment;
 
+use Stripe\Checkout\Session as CheckoutSession;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use Stripe\Webhook;
@@ -33,6 +34,36 @@ class StripePaymentGateway implements PaymentGateway
         return [
             'client_secret' => $intent->client_secret,
             'id' => $intent->id,
+        ];
+    }
+
+    public function createCheckoutSession(
+        int $amount,
+        int $orderId,
+        string $successUrl,
+        string $cancelUrl,
+    ): array {
+        $session = CheckoutSession::create([
+            'mode' => 'payment',
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'line_items' => [[
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => 'jpy',
+                    'unit_amount' => $amount,
+                    'product_data' => ['name' => 'モバイルオーダー'],
+                ],
+            ]],
+            'payment_intent_data' => [
+                'metadata' => ['order_id' => $orderId],
+            ],
+            'metadata' => ['order_id' => $orderId],
+        ]);
+
+        return [
+            'url' => (string) $session->url,
+            'id' => (string) $session->id,
         ];
     }
 
