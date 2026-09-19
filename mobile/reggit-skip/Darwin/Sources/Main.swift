@@ -48,6 +48,11 @@ struct AppMain: App {
             }
             #endif
             .onAppear {
+                #if canImport(UIKit)
+                NativeWalletBridge.addAppleWalletPass = { url in
+                    AppleWalletPassAddHelper.shared.addPass(from: url)
+                }
+                #endif
                 #if canImport(UserNotifications)
                 AnnouncementPushCancel.removeOrphanCancelledNotifications()
                 AnnouncementPushCancel.syncCancelledAnnouncementNotifications()
@@ -55,8 +60,9 @@ struct AppMain: App {
             }
             .onOpenURL { url in
                 _ = QueueDeepLinkHandler.handle(url)
+                _ = PaymentDeepLinkHandler.handle(url)
                 #if canImport(UIKit)
-                if url.scheme == NativeAppIdentity.urlScheme && url.host != "queue" {
+                if url.scheme == NativeAppIdentity.urlScheme && url.host != "queue" && url.host != "payment" {
                     _ = NativeAppURLHandler.handle(url)
                 }
                 #endif

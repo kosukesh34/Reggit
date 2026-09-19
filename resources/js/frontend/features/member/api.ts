@@ -375,7 +375,7 @@ export function shouldShowGoogleWallet(): boolean {
 
 export function walletPassUrl(): string {
     const projectKey = typeof window !== 'undefined' && window.__PROJECT_KEY__ ? window.__PROJECT_KEY__ : '';
-    return `${AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS}?project_key=${encodeURIComponent(projectKey)}`;
+    return `${AppConstants.API_ENDPOINTS.MEMBER_WALLET_PASS}?project_key=${encodeURIComponent(projectKey)}`;
 }
 
 export function pendingLotteryCount(): number {

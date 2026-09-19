@@ -7,7 +7,7 @@ final class ShellLaunchReachabilityGateTests: XCTestCase {
         let checker = FakeShellURLReachabilityChecker(isReachableResult: false)
         let gate = ShellLaunchReachabilityGate(
             reachabilityChecker: checker,
-            liffURLString: "https://example.com/liff",
+            healthURLString: "https://example.com/api/v1/app-config?project_key=default",
             activityMinimum: 0.05,
             reachabilityTimeout: 1
         )
@@ -25,7 +25,7 @@ final class ShellLaunchReachabilityGateTests: XCTestCase {
         let checker = FakeShellURLReachabilityChecker(isReachableResult: true)
         let gate = ShellLaunchReachabilityGate(
             reachabilityChecker: checker,
-            liffURLString: "https://example.com/liff",
+            healthURLString: "https://example.com/api/v1/app-config?project_key=default",
             activityMinimum: 0.05,
             reachabilityTimeout: 1
         )
@@ -41,7 +41,7 @@ final class ShellLaunchReachabilityGateTests: XCTestCase {
         let checker = FakeShellURLReachabilityChecker(isReachableResult: false)
         let gate = ShellLaunchReachabilityGate(
             reachabilityChecker: checker,
-            liffURLString: "https://example.com/liff",
+            healthURLString: "https://example.com/api/v1/app-config?project_key=default",
             activityMinimum: 0.05,
             reachabilityTimeout: 1
         )
@@ -61,7 +61,7 @@ final class ShellLaunchReachabilityGateTests: XCTestCase {
         let checker = FakeShellURLReachabilityChecker(isReachableResult: true)
         let gate = ShellLaunchReachabilityGate(
             reachabilityChecker: checker,
-            liffURLString: "https://example.com/liff",
+            healthURLString: "https://example.com/api/v1/app-config?project_key=default",
             activityMinimum: 0.2,
             reachabilityTimeout: 1
         )

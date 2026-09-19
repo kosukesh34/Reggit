@@ -22,7 +22,7 @@ import { pathForLegacyTab } from "../navigation/tabPath";
 import { isLinkTabType } from "../types/app";
 import { resolveHomeLayout } from "../config/customization";
 import { LinkSitePage } from "./LinkSitePage";
-import { LandingShowcaseFeature } from "./LandingShowcasePage";
+import { LandingShowcaseFeature, LandingShowcaseUtility } from "./LandingShowcasePage";
 import { SimpleRewardsFeature } from "./SimpleRewardsPage";
 
 const FEATURE_ALIASES: Record<string, string> = {
@@ -87,8 +87,16 @@ export function FeaturePage() {
   const feature = aliased !== undefined ? aliased : rawFeature;
   const isNewsArticle = feature === "news" && searchParams.get("announcement") !== null;
 
+  // Remote-backed screens never flash partial content while the first bootstrap is in flight.
+  if (loading && mode !== "preview") {
+    return <FeaturePageSkeleton />;
+  }
+
   if (experienceId === "landing-showcase" && ["mobileOrder", "stamp", "queue"].includes(feature)) {
     return <LandingShowcaseFeature feature={feature} />;
+  }
+  if (experienceId === "landing-showcase" && ["coupon", "point", "reservation", "news", "storeSearch", "orderHistory", "purchaseHistory", "menu", "dineInOrder", "gallery", "favorite", "ticket", "subscription"].includes(feature)) {
+    return <LandingShowcaseUtility feature={feature} />;
   }
   if (experienceId === "simple-rewards" && ["coupon", "stamp"].includes(feature)) {
     return <SimpleRewardsFeature feature={feature} />;

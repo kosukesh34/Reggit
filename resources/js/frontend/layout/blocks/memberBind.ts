@@ -69,11 +69,11 @@ export function formatBannerPointsToNext(data: Record<string, unknown> | null): 
 
 let memberMeCache: Promise<Record<string, unknown> | null> | null = null;
 
-export function resetMemberMeCache(): void {
+export function resetMemberProfileCache(): void {
     memberMeCache = null;
 }
 
-export function fetchMemberMe(): Promise<Record<string, unknown> | null> {
+export function fetchMemberProfile(): Promise<Record<string, unknown> | null> {
     if (memberMeCache !== null) {
         return memberMeCache;
     }
@@ -94,7 +94,7 @@ export function fetchMemberMe(): Promise<Record<string, unknown> | null> {
                 apiClient?: { get: (url: string) => Promise<{ success?: boolean; data?: Record<string, unknown> }> };
             } | undefined;
             if (app !== undefined && app.apiClient !== undefined) {
-                const result = await app.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+                const result = await app.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_PROFILE);
                 if (result !== undefined && result.success === true && result.data !== undefined) {
                     return result.data;
                 }

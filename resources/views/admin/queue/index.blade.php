@@ -3,6 +3,19 @@
 @section('title', '順番待ち')
 @section('page-title', '順番待ち')
 
+@push('styles')
+<style>
+    [data-queue-swipe-row] { transition: transform .18s ease, background-color .18s ease; touch-action: pan-y; }
+    [data-queue-swipe-row].is-swipe-right { background: #ecfdf5; }
+    [data-queue-swipe-row].is-swipe-left { background: #fff7ed; }
+    .queue-swipe-help { color: #64748b; font-size: 12px; margin: 0; }
+    @media (pointer: coarse), (max-width: 768px) {
+        .queue-swipe-help { display: block; }
+        [data-queue-swipe-row] { cursor: grab; }
+    }
+</style>
+@endpush
+
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
@@ -48,6 +61,7 @@
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">待機中一覧</h2>
+        <p class="queue-swipe-help"><i class="fas fa-hand-pointer"></i> 右へスワイプで呼び出し／再呼び出し、左へスワイプで入店またはキャンセル</p>
     </div>
     <div class="card-body">
         @if($view->entries->isEmpty())
@@ -59,7 +73,7 @@
         @else
         <table class="table">
             <thead>
-                <tr>
+                <tr data-queue-swipe-row>
                     <th>番号</th>
                     <th>名前</th>
                     <th>人数</th>
@@ -127,26 +141,26 @@
                     <td class="table-actions-cell">
                         <div class="table-actions">
                             @if($e->status === 'waiting')
-                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline">
+                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline" data-queue-action-form data-swipe-primary>
                                 @csrf
                                 <input type="hidden" name="status" value="called">
                                 <button type="submit" class="btn btn-action btn-info"><i class="fas fa-bullhorn"></i> 呼び出し</button>
                             </form>
                             @endif
                             @if($e->status === 'called')
-                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline">
+                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline" data-queue-action-form data-swipe-primary>
                                 @csrf
                                 <input type="hidden" name="status" value="called">
                                 <button type="submit" class="btn btn-action btn-info"><i class="fas fa-bullhorn"></i> 再呼び出し</button>
                             </form>
-                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline">
+                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline" data-queue-action-form data-swipe-secondary>
                                 @csrf
                                 <input type="hidden" name="status" value="entered">
                                 <button type="submit" class="btn btn-action btn-success"><i class="fas fa-door-open"></i> 入店</button>
                             </form>
                             @endif
                             @if(in_array($e->status, ['waiting', 'called']))
-                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('キャンセルしますか？');">
+                            <form action="{{ admin_route('admin.queue.status', ['id' => $e->id]) }}" method="POST" class="d-inline" data-queue-action-form @if($e->status === 'waiting') data-swipe-secondary @endif>
                                 @csrf
                                 <input type="hidden" name="status" value="cancelled">
                                 <button type="submit" class="btn btn-action btn-danger"><i class="fas fa-times"></i> キャンセル</button>
@@ -162,4 +176,12 @@
         @endif
     </div>
 </div>
+@php
+    $queueRealtimeConfig = [
+        'projectKey' => (string) request()->route('project_key'),
+        'appKey' => (string) config('broadcasting.connections.reverb.key', ''),
+        'wsHost' => (string) config('broadcasting.client_ws_host', ''),
+    ];
+@endphp
+<script type="application/json" id="queueRealtimeConfig">{!! json_encode($queueRealtimeConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 @endsection

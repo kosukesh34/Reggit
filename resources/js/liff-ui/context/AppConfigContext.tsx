@@ -6,14 +6,14 @@ import { themeMap } from '../themes/themes';
 import type { StoreAppConfig } from '../types/app';
 import type { AppCustomization, AppCustomizationPatch, AppExperienceId, CouponStatus } from '../types/customization';
 
-const customizationStorageKey = 'reggit-app-customization-v3';
+const customizationStorageKey = 'reggit-app-customization-v4';
 const showcaseStoreStorageKey = 'reggit-showcase-store-id-v2';
-const SHOWCASE_DEFAULT_STORE_ID = 'store_cafe';
-const experienceVersion = 15;
+const SHOWCASE_DEFAULT_STORE_ID = 'store_landing_showcase';
+const experienceVersion = 16;
 
 interface PersistedCustomizations {
   version: 3;
-  experienceVersion: 15;
+  experienceVersion: 16;
   byStore: Record<string, AppCustomizationPatch>;
 }
 
@@ -58,7 +58,9 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
   const savedTabs = patch.navigation?.tabs;
   const tabs = isMemberCrm
     ? memberCrmNavigationTabs(savedTabs)
-    : (savedTabs !== undefined && savedTabs.length > 0 ? savedTabs.slice(0, 6) : base.navigation.tabs);
+    : (savedTabs !== undefined && savedTabs.length > 0
+      ? (store.storeId === 'store_landing_showcase' ? savedTabs : savedTabs.slice(0, 6))
+      : base.navigation.tabs);
 
   return {
     ...base,
@@ -124,7 +126,8 @@ function resolveStores(isAdminStudio: boolean): StoreAppConfig[] {
     return [projectStore, ...appConfig.stores.filter((store) => store.storeId !== projectStore.storeId)];
   }
   if (isDesignShowcaseMode()) {
-    return appConfig.stores;
+    const showcase = appConfig.stores.find((store) => store.storeId === SHOWCASE_DEFAULT_STORE_ID);
+    return showcase !== undefined ? [showcase] : appConfig.stores.slice(0, 1);
   }
   return [buildProjectStore()];
 }

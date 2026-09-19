@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { subscribeProjectDataUpdates } from '../../realtime/liffEcho';
 import { isDemoDataMode } from '../../demo/demoMode';
 import {
     cancelQueue,
@@ -6,7 +7,7 @@ import {
     createQueue,
     ensureMemberContextForGate,
     fetchQueueByToken,
-    fetchQueueMe,
+    fetchCurrentQueue,
     formatQueueNumber,
     formatUpdatedAt,
     getQueueTokenFromUrl,
@@ -272,7 +273,7 @@ export function QueueView(): JSX.Element {
                     return;
                 }
             }
-            const result = await fetchQueueMe();
+            const result = await fetchCurrentQueue();
             if (result.success !== true) {
                 setView({ kind: 'error', message: result.error });
                 return;
@@ -310,6 +311,11 @@ export function QueueView(): JSX.Element {
 
     useEffect(() => {
         void load();
+        const unsubscribeRealtime = subscribeProjectDataUpdates((payload) => {
+            if (payload.topic === 'queue' || payload.topic === 'all') {
+                void load(true);
+            }
+        });
         const onReady = (): void => {
             void load();
         };
@@ -327,6 +333,7 @@ export function QueueView(): JSX.Element {
         };
         document.addEventListener('visibilitychange', onVisibilityChange);
         return () => {
+            unsubscribeRealtime();
             document.removeEventListener('liff-ready', onReady);
             document.removeEventListener('mobile-device-info-injected', onReady);
             document.removeEventListener('visibilitychange', onVisibilityChange);

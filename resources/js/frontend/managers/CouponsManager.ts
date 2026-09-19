@@ -145,7 +145,7 @@ export class CouponsManager {
             return;
         }
 
-        const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MY_COUPON_USE(memberCouponId), {});
+        const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBER_COUPON_REDEEM(memberCouponId), {});
         if (result.success !== true) {
             window.alert(result.error || 'クーポンの使用に失敗しました');
             return;
@@ -190,7 +190,7 @@ export class CouponsManager {
         section.innerHTML =
             '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
         try {
-            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MY_COUPONS);
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_COUPONS);
             if (result.success !== true) {
                 section.innerHTML = this.getErrorTemplate({ message: result.error });
                 return;
@@ -232,7 +232,7 @@ export class CouponsManager {
     async _openClassicCouponDetail(id: number | string, returnHash?: string): Promise<void> {
         if (this.cache.length === 0) {
             try {
-                const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MY_COUPONS);
+                const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_COUPONS);
                 const data = result.success === true ? result.data as { coupons?: any[]; default_image_url?: string | null } : null;
                 this.cache = data && Array.isArray(data.coupons) ? data.coupons : [];
                 this.lastDefaultImage = data && data.default_image_url ? data.default_image_url : null;
@@ -296,7 +296,7 @@ export class CouponsManager {
     async _openFixedUiCouponDetail(id: number | string, returnHash?: string): Promise<void> {
         if (this.cache.length === 0) {
             try {
-                const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MY_COUPONS);
+                const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_COUPONS);
                 const data = result.success === true ? result.data as { coupons?: any[]; default_image_url?: string | null } : null;
                 this.cache = data && Array.isArray(data.coupons) ? data.coupons : [];
                 this.lastDefaultImage = data && data.default_image_url ? data.default_image_url : null;
@@ -1227,7 +1227,7 @@ export class CouponsManager {
                     return;
                 }
 
-                const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MY_COUPON_USE(memberCouponId), {});
+                const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBER_COUPON_REDEEM(memberCouponId), {});
                 if (result.success !== true) {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { marginBottomStyle } from './blockStyles';
-import { fetchMemberMe } from './memberBind';
+import { fetchMemberProfile } from './memberBind';
 import type { BuilderBlockData } from './types';
 
 type MemberSummaryBlockProps = {
@@ -230,7 +230,7 @@ export function MemberSummaryBlock({ block }: MemberSummaryBlockProps): JSX.Elem
 
     useEffect(() => {
         let cancelled = false;
-        void fetchMemberMe().then((next) => {
+        void fetchMemberProfile().then((next) => {
             if (!cancelled) {
                 setData(next);
             }
