@@ -17,7 +17,10 @@ class RootRouteTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('landing');
-        $response->assertSee('lp-hero-reggit-v2.webp', false);
+        $response->assertSee('editorial/store-hero.webp', false);
+        $response->assertSee('editorial/member-retail.webp', false);
+        $response->assertSee('editorial/queue-family.webp', false);
+        $response->assertSee('editorial/kitchen-team.webp', false);
         $response->assertSee('actual-home.webp', false);
         $response->assertSee('actual-order.webp', false);
         $response->assertSee('actual-member.webp', false);
