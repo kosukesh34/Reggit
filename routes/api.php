@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AnnouncementCancelledIdsController as ApiV1Annou
 use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
 use App\Http\Controllers\Api\V1\AppConfigController;
 use App\Http\Controllers\Api\V1\CouponController as ApiV1CouponController;
+use App\Http\Controllers\Api\V1\DeviceOnceCouponController;
 use App\Http\Controllers\Api\V1\Member\MemberMeController as ApiV1MemberMeController;
 use App\Http\Controllers\Api\V1\Member\MemberPointCardController as ApiV1MemberPointCardController;
 use App\Http\Controllers\Api\V1\Member\MemberPointHistoryController as ApiV1MemberPointHistoryController;
@@ -125,8 +126,8 @@ Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->
     Route::delete('/member-profile/image', [MemberProfileImageController::class, 'destroy']);
     Route::get('/member-coupons', [ApiV1CouponController::class, 'myCoupons']);
     Route::post('/member-coupons/{id}/redeem', [ApiV1CouponController::class, 'use']);
-    Route::get('/device-coupons', [\App\Http\Controllers\Api\V1\DeviceOnceCouponController::class, 'index']);
-    Route::post('/device-coupons/{coupon}/claim', [\App\Http\Controllers\Api\V1\DeviceOnceCouponController::class, 'claim']);
+    Route::get('/device-coupons', [DeviceOnceCouponController::class, 'index']);
+    Route::post('/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim']);
     Route::get('/member-lottery', [MemberLotteryController::class, 'index']);
     Route::post('/member-lottery/{id}/play', [MemberLotteryController::class, 'play']);
     Route::post('/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
@@ -173,8 +174,8 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::c
     Route::delete('/{project_key}/member-profile/image', [MemberProfileImageController::class, 'destroy']);
     Route::get('/{project_key}/member-coupons', [ApiV1CouponController::class, 'myCoupons']);
     Route::post('/{project_key}/member-coupons/{id}/redeem', [ApiV1CouponController::class, 'use']);
-    Route::get('/{project_key}/device-coupons', [\App\Http\Controllers\Api\V1\DeviceOnceCouponController::class, 'index']);
-    Route::post('/{project_key}/device-coupons/{coupon}/claim', [\App\Http\Controllers\Api\V1\DeviceOnceCouponController::class, 'claim']);
+    Route::get('/{project_key}/device-coupons', [DeviceOnceCouponController::class, 'index']);
+    Route::post('/{project_key}/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim']);
     Route::get('/{project_key}/member-lottery', [MemberLotteryController::class, 'index']);
     Route::post('/{project_key}/member-lottery/{id}/play', [MemberLotteryController::class, 'play']);
     Route::post('/{project_key}/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
