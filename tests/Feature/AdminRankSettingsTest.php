@@ -54,6 +54,40 @@ class AdminRankSettingsTest extends TestCase
             ->assertSee('会員情報', false);
     }
 
+    public function test_会員証画面の表示項目を会員証設定で変更できること(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.ranks', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('name="member_show_rank_progress"', false)
+            ->assertSee('name="member_show_point_history"', false)
+            ->assertSee('name="member_show_coupon_activity"', false);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+                'rank_basis' => 'points',
+                'rank_aggregation_type' => RankAggregationType::TOTAL,
+                'rank_period_days' => 365,
+                'point_earn_rate' => 100,
+                'points_valid_days' => 365,
+                'member_show_rank_progress' => '1',
+                'member_show_point_history' => '0',
+                'member_show_coupon_activity' => '0',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue((bool) ShopSettingStore::getValue('member_show_rank_progress', false, $project->id));
+        $this->assertFalse((bool) ShopSettingStore::getValue('member_show_point_history', true, $project->id));
+        $this->assertFalse((bool) ShopSettingStore::getValue('member_show_coupon_activity', true, $project->id));
+    }
+
     public function test_会員証デザイン保存が_lif_fタブ設定へ反映されること(): void
     {
         $project = Project::factory()->create();

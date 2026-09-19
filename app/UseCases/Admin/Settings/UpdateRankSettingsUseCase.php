@@ -138,6 +138,11 @@ class UpdateRankSettingsUseCase
         if (array_key_exists('show_member_card_for_guest', $payload)) {
             $this->shopSettingRepository->setShowMemberCardForGuest((bool) $payload['show_member_card_for_guest'], $projectId);
         }
+        foreach (['member_show_rank_progress', 'member_show_point_history', 'member_show_coupon_activity'] as $settingKey) {
+            if (array_key_exists($settingKey, $payload)) {
+                $this->shopSettingRepository->setValue($settingKey, (bool) $payload[$settingKey], 'boolean', $projectId);
+            }
+        }
         if (array_key_exists('member_card_design', $payload) && MemberCardDesignMap::isValidDesign((string) ($payload['member_card_design'] ?? ''))) {
             $design = (string) $payload['member_card_design'];
             $this->shopSettingRepository->setMemberCardDesign($design, $projectId);

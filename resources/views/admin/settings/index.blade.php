@@ -36,7 +36,7 @@
         [
             'title' => '会員',
             'items' => [
-                ($can('members.view') && $can('settings.view')) ? ['href' => admin_route('admin.settings.ranks'), 'icon' => 'fas fa-crown', 'label' => 'ランク設定', 'desc' => 'ランク判定・ポイント・会員証デザイン'] : null,
+                ($can('members.view') && $can('settings.view')) ? ['href' => admin_route('admin.settings.ranks'), 'icon' => 'fas fa-id-card', 'label' => '会員証・ランク設定', 'desc' => '会員証の表示・デザイン・ランク・ポイント'] : null,
                 ($can('members.view') && $can('settings.view')) ? ['href' => admin_route('admin.settings.profile'), 'icon' => 'fas fa-user-cog', 'label' => 'プロフィール設定', 'desc' => '登録項目の表示と必須'] : null,
                 ($can('settings.view') && $hasPlan(\App\Support\PlanFeatures::WALLET)) ? ['href' => admin_route('admin.settings.wallet'), 'icon' => 'fas fa-wallet', 'label' => 'Wallet画像', 'desc' => 'Apple / Google Wallet の画像'] : null,
             ],
