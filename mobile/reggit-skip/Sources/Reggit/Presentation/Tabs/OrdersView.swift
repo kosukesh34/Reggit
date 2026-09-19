@@ -1,0 +1,86 @@
+import Observation
+import SkipFuse
+import SwiftUI
+
+@MainActor
+@Observable
+final class OrdersViewModel {
+    var isLoading = true
+    var errorMessage: String?
+    var orders: [OrderSnapshot] = []
+
+    private let apiClient: any ReggitAPIServing
+
+    init(apiClient: any ReggitAPIServing) {
+        self.apiClient = apiClient
+    }
+
+    func load() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            orders = try await apiClient.fetchOrders()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+struct OrdersView: View {
+    @State var viewModel: OrdersViewModel
+    @Environment(\.brandAccent) var accent
+    @State var selectedOrder: OrderSnapshot?
+    @State var selectedSegment = 0
+
+    init(apiClient: any ReggitAPIServing) {
+        _viewModel = State(initialValue: OrdersViewModel(apiClient: apiClient))
+    }
+
+    var body: some View {
+        SkipRefreshing {
+            NavigationStack {
+                AppAsyncScreen(
+                    isLoading: viewModel.isLoading && viewModel.orders.isEmpty,
+                    errorMessage: viewModel.orders.isEmpty ? viewModel.errorMessage : nil,
+                    isEmpty: viewModel.orders.isEmpty,
+                    emptyTitle: "注文履歴はありません",
+                    emptySubtitle: "注文するとここに表示されます",
+                    emptyIcon: "list.clipboard",
+                    onRetry: { Task { await viewModel.load() } },
+                    skeleton: { OrdersSkeletonView() }
+                ) {
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            AppSegmentedControl(titles: ["すべて", "進行中", "完了・キャンセル"], selectedIndex: $selectedSegment)
+                                .padding(.bottom, 14)
+                            let visible = viewModel.orders.filter { selectedSegment == 0 || (selectedSegment == 1 ? $0.isActive : !$0.isActive) }
+                            if visible.isEmpty {
+                                AppEmptyState(title: "該当する注文はありません", subtitle: "注文状況はここで確認できます", systemImage: "bag")
+                            }
+                            ForEach(Array(visible.enumerated()), id: \.element.id) { index, order in
+                                Button {
+                                    selectedOrder = order
+                                } label: {
+                                    OrderSummaryRow(order: order)
+                                        .padding(.vertical, 16)
+                                }
+                                .buttonStyle(.plain)
+                                if index < visible.count - 1 { Divider() }
+                            }
+                        }
+                        .padding(16)
+                    }
+                }
+                .background(AppDesign.canvas.ignoresSafeArea())
+                .navigationTitle("注文")
+                .refreshable { await viewModel.load() }
+                .navigationDestination(item: $selectedOrder) { order in
+                    OrderStatusView(order: order)
+                        .environment(\.brandAccent, accent)
+                }
+            }
+        }
+        .task { await viewModel.load() }
+    }
+}

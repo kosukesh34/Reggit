@@ -165,7 +165,7 @@ export class DesignLabManager {
 
     private async _fetchState(): Promise<void> {
         try {
-            const response = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_LOTTERY);
+            const response = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_LOTTERY);
             const raw = response && typeof response === 'object' && 'data' in response
                 ? (response as { data?: LotteryState }).data
                 : null;
@@ -816,7 +816,7 @@ export class DesignLabManager {
         if (prize.entitlement_id !== undefined && !isDemoDataMode()) {
             try {
                 await this.apiClient.post(
-                    AppConstants.API_ENDPOINTS.MEMBERS_LOTTERY_NOTIFY_WIN(prize.entitlement_id),
+                    AppConstants.API_ENDPOINTS.MEMBER_LOTTERY_NOTIFY_WIN(prize.entitlement_id),
                     {},
                 );
             } catch (error: any) {
@@ -1081,7 +1081,7 @@ export class DesignLabManager {
         }
         this._playInFlight = true;
         try {
-            const response = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_LOTTERY_PLAY(id), {});
+            const response = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBER_LOTTERY_PLAY(id), {});
             // apiClient が { success, data } で包む。play API 自体も { success, data } のことがある
             const outer = response && typeof response === 'object' ? response as {
                 success?: boolean;

@@ -413,7 +413,7 @@ export class MemberManager {
 
     /**
      * 会員API取得後に __LINE_USER_ID__ を同期し、他タブ（クーポン・予約・注文履歴）でログイン扱いにする。
-     * @param {object} data - members/me の result.data または正規化済み payload
+     * @param {object} data - member-profile の result.data または正規化済み payload
      */
     _syncLineUserIdFromMemberData(data) {
         if (typeof window === 'undefined' || !data || typeof data !== 'object') return;
@@ -494,7 +494,7 @@ export class MemberManager {
 
         const generationAtStart = this._memberContextFetchGeneration;
         this._memberContextFetchPromise = (async () => {
-            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_PROFILE);
             if (generationAtStart !== this._memberContextFetchGeneration) {
                 throw new Error('MEMBER_CONTEXT_STALE');
             }
@@ -761,7 +761,7 @@ export class MemberManager {
     }
 
     /**
-     * GET /members/me のレスポンスから is_member を持つ payload を取得する。
+     * GET /member-profile のレスポンスから is_member を持つ payload を取得する。
      * フラット形式・{ member: ... }・{ data: ... } のいずれにも対応。
      * @param {object} resultData - apiClient が返す result.data
      * @returns {object|null} is_member を持つオブジェクト、または null
@@ -796,7 +796,7 @@ export class MemberManager {
         }
 
         try {
-            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_PROFILE);
             if (result && result.success && result.data) {
                 const payload = this._normalizeMemberPayload(result.data);
                 if (payload) {
@@ -1279,7 +1279,7 @@ export class MemberManager {
         const showAddToAppleWallet = MemberManager.shouldShowAppleWallet();
         const showAddToGoogleWallet = MemberManager.shouldShowGoogleWallet();
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : '';
-        const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
+        const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBER_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
         let addToWalletBlock = '';
         if (showAddToAppleWallet) {
             addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
@@ -1726,7 +1726,7 @@ export class MemberManager {
 
     async _fetchGoogleWalletIssueUrl(projectKey) {
         await this.ensureIdentityReady(2500);
-        const endpoint = AppConstants.API_ENDPOINTS.MEMBERS_GOOGLE_WALLET_URL
+        const endpoint = AppConstants.API_ENDPOINTS.MEMBER_GOOGLE_WALLET_URL
             + '?project_key=' + encodeURIComponent(projectKey);
         const result = await this.apiClient.get(endpoint);
         if (!result.success || !result.data || !result.data.url) {
@@ -1795,7 +1795,7 @@ export class MemberManager {
             const downloadParams = new URLSearchParams();
             downloadParams.set('token', passToken);
             downloadParams.set('project_key', pk);
-            const relative = MemberManager.resolveApiUrl(AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS)
+            const relative = MemberManager.resolveApiUrl(AppConstants.API_ENDPOINTS.MEMBER_WALLET_PASS)
                 + '?' + downloadParams.toString();
             return MemberManager.normalizeExternalUrl(relative) || relative;
         } catch (e) {
@@ -1996,7 +1996,7 @@ export class MemberManager {
 
     async _fetchWalletPassIssueUrl(projectKey) {
         await this.ensureIdentityReady(2500);
-        const endpoint = AppConstants.API_ENDPOINTS.MEMBERS_WALLET_PASS_URL
+        const endpoint = AppConstants.API_ENDPOINTS.MEMBER_WALLET_PASS_URL
             + '?project_key=' + encodeURIComponent(projectKey);
         const result = await this.apiClient.get(endpoint);
         if (!result.success || !result.data || !result.data.url) {
@@ -3148,7 +3148,7 @@ export class MemberManager {
     async saveProfileImage(file: File) {
         const body = new FormData();
         body.append('image', file);
-        const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_PROFILE_IMAGE, {
+        const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBER_PROFILE_IMAGE, {
             method: 'POST',
             body,
         });
@@ -3160,7 +3160,7 @@ export class MemberManager {
     }
 
     async deleteProfileImage() {
-        const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_PROFILE_IMAGE, {
+        const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBER_PROFILE_IMAGE, {
             method: 'DELETE',
         });
         if (!result.success || !result.data || typeof result.data !== 'object') {
@@ -3190,7 +3190,7 @@ export class MemberManager {
             : ((this.memberData && this.memberData.profile_field_settings) ? this.memberData.profile_field_settings : []);
         const payload: any = this._collectProfileFormPayload(form, fields);
         try {
-            const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBERS_ME, {
+            const result = await this.apiClient.request(AppConstants.API_ENDPOINTS.MEMBER_PROFILE, {
                 method: 'PUT',
                 body: JSON.stringify(payload),
                 headers: { 'Content-Type': 'application/json' },
@@ -3365,7 +3365,7 @@ export class MemberManager {
 
     async _pollWalletSummary(): Promise<void> {
         try {
-            const summary = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_WALLET_SUMMARY);
+            const summary = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_WALLET_SUMMARY);
             const raw = summary && typeof summary === 'object' && 'data' in summary
                 ? (summary as { data?: Record<string, unknown> }).data
                 : null;

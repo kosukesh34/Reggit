@@ -13,7 +13,7 @@ import { readFeatureFlags } from '../demo/navigation';
 export class LiffLayoutManager {
     app: any;
     tabSettings: Record<string, any>;
-    _memberMeCache: Promise<any> | null;
+    _memberProfileCache: Promise<any> | null;
 
     static readonly STATS_SAMPLE_VALUES: Record<string, string> = {
         points: '1,280',
@@ -26,7 +26,7 @@ export class LiffLayoutManager {
         this.tabSettings = (typeof window !== 'undefined' && window.__LIFF_TAB_SETTINGS__)
             ? window.__LIFF_TAB_SETTINGS__
             : {};
-        this._memberMeCache = null;
+        this._memberProfileCache = null;
     }
 
     /**
@@ -46,7 +46,7 @@ export class LiffLayoutManager {
         }
 
         try {
-            this._memberMeCache = null;
+            this._memberProfileCache = null;
             container.innerHTML = this._renderBlocks(blocks);
             this._bindInlineHandlers(container);
             this._initSliders(container);
@@ -285,7 +285,7 @@ export class LiffLayoutManager {
         if (!this._flagEnabled('feature_members_enabled')) {
             return;
         }
-        let data = await this._fetchMemberMe();
+        let data = await this._fetchMemberProfile();
         if ((!data || data.is_member !== true)
             && isDemoDataMode()
             && this.app
@@ -1004,7 +1004,7 @@ export class LiffLayoutManager {
             el.innerHTML = html;
             this._bindInlineHandlers(el);
         };
-        const data = await this._fetchMemberMe();
+        const data = await this._fetchMemberProfile();
         fill((() => {
             const premium = this._premium();
             if (premium) return premium.memberSummaryHtml(data, greeting, (s: any) => this._esc(s), design);
@@ -1038,7 +1038,7 @@ export class LiffLayoutManager {
         });
         if (!needsLive) return;
 
-        const data = await this._fetchMemberMe();
+        const data = await this._fetchMemberProfile();
         cells.forEach((cell) => {
             const field = cell.getAttribute('data-stats-field') || 'static';
             if (field === 'static') return;
@@ -1054,15 +1054,15 @@ export class LiffLayoutManager {
         if (field !== 'points_to_next') return;
         const textEl = el.querySelector('.builder-promo-banner__text');
         if (!textEl) return;
-        const data = await this._fetchMemberMe();
+        const data = await this._fetchMemberProfile();
         textEl.textContent = LiffLayoutManager.formatBannerPointsToNext(data);
     }
 
-    _fetchMemberMe(): Promise<any> {
-        if (this._memberMeCache !== null) {
-            return this._memberMeCache;
+    _fetchMemberProfile(): Promise<any> {
+        if (this._memberProfileCache !== null) {
+            return this._memberProfileCache;
         }
-        this._memberMeCache = (async () => {
+        this._memberProfileCache = (async () => {
             try {
                 if (typeof window !== 'undefined') {
                     const params = new URLSearchParams(window.location.search || '');
@@ -1077,7 +1077,7 @@ export class LiffLayoutManager {
                     }
                 }
                 if (this.app && this.app.apiClient && typeof AppConstants !== 'undefined') {
-                    const result = await this.app.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_ME);
+                    const result = await this.app.apiClient.get(AppConstants.API_ENDPOINTS.MEMBER_PROFILE);
                     if (result && result.success && result.data) {
                         return result.data;
                     }
@@ -1087,7 +1087,7 @@ export class LiffLayoutManager {
             }
             return null;
         })();
-        return this._memberMeCache;
+        return this._memberProfileCache;
     }
 
     static resolveStatsField(item: { field?: string; label?: string } | null | undefined): string {

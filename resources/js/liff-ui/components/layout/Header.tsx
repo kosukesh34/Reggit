@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, ChevronDown, CloudOff, CreditCard, Home, Menu, MoreHorizontal, QrCode, ShoppingBag, Stamp, Ticket, UserRound, X, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, CloudOff, CreditCard, Home, Menu, MoreHorizontal, QrCode, ShoppingBag, Stamp, Ticket, UserRound, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { resolveAppBrand } from "../../config/customization";
@@ -42,13 +42,13 @@ const headerIconDefinitions: Record<HeaderButtonIcon, LucideIcon> = {
 };
 
 export function Header() {
-  const { activeStore, stores, setActiveStoreId, customization, experienceId } = useAppConfig();
+  const { activeStore, stores, customization, experienceId } = useAppConfig();
   const { mode, notificationCount } = useRuntimeData();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const canSwitchStore = stores.length > 1;
-  const isLandingShowcase = canSwitchStore && experienceId === "landing-showcase";
+  const isLandingShowcase = experienceId === "landing-showcase";
   const isSimpleRewards = experienceId === "simple-rewards";
   const headerButton = customization.header.rightButton;
   const effectiveMode = headerButton.mode ?? (customization.header.showNotifications ? "shortcut" : "none");
@@ -142,7 +142,7 @@ export function Header() {
   const ShowcaseActionIcon = location.pathname === "/mobileOrder"
     ? ShoppingBag
     : location.pathname === "/home"
-      ? X
+      ? CreditCard
       : UserRound;
 
   return (
@@ -150,8 +150,8 @@ export function Header() {
       <header className={`header${isLandingShowcase ? " header--landing-showcase" : isSimpleRewards ? " header--simple-rewards" : ""}`}>
         {isLandingShowcase ? (
           <>
-            <button className="header__showcase-menu" onClick={() => setOpen(true)} type="button" aria-label="デザインを選ぶ">
-              <Menu size={27} />
+            <button className="header__showcase-menu" onClick={() => navigate("/home")} type="button" aria-label="ホームへ戻る">
+              <span className="header__showcase-mark">R</span>
             </button>
             <div className="header__showcase-title">
               <strong>{showcaseTitle}</strong>
@@ -161,11 +161,10 @@ export function Header() {
             <button
               className="header__showcase-action"
               type="button"
-              aria-label={location.pathname === "/home" ? "LPデモを終了" : location.pathname === "/mobileOrder" ? "注文履歴を見る" : "マイページを見る"}
+              aria-label={location.pathname === "/home" ? "会員証を見る" : location.pathname === "/mobileOrder" ? "注文履歴を見る" : "マイページを見る"}
               onClick={() => {
                 if (location.pathname === "/home") {
-                  setActiveStoreId("store_cafe");
-                  navigate("/home");
+                  navigate("/membership");
                   return;
                 }
                 navigate(location.pathname === "/mobileOrder" ? "/orderHistory" : "/more");

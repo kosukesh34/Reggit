@@ -111,3 +111,23 @@ export function getLiffEcho(): LiffEcho | null {
 
     return echo;
 }
+
+export type ProjectDataUpdate = {
+    topic?: string;
+    updated_at?: string;
+};
+
+/** 個人情報を載せない店舗更新イベント。受信後は認可済みAPIから最新値を再取得する。 */
+export function subscribeProjectDataUpdates(
+    listener: (payload: ProjectDataUpdate) => void,
+): () => void {
+    const projectKey = typeof window !== 'undefined' ? String(window.__PROJECT_KEY__ ?? '').trim() : '';
+    const client = getLiffEcho();
+    if (client === null || projectKey === '') {
+        return () => undefined;
+    }
+    const channelName = `project.${projectKey}.data`;
+    client.channel(channelName).listen('.data.updated', listener);
+
+    return () => client.leave(channelName);
+}

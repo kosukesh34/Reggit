@@ -60,7 +60,7 @@ android {
         val liffBaseUrlAndroid = readSkipEnvValue("LIFF_BASE_URL_ANDROID", liffBaseUrl)
         val liffProjectKey = readSkipEnvValue("LIFF_PROJECT_KEY", "default")
         val liffProjectKeyAndroid = readSkipEnvValue("LIFF_PROJECT_KEY_ANDROID", liffProjectKey)
-        val liffFixedTab = readSkipEnvValue("LIFF_FIXED_TAB", "products")
+        val liffFixedTab = readSkipEnvValue("LIFF_FIXED_TAB", "home")
         val liffFixedTabAndroid = readSkipEnvValue("LIFF_FIXED_TAB_ANDROID", liffFixedTab)
         // Android では Bundle 経由で共通キーを参照するケースがあるため、
         // 共通キーにも Android 向け URL を設定して白画面（ngrok エラーページ遷移）を防ぐ。

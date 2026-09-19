@@ -240,7 +240,7 @@ export class QueueManager {
             if (this.isQueueMembershipRequired()) {
                 await this.ensureMemberContextForGate();
             }
-            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.QUEUE_ME);
+            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.CURRENT_QUEUE);
             if (result.success !== true) {
                 if (this.shouldShowSampleQueue()) {
                     this.renderSampleQueueCard();
