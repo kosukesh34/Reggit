@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -98,5 +99,31 @@ class AppConfigApiTest extends TestCase
 
         $response->assertStatus(400);
         $response->assertJsonPath('error', 'project_key は必須です。');
+    }
+
+    public function test_app_config_ナビゲーションバー画像を返すこと(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        ShopSettingStore::setValue(
+            'navigation_header_image_url',
+            'https://example.com/store-header.webp',
+            'string',
+            $project->id,
+        );
+        ShopSettingStore::setValue('home_menu_layout', 'grid_2_columns', 'string', $project->id);
+        ShopSettingStore::setValue('navigation_header_background_color', '#F6F1E8', 'string', $project->id);
+        ShopSettingStore::setValue('home_image_url', 'https://example.com/home.webp', 'string', $project->id);
+        ShopSettingStore::setValue('member_show_point_history', false, 'boolean', $project->id);
+
+        $this->getJson('/api/v1/app-config?project_key=default')
+            ->assertOk()
+            ->assertJsonPath('header.image_url', 'https://example.com/store-header.webp')
+            ->assertJsonPath('header.background_color', '#F6F1E8')
+            ->assertJsonPath('home.image_url', 'https://example.com/home.webp')
+            ->assertJsonPath('home.menu_layout', 'grid_2_columns')
+            ->assertJsonPath('member_screen.show_point_history', false);
     }
 }
