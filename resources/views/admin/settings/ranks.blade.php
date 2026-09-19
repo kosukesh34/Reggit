@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
-@section('title', 'ランク・ポイント設定')
-@section('page-title', 'ランク・ポイント設定')
+@section('title', '会員証・ランク設定')
+@section('page-title', '会員証・ランク設定')
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/rank-card-preview.css') }}">
@@ -12,7 +12,7 @@
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.settings.index') }}">設定</a>
     <span class="breadcrumb-sep">/</span>
-    <span>ランク・ポイント</span>
+    <span>会員証・ランク</span>
 </nav>
 
 <form action="{{ admin_route('admin.settings.ranks.update') }}" method="POST" id="ranksSettingsForm">
@@ -189,6 +189,24 @@
                             </label>
                         </div>
                         <p class="form-text text-muted">オフにすると会員未登録時は「会員登録すると会員証が表示されます」などのメッセージのみ表示します。</p>
+                    </div>
+
+                    <div class="ranks-settings-subsection">
+                        <h4 class="ranks-settings-subtitle">会員証画面の情報</h4>
+                        <p class="form-text text-muted">氏名・電話番号などのユーザー情報は表示せず、会員証の下に表示する情報を選択できます。</p>
+                        <div class="ranks-settings-checkboxes">
+                            @foreach([
+                                'member_show_rank_progress' => ['次のランクまでの進捗', $view->memberShowRankProgress ?? true],
+                                'member_show_point_history' => ['ポイント付与・利用履歴', $view->memberShowPointHistory ?? true],
+                                'member_show_coupon_activity' => ['最近獲得したクーポン', $view->memberShowCouponActivity ?? true],
+                            ] as $field => [$label, $enabled])
+                                <label class="form-check">
+                                    <input type="hidden" name="{{ $field }}" value="0">
+                                    <input type="checkbox" name="{{ $field }}" value="1" {{ old($field, $enabled) ? 'checked' : '' }}>
+                                    {{ $label }}
+                                </label>
+                            @endforeach
+                        </div>
                     </div>
 
                     <div class="ranks-settings-subsection">

@@ -35,6 +35,6 @@ class RanksController extends AdminBaseController
         }
 
         return redirect()->route('admin.settings.ranks', $this->buildAdminRouteParams())
-            ->with('success', 'ランク・ポイント設定を更新しました');
+            ->with('success', '会員証・ランク設定を更新しました');
     }
 }

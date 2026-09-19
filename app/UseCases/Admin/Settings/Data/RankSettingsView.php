@@ -33,5 +33,8 @@ class RankSettingsView
         public string $rankAggregationType = 'total',
         public int $rankPeriodDays = 365,
         public bool $isRankDownEnabled = false,
+        public bool $memberShowRankProgress = true,
+        public bool $memberShowPointHistory = true,
+        public bool $memberShowCouponActivity = true,
     ) {}
 }
