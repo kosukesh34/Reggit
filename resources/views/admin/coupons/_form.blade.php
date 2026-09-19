@@ -19,6 +19,7 @@
     $startAt = old('start_at', $coupon?->start_at?->format('Y-m-d\TH:i'));
     $endAt = old('end_at', $coupon?->end_at?->format('Y-m-d\TH:i'));
     $isActive = (bool) old('is_active', $coupon === null ? true : $coupon->is_active);
+    $deviceOnceEnabled = (bool) old('device_once_enabled', $coupon?->device_once_enabled ?? false);
 @endphp
 
 <div class="cp-studio">
@@ -229,6 +230,17 @@
                     <span class="sr-only">このクーポンを有効にする</span>
                 </label>
             </div>
+
+            <div class="cp-status-row">
+                <span class="cp-status-icon"><i class="fas fa-mobile-screen-button" aria-hidden="true"></i></span>
+                <span class="cp-status-copy"><strong>1端末につき1回だけ発行</strong><small>同じ端末で別アカウントを使っても再発行できません</small></span>
+                <label class="cp-switch">
+                    <input type="checkbox" name="device_once_enabled" id="device_once_enabled" value="1" {{ $deviceOnceEnabled ? 'checked' : '' }}>
+                    <span class="cp-switch-ui" aria-hidden="true"></span>
+                    <span class="sr-only">1端末につき1回だけ発行する</span>
+                </label>
+            </div>
+            @error('device_once_enabled')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
 
             <details class="cp-details cp-advanced" @if($usageLimit) open @endif>
                 <summary>

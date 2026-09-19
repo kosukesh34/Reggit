@@ -75,7 +75,7 @@ class WalletPassGenerationTest extends TestCase
             'X-Forwarded-Host' => 'wallet-test.example.test',
             'X-Forwarded-Proto' => 'https',
         ])
-            ->get('/api/members/me/wallet-pass-url?project_key=default');
+            ->get('/api/member-wallet/pass-url?project_key=default');
 
         $response->assertStatus(200);
         $url = (string) $response->json('url');
@@ -106,7 +106,7 @@ class WalletPassGenerationTest extends TestCase
             'X-Forwarded-Host' => 'wallet-test.example.test',
             'X-Forwarded-Proto' => 'https',
         ])
-            ->get('/api/members/me/wallet-pass-url?project_key=default');
+            ->get('/api/member-wallet/pass-url?project_key=default');
 
         $issueResponse->assertStatus(200);
         $walletAddUrl = (string) $issueResponse->json('url');
@@ -126,7 +126,7 @@ class WalletPassGenerationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('id="walletAddButton"', false);
-        $response->assertSee('wallet-pass', false);
+        $response->assertSee('member-wallet', false);
         $response->assertSee($passToken, false);
     }
 
@@ -153,14 +153,14 @@ class WalletPassGenerationTest extends TestCase
             'X-Forwarded-Host' => 'wallet-test.example.test',
             'X-Forwarded-Proto' => 'https',
         ])
-            ->get('/api/members/me/wallet-pass-url?project_key=default');
+            ->get('/api/member-wallet/pass-url?project_key=default');
 
         $walletAddUrl = (string) $issueResponse->json('url');
         parse_str((string) parse_url($walletAddUrl, PHP_URL_QUERY), $query);
         $passToken = (string) ($query['pass_token'] ?? '');
         $this->assertNotEmpty($passToken);
 
-        $downloadUrl = '/api/members/me/wallet-pass?project_key=default&token='.$passToken;
+        $downloadUrl = '/api/member-wallet/pass?project_key=default&token='.$passToken;
 
         $first = $this->withHeaders([
             'X-Forwarded-Host' => 'wallet-test.example.test',
@@ -185,7 +185,7 @@ class WalletPassGenerationTest extends TestCase
             ['name' => 'Default', 'description' => '', 'is_active' => true]
         );
         ShopSettingStore::setLineLiffId('2008962885-AbCdEfGh', (int) $project->id);
-        $walletUrl = 'https://wallet-test.example.test/api/members/me/wallet-pass?project_key=default&token=test';
+        $walletUrl = 'https://wallet-test.example.test/api/member-wallet/pass?project_key=default&token=test';
 
         $response = $this->withServerVariables(['HTTP_HOST' => 'wallet-test.example.test'])
             ->get('/wallet-add?'.http_build_query([
@@ -197,7 +197,7 @@ class WalletPassGenerationTest extends TestCase
             ]));
 
         $response->assertStatus(200);
-        $response->assertSee('wallet-pass', false);
+        $response->assertSee('member-wallet', false);
         $response->assertSee('token=test', false);
         $response->assertSee('id="walletAddButton"', false);
         $response->assertSee('https://liff.line.me/2008962885-AbCdEfGh', false);
