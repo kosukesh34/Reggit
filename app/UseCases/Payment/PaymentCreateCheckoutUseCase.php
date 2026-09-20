@@ -3,6 +3,7 @@
 namespace App\UseCases\Payment;
 
 use App\Domain\Order\Repositories\OrderRepository;
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
@@ -28,6 +29,9 @@ class PaymentCreateCheckoutUseCase
         }
         if ($order->orderType() !== OrderType::MOBILE || $order->paymentMethod() !== PaymentMethod::STRIPE) {
             throw new InvalidArgumentException('カード払いのモバイル注文のみ決済できます');
+        }
+        if ($order->status() !== OrderStatus::PENDING) {
+            throw new InvalidArgumentException('未決済の注文のみ決済できます');
         }
         if ($order->totalAmount() < 1) {
             throw new InvalidArgumentException('決済金額が不正です');

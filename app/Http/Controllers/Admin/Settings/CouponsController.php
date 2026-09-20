@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Settings\GetCouponsSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateCouponsSettingsUseCase;
 use Illuminate\Http\Request;
@@ -18,7 +17,8 @@ class CouponsController extends AdminBaseController
 
     public function __construct(
         GetCouponsSettingsUseCase $getCouponsSettingsUseCase,
-        UpdateCouponsSettingsUseCase $updateCouponsSettingsUseCase
+        UpdateCouponsSettingsUseCase $updateCouponsSettingsUseCase,
+        private PublicImageStorageService $publicImageStorage,
     ) {
         $this->getCouponsSettingsUseCase = $getCouponsSettingsUseCase;
         $this->updateCouponsSettingsUseCase = $updateCouponsSettingsUseCase;
@@ -46,7 +46,7 @@ class CouponsController extends AdminBaseController
         $imageUrl = (string) ($this->getCouponsSettingsUseCase->handle($projectId)->couponDefaultImageUrl ?? '');
         $imageFile = $request->file('coupon_default_image');
         if ($imageFile instanceof UploadedFile) {
-            $imageUrl = resolve(AdminSavePublicImageUseCase::class)->handle(
+            $imageUrl = $this->publicImageStorage->store(
                 $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_COUPON_DEFAULT,

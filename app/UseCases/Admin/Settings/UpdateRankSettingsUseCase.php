@@ -90,16 +90,6 @@ class UpdateRankSettingsUseCase
             throw new \InvalidArgumentException('ランクキーが重複しています');
         }
 
-        if ($this->smaregiRankSync->hasSmaregiContract($projectId) && $rows !== []) {
-            $rankIdsByKey = $this->smaregiRankSync->sync($projectId, $rows);
-            foreach ($rows as $index => $row) {
-                $key = $row['key'];
-                if (isset($rankIdsByKey[$key]) && $rankIdsByKey[$key] !== '') {
-                    $rows[$index]['smaregi_rank_id'] = $rankIdsByKey[$key];
-                }
-            }
-        }
-
         $this->shopSettingRepository->setMemberRankSettings($rows, $projectId);
         $this->shopSettingRepository->setValue('member_rank_basis', (string) $payload['rank_basis'], 'string', $projectId);
         $this->saveLoyaltyToggles($projectId, $payload);
@@ -155,7 +145,15 @@ class UpdateRankSettingsUseCase
             $this->shopSettingRepository->setMemberCardCodeType((string) $payload['member_card_code_type'], $projectId);
         }
 
-        if ($this->smaregiRankSync->hasSmaregiContract($projectId)) {
+        if ($this->smaregiRankSync->hasSmaregiContract($projectId) && $rows !== []) {
+            $rankIdsByKey = $this->smaregiRankSync->sync($projectId, $rows);
+            foreach ($rows as $index => $row) {
+                $key = $row['key'];
+                if (isset($rankIdsByKey[$key]) && $rankIdsByKey[$key] !== '') {
+                    $rows[$index]['smaregi_rank_id'] = $rankIdsByKey[$key];
+                }
+            }
+            $this->shopSettingRepository->setMemberRankSettings($rows, $projectId);
             $this->smaregiCustomerRankAssignmentService->syncPointRatesForProject($projectId);
         }
     }

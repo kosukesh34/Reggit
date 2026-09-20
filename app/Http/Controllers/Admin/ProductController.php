@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\ProductStoreRequest;
 use App\Http\Requests\Admin\ProductUpdateRequest;
 use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Product\AdminProductDeleteUseCase;
 use App\UseCases\Admin\Product\AdminProductEditUseCase;
 use App\UseCases\Admin\Product\AdminProductIndexUseCase;
@@ -30,7 +29,8 @@ class ProductController extends AdminBaseController
         AdminProductStoreUseCase $storeUseCase,
         AdminProductEditUseCase $editUseCase,
         AdminProductUpdateUseCase $updateUseCase,
-        AdminProductDeleteUseCase $deleteUseCase
+        AdminProductDeleteUseCase $deleteUseCase,
+        private PublicImageStorageService $publicImageStorage,
     ) {
         $this->indexUseCase = $indexUseCase;
         $this->storeUseCase = $storeUseCase;
@@ -108,7 +108,7 @@ class ProductController extends AdminBaseController
         unset($validated['image'], $validated['image_clear']);
         $file = $request->file('image');
         if ($file instanceof UploadedFile) {
-            $validated['image_url'] = resolve(AdminSavePublicImageUseCase::class)->handle(
+            $validated['image_url'] = $this->publicImageStorage->store(
                 $file,
                 $this->resolveAdminProjectId(),
                 PublicImageStorageService::DIR_PRODUCT,
