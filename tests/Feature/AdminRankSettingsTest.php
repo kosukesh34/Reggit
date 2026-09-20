@@ -119,7 +119,8 @@ class AdminRankSettingsTest extends TestCase
                     ],
                 ],
             ])
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
 
         $this->assertSame('compact', ShopSettingStore::getMemberCardDesign((int) $project->id));
         $this->assertSame('sheet', ShopSettingStore::getMemberCardDisplayType((int) $project->id));

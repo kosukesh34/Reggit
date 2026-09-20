@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\AnnouncementDeliveryStoreRequest;
 use App\Http\Requests\Admin\AnnouncementUpdateRequest;
 use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementAudiencePreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeleteUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeliveryFormUseCase;
@@ -31,7 +30,7 @@ class AnnouncementController extends AdminBaseController
         private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
         private AdminAnnouncementAudiencePreviewUseCase $audiencePreviewUseCase,
         private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
-        private AdminSavePublicImageUseCase $saveImageUseCase,
+        private PublicImageStorageService $publicImageStorage,
         private AdminAnnouncementReadsUseCase $readsUseCase,
     ) {}
 
@@ -67,7 +66,7 @@ class AnnouncementController extends AdminBaseController
 
         $imageFile = $request->file('image_file');
         if ($imageFile instanceof UploadedFile) {
-            $validated['image_url'] = $this->saveImageUseCase->handle(
+            $validated['image_url'] = $this->publicImageStorage->store(
                 $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_ANNOUNCEMENT,
@@ -140,7 +139,7 @@ class AnnouncementController extends AdminBaseController
 
         $imageFile = $request->file('image_file');
         if ($imageFile instanceof UploadedFile) {
-            $validated['image_url'] = $this->saveImageUseCase->handle(
+            $validated['image_url'] = $this->publicImageStorage->store(
                 $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_ANNOUNCEMENT,
