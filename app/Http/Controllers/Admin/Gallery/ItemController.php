@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin\Gallery;
 
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Gallery\GalleryItemDestroyUseCase;
 use App\UseCases\Admin\Gallery\GalleryItemIndexUseCase;
 use App\UseCases\Admin\Gallery\GalleryItemStoreUseCase;
@@ -16,6 +15,8 @@ use Illuminate\View\View;
 
 class ItemController extends AdminBaseController
 {
+    public function __construct(private PublicImageStorageService $publicImageStorage) {}
+
     public function index(
         Request $request,
         GalleryItemIndexUseCase $useCase
@@ -52,7 +53,7 @@ class ItemController extends AdminBaseController
                 ->withErrors(['image' => '画像を選択してください'])
                 ->withInput();
         }
-        $validated['image_url'] = resolve(AdminSavePublicImageUseCase::class)->handle(
+        $validated['image_url'] = $this->publicImageStorage->store(
             $imageFile,
             $this->resolveAdminProjectId(),
             PublicImageStorageService::DIR_GALLERY,
@@ -84,7 +85,7 @@ class ItemController extends AdminBaseController
         ]);
         $imageFile = $request->file('image');
         if ($imageFile instanceof UploadedFile) {
-            $validated['image_url'] = resolve(AdminSavePublicImageUseCase::class)->handle(
+            $validated['image_url'] = $this->publicImageStorage->store(
                 $imageFile,
                 $this->resolveAdminProjectId(),
                 PublicImageStorageService::DIR_GALLERY,
