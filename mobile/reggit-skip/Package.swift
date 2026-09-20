@@ -10,10 +10,11 @@ let package = Package(
         .library(name: "Reggit", type: .dynamic, targets: ["Reggit"]),
     ],
     dependencies: [
-        // github.com/skiptools に統一（source.skip.tools と混在すると identity conflict になる）
-        .package(url: "https://github.com/skiptools/skip.git", from: "1.9.8"),
-        .package(url: "https://github.com/skiptools/skip-fuse.git", from: "1.0.3"),
-        .package(url: "https://github.com/skiptools/skip-fuse-ui.git", from: "1.18.2"),
+        // Keep all Skip packages on the same canonical host to avoid SwiftPM
+        // package-identity conflicts in generated Android packages.
+        .package(url: "https://github.com/skiptools/skip.git", exact: "1.9.11"),
+        .package(url: "https://github.com/skiptools/skip-fuse.git", exact: "1.0.3"),
+        .package(url: "https://github.com/skiptools/skip-fuse-ui.git", exact: "1.18.2"),
     ],
     targets: [
         .target(
