@@ -32,6 +32,13 @@ class ProjectAdminUiSetting extends Model
         'frontend_header_text',
     ];
 
+    /** @var array<string, string> */
+    protected $casts = [
+        'member_show_rank_progress' => 'boolean',
+        'member_show_point_history' => 'boolean',
+        'member_show_coupon_activity' => 'boolean',
+    ];
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);

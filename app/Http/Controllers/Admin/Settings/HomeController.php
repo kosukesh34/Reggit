@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin\Settings;
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Http\Requests\Admin\SettingsHomeRequest;
 use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Settings\GetHomeSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateHomeSettingsUseCase;
 
@@ -18,7 +17,7 @@ class HomeController extends AdminBaseController
     public function __construct(
         GetHomeSettingsUseCase $getHomeSettingsUseCase,
         UpdateHomeSettingsUseCase $updateHomeSettingsUseCase,
-        private AdminSavePublicImageUseCase $saveImageUseCase,
+        private PublicImageStorageService $publicImageStorage,
     ) {
         $this->getHomeSettingsUseCase = $getHomeSettingsUseCase;
         $this->updateHomeSettingsUseCase = $updateHomeSettingsUseCase;
@@ -39,7 +38,7 @@ class HomeController extends AdminBaseController
         $raw = $validated['tabs'] ?? [];
         $navigationHeaderImageUrl = null;
         if ($request->hasFile('navigation_header_image')) {
-            $navigationHeaderImageUrl = $this->saveImageUseCase->handle(
+            $navigationHeaderImageUrl = $this->publicImageStorage->store(
                 $request->file('navigation_header_image'),
                 $projectId,
                 PublicImageStorageService::DIR_NAVIGATION_HEADER,
@@ -49,7 +48,7 @@ class HomeController extends AdminBaseController
         }
         $homeImageUrl = null;
         if ($request->hasFile('home_image')) {
-            $homeImageUrl = $this->saveImageUseCase->handle(
+            $homeImageUrl = $this->publicImageStorage->store(
                 $request->file('home_image'),
                 $projectId,
                 PublicImageStorageService::DIR_HOME_IMAGE,

@@ -8,7 +8,6 @@ use App\Http\Requests\Admin\CouponQuickCreateRequest;
 use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
 use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\AdminSavePublicImageUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementAudiencePreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
@@ -39,7 +38,7 @@ class CouponController extends AdminBaseController
         private AdminCouponDeleteUseCase $deleteUseCase,
         private AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase,
         private AdminCouponBulkIssueUseCase $bulkIssueUseCase,
-        private AdminSavePublicImageUseCase $saveImageUseCase,
+        private PublicImageStorageService $publicImageStorage,
         private AdminCouponSyncFromSmaregiUseCase $syncFromSmaregiUseCase,
         private AdminCouponPushToSmaregiUseCase $pushToSmaregiUseCase,
         private AdminCouponFullSyncWithSmaregiUseCase $fullSyncWithSmaregiUseCase,
@@ -76,7 +75,7 @@ class CouponController extends AdminBaseController
         $validated = $request->validated();
         $imageFile = $request->file('image');
         if ($imageFile instanceof UploadedFile) {
-            $validated['image_url'] = $this->saveImageUseCase->handle(
+            $validated['image_url'] = $this->publicImageStorage->store(
                 $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_COUPON,
@@ -114,7 +113,7 @@ class CouponController extends AdminBaseController
         $validated = $request->validated();
         $imageFile = $request->file('image');
         if ($imageFile instanceof UploadedFile) {
-            $validated['image_url'] = $this->saveImageUseCase->handle(
+            $validated['image_url'] = $this->publicImageStorage->store(
                 $imageFile,
                 $projectId,
                 PublicImageStorageService::DIR_COUPON,

@@ -8,6 +8,7 @@ use App\Models\CouponDeviceIssue;
 use App\Models\MemberCoupon;
 use App\Models\User;
 use App\Models\UserDevice;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -72,47 +73,41 @@ class DeviceOnceCouponService
             throw ValidationException::withMessages(['coupon' => 'このクーポンは発行期間外です']);
         }
 
-        return DB::transaction(function () use ($member, $coupon, $deviceIdentifier): MemberCoupon {
-            $alreadyClaimed = CouponDeviceIssue::query()
-                ->where('project_id', (int) $member->project_id)
-                ->where('coupon_id', (int) $coupon->id)
-                ->where('device_identifier', $deviceIdentifier)
-                ->lockForUpdate()
-                ->exists();
-            if ($alreadyClaimed) {
-                throw ValidationException::withMessages(['coupon' => 'この端末ではすでに獲得済みです']);
-            }
+        try {
+            return DB::transaction(function () use ($member, $coupon, $deviceIdentifier): MemberCoupon {
+                $now = now();
+                $deviceIssue = CouponDeviceIssue::create([
+                    'project_id' => (int) $member->project_id,
+                    'coupon_id' => (int) $coupon->id,
+                    'member_id' => (int) $member->id,
+                    'device_identifier' => $deviceIdentifier,
+                    'issued_at' => $now,
+                ]);
 
-            $now = now();
-            $deviceGrantHash = hash('sha256', $deviceIdentifier.'|'.$coupon->id);
-            [$validFrom, $validUntil] = $this->couponIssuePolicy->resolveValidityWindow(
-                $coupon->start_at,
-                $coupon->end_at,
-                $now,
-            );
-            $memberCoupon = MemberCoupon::create([
-                'project_id' => (int) $member->project_id,
-                'member_id' => (int) $member->id,
-                'coupon_id' => (int) $coupon->id,
-                'coupon_name_snapshot' => (string) $coupon->name,
-                'status' => MemberCoupon::STATUS_UNUSED,
-                'issued_at' => $now,
-                'valid_from' => $validFrom,
-                'valid_until' => $validUntil,
-                'issue_source_type' => 'device_once',
-                'issue_source_id' => hash('sha256', $deviceIdentifier),
-                'issue_grant_key' => $deviceGrantHash,
-            ]);
-            CouponDeviceIssue::create([
-                'project_id' => (int) $member->project_id,
-                'coupon_id' => (int) $coupon->id,
-                'member_id' => (int) $member->id,
-                'member_coupon_id' => (int) $memberCoupon->id,
-                'device_identifier' => $deviceIdentifier,
-                'issued_at' => $now,
-            ]);
+                [$validFrom, $validUntil] = $this->couponIssuePolicy->resolveValidityWindow(
+                    $coupon->start_at,
+                    $coupon->end_at,
+                    $now,
+                );
+                $memberCoupon = MemberCoupon::create([
+                    'project_id' => (int) $member->project_id,
+                    'member_id' => (int) $member->id,
+                    'coupon_id' => (int) $coupon->id,
+                    'coupon_name_snapshot' => (string) $coupon->name,
+                    'status' => MemberCoupon::STATUS_UNUSED,
+                    'issued_at' => $now,
+                    'valid_from' => $validFrom,
+                    'valid_until' => $validUntil,
+                    'issue_source_type' => 'device_once',
+                    'issue_source_id' => hash('sha256', $deviceIdentifier),
+                    'issue_grant_key' => hash('sha256', $deviceIdentifier.'|'.$coupon->id),
+                ]);
+                $deviceIssue->update(['member_coupon_id' => (int) $memberCoupon->id]);
 
-            return $memberCoupon;
-        });
+                return $memberCoupon;
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw ValidationException::withMessages(['coupon' => 'この端末ではすでに獲得済みです']);
+        }
     }
 }
