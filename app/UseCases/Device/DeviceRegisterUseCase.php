@@ -17,7 +17,7 @@ class DeviceRegisterUseCase
         $pushTokenRaw = $input->payload['push_token'] ?? null;
         $hasPushToken = is_string($pushTokenRaw) && trim($pushTokenRaw) !== '';
 
-        $device = $this->deviceService->register($input->user, $input->payload);
+        $device = $this->deviceService->register($input->user, $input->payload, $input->deviceToken);
 
         $savedTokenLen = $device->push_token !== null && $device->push_token !== ''
             ? strlen($device->push_token)
@@ -27,6 +27,7 @@ class DeviceRegisterUseCase
             (int) $device->id,
             $savedTokenLen,
             $hasPushToken && $savedTokenLen === 0,
+            $device->auth_token,
         );
     }
 }

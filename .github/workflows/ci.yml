@@ -38,6 +38,9 @@ jobs:
     - name: Build frontend assets
       run: npm run build
 
+    - name: Type check frontend
+      run: npx tsc --noEmit
+
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -134,6 +137,20 @@ jobs:
         else
           echo "Laravel Pint not installed, skipping..."
         fi
+
+  security_browser:
+    name: Browser security and accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+    - run: npm ci
+    - run: npx playwright install --with-deps chromium
+    - run: npx playwright test --config=e2e/web/security-review.config.ts --grep @component
 
   # 一時停止: main 運用中は Playwright を走らせない（再開時は条件を戻す）。
   e2e_web:

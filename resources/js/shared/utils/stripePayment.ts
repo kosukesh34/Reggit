@@ -77,7 +77,7 @@ export class StripePayment {
         const result = await this.apiClient.post('/api/payment/create-intent', {
             order_id: orderId,
         });
-        if (!result.success) {
+        if (result.success === false) {
             throw new Error(result.error || 'Payment intent creation failed');
         }
         const data = result.data as { clientSecret?: string; error?: string };
@@ -156,7 +156,7 @@ export class StripePayment {
             payment_intent_id: paymentIntentId,
             order_id: orderId,
         });
-        if (!result.success) {
+        if (result.success === false) {
             throw new Error(result.error || 'Payment confirmation failed');
         }
         return result.data;

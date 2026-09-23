@@ -2,13 +2,13 @@
 
 namespace Tests\Unit\Payment;
 
-use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\UseCases\Payment\OrderPaymentSessionService;
 use App\UseCases\Payment\PaymentCreateIntentUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -38,7 +38,7 @@ class PaymentCreateIntentUseCaseTest extends TestCase
         ]);
 
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateIntentUseCase($gateway, app(OrderRepository::class));
+        $useCase = new PaymentCreateIntentUseCase(new OrderPaymentSessionService($gateway));
 
         $dto = $useCase->handle((int) $order->id, (int) $order->project_id, (int) $user->id);
 
@@ -67,7 +67,7 @@ class PaymentCreateIntentUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
 
-        $useCase = new PaymentCreateIntentUseCase(new FakePaymentGateway, app(OrderRepository::class));
+        $useCase = new PaymentCreateIntentUseCase(new OrderPaymentSessionService(new FakePaymentGateway));
 
         $this->expectException(InvalidArgumentException::class);
         $useCase->handle((int) $order->id, (int) $order->project_id, (int) $other->id);

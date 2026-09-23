@@ -132,6 +132,12 @@ struct SettingsView: View {
             LabeledContent("向け先", value: AppBuildConfig.serverTargetLabel)
             LabeledContent("API URL", value: AppBuildConfig.baseURL)
             LabeledContent("プロジェクト", value: AppBuildConfig.projectKey)
+            SecureField("店舗端末トークン", text: Binding(
+                get: { viewModel.settings.storeToken ?? "" },
+                set: { viewModel.settings.storeToken = $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            ))
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
             if !remote.projectName.isEmpty {
                 LabeledContent("店舗名", value: remote.projectName)
             }
