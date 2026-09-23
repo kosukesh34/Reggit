@@ -16,6 +16,7 @@ class UpdateLotterySettingsUseCase
      * @param  array{
      *     gacha_enabled: bool,
      *     scratch_enabled: bool,
+     *     roulette_enabled: bool,
      *     grant_trigger: string,
      *     min_amount: float|null,
      *     entitlement_expires_hours: int|null,
@@ -29,6 +30,7 @@ class UpdateLotterySettingsUseCase
         $flags = $this->shopSettingRepository->getFeatureFlags($projectId);
         $flags['feature_gacha_enabled'] = (bool) $validated['gacha_enabled'];
         $flags['feature_scratch_enabled'] = (bool) $validated['scratch_enabled'];
+        $flags['feature_roulette_enabled'] = (bool) $validated['roulette_enabled'];
         $this->shopSettingRepository->setFeatureFlags($flags, $projectId);
     }
 }

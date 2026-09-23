@@ -63,6 +63,10 @@ class HomeController extends AdminBaseController
             (string) ($validated['navigation_header_background_color'] ?? '#FFFFFF'),
             $homeImageUrl,
             (string) $validated['home_menu_layout'],
+            (string) $validated['product_display_layout'],
+            $request->boolean('native_navigation_present')
+                ? (is_array($validated['native_navigation'] ?? null) ? $validated['native_navigation'] : [])
+                : null,
         );
 
         return redirect()->route('admin.settings.home', $this->buildAdminRouteParams())

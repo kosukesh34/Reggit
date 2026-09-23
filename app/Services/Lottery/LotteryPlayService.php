@@ -24,8 +24,10 @@ class LotteryPlayService
      * @return array{
      *     gacha_enabled: bool,
      *     scratch_enabled: bool,
+     *     roulette_enabled: bool,
      *     entitlements: list<array{id: int, reward_type: string, expires_at: string|null}>,
-     *     prize_labels: array{gacha: list<string>, scratch: list<string>}
+     *     prize_labels: array{gacha: list<string>, scratch: list<string>, roulette: list<string>},
+     *     eligibility: array{grant_trigger: string, min_amount: float|null, entitlement_expires_hours: int|null}
      * }
      */
     public function getMemberLotteryState(Member $member): array
@@ -48,6 +50,7 @@ class LotteryPlayService
         return [
             'gacha_enabled' => $settings->gacha_enabled === true,
             'scratch_enabled' => $settings->scratch_enabled === true,
+            'roulette_enabled' => $settings->roulette_enabled === true,
             'entitlements' => $entitlements->map(fn (MemberLotteryEntitlement $row) => [
                 'id' => (int) $row->id,
                 'reward_type' => (string) $row->reward_type,
@@ -56,6 +59,14 @@ class LotteryPlayService
             'prize_labels' => [
                 'gacha' => $this->prizeLabels($projectId, 'gacha'),
                 'scratch' => $this->prizeLabels($projectId, 'scratch'),
+                'roulette' => $this->prizeLabels($projectId, 'roulette'),
+            ],
+            'eligibility' => [
+                'grant_trigger' => (string) $settings->grant_trigger,
+                'min_amount' => $settings->min_amount !== null ? (float) $settings->min_amount : null,
+                'entitlement_expires_hours' => $settings->entitlement_expires_hours !== null
+                    ? (int) $settings->entitlement_expires_hours
+                    : null,
             ],
         ];
     }

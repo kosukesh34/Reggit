@@ -26,6 +26,15 @@ class SettingsHomeRequest extends FormRequest
             'home_image' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:8192',
             'home_image_clear' => 'nullable|in:0,1',
             'home_menu_layout' => 'required|in:list,grid_3x2,grid_2_columns',
+            'product_display_layout' => 'required|in:list_with_image,grid_2_columns,name_only',
+            'native_navigation' => 'nullable|array',
+            'native_navigation_present' => 'nullable|boolean',
+            'native_navigation.header' => 'nullable|array|max:2',
+            'native_navigation.header.*' => 'string|max:64',
+            'native_navigation.footer' => 'nullable|array|max:5',
+            'native_navigation.footer.*' => 'string|max:64',
+            'native_navigation.hamburger' => 'nullable|array',
+            'native_navigation.hamburger.*' => 'string|max:64',
         ];
     }
 }

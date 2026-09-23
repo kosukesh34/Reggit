@@ -22,6 +22,9 @@ protocol ReggitAPIServing: Sendable {
     func claimDeviceOnceCoupon(id: Int) async throws
     func redeemCoupon(id: Int) async throws -> CouponRedemptionResult
     func fetchStampCards() async throws -> [StampCardItem]
+    func fetchLotteryState() async throws -> LotteryStateSnapshot
+    func playLottery(entitlementId: Int) async throws -> LotteryPlayResult
+    func notifyLotteryWin(entitlementId: Int) async throws
 
     func fetchProducts() async throws -> [ProductItem]
     func createOrder(items: [OrderLineRequest], paymentMethod: String, notes: String?) async throws -> OrderSnapshot
