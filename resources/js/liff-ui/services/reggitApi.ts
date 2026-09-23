@@ -411,10 +411,6 @@ export const reggitApi = {
     client().clearPersistedLineUserId();
     if (typeof window !== 'undefined') {
       window.__LINE_USER_ID__ = null;
-      const mm = (window.app as { memberManager?: { memberData?: unknown } } | undefined)?.memberManager;
-      if (mm !== undefined) {
-        mm.memberData = null;
-      }
       try {
         const liffSdk = window.liff as { logout?: () => void; isLoggedIn?: () => boolean } | undefined;
         if (liffSdk !== undefined && typeof liffSdk.logout === 'function' && typeof liffSdk.isLoggedIn === 'function' && liffSdk.isLoggedIn()) {
