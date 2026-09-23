@@ -31,6 +31,7 @@ class ShopSettingKeys
         'feature_gallery_enabled' => true,
         'feature_gacha_enabled' => false,
         'feature_scratch_enabled' => false,
+        'feature_roulette_enabled' => false,
     ];
 
     public const FEATURE_FLAG_LABELS = [
@@ -48,6 +49,7 @@ class ShopSettingKeys
     public const LOTTERY_MANAGED_FEATURE_FLAGS = [
         'feature_gacha_enabled',
         'feature_scratch_enabled',
+        'feature_roulette_enabled',
     ];
 
     public const PROFILE_SMAREGI_FIELDS = [

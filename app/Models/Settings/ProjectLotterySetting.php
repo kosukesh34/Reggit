@@ -19,6 +19,7 @@ class ProjectLotterySetting extends Model
         'project_id',
         'gacha_enabled',
         'scratch_enabled',
+        'roulette_enabled',
         'grant_trigger',
         'min_amount',
         'entitlement_expires_hours',
@@ -28,6 +29,7 @@ class ProjectLotterySetting extends Model
     protected $casts = [
         'gacha_enabled' => 'boolean',
         'scratch_enabled' => 'boolean',
+        'roulette_enabled' => 'boolean',
         'min_amount' => 'decimal:2',
         'entitlement_expires_hours' => 'integer',
     ];
@@ -43,6 +45,7 @@ class ProjectLotterySetting extends Model
         return [
             'gacha_enabled' => false,
             'scratch_enabled' => false,
+            'roulette_enabled' => false,
             'grant_trigger' => LotteryGrantTrigger::EVERY_PURCHASE,
             'min_amount' => null,
             'entitlement_expires_hours' => null,

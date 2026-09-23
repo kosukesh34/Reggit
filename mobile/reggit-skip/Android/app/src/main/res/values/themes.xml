@@ -3,7 +3,7 @@
     <color name="reggit_canvas">#FFF9F6ED</color>
     <style name="Theme.Reggit.Splash" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@drawable/splash_background</item>
-        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowFullscreen">false</item>
         <item name="android:statusBarColor">@color/reggit_canvas</item>
         <item name="android:navigationBarColor">@color/reggit_canvas</item>
         <item name="android:windowLightStatusBar">true</item>

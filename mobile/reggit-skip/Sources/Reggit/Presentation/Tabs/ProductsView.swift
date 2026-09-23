@@ -12,6 +12,16 @@ struct CartLine: Identifiable, Equatable {
     var lineTotal: Int { unitPrice * quantity }
 }
 
+enum ProductDisplayLayout: String {
+    case listWithImage = "list_with_image"
+    case grid2Columns = "grid_2_columns"
+    case nameOnly = "name_only"
+
+    static func parse(_ raw: String) -> ProductDisplayLayout {
+        ProductDisplayLayout(rawValue: raw) ?? .listWithImage
+    }
+}
+
 @MainActor
 @Observable
 final class ProductsViewModel {
@@ -134,11 +144,18 @@ struct ProductsView: View {
     @Environment(\.openURL) var openURL
     @State var selectedProduct: ProductItem?
     @State var draftOptionIds: [Int] = []
+    let displayLayout: ProductDisplayLayout
     let paymentReturnOrderID: Int?
     let paymentReturnRevision: Int
 
-    init(apiClient: any ReggitAPIServing, paymentReturnOrderID: Int? = nil, paymentReturnRevision: Int = 0) {
+    init(
+        apiClient: any ReggitAPIServing,
+        displayLayout: String = "list_with_image",
+        paymentReturnOrderID: Int? = nil,
+        paymentReturnRevision: Int = 0
+    ) {
         _viewModel = State(initialValue: ProductsViewModel(apiClient: apiClient))
+        self.displayLayout = ProductDisplayLayout.parse(displayLayout)
         self.paymentReturnOrderID = paymentReturnOrderID
         self.paymentReturnRevision = paymentReturnRevision
     }
@@ -154,7 +171,7 @@ struct ProductsView: View {
                     emptySubtitle: "商品やサービスが登録されるとここに表示されます",
                     emptyIcon: "bag",
                     onRetry: { Task { await viewModel.load() } },
-                    skeleton: { ProductsSkeletonView() }
+                    skeleton: { ProductsSkeletonView(layout: displayLayout) }
                 ) {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
@@ -185,16 +202,7 @@ struct ProductsView: View {
                                 )
                                 .padding(.top, 8)
                             }
-                            LazyVStack(spacing: 0) {
-                                ForEach(Array(viewModel.filteredProducts.enumerated()), id: \.element.id) { index, product in
-                                    productCard(product)
-                                    if index < viewModel.filteredProducts.count - 1 {
-                                        Divider()
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 20)
+                            productCollection
                         }
                     }
                 }
@@ -270,7 +278,46 @@ struct ProductsView: View {
         }
     }
 
-    private func productCard(_ product: ProductItem) -> some View {
+    @ViewBuilder
+    private var productCollection: some View {
+        switch displayLayout {
+        case .listWithImage:
+            LazyVStack(spacing: 0) {
+                ForEach(Array(viewModel.filteredProducts.enumerated()), id: \.element.id) { index, product in
+                    listProductCard(product)
+                    if index < viewModel.filteredProducts.count - 1 {
+                        Divider()
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
+        case .grid2Columns:
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12),
+                ],
+                spacing: 12
+            ) {
+                ForEach(viewModel.filteredProducts) { product in
+                    gridProductCard(product)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
+        case .nameOnly:
+            LazyVStack(spacing: 10) {
+                ForEach(viewModel.filteredProducts) { product in
+                    nameOnlyProductCard(product)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
+        }
+    }
+
+    private func listProductCard(_ product: ProductItem) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Button { openProduct(product) } label: {
                 HStack(alignment: .top, spacing: 16) {
@@ -305,6 +352,85 @@ struct ProductsView: View {
             }
         }
         .padding(.vertical, 16)
+    }
+
+    private func gridProductCard(_ product: ProductItem) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button { openProduct(product) } label: {
+                VStack(alignment: .leading, spacing: 10) {
+                    RemoteImageView(
+                        urlString: product.imageURL,
+                        baseURL: viewModel.mediaBaseURL,
+                        contentMode: .fill,
+                        cornerRadius: AppDesign.radiusM
+                    )
+                    .frame(height: 128)
+                    .clipped()
+                    VStack(alignment: .leading, spacing: 5) {
+                        if !product.category.isEmpty {
+                            Text(product.category)
+                                .font(.caption2)
+                                .foregroundStyle(AppDesign.inkSecondary)
+                                .lineLimit(1)
+                        }
+                        Text(product.name)
+                            .font(.headline)
+                            .foregroundStyle(AppDesign.ink)
+                            .lineLimit(2)
+                            .frame(minHeight: 40, alignment: .topLeading)
+                    }
+                }
+                .multilineTextAlignment(.leading)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("\(product.name)の詳細"))
+            Text(AppFormat.yen(product.price))
+                .font(.headline)
+                .foregroundStyle(AppDesign.ink)
+            QtyStepper(
+                quantity: viewModel.cart[product.id] ?? 0,
+                onMinus: { viewModel.removeFromCart(product) },
+                onPlus: {
+                    if product.optionGroups.isEmpty { viewModel.addToCart(product) }
+                    else { openProduct(product) }
+                }
+            )
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(10)
+        .background(AppDesign.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
+    }
+
+    private func nameOnlyProductCard(_ product: ProductItem) -> some View {
+        HStack(spacing: 12) {
+            Button { openProduct(product) } label: {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(product.name)
+                        .font(.headline)
+                        .foregroundStyle(AppDesign.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(AppFormat.yen(product.price))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppDesign.inkSecondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("\(product.name)の詳細"))
+            QtyStepper(
+                quantity: viewModel.cart[product.id] ?? 0,
+                onMinus: { viewModel.removeFromCart(product) },
+                onPlus: {
+                    if product.optionGroups.isEmpty { viewModel.addToCart(product) }
+                    else { openProduct(product) }
+                }
+            )
+        }
+        .padding(14)
+        .background(AppDesign.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
     }
 
     private func productDetail(_ product: ProductItem) -> some View {

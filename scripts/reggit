@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REGGIT_ROOT="${REGGIT_ROOT:-$HOME/reggit}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REGGIT_ROOT="${REGGIT_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 MOBILE_DIR="${REGGIT_ROOT}/mobile/reggit-skip"
 APK_PATH="${MOBILE_DIR}/.build/Android/app/outputs/apk/debug/app-debug.apk"
 
@@ -32,11 +33,12 @@ DEPLOY_BRANCH="${REGGIT_DEPLOY_BRANCH:-main}"
 usage() {
   cat <<'EOF'
 Usage:
-  reggit startup   Reggit 開発環境を一括起動
-  reggit setup     startup と同じ
-  reggit start     startup と同じ
-  reggit deploy    本番（Xserver）へデプロイ
-  reggit help      このヘルプを表示
+  reggit startup          Reggit 開発環境を一括起動
+  reggit setup            startup と同じ
+  reggit start            startup と同じ
+  reggit android update   reggit-skip を Android 向けにビルド・インストール・起動
+  reggit deploy           本番（Xserver）へデプロイ
+  reggit help             このヘルプを表示
 
 startup の処理内容:
   1. Docker（Rancher Desktop）の起動
@@ -48,6 +50,11 @@ startup の処理内容:
   7. iOS シミュレーター + Reggit App（Xcode）起動
   8. Android エミュレーター + Reggit App 起動
 
+android update の処理内容:
+  1. skip app launch --android（Swift → Android ビルド）
+  2. 接続中の端末／エミュレーターへインストールして起動
+     （端末が無ければ Skip 側がエミュレーター起動を試みる）
+
 deploy の処理内容:
   1. main ブランチへ切替 + pull
   2. npm run build
@@ -55,9 +62,10 @@ deploy の処理内容:
   4. composer install / migrate / キャッシュ再生成
 
 ビルド成果物（.app / .apk）があれば再利用し、なければ自動で新規ビルドします。
+（android update は毎回ビルドし直します）
 
 環境変数:
-  REGGIT_ROOT                 プロジェクトルート（既定: ~/reggit）
+  REGGIT_ROOT                 プロジェクトルート（既定: このスクリプトの親）
   REGGIT_IPAD_DEVICE          Waiting 用 iPad 名（既定: Reggit iPad）
   REGGIT_KITCHEN_IPAD_DEVICE  Kitchen 用 iPad 名（既定: Reggit Kitchen iPad）
   REGGIT_IOS_DEVICE           iOS シミュレーター名（既定: Reggit iPhone 16 Pro）
@@ -70,9 +78,23 @@ deploy の処理内容:
   reggit startup
   reggit setup
   reggit start
+  reggit android update
+  reggit android update --verbose
   reggit deploy
   reggit deploy --skip-build
   reggit deploy --allow-dirty
+EOF
+}
+
+android_usage() {
+  cat <<'EOF'
+Usage:
+  reggit android update [--verbose]   reggit-skip を Android 向けにビルド・インストール・起動
+  reggit android help                 このヘルプを表示
+
+備考:
+  - 実機を接続していればその端末へ、無ければエミュレーターへ入れます
+  - 追加引数はそのまま skip app launch に渡します（例: --verbose）
 EOF
 }
 
@@ -782,6 +804,49 @@ cmd_deploy() {
   log "確認: https://reggit.jp/"
 }
 
+cmd_android_update() {
+  require_reggit_root
+
+  if [[ ! -d "$MOBILE_DIR" ]]; then
+    echo "error: モバイルプロジェクトが見つかりません: ${MOBILE_DIR}" >&2
+    exit 1
+  fi
+  if ! command -v skip >/dev/null 2>&1; then
+    echo "error: skip コマンドが見つかりません。brew install skiptools/skip/skip などで入れてください。" >&2
+    exit 1
+  fi
+
+  export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+  export PATH="${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${PATH}"
+
+  log "=== Android アプリを更新します ==="
+  log "プロジェクト: ${MOBILE_DIR}"
+  (
+    cd "$MOBILE_DIR"
+    skip app launch --android --configuration debug --project . "$@"
+  )
+  log "=== Android 更新完了 ==="
+}
+
+cmd_android() {
+  local subcommand="${1:-update}"
+  shift || true
+
+  case "$subcommand" in
+    update|up)
+      cmd_android_update "$@"
+      ;;
+    help|-h|--help)
+      android_usage
+      ;;
+    *)
+      echo "error: 不明な android サブコマンド: ${subcommand}" >&2
+      android_usage >&2
+      exit 1
+      ;;
+  esac
+}
+
 main() {
   local command="${1:-help}"
   shift || true
@@ -789,6 +854,9 @@ main() {
   case "$command" in
     startup|start|up|setup)
       cmd_startup
+      ;;
+    android)
+      cmd_android "$@"
       ;;
     deploy)
       cmd_deploy "$@"
