@@ -5,6 +5,7 @@ namespace App\Http;
 use App\Http\Middleware\AdminAuditLogger;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\AuthenticateKitchenToken;
+use App\Http\Middleware\AuthorizeQueueAccess;
 use App\Http\Middleware\BindAdminProject;
 use App\Http\Middleware\BindProjectFromRequest;
 use App\Http\Middleware\CheckAdminPermission;
@@ -84,6 +85,7 @@ class Kernel extends HttpKernel
         'throttle' => ThrottleRequests::class,
         'verified' => EnsureEmailIsVerified::class,
         'kitchen.auth' => AuthenticateKitchenToken::class,
+        'queue.access' => AuthorizeQueueAccess::class,
         'verify.smaregi.webhook' => VerifySmaregiWebhookSecret::class,
     ];
 }

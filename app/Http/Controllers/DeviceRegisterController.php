@@ -8,6 +8,7 @@ use App\UseCases\Device\Data\DeviceRegisterInput;
 use App\UseCases\Device\DeviceRegisterUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 
 class DeviceRegisterController extends Controller
@@ -36,7 +37,7 @@ class DeviceRegisterController extends Controller
 
         try {
             $user = $this->userService->getOrCreateUser($request);
-            $output = $this->deviceRegisterUseCase->handle(new DeviceRegisterInput($user, $validated));
+            $output = $this->deviceRegisterUseCase->handle(new DeviceRegisterInput($user, $validated, $request->header('X-Device-Token')));
 
             LogHelper::info('[Device] register success', [
                 'project_id' => $projectId,
@@ -55,7 +56,10 @@ class DeviceRegisterController extends Controller
             return response()->json([
                 'success' => true,
                 'device_id' => $output->deviceId,
+                'device_token' => $output->deviceToken,
             ]);
+        } catch (AuthenticationException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 401);
         } catch (\Throwable $e) {
             LogHelper::error('[Device] register failed', [
                 'project_id' => $projectId,

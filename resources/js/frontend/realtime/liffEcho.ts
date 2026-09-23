@@ -1,4 +1,5 @@
 import Echo from 'laravel-echo';
+import { ApiClient } from '../../shared/utils/apiClient';
 import Pusher from 'pusher-js';
 import type { ChannelAuthorizationHandler } from 'pusher-js';
 
@@ -48,6 +49,7 @@ function identityHeaders(): Record<string, string> {
     const deviceIdentifier = window.__MOBILE_DEVICE_INFO__?.device_identifier;
     if (typeof deviceIdentifier === 'string' && deviceIdentifier.trim() !== '') {
         headers['X-Device-Identifier'] = deviceIdentifier.trim();
+        headers['X-Device-Token'] = ApiClient.getDeviceToken(deviceIdentifier.trim());
     }
 
     return headers;

@@ -8,6 +8,9 @@ import type { TooltipManager } from '../shared/utils/tooltip';
 export {};
 
 type LiffLike = {
+    getProfile?: () => Promise<{ displayName?: string; [key: string]: unknown }>;
+    getAccessToken?: () => string | null;
+    isInClient?: () => boolean;
     isLoggedIn?: () => boolean;
     getDecodedIDToken?: () => { sub?: string } | null;
     getIDToken?: () => string | null;
@@ -38,6 +41,10 @@ type LayoutManagerLike = {
 };
 
 type AppLike = {
+    onLiffReady?: () => void | Promise<void>;
+    refreshCurrentTab?: () => void | Promise<void>;
+    memberManager?: import('../frontend/managers/MemberManager').MemberManager;
+    deviceManager?: import('../frontend/managers/DeviceManager').DeviceManager;
     switchTab?: (tab: string) => void | Promise<void>;
     currentTab?: string;
     pageRouter?: import('../frontend/navigation/LiffPageRouter').LiffPageRouter;
@@ -67,6 +74,15 @@ type AppLike = {
 
 declare global {
     interface Window {
+        __LIFF_APP_BOOTSTRAP__?: boolean;
+        __LIFF_INIT_BOOTSTRAPPED__?: boolean;
+        __LIFF_ID_MISSING__?: boolean;
+        __LIFF_PERMISSION_DENIED__?: boolean;
+        __MOBILE_PENDING_PUSH_TOKEN__?: string | null;
+        __nativeSetPushToken?: (token: string | null | undefined) => void;
+        __nativeOpenExternalUrl__?: (url: string) => boolean;
+        __nativeAddAppleWalletPass__?: (url: string) => boolean;
+        __LIFF_DETAIL_LAYOUTS__?: Record<string, unknown[]>;
         __PROJECT_KEY__?: string;
         __REVERB_APP_KEY__?: string;
         __REVERB_WS_HOST__?: string;

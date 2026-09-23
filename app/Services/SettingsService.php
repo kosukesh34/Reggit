@@ -31,6 +31,7 @@ class SettingsService
             'advanceDays' => $repo->getAdvanceBookingDays($projectId),
             'reservationCapacity' => $repo->getReservationCapacityPerSlot($projectId),
             'orderMode' => $repo->getOrderMode($projectId),
+            'storeDeviceToken' => $repo->getKitchenAccessToken($projectId),
             'orderLineNotifyEnabled' => $repo->isOrderLineNotifyEnabled($projectId),
             'orderReadyLineNotifyEnabled' => $repo->isOrderReadyLineNotifyEnabled($projectId),
         ];

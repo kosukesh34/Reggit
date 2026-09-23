@@ -3,6 +3,7 @@ import { getMemberManager } from './api';
 import { MemberProfileForm } from './MemberProfileForm';
 
 type MemberManagerHooks = {
+    fetchMemberContext?: (options?: { force?: boolean }) => Promise<unknown>;
     ensureGuestMemberContext?: () => Promise<unknown>;
     _registerFullScreen?: boolean;
     _forcedRegister?: boolean;

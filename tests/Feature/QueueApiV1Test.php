@@ -70,8 +70,9 @@ class QueueApiV1Test extends TestCase
             'status' => QueueStatus::WAITING,
         ]);
 
+        $entry->update(['qr_token' => 'cancel-owner-token']);
         $response = $this->withoutMiddleware(AuthenticateApiToken::class)
-            ->post("/api/v1/default/queue/{$entry->id}/cancel");
+            ->post("/api/v1/default/queue/{$entry->id}/cancel?queue_token={$entry->qr_token}");
 
         $response->assertOk()
             ->assertJsonPath('success', true)
