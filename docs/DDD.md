@@ -56,7 +56,7 @@ Domain → Eloquent / ShopSetting に依存しない
 - `OrderIndex` / `OrderShow` 等の **読み取り専用 Eloquent**（CQRS 読みモデルとして許容）
 - Eloquent `Member::syncPointsLedger` / `MemberRepository::syncPointsLedger` のバックフィル（レガシーデータ整合。読取時は自動実行せず、ポイント更新前など明示呼び出しのみ）
 - **薄 UseCase ラッパー**はクリーンアーキテクチャ方針として**維持**する（削除・統合しない。Request 直受けの Input 化のみ進める）
-- LIFF 顧客フロントの legacy managers / Admin デザイナー残骸 → **✅ W2 完了**（`features/*Page` + `frontendStore`、managers/`app.ts` 削除）
+- LIFF 顧客フロントは `features/*Page` へ移行中。`frontend/app.ts` と legacy managers はまだ残り、画面単位で移行してから削除する。React の API 層は `window.app.apiClient` に依存しない。
 
 ## 7. テスト方針
 

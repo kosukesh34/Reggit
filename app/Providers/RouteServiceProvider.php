@@ -24,18 +24,9 @@ class RouteServiceProvider extends ServiceProvider
                 return Limit::none()->by('smaregi:'.$request->ip());
             }
 
-            $deviceIdentifier = trim((string) $request->header('X-Device-Identifier', ''));
-            $lineUserId = trim((string) $request->header('X-Line-User-Id', ''));
-            $projectKey = trim((string) $request->header('X-Project-Key', ''));
-            $key = $request->user()?->id
-                ?: ($lineUserId !== '' ? "line:{$lineUserId}" : null)
-                ?: ($deviceIdentifier !== '' ? "device:{$deviceIdentifier}" : null)
-                ?: "ip:{$request->ip()}";
-            if ($projectKey !== '') {
-                $key .= "|project:{$projectKey}";
-            }
-
-            return Limit::perMinute(240)->by($key);
+            // The global API limiter runs before route authentication. Client-supplied
+            // identity and project headers must never partition its quota.
+            return Limit::perMinute(240)->by('ip:'.$request->ip());
         });
 
         // 管理画面ログイン: 5回/分まで（ブルートフォース対策）

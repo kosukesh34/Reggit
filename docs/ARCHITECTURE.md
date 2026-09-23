@@ -166,7 +166,7 @@ flowchart TB
 
 | 入口 | 認証の考え方 | テナント解決 |
 |------|--------------|--------------|
-| LIFF / 顧客 API | LINE User ID ヘッダ等（Laravel の user guard ではない） | `bind.project` |
+| LIFF / 顧客 API | 本番は LINE ID トークン検証。ネイティブ端末は発行済み端末トークン（Laravel の user guard ではない） | `bind.project` |
 | 店舗 Admin | `auth:admin` セッション + `admin.permission` + `admin.plan` | `bind.admin.project` |
 | システム Admin | `auth:admin` + `system.admin` | 横断（プロジェクト CRUD） |
 | API v1 | Bearer / `X-Api-Token` | トークンの project または URL `{project_key}` |
