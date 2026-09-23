@@ -1,6 +1,6 @@
 @extends('admin.layout')
-@section('title', 'ガチャ・スクラッチ設定')
-@section('page-title', 'ガチャ・スクラッチ設定')
+@section('title', '購入特典ゲーム設定')
+@section('page-title', '購入特典ゲーム設定')
 
 @section('content')
 <nav class="breadcrumb">
@@ -8,10 +8,10 @@
     <span class="breadcrumb-sep">/</span>
     <a href="{{ admin_route('admin.coupons') }}">クーポン</a>
     <span class="breadcrumb-sep">/</span>
-    <span>ガチャ・スクラッチ設定</span>
+    <span>購入特典ゲーム設定</span>
 </nav>
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-dice"></i> ガチャ・スクラッチ設定</h1>
+    <h1 class="page-header-title"><i class="fas fa-dice"></i> 購入特典ゲーム設定</h1>
 </div>
 @if(session('success'))
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
@@ -170,17 +170,25 @@
     $scratchPrizes = old('prizes')
         ? collect(old('prizes'))->where('reward_type', 'scratch')->values()
         : $view->prizes->where('reward_type', 'scratch')->values();
+    $roulettePrizes = old('prizes')
+        ? collect(old('prizes'))->where('reward_type', 'roulette')->values()
+        : $view->prizes->where('reward_type', 'roulette')->values();
     $gachaPrizeInitial = $gachaPrizes->map($mapPrizeRow)->values();
     $scratchPrizeInitial = $scratchPrizes->map($mapPrizeRow)->values();
+    $roulettePrizeInitial = $roulettePrizes->map($mapPrizeRow)->values();
 @endphp
 
 <form action="{{ admin_route('admin.settings.lottery.update') }}" method="POST" id="lotterySettingsForm">
     @csrf
     <div class="card card-mb-24">
         <div class="card-header">
-            <h3 class="card-title"><i class="fas fa-toggle-on"></i> 機能・付与条件</h3>
+            <h3 class="card-title"><i class="fas fa-shopping-bag"></i> 購入特典の利用条件</h3>
         </div>
         <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                条件を満たした購入が完了すると、選択したゲームのプレイ権を各1回付与します。注文キャンセル時は未使用の権利を取り消します。
+            </div>
             <div class="form-group">
                 <label class="checkbox-label checkbox-block">
                     <input type="hidden" name="gacha_enabled" value="0">
@@ -196,7 +204,14 @@
                 </label>
             </div>
             <div class="form-group">
-                <label for="grant_trigger" class="form-label">権利の付与タイミング</label>
+                <label class="checkbox-label checkbox-block">
+                    <input type="hidden" name="roulette_enabled" value="0">
+                    <input type="checkbox" name="roulette_enabled" value="1" {{ old('roulette_enabled', $view->settings->roulette_enabled) ? 'checked' : '' }}>
+                    <span>ルーレットを有効にする</span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="grant_trigger" class="form-label">プレイ権の付与条件</label>
                 <select name="grant_trigger" id="grant_trigger" class="form-control" required>
                     @foreach($view->grantTriggerOptions as $value => $label)
                         <option value="{{ $value }}" {{ old('grant_trigger', $view->settings->grant_trigger) === $value ? 'selected' : '' }}>{{ $label }}</option>
@@ -204,16 +219,22 @@
                 </select>
             </div>
             <div class="form-group" id="min_amount_group" style="{{ old('grant_trigger', $view->settings->grant_trigger) === 'min_amount' ? '' : 'display:none;' }}">
-                <label for="min_amount" class="form-label">最低金額（円）</label>
-                <input type="number" step="1" min="0" name="min_amount" id="min_amount" class="form-control input-max-200"
+                <label for="min_amount" class="form-label">対象となる最低購入金額（税込・円）</label>
+                <input type="number" step="1" min="1" name="min_amount" id="min_amount" class="form-control input-max-200"
                        value="{{ old('min_amount', $view->settings->min_amount) }}" placeholder="例: 1000">
-                <p class="form-text text-muted">この金額以上の取引で権利を付与します。</p>
+                <p class="form-text text-muted">この金額以上の注文・店頭購入が完了したときにプレイ権を付与します。</p>
             </div>
             <div class="form-group">
                 <label for="entitlement_expires_hours" class="form-label">権利の有効期限（時間）</label>
                 <input type="number" min="1" max="8760" name="entitlement_expires_hours" id="entitlement_expires_hours" class="form-control input-max-200"
                        value="{{ old('entitlement_expires_hours', $view->settings->entitlement_expires_hours) }}" placeholder="空欄で無期限">
                 <p class="form-text text-muted">未設定の場合は無期限です。例: 24 = 付与から24時間以内にプレイ。</p>
+            </div>
+            <div class="card mt-3" style="background:#f8fafc; border:1px solid #e2e8f0; box-shadow:none;">
+                <div class="card-body" style="padding:16px;">
+                    <div class="text-muted" style="font-size:12px; font-weight:700; margin-bottom:5px;">お客様への表示イメージ</div>
+                    <strong id="lotteryEligibilityPreview">購入特典の条件を設定してください</strong>
+                </div>
             </div>
         </div>
     </div>
@@ -226,6 +247,17 @@
             <div id="gachaPrizeRows" data-reward-type="gacha"></div>
             <button type="button" class="btn btn-secondary btn-sm" data-add-prize="gacha"><i class="fas fa-plus"></i> 景品を追加</button>
             <p class="form-text text-muted mt-2">合計: <strong id="gachaProbSum">0</strong> / 100</p>
+        </div>
+    </div>
+
+    <div class="card card-mb-24">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-circle-notch"></i> ルーレット景品（確率合計 100）</h3>
+        </div>
+        <div class="card-body">
+            <div id="roulettePrizeRows" data-reward-type="roulette"></div>
+            <button type="button" class="btn btn-secondary btn-sm" data-add-prize="roulette"><i class="fas fa-plus"></i> 景品を追加</button>
+            <p class="form-text text-muted mt-2">合計: <strong id="rouletteProbSum">0</strong> / 100</p>
         </div>
     </div>
 
@@ -273,19 +305,22 @@
     const initial = {
         gacha: @json($gachaPrizeInitial),
         scratch: @json($scratchPrizeInitial),
+        roulette: @json($roulettePrizeInitial),
     };
     let prizeIndex = 0;
 
     function containerFor(type) {
-        return document.getElementById(type === 'gacha' ? 'gachaPrizeRows' : 'scratchPrizeRows');
+        const ids = { gacha: 'gachaPrizeRows', scratch: 'scratchPrizeRows', roulette: 'roulettePrizeRows' };
+        return document.getElementById(ids[type]);
     }
 
     function sumEl(type) {
-        return document.getElementById(type === 'gacha' ? 'gachaProbSum' : 'scratchProbSum');
+        const ids = { gacha: 'gachaProbSum', scratch: 'scratchProbSum', roulette: 'rouletteProbSum' };
+        return document.getElementById(ids[type]);
     }
 
     function refreshSums() {
-        ['gacha', 'scratch'].forEach((type) => {
+        ['gacha', 'scratch', 'roulette'].forEach((type) => {
             let sum = 0;
             containerFor(type).querySelectorAll('[data-field="probability"]').forEach((input) => {
                 sum += parseInt(input.value, 10) || 0;
@@ -307,7 +342,7 @@
 
     function reindexNames() {
         prizeIndex = 0;
-        ['gacha', 'scratch'].forEach((type) => {
+        ['gacha', 'scratch', 'roulette'].forEach((type) => {
             containerFor(type).querySelectorAll('.lottery-prize-row').forEach((row) => {
                 const i = prizeIndex++;
                 row.querySelectorAll('[data-field]').forEach((el) => {
@@ -353,12 +388,39 @@
         });
     });
 
-    document.getElementById('grant_trigger').addEventListener('change', function () {
-        document.getElementById('min_amount_group').style.display = this.value === 'min_amount' ? '' : 'none';
+    const trigger = document.getElementById('grant_trigger');
+    const minAmount = document.getElementById('min_amount');
+    const minAmountGroup = document.getElementById('min_amount_group');
+    const preview = document.getElementById('lotteryEligibilityPreview');
+
+    function updateEligibilityPreview() {
+        const enabledGames = [];
+        if (document.querySelector('input[name="gacha_enabled"]:checked')) enabledGames.push('ガチャ1回');
+        if (document.querySelector('input[name="scratch_enabled"]:checked')) enabledGames.push('スクラッチ1回');
+        if (document.querySelector('input[name="roulette_enabled"]:checked')) enabledGames.push('ルーレット1回');
+        const games = enabledGames.length > 0 ? enabledGames.join('・') : 'ゲーム未選択';
+        minAmountGroup.style.display = trigger.value === 'min_amount' ? '' : 'none';
+        minAmount.required = trigger.value === 'min_amount';
+        if (trigger.value === 'min_amount') {
+            const amount = Number(minAmount.value || 0).toLocaleString('ja-JP');
+            preview.textContent = amount === '0' ? `最低購入金額を入力すると、${games}を付与します` : `税込 ${amount}円以上の購入で${games}`;
+        } else if (trigger.value === 'once_per_day') {
+            preview.textContent = `購入したお客様へ1日1回、${games}`;
+        } else {
+            preview.textContent = `購入ごとに${games}`;
+        }
+    }
+
+    trigger.addEventListener('change', updateEligibilityPreview);
+    minAmount.addEventListener('input', updateEligibilityPreview);
+    document.querySelectorAll('input[name="gacha_enabled"], input[name="scratch_enabled"], input[name="roulette_enabled"]').forEach((input) => {
+        input.addEventListener('change', updateEligibilityPreview);
     });
 
     initial.gacha.forEach((p) => addRow('gacha', p));
     initial.scratch.forEach((p) => addRow('scratch', p));
+    initial.roulette.forEach((p) => addRow('roulette', p));
+    updateEligibilityPreview();
 })();
 </script>
 @endsection

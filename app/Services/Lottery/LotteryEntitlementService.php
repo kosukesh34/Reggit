@@ -133,6 +133,9 @@ class LotteryEntitlementService
         if ($rewardType === LotteryRewardType::SCRATCH) {
             return $settings->scratch_enabled === true;
         }
+        if ($rewardType === LotteryRewardType::ROULETTE) {
+            return $settings->roulette_enabled === true;
+        }
 
         return false;
     }

@@ -814,3 +814,103 @@ struct QueueQrResponse {
         return QueueQrResponse(entry: entry)
     }
 }
+
+// MARK: - Lottery
+
+struct LotteryEntitlement: Equatable, Identifiable {
+    let id: Int
+    let rewardType: String
+    let expiresAt: String?
+}
+
+struct LotteryStateSnapshot: Equatable {
+    let gachaEnabled: Bool
+    let scratchEnabled: Bool
+    let rouletteEnabled: Bool
+    let entitlements: [LotteryEntitlement]
+    let gachaPrizeLabels: [String]
+    let scratchPrizeLabels: [String]
+    let roulettePrizeLabels: [String]
+    let grantTrigger: String
+    let minimumPurchaseAmount: Double?
+    let entitlementExpiresHours: Int?
+
+    func pending(for rewardType: String) -> LotteryEntitlement? {
+        entitlements.first { $0.rewardType == rewardType }
+    }
+
+    static func parse(_ data: Data) throws -> LotteryStateSnapshot {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ReggitAPIError.invalidResponse
+        }
+        let json = (root["data"] as? [String: Any]) ?? root
+        let entitlements = (json["entitlements"] as? [[String: Any]] ?? []).compactMap { row -> LotteryEntitlement? in
+            guard let id = row["id"] as? Int,
+                  let rewardType = row["reward_type"] as? String else { return nil }
+            return LotteryEntitlement(
+                id: id,
+                rewardType: rewardType,
+                expiresAt: row["expires_at"] as? String
+            )
+        }
+        let labels = json["prize_labels"] as? [String: Any] ?? [:]
+        let eligibility = json["eligibility"] as? [String: Any] ?? [:]
+        return LotteryStateSnapshot(
+            gachaEnabled: json["gacha_enabled"] as? Bool ?? false,
+            scratchEnabled: json["scratch_enabled"] as? Bool ?? false,
+            rouletteEnabled: json["roulette_enabled"] as? Bool ?? false,
+            entitlements: entitlements,
+            gachaPrizeLabels: labels["gacha"] as? [String] ?? [],
+            scratchPrizeLabels: labels["scratch"] as? [String] ?? [],
+            roulettePrizeLabels: labels["roulette"] as? [String] ?? [],
+            grantTrigger: eligibility["grant_trigger"] as? String ?? "every_purchase",
+            minimumPurchaseAmount: (eligibility["min_amount"] as? NSNumber)?.doubleValue,
+            entitlementExpiresHours: eligibility["entitlement_expires_hours"] as? Int
+        )
+    }
+}
+
+struct LotteryCouponPrize: Equatable {
+    let id: Int
+    let name: String
+    let description: String?
+    let imageURL: String?
+}
+
+struct LotteryPlayResult: Equatable {
+    let entitlementId: Int
+    let rewardType: String
+    let isWin: Bool
+    let coupon: LotteryCouponPrize?
+
+    static func parse(_ data: Data) throws -> LotteryPlayResult {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ReggitAPIError.invalidResponse
+        }
+        let outer = (root["data"] as? [String: Any]) ?? root
+        let json = (outer["data"] as? [String: Any]) ?? outer
+        guard let entitlementId = json["entitlement_id"] as? Int else {
+            throw ReggitAPIError.invalidResponse
+        }
+        let rawCoupon = json["coupon"] as? [String: Any]
+        let coupon: LotteryCouponPrize?
+        if let rawCoupon,
+           let id = rawCoupon["id"] as? Int,
+           let name = rawCoupon["name"] as? String {
+            coupon = LotteryCouponPrize(
+                id: id,
+                name: name,
+                description: rawCoupon["description"] as? String,
+                imageURL: rawCoupon["image_url"] as? String
+            )
+        } else {
+            coupon = nil
+        }
+        return LotteryPlayResult(
+            entitlementId: entitlementId,
+            rewardType: json["reward_type"] as? String ?? "",
+            isWin: (json["is_win"] as? Bool) ?? (coupon != nil),
+            coupon: coupon
+        )
+    }
+}

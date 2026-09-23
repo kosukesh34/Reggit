@@ -14,6 +14,9 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     var phase: Phase = .loading
     var tabs: [AppTabItem] = []
+    var headerItems: [AppTabItem] = []
+    var footerItems: [AppTabItem] = []
+    var hamburgerItems: [AppTabItem] = []
     var selectedTab: String = "home"
     var projectName: String = "Reggit"
     var primaryColorHex: String = "#173F35"
@@ -21,6 +24,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     var navigationHeaderBackgroundColorHex = "#FFFFFF"
     var homeImageURL: String?
     var homeMenuLayout = "grid_3x2"
+    var productDisplayLayout = "list_with_image"
     var memberShowRankProgress = true
     var memberShowPointHistory = true
     var memberShowCouponActivity = true
@@ -70,8 +74,16 @@ final class NativeRootViewModel: PushNotificationHandling {
             let client = try await bootstrap.registerDevice()
             apiClient = client
             let config = await loadAppConfig(client: client)
-            let filtered = Self.filterNativeTabs(config.tabs)
+            let filtered = Self.filterNativeTabs(
+                Self.uniqueItems(config.tabs + config.headerItems + config.footerItems + config.hamburgerItems)
+            )
             tabs = filtered.isEmpty ? Self.defaultTabs : filtered
+            headerItems = Self.items(config.headerItems, availableIn: tabs)
+            footerItems = Self.items(config.footerItems, availableIn: tabs)
+            if !config.hasNavigationConfiguration {
+                footerItems = Array(tabs.filter { $0.url == nil }.prefix(5))
+            }
+            hamburgerItems = Self.items(config.hamburgerItems, availableIn: tabs)
             projectName = config.projectName
             let hex = config.primaryColor.trimmingCharacters(in: .whitespacesAndNewlines)
             primaryColorHex = hex.isEmpty ? "#173F35" : hex
@@ -79,6 +91,7 @@ final class NativeRootViewModel: PushNotificationHandling {
             navigationHeaderBackgroundColorHex = config.navigationHeaderBackgroundColor
             homeImageURL = config.homeImageURL
             homeMenuLayout = config.homeMenuLayout
+            productDisplayLayout = config.productDisplayLayout
             memberShowRankProgress = config.memberShowRankProgress
             memberShowPointHistory = config.memberShowPointHistory
             memberShowCouponActivity = config.memberShowCouponActivity
@@ -195,7 +208,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     // MARK: - Tabs
 
     static let supportedTabKeys: Set<String> = [
-        "home", "member", "profile", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements",
+        "home", "member", "profile", "products", "orders", "coupons", "stamps", "designlab", "queue", "reservations", "gallery", "announcements", "terms", "privacy",
     ]
 
     static let defaultTabs: [AppTabItem] = [
@@ -210,7 +223,7 @@ final class NativeRootViewModel: PushNotificationHandling {
         var result: [AppTabItem] = []
         for tab in tabs {
             let key = mapTabKey(tab.key)
-            guard supportedTabKeys.contains(key) else { continue }
+            guard supportedTabKeys.contains(key) || tab.url != nil else { continue }
             if result.contains(where: { $0.key == key }) {
                 continue
             }
@@ -220,7 +233,8 @@ final class NativeRootViewModel: PushNotificationHandling {
                     key: key,
                     label: tab.label,
                     icon: tab.icon,
-                    sfSymbol: tab.sfSymbol
+                    sfSymbol: tab.sfSymbol,
+                    url: tab.url
                 )
             )
         }
@@ -236,6 +250,15 @@ final class NativeRootViewModel: PushNotificationHandling {
         case "reservation": return "reservations"
         default: return key
         }
+    }
+
+    static func uniqueItems(_ items: [AppTabItem]) -> [AppTabItem] {
+        var seen = Set<String>()
+        return items.filter { seen.insert($0.key).inserted }
+    }
+
+    static func items(_ requested: [AppTabItem], availableIn available: [AppTabItem]) -> [AppTabItem] {
+        requested.compactMap { item in available.first(where: { $0.key == item.key }) }
     }
 
     private func loadMembership(using client: any ReggitAPIServing) async throws -> MemberProfileSnapshot {

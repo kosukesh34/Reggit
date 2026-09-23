@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Models\Project;
 use App\Support\LiffDesignerSanitizer;
 
 class GetHomeSettingsUseCase
@@ -41,6 +42,28 @@ class GetHomeSettingsUseCase
         $tabs = $tabs->concat($linkTabs)->sortBy('order')->values()->all();
 
         $availableIcons = collect($defaults)->pluck('icon')->push('fa-globe')->unique()->values()->all();
+        $savedNavigation = $this->shopSettingRepository->getValue('native_navigation_items', null, $projectId);
+        $defaultFooter = collect($tabs)->where('enabled', true)->pluck('tab')->take(5)->values()->all();
+        $defaultHamburger = collect($tabs)->where('enabled', true)->pluck('tab')->values()->all();
+        $nativeNavigation = is_array($savedNavigation) ? $savedNavigation : [
+            'header' => [],
+            'footer' => $defaultFooter,
+            'hamburger' => array_merge($defaultHamburger, ['terms', 'privacy']),
+        ];
+        $projectKey = (string) (Project::query()->whereKey($projectId)->value('project_key') ?? '');
+        $termsUrl = $projectKey !== '' ? route('legal.terms', ['project_key' => $projectKey]) : '';
+        $privacyUrl = $projectKey !== '' ? route('legal.privacy', ['project_key' => $projectKey]) : '';
+        $nativeNavigationItems = array_merge(
+            collect($tabs)->map(fn ($tab) => [
+                'key' => (string) $tab['tab'],
+                'label' => (string) $tab['label'],
+            ])->all(),
+            [
+                ['key' => 'terms', 'label' => '利用規約', 'url' => $termsUrl],
+                ['key' => 'privacy', 'label' => 'プライバシーポリシー', 'url' => $privacyUrl],
+            ],
+        );
+        $legalKeys = ['terms', 'privacy'];
 
         return [
             'tabs' => $tabs,
@@ -49,7 +72,57 @@ class GetHomeSettingsUseCase
             'navigationHeaderBackgroundColor' => (string) $this->shopSettingRepository->getValue('navigation_header_background_color', '#FFFFFF', $projectId),
             'homeImageUrl' => (string) $this->shopSettingRepository->getValue('home_image_url', '', $projectId),
             'homeMenuLayout' => (string) $this->shopSettingRepository->getValue('home_menu_layout', 'grid_3x2', $projectId),
+            'productDisplayLayout' => (string) $this->shopSettingRepository->getValue('product_display_layout', 'list_with_image', $projectId),
+            'nativeNavigation' => $nativeNavigation,
+            'nativeNavigationItems' => $nativeNavigationItems,
+            'headerNavChoices' => $this->orderedNavigationChoices(
+                $nativeNavigationItems,
+                is_array($nativeNavigation['header'] ?? null) ? $nativeNavigation['header'] : [],
+                $legalKeys,
+            ),
+            'footerNavChoices' => $this->orderedNavigationChoices(
+                $nativeNavigationItems,
+                is_array($nativeNavigation['footer'] ?? null) ? $nativeNavigation['footer'] : [],
+                $legalKeys,
+            ),
+            'hamburgerNavChoices' => $this->orderedNavigationChoices(
+                $nativeNavigationItems,
+                is_array($nativeNavigation['hamburger'] ?? null) ? $nativeNavigation['hamburger'] : [],
+            ),
+            'termsUrl' => $termsUrl,
+            'privacyUrl' => $privacyUrl,
         ];
+    }
+
+    /**
+     * 選択済みを先頭に、保存順を維持した選択肢を返す。
+     *
+     * @param  list<array{key: string, label: string, url?: string}>  $items
+     * @param  list<mixed>  $selectedKeys
+     * @param  list<string>  $excludeKeys
+     * @return list<array{key: string, label: string, url?: string, selected: bool}>
+     */
+    private function orderedNavigationChoices(array $items, array $selectedKeys, array $excludeKeys = []): array
+    {
+        $byKey = collect($items)
+            ->filter(fn ($item) => is_array($item) && is_string($item['key'] ?? null))
+            ->keyBy('key');
+        $ordered = [];
+        foreach ($selectedKeys as $key) {
+            if (! is_string($key) || in_array($key, $excludeKeys, true) || ! $byKey->has($key)) {
+                continue;
+            }
+            $item = $byKey->pull($key);
+            $ordered[] = array_merge($item, ['selected' => true]);
+        }
+        foreach ($byKey as $key => $item) {
+            if (in_array($key, $excludeKeys, true)) {
+                continue;
+            }
+            $ordered[] = array_merge($item, ['selected' => false]);
+        }
+
+        return $ordered;
     }
 
     private function normalizeEnabled(mixed $value): bool

@@ -11,6 +11,7 @@ use App\Models\Member;
 use App\Models\MemberLotteryEntitlement;
 use App\Models\Project;
 use App\Models\Settings\ProjectLotterySetting;
+use App\Services\Lottery\LotteryPlayService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -48,8 +49,9 @@ class AdminLotterySettingsTest extends TestCase
             ->get(route('admin.settings.lottery', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200)
-            ->assertSee('ガチャ・スクラッチ設定')
-            ->assertSee('権利の付与タイミング')
+            ->assertSee('購入特典ゲーム設定')
+            ->assertSee('プレイ権の付与条件')
+            ->assertSee('対象となる最低購入金額')
             ->assertSee('実績サマリー')
             ->assertSee('景品別の当選数');
     }
@@ -186,5 +188,80 @@ class AdminLotterySettingsTest extends TestCase
         $response->assertRedirect(route('admin.settings.lottery', ['project_key' => $project->project_key]));
         $response->assertSessionHasErrors();
         $this->assertSame(0, LotteryPrize::query()->where('project_id', $project->id)->count());
+    }
+
+    public function test_lottery_settings_購入金額条件では最低購入金額が必須であること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $response = $this->actingAs($admin, 'admin')
+            ->from(route('admin.settings.lottery', ['project_key' => $project->project_key]))
+            ->post(route('admin.settings.lottery.update', ['project_key' => $project->project_key]), [
+                'gacha_enabled' => '0',
+                'scratch_enabled' => '0',
+                'grant_trigger' => LotteryGrantTrigger::MIN_AMOUNT,
+                'min_amount' => null,
+                'prizes' => [],
+            ]);
+
+        $response->assertSessionHasErrors('min_amount');
+    }
+
+    public function test_lottery_state_購入特典の条件をネイティブ向けに返すこと(): void
+    {
+        $project = $this->createProject();
+        $member = Member::factory()->create(['project_id' => $project->id]);
+        ProjectLotterySetting::query()->updateOrCreate(
+            ['project_id' => $project->id],
+            [
+                'gacha_enabled' => true,
+                'scratch_enabled' => false,
+                'grant_trigger' => LotteryGrantTrigger::MIN_AMOUNT,
+                'min_amount' => 3000,
+                'entitlement_expires_hours' => 24,
+            ]
+        );
+
+        $state = resolve(LotteryPlayService::class)->getMemberLotteryState($member);
+
+        $this->assertSame(LotteryGrantTrigger::MIN_AMOUNT, $state['eligibility']['grant_trigger']);
+        $this->assertSame(3000.0, $state['eligibility']['min_amount']);
+        $this->assertSame(24, $state['eligibility']['entitlement_expires_hours']);
+    }
+
+    public function test_ルーレット設定と景品を管理画面から保存できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.lottery.update', ['project_key' => $project->project_key]), [
+                'gacha_enabled' => '0',
+                'scratch_enabled' => '0',
+                'roulette_enabled' => '1',
+                'grant_trigger' => LotteryGrantTrigger::MIN_AMOUNT,
+                'min_amount' => 3000,
+                'prizes' => [[
+                    'reward_type' => 'roulette',
+                    'coupon_id' => $coupon->id,
+                    'probability' => 100,
+                ]],
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('project_lottery_settings', [
+            'project_id' => $project->id,
+            'roulette_enabled' => true,
+            'grant_trigger' => LotteryGrantTrigger::MIN_AMOUNT,
+            'min_amount' => 3000,
+        ]);
+        $this->assertDatabaseHas('lottery_prizes', [
+            'project_id' => $project->id,
+            'reward_type' => 'roulette',
+            'coupon_id' => $coupon->id,
+            'probability' => 100,
+        ]);
     }
 }

@@ -26,6 +26,8 @@ class ProjectAdminUiSetting extends Model
         'navigation_header_background_color',
         'home_image_url',
         'home_menu_layout',
+        'product_display_layout',
+        'native_navigation_items',
         'member_show_rank_progress',
         'member_show_point_history',
         'member_show_coupon_activity',
@@ -34,6 +36,7 @@ class ProjectAdminUiSetting extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'native_navigation_items' => 'array',
         'member_show_rank_progress' => 'boolean',
         'member_show_point_history' => 'boolean',
         'member_show_coupon_activity' => 'boolean',
