@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\Support\CleansUpSmaregiCreatedResources;
 use Tests\TestCase;
 
@@ -22,9 +23,8 @@ use Tests\TestCase;
  *
  * 実行例: php artisan test tests/Feature/SmaregiApiIntegrationTest.php
  * または: php artisan test --group=smaregi-integration
- *
- * @group smaregi-integration
  */
+#[Group('smaregi-integration')]
 class SmaregiApiIntegrationTest extends TestCase
 {
     use CleansUpSmaregiCreatedResources;

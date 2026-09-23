@@ -11,6 +11,18 @@ type ApiFailure = { success: false; error: string };
 export type ApiResult<T = unknown> = ApiSuccess<T> | ApiFailure;
 
 export class ApiClient {
+    static getDeviceToken(deviceIdentifier: string): string {
+        try {
+            return localStorage.getItem(`device-token:${window.__PROJECT_KEY__ || ''}:${deviceIdentifier}`) || '';
+        } catch {
+            return '';
+        }
+    }
+
+    static saveDeviceToken(deviceIdentifier: string, token: string): void {
+        localStorage.setItem(`device-token:${window.__PROJECT_KEY__ || ''}:${deviceIdentifier}`, token);
+    }
+
     baseHeaders: Record<string, string>;
 
     constructor() {
@@ -213,6 +225,7 @@ export class ApiClient {
             const deviceIdentifier = String(window.__MOBILE_DEVICE_INFO__.device_identifier || '').trim();
             if (deviceIdentifier) {
                 requestHeaders['X-Device-Identifier'] = deviceIdentifier;
+                requestHeaders['X-Device-Token'] = ApiClient.getDeviceToken(deviceIdentifier);
             }
         }
         requestHeaders['ngrok-skip-browser-warning'] = 'true';

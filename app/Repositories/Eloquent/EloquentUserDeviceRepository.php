@@ -9,7 +9,7 @@ class EloquentUserDeviceRepository implements UserDeviceRepository
 {
     public function findOrNewByProjectAndIdentifier(int $projectId, string $deviceIdentifier): UserDevice
     {
-        return UserDevice::query()->firstOrNew([
+        return UserDevice::query()->lockForUpdate()->firstOrNew([
             'project_id' => $projectId,
             'device_identifier' => $deviceIdentifier,
         ]);

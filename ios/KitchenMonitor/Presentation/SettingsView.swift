@@ -8,6 +8,9 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("接続") {
+                    SecureField("店舗端末トークン", text: $viewModel.storeToken)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                     LabeledContent("向け先", value: viewModel.serverLabel)
                     LabeledContent("プロジェクト", value: viewModel.projectKey)
                     Text("プロジェクトはビルド設定（AppBuildConfig）で固定です。Waiting と同じ運用です。")

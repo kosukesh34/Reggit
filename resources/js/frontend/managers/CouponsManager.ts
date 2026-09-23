@@ -1,3 +1,4 @@
+import { MemberManager } from './MemberManager';
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import type { ApiClient } from '../../shared/utils/apiClient';

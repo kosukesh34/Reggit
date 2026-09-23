@@ -1,4 +1,4 @@
-import type { ApiClient } from '../../shared/utils/apiClient';
+import { ApiClient } from '../../shared/utils/apiClient';
 import { AppConstants } from '../../shared/constants';
 
 type DevicePayload = {
@@ -74,6 +74,7 @@ export class DeviceManager {
         const url = apiBase + '/devices/session';
         const headers = {
             'X-Device-Identifier': deviceIdentifier,
+            'X-Device-Token': ApiClient.getDeviceToken(deviceIdentifier),
             'X-Project-Key': projectKey,
             'Content-Type': 'application/json',
         };
@@ -200,6 +201,11 @@ export class DeviceManager {
             .then((result) => {
                 if (!result || result.success !== true) {
                     this.lastPayloadHash = '';
+                } else {
+                    const data = result.data as { device_token?: string };
+                    if (typeof data.device_token === 'string') {
+                        ApiClient.saveDeviceToken(payload.device_identifier, data.device_token);
+                    }
                 }
             })
             .catch(() => {

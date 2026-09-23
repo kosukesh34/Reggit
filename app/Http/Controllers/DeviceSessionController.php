@@ -31,7 +31,7 @@ class DeviceSessionController extends Controller
             return response()->json(['line_user_id' => null]);
         }
 
-        $output = $this->getDeviceSessionUseCase->handle($projectId, $deviceIdentifier);
+        $output = $this->getDeviceSessionUseCase->handle($projectId, $deviceIdentifier, $request->header('X-Device-Token'));
 
         if ($output->lineUserId === null) {
             LogHelper::info('[DeviceSession] line user not restored', [

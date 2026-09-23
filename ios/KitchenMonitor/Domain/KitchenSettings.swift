@@ -5,6 +5,7 @@ struct KitchenSettings: Codable, Equatable {
     var projectKey: String
     var passcode: String
     var deviceName: String
+    var storeToken: String? = nil
 
     static var `default`: KitchenSettings {
         KitchenSettings(

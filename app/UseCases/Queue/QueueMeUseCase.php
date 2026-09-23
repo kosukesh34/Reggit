@@ -17,7 +17,8 @@ class QueueMeUseCase
 
     public function handle(QueueMeInput $input): QueueMeOutput
     {
-        $entry = $this->findActiveEntry($input->projectId, $input->queueToken, $input->queueId);
+        // URLの連番IDだけでは受付を取得・紐付けしない。
+        $entry = $this->findActiveEntry($input->projectId, $input->queueToken, null);
         if ($entry === null) {
             $entry = $this->findActiveEntry($input->projectId, null, $input->sessionEntryId);
         }

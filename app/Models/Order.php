@@ -11,6 +11,8 @@ class Order extends Model
 {
     use BelongsToProject, HasFactory;
 
+    protected $hidden = ['payment_session'];
+
     protected $fillable = [
         'project_id',
         'user_id',
@@ -32,6 +34,7 @@ class Order extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'payment_session' => 'encrypted:array',
         'total_amount' => 'decimal:2',
         'points_used' => 'integer',
         'points_earned' => 'integer',
