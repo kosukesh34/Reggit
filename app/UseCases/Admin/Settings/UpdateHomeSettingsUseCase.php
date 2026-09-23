@@ -20,6 +20,8 @@ class UpdateHomeSettingsUseCase
         string $navigationHeaderBackgroundColor = '#FFFFFF',
         ?string $homeImageUrl = null,
         string $homeMenuLayout = 'grid_3x2',
+        string $productDisplayLayout = 'list_with_image',
+        ?array $nativeNavigation = null,
     ): void {
         $defaults = collect($this->shopSettingRepository->defaultFrontendMenuItems())->keyBy('tab');
         $existingLinks = collect($this->existingLinkMenuItems($projectId))->keyBy('tab');
@@ -64,6 +66,22 @@ class UpdateHomeSettingsUseCase
             $this->shopSettingRepository->setValue('home_image_url', $homeImageUrl, 'string', $projectId);
         }
         $this->shopSettingRepository->setValue('home_menu_layout', $homeMenuLayout, 'string', $projectId);
+        $this->shopSettingRepository->setValue('product_display_layout', $productDisplayLayout, 'string', $projectId);
+        if ($nativeNavigation !== null) {
+            $allowedNavigationKeys = array_merge(
+                array_column($items, 'tab'),
+                ['terms', 'privacy'],
+            );
+            $normalizedNavigation = [];
+            foreach (['header' => 2, 'footer' => 5, 'hamburger' => null] as $placement => $limit) {
+                $keys = array_values(array_unique(array_filter(
+                    is_array($nativeNavigation[$placement] ?? null) ? $nativeNavigation[$placement] : [],
+                    fn ($key) => is_string($key) && in_array($key, $allowedNavigationKeys, true),
+                )));
+                $normalizedNavigation[$placement] = $limit === null ? $keys : array_slice($keys, 0, $limit);
+            }
+            $this->shopSettingRepository->setValue('native_navigation_items', $normalizedNavigation, 'json', $projectId);
+        }
     }
 
     /**

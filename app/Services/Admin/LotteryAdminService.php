@@ -135,6 +135,7 @@ class LotteryAdminService
      * @param  array{
      *     gacha_enabled: bool,
      *     scratch_enabled: bool,
+     *     roulette_enabled: bool,
      *     grant_trigger: string,
      *     min_amount: float|null,
      *     entitlement_expires_hours: int|null,
@@ -143,7 +144,12 @@ class LotteryAdminService
      */
     public function updateSettings(int $projectId, array $data): void
     {
-        $this->assertPrizeProbabilities($data['prizes'], (bool) $data['gacha_enabled'], (bool) $data['scratch_enabled']);
+        $enabledTypes = array_keys(array_filter([
+            LotteryRewardType::GACHA => (bool) $data['gacha_enabled'],
+            LotteryRewardType::SCRATCH => (bool) $data['scratch_enabled'],
+            LotteryRewardType::ROULETTE => (bool) $data['roulette_enabled'],
+        ]));
+        $this->assertPrizeProbabilities($data['prizes'], $enabledTypes);
 
         DB::transaction(function () use ($projectId, $data): void {
             $settings = ProjectLotterySetting::query()->firstOrCreate(
@@ -153,6 +159,7 @@ class LotteryAdminService
             $settings->fill([
                 'gacha_enabled' => (bool) $data['gacha_enabled'],
                 'scratch_enabled' => (bool) $data['scratch_enabled'],
+                'roulette_enabled' => (bool) $data['roulette_enabled'],
                 'grant_trigger' => $data['grant_trigger'],
                 'min_amount' => $data['grant_trigger'] === LotteryGrantTrigger::MIN_AMOUNT
                     ? $data['min_amount']
@@ -181,16 +188,10 @@ class LotteryAdminService
     /**
      * @param  list<array{reward_type: string, coupon_id: int|null, is_lose?: bool, probability: int}>  $prizes
      */
-    private function assertPrizeProbabilities(array $prizes, bool $gachaEnabled, bool $scratchEnabled): void
+    private function assertPrizeProbabilities(array $prizes, array $enabledTypes): void
     {
-        $sums = [
-            LotteryRewardType::GACHA => 0,
-            LotteryRewardType::SCRATCH => 0,
-        ];
-        $counts = [
-            LotteryRewardType::GACHA => 0,
-            LotteryRewardType::SCRATCH => 0,
-        ];
+        $sums = array_fill_keys(LotteryRewardType::keys(), 0);
+        $counts = array_fill_keys(LotteryRewardType::keys(), 0);
 
         foreach ($prizes as $prize) {
             $type = $prize['reward_type'];
@@ -203,38 +204,17 @@ class LotteryAdminService
             $counts[$type]++;
         }
 
-        if ($gachaEnabled) {
-            if ($counts[LotteryRewardType::GACHA] < 1) {
+        foreach (LotteryRewardType::getValues() as $type => $label) {
+            if (in_array($type, $enabledTypes, true) && $counts[$type] < 1) {
                 throw ValidationException::withMessages([
-                    'prizes' => 'ガチャを有効にする場合は景品を1件以上設定してください。',
+                    'prizes' => $label.'を有効にする場合は景品を1件以上設定してください。',
                 ]);
             }
-            if ($sums[LotteryRewardType::GACHA] !== 100) {
+            if (($counts[$type] > 0 || in_array($type, $enabledTypes, true)) && $sums[$type] !== 100) {
                 throw ValidationException::withMessages([
-                    'prizes' => 'ガチャ景品の確率合計は100にしてください（現在: '.$sums[LotteryRewardType::GACHA].'）。',
+                    'prizes' => $label.'景品の確率合計は100にしてください（現在: '.$sums[$type].'）。',
                 ]);
             }
-        } elseif ($counts[LotteryRewardType::GACHA] > 0 && $sums[LotteryRewardType::GACHA] !== 100) {
-            throw ValidationException::withMessages([
-                'prizes' => 'ガチャ景品の確率合計は100にしてください（現在: '.$sums[LotteryRewardType::GACHA].'）。',
-            ]);
-        }
-
-        if ($scratchEnabled) {
-            if ($counts[LotteryRewardType::SCRATCH] < 1) {
-                throw ValidationException::withMessages([
-                    'prizes' => 'スクラッチを有効にする場合は景品を1件以上設定してください。',
-                ]);
-            }
-            if ($sums[LotteryRewardType::SCRATCH] !== 100) {
-                throw ValidationException::withMessages([
-                    'prizes' => 'スクラッチ景品の確率合計は100にしてください（現在: '.$sums[LotteryRewardType::SCRATCH].'）。',
-                ]);
-            }
-        } elseif ($counts[LotteryRewardType::SCRATCH] > 0 && $sums[LotteryRewardType::SCRATCH] !== 100) {
-            throw ValidationException::withMessages([
-                'prizes' => 'スクラッチ景品の確率合計は100にしてください（現在: '.$sums[LotteryRewardType::SCRATCH].'）。',
-            ]);
         }
     }
 }

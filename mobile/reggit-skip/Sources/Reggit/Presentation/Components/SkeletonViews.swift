@@ -56,6 +56,8 @@ extension View {
 // MARK: - Screen skeletons
 
 struct ProductsSkeletonView: View {
+    var layout: ProductDisplayLayout = .listWithImage
+
     private let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12),
@@ -64,6 +66,8 @@ struct ProductsSkeletonView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                SkeletonBlock(height: 44, cornerRadius: AppDesign.radiusM)
+                    .padding(.horizontal, 20)
                 HStack(spacing: 8) {
                     ForEach(0 ..< 4, id: \.self) { _ in
                         SkeletonBlock(height: 32, cornerRadius: 16)
@@ -72,28 +76,73 @@ struct ProductsSkeletonView: View {
                 }
                 .padding(.horizontal, 16)
 
-                LazyVGrid(columns: columns, spacing: 14) {
-                    ForEach(0 ..< 6, id: \.self) { _ in
-                        VStack(alignment: .leading, spacing: 0) {
-                            SkeletonBlock(height: 148, cornerRadius: 0)
-                            VStack(alignment: .leading, spacing: 8) {
-                                SkeletonBlock(height: 14)
-                                SkeletonBlock(height: 14, width: 64)
-                                HStack {
-                                    Spacer()
-                                    SkeletonCircle(size: 36)
-                                }
-                            }
-                            .padding(12)
-                        }
-                        .background(AppDesign.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
-                    }
-                }
-                .padding(.horizontal, 16)
+                productPlaceholders
             }
             .padding(.top, 12)
             .padding(.bottom, 24)
+        }
+    }
+
+    @ViewBuilder
+    private var productPlaceholders: some View {
+        switch layout {
+        case .listWithImage:
+            VStack(spacing: 0) {
+                ForEach(0 ..< 5, id: \.self) { _ in
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(alignment: .top, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                SkeletonBlock(height: 12, width: 72)
+                                SkeletonBlock(height: 18)
+                                SkeletonBlock(height: 12, width: 120)
+                            }
+                            SkeletonBlock(height: 96, width: 96, cornerRadius: AppDesign.radiusM)
+                        }
+                        HStack {
+                            SkeletonBlock(height: 18, width: 72)
+                            Spacer()
+                            SkeletonBlock(height: 36, width: 104, cornerRadius: 18)
+                        }
+                    }
+                    .padding(.vertical, 16)
+                    Divider()
+                }
+            }
+            .padding(.horizontal, 16)
+        case .grid2Columns:
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(0 ..< 6, id: \.self) { _ in
+                    VStack(alignment: .leading, spacing: 10) {
+                        SkeletonBlock(height: 128, cornerRadius: AppDesign.radiusM)
+                        SkeletonBlock(height: 16)
+                        SkeletonBlock(height: 16, width: 64)
+                        HStack {
+                            Spacer()
+                            SkeletonBlock(height: 36, width: 104, cornerRadius: 18)
+                        }
+                    }
+                    .padding(10)
+                    .background(AppDesign.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
+                }
+            }
+            .padding(.horizontal, 16)
+        case .nameOnly:
+            VStack(spacing: 10) {
+                ForEach(0 ..< 6, id: \.self) { _ in
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 7) {
+                            SkeletonBlock(height: 18)
+                            SkeletonBlock(height: 14, width: 64)
+                        }
+                        SkeletonBlock(height: 36, width: 104, cornerRadius: 18)
+                    }
+                    .padding(14)
+                    .background(AppDesign.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
+                }
+            }
+            .padding(.horizontal, 16)
         }
     }
 }

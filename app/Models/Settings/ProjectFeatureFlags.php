@@ -28,6 +28,7 @@ class ProjectFeatureFlags extends Model
         'feature_gallery_enabled',
         'feature_gacha_enabled',
         'feature_scratch_enabled',
+        'feature_roulette_enabled',
     ];
 
     /** @var array<string, string> */
@@ -44,6 +45,7 @@ class ProjectFeatureFlags extends Model
         'feature_gallery_enabled' => 'boolean',
         'feature_gacha_enabled' => 'boolean',
         'feature_scratch_enabled' => 'boolean',
+        'feature_roulette_enabled' => 'boolean',
     ];
 
     public function project(): BelongsTo
@@ -67,6 +69,7 @@ class ProjectFeatureFlags extends Model
             'feature_gallery_enabled' => true,
             'feature_gacha_enabled' => false,
             'feature_scratch_enabled' => false,
+            'feature_roulette_enabled' => false,
         ];
     }
 }

@@ -29,6 +29,7 @@ class LotteryController extends AdminBaseController
         $this->updateLotterySettingsUseCase->handle($projectId, [
             'gacha_enabled' => (bool) $validated['gacha_enabled'],
             'scratch_enabled' => (bool) $validated['scratch_enabled'],
+            'roulette_enabled' => (bool) $validated['roulette_enabled'],
             'grant_trigger' => (string) $validated['grant_trigger'],
             'min_amount' => isset($validated['min_amount']) ? (float) $validated['min_amount'] : null,
             'entitlement_expires_hours' => isset($validated['entitlement_expires_hours'])
@@ -38,6 +39,6 @@ class LotteryController extends AdminBaseController
         ]);
 
         return redirect()->route('admin.settings.lottery', $this->buildAdminRouteParams())
-            ->with('success', 'ガチャ・スクラッチ設定を更新しました');
+            ->with('success', '購入特典ゲームの設定を更新しました');
     }
 }

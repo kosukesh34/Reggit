@@ -8,14 +8,25 @@ final class NativeAPIModelsTests: XCTestCase {
             "theme": ["primary_color": "#173F35"],
             "header": ["image_url": "https://example.com/header.webp", "background_color": "#F6F1E8"],
             "home": ["menu_layout": "grid_3x2", "image_url": "https://example.com/home.webp"],
+            "products": ["display_layout": "grid_2_columns"],
             "member_screen": ["show_rank_progress": true, "show_point_history": false, "show_coupon_activity": true],
             "tabs": [["key": "home", "label": "ホーム"]],
+            "navigation": [
+                "header": [["key": "member", "label": "会員証", "sf_symbol": "person.crop.circle.fill"]],
+                "footer": [["key": "home", "label": "ホーム", "sf_symbol": "house.fill"]],
+                "hamburger": [["key": "terms", "label": "利用規約", "sf_symbol": "doc.text.fill", "url": "https://example.com/legal/default/terms"]],
+            ],
         ])
         let config = try XCTUnwrap(AppConfigClient.parse(data))
         XCTAssertEqual(config.navigationHeaderImageURL, "https://example.com/header.webp")
         XCTAssertEqual(config.navigationHeaderBackgroundColor, "#F6F1E8")
         XCTAssertEqual(config.homeImageURL, "https://example.com/home.webp")
         XCTAssertEqual(config.homeMenuLayout, "grid_3x2")
+        XCTAssertEqual(config.productDisplayLayout, "grid_2_columns")
+        XCTAssertEqual(config.headerItems.map(\.key), ["member"])
+        XCTAssertEqual(config.footerItems.map(\.key), ["home"])
+        XCTAssertEqual(config.hamburgerItems.first?.url, "https://example.com/legal/default/terms")
+        XCTAssertTrue(config.hasNavigationConfiguration)
         XCTAssertFalse(config.memberShowPointHistory)
     }
 
@@ -244,6 +255,14 @@ final class NativeAPIModelsTests: XCTestCase {
         XCTAssertNil(MediaURL.resolve("/images/a.jpg", baseURL: ""))
     }
 
+    func testMediaURLRebasesLoopbackAssetForAndroidCompatibleAPIHost() {
+        let resolved = MediaURL.resolve(
+            "http://localhost/storage/navigation_headers/1/header.webp",
+            baseURL: "http://10.0.2.2:8000"
+        )
+        XCTAssertEqual(resolved?.absoluteString, "http://10.0.2.2:8000/storage/navigation_headers/1/header.webp")
+    }
+
     func testWalletPassDownloadURLBuilder() throws {
         let issue = "https://example.com/wallet-add?pass_token=abc123&project_key=demo"
         let url = try WalletPassURLBuilder.downloadURL(
@@ -280,6 +299,41 @@ final class NativeAPIModelsTests: XCTestCase {
         XCTAssertNil(payload["profile_image_url"])
         XCTAssertNil(payload["has_profile_image"])
     }
+
+    func testParseLotteryStateAndPlayResult() throws {
+        let state = try LotteryStateSnapshot.parse(Data("""
+        {
+          "gacha_enabled": true,
+          "scratch_enabled": true,
+          "roulette_enabled": true,
+          "entitlements": [
+            {"id": 41, "reward_type": "gacha", "expires_at": null},
+            {"id": 42, "reward_type": "scratch", "expires_at": "2026-09-30T12:00:00+09:00"}
+          ],
+          "prize_labels": {"gacha": ["ドリンク無料", "ハズレ"], "scratch": ["10% OFF"], "roulette": ["100pt", "ハズレ"]},
+          "eligibility": {"grant_trigger": "min_amount", "min_amount": 3000, "entitlement_expires_hours": 24}
+        }
+        """.utf8))
+        XCTAssertTrue(state.gachaEnabled)
+        XCTAssertTrue(state.scratchEnabled)
+        XCTAssertTrue(state.rouletteEnabled)
+        XCTAssertEqual(state.pending(for: "gacha")?.id, 41)
+        XCTAssertEqual(state.scratchPrizeLabels, ["10% OFF"])
+        XCTAssertEqual(state.roulettePrizeLabels, ["100pt", "ハズレ"])
+        XCTAssertEqual(state.minimumPurchaseAmount, 3_000)
+        XCTAssertEqual(state.entitlementExpiresHours, 24)
+
+        let result = try LotteryPlayResult.parse(Data("""
+        {"success": true, "data": {
+          "entitlement_id": 41,
+          "reward_type": "gacha",
+          "is_win": true,
+          "coupon": {"id": 9, "name": "ドリンク無料", "description": "1杯無料", "image_url": null}
+        }}
+        """.utf8))
+        XCTAssertTrue(result.isWin)
+        XCTAssertEqual(result.coupon?.name, "ドリンク無料")
+    }
 }
 
 @MainActor
@@ -290,9 +344,10 @@ final class NativeRootViewModelTests: XCTestCase {
             AppTabItem(id: "mobileOrder", key: "mobileOrder", label: "注文", icon: "fa-utensils", sfSymbol: "cart.fill"),
             AppTabItem(id: "home", key: "home", label: "ホーム", icon: "fa-home", sfSymbol: "house.fill"),
             AppTabItem(id: "coupon", key: "coupon", label: "クーポン", icon: "fa-ticket", sfSymbol: "heart.fill"),
+            AppTabItem(id: "designlab", key: "designlab", label: "あそび", icon: "fa-dice", sfSymbol: "dice.fill"),
         ]
         let filtered = NativeRootViewModel.filterNativeTabs(tabs)
-        XCTAssertEqual(filtered.map(\.key), ["member", "products", "home", "coupons"])
+        XCTAssertEqual(filtered.map(\.key), ["member", "products", "home", "coupons", "designlab"])
     }
 
     func testDeviceIdentifierPersists() {

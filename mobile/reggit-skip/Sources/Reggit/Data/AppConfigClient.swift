@@ -38,34 +38,50 @@ struct AppConfigClient {
         let navigationHeaderBackgroundColor = ((json["header"] as? [String: Any])?["background_color"] as? String)?.trimmedNonEmpty ?? "#FFFFFF"
         let homeImageURL = ((json["home"] as? [String: Any])?["image_url"] as? String)?.trimmedNonEmpty
         let homeMenuLayout = ((json["home"] as? [String: Any])?["menu_layout"] as? String)?.trimmedNonEmpty ?? "grid_3x2"
+        let productDisplayLayout = ((json["products"] as? [String: Any])?["display_layout"] as? String)?.trimmedNonEmpty ?? "list_with_image"
         let memberScreen = json["member_screen"] as? [String: Any] ?? [:]
 
-        var tabs: [AppTabItem] = []
-        if let rawTabs = json["tabs"] as? [[String: Any]] {
-            for rawTab in rawTabs {
-                guard let key = rawTab["key"] as? String else { continue }
-                let label = rawTab["label"] as? String ?? key
-                let icon = rawTab["icon"] as? String ?? "fa-circle"
-                let sfSymbol = rawTab["sf_symbol"] as? String ?? "circle.fill"
-                tabs.append(AppTabItem(id: key, key: key, label: label, icon: icon, sfSymbol: sfSymbol))
-            }
-        }
+        var tabs = parseMenuItems(json["tabs"])
 
         if tabs.isEmpty {
             tabs = AppTabItem.fallbackTabs
         }
+        let navigation = json["navigation"] as? [String: Any]
+        let headerItems = parseMenuItems(navigation?["header"])
+        let footerItems = parseMenuItems(navigation?["footer"])
+        let hamburgerItems = parseMenuItems(navigation?["hamburger"])
 
         return AppConfig(
             projectName: projectName,
             tabs: tabs,
             primaryColor: primaryColor,
+            headerItems: headerItems,
+            footerItems: footerItems,
+            hamburgerItems: hamburgerItems,
+            hasNavigationConfiguration: navigation != nil,
             navigationHeaderImageURL: navigationHeaderImageURL,
             navigationHeaderBackgroundColor: navigationHeaderBackgroundColor,
             homeImageURL: homeImageURL,
             homeMenuLayout: homeMenuLayout,
+            productDisplayLayout: productDisplayLayout,
             memberShowRankProgress: memberScreen["show_rank_progress"] as? Bool ?? true,
             memberShowPointHistory: memberScreen["show_point_history"] as? Bool ?? true,
             memberShowCouponActivity: memberScreen["show_coupon_activity"] as? Bool ?? true
         )
+    }
+
+    private static func parseMenuItems(_ value: Any?) -> [AppTabItem] {
+        guard let rows = value as? [[String: Any]] else { return [] }
+        return rows.compactMap { row -> AppTabItem? in
+            guard let key = row["key"] as? String else { return nil }
+            return AppTabItem(
+                id: key,
+                key: key,
+                label: row["label"] as? String ?? key,
+                icon: row["icon"] as? String ?? "fa-circle",
+                sfSymbol: row["sf_symbol"] as? String ?? "circle.fill",
+                url: (row["url"] as? String)?.trimmedNonEmpty
+            )
+        }
     }
 }

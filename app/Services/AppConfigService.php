@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Support\LiffThemePresets;
+use Illuminate\Support\Collection;
 
 /**
  * ネイティブアプリ向け app-config API のペイロードを組み立てる。
@@ -42,10 +43,37 @@ class AppConfigService
         ];
 
         $enabledTabs = array_values(array_filter($menuItems, function ($item) use ($featureFlags, $tabFeatureMap) {
+            if (($item['tab'] ?? null) === 'designlab') {
+                return ($featureFlags['feature_gacha_enabled'] ?? false)
+                    || ($featureFlags['feature_scratch_enabled'] ?? false)
+                    || ($featureFlags['feature_roulette_enabled'] ?? false);
+            }
             $flagKey = $tabFeatureMap[$item['tab']] ?? null;
 
             return $flagKey === null || ($featureFlags[$flagKey] ?? true);
         }));
+
+        $nativeNavigationCandidates = $enabledTabs;
+        $nativeNavigationCandidates[] = [
+            'tab' => 'terms',
+            'label' => '利用規約',
+            'icon' => 'fa-file-contract',
+            'url' => route('legal.terms', ['project_key' => $projectKey]),
+        ];
+        $nativeNavigationCandidates[] = [
+            'tab' => 'privacy',
+            'label' => 'プライバシーポリシー',
+            'icon' => 'fa-user-shield',
+            'url' => route('legal.privacy', ['project_key' => $projectKey]),
+        ];
+        $nativeNavigationByKey = collect($nativeNavigationCandidates)->keyBy('tab');
+        $savedNativeNavigation = $repo->getValue('native_navigation_items', null, $projectId);
+        $defaultNavigationKeys = array_column($enabledTabs, 'tab');
+        $nativeNavigation = is_array($savedNativeNavigation) ? $savedNativeNavigation : [
+            'header' => [],
+            'footer' => array_slice($defaultNavigationKeys, 0, 5),
+            'hamburger' => array_merge($defaultNavigationKeys, ['terms', 'privacy']),
+        ];
 
         $theme = $repo->getLineThemeColors($projectId);
         $tabSettings = $repo->getLiffTabSettings($projectId);
@@ -62,7 +90,13 @@ class AppConfigService
                 'label' => $item['label'],
                 'icon' => $item['icon'] ?? 'fa-circle',
                 'sf_symbol' => $this->sfSymbolForTab($item['tab']),
+                'url' => isset($item['url']) ? (string) $item['url'] : null,
             ], $enabledTabs),
+            'navigation' => [
+                'header' => $this->navigationItems($nativeNavigation['header'] ?? [], $nativeNavigationByKey, 2),
+                'footer' => $this->navigationItems($nativeNavigation['footer'] ?? [], $nativeNavigationByKey, 5),
+                'hamburger' => $this->navigationItems($nativeNavigation['hamburger'] ?? [], $nativeNavigationByKey),
+            ],
             'feature_flags' => $featureFlags,
             'theme' => [
                 'primary_color' => $accent,
@@ -116,6 +150,9 @@ class AppConfigService
                 'menu_layout' => (string) $repo->getValue('home_menu_layout', 'grid_3x2', $projectId),
                 'image_url' => (string) $repo->getValue('home_image_url', '', $projectId),
             ],
+            'products' => [
+                'display_layout' => (string) $repo->getValue('product_display_layout', 'list_with_image', $projectId),
+            ],
             'member_screen' => [
                 'show_rank_progress' => (bool) $repo->getValue('member_show_rank_progress', true, $projectId),
                 'show_point_history' => (bool) $repo->getValue('member_show_point_history', true, $projectId),
@@ -141,13 +178,46 @@ class AppConfigService
             'products' => 'fork.knife',
             'orders' => 'list.clipboard.fill',
             'stamps' => 'star.fill',
+            'designlab' => 'dice.fill',
             'coupons' => 'ticket.fill',
             'queue' => 'person.3.fill',
             'member' => 'person.crop.circle.fill',
             'reservations' => 'calendar',
             'gallery' => 'photo.on.rectangle.angled',
             'announcements' => 'megaphone.fill',
+            'terms' => 'doc.text.fill',
+            'privacy' => 'hand.raised.fill',
             default => 'circle.fill',
         };
+    }
+
+    /**
+     * @param  array<mixed>  $keys
+     * @param  Collection<string, array<string, mixed>>  $candidates
+     * @return list<array<string, mixed>>
+     */
+    private function navigationItems(array $keys, $candidates, ?int $limit = null): array
+    {
+        $items = collect($keys)
+            ->filter(fn ($key) => is_string($key) && $candidates->has($key))
+            ->unique()
+            ->map(function (string $key) use ($candidates) {
+                $item = $candidates->get($key);
+
+                return [
+                    'key' => $key,
+                    'label' => (string) ($item['label'] ?? $key),
+                    'icon' => (string) ($item['icon'] ?? 'fa-circle'),
+                    'sf_symbol' => $this->sfSymbolForTab($key),
+                    'url' => isset($item['url']) ? (string) $item['url'] : null,
+                ];
+            })
+            ->values();
+
+        if ($limit !== null) {
+            $items = $items->take($limit)->values();
+        }
+
+        return $items->all();
     }
 }
