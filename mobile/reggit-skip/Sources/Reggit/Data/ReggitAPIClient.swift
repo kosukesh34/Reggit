@@ -134,6 +134,20 @@ struct ReggitAPIClient: ReggitAPIServing {
         return try StampListResponse.parse(data).stampCards
     }
 
+    func fetchLotteryState() async throws -> LotteryStateSnapshot {
+        let data = try await requestData(path: "/api/member-lottery", method: "GET")
+        return try LotteryStateSnapshot.parse(data)
+    }
+
+    func playLottery(entitlementId: Int) async throws -> LotteryPlayResult {
+        let data = try await requestData(path: "/api/member-lottery/\(entitlementId)/play", method: "POST")
+        return try LotteryPlayResult.parse(data)
+    }
+
+    func notifyLotteryWin(entitlementId: Int) async throws {
+        _ = try await requestJSON(path: "/api/member-lottery/\(entitlementId)/notify-win", method: "POST")
+    }
+
     // MARK: - Products / Orders
 
     func fetchProducts() async throws -> [ProductItem] {

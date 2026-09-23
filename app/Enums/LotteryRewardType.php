@@ -10,9 +10,12 @@ class LotteryRewardType extends EnumBase
 
     public const SCRATCH = 'scratch';
 
+    public const ROULETTE = 'roulette';
+
     protected static array $values = [
         self::GACHA => 'ガチャ',
         self::SCRATCH => 'スクラッチ',
+        self::ROULETTE => 'ルーレット',
     ];
 
     /** @return list<string> */

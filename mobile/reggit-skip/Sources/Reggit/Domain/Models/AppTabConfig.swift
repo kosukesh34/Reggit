@@ -6,6 +6,16 @@ struct AppTabItem: Identifiable, Equatable {
     let label: String
     let icon: String
     let sfSymbol: String
+    let url: String?
+
+    init(id: String, key: String, label: String, icon: String, sfSymbol: String, url: String? = nil) {
+        self.id = id
+        self.key = key
+        self.label = label
+        self.icon = icon
+        self.sfSymbol = sfSymbol
+        self.url = url
+    }
 
     static let fallbackTabs: [AppTabItem] = [
         AppTabItem(id: "home", key: "home", label: "ホーム", icon: "fa-home", sfSymbol: "house.fill"),
@@ -18,11 +28,16 @@ struct AppTabItem: Identifiable, Equatable {
 struct AppConfig {
     let projectName: String
     let tabs: [AppTabItem]
+    let headerItems: [AppTabItem]
+    let footerItems: [AppTabItem]
+    let hamburgerItems: [AppTabItem]
+    let hasNavigationConfiguration: Bool
     let primaryColor: String
     let navigationHeaderImageURL: String?
     let navigationHeaderBackgroundColor: String
     let homeImageURL: String?
     let homeMenuLayout: String
+    let productDisplayLayout: String
     let memberShowRankProgress: Bool
     let memberShowPointHistory: Bool
     let memberShowCouponActivity: Bool
@@ -31,21 +46,31 @@ struct AppConfig {
         projectName: String,
         tabs: [AppTabItem],
         primaryColor: String,
+        headerItems: [AppTabItem] = [],
+        footerItems: [AppTabItem] = [],
+        hamburgerItems: [AppTabItem] = [],
+        hasNavigationConfiguration: Bool = false,
         navigationHeaderImageURL: String? = nil,
         navigationHeaderBackgroundColor: String = "#FFFFFF",
         homeImageURL: String? = nil,
         homeMenuLayout: String = "grid_3x2",
+        productDisplayLayout: String = "list_with_image",
         memberShowRankProgress: Bool = true,
         memberShowPointHistory: Bool = true,
         memberShowCouponActivity: Bool = true
     ) {
         self.projectName = projectName
         self.tabs = tabs
+        self.headerItems = headerItems
+        self.footerItems = footerItems
+        self.hamburgerItems = hamburgerItems
+        self.hasNavigationConfiguration = hasNavigationConfiguration
         self.primaryColor = primaryColor
         self.navigationHeaderImageURL = navigationHeaderImageURL
         self.navigationHeaderBackgroundColor = navigationHeaderBackgroundColor
         self.homeImageURL = homeImageURL
         self.homeMenuLayout = homeMenuLayout
+        self.productDisplayLayout = productDisplayLayout
         self.memberShowRankProgress = memberShowRankProgress
         self.memberShowPointHistory = memberShowPointHistory
         self.memberShowCouponActivity = memberShowCouponActivity

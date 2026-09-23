@@ -58,6 +58,7 @@ class LotterySettingsUpdateRequest extends FormRequest
         $this->merge([
             'gacha_enabled' => $this->boolean('gacha_enabled'),
             'scratch_enabled' => $this->boolean('scratch_enabled'),
+            'roulette_enabled' => $this->boolean('roulette_enabled'),
             'prizes' => $normalized,
             'min_amount' => $this->filled('min_amount') ? $this->input('min_amount') : null,
             'entitlement_expires_hours' => $this->filled('entitlement_expires_hours')
@@ -74,8 +75,14 @@ class LotterySettingsUpdateRequest extends FormRequest
         return [
             'gacha_enabled' => 'required|boolean',
             'scratch_enabled' => 'required|boolean',
+            'roulette_enabled' => 'required|boolean',
             'grant_trigger' => ['required', 'string', Rule::in(LotteryGrantTrigger::keys())],
-            'min_amount' => 'nullable|numeric|min:0',
+            'min_amount' => [
+                Rule::requiredIf(fn () => $this->input('grant_trigger') === LotteryGrantTrigger::MIN_AMOUNT),
+                'nullable',
+                'numeric',
+                'min:1',
+            ],
             'entitlement_expires_hours' => 'nullable|integer|min:1|max:8760',
             'prizes' => 'nullable|array',
             'prizes.*.reward_type' => ['required', 'string', Rule::in(LotteryRewardType::keys())],
@@ -129,6 +136,8 @@ class LotterySettingsUpdateRequest extends FormRequest
         return [
             'prizes.*.probability.min' => '確率は1以上で入力してください。',
             'prizes.*.coupon_id.exists' => '選択したクーポンが不正です。',
+            'min_amount.required' => '購入金額を条件にする場合は、対象となる最低購入金額を入力してください。',
+            'min_amount.min' => '最低購入金額は1円以上で入力してください。',
         ];
     }
 }
