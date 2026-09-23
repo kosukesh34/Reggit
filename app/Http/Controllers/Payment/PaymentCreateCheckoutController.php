@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Payment;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\UseCases\Payment\PaymentCreateCheckoutUseCase;
+use App\UseCases\Payment\PaymentSessionInProgressException;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
@@ -35,6 +36,8 @@ class PaymentCreateCheckoutController extends Controller
                 $projectId,
                 (int) $user->id,
             )->toArray());
+        } catch (PaymentSessionInProgressException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
         } catch (InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         } catch (\Throwable $e) {

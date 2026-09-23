@@ -8,6 +8,7 @@ use App\Models\Member;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\User;
 use App\Support\DailySequenceNumber;
+use App\Support\LineIdentityPolicy;
 use App\Support\MemberChannel;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueStoreInput;
@@ -133,7 +134,7 @@ class QueueStoreUseCase
         if (is_string($userLineUserId) && MemberChannel::isValidLineUserId($userLineUserId)) {
             return $userLineUserId;
         }
-        if (config('line.verify_liff_id_token') === true) {
+        if (LineIdentityPolicy::requiresVerifiedToken()) {
             return null;
         }
         if (is_string($headerLineUserId) && MemberChannel::isValidLineUserId($headerLineUserId)) {

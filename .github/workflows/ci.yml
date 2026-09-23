@@ -152,10 +152,8 @@ jobs:
     - run: npx playwright install --with-deps chromium
     - run: npx playwright test --config=e2e/web/security-review.config.ts --grep @component
 
-  # 一時停止: main 運用中は Playwright を走らせない（再開時は条件を戻す）。
   e2e_web:
-    name: E2E Web (Playwright)
-    if: false
+    name: E2E Web smoke (Playwright)
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
@@ -266,7 +264,7 @@ jobs:
           sleep 1
         done
 
-        npm run test:e2e
+        npx playwright test --config=e2e/web/security-review.config.ts --grep-invert @component
 
     - name: Upload Playwright report
       if: failure()
