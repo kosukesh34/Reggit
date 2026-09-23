@@ -103,7 +103,7 @@ function bootstrapLiffInit(): void {
     }
 
     function setLineProfile(profile: unknown): void {
-        window.__LINE_PROFILE__ = profile || null;
+        window.__LINE_PROFILE__ = profile && typeof profile === 'object' ? profile as { displayName?: string; [key: string]: unknown } : null;
     }
 
     function dispatchProfileReady(): void {
@@ -360,7 +360,7 @@ function bootstrapLiffInit(): void {
 
     function applyLiffDesignTokens(): void {
         const settings = window.__LIFF_TAB_SETTINGS__ || {};
-        const global = settings._global || {};
+        const global = (settings._global || {}) as Record<string, unknown>;
         const root = document.documentElement;
         const radiusMap: Record<string, Record<string, string>> = {
             compact: { xs: '6px', sm: '10px', md: '12px', lg: '14px', xl: '18px' },

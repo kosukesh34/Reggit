@@ -3,6 +3,7 @@ import Foundation
 @MainActor
 final class SettingsViewModel: ObservableObject {
     @Published var passcode: String
+    @Published var storeToken: String
     @Published var deviceName: String
     @Published var message: String?
 
@@ -14,6 +15,7 @@ final class SettingsViewModel: ObservableObject {
         self.api = api
         let settings = store.load()
         self.passcode = settings.passcode
+        self.storeToken = settings.storeToken ?? ""
         self.deviceName = settings.deviceName
     }
 
@@ -23,6 +25,7 @@ final class SettingsViewModel: ObservableObject {
     func save() {
         var settings = store.load()
         settings.passcode = passcode.trimmingCharacters(in: .whitespacesAndNewlines)
+        settings.storeToken = storeToken.trimmingCharacters(in: .whitespacesAndNewlines)
         settings.deviceName = deviceName.trimmingCharacters(in: .whitespacesAndNewlines)
         store.save(settings)
         message = "保存しました"

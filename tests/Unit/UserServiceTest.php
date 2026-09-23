@@ -209,7 +209,7 @@ class UserServiceTest extends TestCase
             'project_id' => $project->id,
             'line_user_id' => 'guest-native-1',
         ]);
-        UserDevice::query()->create([
+        $device = UserDevice::query()->create([
             'project_id' => $project->id,
             'user_id' => $user->id,
             'platform' => 'ios',
@@ -220,6 +220,8 @@ class UserServiceTest extends TestCase
         $request = Request::create('/', 'GET');
         $request->headers->set('X-Line-User-Id', self::LINE_USER_ID);
         $request->headers->set('X-Device-Identifier', 'device-abc');
+        $device->forceFill(['auth_token' => 'test-device-token'])->save();
+        $request->headers->set('X-Device-Token', 'test-device-token');
 
         $resolved = app(UserService::class)->findUser($request);
 

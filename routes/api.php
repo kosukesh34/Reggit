@@ -155,7 +155,7 @@ Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->
     Route::get('/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
     Route::post('/queue', ApiV1QueueStoreController::class);
     Route::get('/queue/me', ApiV1QueueMeController::class);
-    Route::post('/queue/{id}/cancel', ApiV1QueueCancelController::class);
+    Route::post('/queue/{id}/cancel', ApiV1QueueCancelController::class)->middleware('queue.access');
     Route::post('/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
 });
@@ -204,7 +204,7 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::c
     Route::get('/{project_key}/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
     Route::post('/{project_key}/queue', ApiV1QueueStoreController::class);
     Route::get('/{project_key}/queue/me', ApiV1QueueMeController::class);
-    Route::post('/{project_key}/queue/{id}/cancel', ApiV1QueueCancelController::class);
+    Route::post('/{project_key}/queue/{id}/cancel', ApiV1QueueCancelController::class)->middleware('queue.access');
     Route::post('/{project_key}/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/{project_key}/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
 });
@@ -280,12 +280,12 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 
     Route::post('/queue', [QueueStoreController::class, '__invoke']);
     Route::get('/queue/me', [QueueMeController::class, '__invoke']);
-    Route::get('/queue/list', [QueueListController::class, '__invoke']);
-    Route::get('/queue/{id}', [QueueStatusController::class, '__invoke']);
-    Route::post('/queue/{id}/cancel', [QueueCancelController::class, '__invoke']);
-    Route::post('/queue/{id}/recall', [QueueRecallController::class, '__invoke']);
-    Route::post('/queue/{id}/enter', [QueueEnterController::class, '__invoke']);
-    Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke']);
+    Route::get('/queue/list', [QueueListController::class, '__invoke'])->middleware('queue.access:staff');
+    Route::get('/queue/{id}', [QueueStatusController::class, '__invoke'])->middleware('queue.access');
+    Route::post('/queue/{id}/cancel', [QueueCancelController::class, '__invoke'])->middleware('queue.access');
+    Route::post('/queue/{id}/recall', [QueueRecallController::class, '__invoke'])->middleware('queue.access:staff');
+    Route::post('/queue/{id}/enter', [QueueEnterController::class, '__invoke'])->middleware('queue.access:staff');
+    Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke'])->middleware('queue.access:staff');
     Route::get('/queue/qr/{token}', [QueueQrStatusController::class, '__invoke']);
 });
 

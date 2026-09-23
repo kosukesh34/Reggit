@@ -8,5 +8,6 @@ class DeviceRegisterOutput
         public readonly int $deviceId,
         public readonly int $savedPushTokenLength,
         public readonly bool $hasPushTokenWarning,
+        public readonly string $deviceToken,
     ) {}
 }

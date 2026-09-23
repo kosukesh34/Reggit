@@ -4,7 +4,7 @@ import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { Card } from "../components/ui/Card";
 import { ErrorState } from "../components/ui/ErrorState";
 import { Skeleton } from "../components/ui/Skeleton";
-import { useAppConfig } from "../context/AppConfigContext";
+import { useAppConfig, isDesignShowcaseMode } from "../context/AppConfigContext";
 import { CollectionDemo } from "../features/demo/CollectionDemo";
 import { featureDefinitionMap, isFeatureType } from "../features/demo/featureCatalog";
 import { OrderDemo } from "../features/demo/OrderDemo";
@@ -92,10 +92,10 @@ export function FeaturePage() {
     return <FeaturePageSkeleton />;
   }
 
-  if (experienceId === "landing-showcase" && ["mobileOrder", "stamp", "queue"].includes(feature)) {
+  if (isDesignShowcaseMode() && experienceId === "landing-showcase" && ["mobileOrder", "stamp", "queue"].includes(feature)) {
     return <LandingShowcaseFeature feature={feature} />;
   }
-  if (experienceId === "landing-showcase" && ["coupon", "point", "reservation", "news", "storeSearch", "orderHistory", "purchaseHistory", "menu", "dineInOrder", "gallery", "favorite", "ticket", "subscription"].includes(feature)) {
+  if (isDesignShowcaseMode() && experienceId === "landing-showcase" && ["coupon", "point", "reservation", "news", "storeSearch", "orderHistory", "purchaseHistory", "menu", "dineInOrder", "gallery", "favorite", "ticket", "subscription"].includes(feature)) {
     return <LandingShowcaseUtility feature={feature} />;
   }
   if (experienceId === "simple-rewards" && ["coupon", "stamp"].includes(feature)) {

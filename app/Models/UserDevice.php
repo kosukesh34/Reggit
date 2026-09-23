@@ -10,6 +10,8 @@ class UserDevice extends Model
 {
     use BelongsToProject;
 
+    protected $hidden = ['auth_token', 'push_token'];
+
     protected $fillable = [
         'project_id',
         'user_id',
@@ -23,12 +25,19 @@ class UserDevice extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'auth_token' => 'encrypted',
         'last_used_at' => 'datetime',
     ];
 
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function authenticates(?string $token): bool
+    {
+        return is_string($this->auth_token) && $this->auth_token !== ''
+            && is_string($token) && $token !== '' && hash_equals($this->auth_token, $token);
     }
 
     public function user(): BelongsTo

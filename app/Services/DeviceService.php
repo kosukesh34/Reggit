@@ -7,6 +7,8 @@ use App\Models\UserDevice;
 use App\Repositories\Contracts\UserDeviceRepository;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\DB;
 
 class DeviceService
 {
@@ -14,7 +16,12 @@ class DeviceService
         private UserDeviceRepository $userDeviceRepository,
     ) {}
 
-    public function register(User $user, array $payload): UserDevice
+    public function register(User $user, array $payload, ?string $deviceToken = null): UserDevice
+    {
+        return DB::transaction(fn () => $this->saveRegistration($user, $payload, $deviceToken));
+    }
+
+    private function saveRegistration(User $user, array $payload, ?string $deviceToken): UserDevice
     {
         $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
         $deviceIdentifier = trim((string) ($payload['device_identifier'] ?? ''));
@@ -23,6 +30,16 @@ class DeviceService
             : '';
 
         $device = $this->userDeviceRepository->findOrNewByProjectAndIdentifier($projectId, $deviceIdentifier);
+
+        if ($device->exists && (int) $device->user_id !== (int) $user->id) {
+            if (! $device->authenticates($deviceToken)) {
+                throw new AuthenticationException('端末の再認証が必要です');
+            }
+            $device->push_token = null;
+        }
+        if (! is_string($device->auth_token) || $device->auth_token === '') {
+            $device->auth_token = bin2hex(random_bytes(32));
+        }
 
         $effectivePushToken = $incomingPushToken !== ''
             ? $incomingPushToken

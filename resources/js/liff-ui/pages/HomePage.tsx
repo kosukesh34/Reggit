@@ -10,7 +10,7 @@ import { QuickActions } from "../components/home/QuickActions";
 import { StoreSummaryCard } from "../components/home/StoreSummary";
 import { Skeleton } from "../components/ui/Skeleton";
 import { resolveAppBrand, resolveHomeLayout } from "../config/customization";
-import { useAppConfig } from "../context/AppConfigContext";
+import { useAppConfig, isDesignShowcaseMode } from "../context/AppConfigContext";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import type { HomeLayout } from "../types/customization";
 import { IndustryGalleryHome } from "./IndustryGalleryHome";
@@ -43,7 +43,7 @@ export function HomePage() {
   const { activeStore, customization, experienceId } = useAppConfig();
   const { member, coupons, news, stores, mode, error, refresh, loading } = useRuntimeData();
 
-  if (experienceId === "landing-showcase") {
+  if (isDesignShowcaseMode() && experienceId === "landing-showcase") {
     return <LandingShowcaseHome />;
   }
   if (experienceId === "simple-rewards") {

@@ -180,7 +180,7 @@ function projectStoreSummary(): StoreSummary {
 
 async function getJson(endpoint: string): Promise<Record<string, unknown>> {
   const result = await client().get(withProject(endpoint));
-  if (!result.success) {
+  if (result.success === false) {
     throw new Error(result.error || 'データの取得に失敗しました');
   }
   return asRecord(result.data);
@@ -297,7 +297,7 @@ export const reggitApi = {
       notes: input.tableNumber ? `卓番: ${input.tableNumber}` : null,
       order_type: orderType,
     });
-    if (!result.success) {
+    if (result.success === false) {
       throw new Error(result.error || '注文に失敗しました');
     }
     const data = asRecord(result.data);
@@ -321,7 +321,7 @@ export const reggitApi = {
       number_of_people: input.partySize,
       notes: input.plan || null,
     });
-    if (!result.success) {
+    if (result.success === false) {
       throw new Error(result.error || '予約に失敗しました');
     }
     const data = asRecord(result.data);
@@ -333,7 +333,7 @@ export const reggitApi = {
     const result = await client().post(withProject(AppConstants.API_ENDPOINTS.QUEUE), {
       party_size: input.partySize,
     });
-    if (!result.success) {
+    if (result.success === false) {
       throw new Error(result.error || '順番待ちの受付に失敗しました');
     }
     const data = asRecord(result.data);
@@ -343,7 +343,7 @@ export const reggitApi = {
 
   async useCoupon(_storeId: string, couponId: string): Promise<OperationReceipt> {
     const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBER_COUPON_REDEEM(couponId)), {});
-    if (!result.success) {
+    if (result.success === false) {
       throw new Error(result.error || 'クーポンを利用できませんでした');
     }
     return receiptFrom(`CPN-${couponId}`);
@@ -352,7 +352,7 @@ export const reggitApi = {
   async markAnnouncementRead(announcementId: string): Promise<void> {
     await ensureIdentity();
     const result = await client().post(withProject(AppConstants.API_ENDPOINTS.ANNOUNCEMENT_READ(announcementId)), {});
-    if (!result.success) {
+    if (result.success === false) {
       throw new Error(result.error || 'お知らせの既読登録に失敗しました');
     }
   },
@@ -362,7 +362,7 @@ export const reggitApi = {
     const raw = staffCode.trim();
     if (isStampGrantCode(raw)) {
       const result = await client().post(withProject(`${AppConstants.API_BASE}/stamps/grant-code/${raw.toLowerCase()}`), {});
-      if (!result.success) {
+      if (result.success === false) {
         throw new Error(('error' in result ? result.error : undefined) || 'スタンプを追加できませんでした');
       }
       return stampGrantReceipt(asRecord(result.data));
@@ -378,7 +378,7 @@ export const reggitApi = {
     }
     const postUrl = /^https?:\/\//i.test(raw) ? raw : grantUrl.href;
     const result = await client().post(postUrl, {});
-    if (!result.success) {
+    if (result.success === false) {
       throw new Error(('error' in result ? result.error : undefined) || 'スタンプを追加できませんでした');
     }
     return stampGrantReceipt(asRecord(result.data));
@@ -398,7 +398,7 @@ export const reggitApi = {
       email: input.email,
       message: `[${input.category}]\n${input.message}`,
     });
-    if (!result.success) {
+    if (result.success === false) {
       throw new Error(result.error || '問い合わせの送信に失敗しました');
     }
     return receiptFrom('CNT');
@@ -428,7 +428,7 @@ export const reggitApi = {
   async withdraw(): Promise<void> {
     await ensureIdentity();
     const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBERS_WITHDRAW), {});
-    if (!result.success) {
+    if (result.success === false) {
       throw new Error(('error' in result ? result.error : undefined) || '退会に失敗しました');
     }
     client().clearPersistedLineUserId();

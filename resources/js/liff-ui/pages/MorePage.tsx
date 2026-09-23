@@ -2,7 +2,7 @@ import { ChevronRight, CircleHelp, FileText, Heart, History, LogOut, MapPin, Mes
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { LandingShowcaseMore } from "./LandingShowcasePage";
-import { useAppConfig } from "../context/AppConfigContext";
+import { useAppConfig, isDesignShowcaseMode } from "../context/AppConfigContext";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { featureDefinitions } from "../features/demo/featureCatalog";
@@ -30,7 +30,7 @@ export function MorePage() {
   const { member, mode, refresh } = useRuntimeData();
   const isMember = member.isMember;
 
-  if (experienceId === "landing-showcase") {
+  if (isDesignShowcaseMode() && experienceId === "landing-showcase") {
     return <LandingShowcaseMore />;
   }
   const availableFeatures = featureDefinitions.filter((feature) => activeStore.features[feature.type]);

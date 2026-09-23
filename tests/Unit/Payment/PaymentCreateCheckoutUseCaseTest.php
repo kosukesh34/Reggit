@@ -2,13 +2,13 @@
 
 namespace Tests\Unit\Payment;
 
-use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\UseCases\Payment\OrderPaymentSessionService;
 use App\UseCases\Payment\PaymentCreateCheckoutUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
@@ -38,7 +38,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase($gateway, app(OrderRepository::class));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway));
 
         $output = $useCase->handle((int) $order->id, (int) $project->id, (int) $user->id);
 
@@ -65,7 +65,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase($gateway, app(OrderRepository::class));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway));
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('未決済の注文のみ決済できます');

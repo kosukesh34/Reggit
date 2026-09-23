@@ -13,7 +13,7 @@ class GetDeviceSessionUseCase
         private UserRepository $userRepository,
     ) {}
 
-    public function handle(int $projectId, ?string $deviceIdentifier): DeviceSessionOutput
+    public function handle(int $projectId, ?string $deviceIdentifier, ?string $deviceToken = null): DeviceSessionOutput
     {
         if ($deviceIdentifier === null || trim($deviceIdentifier) === '') {
             return new DeviceSessionOutput(null);
@@ -24,7 +24,7 @@ class GetDeviceSessionUseCase
             trim($deviceIdentifier),
         );
 
-        if ($device === null) {
+        if ($device === null || ! $device->authenticates($deviceToken)) {
             return new DeviceSessionOutput(null);
         }
 
