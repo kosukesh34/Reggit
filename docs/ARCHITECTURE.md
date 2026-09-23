@@ -204,10 +204,12 @@ sequenceDiagram
 | `bind.project` | `app/Http/Middleware/BindProjectFromRequest.php` | 顧客・LIFF・公開系 |
 | `bind.admin.project` | `app/Http/Middleware/BindAdminProject.php` | Admin + 権限チェック |
 | `AdminContext` | `app/Util/AdminContext.php` | リクエスト内の現在店舗 |
-| `ProjectScope` | `app/Models/Scopes/ProjectScope.php` | 他店データ遮断 |
+| `ProjectScope` | `app/Models/Scopes/ProjectScope.php` | 他店データ遮断。HTTP リクエスト中に店舗コンテキストがない場合は結果を返さない |
 | `BelongsToProject` | `app/Models/Concerns/BelongsToProject.php` | Model に scope + 作成時 project_id |
 
-**デグレ観点:** UseCase / Repository で「別 project_id を明示指定して読む」場合は、スコープ外しが意図的か必ず確認する。
+**デグレ観点:** HTTP リクエスト中に店舗コンテキストがないクエリは空になる。CLI の横断処理は現状の互換性を維持する。店舗をまたぐ管理処理・同期処理では `withoutGlobalScope(ProjectScope::class)` と明示的な `project_id` 条件を併用し、権限と対象店舗の条件をレビューする。
+
+`BindProjectFromRequest` / API トークン認証 / `CheckApiProject` は暗黙のモデル結合より前に実行する。公開スタンプQRはトークンから店舗を特定する初回検索のみスコープを外し、その後の処理は特定した店舗のコンテキスト内で行う。
 
 ---
 

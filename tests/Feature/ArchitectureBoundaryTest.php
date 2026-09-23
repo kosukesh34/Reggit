@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\AuthenticateApiToken;
+use App\Models\ApiToken;
+use App\Models\Coupon;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\UserService;
@@ -10,6 +14,7 @@ use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class ArchitectureBoundaryTest extends TestCase
@@ -44,6 +49,50 @@ class ArchitectureBoundaryTest extends TestCase
         app()->forgetScopedInstances();
 
         $this->assertNull(AdminContext::getCurrentProjectId());
+    }
+
+    public function test_tenant_scoped_models_fail_closed_during_http_requests_without_a_project(): void
+    {
+        $first = Project::factory()->create();
+        $second = Project::factory()->create();
+        User::factory()->create(['project_id' => $first->id]);
+        User::factory()->create(['project_id' => $second->id]);
+
+        AdminContext::setCurrentProject($first);
+        $this->assertSame(1, User::query()->count());
+
+        AdminContext::setCurrentProject(null);
+        $this->assertSame(2, User::query()->count());
+
+        Route::get('/__tenant-scope-check', fn () => response()->json(['count' => User::query()->count()]));
+        $this->getJson('/__tenant-scope-check')->assertOk()->assertJsonPath('count', 0);
+        $this->assertSame(2, User::query()->count());
+    }
+
+    public function test_implicit_model_binding_cannot_load_another_projects_coupon(): void
+    {
+        $first = Project::factory()->create(['project_key' => 'scope-first']);
+        $second = Project::factory()->create(['project_key' => 'scope-second']);
+        $coupon = Coupon::factory()->create(['project_id' => $second->id]);
+
+        $this->withoutMiddleware(AuthenticateApiToken::class)
+            ->withHeader('X-Project-Key', $first->project_key)
+            ->postJson('/api/v1/device-coupons/'.$coupon->id.'/claim')
+            ->assertNotFound();
+    }
+
+    public function test_api_token_sets_tenant_before_the_default_project_can_be_selected(): void
+    {
+        $first = Project::factory()->create(['project_key' => 'token-first']);
+        $second = Project::factory()->create(['project_key' => 'token-second']);
+        $firstProduct = Product::factory()->create(['project_id' => $first->id]);
+        $secondProduct = Product::factory()->create(['project_id' => $second->id]);
+        $token = ApiToken::issue($second, 'scope-test')['plain'];
+
+        $this->withToken($token)->getJson('/api/v1/products/'.$secondProduct->id)
+            ->assertOk()->assertJsonPath('data.product.id', $secondProduct->id);
+        $this->withToken($token)->getJson('/api/v1/products/'.$firstProduct->id)
+            ->assertNotFound();
     }
 
     public function test_http_request_clears_previous_tenant_even_when_project_binding_fails(): void
