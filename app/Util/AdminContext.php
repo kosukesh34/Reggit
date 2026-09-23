@@ -7,21 +7,19 @@ use App\Models\Project;
 
 class AdminContext
 {
-    private static ?Project $currentProject = null;
-
     public static function setCurrentProject(?Project $project): void
     {
-        self::$currentProject = $project;
+        app(TenantContext::class)->setProject($project);
     }
 
     public static function getCurrentProject(): ?Project
     {
-        return self::$currentProject;
+        return app(TenantContext::class)->project();
     }
 
     public static function getCurrentProjectId(): ?int
     {
-        return self::$currentProject !== null ? (int) self::$currentProject->id : null;
+        return app(TenantContext::class)->projectId();
     }
 
     public static function requireCurrentProjectId(): int
