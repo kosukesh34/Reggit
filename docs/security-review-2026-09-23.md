@@ -21,6 +21,7 @@
 
 - PHP: 外部スマレジ実接続グループを除く1008テスト、3763 assertions成功。
 - Swift: 35テスト成功。端末登録後のトークン再送・クライアント再作成後の復元・店舗間分離も検証。
+- 受付・キッチンiOSアプリ: シミュレータ向けターゲットビルド成功。
 - Playwright: XSS、確認ダイアログ・BottomSheet、390px/1280pxの画面遷移と横幅、実店舗のサンプル受付非表示の6件成功。
 - npm build、TypeScript型チェック成功。ビルドには約993kBのmain chunk警告が残る。
 - Composer / npm audit: 既知の脆弱性0件（更新時点）。
