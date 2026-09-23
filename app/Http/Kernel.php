@@ -13,6 +13,7 @@ use App\Http\Middleware\EnsureProjectPlanFeature;
 use App\Http\Middleware\EnsureStoreAdmin;
 use App\Http\Middleware\EnsureSystemAdmin;
 use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\ResetTenantContext;
 use App\Http\Middleware\SetAdminProjectFromQuery;
 use App\Http\Middleware\ValidateCsrfToken;
 use App\Http\Middleware\VerifySmaregiWebhookSecret;
@@ -40,6 +41,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 class Kernel extends HttpKernel
 {
     protected $middleware = [
+        ResetTenantContext::class,
         TrustProxies::class,
         HandleCors::class,
         ValidatePostSize::class,

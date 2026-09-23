@@ -68,6 +68,7 @@ use App\Services\WalletPassService;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\Util\AdminContext;
+use App\Util\TenantContext;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -77,6 +78,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->scoped(TenantContext::class);
         $this->app->bind(ProjectRepository::class, EloquentProjectRepository::class);
         $this->app->bind(AdminUserRepository::class, EloquentAdminUserRepository::class);
         $this->app->bind(UserDeviceRepository::class, EloquentUserDeviceRepository::class);

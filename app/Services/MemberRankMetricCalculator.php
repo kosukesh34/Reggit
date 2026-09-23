@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Member\Services;
+namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\PointTransactionType;

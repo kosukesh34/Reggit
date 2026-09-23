@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Domain\Member\Services\MemberRankDownGuard;
-use App\Domain\Member\Services\MemberRankMetricCalculator;
 use App\Domain\Member\Services\MemberRankResolver;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\RankAggregationType;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Payment;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use App\UseCases\Payment\PaymentCreateIntentUseCase;
+use App\UseCases\Payment\PaymentSessionInProgressException;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
@@ -42,6 +43,8 @@ class PaymentCreateIntentController extends Controller
             );
 
             return response()->json($dto->toArray());
+        } catch (PaymentSessionInProgressException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
         } catch (InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         } catch (\Exception $e) {
