@@ -25,6 +25,20 @@
     <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
 @endif
 
+@if(auth('admin')->user()?->hasPermission('settings.manage'))
+<div class="card">
+    <div class="card-header"><h2 class="card-title">受付・キッチン端末の認証</h2></div>
+    <div class="card-body">
+        <label for="storeDeviceToken" class="form-label">店舗端末トークン</label>
+        <input id="storeDeviceToken" type="text" class="form-control" readonly autocomplete="off" value="{{ $settings['storeDeviceToken'] ?? '' }}">
+        <p class="form-text">この値を受付・キッチンアプリの設定に入力してください。再発行すると、接続中のすべての端末で再設定が必要です。</p>
+        <form action="{{ admin_route('admin.settings.kitchen-token.regenerate') }}" method="POST">
+            @csrf
+            <button type="submit" class="btn btn-secondary">端末トークンを発行・再発行</button>
+        </form>
+    </div>
+</div>
+@endif
 <form action="{{ admin_route('admin.settings.basic.update') }}" method="POST" id="settingsBasicForm">
     @csrf
     <div class="card">

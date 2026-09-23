@@ -5,6 +5,7 @@ namespace Tests\Unit\Infrastructure\Persistence\Eloquent\Order;
 use App\Infrastructure\Persistence\Eloquent\Order\EloquentProductStockRepository;
 use App\Models\Product;
 use App\Models\Project;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,7 +37,12 @@ class EloquentProductStockRepositoryTest extends TestCase
         ]);
 
         $repository = new EloquentProductStockRepository;
-        $repository->decrease((int) $product->id, (int) $other->id, 3);
+        try {
+            $repository->decrease((int) $product->id, (int) $other->id, 3);
+            $this->fail('A foreign project must be rejected');
+        } catch (ModelNotFoundException $e) {
+            $this->assertSame(10, (int) $product->fresh()->stock);
+        }
 
         $this->assertSame(10, (int) $product->fresh()->stock);
     }

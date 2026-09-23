@@ -155,6 +155,7 @@ final class QueueAPIClient: QueueAPIClientProtocol {
     }
 
     private func applyWaitingSystemHeader(_ request: inout URLRequest) {
+        request.setValue(settingsStore.load().storeToken, forHTTPHeaderField: "X-Store-Token")
         request.setValue("waiting-system", forHTTPHeaderField: "X-Queue-Client")
     }
 

@@ -6,10 +6,13 @@ export class ToastManager {
         toast.className = `toast toast-${type}`;
 
         const icon = this.getIcon(type);
-        toast.innerHTML = `
-            <i class="${icon}"></i>
-            <span>${message}</span>
-        `;
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        const iconElement = document.createElement('i');
+        iconElement.className = icon;
+        iconElement.setAttribute('aria-hidden', 'true');
+        const text = document.createElement('span');
+        text.textContent = message;
+        toast.append(iconElement, text);
 
         document.body.appendChild(toast);
 

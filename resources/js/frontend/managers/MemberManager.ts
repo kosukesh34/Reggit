@@ -2327,7 +2327,7 @@ export class MemberManager {
      * @param {string} memberNumber
      * @param {{ displayValue?: boolean, enlarged?: boolean }} options
      */
-    _drawFittedBarcode(el, memberNumber, options = {}) {
+    _drawFittedBarcode(el, memberNumber, options: { displayValue?: boolean; enlarged?: boolean } = {}) {
         const displayValue = options.displayValue !== false;
         const enlarged = options.enlarged === true;
         const wrap = el.closest(

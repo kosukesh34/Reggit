@@ -40,7 +40,7 @@ class UserService
 
         if ($deviceIdentifier !== null) {
             $device = $this->userDeviceRepository->findLatestByProjectAndIdentifier($projectId, $deviceIdentifier);
-            if ($device !== null) {
+            if ($device !== null && $device->authenticates($request->header('X-Device-Token'))) {
                 $deviceUser = $this->userRepository->findByIdAndProject((int) $device->user_id, $projectId);
                 if ($deviceUser !== null) {
                     if ($lineUserId !== null) {

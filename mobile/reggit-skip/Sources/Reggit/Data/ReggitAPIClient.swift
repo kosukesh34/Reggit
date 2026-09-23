@@ -31,6 +31,7 @@ struct ReggitAPIClient: ReggitAPIServing {
     let projectKey: String
     let deviceIdentifier: String
     private let session: URLSession
+    private var credentialKey: String { "device-token:\(baseURL):\(projectKey):\(deviceIdentifier)" }
 
     init(
         baseURL: String,
@@ -65,7 +66,11 @@ struct ReggitAPIClient: ReggitAPIServing {
         if let appVersion, !appVersion.isEmpty {
             body["app_version"] = String(appVersion.prefix(50))
         }
-        _ = try await requestJSON(path: "/api/devices/register", method: "POST", body: body)
+        let result = try await requestJSON(path: "/api/devices/register", method: "POST", body: body)
+        guard let token = result["device_token"] as? String, !token.isEmpty else {
+            throw ReggitAPIError.invalidResponse
+        }
+        UserDefaults.standard.set(token, forKey: credentialKey)
     }
 
     // MARK: - Member
@@ -306,6 +311,9 @@ struct ReggitAPIClient: ReggitAPIServing {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(projectKey, forHTTPHeaderField: "X-Project-Key")
         request.setValue(deviceIdentifier, forHTTPHeaderField: "X-Device-Identifier")
+        if let token = UserDefaults.standard.string(forKey: credentialKey) {
+            request.setValue(token, forHTTPHeaderField: "X-Device-Token")
+        }
         request.setValue(WebShellHTTP.ngrokSkipBrowserWarning, forHTTPHeaderField: "ngrok-skip-browser-warning")
         request.timeoutInterval = 30
         if let body {
