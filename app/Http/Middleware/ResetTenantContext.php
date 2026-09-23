@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Util\AdminContext;
+use App\Util\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -14,6 +15,7 @@ class ResetTenantContext
     public function handle(Request $request, Closure $next): Response
     {
         $this->clear();
+        app(TenantContext::class)->requireProject(true);
 
         try {
             return $next($request);
@@ -25,6 +27,7 @@ class ResetTenantContext
     private function clear(): void
     {
         AdminContext::setCurrentProject(null);
+        app(TenantContext::class)->requireProject(false);
         View::share('currentProject', null);
         View::share('currentProjectId', null);
         View::share('adminProjectId', null);

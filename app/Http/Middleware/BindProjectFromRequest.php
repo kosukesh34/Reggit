@@ -44,9 +44,11 @@ class BindProjectFromRequest
             }
         }
 
-        $project = null;
+        $project = $isExplicitProjectKey ? null : AdminContext::getCurrentProject();
         if (is_string($projectKey) && $projectKey !== '') {
-            $project = $this->projectRepository->findActiveByProjectKey($projectKey);
+            if ($project === null) {
+                $project = $this->projectRepository->findActiveByProjectKey($projectKey);
+            }
         }
 
         if ($project === null && $isExplicitProjectKey === false) {
