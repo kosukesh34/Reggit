@@ -9,6 +9,7 @@ struct AppSettings: Codable, Equatable {
     var printerName: String?
     var shouldPrintTicket: Bool
     var passcode: String
+    var storeToken: String? = nil
 
     static let `default` = AppSettings(
         baseURL: AppConstants.DefaultSettings.baseURL,

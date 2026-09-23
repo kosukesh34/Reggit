@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useState } from "react";
 import { Crown, Info, Maximize2 } from "lucide-react";
-import { useAppConfig } from "../context/AppConfigContext";
+import { useAppConfig, isDesignShowcaseMode } from "../context/AppConfigContext";
 import { MembershipCard } from "../components/membership/MembershipCard";
 import { MembershipQr } from "../components/membership/MembershipQr";
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
@@ -515,7 +515,7 @@ export function MembershipPage() {
     };
   }, []);
 
-  if (!isDesignerEmbedPreview() && experienceId === "landing-showcase") {
+  if (!isDesignerEmbedPreview() && isDesignShowcaseMode() && experienceId === "landing-showcase") {
     return <LandingShowcaseMembership />;
   }
   if (!isDesignerEmbedPreview() && experienceId === "simple-rewards") {

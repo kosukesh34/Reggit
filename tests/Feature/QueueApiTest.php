@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\QueueStatus;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\QueueEntry;
@@ -227,7 +228,8 @@ class QueueApiTest extends TestCase
             'status' => QueueStatus::WAITING,
         ]);
 
-        $response = $this->post("/api/queue/{$entry->id}/cancel?project_key=default");
+        $entry->update(['qr_token' => 'cancel-owner-token']);
+        $response = $this->post("/api/queue/{$entry->id}/cancel?project_key=default&queue_token={$entry->qr_token}");
 
         $response->assertStatus(200)
             ->assertJsonPath('queue_entry.status', 'cancelled');
@@ -241,6 +243,8 @@ class QueueApiTest extends TestCase
     public function test_call_next_次の呼び出しでcalledになること(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'status' => QueueStatus::WAITING,
@@ -257,6 +261,8 @@ class QueueApiTest extends TestCase
     public function test_list_入店済みは一覧に出ないこと(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $waiting = QueueEntry::factory()->create([
             'project_id' => 1,
             'status' => QueueStatus::WAITING,
@@ -282,6 +288,8 @@ class QueueApiTest extends TestCase
     public function test_recall_呼び出し済みを再呼び出しできること(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'status' => QueueStatus::CALLED,
@@ -302,6 +310,8 @@ class QueueApiTest extends TestCase
     public function test_recall_待機中は422になること(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'status' => QueueStatus::WAITING,
@@ -316,6 +326,8 @@ class QueueApiTest extends TestCase
     public function test_enter_呼び出し済みを入店にできること(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'status' => QueueStatus::CALLED,
@@ -361,7 +373,7 @@ class QueueApiTest extends TestCase
             'project_id' => 1,
             'name' => 'Native User',
         ]);
-        UserDevice::create([
+        $device = UserDevice::create([
             'project_id' => 1,
             'user_id' => $user->id,
             'platform' => 'ios',
@@ -369,6 +381,7 @@ class QueueApiTest extends TestCase
             'push_token' => 'push-token-1',
             'last_used_at' => now(),
         ]);
+        $device->forceFill(['auth_token' => 'test-device-token'])->save();
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'user_id' => null,
@@ -377,6 +390,7 @@ class QueueApiTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
+            'X-Device-Token' => 'test-device-token',
             'X-Device-Identifier' => 'native-device-queue-1',
         ])->get("/api/queue/qr/{$entry->qr_token}?project_key=default");
 
@@ -405,6 +419,7 @@ class QueueApiTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
+            'X-Device-Token' => 'test-device-token',
             'X-Device-Identifier' => 'native-device-new-1',
         ])->get("/api/queue/qr/{$entry->qr_token}?project_key=default");
 
@@ -448,6 +463,8 @@ class QueueApiTest extends TestCase
     public function test_list_ネイティブ連携済みはline_linkedがtrueでlink_channelがappになること(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $user = User::factory()->create([
             'line_user_id' => 'guest-native-list-1',
             'project_id' => 1,
@@ -473,6 +490,8 @@ class QueueApiTest extends TestCase
     public function test_list_lin_e連携済みはlink_channelがlineになること(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $lineUserId = 'Uaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
         $user = User::factory()->create([
             'line_user_id' => $lineUserId,
@@ -499,6 +518,8 @@ class QueueApiTest extends TestCase
     public function test_list_未登録はlink_channelがnoneになること(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'user_id' => null,
@@ -565,7 +586,7 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('error', '別のLINEアカウントで登録済みです');
     }
 
-    public function test_qr_status_queue_idパラメータで指定した待ち合わせを返すこと(): void
+    public function test_qr_status_連番idだけでは他人の受付を取得できないこと(): void
     {
         $this->createProject();
         $lineUserId = 'U88888888888888888888888888888888';
@@ -580,10 +601,9 @@ class QueueApiTest extends TestCase
         $response = $this->withHeaders(['X-Line-User-Id' => $lineUserId])
             ->get("/api/queue/qr/{$entry->id}?project_key=default");
 
-        $response->assertStatus(200)
-            ->assertJsonPath('queue_entry.id', $entry->id);
-        $entry->refresh();
-        $this->assertNotNull($entry->qr_token);
+        $response->assertNotFound();
+        $this->assertNull($entry->fresh()->qr_token);
+        $this->assertNull($entry->fresh()->user_id);
     }
 
     public function test_store_ネイティブ会員はuser_idが紐づきline_linkedがtrueになること(): void
@@ -596,7 +616,7 @@ class QueueApiTest extends TestCase
             'phone' => '09012345678',
         ]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
-        UserDevice::create([
+        $device = UserDevice::create([
             'project_id' => 1,
             'user_id' => $user->id,
             'platform' => 'ios',
@@ -604,8 +624,10 @@ class QueueApiTest extends TestCase
             'push_token' => 'push-token-member-store-1',
             'last_used_at' => now(),
         ]);
+        $device->forceFill(['auth_token' => 'test-device-token'])->save();
 
         $response = $this->withHeaders([
+            'X-Device-Token' => 'test-device-token',
             'X-Device-Identifier' => 'native-device-member-store-1',
         ])->post('/api/queue?project_key=default', ['party_size' => 2]);
 
@@ -628,7 +650,7 @@ class QueueApiTest extends TestCase
             'name' => 'Native Me',
         ]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
-        UserDevice::create([
+        $device = UserDevice::create([
             'project_id' => 1,
             'user_id' => $user->id,
             'platform' => 'ios',
@@ -636,6 +658,7 @@ class QueueApiTest extends TestCase
             'push_token' => 'push-token-member-me-1',
             'last_used_at' => now(),
         ]);
+        $device->forceFill(['auth_token' => 'test-device-token'])->save();
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'user_id' => null,
@@ -645,6 +668,7 @@ class QueueApiTest extends TestCase
         ]);
 
         $response = $this->withHeaders([
+            'X-Device-Token' => 'test-device-token',
             'X-Device-Identifier' => 'native-device-member-me-1',
         ])->get('/api/queue/current?project_key=default');
 
@@ -659,13 +683,15 @@ class QueueApiTest extends TestCase
     public function test_list_memberのみ紐付けでもline_linkedがtrueになること(): void
     {
         $this->createProject();
+        ShopSettingStore::setKitchenAccessToken('test-store-token', 1);
+        $this->withHeader('X-Store-Token', 'test-store-token');
         $user = User::factory()->create([
             'line_user_id' => 'guest-native-member-list-1',
             'project_id' => 1,
             'name' => 'Native List Member',
         ]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
-        UserDevice::create([
+        $device = UserDevice::create([
             'project_id' => 1,
             'user_id' => $user->id,
             'platform' => 'ios',
@@ -673,6 +699,7 @@ class QueueApiTest extends TestCase
             'push_token' => 'push-token-member-list-1',
             'last_used_at' => now(),
         ]);
+        $device->forceFill(['auth_token' => 'test-device-token'])->save();
         $entry = QueueEntry::factory()->create([
             'project_id' => 1,
             'user_id' => null,

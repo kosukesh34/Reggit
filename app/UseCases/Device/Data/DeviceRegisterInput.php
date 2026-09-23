@@ -18,5 +18,6 @@ class DeviceRegisterInput
     public function __construct(
         public readonly User $user,
         public readonly array $payload,
+        public readonly ?string $deviceToken = null,
     ) {}
 }

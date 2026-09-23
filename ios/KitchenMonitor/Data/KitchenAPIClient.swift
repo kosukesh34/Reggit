@@ -47,7 +47,7 @@ final class KitchenAPIClient {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        // WaitingSystem の X-Queue-Client と同様、クライアント識別のみ
+        request.setValue(settings.storeToken, forHTTPHeaderField: "X-Store-Token")
         request.setValue("kitchen-monitor", forHTTPHeaderField: "X-Kitchen-Client")
         return request
     }

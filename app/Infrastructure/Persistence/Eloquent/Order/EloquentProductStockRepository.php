@@ -16,9 +16,14 @@ class EloquentProductStockRepository implements ProductStockRepository
         $product = Product::query()
             ->whereKey($productId)
             ->where('project_id', $projectId)
-            ->first();
-        if ($product === null || $product->stock === null) {
+            ->lockForUpdate()
+            ->firstOrFail();
+        if ($product->stock === null) {
             return;
+        }
+
+        if ((int) $product->stock < $quantity) {
+            throw new \InvalidArgumentException('商品の在庫が不足しています');
         }
 
         $product->stock = (int) $product->stock - $quantity;

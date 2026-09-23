@@ -29,7 +29,7 @@ class StripePaymentGateway implements PaymentGateway
             'metadata' => [
                 'order_id' => $orderId,
             ],
-        ]);
+        ], ['idempotency_key' => 'reggit-order-'.$orderId.'-intent']);
 
         return [
             'client_secret' => $intent->client_secret,
@@ -59,7 +59,7 @@ class StripePaymentGateway implements PaymentGateway
                 'metadata' => ['order_id' => $orderId],
             ],
             'metadata' => ['order_id' => $orderId],
-        ]);
+        ], ['idempotency_key' => 'reggit-order-'.$orderId.'-checkout']);
 
         return [
             'url' => (string) $session->url,

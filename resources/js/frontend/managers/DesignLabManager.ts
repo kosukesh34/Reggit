@@ -171,8 +171,6 @@ export class DesignLabManager {
                 : null;
             if (raw !== null && typeof raw === 'object' && Array.isArray(raw.entitlements)) {
                 this._state = raw;
-            } else if (response !== null && typeof response === 'object' && Array.isArray((response as LotteryState).entitlements)) {
-                this._state = response as LotteryState;
             } else {
                 this._state = {
                     gacha_enabled: false,
@@ -669,7 +667,7 @@ export class DesignLabManager {
             prize = (Number.isInteger(prizeIndex) && prizeIndex >= 0 && prizeIndex < DEMO_COUPON_PRIZES.length)
                 ? { ...DEMO_COUPON_PRIZES[prizeIndex], is_win: true }
                 : { ...DEMO_COUPON_PRIZES[0], is_win: true };
-            saveDemoWonCoupon(prize, 'scratch');
+            saveDemoWonCoupon({ ...prize, image_url: prize.image_url ?? '' }, 'scratch');
         } else if (prizeEl.dataset.resolved === '1') {
             prize = {
                 coupon_name: prizeEl.dataset.prizeName || 'ハズレ',
@@ -978,7 +976,7 @@ export class DesignLabManager {
         const prize = items[landedIndex] ?? items[pickIndex];
         const isWin = prize.is_win === true;
         if (isWin) {
-            saveDemoWonCoupon(prize, 'roulette');
+            saveDemoWonCoupon({ ...prize, image_url: prize.image_url ?? '' }, 'roulette');
         }
         this._showPrizeModal({
             coupon_name: prize.coupon_name,

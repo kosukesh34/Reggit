@@ -15,8 +15,6 @@ use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueQrStatusInput;
 use App\UseCases\Queue\Data\QueueQrStatusOutput;
 use App\Util\LogHelper;
-use App\Util\StrHelper;
-use Illuminate\Support\Str;
 
 class QueueQrStatusUseCase
 {
@@ -35,18 +33,6 @@ class QueueQrStatusUseCase
             ->where('project_id', $input->projectId)
             ->where('qr_token', $input->token)
             ->first();
-        if ($entry === null && ctype_digit($input->token)) {
-            $entry = QueueEntryModel::with('user.devices')
-                ->where('project_id', $input->projectId)
-                ->whereKey((int) $input->token)
-                ->first();
-            if ($entry !== null && StrHelper::isEmptyStringOrNull($entry->qr_token)) {
-                $entry->qr_token = $this->generateQrToken();
-                $entry->save();
-                $entry->refresh();
-                $entry->load('user.devices');
-            }
-        }
         if ($entry === null) {
             return null;
         }
@@ -114,19 +100,6 @@ class QueueQrStatusUseCase
             (int) $entry->id,
             (int) $entry->project_id,
         );
-    }
-
-    private function generateQrToken(): string
-    {
-        $maxAttempts = 5;
-        for ($i = 0; $i < $maxAttempts; $i++) {
-            $token = Str::random(32);
-            if (! QueueEntryModel::where('qr_token', $token)->exists()) {
-                return $token;
-            }
-        }
-
-        return (string) Str::uuid();
     }
 
     private function sendLinkedCompleteMessage(QueueEntryModel $entry, string $lineUserId): void
