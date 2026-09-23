@@ -9,6 +9,8 @@ class TenantContext
 {
     private ?Project $project = null;
 
+    private bool $requiresProject = false;
+
     public function setProject(?Project $project): void
     {
         $this->project = $project;
@@ -22,5 +24,15 @@ class TenantContext
     public function projectId(): ?int
     {
         return $this->project !== null ? (int) $this->project->id : null;
+    }
+
+    public function requireProject(bool $required): void
+    {
+        $this->requiresProject = $required;
+    }
+
+    public function requiresProject(): bool
+    {
+        return $this->requiresProject;
     }
 }
