@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Domain\Member;
 
-use App\Domain\Member\Services\MemberRankMetricCalculator;
 use App\Enums\RankAggregationType;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
@@ -11,6 +10,7 @@ use App\Models\MemberStampTransaction;
 use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\User;
+use App\Services\MemberRankMetricCalculator;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\GrantsMemberPoints;

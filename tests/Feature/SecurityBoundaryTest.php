@@ -13,9 +13,11 @@ use App\Services\UserService;
 use App\UseCases\Payment\OrderPaymentSessionService;
 use App\UseCases\Payment\PaymentCreateIntentUseCase;
 use App\UseCases\Payment\PaymentGateway;
+use App\UseCases\Payment\PaymentSessionInProgressException;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\FakePaymentGateway;
@@ -204,5 +206,83 @@ class SecurityBoundaryTest extends TestCase
         $this->assertStringNotContainsString('secret_once', $order->fresh()->getRawOriginal('payment_session'));
         $this->expectException(\InvalidArgumentException::class);
         $sessions->create($order->id, $this->project->id, $user->id, 'checkout');
+    }
+
+    public function test_payment_gateway_runs_after_the_order_reservation_transaction(): void
+    {
+        $user = User::factory()->create(['project_id' => $this->project->id]);
+        $order = Order::create([
+            'project_id' => $this->project->id, 'user_id' => $user->id,
+            'total_amount' => 1200, 'status' => 'pending',
+            'payment_method' => 'stripe', 'order_type' => 'mobile',
+            'points_used' => 0, 'points_earned' => 0,
+        ]);
+        $transactionLevel = DB::transactionLevel();
+        $gateway = \Mockery::mock(PaymentGateway::class);
+        $gateway->shouldReceive('createPaymentIntent')->once()->andReturnUsing(function () use ($order, $transactionLevel) {
+            $this->assertSame($transactionLevel, DB::transactionLevel());
+            $this->assertNotNull($order->fresh()->payment_session['lease'] ?? null);
+
+            return ['id' => 'pi_reserved', 'client_secret' => 'secret_reserved'];
+        });
+
+        $sessions = new OrderPaymentSessionService($gateway);
+        $this->assertSame('pi_reserved', $sessions->create($order->id, $this->project->id, $user->id, 'intent')['id']);
+        $this->assertSame('pi_reserved', $sessions->create($order->id, $this->project->id, $user->id, 'intent')['id']);
+    }
+
+    public function test_payment_reservation_blocks_concurrent_creation_and_can_be_retried_after_failure(): void
+    {
+        $user = User::factory()->create(['project_id' => $this->project->id]);
+        $order = Order::create([
+            'project_id' => $this->project->id, 'user_id' => $user->id,
+            'total_amount' => 1200, 'status' => 'pending',
+            'payment_method' => 'stripe', 'order_type' => 'mobile',
+            'points_used' => 0, 'points_earned' => 0,
+        ]);
+        $gateway = \Mockery::mock(PaymentGateway::class);
+        $gateway->shouldReceive('createPaymentIntent')->once()->andReturnUsing(function () use ($order, $user) {
+            try {
+                (new OrderPaymentSessionService(\Mockery::mock(PaymentGateway::class)))
+                    ->create($order->id, $this->project->id, $user->id, 'intent');
+                $this->fail('A second gateway call should be blocked');
+            } catch (PaymentSessionInProgressException) {
+                // The first reservation is still active.
+            }
+
+            throw new \RuntimeException('gateway unavailable');
+        });
+        $sessions = new OrderPaymentSessionService($gateway);
+        try {
+            $sessions->create($order->id, $this->project->id, $user->id, 'intent');
+            $this->fail('The gateway error should propagate');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('gateway unavailable', $e->getMessage());
+        }
+        $this->assertNull($order->fresh()->payment_session);
+    }
+
+    public function test_expired_payment_reservation_can_be_recovered(): void
+    {
+        $user = User::factory()->create(['project_id' => $this->project->id]);
+        $order = Order::create([
+            'project_id' => $this->project->id, 'user_id' => $user->id,
+            'total_amount' => 1200, 'status' => 'pending',
+            'payment_method' => 'stripe', 'order_type' => 'mobile',
+            'points_used' => 0, 'points_earned' => 0,
+            'payment_session' => [
+                'channel' => 'intent', 'lease' => 'expired',
+                'expires_at' => now()->subMinute()->toIso8601String(),
+            ],
+        ]);
+        $gateway = \Mockery::mock(PaymentGateway::class);
+        $gateway->shouldReceive('createPaymentIntent')->once()
+            ->andReturn(['id' => 'pi_recovered', 'client_secret' => 'secret_recovered']);
+
+        $result = (new OrderPaymentSessionService($gateway))
+            ->create($order->id, $this->project->id, $user->id, 'intent');
+
+        $this->assertSame('pi_recovered', $result['id']);
+        $this->assertSame($result, $order->fresh()->payment_session['result']);
     }
 }

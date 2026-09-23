@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Repositories\Contracts\UserDeviceRepository;
 use App\Repositories\Contracts\UserRepository;
 use App\Services\Line\LineIdTokenVerifier;
+use App\Support\LineIdentityPolicy;
 use App\Support\MemberChannel;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -207,7 +208,7 @@ class UserService
     private function resolveVerifiedLineUserId(Request $request): ?string
     {
         $headerLineUserId = $this->normalizeLineUserId($request->header('X-Line-User-Id'));
-        if (config('line.verify_liff_id_token') !== true) {
+        if (! LineIdentityPolicy::requiresVerifiedToken()) {
             return $headerLineUserId;
         }
 
