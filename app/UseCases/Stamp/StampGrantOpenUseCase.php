@@ -3,6 +3,7 @@
 namespace App\UseCases\Stamp;
 
 use App\Models\Project;
+use App\Models\Scopes\ProjectScope;
 use App\Models\StampGrantCode;
 use App\Support\LiffTabUrlBuilder;
 use App\UseCases\Stamp\Data\StampGrantOpenOutput;
@@ -11,7 +12,7 @@ class StampGrantOpenUseCase
 {
     public function handle(string $token): StampGrantOpenOutput
     {
-        $code = StampGrantCode::query()->where('token', $token)->first();
+        $code = StampGrantCode::withoutGlobalScope(ProjectScope::class)->where('token', $token)->first();
         if ($code === null) {
             return new StampGrantOpenOutput(false, 404, '付与QRが見つかりません', null);
         }
