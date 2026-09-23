@@ -13,9 +13,9 @@ class LotteryGrantTrigger extends EnumBase
     public const MIN_AMOUNT = 'min_amount';
 
     protected static array $values = [
-        self::EVERY_PURCHASE => '会計・注文のたびに1回',
-        self::ONCE_PER_DAY => '1日1回まで',
-        self::MIN_AMOUNT => '最低金額以上の取引のみ',
+        self::EVERY_PURCHASE => '購入金額に関係なく、購入ごとに付与',
+        self::ONCE_PER_DAY => '購入したお客様へ1日1回まで付与',
+        self::MIN_AMOUNT => '設定金額以上を購入した場合に付与',
     ];
 
     /** @return list<string> */

@@ -3,6 +3,8 @@ import SwiftUI
 
 struct NativeRootView: View {
     @State var viewModel: NativeRootViewModel
+    @State var showHamburgerMenu = false
+    @State var isHeaderShown = false
 
     init(viewModel: NativeRootViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -74,82 +76,127 @@ struct NativeRootView: View {
     @ViewBuilder
     private var mainChrome: some View {
         if let client = viewModel.apiClient {
-            VStack(spacing: 0) {
-                NativeSharedHeader(
-                    projectName: viewModel.projectName,
-                    imageURL: viewModel.navigationHeaderImageURL,
-                    backgroundColorHex: viewModel.navigationHeaderBackgroundColorHex,
-                    baseURL: client.baseURL
-                )
-                TabView(selection: Binding(
-                    get: { overflowTabs.contains(where: { $0.key == viewModel.selectedTab }) ? "more" : viewModel.selectedTab },
-                    set: { viewModel.selectedTab = $0 }
-                )) {
-                    ForEach(primaryTabs) { tab in
-                        tabRoot(tab, client: client)
-                            .tabItem {
-                                Label(tab.label, systemImage: TabIconResolver.systemName(for: tab))
-                            }
-                            .tag(tab.key)
+            ZStack(alignment: .leading) {
+                VStack(spacing: 0) {
+                    NativeSharedHeader(
+                        projectName: viewModel.projectName,
+                        imageURL: viewModel.navigationHeaderImageURL,
+                        backgroundColorHex: viewModel.navigationHeaderBackgroundColorHex,
+                        baseURL: client.baseURL,
+                        items: viewModel.headerItems,
+                        showsHamburger: !viewModel.hamburgerItems.isEmpty,
+                        onSelect: { viewModel.selectedTab = $0 },
+                        onOpenHamburger: {
+                            withAnimation(.easeOut(duration: 0.24)) { showHamburgerMenu = true }
+                        }
+                    )
+                    .offset(y: isHeaderShown ? 0 : -PlatformRuntime.navigationHeaderHeight)
+                    .onAppear {
+                        guard !isHeaderShown else { return }
+                        withAnimation(.easeOut(duration: 0.28)) { isHeaderShown = true }
                     }
-                    if !overflowTabs.isEmpty {
-                        moreContent(client: client)
-                            .tabItem { Label("メニュー", systemImage: "square.grid.2x2") }
-                            .tag("more")
+                    ZStack {
+                        AppDesign.canvas.ignoresSafeArea()
+                        if let selectedTab = viewModel.tabs.first(where: { $0.key == viewModel.selectedTab }) {
+                            tabRoot(selectedTab, client: client)
+                                .id(selectedTab.key)
+                                .transition(.identity)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .animation(nil, value: viewModel.selectedTab)
+                    if !viewModel.footerItems.isEmpty {
+                        NativeTabBar(
+                            items: viewModel.footerItems,
+                            selectedTab: Binding(
+                                get: { viewModel.selectedTab },
+                                set: { viewModel.selectedTab = $0 }
+                            )
+                        )
+                        .transaction { $0.animation = nil }
                     }
                 }
-                .tint(accent)
-                .background(AppDesign.canvas.ignoresSafeArea())
+
+                if showHamburgerMenu {
+                    Color.black.opacity(0.35)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeOut(duration: 0.22)) { showHamburgerMenu = false }
+                        }
+                        .transition(.opacity)
+                    hamburgerDrawer
+                        .transition(.move(edge: .leading))
+                        .zIndex(2)
+                }
             }
+            .animation(.easeOut(duration: 0.24), value: showHamburgerMenu)
         } else {
             splash
         }
     }
 
-    private var primaryTabs: [AppTabItem] {
-        if viewModel.tabs.count <= 5 { return viewModel.tabs }
-        // Preserve store ordering, keeping membership accessible even in a large feature set.
-        var result = Array(viewModel.tabs.prefix(4))
-        if let member = viewModel.tabs.first(where: { $0.key == "member" }), !result.contains(where: { $0.key == "member" }) {
-            result[3] = member
-        }
-        return result
-    }
+    private var hamburgerDrawer: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("メニュー")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(AppDesign.ink)
+                Spacer()
+                Button {
+                    withAnimation(.easeOut(duration: 0.22)) { showHamburgerMenu = false }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .frame(width: 36, height: 36)
+                        .foregroundStyle(AppDesign.inkSecondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("閉じる"))
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
 
-    private var overflowTabs: [AppTabItem] {
-        viewModel.tabs.filter { tab in !primaryTabs.contains(where: { $0.key == tab.key }) }
-    }
-
-    @ViewBuilder
-    private func moreContent(client: any ReggitAPIServing) -> some View {
-        if let selected = overflowTabs.first(where: { $0.key == viewModel.selectedTab }) {
-            VStack(spacing: 0) {
-                HStack {
-                    Button { viewModel.selectedTab = "more" } label: {
-                        Label("すべてのメニュー", systemImage: "chevron.left")
-                            .font(.subheadline.weight(.semibold)).frame(minHeight: 44)
+            ScrollView {
+                VStack(spacing: 8) {
+                    ForEach(viewModel.hamburgerItems) { item in
+                        Button {
+                            viewModel.selectedTab = item.key
+                            withAnimation(.easeOut(duration: 0.22)) { showHamburgerMenu = false }
+                        } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: TabIconResolver.systemName(for: item))
+                                    .frame(width: 28)
+                                    .foregroundStyle(accent)
+                                Text(item.label)
+                                    .font(.body.weight(.semibold))
+                                    .foregroundStyle(AppDesign.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(AppDesign.inkSecondary)
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 54)
+                            .background(AppDesign.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    Spacer()
                 }
-                .padding(.horizontal, 20)
-                .background(AppDesign.canvas)
-                tabRoot(selected, client: client)
-            }
-        } else {
-            NavigationStack {
-                ScrollView {
-                    QuickActionGrid(tabs: overflowTabs, onSelect: { viewModel.selectedTab = $0 })
-                        .padding(20)
-                }
-                .background(AppDesign.canvas)
-                .navigationTitle("メニュー")
+                .padding(16)
             }
         }
+        .frame(maxWidth: 300, maxHeight: .infinity, alignment: .top)
+        .background(AppDesign.canvas.ignoresSafeArea())
+        .shadow(color: Color.black.opacity(0.18), radius: 16, x: 6, y: 0)
     }
 
     @ViewBuilder
     private func tabRoot(_ tab: AppTabItem, client: any ReggitAPIServing) -> some View {
-        switch tab.key {
+        if let url = tab.url {
+            LegalWebView(title: tab.label, urlString: url, baseURL: client.baseURL)
+        } else { switch tab.key {
         case "home":
             HomeView(
                 apiClient: client,
@@ -161,6 +208,7 @@ struct NativeRootView: View {
         case "products":
             ProductsView(
                 apiClient: client,
+                displayLayout: viewModel.productDisplayLayout,
                 paymentReturnOrderID: viewModel.paymentReturnOrderID,
                 paymentReturnRevision: viewModel.paymentReturnRevision
             )
@@ -170,6 +218,8 @@ struct NativeRootView: View {
             CouponsView(apiClient: client)
         case "stamps":
             StampsView(apiClient: client)
+        case "designlab":
+            LotteryView(apiClient: client)
         case "queue":
             QueueView(
                 apiClient: client,
@@ -193,7 +243,7 @@ struct NativeRootView: View {
                 showCouponActivity: viewModel.memberShowCouponActivity,
                 onMembershipUpdated: { viewModel.applyMembership($0) }
             )
-        }
+        } }
     }
 }
 
@@ -202,10 +252,15 @@ struct NativeSharedHeader: View {
     let imageURL: String?
     let backgroundColorHex: String
     let baseURL: String
+    let items: [AppTabItem]
+    let showsHamburger: Bool
+    let onSelect: (String) -> Void
+    let onOpenHamburger: () -> Void
 
     var body: some View {
+        let headerColor = backgroundColorHex.toNativeColor(fallback: .white)
         ZStack {
-            backgroundColorHex.toNativeColor()
+            headerColor
             if imageURL != nil {
                 RemoteImageView(
                     urlString: imageURL,
@@ -222,9 +277,33 @@ struct NativeSharedHeader: View {
                     .foregroundStyle(BrandPalette(hex: backgroundColorHex).usesDarkForeground ? Color.black : Color.white)
                     .lineLimit(1)
             }
+            HStack(spacing: 4) {
+                if showsHamburger {
+                    Button(action: onOpenHamburger) {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 20, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("メニューを開く"))
+                }
+                Spacer()
+                ForEach(items) { item in
+                    Button { onSelect(item.key) } label: {
+                        Image(systemName: TabIconResolver.systemName(for: item))
+                            .font(.system(size: 18, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(item.label))
+                }
+            }
+            .padding(.horizontal, 8)
+            .foregroundStyle(BrandPalette(hex: backgroundColorHex).usesDarkForeground ? Color.black : Color.white)
         }
         .frame(maxWidth: .infinity)
         .frame(height: PlatformRuntime.navigationHeaderHeight, alignment: .center)
+        .background(headerColor.ignoresSafeArea(edges: .top))
         .overlay(alignment: .bottom) {
             Rectangle().fill(AppDesign.hairline).frame(height: 0.5)
         }

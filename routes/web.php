@@ -49,6 +49,7 @@ use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\Landing\LandingRegistrationEmailController;
 use App\Http\Controllers\Landing\LandingRegistrationFormController;
 use App\Http\Controllers\Landing\LandingRegistrationVerifyController;
+use App\Http\Controllers\LegalDocumentController;
 use App\Http\Controllers\LiffController;
 use App\Http\Controllers\Onboarding\OnboardingPageController;
 use App\Http\Controllers\Payment\PaymentReturnController;
@@ -84,6 +85,9 @@ Route::get('/lp/register/{registration}/form', [LandingRegistrationFormControlle
 Route::post('/lp/register/{registration}/form', [LandingRegistrationFormController::class, 'store'])
     ->middleware('signed')
     ->name('landing.register.form.submit');
+
+Route::get('/legal/{project_key}/terms', [LegalDocumentController::class, 'terms'])->name('legal.terms');
+Route::get('/legal/{project_key}/privacy', [LegalDocumentController::class, 'privacy'])->name('legal.privacy');
 
 Route::get('/api', function () {
     return response()->json(['message' => 'Reggit API']);

@@ -126,6 +126,40 @@ class LotteryEntitlementPlayTest extends TestCase
         $this->assertSame(0, MemberLotteryEntitlement::query()->where('member_id', $member->id)->count());
     }
 
+    public function test_min_amount達成時は有効な各ゲームの権利を付与すること(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        ProjectLotterySetting::query()->updateOrCreate(
+            ['project_id' => $project->id],
+            [
+                'gacha_enabled' => true,
+                'scratch_enabled' => true,
+                'roulette_enabled' => true,
+                'grant_trigger' => LotteryGrantTrigger::MIN_AMOUNT,
+                'min_amount' => 3000,
+            ]
+        );
+
+        $service = resolve(LotteryEntitlementService::class);
+        $service->grantForPurchase($member, 2999, LotterySourceType::ORDER, 'below-threshold');
+        $service->grantForPurchase($member, 3000, LotterySourceType::ORDER, 'at-threshold');
+
+        $this->assertSame(3, MemberLotteryEntitlement::query()
+            ->where('member_id', $member->id)
+            ->where('source_id', 'at-threshold')
+            ->count());
+        foreach (LotteryRewardType::keys() as $rewardType) {
+            $this->assertDatabaseHas('member_lottery_entitlements', [
+                'member_id' => $member->id,
+                'source_id' => 'at-threshold',
+                'reward_type' => $rewardType,
+                'is_done' => false,
+            ]);
+        }
+    }
+
     public function test_play_でクーポン発行とis_doneになること(): void
     {
         $project = $this->createProject();

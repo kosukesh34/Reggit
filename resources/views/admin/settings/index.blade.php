@@ -47,7 +47,7 @@
                 $can('reservations.view') ? ['href' => admin_route('admin.settings.reservations'), 'icon' => 'fas fa-calendar-check', 'label' => '予約設定', 'desc' => '時間帯・休業日・予約枠'] : null,
                 $can('queue.view') ? ['href' => admin_route('admin.settings.queue'), 'icon' => 'fas fa-list-ol', 'label' => '順番待ち設定', 'desc' => '待ち時間の目安'] : null,
                 $can('coupons.view') ? ['href' => admin_route('admin.settings.coupons'), 'icon' => 'fas fa-ticket-alt', 'label' => 'クーポン設定', 'desc' => 'クーポン機能とデフォルト画像'] : null,
-                ($can('coupons.view') && $hasPlan(\App\Support\PlanFeatures::LOTTERY)) ? ['href' => admin_route('admin.settings.lottery'), 'icon' => 'fas fa-dice', 'label' => 'ガチャ・スクラッチ', 'desc' => '権利の付与と景品確率'] : null,
+                ($can('coupons.view') && $hasPlan(\App\Support\PlanFeatures::LOTTERY)) ? ['href' => admin_route('admin.settings.lottery'), 'icon' => 'fas fa-dice', 'label' => '購入特典ゲーム', 'desc' => '利用条件と景品確率'] : null,
                 $can('announcements.view') ? ['href' => admin_route('admin.settings.announcements'), 'icon' => 'fas fa-bullhorn', 'label' => 'お知らせの設定', 'desc' => 'お知らせ機能のON/OFF'] : null,
                 $can('gallery.view') ? ['href' => admin_route('admin.settings.gallery'), 'icon' => 'fas fa-images', 'label' => 'ギャラリー設定', 'desc' => 'ギャラリー機能のON/OFF'] : null,
             ],

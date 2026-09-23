@@ -28,6 +28,7 @@ class AppConfigApiTest extends TestCase
             'project_key',
             'project_name',
             'tabs',
+            'navigation' => ['header', 'footer', 'hamburger'],
             'feature_flags',
             'theme',
             'header',
@@ -114,9 +115,15 @@ class AppConfigApiTest extends TestCase
             $project->id,
         );
         ShopSettingStore::setValue('home_menu_layout', 'grid_2_columns', 'string', $project->id);
+        ShopSettingStore::setValue('product_display_layout', 'grid_2_columns', 'string', $project->id);
         ShopSettingStore::setValue('navigation_header_background_color', '#F6F1E8', 'string', $project->id);
         ShopSettingStore::setValue('home_image_url', 'https://example.com/home.webp', 'string', $project->id);
         ShopSettingStore::setValue('member_show_point_history', false, 'boolean', $project->id);
+        ShopSettingStore::setValue('native_navigation_items', [
+            'header' => ['member'],
+            'footer' => ['home', 'products'],
+            'hamburger' => ['orders', 'terms', 'privacy'],
+        ], 'json', $project->id);
 
         $this->getJson('/api/v1/app-config?project_key=default')
             ->assertOk()
@@ -124,6 +131,26 @@ class AppConfigApiTest extends TestCase
             ->assertJsonPath('header.background_color', '#F6F1E8')
             ->assertJsonPath('home.image_url', 'https://example.com/home.webp')
             ->assertJsonPath('home.menu_layout', 'grid_2_columns')
+            ->assertJsonPath('products.display_layout', 'grid_2_columns')
+            ->assertJsonPath('navigation.header.0.key', 'member')
+            ->assertJsonPath('navigation.footer.1.key', 'products')
+            ->assertJsonPath('navigation.hamburger.1.key', 'terms')
+            ->assertJsonPath('navigation.hamburger.2.key', 'privacy')
+            ->assertJsonPath('navigation.hamburger.1.url', route('legal.terms', ['project_key' => 'default']))
+            ->assertJsonPath('navigation.hamburger.2.url', route('legal.privacy', ['project_key' => 'default']))
             ->assertJsonPath('member_screen.show_point_history', false);
+    }
+
+    public function test_app_config_抽選機能が有効な場合にあそびメニューを返すこと(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        ShopSettingStore::setValue('feature_gacha_enabled', true, 'boolean', $project->id);
+
+        $response = $this->getJson('/api/v1/app-config?project_key=default')->assertOk();
+
+        $this->assertContains('designlab', collect($response->json('tabs'))->pluck('key')->all());
     }
 }
