@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Services\UserService;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\UseCases\Payment\PaymentCreateIntentUseCase;
+use App\UseCases\Payment\PaymentSessionInProgressException;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
@@ -43,6 +44,8 @@ class PaymentController extends BaseApiController
             );
 
             return $this->success($dto->toArray());
+        } catch (PaymentSessionInProgressException $e) {
+            return $this->error($e->getMessage(), 409);
         } catch (InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {

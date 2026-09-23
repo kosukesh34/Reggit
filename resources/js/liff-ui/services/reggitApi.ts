@@ -15,9 +15,10 @@ import type {
 } from '../types/runtime';
 import type { CouponItem, MemberProfile, NewsItem, StoreSummary } from '../types/app';
 
+const apiClient = new ApiClient();
+
 function client(): ApiClient {
-  const app = window.app as { apiClient?: ApiClient } | undefined;
-  return app?.apiClient ?? new ApiClient();
+  return apiClient;
 }
 
 async function ensureIdentity(): Promise<void> {

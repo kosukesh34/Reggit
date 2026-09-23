@@ -19,7 +19,7 @@ class QueueRequestContext
         if ($userLineUserId !== null && trim($userLineUserId) !== '') {
             return trim($userLineUserId);
         }
-        if (config('line.verify_liff_id_token') === true) {
+        if (LineIdentityPolicy::requiresVerifiedToken()) {
             return '';
         }
 
