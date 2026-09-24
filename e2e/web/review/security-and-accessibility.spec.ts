@@ -82,8 +82,12 @@ for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     const response = await page.goto('/liff#/home');
     expect(response?.status()).toBe(200);
-    await page.getByRole('button', { name: '会員証を見る' }).click();
-    await page.getByRole('button', { name: 'マイページを見る' }).click();
+    const loginPrompt = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'ログイン' }) });
+    await loginPrompt.getByRole('button', { name: 'あとで' }).click();
+    await expect(loginPrompt).toBeHidden();
+    const navigation = page.getByRole('navigation', { name: '主要ナビゲーション' });
+    await expect(navigation).toBeVisible();
+    await navigation.getByRole('link', { name: 'その他' }).click();
     await expect(page).toHaveURL(/#\/more$/);
     await expect(page.getByRole('heading', { name: 'すべてのサービス', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'ポイント', exact: true })).toBeVisible();
