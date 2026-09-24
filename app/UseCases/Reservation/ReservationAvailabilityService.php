@@ -5,6 +5,7 @@ namespace App\UseCases\Reservation;
 use App\Domain\Reservation\Policies\ReservationSlotPolicy;
 use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Models\ReservationCourse;
 use App\UseCases\Reservation\Data\ReservationAvailability;
 use App\Util\AdminContext;
 use Carbon\Carbon;
@@ -52,7 +53,9 @@ class ReservationAvailabilityService
         return new ReservationAvailability(
             $availableDates,
             $startDate->format(ReservationSlotPolicy::DATE_FORMAT),
-            $endDate->format(ReservationSlotPolicy::DATE_FORMAT)
+            $endDate->format(ReservationSlotPolicy::DATE_FORMAT),
+            ReservationCourse::where('project_id', $projectId)->where('is_active', true)
+                ->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'price', 'description'])->toArray(),
         );
     }
 
