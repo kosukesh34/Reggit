@@ -401,6 +401,7 @@ struct QtyStepper: View {
     let quantity: Int
     let onMinus: () -> Void
     let onPlus: () -> Void
+    var canIncrease = true
     var expandsToFill = false
     @Environment(\.brandAccent) var accent
     @Environment(\.brandForeground) var onAccent
@@ -429,6 +430,7 @@ struct QtyStepper: View {
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .disabled(!canIncrease)
                 .accessibilityLabel("\(itemName)の数量を増やす")
             } else {
                 Button(action: onPlus) {
@@ -441,6 +443,7 @@ struct QtyStepper: View {
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .disabled(!canIncrease)
                 .accessibilityLabel("\(itemName)を追加")
             }
         }
