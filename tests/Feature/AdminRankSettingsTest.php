@@ -45,13 +45,9 @@ class AdminRankSettingsTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.ranks', ['project_key' => $project->project_key]))
             ->assertOk()
-            ->assertSee('ranks-design-picker', false)
             ->assertSee('name="member_card_design"', false)
             ->assertSee('value="compact"', false)
-            ->assertSee('デジタルパス', false)
-            ->assertSee('liff-membership-preview', false)
-            ->assertSee('MEMBER STATUS', false)
-            ->assertSee('会員情報', false);
+            ->assertSee('デジタルパス', false);
     }
 
     public function test_会員証画面の表示項目を会員証設定で変更できること(): void

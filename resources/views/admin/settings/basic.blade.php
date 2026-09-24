@@ -21,9 +21,6 @@
     <h1 class="page-header-title"><i class="fas fa-sliders-h"></i> 基本設定</h1>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
-@endif
 
 @if(auth('admin')->user()?->hasPermission('settings.manage'))
 <div class="card">
@@ -77,39 +74,11 @@
                 </label>
                 <small class="form-text">キッチン／管理画面で「受取可」に更新したとき、顧客の LINE に通知します。</small>
             </div>
-            <div class="quick-menu-section" style="margin-top:12px;">
-                <h3 class="quick-menu-title"><i class="fas fa-compass"></i> 機能別の設定へ</h3>
-                <p class="quick-menu-desc">重複を避けるため、各機能の詳細設定は専用画面に分けています。</p>
-                <div class="quick-menu-grid">
-                    <a href="{{ admin_route('admin.settings.reservations') }}" class="quick-menu-item">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>予約設定</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.queue') }}" class="quick-menu-item">
-                        <i class="fas fa-list-ol"></i>
-                        <span>順番待ち設定</span>
-                    </a>
-                    <a href="{{ admin_route('admin.settings.home') }}" class="quick-menu-item">
-                        <i class="fas fa-home"></i>
-                        <span>ホーム設定</span>
-                    </a>
-                </div>
-            </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-                <a href="{{ admin_route('admin.settings.advanced') }}" class="btn btn-secondary">詳細設定（配色）へ</a>
             </div>
         </div>
     </div>
 </form>
 
-<div class="card" style="margin-top:24px;">
-    <div class="card-header">
-        <h2 class="card-title"><i class="fas fa-toggle-on"></i> 利用機能</h2>
-    </div>
-    <div class="card-body">
-        <p class="form-text" style="margin-bottom:12px;">LINE アプリで利用できる機能の ON / OFF は機能設定でまとめて変更できます。</p>
-        <a href="{{ admin_route('admin.settings.features') }}" class="btn btn-primary"><i class="fas fa-sliders-h"></i> 機能・カスタマイズ設定へ</a>
-    </div>
-</div>
 @endsection

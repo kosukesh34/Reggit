@@ -28,7 +28,7 @@ class AdminBasicSettingsFeatureFlagsConsolidationTest extends TestCase
         ]);
     }
 
-    public function test_basic_settings_に機能フラグフォームがなく機能設定へ誘導すること(): void
+    public function test_basic_settings_に機能フラグフォームがないこと(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
@@ -36,9 +36,7 @@ class AdminBasicSettingsFeatureFlagsConsolidationTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.basic', ['project_key' => $project->project_key]))
             ->assertStatus(200)
-            ->assertDontSee('name="feature_flags[', false)
-            ->assertSee('機能・カスタマイズ設定へ')
-            ->assertSee(route('admin.settings.features', ['project_key' => $project->project_key], false));
+            ->assertDontSee('name="feature_flags[', false);
     }
 
     public function test_feature_flags_update_ルートが存在しないこと(): void

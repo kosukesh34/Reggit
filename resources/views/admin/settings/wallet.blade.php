@@ -11,7 +11,6 @@
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-wallet"></i> Wallet 画像設定</h1>
 </div>
-@if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> 入力内容を確認してください。</div>@endif
 
 <form action="{{ admin_route('admin.settings.wallet.update') }}" method="POST" enctype="multipart/form-data">
@@ -79,7 +78,6 @@
 
     <div class="form-actions">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-        <a href="{{ admin_route('admin.settings.index') }}" class="btn btn-secondary">設定に戻る</a>
     </div>
 </form>
 @endsection
