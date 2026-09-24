@@ -9,7 +9,8 @@
     $adminUser = auth('admin')->user();
     $canManage = $adminUser === null || $adminUser->hasPermission('members.manage');
     $user = $view->member->user;
-    $memberName = $user?->name ?? $view->member->member_number;
+    $hasName = trim((string) ($user?->name ?? '')) !== '';
+    $memberName = $hasName ? $user->name : $view->member->member_number;
     $lineName = trim((string) ($user?->line_name ?? ''));
     $kana = trim((string) ($user?->kana ?? ''));
     $phone = trim((string) ($user?->phone ?? ''));
@@ -60,109 +61,95 @@
 </nav>
 
 <section class="member-identity" aria-labelledby="member-identity-name">
-    <img class="member-avatar" src="{{ $profileImageUrl }}" alt="{{ $memberName }}のプロフィール画像">
-    <div class="member-identity-main">
-        <div class="member-identity-top">
-            <div>
-                <h1 class="member-identity-name" id="member-identity-name">{{ $memberName }}</h1>
-                @if($kana !== '')
-                <p class="member-identity-kana">{{ $kana }}</p>
-                @endif
-                <div class="member-identity-meta">
-                    <span class="member-identity-registered">登録 {{ $view->member->created_at->format('Y/m/d') }}</span>
-                    <span class="member-number-label">会員番号</span><code class="member-number">{{ $view->member->member_number }}</code>
-                    <span class="member-rank-chip" data-rank="{{ $view->member->rank ?? '' }}">{{ $rankLabel }}</span>
-                    <span class="badge badge-{{ $isActive ? 'success' : 'danger' }}">{{ $statusLabel }}</span>
-                    @if($lineName !== '')
-                    <span class="member-chip member-chip--line"><i class="fab fa-line" aria-hidden="true"></i>LINE名{{ $lineName !== $memberName ? ' '.$lineName : '' }}</span>
+    <div class="member-identity-head">
+        <img class="member-avatar" src="{{ $profileImageUrl }}" alt="{{ $memberName }}のプロフィール画像">
+        <div class="member-identity-main">
+            <div class="member-identity-top">
+                <div>
+                    <h1 class="member-identity-name{{ $hasName ? '' : ' member-identity-name--empty' }}" id="member-identity-name">{{ $hasName ? $memberName : '氏名未登録' }}</h1>
+                    @if($kana !== '')
+                    <p class="member-identity-kana">{{ $kana }}</p>
                     @endif
-                    @if($channelLabel !== '—')
-                    <span class="member-chip">{{ $channelLabel }}</span>
-                    @endif
+                    <div class="member-identity-meta">
+                        <span class="member-identity-registered">登録 {{ $view->member->created_at->format('Y/m/d') }}</span>
+                        <span class="member-number-label">会員番号</span><code class="member-number">{{ $view->member->member_number }}</code>
+                        <span class="member-rank-chip" data-rank="{{ $view->member->rank ?? '' }}">{{ $rankLabel }}</span>
+                        <span class="badge badge-{{ $isActive ? 'success' : 'danger' }}">{{ $statusLabel }}</span>
+                        @if($lineName !== '')
+                        <span class="member-chip member-chip--line"><i class="fab fa-line" aria-hidden="true"></i>LINE名{{ $lineName !== $memberName ? ' '.$lineName : '' }}</span>
+                        @endif
+                        @if($channelLabel !== '—')
+                        <span class="member-chip">{{ $channelLabel }}</span>
+                        @endif
+                    </div>
                 </div>
+                @if($canManage)
+                <div class="member-identity-actions">
+                    <a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit" aria-hidden="true"></i> 会員情報を編集
+                    </a>
+                </div>
+                @endif
             </div>
-            @if($canManage)
-            <div class="member-identity-actions">
-                <a href="{{ admin_route('admin.members.edit', ['id' => $view->member->id]) }}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-edit" aria-hidden="true"></i> 会員情報を編集
-                </a>
-
-            </div>
+            @if($phone !== '' || $email !== '')
+            <p class="member-identity-contact">
+                @if($phone !== '')
+                <a href="tel:{{ $phone }}"><i class="fas fa-phone" aria-hidden="true"></i>{{ $phone }}</a>
+                @endif
+                @if($email !== '')
+                <a href="mailto:{{ $email }}"><i class="fas fa-envelope" aria-hidden="true"></i>{{ $email }}</a>
+                @endif
+            </p>
             @endif
         </div>
-        @if($phone !== '' || $email !== '')
-        <p class="member-identity-contact">
-            @if($phone !== '')
-            <a href="tel:{{ $phone }}"><i class="fas fa-phone" aria-hidden="true"></i>{{ $phone }}</a>
+    </div>
+    <div class="member-identity-stats">
+        <div class="member-identity-stat member-identity-stat--primary">
+            <div class="member-identity-stat-label">保有ポイント</div>
+            <div class="member-identity-stat-value">{{ number_format($view->member->points) }}<span>pt</span></div>
+            @if($pointsExpiring > 0)
+            <div class="member-identity-stat-sub">{{ $pointsExpiryLabel }}に {{ number_format($pointsExpiring) }}pt 期限切れ</div>
             @endif
-            @if($email !== '')
-            <a href="mailto:{{ $email }}"><i class="fas fa-envelope" aria-hidden="true"></i>{{ $email }}</a>
-            @endif
-        </p>
+        </div>
+        <div class="member-identity-stat">
+            <div class="member-identity-stat-label">来店回数</div>
+            <div class="member-identity-stat-value">{{ number_format((int) ($view->member->visits_count ?? 0)) }}<span>回</span></div>
+            <div class="member-identity-stat-sub">
+                {{ $view->member->last_visited_at ? '最終 '.$view->member->last_visited_at->format('Y/m/d H:i') : '来店なし' }}
+            </div>
+        </div>
+        @if($firstStamp !== null)
+        <div class="member-identity-stat">
+            <div class="member-identity-stat-label">スタンプ</div>
+            <div class="member-identity-stat-value">{{ $firstStamp->current_stamps }}<span> / {{ $firstStamp->stampCard?->required_stamps ?? 0 }}</span></div>
+            <div class="member-identity-stat-sub">{{ $firstStamp->stampCard?->name ?? 'スタンプカード' }}{{ $firstStamp->completed_at ? '（達成済み）' : '' }}</div>
+        </div>
         @endif
-        <div class="member-identity-stats">
-            <div class="member-identity-stat">
-                <div class="member-identity-stat-label">保有ポイント</div>
-                <div class="member-identity-stat-value">{{ number_format($view->member->points) }}<span>pt</span></div>
-                @if($pointsExpiring > 0)
-                <div class="member-identity-stat-sub">{{ $pointsExpiryLabel }}に {{ number_format($pointsExpiring) }}pt 期限切れ</div>
-                @endif
-            </div>
-            <div class="member-identity-stat">
-                <div class="member-identity-stat-label">来店回数</div>
-                <div class="member-identity-stat-value">{{ number_format((int) ($view->member->visits_count ?? 0)) }}<span>回</span></div>
-                <div class="member-identity-stat-sub">
-                    {{ $view->member->last_visited_at ? '最終 '.$view->member->last_visited_at->format('Y/m/d H:i') : '来店なし' }}
-                </div>
-            </div>
-            @if($firstStamp !== null)
-            <div class="member-identity-stat">
-                <div class="member-identity-stat-label">スタンプ</div>
-                <div class="member-identity-stat-value">{{ $firstStamp->current_stamps }}<span> / {{ $firstStamp->stampCard?->required_stamps ?? 0 }}</span></div>
-                <div class="member-identity-stat-sub">{{ $firstStamp->stampCard?->name ?? 'スタンプカード' }}{{ $firstStamp->completed_at ? '（達成済み）' : '' }}</div>
-            </div>
+    </div>
+    <div class="member-identity-stats">
+        <div class="member-identity-stat">
+            <div class="member-identity-stat-label">累計購買額（LTV）</div>
+            <div class="member-identity-stat-value">¥{{ number_format($view->purchaseSummary['total_revenue'] ?? 0) }}</div>
+        </div>
+        <div class="member-identity-stat">
+            <div class="member-identity-stat-label">総注文数</div>
+            <div class="member-identity-stat-value">{{ number_format($view->purchaseSummary['total_orders'] ?? 0) }}<span>件</span></div>
+        </div>
+        <div class="member-identity-stat">
+            <div class="member-identity-stat-label">平均注文単価</div>
+            <div class="member-identity-stat-value">¥{{ number_format($view->purchaseSummary['avg_order_value'] ?? 0) }}</div>
+        </div>
+        <div class="member-identity-stat{{ isset($view->purchaseSummary['days_since_last_order']) && $view->purchaseSummary['days_since_last_order'] > 90 ? ' member-identity-stat--alert' : '' }}">
+            <div class="member-identity-stat-label">最終購買日</div>
+            @if(isset($view->purchaseSummary['last_order_at']) && $view->purchaseSummary['last_order_at'])
+            <div class="member-identity-stat-value">{{ $view->purchaseSummary['last_order_at']->format('Y/m/d') }}</div>
+            <div class="member-identity-stat-sub">{{ $view->purchaseSummary['days_since_last_order'] }}日前</div>
+            @else
+            <div class="member-identity-stat-value member-identity-stat-value--empty">購買なし</div>
             @endif
         </div>
     </div>
 </section>
-
-<div class="member-kpi-grid">
-    <div class="member-kpi-card">
-        <div class="member-kpi-icon member-kpi-icon--ltv"><i class="fas fa-yen-sign"></i></div>
-        <div class="member-kpi-body">
-            <div class="member-kpi-label">累計購買額（LTV）</div>
-            <div class="member-kpi-value">¥{{ number_format($view->purchaseSummary['total_revenue'] ?? 0) }}</div>
-        </div>
-    </div>
-    <div class="member-kpi-card">
-        <div class="member-kpi-icon member-kpi-icon--orders"><i class="fas fa-shopping-cart"></i></div>
-        <div class="member-kpi-body">
-            <div class="member-kpi-label">総注文数</div>
-            <div class="member-kpi-value">{{ number_format($view->purchaseSummary['total_orders'] ?? 0) }}件</div>
-        </div>
-    </div>
-    <div class="member-kpi-card">
-        <div class="member-kpi-icon member-kpi-icon--avg"><i class="fas fa-chart-bar"></i></div>
-        <div class="member-kpi-body">
-            <div class="member-kpi-label">平均注文単価</div>
-            <div class="member-kpi-value">¥{{ number_format($view->purchaseSummary['avg_order_value'] ?? 0) }}</div>
-        </div>
-    </div>
-    <div class="member-kpi-card {{ isset($view->purchaseSummary['days_since_last_order']) && $view->purchaseSummary['days_since_last_order'] > 90 ? 'member-kpi-card--alert' : '' }}">
-        <div class="member-kpi-icon member-kpi-icon--last {{ isset($view->purchaseSummary['days_since_last_order']) && $view->purchaseSummary['days_since_last_order'] > 90 ? 'member-kpi-icon--danger' : '' }}"><i class="fas fa-clock"></i></div>
-        <div class="member-kpi-body">
-            <div class="member-kpi-label">最終購買日</div>
-            <div class="member-kpi-value">
-                @if(isset($view->purchaseSummary['last_order_at']) && $view->purchaseSummary['last_order_at'])
-                    {{ $view->purchaseSummary['last_order_at']->format('Y/m/d') }}
-                    <span class="member-kpi-sub">{{ $view->purchaseSummary['days_since_last_order'] }}日前</span>
-                @else
-                    <span class="text-muted">購買なし</span>
-                @endif
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="member-workspace">
 <section class="member-history-shell" aria-label="履歴">
