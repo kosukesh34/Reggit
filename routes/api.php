@@ -90,7 +90,9 @@ Route::prefix('kitchen/{project_key}')->middleware([AuthenticateKitchenToken::cl
 
 // スマレジ・プラットフォームAPI 連携（利用者契約通知・Webhook）
 // 公式: HTTPS POST / JSON。接続確認で GET/HEAD が来る場合があるため許可。
-Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
+Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])
+    ->middleware('verify.smaregi.idp')
+    ->name('smaregi.idp');
 Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
     ->middleware('verify.smaregi.webhook')
     ->name('smaregi.webhook');

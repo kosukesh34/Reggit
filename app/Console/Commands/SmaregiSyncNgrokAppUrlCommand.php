@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Smaregi\SmaregiIdpCallbackUrl;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
@@ -39,11 +40,15 @@ class SmaregiSyncNgrokAppUrlCommand extends Command
         }
 
         $webhookUrl = $url.'/api/smaregi/webhook';
-        $idpUrl = $url.'/api/smaregi/idp';
+        $idpUrl = SmaregiIdpCallbackUrl::forBaseUrl($url);
 
         $this->info('ngrok 公開 URL: '.$url);
         $this->info('Webhook URL（スマレジに登録）: '.$webhookUrl);
-        $this->info('利用者契約通知先 URL: '.$idpUrl);
+        if ($idpUrl !== null) {
+            $this->info('利用者契約通知先 URL: '.$idpUrl);
+        } else {
+            $this->warn('SMAREGI_IDP_CALLBACK_TOKEN が未設定です。利用者契約通知先 URL を発行できません。');
+        }
         $this->newLine();
 
         if ($this->option('dry-run')) {
