@@ -47,12 +47,21 @@ class RequestExistingMemberLinkUseCase
             throw new InvalidArgumentException('この会員はすでに連携されています');
         }
 
-        $fields = is_array($setting->identifier_fields) ? $setting->identifier_fields : [];
-        if (in_array(ExistingMemberLinkField::EMAIL, $fields, true)) {
-            return $this->sendMail($projectId, $user, $customerId, (string) ($input[ExistingMemberLinkField::EMAIL] ?? ''));
+        if ($user !== null) {
+            $email = trim((string) ($customer['mailAddress'] ?? ''));
+            if ($email === '') {
+                throw new InvalidArgumentException('確認先のメールアドレスが未登録です。店舗にお問い合わせください');
+            }
+
+            return $this->sendMail($projectId, $user, $customerId, $email);
         }
 
-        $this->writer->link($projectId, $user, $customer);
+        $fields = is_array($setting->identifier_fields) ? $setting->identifier_fields : [];
+        if (in_array(ExistingMemberLinkField::EMAIL, $fields, true)) {
+            return $this->sendMail($projectId, null, $customerId, (string) ($input[ExistingMemberLinkField::EMAIL] ?? ''));
+        }
+
+        $this->writer->link($projectId, null, $customer);
 
         return ['linked' => true, 'message' => '既存会員を連携しました'];
     }
