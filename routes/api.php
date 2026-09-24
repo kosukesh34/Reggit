@@ -41,6 +41,7 @@ use App\Http\Controllers\Member\MemberPointsController;
 use App\Http\Controllers\Member\MemberProfileImageController;
 use App\Http\Controllers\Member\MemberRegisterController;
 use App\Http\Controllers\Member\MemberSessionClearController;
+use App\Http\Controllers\Member\ExistingMemberLinkController;
 use App\Http\Controllers\Member\MemberTransferClaimController;
 use App\Http\Controllers\Member\MemberTransferCodeController;
 use App\Http\Controllers\Member\MemberUpdateController;
@@ -255,6 +256,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/withdraw', [MemberWithdrawController::class, '__invoke']);
     Route::post('/members/transfer-code', MemberTransferCodeController::class)->middleware('throttle:10,1');
     Route::post('/members/transfer', MemberTransferClaimController::class)->middleware('throttle:10,1');
+    Route::get('/members/existing-link', [ExistingMemberLinkController::class, 'show']);
+    Route::post('/members/existing-link', [ExistingMemberLinkController::class, 'store'])->middleware('throttle:10,1');
     Route::post('/members/session/clear', [MemberSessionClearController::class, '__invoke']);
     Route::post('/devices/register', DeviceRegisterController::class);
     Route::get('/devices/session', DeviceSessionController::class);

@@ -226,6 +226,7 @@
                         || $adminUser->hasPermission('announcements.view')
                         || $adminUser->hasPermission('gallery.view')
                         || $adminUser->hasPermission('audit_logs.view')
+                        || $adminUser->hasPermission('members.manage')
                     )
                     <a href="{{ admin_route('admin.settings.index') }}" class="nav-item {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>

@@ -138,6 +138,7 @@ class AllScreensAccessibleTest extends TestCase
             'settings.coupons' => ['admin.settings.coupons', ['project_key' => $key]],
             'settings.announcements' => ['admin.settings.announcements', ['project_key' => $key]],
             'settings.profile' => ['admin.settings.profile', ['project_key' => $key]],
+            'settings.existing-member-link' => ['admin.settings.existing-member-link', ['project_key' => $key]],
             'settings.wallet' => ['admin.settings.wallet', ['project_key' => $key]],
             'analytics' => ['admin.analytics', ['project_key' => $key]],
             'audit-logs.index' => ['admin.audit-logs.index', ['project_key' => $key]],
