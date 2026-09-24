@@ -19,6 +19,7 @@ class SmaregiProductSyncService
         private SmaregiApiService $smaregiApi,
         private SmaregiProductRegisterService $smaregiProductRegister,
         private ProductDeduplicationService $productDeduplication,
+        private SmaregiProductOptionSyncService $productOptionSync,
     ) {}
 
     /**
@@ -40,6 +41,7 @@ class SmaregiProductSyncService
         $failed = 0;
         $errors = [];
         $page = 1;
+        $allRows = [];
 
         do {
             $result = $this->smaregiApi->request($contractId, 'GET', 'pos/products', [
@@ -51,8 +53,12 @@ class SmaregiProductSyncService
             }
 
             $list = $this->extractListFromResponse($result, 'products');
+            $allRows = array_merge($allRows, $list);
             foreach ($list as $row) {
                 if (! is_array($row)) {
+                    continue;
+                }
+                if ((string) ($row['division'] ?? '0') === '2') {
                     continue;
                 }
                 $productId = $row['productId'] ?? null;
@@ -80,6 +86,10 @@ class SmaregiProductSyncService
 
             $page++;
         } while (count($list) === self::LIMIT);
+
+        $optionResult = $this->productOptionSync->sync($projectId, $contractId, $allRows);
+        $failed += $optionResult['failed'];
+        $errors = array_merge($errors, $optionResult['errors']);
 
         $this->productDeduplication->deduplicateForProject($projectId);
 
@@ -118,6 +128,7 @@ class SmaregiProductSyncService
         $errors = [];
         $smaregiProductIds = [];
         $smaregiProductNames = [];
+        $allRows = [];
 
         // 1. スマレジ → DB: スマレジの全商品を取得して DB に反映し、スマレジ側の productId 一覧を保持
         $page = 1;
@@ -131,8 +142,12 @@ class SmaregiProductSyncService
             }
 
             $list = $this->extractListFromResponse($result, 'products');
+            $allRows = array_merge($allRows, $list);
             foreach ($list as $row) {
                 if (! is_array($row)) {
+                    continue;
+                }
+                if ((string) ($row['division'] ?? '0') === '2') {
                     continue;
                 }
                 $productId = $row['productId'] ?? null;
@@ -164,6 +179,10 @@ class SmaregiProductSyncService
             }
             $page++;
         } while (count($list) === self::LIMIT);
+
+        $optionResult = $this->productOptionSync->sync($projectId, $contractId, $allRows);
+        $failed += $optionResult['failed'];
+        $errors = array_merge($errors, $optionResult['errors']);
 
         // 2. DB → スマレジ: DB にありスマレジにない商品をスマレジに登録
         // 部門が取得できない場合は登録を試みずスキップする（失敗0で完了させる）
