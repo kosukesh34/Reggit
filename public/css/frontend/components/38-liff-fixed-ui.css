@@ -4669,8 +4669,8 @@ body.liff-lottery-ui .demo-play-entry__btn-hint {
 .pp-gacha-popup__panel {
     position: relative;
     z-index: 1;
-    width: min(100%, 360px);
-    max-height: min(92dvh, 760px);
+    width: min(100%, 320px);
+    max-height: min(78dvh, 620px);
     overflow: auto;
     padding: 0;
     border-radius: 22px;
