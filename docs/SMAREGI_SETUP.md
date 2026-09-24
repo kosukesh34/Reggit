@@ -36,7 +36,7 @@ APP_URL=https://あなたのngrokサブドメイン.ngrok-free.dev
 | 項目 | 設定するURL |
 |------|-------------|
 | **アプリURL（必須）** | `{APP_URL}/onboarding`（初回遷移でプロジェクト・管理者アカウント作成） |
-| **利用者契約通知先URL（必須）** | `{APP_URL}/api/smaregi/idp` または `{APP_URL}/smaregi/idp`（後者は `/api` 省略用） |
+| **利用者契約通知先URL（必須）** | `{APP_URL}/api/smaregi/idp?callback_token={SMAREGI_IDP_CALLBACK_TOKEN}` |
 | **Webhook送信先エンドポイント** | `{APP_URL}/api/smaregi/webhook`（推奨）または `{APP_URL}/smaregi/webhook`（`/api` 省略用。任意） |
 
 例（ngrok で `https://あなたのサブドメイン.ngrok-free.dev` → `http://localhost:8080` で公開している場合）:
@@ -44,10 +44,11 @@ APP_URL=https://あなたのngrokサブドメイン.ngrok-free.dev
 | スマレジ・デベロッパーズの項目 | 設定する値 |
 |------------------------------|------------|
 | **アプリURL（必須）** | `https://あなたのサブドメイン.ngrok-free.dev/onboarding` |
-| **利用者契約通知先URL（必須）** | `https://あなたのサブドメイン.ngrok-free.dev/api/smaregi/idp` |
+| **利用者契約通知先URL（必須）** | `https://あなたのサブドメイン.ngrok-free.dev/api/smaregi/idp?callback_token={SMAREGI_IDP_CALLBACK_TOKEN}` |
 | **Webhook送信先エンドポイント** | `https://あなたのサブドメイン.ngrok-free.dev/api/smaregi/webhook` |
 
 上記の「あなたのサブドメイン」を実際の ngrok のサブドメインに置き換えてください。  
+`SMAREGI_IDP_CALLBACK_TOKEN` は環境ごとに生成した64桁の16進数を `.env` に保存し、同じ値を通知先URLに設定します。URLに含まれるため、公開資料やログへ貼り付けないでください。
 リダイレクトURIは認可コードフロー用です。アプリアクセストークン（Client Credentials）のみ使う場合は `urn:ietf:wg:oauth:2.0:oob` のままで問題ありません。
 
 ## 3. 公開オンボーディング（プロジェクト作成）
