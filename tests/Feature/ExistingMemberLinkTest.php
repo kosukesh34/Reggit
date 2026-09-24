@@ -19,11 +19,13 @@ class ExistingMemberLinkTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_条件が一致すれば会員を作って結びつけること(): void
+    public function test_条件が一致してもメール確認後に会員を結びつけること(): void
     {
+        Mail::fake();
         $project = $this->createProject();
         $this->enable($project, ['customer_code', 'phone', 'name']);
-        $this->mockCustomers([$this->customer()]);
+        $api = $this->mockCustomers([$this->customer()]);
+        $api->shouldReceive('getCustomer')->once()->andReturn($this->customer());
         $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U00000000000000000000000000000031']);
 
         $response = $this->withHeaders(['X-Line-User-Id' => $user->line_user_id])
@@ -33,13 +35,35 @@ class ExistingMemberLinkTest extends TestCase
                 'name' => '山田太郎',
             ]);
 
-        $response->assertOk()->assertJsonPath('data.linked', true);
+        $response->assertOk()->assertJsonPath('data.linked', false);
+        Mail::assertSent(ExistingMemberLinkMail::class);
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
+
+        $token = ExistingMemberLinkRequest::query()->where('user_id', $user->id)->value('token');
+        $this->get('/existing-member-link/'.$token)->assertOk()->assertSee('連携しました');
         $this->assertDatabaseHas('members', [
             'project_id' => $project->id,
             'user_id' => $user->id,
             'smaregi_customer_id' => '9001',
             'points' => 120,
         ]);
+    }
+
+    public function test_スマレジにメールアドレスがない会員はセルフ連携できないこと(): void
+    {
+        $project = $this->createProject();
+        $this->enable($project, ['customer_code']);
+        $customer = $this->customer();
+        $customer['mailAddress'] = '';
+        $this->mockCustomers([$customer]);
+        $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U00000000000000000000000000000034']);
+
+        $this->withHeaders(['X-Line-User-Id' => $user->line_user_id])
+            ->postJson('/api/members/existing-link?project_key=default', ['customer_code' => 'C100'])
+            ->assertStatus(422);
+
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
+        $this->assertDatabaseCount('existing_member_link_requests', 0);
     }
 
     public function test_メールアドレスが条件なら確認後に連携すること(): void
