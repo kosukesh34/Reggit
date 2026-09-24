@@ -83,6 +83,7 @@ class ShopSettingStore
         'navigation_header_image_url' => ProjectAdminUiSetting::class,
         'navigation_header_background_color' => ProjectAdminUiSetting::class,
         'home_image_url' => ProjectAdminUiSetting::class,
+        'home_image_urls' => ProjectAdminUiSetting::class,
         'home_menu_layout' => ProjectAdminUiSetting::class,
         'product_display_layout' => ProjectAdminUiSetting::class,
         'native_navigation_items' => ProjectAdminUiSetting::class,
@@ -303,7 +304,7 @@ class ShopSettingStore
                 $merged[] = $item;
             }
         }
-        if ($merged === []) {
+        if ($merged === [] && ! is_array($items)) {
             return self::defaultFrontendMenuItems();
         }
         usort($merged, fn ($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));

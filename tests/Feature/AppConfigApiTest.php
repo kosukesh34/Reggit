@@ -11,6 +11,22 @@ class AppConfigApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_ギャラリーはホームメニューで非表示にするとアプリ設定から消えること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        ShopSettingStore::setFrontendMenuItems([
+            ['tab' => 'gallery', 'label' => 'ギャラリー', 'enabled' => false, 'order' => 10],
+        ], $project->id);
+
+        $response = $this->getJson('/api/v1/app-config?project_key=default');
+
+        $response->assertOk()->assertJsonPath('feature_flags.feature_gallery_enabled', false);
+        $this->assertNotContains('gallery', array_column($response->json('tabs'), 'key'));
+    }
+
     public function test_app_config_有効なプロジェクトキーで設定を返すこと(): void
     {
         $project = Project::firstOrCreate(
@@ -130,6 +146,7 @@ class AppConfigApiTest extends TestCase
             ->assertJsonPath('header.image_url', 'https://example.com/store-header.webp')
             ->assertJsonPath('header.background_color', '#F6F1E8')
             ->assertJsonPath('home.image_url', 'https://example.com/home.webp')
+            ->assertJsonPath('home.image_urls', ['https://example.com/home.webp'])
             ->assertJsonPath('home.menu_layout', 'grid_2_columns')
             ->assertJsonPath('products.display_layout', 'grid_2_columns')
             ->assertJsonPath('navigation.header.0.key', 'member')
@@ -141,7 +158,50 @@ class AppConfigApiTest extends TestCase
             ->assertJsonPath('member_screen.show_point_history', false);
     }
 
-    public function test_app_config_抽選機能が有効な場合にあそびメニューを返すこと(): void
+    public function test_app_config_フッターの明示設定はホームメニュー非表示でも反映されること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        ShopSettingStore::setFrontendMenuItems([
+            ['tab' => 'home', 'label' => 'ホーム', 'enabled' => true, 'order' => 0],
+            ['tab' => 'member', 'label' => '会員証', 'enabled' => false, 'order' => 1],
+            ['tab' => 'coupons', 'label' => 'クーポン', 'enabled' => false, 'order' => 2],
+        ], $project->id);
+        ShopSettingStore::setValue('native_navigation_items', [
+            'header' => ['member', 'coupons'],
+            'footer' => ['home', 'member', 'coupons'],
+            'hamburger' => [],
+        ], 'json', $project->id);
+
+        $response = $this->getJson('/api/v1/app-config?project_key=default')->assertOk();
+
+        $this->assertSame(['home', 'member', 'coupons'], array_column($response->json('navigation.footer'), 'key'));
+        $this->assertSame(['member'], array_column($response->json('navigation.header'), 'key'));
+    }
+
+    public function test_app_config_複数のホーム画像を登録順に返すこと(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        ShopSettingStore::setValue('home_image_urls', [
+            'https://example.com/first.webp',
+            'https://example.com/second.webp',
+        ], 'json', $project->id);
+
+        $this->getJson('/api/v1/app-config?project_key=default')
+            ->assertOk()
+            ->assertJsonPath('home.image_url', 'https://example.com/first.webp')
+            ->assertJsonPath('home.image_urls', [
+                'https://example.com/first.webp',
+                'https://example.com/second.webp',
+            ]);
+    }
+
+    public function test_app_config_抽選機能が有効でもネイティブのあそびタブを返さないこと(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -151,6 +211,24 @@ class AppConfigApiTest extends TestCase
 
         $response = $this->getJson('/api/v1/app-config?project_key=default')->assertOk();
 
-        $this->assertContains('designlab', collect($response->json('tabs'))->pluck('key')->all());
+        $this->assertNotContains('designlab', collect($response->json('tabs'))->pluck('key')->all());
+    }
+
+    public function test_app_config_reverb接続先を返すこと(): void
+    {
+        Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        config([
+            'app.url' => 'https://example.com',
+            'broadcasting.default' => 'reverb',
+            'broadcasting.client_ws_host' => 'ws.example.com',
+            'broadcasting.connections.reverb.key' => 'public-key',
+        ]);
+
+        $this->getJson('/api/v1/app-config?project_key=default')
+            ->assertOk()
+            ->assertJsonPath('realtime.websocket_url', 'wss://ws.example.com/app/public-key?protocol=7&client=reggit-skip&version=1.0');
     }
 }
