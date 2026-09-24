@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 72" role="img" aria-labelledby="oruma-title oruma-desc">
+  <title id="oruma-title">ORUMA</title>
+  <desc id="oruma-desc">架空企業 ORUMA のロゴ表示例</desc>
+  <circle cx="40" cy="36" r="24" fill="none" stroke="#53645B" stroke-width="8"/>
+  <path d="M23 53 57 19" fill="none" stroke="#53645B" stroke-width="8" stroke-linecap="square"/>
+  <circle cx="40" cy="36" r="6" fill="#829489"/>
+  <text x="83" y="46" fill="#314039" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="29" font-weight="700" letter-spacing="1.25">ORUMA</text>
+</svg>

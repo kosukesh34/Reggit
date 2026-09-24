@@ -69,6 +69,48 @@ class MemberTransferTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_別プロジェクトの引き継ぎコードは使えないこと(): void
+    {
+        $sourceProject = $this->createProject();
+        $otherProject = Project::factory()->create([
+            'project_key' => 'other',
+            'is_active' => true,
+        ]);
+        $source = User::factory()->create([
+            'project_id' => $sourceProject->id,
+            'line_user_id' => self::SOURCE_LINE_ID,
+        ]);
+        $member = Member::factory()->create([
+            'project_id' => $sourceProject->id,
+            'user_id' => $source->id,
+        ]);
+        $this->registerDevice(self::SOURCE_LINE_ID, 'device-source');
+        $issued = $this->withHeaders(['X-Line-User-Id' => self::SOURCE_LINE_ID])
+            ->postJson('/api/members/transfer-code?project_key=default');
+        $issued->assertOk();
+
+        $destinationDevice = $this->registerDevice(self::DESTINATION_LINE_ID, 'device-other', 'other');
+        $this->withHeaders([
+            'X-Line-User-Id' => self::DESTINATION_LINE_ID,
+            'X-Device-Identifier' => 'device-other',
+            'X-Device-Token' => $destinationDevice,
+        ])->postJson('/api/members/transfer?project_key=other', [
+            'member_id' => $member->id,
+            'code' => $issued->json('data.code'),
+        ])->assertStatus(422);
+
+        $this->assertSame(self::SOURCE_LINE_ID, $source->fresh()->line_user_id);
+        $this->assertDatabaseHas('member_transfer_codes', [
+            'project_id' => $sourceProject->id,
+            'user_id' => $source->id,
+            'consumed_at' => null,
+        ]);
+        $this->assertDatabaseMissing('users', [
+            'project_id' => $otherProject->id,
+            'line_user_id' => self::SOURCE_LINE_ID,
+        ]);
+    }
+
     public function test_管理画面から引き継ぎコードを発行できること(): void
     {
         $project = $this->createProject();
@@ -110,12 +152,12 @@ class MemberTransferTest extends TestCase
         );
     }
 
-    private function registerDevice(string $lineUserId, string $deviceIdentifier): string
+    private function registerDevice(string $lineUserId, string $deviceIdentifier, string $projectKey = 'default'): string
     {
         $response = $this->withHeaders([
             'X-Line-User-Id' => $lineUserId,
             'X-Device-Identifier' => $deviceIdentifier,
-        ])->postJson('/api/devices/register?project_key=default', [
+        ])->postJson('/api/devices/register?project_key='.$projectKey, [
             'platform' => 'ios',
             'device_identifier' => $deviceIdentifier,
         ]);

@@ -28,7 +28,7 @@ class EloquentProductReadRepository implements ProductReadRepository
         return Product::with('optionGroups.options')->findOrFail($id)->toArray();
     }
 
-    public function availableCategoryCounts(): array
+    public function categoryCounts(): array
     {
         return Product::query()
             ->select('category', DB::raw('COUNT(*) as count'))

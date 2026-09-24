@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 48" role="img" aria-labelledby="reggit-wordmark-title">
+  <title id="reggit-wordmark-title">Reggit</title>
+  <g transform="translate(0 1) scale(.72)">
+    <path fill="#153044" fill-rule="evenodd" d="M7 4h25.5C47.1 4 56 12.1 56 25.2c0 12.7-8.9 21-23.5 21H20.4V60H7V4Zm13.4 11.8v18.6h11.9c6.8 0 10.5-3.3 10.5-9.3 0-6-3.7-9.3-10.5-9.3H20.4Z"/>
+    <path fill="#418C88" d="M32.5 37.3h15.8L63 60H47.5l-15-22.7Z"/>
+  </g>
+  <text x="54" y="34" fill="#153044" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="31" font-weight="700" letter-spacing="-.8">Reggit</text>
+</svg>

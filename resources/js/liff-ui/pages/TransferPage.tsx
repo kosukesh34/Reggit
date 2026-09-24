@@ -6,7 +6,9 @@ import { reggitApi } from "../services/reggitApi";
 
 export function TransferPage() {
   const { member, refresh } = useRuntimeData();
+  const [memberId, setMemberId] = useState("");
   const [code, setCode] = useState("");
+  const [issuedMemberId, setIssuedMemberId] = useState("");
   const [issuedCode, setIssuedCode] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [busy, setBusy] = useState(false);
@@ -19,6 +21,7 @@ export function TransferPage() {
     setMessage(undefined);
     try {
       const issued = await reggitApi.issueTransferCode();
+      setIssuedMemberId(String(issued.memberId));
       setIssuedCode(issued.code);
       setExpiresAt(issued.expiresAt);
     } catch (caught) {
@@ -33,7 +36,7 @@ export function TransferPage() {
     setError(undefined);
     setMessage(undefined);
     try {
-      await reggitApi.claimTransfer(code);
+      await reggitApi.claimTransfer(Number(memberId), code);
       setMessage("会員を引き継ぎました");
       await refresh();
     } catch (caught) {
@@ -54,15 +57,20 @@ export function TransferPage() {
       ) : null}
       {issuedCode !== "" ? (
         <div className="card card--lg">
+          <p>会員ID {issuedMemberId}</p>
           <strong>{issuedCode}</strong>
           <p>有効期限 {expiresAt}</p>
         </div>
       ) : null}
       <label>
+        会員ID
+        <input className="form-control" value={memberId} onChange={(event) => setMemberId(event.target.value)} inputMode="numeric" />
+      </label>
+      <label>
         受け取ったコード
         <input className="form-control" value={code} onChange={(event) => setCode(event.target.value)} autoCapitalize="characters" />
       </label>
-      <Button variant="outline" disabled={busy || code.trim() === ""} onClick={() => void claim()}>
+      <Button variant="outline" disabled={busy || code.trim() === "" || !Number.isSafeInteger(Number(memberId)) || Number(memberId) <= 0} onClick={() => void claim()}>
         このアカウントへ引き継ぐ
       </Button>
       {error ? <div className="form-error" role="alert">{error}</div> : null}

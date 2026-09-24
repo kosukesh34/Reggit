@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 72" role="img" aria-labelledby="nolena-title nolena-desc">
+  <title id="nolena-title">NOLENA</title>
+  <desc id="nolena-desc">架空企業 NOLENA のロゴ表示例</desc>
+  <path d="M14 60V12h10l31 33V12h10v48H55L24 27v33H14Z" fill="#4D5F6C"/>
+  <path d="M54 12h11v12H54z" fill="#A7B2B7"/>
+  <text x="83" y="46" fill="#344650" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="29" font-weight="700" letter-spacing="1">NOLENA</text>
+</svg>

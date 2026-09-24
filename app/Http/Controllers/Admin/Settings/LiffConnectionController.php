@@ -27,7 +27,7 @@ class LiffConnectionController extends AdminBaseController
             $request->toPayload(),
         );
 
-        return redirect()->route('admin.settings.liff-connection', $this->buildAdminRouteParams())
+        return redirect()->route('admin.settings.home', $this->buildAdminRouteParams())
             ->with('success', 'LIFF設定を更新しました');
     }
 }

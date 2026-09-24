@@ -56,7 +56,7 @@ class AdminLiffConnectionSettingsTest extends TestCase
                 'line_channel_secret' => 'test-channel-secret',
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-connection', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
         $this->assertSame('2000000000-abcdef', ShopSettingStore::getLineLiffId((int) $project->id));
         $this->assertSame('https://miniapp.line.me/2000000000-abcdef', ShopSettingStore::getLineLiffUrl((int) $project->id));
         $this->assertSame('test-channel-access-token', ShopSettingStore::getLineChannelAccessToken((int) $project->id));

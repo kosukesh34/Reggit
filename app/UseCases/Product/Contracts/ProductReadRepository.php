@@ -11,5 +11,5 @@ interface ProductReadRepository
     public function findOrFail(int $id): array;
 
     /** @return array<string, int> */
-    public function availableCategoryCounts(): array;
+    public function categoryCounts(): array;
 }
