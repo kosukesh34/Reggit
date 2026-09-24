@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Services\Admin\ProductDeduplicationService;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Services\Smaregi\SmaregiProductOptionSyncService;
 use App\Services\Smaregi\SmaregiProductRegisterService;
 use App\Services\Smaregi\SmaregiProductSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,6 +50,7 @@ class SmaregiProductImageSyncTest extends TestCase
             Mockery::mock(SmaregiApiService::class),
             $register,
             Mockery::mock(ProductDeduplicationService::class),
+            Mockery::mock(SmaregiProductOptionSyncService::class),
         );
 
         $result = $sync->syncAllImagesToSmaregi((int) $project->id);
