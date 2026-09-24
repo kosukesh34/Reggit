@@ -1653,6 +1653,9 @@ body.reggit-liff-ui .membership-page .member-section.member-card-mount {
 .quantity-stepper span { font-size: 10px; font-weight: 800; }
 .order-product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
 .order-product-card { display: grid; align-content: start; min-width: 0; overflow: hidden; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 20px; box-shadow: var(--shadow-soft); }
+.order-product-card.is-stopped,
+.order-row.is-stopped { opacity: 0.55; filter: grayscale(0.35); }
+.order-availability { color: var(--color-text-secondary); font-size: 11px; }
 .order-product-card__image { position: relative; display: grid; place-items: center; height: 126px; overflow: hidden; color: var(--color-primary); font-size: 18px; font-weight: 850; background: color-mix(in srgb, var(--color-accent) 20%, var(--color-background)) center / cover no-repeat; }
 .order-product-card__image::after { position: absolute; inset: auto 0 0; height: 34%; background: linear-gradient(transparent, rgb(0 0 0 / .12)); content: ""; pointer-events: none; }
 .order-product-card__image > b { position: absolute; z-index: 1; top: 9px; right: 9px; display: grid; place-items: center; min-width: 25px; height: 25px; padding: 0 7px; color: var(--color-on-primary); font-size: 10px; background: var(--color-primary); border: 2px solid var(--color-surface); border-radius: 999px; }

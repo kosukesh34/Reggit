@@ -124,7 +124,7 @@ function mapProduct(row: Record<string, unknown>): RuntimeCatalogItem {
       return {
         id: String(option.id ?? ''),
         name: String(option.name ?? ''),
-        priceDelta: Number(option.price_delta ?? 0) || 0,
+        priceDelta: Number(option.price_delta ?? 0),
         isDefault: option.is_default === true,
       };
     }).filter((option) => option.id !== '');
@@ -150,6 +150,8 @@ function mapProduct(row: Record<string, unknown>): RuntimeCatalogItem {
     price: Number(row.price ?? 0) || 0,
     image: row.image_url ? String(row.image_url) : (row.image ? String(row.image) : undefined),
     category: row.category ? String(row.category) : undefined,
+    isAvailable: row.is_available !== false && row.is_available !== 0 && row.is_available !== '0',
+    stock: row.stock === null || row.stock === undefined || row.stock === '' ? null : Number(row.stock),
     optionGroups,
   };
 }

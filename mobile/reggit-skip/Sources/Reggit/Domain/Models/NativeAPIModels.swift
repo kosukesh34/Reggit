@@ -491,6 +491,7 @@ struct ProductItem: Identifiable, Equatable {
     let description: String
     let price: Int
     let isAvailable: Bool
+    let stock: Int?
     let category: String
     let imageURL: String?
     let optionGroups: [ProductOptionGroupItem]
@@ -535,7 +536,8 @@ struct ProductListResponse {
                 name: item["name"] as? String ?? "商品",
                 description: item["description"] as? String ?? "",
                 price: priceValue,
-                isAvailable: item["is_available"] as? Bool ?? true,
+                isAvailable: item["is_available"] as? Bool ?? ((item["is_available"] as? NSNumber)?.boolValue ?? true),
+                stock: Self.optionalInt(item["stock"]),
                 category: item["category"] as? String ?? "",
                 imageURL: (item["image_url"] as? String)?.trimmedNonEmpty,
                 optionGroups: (item["option_groups"] as? [[String: Any]] ?? []).compactMap { group in
@@ -560,6 +562,13 @@ struct ProductListResponse {
             )
         }
         return ProductListResponse(products: products)
+    }
+
+    private static func optionalInt(_ value: Any?) -> Int? {
+        if value == nil || value is NSNull { return nil }
+        if let intValue = value as? Int { return intValue }
+        if let number = value as? NSNumber { return number.intValue }
+        return nil
     }
 }
 

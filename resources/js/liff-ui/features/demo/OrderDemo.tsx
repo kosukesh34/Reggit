@@ -14,6 +14,8 @@ interface OrderItem {
   price: number;
   image?: string;
   category?: string;
+  isAvailable?: boolean;
+  stock?: number | null;
   optionGroups?: RuntimeProductOptionGroup[];
 }
 
@@ -143,7 +145,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
     : [];
   const pickupTime = commerce?.pickupEstimate || profile.pickupTime;
   const dineInDetail = commerce?.dineInDetail || profile.dineInDetail;
-  const count = Object.values(quantities).reduce((sum, quantity) => sum + quantity, 0);
+  const count = orderItems.reduce((sum, item) => item.isAvailable === false ? sum : sum + (quantities[item.id] ?? 0), 0);
   const optionPrice = (item: OrderItem, optionIds = selectedOptions[item.id] ?? []) => (item.optionGroups ?? [])
     .flatMap((group) => group.options)
     .filter((option) => optionIds.includes(option.id))
@@ -153,7 +155,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
     .flatMap((group) => group.options)
     .filter((option) => (selectedOptions[item.id] ?? []).includes(option.id))
     .map((option) => option.name);
-  const total = orderItems.reduce((sum, item) => sum + itemUnitPrice(item) * (quantities[item.id] ?? 0), 0);
+  const total = orderItems.reduce((sum, item) => item.isAvailable === false ? sum : sum + itemUnitPrice(item) * (quantities[item.id] ?? 0), 0);
   const categories = useMemo(() => Array.from(new Set(orderItems.map((item) => item.category || "other"))), [orderItems]);
   const visibleItems = !config.groupByCategory || selectedCategory === "all"
     ? orderItems
@@ -179,6 +181,9 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
 
   const changeQuantity = (item: OrderItem, amount: number) => {
     const currentQuantity = quantities[item.id] ?? 0;
+    if (amount > 0 && item.isAvailable === false) {
+      return;
+    }
     if (amount > 0 && currentQuantity === 0 && (item.optionGroups?.length ?? 0) > 0) {
       openItemOptions(item);
       return;
@@ -233,7 +238,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         fulfillment: dineIn ? "dine_in" : "pickup",
         paymentMethod: dineIn ? "cash" : paymentMethod,
         tableNumber: dineIn ? tableNumber.trim() : undefined,
-        lines: orderItems.filter((item) => quantities[item.id]).map((item) => ({
+        lines: orderItems.filter((item) => quantities[item.id] && item.isAvailable !== false).map((item) => ({
           itemId: item.id,
           name: item.name,
           quantity: quantities[item.id],
@@ -306,7 +311,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
         {config.catalogLayout === "compact" ? (
           <div className="order-list">
             {visibleItems.map((item, index) => (
-              <Card className={`order-row${config.showItemImages ? "" : " order-row--no-image"}`} padding="md" key={item.id}>
+              <Card className={`order-row${config.showItemImages ? "" : " order-row--no-image"}${item.isAvailable === false ? " is-stopped" : ""}`} padding="md" key={item.id}>
                 {config.showItemImages ? (
                   <div className="order-row__image" style={item.image || index === 0 ? { backgroundImage: `url(${item.image ?? image})` } : undefined}>
                     {item.image || index === 0 ? null : <span>{index + 1}</span>}
@@ -316,10 +321,11 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
                   <strong>{item.name}</strong>
                   <span>{item.description}</span>
                   <b>¥{item.price.toLocaleString()}</b>
+                  <AvailabilityNote item={item} quantity={quantities[item.id] ?? 0} />
                 </div>
                 <div className="order-row__actions">
-                  {(quantities[item.id] ?? 0) > 0 && (item.optionGroups?.length ?? 0) > 0 ? <button type="button" className="order-option-edit" onClick={() => openItemOptions(item)}>内容変更</button> : null}
-                  <QuantityControl item={item} quantity={quantities[item.id] ?? 0} onChange={changeQuantity} />
+                  {(quantities[item.id] ?? 0) > 0 && item.isAvailable !== false && (item.optionGroups?.length ?? 0) > 0 ? <button type="button" className="order-option-edit" onClick={() => openItemOptions(item)}>内容変更</button> : null}
+                  <QuantityControl item={item} quantity={quantities[item.id] ?? 0} canIncrease={item.isAvailable !== false} onChange={changeQuantity} />
                 </div>
               </Card>
             ))}
@@ -330,7 +336,7 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
               const quantity = quantities[item.id] ?? 0;
               const productImage = item.image || (index === 0 ? image : "");
               return (
-                <article className={`order-product-card${config.showItemImages ? "" : " order-product-card--no-image"}`} key={item.id}>
+                <article className={`order-product-card${config.showItemImages ? "" : " order-product-card--no-image"}${item.isAvailable === false ? " is-stopped" : ""}`} key={item.id}>
                   {config.showItemImages ? (
                     <div className="order-product-card__image" style={productImage ? { backgroundImage: `url(${productImage})` } : undefined}>
                       {!productImage ? <span>{String(index + 1).padStart(2, "0")}</span> : null}
@@ -342,12 +348,13 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
                     <strong>{item.name}</strong>
                     <p>{item.description}</p>
                     <b>¥{item.price.toLocaleString()}</b>
-                    {quantity === 0 ? (
+                    <AvailabilityNote item={item} quantity={quantity} />
+                    {quantity === 0 && item.isAvailable !== false ? (
                       <button type="button" className="order-product-card__add" onClick={() => changeQuantity(item, 1)}><Plus size={15} />カートに追加</button>
                     ) : (
                       <>
-                        {(item.optionGroups?.length ?? 0) > 0 ? <button type="button" className="order-option-edit" onClick={() => openItemOptions(item)}>内容変更</button> : null}
-                        <QuantityControl item={item} quantity={quantity} onChange={changeQuantity} />
+                        {quantity > 0 && item.isAvailable !== false && (item.optionGroups?.length ?? 0) > 0 ? <button type="button" className="order-option-edit" onClick={() => openItemOptions(item)}>内容変更</button> : null}
+                        <QuantityControl item={item} quantity={quantity} canIncrease={item.isAvailable !== false} onChange={changeQuantity} />
                       </>
                     )}
                   </div>
@@ -414,12 +421,27 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
   );
 }
 
-function QuantityControl({ item, quantity, onChange }: { item: OrderItem; quantity: number; onChange: (item: OrderItem, amount: number) => void }) {
+function AvailabilityNote({ item, quantity }: { item: OrderItem; quantity: number }) {
+  if (item.isAvailable !== false && item.stock == null) {
+    return null;
+  }
+  const stockLabel = item.stock == null ? "" : `残り${item.stock}`;
+  return (
+    <small className="order-availability">
+      {item.isAvailable === false ? "販売停止" : ""}
+      {item.isAvailable === false && stockLabel !== "" ? " · " : ""}
+      {stockLabel}
+      {quantity > 0 ? ` · 選択中 ${quantity}` : ""}
+    </small>
+  );
+}
+
+function QuantityControl({ item, quantity, canIncrease, onChange }: { item: OrderItem; quantity: number; canIncrease: boolean; onChange: (item: OrderItem, amount: number) => void }) {
   return (
     <div className="quantity-stepper" aria-label={`${item.name}の数量`}>
       <button type="button" aria-label={`${item.name}を減らす`} onClick={() => onChange(item, -1)} disabled={quantity === 0}><Minus size={16} /></button>
       <span>{quantity}</span>
-      <button type="button" aria-label={`${item.name}を増やす`} onClick={() => onChange(item, 1)}><Plus size={16} /></button>
+      <button type="button" aria-label={`${item.name}を増やす`} onClick={() => onChange(item, 1)} disabled={!canIncrease}><Plus size={16} /></button>
     </div>
   );
 }

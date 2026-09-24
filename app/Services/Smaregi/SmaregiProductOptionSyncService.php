@@ -101,7 +101,7 @@ class SmaregiProductOptionSyncService
                         [
                             'project_id' => $projectId,
                             'name' => (string) ($optionProduct['productName'] ?? ''),
-                            'price_delta' => max(0, (int) ($optionProduct['price'] ?? 0)),
+                            'price_delta' => (int) ($optionProduct['price'] ?? 0),
                             'is_default' => false,
                             'sort_order' => $index,
                         ],
