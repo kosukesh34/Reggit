@@ -26,11 +26,18 @@ class QueueStatsServiceTest extends TestCase
             'is_active' => true,
         ]);
 
-        QueueEntry::factory()->count(2)->create([
+        QueueEntry::factory()->count(2)->sequence(
+            ['queue_number' => 1],
+            ['queue_number' => 2],
+        )->create([
             'project_id' => $project->id,
             'status' => QueueStatus::WAITING,
         ]);
-        QueueEntry::factory()->count(3)->create([
+        QueueEntry::factory()->count(3)->sequence(
+            ['queue_number' => 1],
+            ['queue_number' => 2],
+            ['queue_number' => 3],
+        )->create([
             'project_id' => $other->id,
             'status' => QueueStatus::WAITING,
         ]);
