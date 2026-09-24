@@ -83,9 +83,6 @@ class ViteReactAssetsTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
 
-        $response->assertStatus(200);
-        $response->assertSee('data-page-kind="liff-designer"', false);
-        $response->assertSee('id="ldDesignerConfig"', false);
-        $response->assertSee('id="react-admin-root"', false);
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
     }
 }

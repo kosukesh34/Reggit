@@ -14,6 +14,7 @@ import { useAppConfig, isDesignShowcaseMode } from "../context/AppConfigContext"
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import type { HomeLayout } from "../types/customization";
 import { IndustryGalleryHome } from "./IndustryGalleryHome";
+import { NativeHome } from "./NativeHome";
 import { LandingShowcaseHome } from "./LandingShowcasePage";
 import { OperationalHomePage } from "./OperationalHomePage";
 import { SimpleRewardsHome } from "./SimpleRewardsPage";
@@ -42,6 +43,11 @@ function HomePageSkeleton(): JSX.Element {
 export function HomePage() {
   const { activeStore, customization, experienceId } = useAppConfig();
   const { member, coupons, news, stores, mode, error, refresh, loading } = useRuntimeData();
+  const designerEmbed = typeof window !== "undefined" && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
+
+  if (!designerEmbed) {
+    return <NativeHome />;
+  }
 
   if (isDesignShowcaseMode() && experienceId === "landing-showcase") {
     return <LandingShowcaseHome />;

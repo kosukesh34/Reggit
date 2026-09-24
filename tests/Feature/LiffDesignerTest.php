@@ -38,8 +38,7 @@ class LiffDesignerTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
 
-        $response->assertOk();
-        $response->assertSee('LIFFデザイン');
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
     }
 
     public function test_liff_designer_レイアウトを保存できること(): void

@@ -32,6 +32,12 @@ export function AppShell({ children, gateSettled = true }: PropsWithChildren<{ g
   }, [dataSettled, gateSettled]);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.__IS_DESIGNER_EMBED_PREVIEW__ !== true) {
+      document.body.classList.add("skip-native");
+    }
+  }, []);
+
+  useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);

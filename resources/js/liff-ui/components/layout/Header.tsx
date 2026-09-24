@@ -48,8 +48,9 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const canSwitchStore = stores.length > 1;
-  const isLandingShowcase = experienceId === "landing-showcase";
-  const isSimpleRewards = experienceId === "simple-rewards";
+  const designerEmbed = typeof window !== "undefined" && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
+  const isLandingShowcase = designerEmbed && experienceId === "landing-showcase";
+  const isSimpleRewards = designerEmbed && experienceId === "simple-rewards";
   const headerButton = customization.header.rightButton;
   const effectiveMode = headerButton.mode ?? (customization.header.showNotifications ? "shortcut" : "none");
   const shortcutKey = effectiveMode === "shortcut" ? (headerButton.shortcut || customization.header.shortcut) : "none";
