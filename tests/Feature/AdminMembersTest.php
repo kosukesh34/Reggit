@@ -214,6 +214,28 @@ class AdminMembersTest extends TestCase
         $edit->assertStatus(200);
     }
 
+    public function test_members_detail_閲覧だけではポイント台帳とスマレジを更新しないこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'points' => 250,
+            'smaregi_customer_id' => '123',
+        ]);
+        Http::preventStrayRequests();
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.members.detail', ['project_key' => $project->project_key, 'id' => $member->id]))
+            ->assertOk();
+
+        $this->assertSame(250, (int) $member->fresh()->points);
+        $this->assertSame(0, $member->getTotalPointsFromTransactions());
+        Http::assertNothingSent();
+    }
+
     public function test_members_detail_履歴の検索とページネーションができること(): void
     {
         $project = $this->createProject();
