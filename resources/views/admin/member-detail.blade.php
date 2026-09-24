@@ -404,6 +404,22 @@
     </div>
 </div>
     @if($canManage)
+    <div class="card">
+        <div class="card-header"><h3 class="card-title"><i class="fas fa-right-left"></i> 引き継ぎ</h3></div>
+        <div class="card-body">
+            @if(session('transfer_code'))
+            <p>会員ID: {{ session('transfer_member_id') }}</p>
+            <p class="page-header-title">{{ session('transfer_code') }}</p>
+            <p class="form-text">有効期限: {{ session('transfer_expires_at') }}。会員IDとコードの両方が必要です。この画面を離れると再表示できません。</p>
+            @endif
+            <p class="form-text">機種変更した会員へ、会員IDと30分で1回だけ使えるコードを発行します。</p>
+            @error('transfer')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+            <form action="{{ admin_route('admin.members.transfer-code', ['id' => $view->member->id]) }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-secondary btn-sm">コードを発行</button>
+            </form>
+        </div>
+    </div>
     <details class="member-danger-zone">
         <summary>会員の削除</summary>
         <p>この会員を削除する場合はこちらから操作してください。</p>

@@ -28,6 +28,7 @@ import { getMemberRegistrationMode, shouldAutoCreateMember } from "../../fronten
 import type { MemberProfile } from "../types/app";
 import { isDemoDataMode } from "../../frontend/demo/demoMode";
 import type { DataMode } from "../types/runtime";
+import { MemberAccountPanel } from "./MemberAccountPanel";
 import { LandingShowcaseMembership } from "./LandingShowcasePage";
 import { SimpleRewardsMembership } from "./SimpleRewardsPage";
 
@@ -448,6 +449,8 @@ function MembershipMemberBody({
       {m.showUsageNote && m.showBarcode ? (
         <p className="page-note"><Info size={15} /> お会計時に会員証の{codeType === "qrcode" ? "QRコード" : "バーコード"}をご提示ください。</p>
       ) : null}
+
+      {showActions ? <MemberAccountPanel isMember={member.isMember} /> : null}
 
       <CenterPopup open={barcodeOpen && barcodeValue !== ""} onClose={() => setBarcodeOpen(false)} title={codeType === "qrcode" ? "会員QRコード" : "会員バーコード"} className="barcode-popup">
         {codeType === "qrcode" ? <MembershipQr value={barcodeValue} /> : <BarcodeEnlargeView value={barcodeValue} />}

@@ -80,6 +80,29 @@ struct ReggitAPIClient: ReggitAPIServing {
         return try MemberProfileSnapshot.parse(data)
     }
 
+    func withdrawMember() async throws {
+        _ = try await requestData(path: "/api/members/withdraw", method: "POST")
+    }
+
+    func issueTransferCode() async throws -> TransferCode {
+        let json = try await requestJSON(path: "/api/members/transfer-code", method: "POST")
+        guard let data = json["data"] as? [String: Any],
+              let code = data["code"] as? String, !code.isEmpty else {
+            throw ReggitAPIError.invalidResponse
+        }
+        let memberId = data["member_id"] as? Int ?? (data["member_id"] as? NSNumber)?.intValue ?? 0
+        guard memberId > 0 else { throw ReggitAPIError.invalidResponse }
+        return TransferCode(memberId: memberId, code: code, expiresAt: data["expires_at"] as? String ?? "")
+    }
+
+    func claimTransferCode(memberId: Int, code: String) async throws {
+        _ = try await requestJSON(
+            path: "/api/members/transfer",
+            method: "POST",
+            body: ["member_id": memberId, "code": code]
+        )
+    }
+
     func authorizeWalletChannel(socketID: String, memberID: Int) async throws -> String {
         let response = try await requestJSON(
             path: "/api/broadcasting/auth",
