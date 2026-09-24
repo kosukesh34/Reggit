@@ -3,6 +3,8 @@
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
 use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
+use App\Http\Controllers\Api\V1\Analysis\AnalysisDeliveryController as ApiV1AnalysisDeliveryController;
+use App\Http\Controllers\Api\V1\Analysis\AnalysisSummaryController as ApiV1AnalysisSummaryController;
 use App\Http\Controllers\Api\V1\AnnouncementCancelledIdsController as ApiV1AnnouncementCancelledIdsController;
 use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
 use App\Http\Controllers\Api\V1\AppConfigController;
@@ -212,6 +214,8 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::c
     Route::post('/{project_key}/queue/{id}/cancel', ApiV1QueueCancelController::class)->middleware('queue.access');
     Route::post('/{project_key}/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/{project_key}/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
+    Route::get('/{project_key}/analysis/summary', ApiV1AnalysisSummaryController::class);
+    Route::post('/{project_key}/analysis/deliveries', ApiV1AnalysisDeliveryController::class);
 });
 
 // ネイティブアプリ設定（認証不要・project_key クエリで取得）

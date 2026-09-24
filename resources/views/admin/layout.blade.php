@@ -202,9 +202,13 @@
                     <div class="nav-group">
                         <div class="nav-group-label">分析</div>
                         @if($showAnalytics)
-                        <a href="{{ admin_route('admin.analytics') }}" class="nav-item {{ request()->routeIs('admin.analytics*') ? 'active' : '' }}">
+                        <a href="{{ admin_route('admin.analytics') }}" class="nav-item {{ request()->routeIs('admin.analytics') ? 'active' : '' }}">
                             <i class="fas fa-chart-line"></i>
                             <span>分析</span>
+                        </a>
+                        <a href="{{ admin_route('admin.analysis-deliveries') }}" class="nav-item {{ request()->routeIs('admin.analysis-deliveries*') ? 'active' : '' }}">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>分析から配信</span>
                         </a>
                         @endif
                         @if($adminUser === null || $adminUser->hasPermission('members.view'))
