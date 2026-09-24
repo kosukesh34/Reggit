@@ -56,6 +56,9 @@
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror
                 </div>
+                @if($courses->isNotEmpty())
+                <div class="form-group"><label class="form-label" for="reservation_course_id">コース</label><select class="form-control" name="reservation_course_id" id="reservation_course_id"><option value="">指定なし</option>@foreach($courses as $course)<option value="{{ $course->id }}" {{ (string) old('reservation_course_id') === (string) $course->id ? 'selected' : '' }}>{{ $course->name }} · {{ number_format($course->price) }}円</option>@endforeach</select></div>
+                @endif
             </div>
 
             <div class="form-group">

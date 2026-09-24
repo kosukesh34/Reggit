@@ -7,7 +7,6 @@
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約設定</h1>
 </div>
-@if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 @php
     $timeSlots = $settings['timeSlots'] ?? ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
     $closedDays = $settings['closedDays'] ?? [];
@@ -18,6 +17,7 @@
 <form action="{{ admin_route('admin.settings.reservations.update') }}" method="POST">
     @csrf
     <div class="card">
+        <div class="card-header"><h2 class="card-title">受付日時と予約枠</h2></div>
         <div class="card-body">
             <div class="form-group">
                 <label class="form-label">予約可能な時間帯</label>
@@ -58,6 +58,35 @@
         </div>
     </div>
 </form>
+<div class="card" style="margin-top:24px">
+    <div class="card-header"><h2 class="card-title">予約コース</h2></div>
+    <div class="card-body">
+        <form action="{{ admin_route('admin.settings.reservations.courses.store') }}" method="POST">
+            @csrf
+            <div class="settings-staff-fields">
+                <div class="form-group"><label for="course-name" class="form-label">コース名</label><input id="course-name" class="form-control" name="name" maxlength="120" required></div>
+                <div class="form-group"><label for="course-price" class="form-label">料金（円）</label><input id="course-price" class="form-control" type="number" name="price" min="0" value="0" required></div>
+                <div class="form-group"><label for="course-description" class="form-label">説明</label><input id="course-description" class="form-control" name="description" maxlength="1000"></div>
+            </div>
+            <div class="form-actions"><button class="btn btn-primary" type="submit">コースを追加</button></div>
+        </form>
+        @foreach($courses as $course)
+            <details class="settings-staff-member">
+                <summary><strong>{{ $course->name }}</strong><span>{{ number_format($course->price) }}円 · {{ $course->is_active ? '受付中' : '停止中' }}</span><i class="fas fa-chevron-down" aria-hidden="true"></i></summary>
+                <form action="{{ admin_route('admin.settings.reservations.courses.update', ['id' => $course->id]) }}" method="POST">
+                    @csrf @method('PUT')
+                    <div class="settings-staff-fields">
+                        <div class="form-group"><label class="form-label" for="course-name-{{ $course->id }}">コース名</label><input class="form-control" id="course-name-{{ $course->id }}" name="name" value="{{ $course->name }}" required></div>
+                        <div class="form-group"><label class="form-label" for="course-price-{{ $course->id }}">料金（円）</label><input class="form-control" type="number" id="course-price-{{ $course->id }}" name="price" min="0" value="{{ $course->price }}" required></div>
+                        <div class="form-group"><label class="form-label" for="course-description-{{ $course->id }}">説明</label><input class="form-control" id="course-description-{{ $course->id }}" name="description" value="{{ $course->description }}"></div>
+                    </div>
+                    <label class="checkbox-label"><input type="hidden" name="is_active" value="0"><input type="checkbox" name="is_active" value="1" {{ $course->is_active ? 'checked' : '' }}> 予約を受け付ける</label>
+                    <div class="form-actions"><button class="btn btn-primary" type="submit">変更を保存</button></div>
+                </form>
+            </details>
+        @endforeach
+    </div>
+</div>
 <script>
 function addSlot(){ var c=document.getElementById('timeSlotsContainer'); var d=document.createElement('div'); d.className='time-slot-item'; d.innerHTML='<input type="time" name="reservation_time_slots[]" class="form-control"> <button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.time-slot-item\').remove()"><i class="fas fa-times"></i></button>'; c.appendChild(d); }
 function addClosedDate(){ var c=document.getElementById('closedDatesContainer'); var d=document.createElement('div'); d.className='closed-date-item mb-1'; d.innerHTML='<input type="date" name="closed_dates[]" class="form-control d-inline-block w-auto"> <button type="button" class="btn btn-sm btn-danger" onclick="this.closest(\'.closed-date-item\').remove()"><i class="fas fa-times"></i></button>'; c.appendChild(d); }

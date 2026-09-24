@@ -30,6 +30,8 @@ enum MemberRegistrationMode: String, Equatable {
 
 struct MemberProfileSnapshot: Equatable {
     let isMember: Bool
+    let userId: Int?
+    let memberId: Int?
     let name: String
     let phone: String
     let memberNumber: String
@@ -92,6 +94,8 @@ struct MemberProfileSnapshot: Equatable {
         let fields = (json["profile_field_settings"] as? [[String: Any]] ?? []).compactMap(ProfileFieldDefinition.parse)
         return MemberProfileSnapshot(
             isMember: isMember,
+            userId: (json["user_id"] as? Int) ?? (user["id"] as? Int),
+            memberId: member["id"] as? Int,
             name: name,
             phone: phone,
             memberNumber: memberNumber,
@@ -116,6 +120,8 @@ struct MemberProfileSnapshot: Equatable {
     func withCard(_ card: PointCardSnapshot) -> MemberProfileSnapshot {
         MemberProfileSnapshot(
             isMember: isMember,
+            userId: userId,
+            memberId: memberId,
             name: name,
             phone: phone,
             memberNumber: card.memberNumber.isEmpty ? memberNumber : card.memberNumber,
@@ -485,6 +491,7 @@ struct ProductItem: Identifiable, Equatable {
     let description: String
     let price: Int
     let isAvailable: Bool
+    let stock: Int?
     let category: String
     let imageURL: String?
     let optionGroups: [ProductOptionGroupItem]
@@ -529,7 +536,8 @@ struct ProductListResponse {
                 name: item["name"] as? String ?? "商品",
                 description: item["description"] as? String ?? "",
                 price: priceValue,
-                isAvailable: item["is_available"] as? Bool ?? true,
+                isAvailable: item["is_available"] as? Bool ?? ((item["is_available"] as? NSNumber)?.boolValue ?? true),
+                stock: Self.optionalInt(item["stock"]),
                 category: item["category"] as? String ?? "",
                 imageURL: (item["image_url"] as? String)?.trimmedNonEmpty,
                 optionGroups: (item["option_groups"] as? [[String: Any]] ?? []).compactMap { group in
@@ -554,6 +562,13 @@ struct ProductListResponse {
             )
         }
         return ProductListResponse(products: products)
+    }
+
+    private static func optionalInt(_ value: Any?) -> Int? {
+        if value == nil || value is NSNull { return nil }
+        if let intValue = value as? Int { return intValue }
+        if let number = value as? NSNumber { return number.intValue }
+        return nil
     }
 }
 
@@ -591,10 +606,18 @@ struct OrderSnapshot: Identifiable, Equatable, Hashable {
         OrderProgress.label(for: status)
     }
 
-    var hasPickupNumber: Bool { !orderNumber.isEmpty }
+    var isAwaitingCardPayment: Bool { paymentMethod == "stripe" && status == "pending" }
+
+    var hasPickupNumber: Bool { !orderNumber.isEmpty && !isAwaitingCardPayment }
 
     var pickupNumberLabel: String {
-        hasPickupNumber ? orderNumber : "決済確認中"
+        guard hasPickupNumber else { return "決済確認中" }
+        // 保存形式 YYYYMMDD+通番 は、画面では日+通番で表示する。
+        if orderNumber.range(of: #"^[0-9]{9,}$"#, options: .regularExpression) != nil,
+           let day = Int(orderNumber.dropFirst(6).prefix(2)) {
+            return String(day) + orderNumber.dropFirst(8)
+        }
+        return orderNumber
     }
 
     static func parse(_ data: Data) throws -> OrderSnapshot {

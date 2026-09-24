@@ -107,4 +107,39 @@ class AdminProductsTest extends TestCase
         $product->refresh();
         $this->assertSame('', (string) $product->image_url);
     }
+
+    public function test_販売停止でも在庫とマイナスオプションを保存すること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $product = Product::factory()->create([
+            'project_id' => $project->id,
+            'name' => '季節メニュー',
+            'price' => 800,
+            'stock' => 3,
+            'is_available' => true,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->put(route('admin.products.update', ['project_key' => $project->project_key, 'id' => $product->id]), [
+                'name' => '季節メニュー',
+                'price' => 800,
+                'category' => 'food',
+                'stock' => 12,
+                'option_groups' => [[
+                    'name' => 'トッピング',
+                    'selection_type' => 'single',
+                    'options' => [[
+                        'name' => 'なし',
+                        'price_delta' => -50,
+                    ]],
+                ]],
+            ])
+            ->assertRedirect();
+
+        $product->refresh();
+        $this->assertFalse($product->is_available);
+        $this->assertSame(12, $product->stock);
+        $this->assertSame('-50.00', (string) $product->optionGroups()->first()->options()->first()->price_delta);
+    }
 }

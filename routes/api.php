@@ -3,6 +3,8 @@
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
 use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
+use App\Http\Controllers\Api\V1\Analysis\AnalysisDeliveryController as ApiV1AnalysisDeliveryController;
+use App\Http\Controllers\Api\V1\Analysis\AnalysisSummaryController as ApiV1AnalysisSummaryController;
 use App\Http\Controllers\Api\V1\AnnouncementCancelledIdsController as ApiV1AnnouncementCancelledIdsController;
 use App\Http\Controllers\Api\V1\AnnouncementController as ApiV1AnnouncementController;
 use App\Http\Controllers\Api\V1\AppConfigController;
@@ -31,6 +33,7 @@ use App\Http\Controllers\DeviceSessionController;
 use App\Http\Controllers\Diagnostics\ClientDebugController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\LineWebhookController;
+use App\Http\Controllers\Member\ExistingMemberLinkController;
 use App\Http\Controllers\Member\GoogleWalletUrlController;
 use App\Http\Controllers\Member\LiffBroadcastAuthController;
 use App\Http\Controllers\Member\MemberLotteryController;
@@ -41,6 +44,8 @@ use App\Http\Controllers\Member\MemberPointsController;
 use App\Http\Controllers\Member\MemberProfileImageController;
 use App\Http\Controllers\Member\MemberRegisterController;
 use App\Http\Controllers\Member\MemberSessionClearController;
+use App\Http\Controllers\Member\MemberTransferClaimController;
+use App\Http\Controllers\Member\MemberTransferCodeController;
 use App\Http\Controllers\Member\MemberUpdateController;
 use App\Http\Controllers\Member\MemberWalletSummaryController;
 use App\Http\Controllers\Member\MemberWithdrawController;
@@ -90,7 +95,9 @@ Route::prefix('kitchen/{project_key}')->middleware([AuthenticateKitchenToken::cl
 
 // スマレジ・プラットフォームAPI 連携（利用者契約通知・Webhook）
 // 公式: HTTPS POST / JSON。接続確認で GET/HEAD が来る場合があるため許可。
-Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp');
+Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])
+    ->middleware('verify.smaregi.idp')
+    ->name('smaregi.idp');
 Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
     ->middleware('verify.smaregi.webhook')
     ->name('smaregi.webhook');
@@ -207,6 +214,8 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::c
     Route::post('/{project_key}/queue/{id}/cancel', ApiV1QueueCancelController::class)->middleware('queue.access');
     Route::post('/{project_key}/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/{project_key}/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
+    Route::get('/{project_key}/analysis/summary', ApiV1AnalysisSummaryController::class);
+    Route::post('/{project_key}/analysis/deliveries', ApiV1AnalysisDeliveryController::class);
 });
 
 // ネイティブアプリ設定（認証不要・project_key クエリで取得）
@@ -249,6 +258,10 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/members/me/google-wallet-url', [GoogleWalletUrlController::class, '__invoke']);
     Route::post('/members/register', [MemberRegisterController::class, '__invoke']);
     Route::post('/members/withdraw', [MemberWithdrawController::class, '__invoke']);
+    Route::post('/members/transfer-code', MemberTransferCodeController::class)->middleware('throttle:10,1');
+    Route::post('/members/transfer', MemberTransferClaimController::class)->middleware('throttle:10,1');
+    Route::get('/members/existing-link', [ExistingMemberLinkController::class, 'show']);
+    Route::post('/members/existing-link', [ExistingMemberLinkController::class, 'store'])->middleware('throttle:10,1');
     Route::post('/members/session/clear', [MemberSessionClearController::class, '__invoke']);
     Route::post('/devices/register', DeviceRegisterController::class);
     Route::get('/devices/session', DeviceSessionController::class);

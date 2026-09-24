@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Account\AccountIndexController;
 use App\Http\Controllers\Admin\Account\AccountStoreController;
 use App\Http\Controllers\Admin\Account\AccountUpdateController;
 use App\Http\Controllers\Admin\AfterRegistrationDeliveryController as AdminAfterRegistrationDeliveryController;
+use App\Http\Controllers\Admin\AnalysisDeliveryController as AdminAnalysisDeliveryController;
 use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
@@ -16,9 +17,11 @@ use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryController;
 use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
+use App\Http\Controllers\Admin\HelpController as AdminHelpController;
 use App\Http\Controllers\Admin\MailTestController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
 use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
+use App\Http\Controllers\Admin\MemberTransferController as AdminMemberTransferController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
@@ -29,8 +32,8 @@ use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedCo
 use App\Http\Controllers\Admin\Settings\AnnouncementsController;
 use App\Http\Controllers\Admin\Settings\BasicController as SettingsBasicController;
 use App\Http\Controllers\Admin\Settings\CouponsController;
+use App\Http\Controllers\Admin\Settings\ExistingMemberLinkController as SettingsExistingMemberLinkController;
 use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
-use App\Http\Controllers\Admin\Settings\GalleryController;
 use App\Http\Controllers\Admin\Settings\HomeController as SettingsHomeController;
 use App\Http\Controllers\Admin\Settings\IndexController as SettingsIndexController;
 use App\Http\Controllers\Admin\Settings\LiffConnectionController as SettingsLiffConnectionController;
@@ -41,10 +44,12 @@ use App\Http\Controllers\Admin\Settings\ProfileController;
 use App\Http\Controllers\Admin\Settings\QueueController;
 use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksController;
 use App\Http\Controllers\Admin\Settings\ReservationsController;
-use App\Http\Controllers\Admin\Settings\SmaregiController;
+use App\Http\Controllers\Admin\Settings\StaffController as SettingsStaffController;
 use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
+use App\Http\Controllers\Admin\SystemHelpArticleController;
+use App\Http\Controllers\ExistingMemberLinkConfirmController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\Landing\LandingRegistrationEmailController;
 use App\Http\Controllers\Landing\LandingRegistrationFormController;
@@ -86,6 +91,9 @@ Route::post('/lp/register/{registration}/form', [LandingRegistrationFormControll
     ->middleware('signed')
     ->name('landing.register.form.submit');
 
+Route::get('/existing-member-link/{token}', ExistingMemberLinkConfirmController::class)
+    ->middleware('throttle:20,1')
+    ->name('existing-member-link.confirm');
 Route::get('/legal/{project_key}/terms', [LegalDocumentController::class, 'terms'])->name('legal.terms');
 Route::get('/legal/{project_key}/privacy', [LegalDocumentController::class, 'privacy'])->name('legal.privacy');
 
@@ -122,7 +130,9 @@ Route::get('/health', function (Request $request) {
 Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
     ->middleware('verify.smaregi.webhook')
     ->name('smaregi.webhook_no_api_prefix');
-Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp_no_api_prefix');
+Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])
+    ->middleware('verify.smaregi.idp')
+    ->name('smaregi.idp_no_api_prefix');
 
 // ========== LIFF ==========
 Route::prefix('liff')->middleware('bind.project')->group(function () {
@@ -228,6 +238,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::delete('/products/{id}', [AdminProductController::class, 'deleteProduct'])->name('admin.products.delete')->middleware('admin.permission:products.manage');
 
         Route::get('/members', [AdminMemberController::class, 'members'])->name('admin.members')->middleware('admin.permission:members.view');
+        Route::post('/members/{id}/transfer-code', [AdminMemberTransferController::class, 'store'])->name('admin.members.transfer-code')->middleware('admin.permission:members.manage');
         Route::get('/members/export', [AdminMemberController::class, 'export'])->name('admin.members.export')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/history/{section}', [AdminMemberController::class, 'memberHistory'])->name('admin.members.history')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/visits/{visitId}', [AdminMemberController::class, 'visitDetail'])->name('admin.members.visits.detail')->middleware('admin.permission:members.view');
@@ -322,16 +333,17 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/settings/features', [SettingsFeaturesController::class, 'update'])->name('admin.settings.features.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/ranks', [SettingsRanksController::class, 'index'])->name('admin.settings.ranks')->middleware('admin.permission:settings.view');
         Route::post('/settings/ranks', [SettingsRanksController::class, 'update'])->name('admin.settings.ranks.update')->middleware('admin.permission:settings.manage');
-        Route::get('/settings/smaregi', [SmaregiController::class, 'index'])->name('admin.settings.smaregi')->middleware('admin.permission:settings.view');
-        Route::post('/settings/smaregi', [SmaregiController::class, 'update'])->name('admin.settings.smaregi.update')->middleware('admin.permission:settings.manage');
-        Route::post('/settings/smaregi/sync-products', [SmaregiController::class, 'syncProducts'])->name('admin.settings.smaregi.sync-products')->middleware('admin.permission:settings.manage');
-        Route::post('/settings/smaregi/full-sync-products', [SmaregiController::class, 'fullSyncProducts'])->name('admin.settings.smaregi.full-sync-products')->middleware('admin.permission:settings.manage');
         Route::get('/settings/liff-connection', [SettingsLiffConnectionController::class, 'index'])->name('admin.settings.liff-connection')->middleware('admin.permission:settings.view');
         Route::post('/settings/liff-connection', [SettingsLiffConnectionController::class, 'update'])->name('admin.settings.liff-connection.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/liff-designer', [SettingsLiffDesignerController::class, 'index'])->name('admin.settings.liff-designer')->middleware(['admin.permission:liff_designer.manage', 'admin.plan:liff_designer_advanced']);
         Route::post('/settings/liff-designer', [SettingsLiffDesignerController::class, 'update'])->name('admin.settings.liff-designer.update')->middleware(['admin.permission:liff_designer.manage', 'admin.plan:liff_designer_advanced']);
         Route::get('/settings/reservations', [ReservationsController::class, 'index'])->name('admin.settings.reservations')->middleware('admin.permission:reservations.view');
         Route::post('/settings/reservations', [ReservationsController::class, 'update'])->name('admin.settings.reservations.update')->middleware('admin.permission:settings.manage');
+        Route::post('/settings/reservations/courses', [ReservationsController::class, 'storeCourse'])->name('admin.settings.reservations.courses.store')->middleware('admin.permission:settings.manage');
+        Route::put('/settings/reservations/courses/{id}', [ReservationsController::class, 'updateCourse'])->name('admin.settings.reservations.courses.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/staff', [SettingsStaffController::class, 'index'])->name('admin.settings.staff');
+        Route::post('/settings/staff', [SettingsStaffController::class, 'store'])->name('admin.settings.staff.store');
+        Route::put('/settings/staff/{id}', [SettingsStaffController::class, 'update'])->name('admin.settings.staff.update');
         Route::get('/settings/queue', [QueueController::class, 'index'])->name('admin.settings.queue')->middleware('admin.permission:queue.view');
         Route::post('/settings/queue', [QueueController::class, 'update'])->name('admin.settings.queue.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/coupons', [CouponsController::class, 'index'])->name('admin.settings.coupons')->middleware('admin.permission:coupons.view');
@@ -340,14 +352,19 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/settings/lottery', [SettingsLotteryController::class, 'update'])->name('admin.settings.lottery.update')->middleware(['admin.permission:coupons.manage', 'admin.plan:lottery']);
         Route::get('/settings/announcements', [AnnouncementsController::class, 'index'])->name('admin.settings.announcements')->middleware('admin.permission:announcements.view');
         Route::post('/settings/announcements', [AnnouncementsController::class, 'update'])->name('admin.settings.announcements.update')->middleware('admin.permission:settings.manage');
-        Route::get('/settings/gallery', [GalleryController::class, 'index'])->name('admin.settings.gallery')->middleware('admin.permission:gallery.view');
-        Route::post('/settings/gallery', [GalleryController::class, 'update'])->name('admin.settings.gallery.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/existing-member-link', [SettingsExistingMemberLinkController::class, 'index'])->name('admin.settings.existing-member-link');
+        Route::post('/settings/existing-member-link', [SettingsExistingMemberLinkController::class, 'update'])->name('admin.settings.existing-member-link.update');
+        Route::post('/settings/existing-member-link/connect', [SettingsExistingMemberLinkController::class, 'store'])->name('admin.settings.existing-member-link.store');
         Route::get('/settings/profile', [ProfileController::class, 'index'])->name('admin.settings.profile')->middleware('admin.permission:settings.view');
         Route::post('/settings/profile', [ProfileController::class, 'update'])->name('admin.settings.profile.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/wallet', [WalletController::class, 'index'])->name('admin.settings.wallet')->middleware(['admin.permission:settings.view', 'admin.plan:wallet']);
         Route::post('/settings/wallet', [WalletController::class, 'update'])->name('admin.settings.wallet.update')->middleware(['admin.permission:settings.manage', 'admin.plan:wallet']);
 
         Route::get('/analytics', [AdminAnalyticsController::class, 'analytics'])->name('admin.analytics')->middleware(['admin.permission:analytics.view', 'admin.plan:analytics_advanced']);
+        Route::get('/analysis-deliveries', [AdminAnalysisDeliveryController::class, 'index'])->name('admin.analysis-deliveries')->middleware(['admin.permission:analytics.view', 'admin.plan:analytics_advanced']);
+        Route::post('/analysis-deliveries', [AdminAnalysisDeliveryController::class, 'store'])->name('admin.analysis-deliveries.store')->middleware(['admin.permission:coupons.manage', 'admin.plan:analytics_advanced']);
+        Route::get('/help', [AdminHelpController::class, 'index'])->name('admin.help');
+        Route::get('/help/{slug}', [AdminHelpController::class, 'show'])->name('admin.help.show');
         Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('admin.audit-logs.index')->middleware('admin.permission:audit_logs.view');
         Route::get('/audit-logs/{id}', [AdminAuditLogController::class, 'show'])->name('admin.audit-logs.show')->middleware('admin.permission:audit_logs.view');
 
@@ -384,6 +401,12 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
     Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('system-admin.audit-logs.index');
     Route::get('/audit-logs/{id}', [AdminAuditLogController::class, 'show'])->name('system-admin.audit-logs.show');
 
+    Route::get('/help-articles', [SystemHelpArticleController::class, 'index'])->name('system-admin.help-articles.index');
+    Route::get('/help-articles/create', [SystemHelpArticleController::class, 'create'])->name('system-admin.help-articles.create');
+    Route::post('/help-articles', [SystemHelpArticleController::class, 'store'])->name('system-admin.help-articles.store');
+    Route::get('/help-articles/{id}/edit', [SystemHelpArticleController::class, 'edit'])->name('system-admin.help-articles.edit');
+    Route::put('/help-articles/{id}', [SystemHelpArticleController::class, 'update'])->name('system-admin.help-articles.update');
+    Route::delete('/help-articles/{id}', [SystemHelpArticleController::class, 'destroy'])->name('system-admin.help-articles.destroy');
     Route::get('/mail-test', [MailTestController::class, 'show'])->name('system-admin.mail-test.show');
     Route::post('/mail-test', [MailTestController::class, 'send'])->name('system-admin.mail-test.send')->middleware('throttle:10,1');
 });

@@ -27,6 +27,7 @@ class ReservationAvailableDatesController extends Controller
                 'available_dates' => $result->availableDates,
                 'start_date' => $result->startDate,
                 'end_date' => $result->endDate,
+                'courses' => $result->courses,
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] available dates failed', [

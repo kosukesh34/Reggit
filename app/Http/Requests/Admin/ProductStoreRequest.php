@@ -13,9 +13,11 @@ class ProductStoreRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $merged = ['is_available' => $this->boolean('is_available')];
         if ($this->boolean('stock_unlimited')) {
-            $this->merge(['stock' => null]);
+            $merged['stock'] = null;
         }
+        $this->merge($merged);
     }
 
     public function rules(): array
@@ -41,7 +43,7 @@ class ProductStoreRequest extends FormRequest
             'option_groups.*.is_required' => 'nullable|boolean',
             'option_groups.*.options' => 'required|array|min:1|max:20',
             'option_groups.*.options.*.name' => 'required|string|max:100',
-            'option_groups.*.options.*.price_delta' => 'required|numeric|min:0|max:999999',
+            'option_groups.*.options.*.price_delta' => 'required|numeric|min:-999999|max:999999',
         ];
     }
 }

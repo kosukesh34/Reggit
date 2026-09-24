@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\Member;
 
+use App\Services\Admin\MemberAdminListQueryService;
 use App\Services\Admin\MemberAdminService;
 use App\UseCases\Admin\Member\Data\AdminMemberListOutput;
 
@@ -11,7 +12,7 @@ class AdminMemberListUseCase
 
     private MemberAdminService $memberAdminService;
 
-    public function __construct(MemberAdminService $memberAdminService)
+    public function __construct(MemberAdminService $memberAdminService, private MemberAdminListQueryService $memberList)
     {
         $this->memberAdminService = $memberAdminService;
     }
@@ -21,7 +22,7 @@ class AdminMemberListUseCase
      */
     public function handle(int $projectId, array $filters = []): AdminMemberListOutput
     {
-        $members = $this->memberAdminService->getPaginatedList($projectId, self::PER_PAGE, $filters);
+        $members = $this->memberList->getPaginatedList($projectId, self::PER_PAGE, $filters);
 
         return new AdminMemberListOutput(
             $members,

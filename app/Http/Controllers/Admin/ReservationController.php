@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\ReservationStatusRequest;
 use App\Http\Requests\Admin\ReservationStoreRequest;
+use App\Models\ReservationCourse;
 use App\UseCases\Admin\Reservation\AdminReservationCompleteUseCase;
 use App\UseCases\Admin\Reservation\AdminReservationDestroyUseCase;
 use App\UseCases\Admin\Reservation\AdminReservationDetailUseCase;
@@ -87,7 +88,9 @@ class ReservationController extends AdminBaseController
 
     public function createReservation()
     {
-        return view('admin.reservation-create');
+        $courses = ReservationCourse::where('project_id', $this->resolveAdminProjectId())->where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('admin.reservation-create', compact('courses'));
     }
 
     public function storeReservation(ReservationStoreRequest $request)
@@ -102,8 +105,9 @@ class ReservationController extends AdminBaseController
     public function editReservation(string $projectKey, $id)
     {
         $reservation = $this->detailUseCase->handle((int) $id);
+        $courses = ReservationCourse::where('project_id', $this->resolveAdminProjectId())->where('is_active', true)->orderBy('sort_order')->get();
 
-        return view('admin.reservation-edit', compact('reservation'));
+        return view('admin.reservation-edit', compact('reservation', 'courses'));
     }
 
     public function updateReservation(ReservationStoreRequest $request, string $projectKey, $id)

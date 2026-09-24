@@ -7,7 +7,7 @@ return [
     | スマレジ・プラットフォームAPI 設定
     |--------------------------------------------------------------------------
     | スマレジ・デベロッパーズで発行されたクライアント情報とエンドポイントを設定します。
-    | 利用者契約通知先URL: {APP_URL}/api/smaregi/idp
+    | 利用者契約通知先URL: {APP_URL}/api/smaregi/idp?callback_token={SMAREGI_IDP_CALLBACK_TOKEN}
     | Webhook送信先: {APP_URL}/api/smaregi/webhook
     */
 
@@ -24,6 +24,7 @@ return [
 
     'webhook_secret' => env('SMAREGI_WEBHOOK_SECRET', ''),
     'webhook_secret_header' => env('SMAREGI_WEBHOOK_SECRET_HEADER', 'x-sdsch-idnect'),
+    'idp_callback_token' => env('SMAREGI_IDP_CALLBACK_TOKEN', ''),
 
     /**
      * true のとき Webhook 受信直後にポイント同期ジョブを同期的に実行する（local 向け）。

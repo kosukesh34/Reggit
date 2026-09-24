@@ -19,7 +19,7 @@
         @php
             $optionGroups = old('option_groups');
             if ($optionGroups === null && isset($product)) {
-                $optionGroups = $product->optionGroups->map(fn ($group) => [
+                $optionGroups = $product->optionGroups->filter(fn ($group) => $group->smaregi_option_group_id === null)->map(fn ($group) => [
                     'name' => $group->name,
                     'selection_type' => $group->selection_type,
                     'is_required' => $group->is_required,
@@ -52,7 +52,7 @@
                             @foreach(($group['options'] ?? []) as $optionIndex => $option)
                                 <div class="option-row" style="display:grid;grid-template-columns:minmax(180px,1fr) 150px auto;gap:10px">
                                     <input class="form-control" name="option_groups[{{ $groupIndex }}][options][{{ $optionIndex }}][name]" value="{{ $option['name'] ?? '' }}" placeholder="例：はちみつ多め" required>
-                                    <input type="number" class="form-control" name="option_groups[{{ $groupIndex }}][options][{{ $optionIndex }}][price_delta]" value="{{ $option['price_delta'] ?? 0 }}" min="0" step="1" placeholder="追加料金">
+                                    <input type="number" class="form-control" name="option_groups[{{ $groupIndex }}][options][{{ $optionIndex }}][price_delta]" value="{{ $option['price_delta'] ?? 0 }}" step="1" placeholder="追加・割引">
                                     <button type="button" class="btn btn-outline-danger remove-option">×</button>
                                 </div>
                             @endforeach
@@ -61,6 +61,11 @@
                     </div>
                 @endforeach
             </div>
+            @if(isset($product))
+                @foreach($product->optionGroups->filter(fn ($group) => $group->smaregi_option_group_id !== null) as $smaregiGroup)
+                    <div class="alert alert-info" style="margin-top:12px"><strong>{{ $smaregiGroup->name }}</strong>：スマレジから同期（{{ $smaregiGroup->options->pluck('name')->join(' / ') }}）</div>
+                @endforeach
+            @endif
         </div>
 
         <div class="form-group">
@@ -155,7 +160,7 @@
         const row = document.createElement('div');
         row.className = 'option-row';
         row.style.cssText = 'display:grid;grid-template-columns:minmax(180px,1fr) 150px auto;gap:10px';
-        row.innerHTML = `<input class="form-control" value="${name}" placeholder="例：はちみつ多め" required><input type="number" class="form-control" value="${price}" min="0" step="1" placeholder="追加料金"><button type="button" class="btn btn-outline-danger remove-option">×</button>`;
+        row.innerHTML = `<input class="form-control" value="${name}" placeholder="例：はちみつ多め" required><input type="number" class="form-control" value="${price}" step="1" placeholder="追加・割引"><button type="button" class="btn btn-outline-danger remove-option">×</button>`;
         group.querySelector('.option-rows').appendChild(row);
         reindex();
     }

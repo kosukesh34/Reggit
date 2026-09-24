@@ -19,7 +19,7 @@ class OnboardingStoreRequest extends FormRequest
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
             'is_active' => 'nullable|boolean',
-            'plan' => 'required|string|in:normal,distribution,premium',
+            'plan' => 'required|string|in:normal',
             'smaregi_contract_id' => 'required|string|max:255',
             'smaregi_client_id' => 'required|string|max:255',
             'smaregi_client_secret' => 'required|string|max:512',
@@ -46,7 +46,7 @@ class OnboardingStoreRequest extends FormRequest
             'name' => $this->validated('name'),
             'description' => $this->validated('description'),
             'is_active' => (bool) ($this->validated('is_active') ?? true),
-            'plan' => $this->validated('plan') ?? 'normal',
+            'plan' => 'normal',
         ];
     }
 

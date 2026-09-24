@@ -7,6 +7,7 @@ use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\Reservation;
+use App\Models\ReservationCourse;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -80,6 +81,32 @@ class ReservationControllerTest extends TestCase
             'number_of_people' => 2,
             'status' => ReservationStatus::PENDING,
         ]);
+    }
+
+    public function test_store_選択したコースの名称と料金を予約時点で保存すること(): void
+    {
+        $project = $this->createDefaultProject();
+        $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $course = ReservationCourse::create(['project_id' => $project->id, 'name' => 'ディナーコース', 'price' => 4200, 'is_active' => true]);
+        $timeSlot = ShopSettingStore::getReservationTimeSlots($project->id)[0];
+
+        $this->withSession($this->sessionForUser($project, $user))
+            ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
+            ->post($this->reservationUrl(), [
+                'reserved_at' => now()->addDay()->format('Y-m-d').'T'.$timeSlot,
+                'number_of_people' => 2,
+                'reservation_course_id' => $course->id,
+            ])->assertCreated();
+
+        $this->assertDatabaseHas('reservations', [
+            'user_id' => $user->id,
+            'reservation_course_id' => $course->id,
+            'course_name' => 'ディナーコース',
+            'course_price' => 4200,
+        ]);
+        $course->update(['name' => '改名後', 'price' => 5000]);
+        $this->assertSame('ディナーコース', Reservation::where('user_id', $user->id)->firstOrFail()->course_name);
     }
 
     public function test_store_必須項目のバリデーションが行われること(): void

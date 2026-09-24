@@ -97,7 +97,7 @@ DB 接続エラー時は `docs/DOCKER_DB_FIX.md` を参照してください。
 ### 公開エンドポイント（認証不要）
 
 - `GET/POST /api/line/webhook` — LINE Webhook
-- `POST /api/smaregi/idp` — スマレジ利用者契約通知
+- `POST /api/smaregi/idp?callback_token=...` — スマレジ利用者契約通知。64 桁のランダムな 16 進値を `SMAREGI_IDP_CALLBACK_TOKEN` に設定し、管理画面に表示される URL をスマレジ・デベロッパーズへ登録してください。未設定時やトークン不一致の通知は拒否します。Webhook のカスタムヘッダーは利用者契約通知に送信されません。
 - `POST /api/smaregi/webhook` — スマレジ Webhook
 - `POST /api/payment/webhook` — Stripe Webhook
 

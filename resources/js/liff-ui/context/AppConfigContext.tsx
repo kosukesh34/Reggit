@@ -93,16 +93,9 @@ function mergeCustomization(store: StoreAppConfig, patch?: AppCustomizationPatch
   };
 }
 
-/** /liff（プロジェクトキーなし）や ?demo=1 では業態モックを並べてデザイン切替できる */
+/** デモ用の業態ギャラリーは出さない。お客様画面は Skip と同じ構成にする。 */
 export function isDesignShowcaseMode(): boolean {
-  if (typeof document !== 'undefined' && document.body.classList.contains('liff-demo-data')) {
-    return true;
-  }
-  if (typeof window === 'undefined') {
-    return false;
-  }
-  const path = window.location.pathname.replace(/\/+$/, '') || '/';
-  return path === '/liff';
+  return false;
 }
 
 function readShowcaseStoreId(stores: StoreAppConfig[]): string {

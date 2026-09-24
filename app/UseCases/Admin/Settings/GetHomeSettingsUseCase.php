@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Models\Project;
+use App\Support\HomeImageUrls;
 use App\Support\LiffDesignerSanitizer;
 
 class GetHomeSettingsUseCase
@@ -43,8 +44,9 @@ class GetHomeSettingsUseCase
 
         $availableIcons = collect($defaults)->pluck('icon')->push('fa-globe')->unique()->values()->all();
         $savedNavigation = $this->shopSettingRepository->getValue('native_navigation_items', null, $projectId);
-        $defaultFooter = collect($tabs)->where('enabled', true)->pluck('tab')->take(5)->values()->all();
-        $defaultHamburger = collect($tabs)->where('enabled', true)->pluck('tab')->values()->all();
+        $nativeTabs = collect($tabs)->reject(fn ($tab) => $tab['tab'] === 'designlab');
+        $defaultFooter = $nativeTabs->where('enabled', true)->pluck('tab')->take(5)->values()->all();
+        $defaultHamburger = $nativeTabs->where('enabled', true)->pluck('tab')->values()->all();
         $nativeNavigation = is_array($savedNavigation) ? $savedNavigation : [
             'header' => [],
             'footer' => $defaultFooter,
@@ -54,7 +56,7 @@ class GetHomeSettingsUseCase
         $termsUrl = $projectKey !== '' ? route('legal.terms', ['project_key' => $projectKey]) : '';
         $privacyUrl = $projectKey !== '' ? route('legal.privacy', ['project_key' => $projectKey]) : '';
         $nativeNavigationItems = array_merge(
-            collect($tabs)->map(fn ($tab) => [
+            $nativeTabs->map(fn ($tab) => [
                 'key' => (string) $tab['tab'],
                 'label' => (string) $tab['label'],
             ])->all(),
@@ -71,6 +73,7 @@ class GetHomeSettingsUseCase
             'navigationHeaderImageUrl' => (string) $this->shopSettingRepository->getValue('navigation_header_image_url', '', $projectId),
             'navigationHeaderBackgroundColor' => (string) $this->shopSettingRepository->getValue('navigation_header_background_color', '#FFFFFF', $projectId),
             'homeImageUrl' => (string) $this->shopSettingRepository->getValue('home_image_url', '', $projectId),
+            'homeImageUrls' => HomeImageUrls::forProject($this->shopSettingRepository, $projectId),
             'homeMenuLayout' => (string) $this->shopSettingRepository->getValue('home_menu_layout', 'grid_3x2', $projectId),
             'productDisplayLayout' => (string) $this->shopSettingRepository->getValue('product_display_layout', 'list_with_image', $projectId),
             'nativeNavigation' => $nativeNavigation,

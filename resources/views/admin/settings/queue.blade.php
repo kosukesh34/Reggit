@@ -7,7 +7,6 @@
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-list-ol"></i> 順番待ち設定</h1>
 </div>
-@if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 @if($errors->any())
     <div class="alert alert-danger">
         <i class="fas fa-exclamation-circle"></i>

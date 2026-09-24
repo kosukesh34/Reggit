@@ -2,13 +2,14 @@
 
 namespace App\UseCases\Product;
 
-use App\Models\Product;
+use App\UseCases\Product\Contracts\ProductReadRepository;
 use App\UseCases\Product\Data\ProductCategory;
 use App\UseCases\Product\Data\ProductIndexOutput;
-use Illuminate\Support\Facades\DB;
 
 class ProductIndexUseCase
 {
+    public function __construct(private ProductReadRepository $products) {}
+
     private const CATEGORY_META = [
         'food' => ['label' => 'フード', 'icon' => 'fa-utensils', 'sort' => 1],
         'drink' => ['label' => 'ドリンク', 'icon' => 'fa-coffee', 'sort' => 2],
@@ -19,33 +20,20 @@ class ProductIndexUseCase
 
     public function handle(?string $category, ?bool $availableOnly, bool $includeCategories): ProductIndexOutput
     {
-        $query = Product::query()->with('optionGroups.options');
-        if ($availableOnly === true) {
-            $query->where('is_available', true);
-        }
-
-        if ($category !== null && $category !== '' && $category !== 'all') {
-            $query->where('category', $category);
-        }
-
-        $products = $query->orderBy('category')->orderBy('name')->get();
+        $products = $this->products->list($category, $availableOnly);
 
         if ($includeCategories === false) {
             return new ProductIndexOutput($products, []);
         }
 
-        $categoryCounts = Product::query()
-            ->where('is_available', true)
-            ->select('category', DB::raw('COUNT(*) as count'))
-            ->groupBy('category')
-            ->pluck('count', 'category');
+        $categoryCounts = $this->products->categoryCounts();
 
         $categories = [];
         $categories[] = new ProductCategory(
             'all',
             'すべて',
             'fa-th-large',
-            $categoryCounts->sum(),
+            array_sum($categoryCounts),
             0
         );
 

@@ -39,6 +39,10 @@
 .home-sort-row .home-sort-label { font-size: 14px; font-weight: 600; color: #292524; }
 .home-color-row { display: flex; align-items: center; gap: 10px; max-width: 280px; }
 .home-color-row .color-input { width: 42px; height: 38px; padding: 2px; }
+.home-image-list { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.home-image-item { width: 112px; }
+.home-image-item img { display: block; width: 112px; height: 112px; object-fit: cover; border-radius: 8px; }
+.home-image-item label { display: flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 12px; }
 .home-legal-box {
     margin-top: 14px;
     padding: 12px 14px;
@@ -118,9 +122,6 @@
     <h1 class="page-header-title"><i class="fas fa-home"></i> ホーム設定</h1>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
-@endif
 
 <form action="{{ admin_route('admin.settings.home.update') }}" method="POST" enctype="multipart/form-data" id="home-settings-form" class="home-settings">
     @csrf
@@ -145,9 +146,9 @@
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">メニュー（最大2件）</label>
+                <label class="form-label">メニュー（最大1件）</label>
                 <p class="section-help">チェックした項目がヘッダーに出ます。ドラッグで順番を変えられます。</p>
-                <div class="home-sort-list" data-nav-placement="header" data-nav-limit="2">
+                <div class="home-sort-list" data-nav-placement="header" data-nav-limit="1">
                     @foreach($headerNavChoices as $item)
                         @php($checked = in_array($item['key'], $selectedHeader, true))
                         <div class="home-sort-row {{ $checked ? '' : 'is-off' }}" draggable="true">
@@ -217,14 +218,24 @@
     <div class="card">
         <div class="card-header"><h2 class="card-title">ホーム画面</h2></div>
         <div class="card-body">
-            @include('admin.partials._frontend_logo_dropzone', [
-                'logoInputName' => 'home_image',
-                'logoClearName' => 'home_image_clear',
-                'logoFieldId' => 'home_image',
-                'logoCurrentUrl' => (string) old('home_image_url', $homeImageUrl ?? ''),
-                'logoLabel' => 'メイン画像',
-                'logoHelp' => '推奨 1200×660px。JPEG・PNG・WebP、8MB以下。',
-            ])
+            <div class="form-group">
+                <label class="form-label" for="home_images">ホーム画像</label>
+                <p class="section-help">最大10枚。複数枚は登録順にスライド表示されます。推奨 1200×1200px、JPEG・PNG・WebP、各8MB以下。</p>
+                <input type="hidden" name="home_images_present" value="1">
+                @if(!empty($homeImageUrls))
+                    <div class="home-image-list">
+                        @foreach($homeImageUrls as $index => $url)
+                            <div class="home-image-item">
+                                <img src="{{ $url }}" alt="ホーム画像 {{ $index + 1 }}">
+                                <label><input type="checkbox" name="home_image_remove[]" value="{{ $index }}" {{ in_array($index, array_map('intval', old('home_image_remove', [])), true) ? 'checked' : '' }}> 削除</label>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+                <input type="file" id="home_images" name="home_images[]" accept="image/png,image/jpeg,image/webp" multiple>
+                @error('home_images')<p class="text-danger">{{ $message }}</p>@enderror
+                @error('home_images.*')<p class="text-danger">{{ $message }}</p>@enderror
+            </div>
             <div class="form-group">
                 <label for="home_menu_layout" class="form-label">メニューのレイアウト</label>
                 <select id="home_menu_layout" name="home_menu_layout" class="form-control" style="max-width:360px" required>
@@ -276,7 +287,6 @@
 
     <div class="home-settings-actions form-actions">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存する</button>
-        <a href="{{ admin_route('admin.settings.basic') }}" class="btn btn-secondary">基本設定に戻る</a>
     </div>
 </form>
 

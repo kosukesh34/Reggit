@@ -14,11 +14,13 @@ private enum LotteryTheme {
 
 struct LotteryView: View {
     @State var viewModel: LotteryViewModel
+    let gachaOnly: Bool
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.brandAccent) var accent
 
-    init(apiClient: any ReggitAPIServing) {
+    init(apiClient: any ReggitAPIServing, gachaOnly: Bool = false) {
         _viewModel = State(initialValue: LotteryViewModel(apiClient: apiClient))
+        self.gachaOnly = gachaOnly
     }
 
     var body: some View {
@@ -44,15 +46,19 @@ struct LotteryView: View {
                         } else {
                             ScrollView {
                                 VStack(spacing: 18) {
-                                    arcadeHeader
-                                    eligibilityCard
-                                    gameSelector
-                                    selectedGame
-                                        .id(viewModel.selectedGame)
-                                        .transition(.opacity)
+                                    if gachaOnly {
+                                        gachaModalContent
+                                    } else {
+                                        arcadeHeader
+                                        eligibilityCard
+                                        gameSelector
+                                        selectedGame
+                                            .id(viewModel.selectedGame)
+                                            .transition(.opacity)
+                                    }
                                 }
                                 .padding(.horizontal, 14)
-                                .padding(.top, 18)
+                                .padding(.top, gachaOnly ? 46 : 18)
                                 .padding(.bottom, 32)
                             }
                             .refreshable { await viewModel.load() }
@@ -85,6 +91,33 @@ struct LotteryView: View {
             }
         }
         .task { await viewModel.load() }
+    }
+
+    private var gachaModalContent: some View {
+        VStack(spacing: 4) {
+            GachaMachineView(
+                rotation: viewModel.gachaRotation,
+                shakeOffset: viewModel.gachaShakeOffset,
+                showsDroppedCapsule: viewModel.showsDroppedCapsule,
+                opensDroppedCapsule: viewModel.opensDroppedCapsule
+            )
+            .scaleEffect(0.76)
+            .frame(height: 340)
+            Button {
+                Task { await viewModel.playGacha(reduceMotion: reduceMotion) }
+            } label: {
+                Image(systemName: "hand.tap.fill")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(LotteryTheme.night)
+                    .frame(width: 64, height: 48)
+                    .background(LotteryTheme.goldLight)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.hasEntitlement("gacha") || viewModel.isPlaying)
+            .opacity(viewModel.hasEntitlement("gacha") ? 1 : 0.45)
+            .accessibilityLabel("ガチャを回す")
+        }
     }
 
     private var arcadeHeader: some View {
@@ -125,7 +158,8 @@ struct LotteryView: View {
 
     private var gameSelector: some View {
         HStack(spacing: 6) {
-            ForEach(viewModel.availableGames) { game in
+            ForEach(0..<viewModel.availableGames.count, id: \.self) { index in
+                let game = viewModel.availableGames[index]
                 let isSelected = viewModel.selectedGame == game
                 Button {
                     if reduceMotion {
@@ -150,8 +184,12 @@ struct LotteryView: View {
                             .stroke(isSelected ? accent : Color.white.opacity(0.10), lineWidth: isSelected ? 2 : 1)
                     }
                 }
+                #if os(Android)
+                .buttonStyle(.plain)
+                #else
                 .buttonStyle(LotteryPressStyle())
-                .accessibilityLabel(game.title)
+                #endif
+                .accessibilityLabel(Text(game.title))
             }
         }
         .padding(5)
@@ -176,6 +214,8 @@ struct LotteryView: View {
                     showsDroppedCapsule: viewModel.showsDroppedCapsule,
                     opensDroppedCapsule: viewModel.opensDroppedCapsule
                 )
+                .scaleEffect(0.70)
+                .frame(height: 330)
                 prizeStrip(labels: viewModel.state?.gachaPrizeLabels ?? [])
                 LotteryActionButton(
                     title: viewModel.hasEntitlement("gacha") ? "ハンドルを回す" : "抽選券がありません",
@@ -206,6 +246,8 @@ struct LotteryView: View {
                         }
                     }
                 )
+                .scaleEffect(0.84)
+                .frame(height: 270)
                 scratchProgress
                 if viewModel.scratchResult != nil, viewModel.hasEntitlement("scratch") {
                     LotteryActionButton(title: "次のスクラッチを開く", subtitle: "もう一度挑戦") {
@@ -225,6 +267,8 @@ struct LotteryView: View {
                     labels: viewModel.rouletteLabels,
                     rotation: viewModel.rouletteRotation
                 )
+                .scaleEffect(0.76)
+                .frame(height: 290)
                 LotteryActionButton(
                     title: viewModel.hasEntitlement("roulette") ? "ルーレットを回す" : "抽選券がありません",
                     subtitle: viewModel.hasEntitlement("roulette") ? "タップしてスタート" : "購入条件を達成すると遊べます",
@@ -391,7 +435,11 @@ struct LotteryActionButton: View {
                     .stroke(enabled ? Color.white.opacity(0.55) : Color.white.opacity(0.08), lineWidth: 1)
             }
         }
+        #if os(Android)
+        .buttonStyle(.plain)
+        #else
         .buttonStyle(LotteryPressStyle())
+        #endif
         .disabled(!enabled || isLoading)
     }
 }
@@ -594,7 +642,6 @@ struct GachaMachineView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 462)
-        .accessibilityElement(children: .ignore)
         .accessibilityLabel("透明ケースにカプセルが入った白いガシャポンマシン")
     }
 
@@ -1033,7 +1080,6 @@ struct RouletteWheelView: View {
             Capsule().fill(Color.black.opacity(0.34)).frame(width: 190, height: 12).blur(radius: 4).offset(y: -3)
         }
         .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .ignore)
         .accessibilityLabel("8つの景品が並ぶラッキールーレット")
     }
 
@@ -1146,12 +1192,15 @@ struct RewardRevealOverlay: View {
                         .background(LotteryTheme.goldLight)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
+                #if os(Android)
+                .buttonStyle(.plain)
+                #else
                 .buttonStyle(LotteryPressStyle())
+                #endif
             }
             .padding(24)
             .frame(maxWidth: 360)
         }
-        .accessibilityElement(children: .contain)
     }
 }
 
