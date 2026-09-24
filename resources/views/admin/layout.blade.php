@@ -116,6 +116,10 @@
                         <i class="fas fa-clipboard-list"></i>
                         <span>監査ログ</span>
                     </a>
+                    <a href="{{ route('system-admin.help-articles.index') }}" class="nav-item {{ request()->routeIs('system-admin.help-articles.*') ? 'active' : '' }}">
+                        <i class="fas fa-book"></i>
+                        <span>ヘルプ記事</span>
+                    </a>
                     <a href="{{ route('system-admin.mail-test.show') }}" class="nav-item {{ request()->routeIs('system-admin.mail-test.*') ? 'active' : '' }}">
                         <i class="fas fa-envelope"></i>
                         <span>メール送信テスト</span>
@@ -238,6 +242,10 @@
                     </a>
                     @endif
                     <div class="nav-group nav-group-footer">
+                        <a href="{{ admin_route('admin.help') }}" class="nav-item {{ request()->routeIs('admin.help') ? 'active' : '' }}" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-circle-question"></i>
+                            <span>ヘルプ</span>
+                        </a>
                         @php $frontUrl = admin_front_url(); @endphp
                         @if($frontUrl !== null)
                         <a href="{{ $frontUrl }}" class="nav-item" target="_blank" rel="noopener noreferrer">

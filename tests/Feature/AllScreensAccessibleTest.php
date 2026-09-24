@@ -142,6 +142,8 @@ class AllScreensAccessibleTest extends TestCase
             'settings.wallet' => ['admin.settings.wallet', ['project_key' => $key]],
             'analytics' => ['admin.analytics', ['project_key' => $key]],
             'analysis-deliveries' => ['admin.analysis-deliveries', ['project_key' => $key]],
+            'help' => ['admin.help', ['project_key' => $key]],
+            'help.show' => ['admin.help.show', ['project_key' => $key, 'slug' => 'transfer']],
             'audit-logs.index' => ['admin.audit-logs.index', ['project_key' => $key]],
             'audit-logs.show' => ['admin.audit-logs.show', ['project_key' => $key, 'id' => 1]],
             'gallery.categories' => ['admin.gallery.categories', ['project_key' => $key]],
@@ -229,6 +231,8 @@ class AllScreensAccessibleTest extends TestCase
             'accounts.edit' => ['system-admin.accounts.edit', ['id' => 1]],
             'audit-logs.index' => ['system-admin.audit-logs.index', []],
             'audit-logs.show' => ['system-admin.audit-logs.show', ['id' => 1]],
+            'help-articles.index' => ['system-admin.help-articles.index', []],
+            'help-articles.create' => ['system-admin.help-articles.create', []],
             'mail-test.show' => ['system-admin.mail-test.show', []],
         ];
     }
