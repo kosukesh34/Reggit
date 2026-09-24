@@ -1,5 +1,22 @@
 import Foundation
 
+struct ExistingMemberLinkFieldItem: Equatable, Sendable, Identifiable {
+    let key: String
+    let label: String
+    var id: String { key }
+}
+
+struct ExistingMemberLinkForm: Equatable, Sendable {
+    let isEnabled: Bool
+    let description: String
+    let fields: [ExistingMemberLinkFieldItem]
+}
+
+struct ExistingMemberLinkResult: Equatable, Sendable {
+    let linked: Bool
+    let message: String
+}
+
 struct TransferCode: Equatable, Sendable {
     let memberId: Int
     let code: String
@@ -21,6 +38,8 @@ protocol ReggitAPIServing: Sendable {
     func withdrawMember() async throws
     func issueTransferCode() async throws -> TransferCode
     func claimTransferCode(memberId: Int, code: String) async throws
+    func fetchExistingMemberLinkForm() async throws -> ExistingMemberLinkForm
+    func submitExistingMemberLink(values: [String: String]) async throws -> ExistingMemberLinkResult
     func registerMember(name: String, phone: String) async throws -> MemberProfileSnapshot
     func updateMemberProfile(name: String, phone: String, profilePayload: [String: String], profileListPayload: [String: [String]]) async throws -> MemberProfileSnapshot
     func fetchPointCard() async throws -> PointCardSnapshot
