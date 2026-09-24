@@ -6,6 +6,7 @@ use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Reservation\ValueObjects\PendingReservation;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
+use App\Models\ReservationCourse;
 use App\Models\User;
 use App\Util\AdminContext;
 use App\Util\DateUtil;
@@ -25,6 +26,8 @@ class ReservationService
             throw new \InvalidArgumentException('予約日時が不正です');
         }
 
+        $course = $this->resolveCourse($projectId, $data['reservation_course_id'] ?? null);
+
         $reservationId = $this->reservationRepository->persistPending(new PendingReservation(
             $projectId,
             (int) $user->id,
@@ -38,7 +41,10 @@ class ReservationService
             'user_id' => $user->id,
         ]);
 
-        return Reservation::findOrFail($reservationId);
+        $reservation = Reservation::findOrFail($reservationId);
+        $this->applyCourse($reservation, $course);
+
+        return $reservation;
     }
 
     public function cancelReservation(int $reservationId, User $user): Reservation
@@ -75,6 +81,10 @@ class ReservationService
             throw new \InvalidArgumentException('予約日時が不正です');
         }
 
+        $course = array_key_exists('reservation_course_id', $data)
+            ? $this->resolveCourse($projectId, $data['reservation_course_id'])
+            : null;
+
         $aggregate->updateDetails(
             $reservedAt,
             (int) ($data['number_of_people'] ?? $aggregate->numberOfPeople()),
@@ -82,12 +92,17 @@ class ReservationService
         );
         $this->reservationRepository->save($aggregate);
 
+        $reservation = Reservation::findOrFail($aggregate->id()->value());
+        if (array_key_exists('reservation_course_id', $data)) {
+            $this->applyCourse($reservation, $course);
+        }
+
         LogHelper::info('[Reservation] updated', [
             'reservation_id' => $aggregate->id()->value(),
             'user_id' => $user->id,
         ]);
 
-        return Reservation::findOrFail($aggregate->id()->value());
+        return $reservation;
     }
 
     public function getUserReservations(User $user): array
@@ -105,6 +120,9 @@ class ReservationService
                     'number_of_people' => $reservation->number_of_people ?? 1,
                     'status' => $reservation->status ?? ReservationStatus::PENDING,
                     'notes' => $reservation->notes ?? null,
+                    'reservation_course_id' => $reservation->reservation_course_id,
+                    'course_name' => $reservation->course_name,
+                    'course_price' => $reservation->course_price,
                 ];
             })->toArray();
         } catch (\Exception $e) {
@@ -114,5 +132,23 @@ class ReservationService
             ]);
             throw $e;
         }
+    }
+
+    private function resolveCourse(int $projectId, int|string|null $courseId): ?ReservationCourse
+    {
+        if ($courseId === null || $courseId === '') {
+            return null;
+        }
+
+        return ReservationCourse::where('project_id', $projectId)->where('is_active', true)->findOrFail((int) $courseId);
+    }
+
+    private function applyCourse(Reservation $reservation, ?ReservationCourse $course): void
+    {
+        $reservation->update([
+            'reservation_course_id' => $course?->id,
+            'course_name' => $course?->name,
+            'course_price' => $course?->price,
+        ]);
     }
 }

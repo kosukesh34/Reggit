@@ -61,6 +61,8 @@
                     && \App\Support\PlanFeatures::hasFeature($navPlan, \App\Support\PlanFeatures::LIFF_DESIGNER_ADVANCED);
                 $showAnalytics = ($adminUser === null || $adminUser->hasPermission('analytics.view'))
                     && \App\Support\PlanFeatures::hasFeature($navPlan, \App\Support\PlanFeatures::ANALYTICS_ADVANCED);
+                $showGallery = $navStore !== null
+                    && app(\App\Domain\Settings\Repositories\ShopSettingRepository::class)->isFeatureEnabled('feature_gallery_enabled', (int) $navStore->id);
             @endphp
             <div class="sidebar-header">
                 @if($isSystemAdminScreen)
@@ -113,6 +115,10 @@
                     <a href="{{ route('system-admin.audit-logs.index') }}" class="nav-item {{ request()->routeIs('system-admin.audit-logs*') ? 'active' : '' }}">
                         <i class="fas fa-clipboard-list"></i>
                         <span>監査ログ</span>
+                    </a>
+                    <a href="{{ route('system-admin.help-articles.index') }}" class="nav-item {{ request()->routeIs('system-admin.help-articles.*') ? 'active' : '' }}">
+                        <i class="fas fa-book"></i>
+                        <span>ヘルプ記事</span>
                     </a>
                     <a href="{{ route('system-admin.mail-test.show') }}" class="nav-item {{ request()->routeIs('system-admin.mail-test.*') ? 'active' : '' }}">
                         <i class="fas fa-envelope"></i>
@@ -190,7 +196,7 @@
                         @endif
                     </div>
                     @endif
-                    @if($adminUser === null || $adminUser->hasPermission('gallery.view'))
+                    @if($showGallery && ($adminUser === null || $adminUser->hasPermission('gallery.view')))
                     <a href="{{ admin_route('admin.gallery.items') }}" class="nav-item {{ request()->routeIs('admin.gallery*') ? 'active' : '' }}">
                         <i class="fas fa-images"></i>
                         <span>ギャラリー</span>
@@ -200,9 +206,13 @@
                     <div class="nav-group">
                         <div class="nav-group-label">分析</div>
                         @if($showAnalytics)
-                        <a href="{{ admin_route('admin.analytics') }}" class="nav-item {{ request()->routeIs('admin.analytics*') ? 'active' : '' }}">
+                        <a href="{{ admin_route('admin.analytics') }}" class="nav-item {{ request()->routeIs('admin.analytics') ? 'active' : '' }}">
                             <i class="fas fa-chart-line"></i>
                             <span>分析</span>
+                        </a>
+                        <a href="{{ admin_route('admin.analysis-deliveries') }}" class="nav-item {{ request()->routeIs('admin.analysis-deliveries*') ? 'active' : '' }}">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>分析から配信</span>
                         </a>
                         @endif
                         @if($adminUser === null || $adminUser->hasPermission('members.view'))
@@ -214,28 +224,28 @@
                     </div>
                     @endif
                     <div class="nav-separator" role="presentation"></div>
-                    @if($showLiffDesigner)
-                    <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">
-                        <i class="fas fa-paint-brush"></i>
-                        <span>LIFFデザイン</span>
-                    </a>
-                    @endif
                     @if(
                         $adminUser === null
                         || $adminUser->hasPermission('settings.view')
+                        || $showLiffDesigner
                         || $adminUser->hasPermission('reservations.view')
                         || $adminUser->hasPermission('queue.view')
                         || $adminUser->hasPermission('coupons.view')
                         || $adminUser->hasPermission('announcements.view')
                         || $adminUser->hasPermission('gallery.view')
                         || $adminUser->hasPermission('audit_logs.view')
+                        || $adminUser->hasPermission('members.manage')
                     )
-                    <a href="{{ admin_route('admin.settings.index') }}" class="nav-item {{ (request()->routeIs('admin.settings.*') && ! request()->routeIs('admin.settings.liff-designer*')) || request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.settings.index') }}" class="nav-item {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>
                         <span>設定</span>
                     </a>
                     @endif
                     <div class="nav-group nav-group-footer">
+                        <a href="{{ admin_route('admin.help') }}" class="nav-item {{ request()->routeIs('admin.help*') ? 'active' : '' }}" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-circle-question"></i>
+                            <span>ヘルプ</span>
+                        </a>
                         @php $frontUrl = admin_front_url(); @endphp
                         @if($frontUrl !== null)
                         <a href="{{ $frontUrl }}" class="nav-item" target="_blank" rel="noopener noreferrer">
@@ -289,7 +299,14 @@
                 </div>
             @endif
             <div class="content-body">
+                @if(request()->routeIs('admin.settings.*') && !request()->routeIs('admin.settings.index') && !request()->routeIs('admin.settings.liff-designer*'))
+                    <div class="settings-page-content">
+                        <a href="{{ admin_route('admin.settings.index') }}" class="settings-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 設定一覧</a>
+                        @yield('content')
+                    </div>
+                @else
                 @yield('content')
+                @endif
             </div>
         </main>
     </div>

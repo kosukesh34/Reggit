@@ -25,7 +25,7 @@ struct DefaultNativeDeviceContextProvider: NativeDeviceContextProvider {
     }
 
     var osVersion: String {
-        ProcessInfo.processInfo.operatingSystemVersionString
+        PlatformRuntime.osVersion
     }
 
     var appVersion: String {

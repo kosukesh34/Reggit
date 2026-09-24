@@ -80,6 +80,65 @@ struct ReggitAPIClient: ReggitAPIServing {
         return try MemberProfileSnapshot.parse(data)
     }
 
+    func withdrawMember() async throws {
+        _ = try await requestData(path: "/api/members/withdraw", method: "POST")
+    }
+
+    func issueTransferCode() async throws -> TransferCode {
+        let json = try await requestJSON(path: "/api/members/transfer-code", method: "POST")
+        guard let data = json["data"] as? [String: Any],
+              let code = data["code"] as? String, !code.isEmpty else {
+            throw ReggitAPIError.invalidResponse
+        }
+        let memberId = data["member_id"] as? Int ?? (data["member_id"] as? NSNumber)?.intValue ?? 0
+        guard memberId > 0 else { throw ReggitAPIError.invalidResponse }
+        return TransferCode(memberId: memberId, code: code, expiresAt: data["expires_at"] as? String ?? "")
+    }
+
+    func claimTransferCode(memberId: Int, code: String) async throws {
+        _ = try await requestJSON(
+            path: "/api/members/transfer",
+            method: "POST",
+            body: ["member_id": memberId, "code": code]
+        )
+    }
+
+    func fetchExistingMemberLinkForm() async throws -> ExistingMemberLinkForm {
+        let json = try await requestJSON(path: "/api/members/existing-link", method: "GET")
+        guard let data = json["data"] as? [String: Any] else { throw ReggitAPIError.invalidResponse }
+        let rawFields = data["fields"] as? [[String: Any]] ?? []
+        let fields = rawFields.compactMap { row -> ExistingMemberLinkFieldItem? in
+            guard let key = row["key"] as? String, let label = row["label"] as? String else { return nil }
+            return ExistingMemberLinkFieldItem(key: key, label: label)
+        }
+        return ExistingMemberLinkForm(
+            isEnabled: data["is_enabled"] as? Bool ?? false,
+            description: data["description"] as? String ?? "",
+            fields: fields
+        )
+    }
+
+    func submitExistingMemberLink(values: [String: String]) async throws -> ExistingMemberLinkResult {
+        let json = try await requestJSON(path: "/api/members/existing-link", method: "POST", body: values)
+        let data = json["data"] as? [String: Any]
+        return ExistingMemberLinkResult(
+            linked: data?["linked"] as? Bool ?? false,
+            message: json["message"] as? String ?? "既存会員を連携しました"
+        )
+    }
+
+    func authorizeWalletChannel(socketID: String, memberID: Int) async throws -> String {
+        let response = try await requestJSON(
+            path: "/api/broadcasting/auth",
+            method: "POST",
+            body: ["socket_id": socketID, "channel_name": "private-liff.member.\(memberID)"]
+        )
+        guard let auth = response["auth"] as? String, !auth.isEmpty else {
+            throw ReggitAPIError.invalidResponse
+        }
+        return auth
+    }
+
     func registerMember(name: String, phone: String) async throws -> MemberProfileSnapshot {
         let data = try await requestData(
             path: "/api/members/register",
@@ -266,7 +325,12 @@ struct ReggitAPIClient: ReggitAPIServing {
         return try ReservationListResponse.parse(data).reservations
     }
 
-    func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?) async throws {
+    func fetchReservationCourses() async throws -> [ReservationCourseItem] {
+        let data = try await requestData(path: "/api/reservations/available-dates", method: "GET")
+        return try ReservationCourseItem.parseList(data)
+    }
+
+    func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?, courseId: Int?) async throws {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
         var body: [String: Any] = [
@@ -275,6 +339,9 @@ struct ReggitAPIClient: ReggitAPIServing {
         ]
         if let notes, !notes.isEmpty {
             body["notes"] = notes
+        }
+        if let courseId {
+            body["reservation_course_id"] = courseId
         }
         _ = try await requestJSON(path: "/api/reservations", method: "POST", body: body)
     }

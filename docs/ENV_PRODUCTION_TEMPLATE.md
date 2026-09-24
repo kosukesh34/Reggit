@@ -14,7 +14,7 @@
 |------|-------------------|---------------------------|
 | **APP_URL** | `http://localhost:8080` | `https://reggit.jp` |
 | **アプリURL**（スマレジ画面） | `http://localhost:8080` | `https://reggit.jp` |
-| **利用者契約通知先URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.jp/api/smaregi/idp` |
+| **利用者契約通知先URL** | `{APP_URL}/api/smaregi/idp?callback_token={SMAREGI_IDP_CALLBACK_TOKEN}` | `{APP_URL}/api/smaregi/idp?callback_token={SMAREGI_IDP_CALLBACK_TOKEN}` |
 | **Webhook送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.jp/api/smaregi/webhook` |
 | **リダイレクトURI** | `urn:ietf:wg:oauth:2.0:oob`（共通） | `urn:ietf:wg:oauth:2.0:oob`（共通） |
 
@@ -35,7 +35,7 @@
 | **API ベース** | https://reggit.jp/api |
 | **アプリ設定取得（モバイル用）** | https://reggit.jp/api/v1/app-config?project_key=default |
 | **LINE Webhook** | https://reggit.jp/api/line/webhook |
-| **スマレジ 利用者契約通知** | https://reggit.jp/api/smaregi/idp |
+| **スマレジ 利用者契約通知** | `https://reggit.jp/api/smaregi/idp?callback_token={SMAREGI_IDP_CALLBACK_TOKEN}` |
 | **スマレジ Webhook** | https://reggit.jp/api/smaregi/webhook |
 | **Stripe Webhook** | https://reggit.jp/api/payment/webhook |
 | **デバイス登録** | https://reggit.jp/api/devices/register |
@@ -107,11 +107,12 @@
 | 項目 | ローカル用 | 本番用 |
 |------|------------|--------|
 | **アプリ URL** | `http://localhost:8080` | `https://reggit.jp` |
-| **利用者契約通知先 URL** | `http://localhost:8080/api/smaregi/idp` | `https://reggit.jp/api/smaregi/idp` |
+| **利用者契約通知先 URL** | `{APP_URL}/api/smaregi/idp?callback_token={SMAREGI_IDP_CALLBACK_TOKEN}` | `{APP_URL}/api/smaregi/idp?callback_token={SMAREGI_IDP_CALLBACK_TOKEN}` |
 | **Webhook 送信先エンドポイント** | `http://localhost:8080/api/smaregi/webhook` | `https://reggit.jp/api/smaregi/webhook` |
 | **リダイレクト URI** | `urn:ietf:wg:oauth:2.0:oob` | `urn:ietf:wg:oauth:2.0:oob` |
 
 このファイルはあくまでメモ用です。本番の秘密情報はサーバー上の `.env` にだけ入れ、リポジトリには上げないでください。
+利用者契約通知先URLを変更した場合は、スマレジ・デベロッパーズに登録したURLも同時に更新してください。
 
 ---
 

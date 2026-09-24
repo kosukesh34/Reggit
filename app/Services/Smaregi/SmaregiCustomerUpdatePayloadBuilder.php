@@ -10,6 +10,10 @@ class SmaregiCustomerUpdatePayloadBuilder
 {
     public const CUSTOM_FIELD_VALUE_MAX = 85;
 
+    public const NAME_PLACEHOLDER = '—';
+
+    public const KANA_PLACEHOLDER = 'ー';
+
     /**
      * @param  array<string, mixed>  $data  name / kana / email / phone / 住所・生年月日等
      * @param  list<array{key?: string, smaregi_no?: int|null}>  $customFieldDefs
@@ -122,10 +126,10 @@ class SmaregiCustomerUpdatePayloadBuilder
     public function withRegisterNamePlaceholders(array $body): array
     {
         if (! isset($body['lastName']) || trim((string) $body['lastName']) === '') {
-            $body['lastName'] = '—';
+            $body['lastName'] = self::NAME_PLACEHOLDER;
         }
         if (! isset($body['firstName']) || trim((string) $body['firstName']) === '') {
-            $body['firstName'] = '—';
+            $body['firstName'] = self::NAME_PLACEHOLDER;
         }
 
         $body['lastKana'] = $this->normalizeSmaregiKana((string) ($body['lastKana'] ?? ''));
@@ -241,7 +245,7 @@ class SmaregiCustomerUpdatePayloadBuilder
     {
         $value = trim($value);
         if ($value === '') {
-            return 'ー';
+            return self::KANA_PLACEHOLDER;
         }
 
         $katakana = mb_convert_kana($value, 'CKV', 'UTF-8');
@@ -249,6 +253,6 @@ class SmaregiCustomerUpdatePayloadBuilder
             return $katakana;
         }
 
-        return 'ー';
+        return self::KANA_PLACEHOLDER;
     }
 }

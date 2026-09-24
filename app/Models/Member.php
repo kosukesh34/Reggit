@@ -194,15 +194,12 @@ class Member extends Model
         $this->recalcPointsFromTransactions();
     }
 
-    /** 表示・判定用。台帳とカラムがずれていれば整合してから返す */
+    /** 表示・判定用。既存データに台帳がない場合はカラム値を使い、読み取り時には更新しない。 */
     public function getDisplayPoints(): int
     {
         $ledgerPoints = $this->getTotalPointsFromTransactions();
-        if ((int) $this->points !== $ledgerPoints) {
-            $this->syncPointsLedger();
-            $this->refresh();
-
-            return $this->getTotalPointsFromTransactions();
+        if ($ledgerPoints === 0 && (int) $this->points > 0) {
+            return (int) $this->points;
         }
 
         return $ledgerPoints;

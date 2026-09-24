@@ -1,0 +1,19 @@
+appId: com.reggit.default
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "メニューを開く"
+    timeout: 30000
+- tapOn: "メニューを開く"
+- assertVisible: "アプリ情報"
+- tapOn: "アプリ情報"
+- assertVisible: "端末"
+- assertVisible: "端末ID"
+- assertVisible: "アプリバージョン"
+- assertVisible: "OSバージョン"
+- assertVisible: "ユーザーID"
+- assertVisible: "表示時刻"
+- assertNotVisible: "未取得"
+- tapOn: "閉じる"
+- assertVisible: "メニューを開く"

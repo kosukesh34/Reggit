@@ -70,7 +70,7 @@ class OnboardingProjectStoreTest extends TestCase
         $this->assertDatabaseMissing('projects', ['project_key' => 'store-b']);
     }
 
-    public function test_既存店舗の契約_i_dを付け替えたら旧店舗設定から外れること(): void
+    public function test_既存店舗の契約_i_dを別店舗へ付け替えられないこと(): void
     {
         $oldProject = Project::factory()->create([
             'project_key' => 'old-store',
@@ -89,17 +89,21 @@ class OnboardingProjectStoreTest extends TestCase
             'admin_email' => 'new-admin@example.com',
         ]));
 
-        $response->assertCreated();
-        $newProject = Project::where('project_key', 'new-store')->firstOrFail();
-
-        $this->assertSame('sb_shared_contract', ShopSettingStore::getValue('smaregi_contract_id', null, (int) $newProject->id));
-        $this->assertTrue(
-            ShopSettingStore::getValue('smaregi_contract_id', null, (int) $oldProject->id) === null
-            || ShopSettingStore::getValue('smaregi_contract_id', null, (int) $oldProject->id) === ''
-        );
+        $response->assertUnprocessable()->assertJsonValidationErrors('smaregi_contract_id');
+        $this->assertDatabaseMissing('projects', ['project_key' => 'new-store']);
+        $this->assertDatabaseMissing('admin_users', ['login_id' => 'new_store_admin']);
+        $this->assertSame('sb_shared_contract', ShopSettingStore::getValue('smaregi_contract_id', null, (int) $oldProject->id));
         $this->assertDatabaseHas('smaregi_contracts', [
             'contract_id' => 'sb_shared_contract',
-            'project_id' => $newProject->id,
+            'project_id' => $oldProject->id,
         ]);
+    }
+
+    public function test_未認証で有料プランを指定できないこと(): void
+    {
+        $response = $this->postJson('/api/onboarding/projects', $this->validPayload(['plan' => 'premium']));
+
+        $response->assertUnprocessable()->assertJsonValidationErrors('plan');
+        $this->assertDatabaseMissing('projects', ['project_key' => 'store-a']);
     }
 }

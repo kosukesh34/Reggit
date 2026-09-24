@@ -16,37 +16,71 @@ final class HomeViewModel {
 
 struct HomeView: View {
     @State var viewModel: HomeViewModel
-    let homeImageURL: String?
+    @State var selectedHeroIndex = 0
+    let homeImageURLs: [String]
     let menuLayout: String
     let tabs: [AppTabItem]
     let onSelectTab: (String) -> Void
+    let onExpandImage: (Int) -> Void
 
     init(
         apiClient: any ReggitAPIServing,
-        homeImageURL: String? = nil,
+        homeImageURLs: [String] = [],
         menuLayout: String = "grid_3x2",
         tabs: [AppTabItem],
-        onSelectTab: @escaping (String) -> Void
+        onSelectTab: @escaping (String) -> Void,
+        onExpandImage: @escaping (Int) -> Void
     ) {
         _viewModel = State(initialValue: HomeViewModel(apiClient: apiClient))
-        self.homeImageURL = homeImageURL
+        self.homeImageURLs = homeImageURLs
         self.menuLayout = menuLayout
         self.tabs = tabs
         self.onSelectTab = onSelectTab
+        self.onExpandImage = onExpandImage
+    }
+
+    init(
+        apiClient: any ReggitAPIServing,
+        homeImageURLs: [String],
+        menuLayout: String,
+        tabs: [AppTabItem],
+        onSelectTab: @escaping (String) -> Void
+    ) {
+        self.init(
+            apiClient: apiClient,
+            homeImageURLs: homeImageURLs,
+            menuLayout: menuLayout,
+            tabs: tabs,
+            onSelectTab: onSelectTab,
+            onExpandImage: { _ in }
+        )
     }
 
     var body: some View {
-        SkipRefreshing {
+        SkipRefreshing { homeContent }
+    }
+
+    private var homeContent: some View {
+        ScrollView {
             VStack(spacing: 16) {
                 heroImage
-                Spacer(minLength: 12)
                 homeMenu
             }
             .padding(.horizontal, PlatformRuntime.homeHorizontalPadding)
             .padding(.top, 12)
             .padding(.bottom, 10)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppDesign.canvas.ignoresSafeArea())
+            .frame(maxWidth: .infinity)
+        }
+        .background(AppDesign.canvas.ignoresSafeArea())
+        .task(id: homeImageURLs.count) {
+            selectedHeroIndex = 0
+            guard homeImageURLs.count > 1 else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                if !Task.isCancelled {
+                    selectedHeroIndex = (selectedHeroIndex + 1) % homeImageURLs.count
+                }
+            }
         }
     }
 
@@ -66,33 +100,68 @@ struct HomeView: View {
         }
     }
 
-    @ViewBuilder
     private var heroImage: some View {
-        Group {
-            if homeImageURL != nil {
-                RemoteImageView(
-                    urlString: homeImageURL,
-                    baseURL: viewModel.mediaBaseURL,
-                    contentMode: .fill,
-                    cornerRadius: AppDesign.radiusL
-                )
-                .frame(maxWidth: .infinity)
-                .frame(height: PlatformRuntime.homeHeroHeight, alignment: .center)
-                .clipped()
-            } else {
-                Image("DemoStoreHero", bundle: .module)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: PlatformRuntime.homeHeroHeight, alignment: .center)
-                    .clipped()
-                    .accessibilityHidden(true)
-                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
+        GeometryReader { geometry in
+            Group {
+                if homeImageURLs.count > 1 {
+                    heroImagePages
+                } else {
+                    heroImageButton(at: 0)
+                }
             }
+            .frame(width: geometry.size.width, height: geometry.size.width)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
         }
+        .aspectRatio(1, contentMode: .fit)
         .overlay {
             RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous)
                 .stroke(Color.white.opacity(0.18), lineWidth: 1)
+        }
+    }
+
+    private func heroImageButton(at index: Int) -> some View {
+        Button {
+            selectedHeroIndex = index
+            onExpandImage(index)
+        } label: {
+            heroImageContent(at: index, contentMode: .fill)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("画像を全画面で表示")
+    }
+
+    @ViewBuilder
+    private var heroImagePages: some View {
+        #if os(macOS)
+        heroImageTabView
+        #else
+        heroImageTabView.tabViewStyle(.page(indexDisplayMode: .automatic))
+        #endif
+    }
+
+    private var heroImageTabView: some View {
+        TabView(selection: $selectedHeroIndex) {
+            ForEach(homeImageURLs.indices, id: \.self) { index in
+                heroImageButton(at: index)
+                    .tag(index)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func heroImageContent(at index: Int, contentMode: ContentMode) -> some View {
+        if homeImageURLs.indices.contains(index) {
+            RemoteImageView(
+                urlString: homeImageURLs[index],
+                baseURL: viewModel.mediaBaseURL,
+                contentMode: contentMode
+            )
+        } else {
+            Image("DemoStoreHero", bundle: .module)
+                .resizable()
+                .aspectRatio(contentMode: contentMode)
         }
     }
 }

@@ -47,12 +47,24 @@ class ShopSettingFeatureFlagsTest extends TestCase
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_gacha_enabled', $project->id));
     }
 
-    public function test_set_feature_flags_文字列0は無効になること(): void
+    public function test_ギャラリーの公開状態はホームメニューだけで決まること(): void
     {
         $project = $this->createProject();
         $flags = ShopSettingStore::getFeatureFlags($project->id);
         $flags['feature_gallery_enabled'] = '0';
 
+        ShopSettingStore::setFeatureFlags($flags, $project->id);
+
+        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
+
+        ShopSettingStore::setFrontendMenuItems([
+            ['tab' => 'gallery', 'label' => 'ギャラリー', 'enabled' => false, 'order' => 10],
+        ], $project->id);
+
+        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
+        $this->assertFalse(ShopSettingStore::getFeatureFlags($project->id)['feature_gallery_enabled']);
+
+        $flags['feature_gallery_enabled'] = true;
         ShopSettingStore::setFeatureFlags($flags, $project->id);
 
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_gallery_enabled', $project->id));

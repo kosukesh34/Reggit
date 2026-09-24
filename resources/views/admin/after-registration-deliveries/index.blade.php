@@ -16,10 +16,6 @@
     <h1 class="page-header-title"><i class="fas fa-clock"></i> スケジュール配信</h1>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success" role="alert">{{ session('success') }}</div>
-@endif
-
 <div class="card">
     <div class="card-header card-header-with-action">
         <h2 class="card-title">一覧</h2>

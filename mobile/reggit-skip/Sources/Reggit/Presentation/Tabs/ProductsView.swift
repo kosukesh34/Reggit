@@ -61,7 +61,7 @@ final class ProductsViewModel {
 
     var cartLines: [CartLine] {
         products.compactMap { product in
-            guard let qty = cart[product.id], qty > 0 else { return nil }
+            guard product.isAvailable, let qty = cart[product.id], qty > 0 else { return nil }
             return CartLine(id: product.id, product: product, quantity: qty, optionIds: selectedOptions[product.id] ?? [])
         }
     }
@@ -76,13 +76,16 @@ final class ProductsViewModel {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            products = try await apiClient.fetchProducts().filter(\.isAvailable)
+            products = try await apiClient.fetchProducts()
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    func addToCart(_ product: ProductItem) { cart[product.id, default: 0] += 1 }
+    func addToCart(_ product: ProductItem) {
+        guard product.isAvailable else { return }
+        cart[product.id, default: 0] += 1
+    }
 
     func removeFromCart(_ product: ProductItem) {
         guard let count = cart[product.id], count > 0 else { return }
@@ -273,7 +276,9 @@ struct ProductsView: View {
             if let order = try? await viewModel.fetchOrder(id: orderID) {
                 viewModel.activeOrder = order
                 viewModel.showConfirm = false
-                viewModel.checkoutURL = nil
+                if !order.isAwaitingCardPayment {
+                    viewModel.checkoutURL = nil
+                }
             }
         }
     }
@@ -338,20 +343,25 @@ struct ProductsView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("\(product.name)の詳細"))
+            availabilityLine(product)
             HStack {
                 Text(AppFormat.yen(product.price)).font(.headline).foregroundStyle(AppDesign.ink)
                 Spacer()
                 QtyStepper(
+                    itemName: product.name,
                     quantity: viewModel.cart[product.id] ?? 0,
                     onMinus: { viewModel.removeFromCart(product) },
                     onPlus: {
                         if product.optionGroups.isEmpty { viewModel.addToCart(product) }
                         else { openProduct(product) }
-                    }
+                    },
+                    canIncrease: product.isAvailable
                 )
             }
         }
         .padding(.vertical, 16)
+        .opacity(product.isAvailable ? 1 : 0.45)
+        .grayscale(product.isAvailable ? 0 : 0.8)
     }
 
     private func gridProductCard(_ product: ProductItem) -> some View {
@@ -387,16 +397,21 @@ struct ProductsView: View {
             Text(AppFormat.yen(product.price))
                 .font(.headline)
                 .foregroundStyle(AppDesign.ink)
+            availabilityLine(product)
             QtyStepper(
+                itemName: product.name,
                 quantity: viewModel.cart[product.id] ?? 0,
                 onMinus: { viewModel.removeFromCart(product) },
                 onPlus: {
                     if product.optionGroups.isEmpty { viewModel.addToCart(product) }
                     else { openProduct(product) }
-                }
+                },
+                canIncrease: product.isAvailable,
+                expandsToFill: true
             )
-            .frame(maxWidth: .infinity, alignment: .trailing)
         }
+        .opacity(product.isAvailable ? 1 : 0.45)
+        .grayscale(product.isAvailable ? 0 : 0.8)
         .padding(10)
         .background(AppDesign.surface)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
@@ -413,6 +428,7 @@ struct ProductsView: View {
                     Text(AppFormat.yen(product.price))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppDesign.inkSecondary)
+                    availabilityLine(product)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .multilineTextAlignment(.leading)
@@ -420,14 +436,18 @@ struct ProductsView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text("\(product.name)の詳細"))
             QtyStepper(
+                itemName: product.name,
                 quantity: viewModel.cart[product.id] ?? 0,
                 onMinus: { viewModel.removeFromCart(product) },
                 onPlus: {
                     if product.optionGroups.isEmpty { viewModel.addToCart(product) }
                     else { openProduct(product) }
-                }
+                },
+                canIncrease: product.isAvailable
             )
         }
+        .opacity(product.isAvailable ? 1 : 0.45)
+        .grayscale(product.isAvailable ? 0 : 0.8)
         .padding(14)
         .background(AppDesign.surface)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
@@ -464,7 +484,7 @@ struct ProductsView: View {
                                             .foregroundStyle(accent)
                                         Text(option.name).foregroundStyle(AppDesign.ink)
                                         Spacer()
-                                        if option.priceDelta > 0 { Text("+\(AppFormat.yen(option.priceDelta))").foregroundStyle(AppDesign.inkSecondary) }
+                                        if option.priceDelta != 0 { Text("\(option.priceDelta > 0 ? "+" : "")\(AppFormat.yen(option.priceDelta))").foregroundStyle(AppDesign.inkSecondary) }
                                     }
                                     .frame(minHeight: 44)
                                 }
@@ -500,8 +520,27 @@ struct ProductsView: View {
     }
 
     private func openProduct(_ product: ProductItem) {
+        guard product.isAvailable else { return }
         draftOptionIds = viewModel.selectedOptions[product.id] ?? []
         selectedProduct = product
+    }
+
+    @ViewBuilder
+    private func availabilityLine(_ product: ProductItem) -> some View {
+        if product.isAvailable == false || product.stock != nil {
+            Text(availabilityText(product))
+                .font(.caption)
+                .foregroundStyle(AppDesign.inkSecondary)
+        }
+    }
+
+    private func availabilityText(_ product: ProductItem) -> String {
+        var parts: [String] = []
+        if product.isAvailable == false { parts.append("販売停止") }
+        if let stock = product.stock { parts.append("残り\(stock)") }
+        let quantity = viewModel.cart[product.id] ?? 0
+        if quantity > 0 { parts.append("選択中 \(quantity)") }
+        return parts.joined(separator: " · ")
     }
 
     private func toggleOption(_ option: ProductOptionItem, in group: ProductOptionGroupItem) {
@@ -664,19 +703,19 @@ struct OrderStatusView: View {
         ScrollView {
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
-                    Text(order.paymentMethod == "stripe" && order.status == "pending" ? "カード決済を完了してください" : order.isActive ? "ご注文を受け付けました" : order.statusLabel)
+                    Text(order.isAwaitingCardPayment ? "カード決済は完了していません" : order.isActive ? "ご注文を受け付けました" : order.statusLabel)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(AppDesign.inkSecondary)
                     Text(order.pickupNumberLabel)
                         .font(.system(size: 44, weight: .bold, design: .rounded))
                         .foregroundStyle(accent)
-                    Text("受取番号")
+                    Text(order.hasPickupNumber ? "受取番号" : "決済状況")
                         .font(.system(size: 13))
                         .foregroundStyle(AppDesign.inkSecondary)
                 }
                 .padding(.top, 8)
 
-                if order.paymentMethod == "stripe", order.status == "pending", let onContinuePayment {
+                if order.isAwaitingCardPayment, let onContinuePayment {
                     VStack(spacing: 10) {
                         AppPrimaryButton(title: "カード決済を続ける", action: onContinuePayment)
                         Text("決済完了後に受取番号が発行されます")
@@ -685,6 +724,7 @@ struct OrderStatusView: View {
                     }
                 }
 
+                if !order.isAwaitingCardPayment {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("進捗")
                         .font(.system(size: 15, weight: .bold))
@@ -697,6 +737,7 @@ struct OrderStatusView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 8)
+                }
 
                 if !order.items.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {

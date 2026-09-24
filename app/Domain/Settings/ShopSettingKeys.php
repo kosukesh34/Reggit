@@ -43,7 +43,6 @@ class ShopSettingKeys
         'feature_coupons_enabled' => 'クーポン',
         'feature_members_enabled' => '会員証',
         'feature_announcements_enabled' => 'お知らせ',
-        'feature_gallery_enabled' => 'ギャラリー',
     ];
 
     public const LOTTERY_MANAGED_FEATURE_FLAGS = [

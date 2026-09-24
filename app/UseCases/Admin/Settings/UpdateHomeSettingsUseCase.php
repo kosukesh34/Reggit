@@ -22,6 +22,7 @@ class UpdateHomeSettingsUseCase
         string $homeMenuLayout = 'grid_3x2',
         string $productDisplayLayout = 'list_with_image',
         ?array $nativeNavigation = null,
+        ?array $homeImageUrls = null,
     ): void {
         $defaults = collect($this->shopSettingRepository->defaultFrontendMenuItems())->keyBy('tab');
         $existingLinks = collect($this->existingLinkMenuItems($projectId))->keyBy('tab');
@@ -62,18 +63,22 @@ class UpdateHomeSettingsUseCase
             $this->shopSettingRepository->setValue('navigation_header_image_url', $navigationHeaderImageUrl, 'string', $projectId);
         }
         $this->shopSettingRepository->setValue('navigation_header_background_color', strtoupper($navigationHeaderBackgroundColor), 'string', $projectId);
-        if ($homeImageUrl !== null) {
+        if ($homeImageUrls !== null) {
+            $this->shopSettingRepository->setValue('home_image_urls', $homeImageUrls, 'json', $projectId);
+            $this->shopSettingRepository->setValue('home_image_url', $homeImageUrls[0] ?? '', 'string', $projectId);
+        } elseif ($homeImageUrl !== null) {
+            $this->shopSettingRepository->setValue('home_image_urls', $homeImageUrl !== '' ? [$homeImageUrl] : [], 'json', $projectId);
             $this->shopSettingRepository->setValue('home_image_url', $homeImageUrl, 'string', $projectId);
         }
         $this->shopSettingRepository->setValue('home_menu_layout', $homeMenuLayout, 'string', $projectId);
         $this->shopSettingRepository->setValue('product_display_layout', $productDisplayLayout, 'string', $projectId);
         if ($nativeNavigation !== null) {
             $allowedNavigationKeys = array_merge(
-                array_column($items, 'tab'),
+                array_values(array_filter(array_column($items, 'tab'), fn ($tab) => $tab !== 'designlab')),
                 ['terms', 'privacy'],
             );
             $normalizedNavigation = [];
-            foreach (['header' => 2, 'footer' => 5, 'hamburger' => null] as $placement => $limit) {
+            foreach (['header' => 1, 'footer' => 5, 'hamburger' => null] as $placement => $limit) {
                 $keys = array_values(array_unique(array_filter(
                     is_array($nativeNavigation[$placement] ?? null) ? $nativeNavigation[$placement] : [],
                     fn ($key) => is_string($key) && in_array($key, $allowedNavigationKeys, true),

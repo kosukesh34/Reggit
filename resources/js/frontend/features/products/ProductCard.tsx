@@ -19,12 +19,19 @@ export function ProductCard({
     onAddToCart,
     onAdjustQuantity,
 }: ProductCardProps): JSX.Element {
+    const isStopped = product.is_available === false || product.is_available === 0;
+    const stockLabel = product.stock === null || product.stock === undefined || product.stock === ''
+        ? ''
+        : `残り${Number(product.stock)}`;
     const isInCart = cartQuantity > 0;
     const imageUrl = product.image_url || PLACEHOLDER;
     const hasOptions = Array.isArray(product.option_groups) && product.option_groups.length > 0;
     const priceLabel = DomHelper.formatPrice(product.price);
 
     const handleCardClick = (): void => {
+        if (isStopped) {
+            return;
+        }
         if (hasOptions) {
             onOpenDetail(product.id);
             return;
@@ -36,7 +43,7 @@ export function ProductCard({
 
     return (
         <div
-            className={`product-card${isInCart ? ' in-cart' : ''}`}
+            className={`product-card${isInCart ? ' in-cart' : ''}${isStopped ? ' is-stopped' : ''}`}
             data-product-id={String(product.id)}
             onClick={hasOptions || !isInCart ? handleCardClick : undefined}
             role={hasOptions || !isInCart ? 'button' : undefined}
@@ -66,7 +73,19 @@ export function ProductCard({
                     {priceLabel}
                     {hasOptions ? <span className="product-price-from">〜</span> : null}
                 </div>
-                {hasOptions ? (
+                {isStopped || stockLabel !== '' ? (
+                    <div className="product-stock-note">
+                        {isStopped ? '販売停止' : ''}
+                        {isStopped && stockLabel !== '' ? ' · ' : ''}
+                        {stockLabel}
+                        {isInCart ? ` · 選択中 ${cartQuantity}` : ''}
+                    </div>
+                ) : null}
+                {isStopped ? (
+                    <div className="product-qty-stepper" onClick={(e) => e.stopPropagation()}>
+                        <span className="product-qty-value" aria-live="polite">{cartQuantity}</span>
+                    </div>
+                ) : hasOptions ? (
                     <button
                         type="button"
                         className="product-add-btn"

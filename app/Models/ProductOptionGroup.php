@@ -19,6 +19,7 @@ class ProductOptionGroup extends Model
     protected $fillable = [
         'project_id',
         'product_id',
+        'smaregi_option_group_id',
         'name',
         'selection_type',
         'is_required',

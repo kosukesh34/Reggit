@@ -12,6 +12,8 @@ final class ReservationsViewModel {
     var reservedAt = AppClock.now.addingTimeInterval(3600)
     var partySize = 2
     var notes = ""
+    var courses: [ReservationCourseItem] = []
+    var selectedCourseID: Int? = nil
     var isSubmitting = false
     var actionMessage: String?
     var pendingCancel: ReservationItem?
@@ -28,6 +30,7 @@ final class ReservationsViewModel {
         defer { isLoading = false }
         do {
             reservations = try await apiClient.fetchMemberReservations()
+            courses = (try? await apiClient.fetchReservationCourses()) ?? []
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -46,10 +49,12 @@ final class ReservationsViewModel {
             try await apiClient.bookReservation(
                 reservedAt: reservedAt,
                 numberOfPeople: partySize,
-                notes: notes.trimmed
+                notes: notes.trimmed,
+                courseId: selectedCourseID
             )
             showCreate = false
             notes = ""
+            selectedCourseID = nil
             actionMessage = "予約を作成しました"
             await load()
         } catch {
@@ -166,6 +171,9 @@ struct ReservationsView: View {
                 Label("\(item.numberOfPeople)名", systemImage: "person.2")
                 Text("予約番号 \(item.reservationNumber)")
             }.font(.caption).foregroundStyle(AppDesign.inkSecondary)
+            if let courseName = item.courseName, !courseName.isEmpty {
+                Text(courseName).font(.subheadline.weight(.medium)).foregroundStyle(AppDesign.ink)
+            }
             if !item.notes.isEmpty {
                 Text(item.notes).font(.subheadline).foregroundStyle(AppDesign.inkSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -202,6 +210,19 @@ struct ReservationsView: View {
                     ),
                     in: 1 ... 10
                 )
+            }
+            if !viewModel.courses.isEmpty {
+                Section("コース") {
+                    Picker("コース", selection: Binding(
+                        get: { viewModel.selectedCourseID ?? 0 },
+                        set: { viewModel.selectedCourseID = $0 == 0 ? nil : $0 }
+                    )) {
+                        Text("指定なし").tag(0)
+                        ForEach(viewModel.courses) { course in
+                            Text("\(course.name) · \(AppFormat.yen(course.price))").tag(course.id)
+                        }
+                    }
+                }
             }
             Section("メモ") {
                 TextField("要望など（任意）", text: Binding(

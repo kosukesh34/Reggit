@@ -17,6 +17,9 @@ type Reservation = {
     reservation_number?: string | number | null;
     number_of_people: number;
     notes?: string | null;
+    reservation_course_id?: number | null;
+    course_name?: string | null;
+    course_price?: number | null;
     is_sample_preview?: boolean;
 };
 
@@ -26,10 +29,13 @@ type AvailableDateInfo = {
     time_slots?: string[];
 };
 
+type ReservationCourse = { id: number; name: string; price: number; description?: string | null };
+
 export class ReservationManager {
     app: any;
     reservations: Reservation[];
     availableDates: AvailableDateInfo[];
+    courses: ReservationCourse[];
     selectedDate: string | null;
     selectedTime: string | null;
     availableDateMap: Map<string, AvailableDateInfo>;
@@ -43,12 +49,14 @@ export class ReservationManager {
     private pageMode = false;
     private pendingPeople = 1;
     private pendingNotes: string | null = null;
+    private pendingCourseId: number | null = null;
     private lastCompletedLabel: string | null = null;
 
     constructor(appInstance: any) {
         this.app = appInstance;
         this.reservations = [];
         this.availableDates = [];
+        this.courses = [];
         this.selectedDate = null;
         this.selectedTime = null;
         this.availableDateMap = new Map();
@@ -432,6 +440,7 @@ export class ReservationManager {
                 this.selectedTime = null;
                 this.pendingPeople = AppConstants.RESERVATION_VALIDATION.MIN_PEOPLE;
                 this.pendingNotes = null;
+                this.pendingCourseId = null;
             }
             await this.loadAvailableDates();
             section.innerHTML = `<div class="liff-flow-page reservation-flow-new">${this.getCreateFormHtml()}</div>`;
@@ -449,6 +458,7 @@ export class ReservationManager {
                     <h2>予約内容の確認</h2>
                     <p class="liff-entity-detail__meta">日時: ${DomHelper.escapeHtml(dateLabel)} ${DomHelper.escapeHtml(timeLabel)}</p>
                     <p class="liff-entity-detail__meta">人数: ${this.pendingPeople}名</p>
+                    ${this.pendingCourseId ? `<p class="liff-entity-detail__meta">コース: ${DomHelper.escapeHtml(this.courses.find((course) => course.id === this.pendingCourseId)?.name || '')}</p>` : ''}
                     ${this.pendingNotes ? `<p class="liff-entity-detail__body">${DomHelper.escapeHtml(this.pendingNotes)}</p>` : ''}
                     <div class="liff-flow-actions">
                         <button type="button" class="btn btn-primary" id="reservationConfirmSubmit">
@@ -488,6 +498,7 @@ export class ReservationManager {
             reserved_at: `${this.selectedDate} ${this.selectedTime}:00`,
             number_of_people: this.pendingPeople,
             notes: this.pendingNotes,
+            reservation_course_id: this.pendingCourseId,
         };
         try {
             const response = await this.apiClient.post(AppConstants.API_ENDPOINTS.RESERVATIONS, data);
@@ -497,6 +508,7 @@ export class ReservationManager {
                 this.selectedDate = null;
                 this.selectedTime = null;
                 this.pendingNotes = null;
+                this.pendingCourseId = null;
                 await this.loadReservations();
                 await this.openFlowStep('complete');
             } else {
@@ -634,6 +646,9 @@ export class ReservationManager {
                             ${this.getPeopleStepperHtml(numPeople)}
                         </div>
                         <div class="form-group">
+                            ${this.getCourseSelectHtml(reservation.reservation_course_id || null)}
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-comment"></i> ${AppConstants.RESERVATION_LABELS.NOTES_OPTIONAL}
                             </label>
@@ -662,8 +677,9 @@ export class ReservationManager {
         try {
             const response = await this.apiClient.get(url);
             if (response.success === true) {
-                const data = response.data as { available_dates?: AvailableDateInfo[]; start_date?: string; end_date?: string } | undefined;
+                const data = response.data as { available_dates?: AvailableDateInfo[]; start_date?: string; end_date?: string; courses?: ReservationCourse[] } | undefined;
                 this.availableDates = (data && data.available_dates) || [];
+                this.courses = (data && data.courses) || [];
                 this.availableDateMap = new Map(this.availableDates.map((dateInfo) => [dateInfo.date, dateInfo]));
                 this.calendarStartDate = this.parseDate(data && data.start_date) || this.getDefaultCalendarStart();
                 this.calendarEndDate = this.parseDate(data && data.end_date) || this.getDefaultCalendarEnd();
@@ -683,6 +699,7 @@ export class ReservationManager {
             // eslint-disable-next-line no-console
             console.error('Failed to load available dates:', error);
             this.availableDates = [];
+            this.courses = [];
             this.availableDateMap = new Map();
             this.calendarStartDate = this.getDefaultCalendarStart();
             this.calendarEndDate = this.getDefaultCalendarEnd();
@@ -733,6 +750,9 @@ export class ReservationManager {
                             ${this.getPeopleStepperHtml(this.pendingPeople)}
                         </div>
                         <div class="form-group">
+                            ${this.getCourseSelectHtml(this.pendingCourseId)}
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-comment"></i> ${AppConstants.RESERVATION_LABELS.NOTES_OPTIONAL}
                             </label>
@@ -752,6 +772,12 @@ export class ReservationManager {
                 </form>
             </div>
         `;
+    }
+
+    getCourseSelectHtml(selectedId: number | null): string {
+        if (this.courses.length === 0) return '';
+        const options = this.courses.map((course) => `<option value="${course.id}" ${selectedId === course.id ? 'selected' : ''}>${DomHelper.escapeHtml(course.name)} · ${Number(course.price).toLocaleString('ja-JP')}円</option>`).join('');
+        return `<label class="form-label" for="reservationCourse">コース</label><select class="form-control" id="reservationCourse" name="reservation_course_id"><option value="">指定なし</option>${options}</select>`;
     }
 
     private restoreNewFormSelection(): void {
@@ -933,6 +959,7 @@ export class ReservationManager {
                 this.pendingPeople = parseInt(String(formData.get('number_of_people') || '1'), 10) || 1;
                 const notes = formData.get('notes');
                 this.pendingNotes = notes !== null && String(notes) !== '' ? String(notes) : null;
+                this.pendingCourseId = Number(formData.get('reservation_course_id')) || null;
                 if (!this.selectedDate || !this.selectedTime) {
                     ToastManager.error('日付と時間を選択してください');
                     return;
@@ -1010,6 +1037,7 @@ export class ReservationManager {
             reserved_at: `${this.selectedDate} ${this.selectedTime}:00`,
             number_of_people: parseInt(String(formData.get('number_of_people') || '0'), 10),
             notes: formData.get('notes') || null,
+            reservation_course_id: Number(formData.get('reservation_course_id')) || null,
         };
         try {
             const response = await this.apiClient.put(`${AppConstants.API_ENDPOINTS.RESERVATIONS}/${reservationId}`, data);
@@ -1033,6 +1061,7 @@ export class ReservationManager {
             reserved_at: `${this.selectedDate} ${this.selectedTime}:00`,
             number_of_people: parseInt(String(formData.get('number_of_people') || '0'), 10),
             notes: formData.get('notes') || null,
+            reservation_course_id: Number(formData.get('reservation_course_id')) || null,
         };
         try {
             const response = await this.apiClient.post(AppConstants.API_ENDPOINTS.RESERVATIONS, data);

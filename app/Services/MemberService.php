@@ -53,6 +53,7 @@ class MemberService
 
             return [
                 'is_member' => false,
+                'user_id' => (int) $user->id,
                 'message' => '会員登録がまだです',
                 'show_member_card_for_guest' => $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
                 'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
@@ -77,6 +78,7 @@ class MemberService
 
         return [
             'is_member' => true,
+            'user_id' => (int) $user->id,
             'member' => $member->load('user'),
             'user' => $member->user,
             'profile_field_settings' => $profileFormFields,

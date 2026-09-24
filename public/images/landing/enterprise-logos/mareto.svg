@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 72" role="img" aria-labelledby="mareto-title mareto-desc">
+  <title id="mareto-title">MARETO</title>
+  <desc id="mareto-desc">架空企業 MARETO のロゴ表示例</desc>
+  <path d="M40 11a25 25 0 0 1 25 25H15a25 25 0 0 1 25-25Z" fill="#8B7668"/>
+  <path d="M16 43h49v7H16zM24 56h33v6H24z" fill="#8B7668"/>
+  <text x="83" y="46" fill="#443E3B" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="29" font-weight="700" letter-spacing="1.15">MARETO</text>
+</svg>
