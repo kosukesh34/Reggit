@@ -141,6 +141,7 @@ class AllScreensAccessibleTest extends TestCase
             'settings.existing-member-link' => ['admin.settings.existing-member-link', ['project_key' => $key]],
             'settings.wallet' => ['admin.settings.wallet', ['project_key' => $key]],
             'analytics' => ['admin.analytics', ['project_key' => $key]],
+            'analysis-deliveries' => ['admin.analysis-deliveries', ['project_key' => $key]],
             'audit-logs.index' => ['admin.audit-logs.index', ['project_key' => $key]],
             'audit-logs.show' => ['admin.audit-logs.show', ['project_key' => $key, 'id' => 1]],
             'gallery.categories' => ['admin.gallery.categories', ['project_key' => $key]],
