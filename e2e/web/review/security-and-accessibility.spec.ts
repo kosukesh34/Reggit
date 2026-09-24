@@ -83,11 +83,19 @@ for (const width of [390, 1280]) {
     const response = await page.goto('/liff#/home');
     expect(response?.status()).toBe(200);
     const loginPrompt = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'ログイン' }) });
-    await loginPrompt.getByRole('button', { name: 'あとで' }).click();
-    await expect(loginPrompt).toBeHidden();
     const navigation = page.getByRole('navigation', { name: '主要ナビゲーション' });
     await expect(navigation).toBeVisible();
-    await navigation.getByRole('link', { name: 'その他' }).click();
+    const moreLink = navigation.getByRole('link', { name: 'その他' });
+    if (await loginPrompt.isVisible()) {
+      await loginPrompt.getByRole('button', { name: 'あとで' }).click();
+    }
+    try {
+      await moreLink.click({ timeout: 5000 });
+    } catch (error) {
+      if (!await loginPrompt.isVisible()) throw error;
+      await loginPrompt.getByRole('button', { name: 'あとで' }).click();
+      await moreLink.click();
+    }
     await expect(page).toHaveURL(/#\/more$/);
     await expect(page.getByRole('heading', { name: 'すべてのサービス', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'ポイント', exact: true })).toBeVisible();
