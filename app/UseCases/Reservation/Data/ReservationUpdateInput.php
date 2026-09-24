@@ -11,6 +11,7 @@ use App\Models\User;
  *     reserved_at: string,
  *     number_of_people: int,
  *     notes?: string|null,
+ *     reservation_course_id?: int|null,
  * }  $reservationPayload
  */
 class ReservationUpdateInput

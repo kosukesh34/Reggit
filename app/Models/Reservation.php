@@ -26,6 +26,9 @@ class Reservation extends Model
         'reservation_number',
         'reserved_at',
         'number_of_people',
+        'reservation_course_id',
+        'course_name',
+        'course_price',
         'status',
         'notes',
     ];
@@ -34,6 +37,7 @@ class Reservation extends Model
     protected $casts = [
         'reserved_at' => 'datetime',
         'number_of_people' => 'integer',
+        'course_price' => 'integer',
     ];
 
     public function project()
@@ -44,6 +48,11 @@ class Reservation extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(ReservationCourse::class, 'reservation_course_id');
     }
 
     protected static function boot()
