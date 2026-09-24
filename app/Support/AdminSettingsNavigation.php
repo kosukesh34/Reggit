@@ -26,6 +26,7 @@ final class AdminSettingsNavigation
             ['title' => '会員・販促', 'items' => [
                 ($can('members.view') && $can('settings.view')) ? ['route' => 'admin.settings.ranks', 'icon' => 'fas fa-id-card', 'label' => '会員証・ランク', 'hint' => '表示・ポイント'] : null,
                 ($can('members.view') && $can('settings.view')) ? ['route' => 'admin.settings.profile', 'icon' => 'fas fa-user-cog', 'label' => 'プロフィール', 'hint' => '登録項目'] : null,
+                ($can('settings.view') || $can('members.manage')) ? ['route' => 'admin.settings.existing-member-link', 'icon' => 'fas fa-link', 'label' => '既存会員連携', 'hint' => 'スマレジの会員を結びつける'] : null,
                 ($can('settings.view') && $hasPlan(PlanFeatures::WALLET)) ? ['route' => 'admin.settings.wallet', 'icon' => 'fas fa-wallet', 'label' => 'Wallet画像', 'hint' => '会員証の画像'] : null,
                 $can('coupons.view') ? ['route' => 'admin.settings.coupons', 'icon' => 'fas fa-ticket-alt', 'label' => 'クーポン', 'hint' => '利用・初期画像'] : null,
                 ($can('coupons.view') && $hasPlan(PlanFeatures::LOTTERY)) ? ['route' => 'admin.settings.lottery', 'icon' => 'fas fa-dice', 'label' => '購入特典ゲーム', 'hint' => '条件・景品'] : null,

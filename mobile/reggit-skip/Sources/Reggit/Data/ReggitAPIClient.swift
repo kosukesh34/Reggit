@@ -103,6 +103,30 @@ struct ReggitAPIClient: ReggitAPIServing {
         )
     }
 
+    func fetchExistingMemberLinkForm() async throws -> ExistingMemberLinkForm {
+        let json = try await requestJSON(path: "/api/members/existing-link", method: "GET")
+        guard let data = json["data"] as? [String: Any] else { throw ReggitAPIError.invalidResponse }
+        let rawFields = data["fields"] as? [[String: Any]] ?? []
+        let fields = rawFields.compactMap { row -> ExistingMemberLinkFieldItem? in
+            guard let key = row["key"] as? String, let label = row["label"] as? String else { return nil }
+            return ExistingMemberLinkFieldItem(key: key, label: label)
+        }
+        return ExistingMemberLinkForm(
+            isEnabled: data["is_enabled"] as? Bool ?? false,
+            description: data["description"] as? String ?? "",
+            fields: fields
+        )
+    }
+
+    func submitExistingMemberLink(values: [String: String]) async throws -> ExistingMemberLinkResult {
+        let json = try await requestJSON(path: "/api/members/existing-link", method: "POST", body: values)
+        let data = json["data"] as? [String: Any]
+        return ExistingMemberLinkResult(
+            linked: data?["linked"] as? Bool ?? false,
+            message: json["message"] as? String ?? "既存会員を連携しました"
+        )
+    }
+
     func authorizeWalletChannel(socketID: String, memberID: Int) async throws -> String {
         let response = try await requestJSON(
             path: "/api/broadcasting/auth",

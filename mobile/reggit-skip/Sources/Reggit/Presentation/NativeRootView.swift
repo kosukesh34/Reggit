@@ -68,7 +68,16 @@ struct NativeRootView: View {
             get: { accountMode != nil },
             set: { if $0 == false { accountMode = nil } }
         )) {
-            if let client = viewModel.apiClient {
+            if accountMode == "link", let client = viewModel.apiClient {
+                ExistingMemberLinkView(
+                    apiClient: client,
+                    onLinked: {
+                        accountMode = nil
+                        Task { await viewModel.start() }
+                    },
+                    onClose: { accountMode = nil }
+                )
+            } else if let client = viewModel.apiClient {
                 AccountActionsView(
                     apiClient: client,
                     isMember: viewModel.membership?.isMember == true,
@@ -302,6 +311,13 @@ struct NativeRootView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    Button {
+                        showHamburgerMenu = false
+                        accountMode = "link"
+                    } label: {
+                        drawerRow(title: "既存会員連携", systemImage: "link")
+                    }
+                    .buttonStyle(.plain)
                     Button {
                         showHamburgerMenu = false
                         accountMode = "transfer"

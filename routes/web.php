@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedCo
 use App\Http\Controllers\Admin\Settings\AnnouncementsController;
 use App\Http\Controllers\Admin\Settings\BasicController as SettingsBasicController;
 use App\Http\Controllers\Admin\Settings\CouponsController;
+use App\Http\Controllers\Admin\Settings\ExistingMemberLinkController as SettingsExistingMemberLinkController;
 use App\Http\Controllers\Admin\Settings\FeaturesController as SettingsFeaturesController;
 use App\Http\Controllers\Admin\Settings\HomeController as SettingsHomeController;
 use App\Http\Controllers\Admin\Settings\IndexController as SettingsIndexController;
@@ -45,6 +46,7 @@ use App\Http\Controllers\Admin\Settings\StaffController as SettingsStaffControll
 use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
+use App\Http\Controllers\ExistingMemberLinkConfirmController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\Landing\LandingRegistrationEmailController;
 use App\Http\Controllers\Landing\LandingRegistrationFormController;
@@ -86,6 +88,9 @@ Route::post('/lp/register/{registration}/form', [LandingRegistrationFormControll
     ->middleware('signed')
     ->name('landing.register.form.submit');
 
+Route::get('/existing-member-link/{token}', ExistingMemberLinkConfirmController::class)
+    ->middleware('throttle:20,1')
+    ->name('existing-member-link.confirm');
 Route::get('/legal/{project_key}/terms', [LegalDocumentController::class, 'terms'])->name('legal.terms');
 Route::get('/legal/{project_key}/privacy', [LegalDocumentController::class, 'privacy'])->name('legal.privacy');
 
@@ -344,6 +349,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/settings/lottery', [SettingsLotteryController::class, 'update'])->name('admin.settings.lottery.update')->middleware(['admin.permission:coupons.manage', 'admin.plan:lottery']);
         Route::get('/settings/announcements', [AnnouncementsController::class, 'index'])->name('admin.settings.announcements')->middleware('admin.permission:announcements.view');
         Route::post('/settings/announcements', [AnnouncementsController::class, 'update'])->name('admin.settings.announcements.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/existing-member-link', [SettingsExistingMemberLinkController::class, 'index'])->name('admin.settings.existing-member-link');
+        Route::post('/settings/existing-member-link', [SettingsExistingMemberLinkController::class, 'update'])->name('admin.settings.existing-member-link.update');
+        Route::post('/settings/existing-member-link/connect', [SettingsExistingMemberLinkController::class, 'store'])->name('admin.settings.existing-member-link.store');
         Route::get('/settings/profile', [ProfileController::class, 'index'])->name('admin.settings.profile')->middleware('admin.permission:settings.view');
         Route::post('/settings/profile', [ProfileController::class, 'update'])->name('admin.settings.profile.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/wallet', [WalletController::class, 'index'])->name('admin.settings.wallet')->middleware(['admin.permission:settings.view', 'admin.plan:wallet']);
