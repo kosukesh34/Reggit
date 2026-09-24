@@ -14,9 +14,6 @@
     <h1 class="page-header-title"><i class="fab fa-line"></i> LIFF設定</h1>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
-@endif
 
 <div class="card mb-4">
     <div class="card-header"><i class="fas fa-link"></i> このプロジェクトの LIFF エントリURL</div>
@@ -72,7 +69,6 @@
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-                <a href="{{ admin_route('admin.settings.liff-designer') }}" class="btn btn-secondary">LIFFデザインへ</a>
             </div>
         </div>
     </div>

@@ -7,7 +7,6 @@
 <div class="page-header">
     <h1 class="page-header-title"><i class="fas fa-ticket-alt"></i> クーポン設定</h1>
 </div>
-@if(session('success'))<div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>@endif
 <form action="{{ admin_route('admin.settings.coupons.update') }}" method="POST" enctype="multipart/form-data">
     @csrf
     <div class="card">

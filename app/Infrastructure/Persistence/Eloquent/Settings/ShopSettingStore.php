@@ -651,7 +651,9 @@ class ShopSettingStore
     {
         $flags = [];
         foreach (self::FEATURE_FLAGS as $key => $default) {
-            $flags[$key] = (bool) self::getValue($key, $default, $projectId);
+            $flags[$key] = $key === 'feature_gallery_enabled'
+                ? self::galleryEnabledInHomeMenu($projectId)
+                : (bool) self::getValue($key, $default, $projectId);
         }
 
         return $flags;
@@ -660,6 +662,10 @@ class ShopSettingStore
     /** 指定機能が有効か */
     public static function isFeatureEnabled(string $featureKey, ?int $projectId = null): bool
     {
+        if ($featureKey === 'feature_gallery_enabled') {
+            return self::galleryEnabledInHomeMenu($projectId);
+        }
+
         $default = self::FEATURE_FLAGS[$featureKey] ?? true;
 
         return (bool) self::getValue($featureKey, $default, $projectId);
@@ -691,9 +697,28 @@ class ShopSettingStore
     public static function setFeatureFlags(array $flags, ?int $projectId = null): void
     {
         foreach (self::FEATURE_FLAGS as $key => $default) {
-            $enabled = array_key_exists($key, $flags) && self::isTruthyFeatureFlag($flags[$key]);
+            $enabled = $key === 'feature_gallery_enabled'
+                ? self::galleryEnabledInHomeMenu($projectId)
+                : (array_key_exists($key, $flags) && self::isTruthyFeatureFlag($flags[$key]));
             self::setValue($key, $enabled ? '1' : '0', 'boolean', $projectId);
         }
+    }
+
+    /** ギャラリーの公開状態はホームメニューの「表示」だけで決まる。 */
+    private static function galleryEnabledInHomeMenu(?int $projectId): bool
+    {
+        $items = self::getValue('frontend_menu_items', null, $projectId);
+        if (! is_array($items)) {
+            return true;
+        }
+        foreach ($items as $item) {
+            if (is_array($item) && ($item['tab'] ?? null) === 'gallery') {
+                return ! array_key_exists('enabled', $item)
+                    || filter_var($item['enabled'], FILTER_VALIDATE_BOOLEAN);
+            }
+        }
+
+        return true;
     }
 
     /**

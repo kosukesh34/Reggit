@@ -37,6 +37,9 @@ class AdminSettingsTest extends TestCase
             ->get(route('admin.settings.basic', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
+        $response->assertSee('settings-back-link', false);
+        $response->assertDontSee('settings-workspace-nav', false);
+        $response->assertSee('設定一覧', false);
     }
 
     public function test_settings_注文_lin_e通知トグルを保存できること(): void
@@ -100,11 +103,33 @@ class AdminSettingsTest extends TestCase
             ->get(route('admin.settings.index', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
-        $response->assertSee('基本設定', false);
-        $response->assertSee('予約設定', false);
-        $response->assertSee('クーポン設定', false);
+        $response->assertSee('店舗の基本', false);
+        $response->assertSee('予約', false);
+        $response->assertSee('クーポン', false);
         $response->assertSee('settings-hub-card', false);
+        $response->assertSee('設定を検索', false);
         $response->assertSee('css/admin/admin.css', false);
         $response->assertSee(route('admin.settings.basic', ['project_key' => $project->project_key], false), false);
+        $response->assertDontSee('スマレジ連携');
+        $response->assertDontSee('ギャラリー設定');
+        $response->assertDontSee('<h1>設定</h1>', false);
+    }
+
+    public function test_ギャラリーはホームメニューで非表示にすると管理メニューから消えること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        ShopSettingStore::setFrontendMenuItems([
+            ['tab' => 'gallery', 'label' => 'ギャラリー', 'enabled' => false, 'order' => 10],
+        ], $project->id);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.index', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertDontSee(route('admin.gallery.items', ['project_key' => $project->project_key], false), false);
+
+        $this->get(route('admin.settings.features', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertDontSee('features[feature_gallery_enabled]', false);
     }
 }

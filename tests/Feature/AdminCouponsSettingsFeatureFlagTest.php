@@ -61,7 +61,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_coupons_enabled', $project->id));
         $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_orders_enabled', $project->id));
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_reservations_enabled', $project->id));
-        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
+        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_announcements_enabled', $project->id));
         $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', $project->id));
     }
