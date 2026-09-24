@@ -12,5 +12,5 @@ appId: com.reggit.default
     text: "Don't Allow"
     optional: true
 - extendedWaitUntil:
-    visible: "Reggit"
+    visible: "メニューを開く"
     timeout: 30000
