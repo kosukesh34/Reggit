@@ -20,8 +20,14 @@ class ClaimMemberTransferCodeUseCase
             throw new InvalidArgumentException('会員IDと引き継ぎコードを入力してください');
         }
 
-        return DB::transaction(function () use ($currentUser, $device, $normalized, $memberId): User {
+        $projectId = AdminContext::requireCurrentProjectId();
+        if ((int) $currentUser->project_id !== $projectId) {
+            throw new InvalidArgumentException('引き継ぎコードが無効か、期限切れです');
+        }
+
+        return DB::transaction(function () use ($currentUser, $device, $normalized, $memberId, $projectId): User {
             $row = MemberTransferCode::query()
+                ->where('project_id', $projectId)
                 ->where('code_hash', hash('sha256', $normalized))
                 ->whereNull('consumed_at')
                 ->lockForUpdate()
@@ -31,7 +37,13 @@ class ClaimMemberTransferCodeUseCase
             }
 
             $source = User::query()->whereKey($row->user_id)->first();
-            if ($source === null || $source->member === null || (int) $source->member->id !== $memberId) {
+            $member = $source?->member;
+            $isSameProject = $source !== null
+                && $member !== null
+                && (int) $source->project_id === $projectId
+                && (int) $member->project_id === $projectId
+                && (int) $member->id === $memberId;
+            if ($isSameProject === false) {
                 throw new InvalidArgumentException('会員IDか引き継ぎコードが違います');
             }
             if ((int) $currentUser->id !== (int) $source->id && $currentUser->member !== null) {

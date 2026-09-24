@@ -26,7 +26,7 @@ class ProductIndexUseCase
             return new ProductIndexOutput($products, []);
         }
 
-        $categoryCounts = $this->products->availableCategoryCounts();
+        $categoryCounts = $this->products->categoryCounts();
 
         $categories = [];
         $categories[] = new ProductCategory(

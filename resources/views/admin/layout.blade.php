@@ -242,7 +242,7 @@
                     </a>
                     @endif
                     <div class="nav-group nav-group-footer">
-                        <a href="{{ admin_route('admin.help') }}" class="nav-item {{ request()->routeIs('admin.help') ? 'active' : '' }}" target="_blank" rel="noopener noreferrer">
+                        <a href="{{ admin_route('admin.help') }}" class="nav-item {{ request()->routeIs('admin.help*') ? 'active' : '' }}" target="_blank" rel="noopener noreferrer">
                             <i class="fas fa-circle-question"></i>
                             <span>ヘルプ</span>
                         </a>

@@ -52,7 +52,7 @@ class ExistingMemberLinkController extends AdminBaseController
         $validated = $request->validate([
             'description' => ['nullable', 'string', 'max:300'],
             'identifier_fields' => ['required', 'array', 'min:1'],
-            'identifier_fields.*' => ['string', Rule::in(ExistingMemberLinkField::keys())],
+            'identifier_fields.*' => ['string', Rule::in(array_keys(ExistingMemberLinkField::getValues()))],
         ]);
         ExistingMemberLinkSetting::query()->updateOrCreate(
             ['project_id' => $this->resolveAdminProjectId()],
