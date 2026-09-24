@@ -4,6 +4,7 @@ import SwiftUI
 struct NativeRootView: View {
     @State var viewModel: NativeRootViewModel
     @State var showHamburgerMenu = false
+    @State var accountMode: String?
     @State var showAppInfo = false
     @State var appInfoDisplayedAt = Date()
     @State var expandedHomeImageIndex: Int? = nil
@@ -62,6 +63,27 @@ struct NativeRootView: View {
             Button("あとで", role: .cancel) {}
         } message: {
             Text(viewModel.membership?.message ?? "会員登録でポイントやクーポンが使えます。")
+        }
+        .sheet(isPresented: Binding(
+            get: { accountMode != nil },
+            set: { if $0 == false { accountMode = nil } }
+        )) {
+            if let client = viewModel.apiClient {
+                AccountActionsView(
+                    apiClient: client,
+                    isMember: viewModel.membership?.isMember == true,
+                    initialMode: accountMode ?? "transfer",
+                    onWithdrawn: {
+                        accountMode = nil
+                        Task { await viewModel.start() }
+                    },
+                    onTransferred: {
+                        accountMode = nil
+                        Task { await viewModel.start() }
+                    },
+                    onClose: { accountMode = nil }
+                )
+            }
         }
         .sheet(isPresented: $showAppInfo) {
             AppInfoView(
@@ -277,6 +299,22 @@ struct NativeRootView: View {
                             .frame(minHeight: 54)
                             .background(AppDesign.surface)
                             .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Button {
+                        showHamburgerMenu = false
+                        accountMode = "transfer"
+                    } label: {
+                        drawerRow(title: "引き継ぎ", systemImage: "arrow.left.arrow.right")
+                    }
+                    .buttonStyle(.plain)
+                    if viewModel.membership?.isMember == true {
+                        Button {
+                            showHamburgerMenu = false
+                            accountMode = "withdraw"
+                        } label: {
+                            drawerRow(title: "退会", systemImage: "xmark.circle")
                         }
                         .buttonStyle(.plain)
                     }

@@ -1,5 +1,11 @@
 import Foundation
 
+struct TransferCode: Equatable, Sendable {
+    let memberId: Int
+    let code: String
+    let expiresAt: String
+}
+
 /// 顧客向け REST API の境界。Presentation は具象クライアントではなくこのプロトコルに依存する。
 protocol ReggitAPIServing: Sendable {
     var baseURL: String { get }
@@ -12,6 +18,9 @@ protocol ReggitAPIServing: Sendable {
     ) async throws
 
     func fetchMemberProfile() async throws -> MemberProfileSnapshot
+    func withdrawMember() async throws
+    func issueTransferCode() async throws -> TransferCode
+    func claimTransferCode(memberId: Int, code: String) async throws
     func registerMember(name: String, phone: String) async throws -> MemberProfileSnapshot
     func updateMemberProfile(name: String, phone: String, profilePayload: [String: String], profileListPayload: [String: [String]]) async throws -> MemberProfileSnapshot
     func fetchPointCard() async throws -> PointCardSnapshot

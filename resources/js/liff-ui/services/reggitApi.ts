@@ -424,6 +424,37 @@ export const reggitApi = {
     }
   },
 
+  async issueTransferCode(): Promise<{ memberId: number; code: string; expiresAt: string }> {
+    await ensureIdentity();
+    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBERS_TRANSFER_CODE), {});
+    if (result.success === false) {
+      throw new Error(('error' in result ? result.error : undefined) || '引き継ぎコードの発行に失敗しました');
+    }
+    const body = asRecord('data' in result ? result.data : undefined);
+    const payload = asRecord(body.data);
+    const code = typeof payload.code === 'string' ? payload.code : '';
+    if (code === '') {
+      throw new Error('引き継ぎコードの発行に失敗しました');
+    }
+    const memberId = typeof payload.member_id === 'number' ? payload.member_id : Number(payload.member_id);
+    if (!Number.isFinite(memberId) || memberId <= 0) {
+      throw new Error('引き継ぎコードの発行に失敗しました');
+    }
+    return {
+      memberId,
+      code,
+      expiresAt: typeof payload.expires_at === 'string' ? payload.expires_at : '',
+    };
+  },
+
+  async claimTransfer(memberId: number, code: string): Promise<void> {
+    await ensureIdentity();
+    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBERS_TRANSFER), { member_id: memberId, code });
+    if (result.success === false) {
+      throw new Error(('error' in result ? result.error : undefined) || '引き継ぎに失敗しました');
+    }
+  },
+
   async withdraw(): Promise<void> {
     await ensureIdentity();
     const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBERS_WITHDRAW), {});
