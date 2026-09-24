@@ -36,11 +36,13 @@ struct AppConfig {
     let navigationHeaderImageURL: String?
     let navigationHeaderBackgroundColor: String
     let homeImageURL: String?
+    let homeImageURLs: [String]
     let homeMenuLayout: String
     let productDisplayLayout: String
     let memberShowRankProgress: Bool
     let memberShowPointHistory: Bool
     let memberShowCouponActivity: Bool
+    let realtimeWebSocketURL: String?
 
     init(
         projectName: String,
@@ -53,11 +55,13 @@ struct AppConfig {
         navigationHeaderImageURL: String? = nil,
         navigationHeaderBackgroundColor: String = "#FFFFFF",
         homeImageURL: String? = nil,
+        homeImageURLs: [String] = [],
         homeMenuLayout: String = "grid_3x2",
         productDisplayLayout: String = "list_with_image",
         memberShowRankProgress: Bool = true,
         memberShowPointHistory: Bool = true,
-        memberShowCouponActivity: Bool = true
+        memberShowCouponActivity: Bool = true,
+        realtimeWebSocketURL: String? = nil
     ) {
         self.projectName = projectName
         self.tabs = tabs
@@ -69,10 +73,12 @@ struct AppConfig {
         self.navigationHeaderImageURL = navigationHeaderImageURL
         self.navigationHeaderBackgroundColor = navigationHeaderBackgroundColor
         self.homeImageURL = homeImageURL
+        self.homeImageURLs = homeImageURLs.isEmpty ? (homeImageURL.map { [$0] } ?? []) : homeImageURLs
         self.homeMenuLayout = homeMenuLayout
         self.productDisplayLayout = productDisplayLayout
         self.memberShowRankProgress = memberShowRankProgress
         self.memberShowPointHistory = memberShowPointHistory
         self.memberShowCouponActivity = memberShowCouponActivity
+        self.realtimeWebSocketURL = realtimeWebSocketURL
     }
 }

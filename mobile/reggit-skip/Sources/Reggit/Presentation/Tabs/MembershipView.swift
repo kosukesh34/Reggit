@@ -490,16 +490,24 @@ struct MembershipPassCard: View {
     var onEnlargeCode: (() -> Void)? = nil
     @Environment(\.brandAccent) var accent
 
+    private var cardColor: Color {
+        member.rankColorHex?.toNativeColor(fallback: accent) ?? accent
+    }
+
+    private var cardForeground: Color {
+        BrandPalette(hex: member.rankColorHex ?? "#173F35").usesDarkForeground ? .black : .white
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(projectName)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.white.opacity(0.72))
+                        .foregroundStyle(cardForeground.opacity(0.72))
                     Text("会員証")
                         .font(.title2.weight(.bold))
-                        .foregroundStyle(Color.white)
+                        .foregroundStyle(cardForeground)
                 }
                 Spacer(minLength: 8)
                 if !member.rankLabel.isEmpty {
@@ -519,10 +527,10 @@ struct MembershipPassCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("\(member.points)")
                     .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(cardForeground)
                 Text("pt")
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(Color.white.opacity(0.72))
+                    .foregroundStyle(cardForeground.opacity(0.72))
                 Spacer()
                 if let imageURL = member.cardLogoURL {
                     RemoteImageView(
@@ -562,15 +570,11 @@ struct MembershipPassCard: View {
             }
         }
         .background(
-            LinearGradient(
-                colors: [Color(red: 0.16, green: 0.36, blue: 0.31), AppDesign.forest],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            cardColor
         )
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous).stroke(AppDesign.forest.opacity(0.25), lineWidth: 1))
-        .shadow(color: AppDesign.forest.opacity(0.2), radius: 20, x: 0, y: 12)
+        .overlay(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous).stroke(cardColor.opacity(0.35), lineWidth: 1))
+        .shadow(color: cardColor.opacity(0.2), radius: 20, x: 0, y: 12)
     }
 }
 

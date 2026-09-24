@@ -51,7 +51,9 @@ final class LotteryViewModel {
         do {
             let latest = try await service.fetchState()
             state = latest
-            if !availableGames.contains(selectedGame), let firstGame = availableGames.first {
+            if let pendingGame = availableGames.first(where: { latest.pending(for: $0.rawValue) != nil }) {
+                selectedGame = pendingGame
+            } else if !availableGames.contains(selectedGame), let firstGame = availableGames.first {
                 selectedGame = firstGame
             }
         } catch {

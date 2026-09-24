@@ -30,6 +30,8 @@ enum MemberRegistrationMode: String, Equatable {
 
 struct MemberProfileSnapshot: Equatable {
     let isMember: Bool
+    let userId: Int?
+    let memberId: Int?
     let name: String
     let phone: String
     let memberNumber: String
@@ -92,6 +94,8 @@ struct MemberProfileSnapshot: Equatable {
         let fields = (json["profile_field_settings"] as? [[String: Any]] ?? []).compactMap(ProfileFieldDefinition.parse)
         return MemberProfileSnapshot(
             isMember: isMember,
+            userId: (json["user_id"] as? Int) ?? (user["id"] as? Int),
+            memberId: member["id"] as? Int,
             name: name,
             phone: phone,
             memberNumber: memberNumber,
@@ -116,6 +120,8 @@ struct MemberProfileSnapshot: Equatable {
     func withCard(_ card: PointCardSnapshot) -> MemberProfileSnapshot {
         MemberProfileSnapshot(
             isMember: isMember,
+            userId: userId,
+            memberId: memberId,
             name: name,
             phone: phone,
             memberNumber: card.memberNumber.isEmpty ? memberNumber : card.memberNumber,
@@ -591,10 +597,18 @@ struct OrderSnapshot: Identifiable, Equatable, Hashable {
         OrderProgress.label(for: status)
     }
 
-    var hasPickupNumber: Bool { !orderNumber.isEmpty }
+    var isAwaitingCardPayment: Bool { paymentMethod == "stripe" && status == "pending" }
+
+    var hasPickupNumber: Bool { !orderNumber.isEmpty && !isAwaitingCardPayment }
 
     var pickupNumberLabel: String {
-        hasPickupNumber ? orderNumber : "決済確認中"
+        guard hasPickupNumber else { return "決済確認中" }
+        // 保存形式 YYYYMMDD+通番 は、画面では日+通番で表示する。
+        if orderNumber.range(of: #"^[0-9]{9,}$"#, options: .regularExpression) != nil,
+           let day = Int(orderNumber.dropFirst(6).prefix(2)) {
+            return String(day) + orderNumber.dropFirst(8)
+        }
+        return orderNumber
     }
 
     static func parse(_ data: Data) throws -> OrderSnapshot {

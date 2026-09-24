@@ -42,6 +42,7 @@ protocol ReggitAPIServing: Sendable {
     func fetchPublishedAnnouncements() async throws -> [AnnouncementItem]
     func fetchGalleryContent(categoryId: Int?) async throws -> GallerySnapshot
     func fetchMemberReservations() async throws -> [ReservationItem]
-    func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?) async throws
+    func fetchReservationCourses() async throws -> [ReservationCourseItem]
+    func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?, courseId: Int?) async throws
     func cancelReservationBooking(id: Int) async throws
 }
