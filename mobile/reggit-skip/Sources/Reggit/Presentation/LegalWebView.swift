@@ -1,5 +1,5 @@
 import SwiftUI
-#if SKIP || os(iOS)
+#if SKIP || os(iOS) || os(Android)
 import SkipWeb
 #endif
 
@@ -7,7 +7,7 @@ struct LegalWebView: View {
     let title: String
     let urlString: String
     let baseURL: String
-    #if SKIP || os(iOS)
+    #if SKIP || os(iOS) || os(Android)
     @State var state = WebViewState()
     #endif
 
@@ -28,7 +28,7 @@ struct LegalWebView: View {
             .background(AppDesign.surface)
             Divider()
             if let url {
-                #if SKIP || os(iOS)
+                #if SKIP || os(iOS) || os(Android)
                 WebView(url: url, state: $state)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 #else

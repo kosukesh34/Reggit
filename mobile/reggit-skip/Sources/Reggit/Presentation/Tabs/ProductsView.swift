@@ -273,7 +273,9 @@ struct ProductsView: View {
             if let order = try? await viewModel.fetchOrder(id: orderID) {
                 viewModel.activeOrder = order
                 viewModel.showConfirm = false
-                viewModel.checkoutURL = nil
+                if !order.isAwaitingCardPayment {
+                    viewModel.checkoutURL = nil
+                }
             }
         }
     }
@@ -342,6 +344,7 @@ struct ProductsView: View {
                 Text(AppFormat.yen(product.price)).font(.headline).foregroundStyle(AppDesign.ink)
                 Spacer()
                 QtyStepper(
+                    itemName: product.name,
                     quantity: viewModel.cart[product.id] ?? 0,
                     onMinus: { viewModel.removeFromCart(product) },
                     onPlus: {
@@ -388,14 +391,15 @@ struct ProductsView: View {
                 .font(.headline)
                 .foregroundStyle(AppDesign.ink)
             QtyStepper(
+                itemName: product.name,
                 quantity: viewModel.cart[product.id] ?? 0,
                 onMinus: { viewModel.removeFromCart(product) },
                 onPlus: {
                     if product.optionGroups.isEmpty { viewModel.addToCart(product) }
                     else { openProduct(product) }
-                }
+                },
+                expandsToFill: true
             )
-            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(10)
         .background(AppDesign.surface)
@@ -420,6 +424,7 @@ struct ProductsView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(Text("\(product.name)の詳細"))
             QtyStepper(
+                itemName: product.name,
                 quantity: viewModel.cart[product.id] ?? 0,
                 onMinus: { viewModel.removeFromCart(product) },
                 onPlus: {
@@ -664,19 +669,19 @@ struct OrderStatusView: View {
         ScrollView {
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
-                    Text(order.paymentMethod == "stripe" && order.status == "pending" ? "カード決済を完了してください" : order.isActive ? "ご注文を受け付けました" : order.statusLabel)
+                    Text(order.isAwaitingCardPayment ? "カード決済は完了していません" : order.isActive ? "ご注文を受け付けました" : order.statusLabel)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(AppDesign.inkSecondary)
                     Text(order.pickupNumberLabel)
                         .font(.system(size: 44, weight: .bold, design: .rounded))
                         .foregroundStyle(accent)
-                    Text("受取番号")
+                    Text(order.hasPickupNumber ? "受取番号" : "決済状況")
                         .font(.system(size: 13))
                         .foregroundStyle(AppDesign.inkSecondary)
                 }
                 .padding(.top, 8)
 
-                if order.paymentMethod == "stripe", order.status == "pending", let onContinuePayment {
+                if order.isAwaitingCardPayment, let onContinuePayment {
                     VStack(spacing: 10) {
                         AppPrimaryButton(title: "カード決済を続ける", action: onContinuePayment)
                         Text("決済完了後に受取番号が発行されます")
@@ -685,6 +690,7 @@ struct OrderStatusView: View {
                     }
                 }
 
+                if !order.isAwaitingCardPayment {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("進捗")
                         .font(.system(size: 15, weight: .bold))
@@ -697,6 +703,7 @@ struct OrderStatusView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 8)
+                }
 
                 if !order.items.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {

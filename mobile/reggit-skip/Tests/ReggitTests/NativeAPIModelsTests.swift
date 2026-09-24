@@ -2,12 +2,32 @@ import XCTest
 @testable import Reggit
 
 final class NativeAPIModelsTests: XCTestCase {
+    func testUnpaidStripeOrderDoesNotShowPickupNumber() {
+        let unpaid = OrderSnapshot(id: 1, orderNumber: "202609241", totalAmount: 1200, status: "pending", paymentMethod: "stripe", createdAt: "", items: [])
+        XCTAssertTrue(unpaid.isAwaitingCardPayment)
+        XCTAssertFalse(unpaid.hasPickupNumber)
+        XCTAssertEqual(unpaid.pickupNumberLabel, "決済確認中")
+
+        let paid = OrderSnapshot(id: 1, orderNumber: "202609241", totalAmount: 1200, status: "confirmed", paymentMethod: "stripe", createdAt: "", items: [])
+        XCTAssertFalse(paid.isAwaitingCardPayment)
+        XCTAssertTrue(paid.hasPickupNumber)
+    }
+    func testAppleDeviceNames() {
+        XCTAssertEqual(PlatformRuntime.appleDeviceName(identifier: "iPhone12,8"), "iPhone SE（第2世代）")
+        XCTAssertEqual(PlatformRuntime.appleDeviceName(identifier: "iPhone18,3"), "iPhone 17")
+        XCTAssertEqual(PlatformRuntime.appleDeviceName(identifier: "iPhone99,1"), "iPhone99,1")
+    }
     func testAppConfigParsesNavigationHeaderImage() throws {
         let data = try JSONSerialization.data(withJSONObject: [
             "project_name": "Demo",
             "theme": ["primary_color": "#173F35"],
             "header": ["image_url": "https://example.com/header.webp", "background_color": "#F6F1E8"],
-            "home": ["menu_layout": "grid_3x2", "image_url": "https://example.com/home.webp"],
+            "realtime": ["websocket_url": "wss://example.com/app/demo?protocol=7"],
+            "home": [
+                "menu_layout": "grid_3x2",
+                "image_url": "https://example.com/home.webp",
+                "image_urls": ["https://example.com/home.webp", "https://example.com/second.webp"],
+            ],
             "products": ["display_layout": "grid_2_columns"],
             "member_screen": ["show_rank_progress": true, "show_point_history": false, "show_coupon_activity": true],
             "tabs": [["key": "home", "label": "ホーム"]],
@@ -21,6 +41,8 @@ final class NativeAPIModelsTests: XCTestCase {
         XCTAssertEqual(config.navigationHeaderImageURL, "https://example.com/header.webp")
         XCTAssertEqual(config.navigationHeaderBackgroundColor, "#F6F1E8")
         XCTAssertEqual(config.homeImageURL, "https://example.com/home.webp")
+        XCTAssertEqual(config.homeImageURLs, ["https://example.com/home.webp", "https://example.com/second.webp"])
+        XCTAssertEqual(config.realtimeWebSocketURL, "wss://example.com/app/demo?protocol=7")
         XCTAssertEqual(config.homeMenuLayout, "grid_3x2")
         XCTAssertEqual(config.productDisplayLayout, "grid_2_columns")
         XCTAssertEqual(config.headerItems.map(\.key), ["member"])
@@ -28,6 +50,15 @@ final class NativeAPIModelsTests: XCTestCase {
         XCTAssertEqual(config.hamburgerItems.first?.url, "https://example.com/legal/default/terms")
         XCTAssertTrue(config.hasNavigationConfiguration)
         XCTAssertFalse(config.memberShowPointHistory)
+    }
+
+    func testAppConfigFallsBackToSingleHomeImage() throws {
+        let data = try JSONSerialization.data(withJSONObject: [
+            "project_name": "Demo",
+            "home": ["image_url": "https://example.com/legacy.webp"],
+        ])
+        let config = try XCTUnwrap(AppConfigClient.parse(data))
+        XCTAssertEqual(config.homeImageURLs, ["https://example.com/legacy.webp"])
     }
 
     func testAPIDateFormattingHidesTimezoneSuffix() {
@@ -39,6 +70,8 @@ final class NativeAPIModelsTests: XCTestCase {
         let json = """
         {
           "is_member": true,
+          "user_id": 42,
+          "member": {"id": 24, "member_number": "M-001"},
           "points": 120,
           "current_rank_label": "ゴールド",
           "next_rank_label": "プラチナ",
@@ -53,6 +86,8 @@ final class NativeAPIModelsTests: XCTestCase {
 
         let snapshot = try MemberProfileSnapshot.parse(json)
         XCTAssertTrue(snapshot.isMember)
+        XCTAssertEqual(snapshot.userId, 42)
+        XCTAssertEqual(snapshot.memberId, 24)
         XCTAssertEqual(snapshot.name, "山田")
         XCTAssertEqual(snapshot.phone, "09011112222")
         XCTAssertEqual(snapshot.memberNumber, "M-001")
@@ -169,6 +204,7 @@ final class NativeAPIModelsTests: XCTestCase {
         """.data(using: .utf8)!
         let order = try OrderCreateResponse.parse(orderJSON).order
         XCTAssertEqual(order.orderNumber, "A-9")
+        XCTAssertEqual(order.pickupNumberLabel, "A-9")
         XCTAssertEqual(order.totalAmount, 800)
         XCTAssertEqual(order.items.count, 1)
         XCTAssertTrue(order.isActive)
@@ -188,6 +224,19 @@ final class NativeAPIModelsTests: XCTestCase {
         let unpaid = try OrderCreateResponse.parse(unpaidJSON).order
         XCTAssertFalse(unpaid.hasPickupNumber)
         XCTAssertEqual(unpaid.pickupNumberLabel, "決済確認中")
+
+        for (stored, displayed) in [
+            ("202604201", "201"),
+            ("2026042020", "2020"),
+            ("202604202022", "202022"),
+        ] {
+            let numbered = OrderSnapshot(
+                id: 11, orderNumber: stored, totalAmount: 500, status: "preparing",
+                paymentMethod: "cash", createdAt: "", items: []
+            )
+            XCTAssertEqual(numbered.pickupNumberLabel, displayed)
+            XCTAssertEqual(numbered.orderNumber, stored)
+        }
 
         let listJSON = """
         {
@@ -347,7 +396,7 @@ final class NativeRootViewModelTests: XCTestCase {
             AppTabItem(id: "designlab", key: "designlab", label: "あそび", icon: "fa-dice", sfSymbol: "dice.fill"),
         ]
         let filtered = NativeRootViewModel.filterNativeTabs(tabs)
-        XCTAssertEqual(filtered.map(\.key), ["member", "products", "home", "coupons", "designlab"])
+        XCTAssertEqual(filtered.map(\.key), ["member", "products", "home", "coupons"])
     }
 
     func testDeviceIdentifierPersists() {

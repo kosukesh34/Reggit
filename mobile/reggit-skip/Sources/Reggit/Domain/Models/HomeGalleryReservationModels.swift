@@ -92,6 +92,7 @@ struct ReservationItem: Identifiable, Equatable {
     let reservationNumber: String
     let numberOfPeople: Int
     let notes: String
+    let courseName: String?
 
     var statusLabel: String {
         switch status {
@@ -104,6 +105,22 @@ struct ReservationItem: Identifiable, Equatable {
 
     var isCancellable: Bool {
         status == "pending" || status == "confirmed"
+    }
+}
+
+struct ReservationCourseItem: Identifiable, Equatable {
+    let id: Int
+    let name: String
+    let price: Int
+
+    static func parseList(_ data: Data) throws -> [ReservationCourseItem] {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ReggitAPIError.invalidResponse
+        }
+        return ((json["courses"] as? [[String: Any]]) ?? []).compactMap { row in
+            guard let id = row["id"] as? Int else { return nil }
+            return ReservationCourseItem(id: id, name: row["name"] as? String ?? "コース", price: row["price"] as? Int ?? 0)
+        }
     }
 }
 
@@ -131,7 +148,8 @@ struct ReservationListResponse {
                 status: (row["status"] as? String) ?? "",
                 reservationNumber: number,
                 numberOfPeople: row["number_of_people"] as? Int ?? 1,
-                notes: (row["notes"] as? String) ?? ""
+                notes: (row["notes"] as? String) ?? "",
+                courseName: row["course_name"] as? String
             )
         }
         return ReservationListResponse(reservations: items)
