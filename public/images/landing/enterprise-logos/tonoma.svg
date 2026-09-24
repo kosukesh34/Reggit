@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 72" role="img" aria-labelledby="tonoma-title tonoma-desc">
+  <title id="tonoma-title">TONOMA</title>
+  <desc id="tonoma-desc">架空企業 TONOMA のロゴ表示例</desc>
+  <path d="M15 60V26c0-7 5-12 12-12h27c7 0 12 5 12 12v34h-8V27c0-3-2-5-5-5H28c-3 0-5 2-5 5v33h-8Z" fill="#25343A"/>
+  <path d="M34 60V41c0-4 3-7 7-7h5c4 0 7 3 7 7v19h-8V42h-3v18h-8Z" fill="#718984"/>
+  <text x="84" y="46" fill="#25343A" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="29" font-weight="700" letter-spacing="1.1">TONOMA</text>
+</svg>

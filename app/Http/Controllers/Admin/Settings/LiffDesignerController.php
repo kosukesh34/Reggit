@@ -28,7 +28,7 @@ class LiffDesignerController extends AdminBaseController
         }
 
         return redirect()
-            ->route('admin.settings.liff-designer', $this->buildAdminRouteParams())
+            ->route('admin.settings.home', $this->buildAdminRouteParams())
             ->with('success', 'LIFFデザインを更新しました');
     }
 }

@@ -26,10 +26,4 @@ class ExistingMemberLinkField extends EnumBase
         self::BIRTHDAY => '生年月日',
         self::ADDRESS => '住所',
     ];
-
-    /** @return list<string> */
-    public static function keys(): array
-    {
-        return array_keys(static::$values);
-    }
 }

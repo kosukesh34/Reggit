@@ -69,7 +69,7 @@ class LiffDesignerTest extends TestCase
                 'layouts_json' => json_encode($layouts),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $stored = ShopSettingStore::getLiffTabLayouts($project->id);
         $this->assertArrayHasKey('home', $stored);
@@ -147,7 +147,7 @@ class LiffDesignerTest extends TestCase
                 'menu_items_json' => json_encode($menuItems),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         // 新ブロックが保存されている
         $stored = ShopSettingStore::getLiffTabLayouts($project->id);
@@ -229,7 +229,7 @@ class LiffDesignerTest extends TestCase
                 'layouts_json' => json_encode($layouts),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $stored = ShopSettingStore::getLiffTabLayouts($project->id);
         $this->assertSame('wallet', $stored['home'][0]['design']);
@@ -281,7 +281,7 @@ class LiffDesignerTest extends TestCase
                 'layouts_json' => json_encode($layouts),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $stored = ShopSettingStore::getLiffTabLayouts($project->id);
         $this->assertArrayNotHasKey('action', $stored['home'][0]);
@@ -334,7 +334,7 @@ class LiffDesignerTest extends TestCase
                 'layouts_json' => json_encode($layouts),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $stored = ShopSettingStore::getLiffTabLayouts($project->id);
         $this->assertSame('friend_add', $stored['home'][0]['type']);
@@ -407,7 +407,7 @@ class LiffDesignerTest extends TestCase
                 'detail_layouts_json' => json_encode($detailLayouts),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $stored = ShopSettingStore::getLiffDetailLayouts($project->id);
         $this->assertArrayHasKey('product_detail', $stored);
@@ -447,7 +447,7 @@ class LiffDesignerTest extends TestCase
                 'layouts_json' => json_encode(['home' => [['type' => 'text', 'text' => 'tabs only']]]),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $after = ShopSettingStore::getLiffDetailLayouts($project->id);
         $this->assertSame('Keep Me', $after['product_detail'][0]['text'] ?? null);
@@ -529,7 +529,7 @@ class LiffDesignerTest extends TestCase
                 'tab_settings_json' => json_encode($tabSettings),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $stored = ShopSettingStore::getLiffTabLayouts($project->id);
         $types = array_column($stored['home'], 'type');
@@ -604,7 +604,7 @@ class LiffDesignerTest extends TestCase
                 'tab_settings_json' => json_encode($tabSettings),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $stored = ShopSettingStore::getLiffTabLayouts($project->id);
         $this->assertSame('wallet', $stored['stamps'][0]['stamp_design'] ?? null);
@@ -650,7 +650,7 @@ class LiffDesignerTest extends TestCase
                 'menu_items_json' => json_encode($menuItems),
             ]);
 
-        $response->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $raw = ShopSettingStore::getValue('frontend_menu_items', null, $project->id);
         $this->assertSame(['home', 'link_1'], array_column($raw, 'tab'));
@@ -705,7 +705,7 @@ class LiffDesignerTest extends TestCase
                 'tab_settings_json' => json_encode($tabSettings),
                 'custom_css' => '.runtime-reflect-marker{color:#A81612}',
             ])
-            ->assertRedirect(route('admin.settings.liff-designer', ['project_key' => $project->project_key]));
+            ->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         $this->assertSame('反映テスト店', ShopSettingStore::getValue('frontend_header_text', null, $project->id));
         $this->assertSame('#a81612', strtolower((string) ShopSettingStore::getValue('line_primary_color', null, $project->id)));
