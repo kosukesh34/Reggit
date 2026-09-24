@@ -1,6 +1,6 @@
 {
-  "_pusher-DgN9wgw_.js": {
-    "file": "assets/pusher-DgN9wgw_.js",
+  "_pusher-DSNgnxjM.js": {
+    "file": "assets/pusher-DSNgnxjM.js",
     "name": "pusher"
   },
   "resources/css/app.css": {
@@ -8,24 +8,24 @@
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-BNWKDL-v.js",
+    "file": "assets/main-B4EEMrTi.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_pusher-DgN9wgw_.js"
+      "_pusher-DSNgnxjM.js"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-DlEAhC9l.js",
+    "file": "assets/main-B9U4zZe6.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_pusher-DgN9wgw_.js"
+      "_pusher-DSNgnxjM.js"
     ],
     "css": [
-      "assets/main-wDdkHTF-.css",
+      "assets/main-jQfla7uE.css",
       "assets/app-BVkIgqqC.css",
       "assets/tokens-CJDqh8yr.css",
       "assets/globals-D0MfLSEI.css",
