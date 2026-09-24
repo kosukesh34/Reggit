@@ -37,9 +37,12 @@ struct AppConfigClient {
         let navigationHeaderImageURL = ((json["header"] as? [String: Any])?["image_url"] as? String)?.trimmedNonEmpty
         let navigationHeaderBackgroundColor = ((json["header"] as? [String: Any])?["background_color"] as? String)?.trimmedNonEmpty ?? "#FFFFFF"
         let homeImageURL = ((json["home"] as? [String: Any])?["image_url"] as? String)?.trimmedNonEmpty
+        let homeImageURLs = (((json["home"] as? [String: Any])?["image_urls"] as? [String]) ?? [])
+            .compactMap { $0.trimmedNonEmpty }
         let homeMenuLayout = ((json["home"] as? [String: Any])?["menu_layout"] as? String)?.trimmedNonEmpty ?? "grid_3x2"
         let productDisplayLayout = ((json["products"] as? [String: Any])?["display_layout"] as? String)?.trimmedNonEmpty ?? "list_with_image"
         let memberScreen = json["member_screen"] as? [String: Any] ?? [:]
+        let realtimeWebSocketURL = ((json["realtime"] as? [String: Any])?["websocket_url"] as? String)?.trimmedNonEmpty
 
         var tabs = parseMenuItems(json["tabs"])
 
@@ -62,11 +65,13 @@ struct AppConfigClient {
             navigationHeaderImageURL: navigationHeaderImageURL,
             navigationHeaderBackgroundColor: navigationHeaderBackgroundColor,
             homeImageURL: homeImageURL,
+            homeImageURLs: homeImageURLs,
             homeMenuLayout: homeMenuLayout,
             productDisplayLayout: productDisplayLayout,
             memberShowRankProgress: memberScreen["show_rank_progress"] as? Bool ?? true,
             memberShowPointHistory: memberScreen["show_point_history"] as? Bool ?? true,
-            memberShowCouponActivity: memberScreen["show_coupon_activity"] as? Bool ?? true
+            memberShowCouponActivity: memberScreen["show_coupon_activity"] as? Bool ?? true,
+            realtimeWebSocketURL: realtimeWebSocketURL
         )
     }
 

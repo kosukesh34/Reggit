@@ -124,7 +124,7 @@ function mapProduct(row: Record<string, unknown>): RuntimeCatalogItem {
       return {
         id: String(option.id ?? ''),
         name: String(option.name ?? ''),
-        priceDelta: Number(option.price_delta ?? 0) || 0,
+        priceDelta: Number(option.price_delta ?? 0),
         isDefault: option.is_default === true,
       };
     }).filter((option) => option.id !== '');
@@ -150,6 +150,8 @@ function mapProduct(row: Record<string, unknown>): RuntimeCatalogItem {
     price: Number(row.price ?? 0) || 0,
     image: row.image_url ? String(row.image_url) : (row.image ? String(row.image) : undefined),
     category: row.category ? String(row.category) : undefined,
+    isAvailable: row.is_available !== false && row.is_available !== 0 && row.is_available !== '0',
+    stock: row.stock === null || row.stock === undefined || row.stock === '' ? null : Number(row.stock),
     optionGroups,
   };
 }
@@ -419,6 +421,37 @@ export const reggitApi = {
       } catch {
         // LIFF logout はベストエフォート
       }
+    }
+  },
+
+  async issueTransferCode(): Promise<{ memberId: number; code: string; expiresAt: string }> {
+    await ensureIdentity();
+    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBERS_TRANSFER_CODE), {});
+    if (result.success === false) {
+      throw new Error(('error' in result ? result.error : undefined) || '引き継ぎコードの発行に失敗しました');
+    }
+    const body = asRecord('data' in result ? result.data : undefined);
+    const payload = asRecord(body.data);
+    const code = typeof payload.code === 'string' ? payload.code : '';
+    if (code === '') {
+      throw new Error('引き継ぎコードの発行に失敗しました');
+    }
+    const memberId = typeof payload.member_id === 'number' ? payload.member_id : Number(payload.member_id);
+    if (!Number.isFinite(memberId) || memberId <= 0) {
+      throw new Error('引き継ぎコードの発行に失敗しました');
+    }
+    return {
+      memberId,
+      code,
+      expiresAt: typeof payload.expires_at === 'string' ? payload.expires_at : '',
+    };
+  },
+
+  async claimTransfer(memberId: number, code: string): Promise<void> {
+    await ensureIdentity();
+    const result = await client().post(withProject(AppConstants.API_ENDPOINTS.MEMBERS_TRANSFER), { member_id: memberId, code });
+    if (result.success === false) {
+      throw new Error(('error' in result ? result.error : undefined) || '引き継ぎに失敗しました');
     }
   },
 

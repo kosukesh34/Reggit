@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Models\ReservationCourse;
 use App\UseCases\Admin\Settings\GetReservationOnlySettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateReservationOnlySettingsUseCase;
 use Illuminate\Http\Request;
@@ -26,7 +27,9 @@ class ReservationsController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $settings = $this->getReservationOnlySettingsUseCase->handle($projectId);
 
-        return view('admin.settings.reservations', compact('settings'));
+        $courses = ReservationCourse::where('project_id', $projectId)->orderBy('sort_order')->orderBy('id')->get();
+
+        return view('admin.settings.reservations', compact('settings', 'courses'));
     }
 
     public function update(Request $request)
@@ -46,5 +49,33 @@ class ReservationsController extends AdminBaseController
 
         return redirect()->route('admin.settings.reservations', $this->buildAdminRouteParams())
             ->with('success', '予約設定を更新しました');
+    }
+
+    public function storeCourse(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:120',
+            'price' => 'required|integer|min:0|max:99999999',
+            'description' => 'nullable|string|max:1000',
+        ]);
+        ReservationCourse::create($data + ['project_id' => $this->resolveAdminProjectId()]);
+
+        return redirect()->route('admin.settings.reservations', $this->buildAdminRouteParams())
+            ->with('success', 'コースを追加しました');
+    }
+
+    public function updateCourse(Request $request, string $projectKey, int $id)
+    {
+        $course = ReservationCourse::where('project_id', $this->resolveAdminProjectId())->findOrFail($id);
+        $data = $request->validate([
+            'name' => 'required|string|max:120',
+            'price' => 'required|integer|min:0|max:99999999',
+            'description' => 'nullable|string|max:1000',
+            'is_active' => 'required|boolean',
+        ]);
+        $course->update($data);
+
+        return redirect()->route('admin.settings.reservations', $this->buildAdminRouteParams())
+            ->with('success', 'コースを更新しました');
     }
 }

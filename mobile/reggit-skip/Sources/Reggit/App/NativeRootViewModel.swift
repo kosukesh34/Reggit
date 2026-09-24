@@ -22,9 +22,12 @@ final class NativeRootViewModel: PushNotificationHandling {
     var primaryColorHex: String = "#173F35"
     var navigationHeaderImageURL: String?
     var navigationHeaderBackgroundColorHex = "#FFFFFF"
-    var homeImageURL: String?
+    var homeImageURLs: [String] = []
     var homeMenuLayout = "grid_3x2"
     var productDisplayLayout = "list_with_image"
+    var lotteryModalPresented = false
+    var pendingLotteryCount = 0
+    private var realtimeWebSocketURL: String?
     var memberShowRankProgress = true
     var memberShowPointHistory = true
     var memberShowCouponActivity = true
@@ -38,11 +41,13 @@ final class NativeRootViewModel: PushNotificationHandling {
     var registrationPhone = ""
     var registrationError: String?
     var isRegistering = false
+    var showRegistrationPopup = false
 
     private(set) var apiClient: (any ReggitAPIServing)?
     private let bootstrap: DeviceBootstrapService
     private let pushObserver: any PushNotificationObserving
     private let configRepository: any MobileWebConfigRepository
+    private let walletRealtime = MemberWalletRealtime()
 
     init(
         bootstrap: DeviceBootstrapService = DeviceBootstrapService(),
@@ -61,6 +66,7 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     func onDisappear() {
         pushObserver.stopObserving()
+        walletRealtime.stop()
     }
 
     func retry() {
@@ -68,8 +74,10 @@ final class NativeRootViewModel: PushNotificationHandling {
     }
 
     func start() async {
+        walletRealtime.stop()
         phase = .loading
         registrationError = nil
+        showRegistrationPopup = false
         do {
             let client = try await bootstrap.registerDevice()
             apiClient = client
@@ -78,8 +86,8 @@ final class NativeRootViewModel: PushNotificationHandling {
                 Self.uniqueItems(config.tabs + config.headerItems + config.footerItems + config.hamburgerItems)
             )
             tabs = filtered.isEmpty ? Self.defaultTabs : filtered
-            headerItems = Self.items(config.headerItems, availableIn: tabs)
-            footerItems = Self.items(config.footerItems, availableIn: tabs)
+            headerItems = Array(Self.items(config.headerItems, availableIn: tabs).prefix(1))
+            footerItems = Array(Self.items(config.footerItems, availableIn: tabs).prefix(5))
             if !config.hasNavigationConfiguration {
                 footerItems = Array(tabs.filter { $0.url == nil }.prefix(5))
             }
@@ -89,9 +97,10 @@ final class NativeRootViewModel: PushNotificationHandling {
             primaryColorHex = hex.isEmpty ? "#173F35" : hex
             navigationHeaderImageURL = config.navigationHeaderImageURL
             navigationHeaderBackgroundColorHex = config.navigationHeaderBackgroundColor
-            homeImageURL = config.homeImageURL
+            homeImageURLs = config.homeImageURLs
             homeMenuLayout = config.homeMenuLayout
             productDisplayLayout = config.productDisplayLayout
+            realtimeWebSocketURL = config.realtimeWebSocketURL
             memberShowRankProgress = config.memberShowRankProgress
             memberShowPointHistory = config.memberShowPointHistory
             memberShowCouponActivity = config.memberShowCouponActivity
@@ -108,7 +117,10 @@ final class NativeRootViewModel: PushNotificationHandling {
                 phase = .needsRegistration
             } else {
                 phase = .ready
+                showRegistrationPopup = !member.isMember && member.registrationMode == .popup
             }
+
+            connectRealtimeIfPossible()
 
             if let token = pendingQueueToken, phase == .ready {
                 pendingQueueToken = nil
@@ -138,6 +150,7 @@ final class NativeRootViewModel: PushNotificationHandling {
                 member = member.withCard(card)
             }
             membership = member
+            connectRealtimeIfPossible()
             phase = .ready
             membershipRevision &+= 1
             if tabs.contains(where: { $0.key == "member" }) {
@@ -151,11 +164,37 @@ final class NativeRootViewModel: PushNotificationHandling {
     func applyMembership(_ member: MemberProfileSnapshot) {
         membership = member
         membershipRevision &+= 1
+        connectRealtimeIfPossible()
+    }
+
+    private func connectRealtimeIfPossible() {
+        guard let member = membership, member.isMember,
+              let memberID = member.memberId,
+              let websocketURL = realtimeWebSocketURL,
+              let nativeClient = apiClient as? ReggitAPIClient else { return }
+        walletRealtime.start(websocketURL: websocketURL, client: nativeClient, memberID: memberID) { [weak self] count in
+            guard let self else { return }
+            if count > self.pendingLotteryCount {
+                Task {
+                    guard let state = try? await nativeClient.fetchLotteryState(),
+                          state.gachaEnabled,
+                          state.pending(for: "gacha") != nil else { return }
+                    self.lotteryModalPresented = true
+                }
+            }
+            self.pendingLotteryCount = count
+        }
     }
 
     func skipRegistration() {
         guard membership?.registrationMode.canSkipRegistration != false else { return }
         phase = .ready
+    }
+
+    func openRegistrationFromPopup() {
+        guard phase == .ready, membership?.isMember == false else { return }
+        showRegistrationPopup = false
+        phase = .needsRegistration
     }
 
     func handleQueueDeepLink(queueToken: String) {
@@ -208,7 +247,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     // MARK: - Tabs
 
     static let supportedTabKeys: Set<String> = [
-        "home", "member", "profile", "products", "orders", "coupons", "stamps", "designlab", "queue", "reservations", "gallery", "announcements", "terms", "privacy",
+        "home", "member", "profile", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "terms", "privacy",
     ]
 
     static let defaultTabs: [AppTabItem] = [
@@ -223,7 +262,7 @@ final class NativeRootViewModel: PushNotificationHandling {
         var result: [AppTabItem] = []
         for tab in tabs {
             let key = mapTabKey(tab.key)
-            guard supportedTabKeys.contains(key) || tab.url != nil else { continue }
+            guard key != "designlab", supportedTabKeys.contains(key) || tab.url != nil else { continue }
             if result.contains(where: { $0.key == key }) {
                 continue
             }

@@ -108,6 +108,54 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         $this->assertSame('name_only', ShopSettingStore::getValue('product_display_layout', '', $project->id));
     }
 
+    public function test_home_settings_複数画像を追加して個別に削除できること(): void
+    {
+        Storage::fake('public');
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        ShopSettingStore::setValue('home_image_url', 'https://example.com/legacy.webp', 'string', $project->id);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.home.update', ['project_key' => $project->project_key]), [
+                'home_images_present' => '1',
+                'home_images' => [
+                    UploadedFile::fake()->image('second.png', 1200, 1200),
+                    UploadedFile::fake()->image('third.png', 1200, 1200),
+                ],
+                'home_menu_layout' => 'grid_3x2',
+                'product_display_layout' => 'list_with_image',
+            ])->assertRedirect();
+
+        $urls = ShopSettingStore::getValue('home_image_urls', [], $project->id);
+        $this->assertCount(3, $urls);
+        $this->assertSame('https://example.com/legacy.webp', $urls[0]);
+        $this->assertSame($urls[0], ShopSettingStore::getValue('home_image_url', '', $project->id));
+        $this->assertStringContainsString('/storage/home_images/'.$project->id.'/', $urls[1]);
+        $this->assertStringContainsString('/storage/home_images/'.$project->id.'/', $urls[2]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.home.update', ['project_key' => $project->project_key]), [
+                'home_images_present' => '1',
+                'home_image_remove' => ['0', '2'],
+                'home_menu_layout' => 'grid_3x2',
+                'product_display_layout' => 'list_with_image',
+            ])->assertRedirect();
+
+        $this->assertSame([$urls[1]], ShopSettingStore::getValue('home_image_urls', [], $project->id));
+        $this->assertSame($urls[1], ShopSettingStore::getValue('home_image_url', '', $project->id));
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.home.update', ['project_key' => $project->project_key]), [
+                'home_images_present' => '1',
+                'home_image_remove' => ['0'],
+                'home_menu_layout' => 'grid_3x2',
+                'product_display_layout' => 'list_with_image',
+            ])->assertRedirect();
+
+        $this->assertSame([], ShopSettingStore::getValue('home_image_urls', null, $project->id));
+        $this->assertSame('', ShopSettingStore::getValue('home_image_url', null, $project->id));
+    }
+
     public function test_home_menu_非表示設定を保存して再表示しても維持すること(): void
     {
         $project = $this->createProject();
@@ -169,7 +217,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
                 'product_display_layout' => 'list_with_image',
                 'native_navigation_present' => '1',
                 'native_navigation' => [
-                    'header' => ['coupons', 'member'],
+                    'header' => ['coupons'],
                     'footer' => ['products', 'home', 'member'],
                     'hamburger' => ['privacy', 'terms', 'coupons'],
                 ],
@@ -177,12 +225,12 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
             ->assertRedirect();
 
         $navigation = ShopSettingStore::getValue('native_navigation_items', [], $project->id);
-        $this->assertSame(['coupons', 'member'], $navigation['header']);
+        $this->assertSame(['coupons'], $navigation['header']);
         $this->assertSame(['products', 'home', 'member'], $navigation['footer']);
         $this->assertSame(['privacy', 'terms', 'coupons'], $navigation['hamburger']);
 
         $view = app(GetHomeSettingsUseCase::class)->handle((int) $project->id);
-        $this->assertSame(['coupons', 'member'], array_column(array_slice($view['headerNavChoices'], 0, 2), 'key'));
+        $this->assertSame('coupons', $view['headerNavChoices'][0]['key']);
         $this->assertTrue($view['headerNavChoices'][0]['selected']);
         $this->assertSame('products', $view['footerNavChoices'][0]['key']);
         $this->assertSame('privacy', $view['hamburgerNavChoices'][0]['key']);

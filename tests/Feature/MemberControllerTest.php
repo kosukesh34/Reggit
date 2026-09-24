@@ -99,7 +99,8 @@ class MemberControllerTest extends TestCase
             ->get('/api/member-profile?project_key=default');
 
         $response->assertStatus(200)
-            ->assertJsonPath('is_member', true);
+            ->assertJsonPath('is_member', true)
+            ->assertJsonPath('user_id', $user->id);
 
         ShopSettingStore::setMemberRegistrationMode('prompt', (int) $project->id);
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])

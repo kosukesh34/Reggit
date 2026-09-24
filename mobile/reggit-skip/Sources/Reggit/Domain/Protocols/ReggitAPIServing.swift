@@ -1,5 +1,28 @@
 import Foundation
 
+struct ExistingMemberLinkFieldItem: Equatable, Sendable, Identifiable {
+    let key: String
+    let label: String
+    var id: String { key }
+}
+
+struct ExistingMemberLinkForm: Equatable, Sendable {
+    let isEnabled: Bool
+    let description: String
+    let fields: [ExistingMemberLinkFieldItem]
+}
+
+struct ExistingMemberLinkResult: Equatable, Sendable {
+    let linked: Bool
+    let message: String
+}
+
+struct TransferCode: Equatable, Sendable {
+    let memberId: Int
+    let code: String
+    let expiresAt: String
+}
+
 /// 顧客向け REST API の境界。Presentation は具象クライアントではなくこのプロトコルに依存する。
 protocol ReggitAPIServing: Sendable {
     var baseURL: String { get }
@@ -12,6 +35,11 @@ protocol ReggitAPIServing: Sendable {
     ) async throws
 
     func fetchMemberProfile() async throws -> MemberProfileSnapshot
+    func withdrawMember() async throws
+    func issueTransferCode() async throws -> TransferCode
+    func claimTransferCode(memberId: Int, code: String) async throws
+    func fetchExistingMemberLinkForm() async throws -> ExistingMemberLinkForm
+    func submitExistingMemberLink(values: [String: String]) async throws -> ExistingMemberLinkResult
     func registerMember(name: String, phone: String) async throws -> MemberProfileSnapshot
     func updateMemberProfile(name: String, phone: String, profilePayload: [String: String], profileListPayload: [String: [String]]) async throws -> MemberProfileSnapshot
     func fetchPointCard() async throws -> PointCardSnapshot
@@ -42,6 +70,7 @@ protocol ReggitAPIServing: Sendable {
     func fetchPublishedAnnouncements() async throws -> [AnnouncementItem]
     func fetchGalleryContent(categoryId: Int?) async throws -> GallerySnapshot
     func fetchMemberReservations() async throws -> [ReservationItem]
-    func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?) async throws
+    func fetchReservationCourses() async throws -> [ReservationCourseItem]
+    func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?, courseId: Int?) async throws
     func cancelReservationBooking(id: Int) async throws
 }

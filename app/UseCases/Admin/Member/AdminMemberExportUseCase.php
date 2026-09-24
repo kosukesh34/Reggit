@@ -3,14 +3,14 @@
 namespace App\UseCases\Admin\Member;
 
 use App\Models\Member;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminListQueryService;
 use App\Support\MemberChannel;
 use Illuminate\Support\Collection;
 
 class AdminMemberExportUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberAdminListQueryService $memberList,
     ) {}
 
     /**
@@ -19,7 +19,7 @@ class AdminMemberExportUseCase
      */
     public function handle(int $projectId, array $filters): Collection
     {
-        return $this->memberAdminService->getFilteredMembers($projectId, $filters)
+        return $this->memberList->getFilteredMembers($projectId, $filters)
             ->map(function (Member $m): array {
                 $user = $m->user;
 

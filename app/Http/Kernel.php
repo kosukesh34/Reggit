@@ -17,6 +17,7 @@ use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\ResetTenantContext;
 use App\Http\Middleware\SetAdminProjectFromQuery;
 use App\Http\Middleware\ValidateCsrfToken;
+use App\Http\Middleware\VerifySmaregiIdpCallbackToken;
 use App\Http\Middleware\VerifySmaregiWebhookSecret;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\AuthenticateWithBasicAuth;
@@ -103,5 +104,6 @@ class Kernel extends HttpKernel
         'kitchen.auth' => AuthenticateKitchenToken::class,
         'queue.access' => AuthorizeQueueAccess::class,
         'verify.smaregi.webhook' => VerifySmaregiWebhookSecret::class,
+        'verify.smaregi.idp' => VerifySmaregiIdpCallbackToken::class,
     ];
 }

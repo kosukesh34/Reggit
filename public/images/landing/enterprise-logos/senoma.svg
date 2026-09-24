@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 72" role="img" aria-labelledby="senoma-title senoma-desc">
+  <title id="senoma-title">SENOMA</title>
+  <desc id="senoma-desc">架空企業 SENOMA のロゴ表示例</desc>
+  <path d="M16 14h22v9H16zM45 14h22v9H45zM16 31h22v9H16zM45 31h22v9H45zM16 48h22v9H16zM45 48h22v9H45z" fill="#4C5361"/>
+  <path d="M34 14h9v43h-9z" fill="#8C94A0"/>
+  <text x="84" y="46" fill="#353B47" font-family="Avenir Next, Helvetica Neue, Helvetica, Arial, sans-serif" font-size="29" font-weight="700" letter-spacing="1.05">SENOMA</text>
+</svg>

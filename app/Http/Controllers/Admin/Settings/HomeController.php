@@ -56,6 +56,27 @@ class HomeController extends AdminBaseController
         } elseif ($request->input('home_image_clear') === '1') {
             $homeImageUrl = '';
         }
+        $homeImageUrls = null;
+        if ($request->input('home_images_present') === '1') {
+            $existing = $this->getHomeSettingsUseCase->handle($projectId)['homeImageUrls'];
+            $removed = array_map('intval', $validated['home_image_remove'] ?? []);
+            $homeImageUrls = array_values(array_filter(
+                $existing,
+                fn ($url, $index) => ! in_array($index, $removed, true),
+                ARRAY_FILTER_USE_BOTH,
+            ));
+            $newImages = $request->file('home_images', []);
+            if (count($homeImageUrls) + count($newImages) > 10) {
+                return back()->withErrors(['home_images' => 'ホーム画像は最大10枚まで登録できます。'])->withInput();
+            }
+            foreach ($newImages as $image) {
+                $homeImageUrls[] = $this->publicImageStorage->store(
+                    $image,
+                    $projectId,
+                    PublicImageStorageService::DIR_HOME_IMAGE,
+                );
+            }
+        }
         $this->updateHomeSettingsUseCase->handle(
             $projectId,
             is_array($raw) ? $raw : [],
@@ -67,6 +88,7 @@ class HomeController extends AdminBaseController
             $request->boolean('native_navigation_present')
                 ? (is_array($validated['native_navigation'] ?? null) ? $validated['native_navigation'] : [])
                 : null,
+            $homeImageUrls,
         );
 
         return redirect()->route('admin.settings.home', $this->buildAdminRouteParams())

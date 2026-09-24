@@ -397,9 +397,12 @@ struct CategoryChipRow: View {
 }
 
 struct QtyStepper: View {
+    let itemName: String
     let quantity: Int
     let onMinus: () -> Void
     let onPlus: () -> Void
+    var canIncrease = true
+    var expandsToFill = false
     @Environment(\.brandAccent) var accent
     @Environment(\.brandForeground) var onAccent
 
@@ -412,22 +415,39 @@ struct QtyStepper: View {
                         .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("数量を減らす")
+                .accessibilityLabel("\(itemName)の数量を減らす")
+                if expandsToFill { Spacer(minLength: 0) }
                 Text("\(quantity)")
                     .font(.system(size: 15, weight: .semibold, design: .monospaced))
                     .frame(minWidth: 22)
+                if expandsToFill { Spacer(minLength: 0) }
+                Button(action: onPlus) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(onAccent)
+                        .frame(width: 44, height: 44)
+                        .background(accent)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canIncrease)
+                .accessibilityLabel("\(itemName)の数量を増やす")
+            } else {
+                Button(action: onPlus) {
+                    Text("追加")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(onAccent)
+                        .padding(.horizontal, 18)
+                        .frame(maxWidth: expandsToFill ? .infinity : nil, minHeight: 44)
+                        .background(accent)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canIncrease)
+                .accessibilityLabel("\(itemName)を追加")
             }
-            Button(action: onPlus) {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(onAccent)
-                    .frame(width: 44, height: 44)
-                    .background(accent)
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("数量を増やす")
         }
+        .frame(maxWidth: expandsToFill ? .infinity : nil)
         .foregroundStyle(AppDesign.ink)
         .background(quantity > 0 ? AppDesign.surfaceMuted : Color.clear)
         .clipShape(Capsule())

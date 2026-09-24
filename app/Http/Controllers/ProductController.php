@@ -20,7 +20,7 @@ class ProductController extends Controller
             $category = $request->get('category');
         }
 
-        $result = $this->indexUseCase->handle($category, true, true);
+        $result = $this->indexUseCase->handle($category, false, true);
 
         return response()->json([
             'products' => $result->products,

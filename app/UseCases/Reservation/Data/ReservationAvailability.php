@@ -12,6 +12,7 @@ class ReservationAvailability
     public function __construct(
         public array $availableDates,
         public string $startDate,
-        public string $endDate
+        public string $endDate,
+        public array $courses = [],
     ) {}
 }

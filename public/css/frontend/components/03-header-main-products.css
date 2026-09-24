@@ -299,6 +299,10 @@ body.native-app-embed .header {
     box-shadow: var(--shadow-lg);
     border-color: rgba(var(--primary-rgb), 0.2);
 }
+.product-card.is-stopped { opacity: 0.55; filter: grayscale(0.35); cursor: default; }
+.product-card.is-stopped:hover,
+.product-card.is-stopped:active { transform: none; box-shadow: var(--shadow-xs); }
+.product-stock-note { color: #667085; font-size: 12px; }
 .product-card:active {
     transform: translateY(-1px) scale(0.99);
 }
