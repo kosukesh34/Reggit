@@ -18,8 +18,10 @@ foreach ($files as $name => $box) {
     $image = imagecreatefrompng($path);
     if ($image === false) {
         fwrite(STDERR, "skip {$name}\n");
+
         continue;
     }
+
     $width = imagesx($image);
     $height = imagesy($image);
     $color = imagecolorallocate($image, 225, 29, 72);
