@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Repositories\Contracts\ProjectRepository;
+use App\Support\HomeImageUrls;
 use App\Support\LiffThemePresets;
 use Illuminate\Support\Collection;
 
@@ -25,6 +26,7 @@ class AppConfigService
         $project = $this->projectRepository->findActiveByProjectKey($projectKey);
         $projectId = $project !== null ? (int) $project->id : 1;
         $repo = $this->shopSettingRepository;
+        $homeImageUrls = HomeImageUrls::forProject($repo, $projectId);
 
         $featureFlags = $repo->getFeatureFlags($projectId);
         $menuItems = $repo->getFrontendMenuItems($projectId);
@@ -44,16 +46,33 @@ class AppConfigService
 
         $enabledTabs = array_values(array_filter($menuItems, function ($item) use ($featureFlags, $tabFeatureMap) {
             if (($item['tab'] ?? null) === 'designlab') {
-                return ($featureFlags['feature_gacha_enabled'] ?? false)
-                    || ($featureFlags['feature_scratch_enabled'] ?? false)
-                    || ($featureFlags['feature_roulette_enabled'] ?? false);
+                return false;
             }
             $flagKey = $tabFeatureMap[$item['tab']] ?? null;
 
             return $flagKey === null || ($featureFlags[$flagKey] ?? true);
         }));
 
-        $nativeNavigationCandidates = $enabledTabs;
+        // ネイティブの配置設定はホームメニューの表示設定とは独立している。
+        // 明示的にフッターへ置いた会員証などをホームメニュー非表示だけで落とさない。
+        $savedMenu = $repo->getValue('frontend_menu_items', null, $projectId);
+        $savedMenuByTab = collect(is_array($savedMenu) ? $savedMenu : [])->keyBy('tab');
+        $defaultMenu = collect($repo->defaultFrontendMenuItems());
+        $defaultKeys = $defaultMenu->pluck('tab');
+        $nativeNavigationCandidates = $defaultMenu
+            ->map(fn ($item) => array_merge($item, is_array($savedMenuByTab->get($item['tab'])) ? $savedMenuByTab->get($item['tab']) : []))
+            ->concat(collect($enabledTabs)->filter(fn ($item) => ! $defaultKeys->contains($item['tab'])))
+            ->filter(function ($item) use ($featureFlags, $tabFeatureMap) {
+                $tab = $item['tab'] ?? null;
+                if ($tab === 'designlab') {
+                    return false;
+                }
+                $flagKey = $tabFeatureMap[$tab] ?? null;
+
+                return $flagKey === null || ($featureFlags[$flagKey] ?? true);
+            })
+            ->values()
+            ->all();
         $nativeNavigationCandidates[] = [
             'tab' => 'terms',
             'label' => '利用規約',
@@ -93,7 +112,7 @@ class AppConfigService
                 'url' => isset($item['url']) ? (string) $item['url'] : null,
             ], $enabledTabs),
             'navigation' => [
-                'header' => $this->navigationItems($nativeNavigation['header'] ?? [], $nativeNavigationByKey, 2),
+                'header' => $this->navigationItems($nativeNavigation['header'] ?? [], $nativeNavigationByKey, 1),
                 'footer' => $this->navigationItems($nativeNavigation['footer'] ?? [], $nativeNavigationByKey, 5),
                 'hamburger' => $this->navigationItems($nativeNavigation['hamburger'] ?? [], $nativeNavigationByKey),
             ],
@@ -148,7 +167,8 @@ class AppConfigService
             ],
             'home' => [
                 'menu_layout' => (string) $repo->getValue('home_menu_layout', 'grid_3x2', $projectId),
-                'image_url' => (string) $repo->getValue('home_image_url', '', $projectId),
+                'image_url' => $homeImageUrls[0] ?? '',
+                'image_urls' => $homeImageUrls,
             ],
             'products' => [
                 'display_layout' => (string) $repo->getValue('product_display_layout', 'list_with_image', $projectId),
@@ -158,6 +178,7 @@ class AppConfigService
                 'show_point_history' => (bool) $repo->getValue('member_show_point_history', true, $projectId),
                 'show_coupon_activity' => (bool) $repo->getValue('member_show_coupon_activity', true, $projectId),
             ],
+            'realtime' => $this->nativeRealtimeConfig(),
             'line' => [
                 'liff_id' => $repo->getLineLiffId($projectId),
                 'liff_url' => $repo->getLineLiffUrl($projectId),
@@ -169,6 +190,28 @@ class AppConfigService
             'queue_require_membership' => $repo->getQueueRequireMembership($projectId),
             'member_registration_mode' => $repo->getMemberRegistrationMode($projectId),
         ];
+    }
+
+    /** @return array{websocket_url: string} */
+    private function nativeRealtimeConfig(): array
+    {
+        if (config('broadcasting.default') !== 'reverb') {
+            return ['websocket_url' => ''];
+        }
+
+        $key = trim((string) config('broadcasting.connections.reverb.key', ''));
+        $clientHost = trim((string) config('broadcasting.client_ws_host', ''));
+        $appUrl = (string) config('app.url', '');
+        $host = $clientHost !== '' ? $clientHost : (string) parse_url($appUrl, PHP_URL_HOST);
+        if ($key === '' || $host === '') {
+            return ['websocket_url' => ''];
+        }
+
+        $secure = $clientHost !== '' || parse_url($appUrl, PHP_URL_SCHEME) === 'https';
+        $port = $clientHost !== '' ? null : parse_url($appUrl, PHP_URL_PORT);
+        $authority = $host.(is_int($port) ? ':'.$port : '');
+
+        return ['websocket_url' => ($secure ? 'wss' : 'ws').'://'.$authority.'/app/'.rawurlencode($key).'?protocol=7&client=reggit-skip&version=1.0'];
     }
 
     private function sfSymbolForTab(string $tab): string
