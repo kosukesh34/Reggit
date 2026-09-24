@@ -6,6 +6,8 @@ import { HomePage } from "../pages/HomePage";
 import { MembershipPage } from "../pages/MembershipPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { MorePage } from "../pages/MorePage";
+import { TransferPage } from "../pages/TransferPage";
+import { WithdrawPage } from "../pages/WithdrawPage";
 import { ThemePreviewPage } from "../pages/ThemePreviewPage";
 import { FeaturePage } from "../pages/FeaturePage";
 import { StampIssuePage } from "../pages/StampIssuePage";
@@ -73,6 +75,8 @@ function ScreenRoutes() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/designlab" element={<div className="page feature-page"><DesignLabPage /></div>} />
         <Route path="/more" element={<MorePage />} />
+        <Route path="/more/withdraw" element={<WithdrawPage />} />
+        <Route path="/more/transfer" element={<TransferPage />} />
         <Route path="/dev/themes" element={<ThemePreviewPage />} />
         <Route path="/stamp/issue" element={<StampIssuePage />} />
         <Route path="/coupons" element={<Navigate to="/coupon" replace />} />

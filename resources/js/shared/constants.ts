@@ -26,6 +26,8 @@ export const AppConstants = {
         MEMBER_PROFILE_IMAGE: `${API_BASE}/member-profile/image`,
         MEMBERS_REGISTER: `${API_BASE}/members/register`,
         MEMBERS_WITHDRAW: `${API_BASE}/members/withdraw`,
+        MEMBERS_TRANSFER_CODE: `${API_BASE}/members/transfer-code`,
+        MEMBERS_TRANSFER: `${API_BASE}/members/transfer`,
         MEMBERS_SESSION_CLEAR: `${API_BASE}/members/session/clear`,
         DEVICE_REGISTER: `${API_BASE}/devices/register`,
         DEVICE_SESSION: `${API_BASE}/devices/session`,

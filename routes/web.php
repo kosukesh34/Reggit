@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
 use App\Http\Controllers\Admin\MailTestController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
 use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
+use App\Http\Controllers\Admin\MemberTransferController as AdminMemberTransferController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
@@ -229,6 +230,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::delete('/products/{id}', [AdminProductController::class, 'deleteProduct'])->name('admin.products.delete')->middleware('admin.permission:products.manage');
 
         Route::get('/members', [AdminMemberController::class, 'members'])->name('admin.members')->middleware('admin.permission:members.view');
+        Route::post('/members/{id}/transfer-code', [AdminMemberTransferController::class, 'store'])->name('admin.members.transfer-code')->middleware('admin.permission:members.manage');
         Route::get('/members/export', [AdminMemberController::class, 'export'])->name('admin.members.export')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/history/{section}', [AdminMemberController::class, 'memberHistory'])->name('admin.members.history')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/visits/{visitId}', [AdminMemberController::class, 'visitDetail'])->name('admin.members.visits.detail')->middleware('admin.permission:members.view');

@@ -60,21 +60,6 @@ export function MorePage() {
     }
   };
 
-  const runWithdraw = async () => {
-    if (!window.confirm("退会すると会員情報・ポイント・スタンプ等は復元できません。本当に退会しますか？")) {
-      return;
-    }
-    setBusy(true);
-    setError(undefined);
-    try {
-      await reggitApi.withdraw();
-      window.location.reload();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "退会に失敗しました");
-      setBusy(false);
-    }
-  };
-
   return (
     <div className="page stack stack--lg">
       <Link className="card card--lg account-card" to="/membership" aria-label="会員情報を確認・変更">
@@ -178,11 +163,6 @@ export function MorePage() {
           <Button variant="outline" disabled={busy} onClick={() => void runLogout()}>
             <LogOut size={17} /> {busy ? "処理中…" : "ログアウト"}
           </Button>
-          {isMember ? (
-            <Button variant="soft" disabled={busy} onClick={() => void runWithdraw()}>
-              退会する
-            </Button>
-          ) : null}
         </section>
       ) : null}
 
