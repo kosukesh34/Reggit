@@ -2,13 +2,15 @@
 
 namespace App\UseCases\Product\Data;
 
-use Illuminate\Support\Collection;
-
-/** 商品一覧 UseCase の出力。 @param Collection<int, \App\Models\Product> $products @param array<int, ProductCategory> $categories */
+/** 商品一覧 UseCase の出力。 */
 class ProductIndexOutput
 {
+    /**
+     * @param  list<array<string, mixed>>  $products
+     * @param  array<int, ProductCategory>  $categories
+     */
     public function __construct(
-        public Collection $products,
+        public array $products,
         public array $categories
     ) {}
 

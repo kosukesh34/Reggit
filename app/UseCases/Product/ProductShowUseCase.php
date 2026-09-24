@@ -2,12 +2,15 @@
 
 namespace App\UseCases\Product;
 
-use App\Models\Product;
+use App\UseCases\Product\Contracts\ProductReadRepository;
 
 class ProductShowUseCase
 {
-    public function handle(int $id): Product
+    public function __construct(private ProductReadRepository $products) {}
+
+    /** @return array<string, mixed> */
+    public function handle(int $id): array
     {
-        return Product::with('optionGroups.options')->findOrFail($id);
+        return $this->products->findOrFail($id);
     }
 }
