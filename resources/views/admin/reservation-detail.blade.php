@@ -65,6 +65,9 @@
                 <div class="info-label">人数</div>
                 <div class="info-value">{{ $reservation->number_of_people }}名</div>
             </div>
+            @if($reservation->course_name)
+            <div class="info-item"><div class="info-label">コース</div><div class="info-value">{{ $reservation->course_name }} · {{ number_format($reservation->course_price) }}円</div></div>
+            @endif
             <div class="info-item">
                 <div class="info-label">ステータス</div>
                 <div class="info-value">

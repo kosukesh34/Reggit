@@ -24,6 +24,7 @@ class ReservationUpdateController extends Controller
                 'reserved_at' => 'required|date|after:now',
                 'number_of_people' => 'required|integer|min:1|max:10',
                 'notes' => 'nullable|string|max:500',
+                'reservation_course_id' => 'nullable|integer|min:1',
             ]);
         } catch (ValidationException $e) {
             return response()->json([

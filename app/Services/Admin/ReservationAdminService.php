@@ -6,6 +6,7 @@ use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
+use App\Models\ReservationCourse;
 use App\Util\AdminContext;
 use App\Util\DateUtil;
 use InvalidArgumentException;
@@ -121,10 +122,15 @@ class ReservationAdminService
             throw new InvalidArgumentException('予約日時が不正です');
         }
 
+        $course = $this->resolveCourse($projectId, $data['reservation_course_id'] ?? null);
+
         return Reservation::create([
             'project_id' => $projectId,
             'reserved_at' => $reservedAt,
             'number_of_people' => $data['number_of_people'],
+            'reservation_course_id' => $course?->id,
+            'course_name' => $course?->name,
+            'course_price' => $course?->price,
             'notes' => $data['notes'] ?? null,
             'status' => ReservationStatus::CONFIRMED,
         ]);
@@ -139,11 +145,18 @@ class ReservationAdminService
             throw new InvalidArgumentException('予約日時が不正です');
         }
 
-        $reservation->update([
+        $attributes = [
             'reserved_at' => $reservedAt,
             'number_of_people' => $data['number_of_people'],
             'notes' => $data['notes'] ?? null,
-        ]);
+        ];
+        if (array_key_exists('reservation_course_id', $data)) {
+            $course = $this->resolveCourse((int) $reservation->project_id, $data['reservation_course_id']);
+            $attributes['reservation_course_id'] = $course?->id;
+            $attributes['course_name'] = $course?->name;
+            $attributes['course_price'] = $course?->price;
+        }
+        $reservation->update($attributes);
 
         return $reservation->fresh();
     }
@@ -151,5 +164,14 @@ class ReservationAdminService
     public function destroy(int $id): void
     {
         Reservation::findOrFail($id)->delete();
+    }
+
+    private function resolveCourse(int $projectId, int|string|null $id): ?ReservationCourse
+    {
+        if ($id === null || $id === '') {
+            return null;
+        }
+
+        return ReservationCourse::where('project_id', $projectId)->where('is_active', true)->findOrFail((int) $id);
     }
 }
