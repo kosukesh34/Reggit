@@ -177,6 +177,32 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(20, $member->points);
     }
 
+    public function test_pos_customersの同期で登録時の氏名プレースホルダは取り込まないこと(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        $user = User::factory()->create(['project_id' => $project->id, 'name' => null, 'kana' => 'ヤマダ']);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'smaregi_customer_id' => '44',
+        ]);
+
+        $this->fakeSmaregiHttpSingleCustomer([
+            'customerId' => '44',
+            'lastName' => '—',
+            'firstName' => '—',
+            'lastKana' => 'ヤマダ',
+            'firstKana' => 'ー',
+        ]);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)->syncByCustomerIds(self::CONTRACT_ID, ['44'], 'edited');
+
+        $user->refresh();
+        $this->assertNull($user->name);
+        $this->assertSame('ヤマダ', $user->kana);
+    }
+
     public function test_pos_customersの同期で任意項目がprofile_extraに反映されること(): void
     {
         $project = Project::factory()->create();
