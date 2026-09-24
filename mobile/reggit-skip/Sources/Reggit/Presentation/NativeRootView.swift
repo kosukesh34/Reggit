@@ -4,6 +4,10 @@ import SwiftUI
 struct NativeRootView: View {
     @State var viewModel: NativeRootViewModel
     @State var showHamburgerMenu = false
+    @State var showAppInfo = false
+    @State var appInfoDisplayedAt = Date()
+    @State var expandedHomeImageIndex: Int? = nil
+    @State var expandedHomePage = 0
     @State var isHeaderShown = false
 
     init(viewModel: NativeRootViewModel) {
@@ -53,6 +57,99 @@ struct NativeRootView: View {
         }
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
+        .alert("会員登録", isPresented: $viewModel.showRegistrationPopup) {
+            Button("会員登録する") { viewModel.openRegistrationFromPopup() }
+            Button("あとで", role: .cancel) {}
+        } message: {
+            Text(viewModel.membership?.message ?? "会員登録でポイントやクーポンが使えます。")
+        }
+        .sheet(isPresented: $showAppInfo) {
+            AppInfoView(
+                userId: viewModel.membership?.userId,
+                displayedAt: appInfoDisplayedAt,
+                onClose: { showAppInfo = false }
+            )
+        }
+        .overlay {
+            if viewModel.lotteryModalPresented, let client = viewModel.apiClient {
+                GeometryReader { geometry in
+                    ZStack {
+                        Color.black.opacity(0.64)
+                            .ignoresSafeArea()
+                        ZStack(alignment: .topTrailing) {
+                            LotteryView(apiClient: client, gachaOnly: true)
+                            Button { viewModel.lotteryModalPresented = false } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.black.opacity(0.55))
+                                    .clipShape(Circle())
+                            }
+                            .accessibilityLabel("閉じる")
+                            .padding(12)
+                        }
+                        .frame(maxWidth: 390)
+                        .frame(height: min(geometry.size.height * 0.72, 520))
+                        .background(Color.black)
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .padding(.horizontal, 18)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .zIndex(100)
+            }
+        }
+        .overlay {
+            if expandedHomeImageIndex != nil, let client = viewModel.apiClient {
+                expandedHomeImage(baseURL: client.baseURL)
+                    .zIndex(101)
+            }
+        }
+    }
+
+    private func expandedHomeImage(baseURL: String) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+            Group {
+                if viewModel.homeImageURLs.count > 1 {
+                    TabView(selection: $expandedHomePage) {
+                        ForEach(viewModel.homeImageURLs.indices, id: \.self) { index in
+                            RemoteImageView(
+                                urlString: viewModel.homeImageURLs[index],
+                                baseURL: baseURL,
+                                contentMode: .fit
+                            )
+                            .padding(16)
+                            .tag(index)
+                        }
+                    }
+                    #if !os(macOS)
+                    .tabViewStyle(.page(indexDisplayMode: .automatic))
+                    #endif
+                } else if let url = viewModel.homeImageURLs.first {
+                    RemoteImageView(urlString: url, baseURL: baseURL, contentMode: .fit)
+                        .padding(16)
+                } else {
+                    Image("DemoStoreHero", bundle: .module)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .padding(16)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Button { expandedHomeImageIndex = nil } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Color.black.opacity(0.6))
+                    .clipShape(Circle())
+            }
+            .accessibilityLabel("閉じる")
+            .padding(16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var splash: some View {
@@ -84,7 +181,7 @@ struct NativeRootView: View {
                         backgroundColorHex: viewModel.navigationHeaderBackgroundColorHex,
                         baseURL: client.baseURL,
                         items: viewModel.headerItems,
-                        showsHamburger: !viewModel.hamburgerItems.isEmpty,
+                        showsHamburger: true,
                         onSelect: { viewModel.selectedTab = $0 },
                         onOpenHamburger: {
                             withAnimation(.easeOut(duration: 0.24)) { showHamburgerMenu = true }
@@ -113,7 +210,6 @@ struct NativeRootView: View {
                                 set: { viewModel.selectedTab = $0 }
                             )
                         )
-                        .transaction { $0.animation = nil }
                     }
                 }
 
@@ -183,6 +279,29 @@ struct NativeRootView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    Button {
+                        appInfoDisplayedAt = Date()
+                        showHamburgerMenu = false
+                        showAppInfo = true
+                    } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: "info.circle")
+                                .frame(width: 28)
+                                .foregroundStyle(accent)
+                            Text("アプリ情報")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(AppDesign.ink)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(AppDesign.inkSecondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: 54)
+                        .background(AppDesign.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM))
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(16)
             }
@@ -200,10 +319,14 @@ struct NativeRootView: View {
         case "home":
             HomeView(
                 apiClient: client,
-                homeImageURL: viewModel.homeImageURL,
+                homeImageURLs: viewModel.homeImageURLs,
                 menuLayout: viewModel.homeMenuLayout,
                 tabs: viewModel.tabs,
-                onSelectTab: { viewModel.selectedTab = $0 }
+                onSelectTab: { viewModel.selectedTab = $0 },
+                onExpandImage: { index in
+                    expandedHomePage = index
+                    expandedHomeImageIndex = index
+                }
             )
         case "products":
             ProductsView(
@@ -218,8 +341,6 @@ struct NativeRootView: View {
             CouponsView(apiClient: client)
         case "stamps":
             StampsView(apiClient: client)
-        case "designlab":
-            LotteryView(apiClient: client)
         case "queue":
             QueueView(
                 apiClient: client,
@@ -278,16 +399,6 @@ struct NativeSharedHeader: View {
                     .lineLimit(1)
             }
             HStack(spacing: 4) {
-                if showsHamburger {
-                    Button(action: onOpenHamburger) {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 20, weight: .semibold))
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("メニューを開く"))
-                }
-                Spacer()
                 ForEach(items) { item in
                     Button { onSelect(item.key) } label: {
                         Image(systemName: TabIconResolver.systemName(for: item))
@@ -296,6 +407,16 @@ struct NativeSharedHeader: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(item.label))
+                }
+                Spacer()
+                if showsHamburger {
+                    Button(action: onOpenHamburger) {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.system(size: 20, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text("メニューを開く"))
                 }
             }
             .padding(.horizontal, 8)
