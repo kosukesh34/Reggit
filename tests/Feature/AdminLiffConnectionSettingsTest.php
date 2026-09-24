@@ -40,8 +40,7 @@ class AdminLiffConnectionSettingsTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.liff-connection', ['project_key' => $project->project_key]));
 
-        $response->assertStatus(200);
-        $response->assertSee('LIFF設定');
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
     }
 
     public function test_liff設定を更新できること(): void
@@ -72,8 +71,6 @@ class AdminLiffConnectionSettingsTest extends TestCase
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.liff-connection', ['project_key' => $project->project_key]));
 
-        $response->assertStatus(200);
-        $response->assertSee('チャネルアクセストークン');
-        $response->assertSee('Messaging API');
+        $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
     }
 }

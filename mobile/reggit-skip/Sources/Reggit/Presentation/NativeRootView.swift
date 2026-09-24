@@ -226,6 +226,7 @@ struct NativeRootView: View {
                 }
             }
             .animation(.easeOut(duration: 0.24), value: showHamburgerMenu)
+            .environment(\.layoutDirection, .leftToRight)
         } else {
             splash
         }
@@ -284,22 +285,7 @@ struct NativeRootView: View {
                         showHamburgerMenu = false
                         showAppInfo = true
                     } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: "info.circle")
-                                .frame(width: 28)
-                                .foregroundStyle(accent)
-                            Text("アプリ情報")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(AppDesign.ink)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(AppDesign.inkSecondary)
-                        }
-                        .padding(.horizontal, 16)
-                        .frame(minHeight: 54)
-                        .background(AppDesign.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM))
+                        drawerRow(title: "アプリ情報", systemImage: "info.circle")
                     }
                     .buttonStyle(.plain)
                 }
@@ -308,7 +294,27 @@ struct NativeRootView: View {
         }
         .frame(maxWidth: 300, maxHeight: .infinity, alignment: .top)
         .background(AppDesign.canvas.ignoresSafeArea())
+        .frame(maxWidth: .infinity, alignment: .leading)
         .shadow(color: Color.black.opacity(0.18), radius: 16, x: 6, y: 0)
+    }
+
+    private func drawerRow(title: String, systemImage: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .frame(width: 28)
+                .foregroundStyle(accent)
+            Text(title)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(AppDesign.ink)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(AppDesign.inkSecondary)
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 54)
+        .background(AppDesign.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM))
     }
 
     @ViewBuilder
@@ -399,16 +405,6 @@ struct NativeSharedHeader: View {
                     .lineLimit(1)
             }
             HStack(spacing: 4) {
-                ForEach(items) { item in
-                    Button { onSelect(item.key) } label: {
-                        Image(systemName: TabIconResolver.systemName(for: item))
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text(item.label))
-                }
-                Spacer()
                 if showsHamburger {
                     Button(action: onOpenHamburger) {
                         Image(systemName: "line.3.horizontal")
@@ -417,6 +413,16 @@ struct NativeSharedHeader: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("メニューを開く"))
+                }
+                Spacer()
+                ForEach(items) { item in
+                    Button { onSelect(item.key) } label: {
+                        Image(systemName: TabIconResolver.systemName(for: item))
+                            .font(.system(size: 18, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(item.label))
                 }
             }
             .padding(.horizontal, 8)

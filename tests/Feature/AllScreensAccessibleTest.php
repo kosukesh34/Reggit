@@ -133,7 +133,6 @@ class AllScreensAccessibleTest extends TestCase
             'settings.home' => ['admin.settings.home', ['project_key' => $key]],
             'settings.features' => ['admin.settings.features', ['project_key' => $key]],
             'settings.ranks' => ['admin.settings.ranks', ['project_key' => $key]],
-            'settings.liff-designer' => ['admin.settings.liff-designer', ['project_key' => $key]],
             'settings.reservations' => ['admin.settings.reservations', ['project_key' => $key]],
             'settings.queue' => ['admin.settings.queue', ['project_key' => $key]],
             'settings.coupons' => ['admin.settings.coupons', ['project_key' => $key]],

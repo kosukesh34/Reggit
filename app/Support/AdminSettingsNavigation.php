@@ -20,10 +20,8 @@ final class AdminSettingsNavigation
                 $can('queue.view') ? ['route' => 'admin.settings.queue', 'icon' => 'fas fa-list-ol', 'label' => '順番待ち', 'hint' => '待ち時間'] : null,
             ]],
             ['title' => 'お客様向け画面', 'items' => [
-                $can('settings.view') ? ['route' => 'admin.settings.home', 'icon' => 'fas fa-home', 'label' => 'ホーム・メニュー', 'hint' => '画像・タブ・並び順'] : null,
-                ($can('liff_designer.manage') && $hasPlan(PlanFeatures::LIFF_DESIGNER_ADVANCED)) ? ['route' => 'admin.settings.liff-designer', 'icon' => 'fas fa-paint-brush', 'label' => '画面デザイン', 'hint' => 'テーマ・レイアウト'] : null,
+                $can('settings.view') ? ['route' => 'admin.settings.home', 'icon' => 'fas fa-home', 'label' => 'ホーム・メニュー', 'hint' => 'SkipとLINEの共通画面'] : null,
                 $can('settings.view') ? ['route' => 'admin.settings.advanced', 'icon' => 'fas fa-palette', 'label' => '配色', 'hint' => '成功・注意などの色'] : null,
-                $can('settings.view') ? ['route' => 'admin.settings.liff-connection', 'icon' => 'fab fa-line', 'label' => 'LINE連携', 'hint' => 'LIFF・Messaging API'] : null,
             ]],
             ['title' => '会員・販促', 'items' => [
                 ($can('members.view') && $can('settings.view')) ? ['route' => 'admin.settings.ranks', 'icon' => 'fas fa-id-card', 'label' => '会員証・ランク', 'hint' => '表示・ポイント'] : null,
