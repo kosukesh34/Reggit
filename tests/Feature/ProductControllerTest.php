@@ -77,4 +77,23 @@ class ProductControllerTest extends TestCase
         $this->assertSame('サイズ', $target['option_groups'][0]['name']);
         $this->assertCount(1, $target['option_groups'][0]['options']);
     }
+
+    public function test_index_販売停止の商品も在庫付きで返すこと(): void
+    {
+        $this->createProject();
+        $product = Product::factory()->create([
+            'project_id' => 1,
+            'name' => '売り切れ表示',
+            'is_available' => false,
+            'stock' => 4,
+        ]);
+
+        $response = $this->get('/api/products?project_key=default');
+
+        $response->assertOk();
+        $target = collect($response->json('products'))->firstWhere('id', $product->id);
+        $this->assertNotNull($target);
+        $this->assertFalse($target['is_available']);
+        $this->assertSame(4, $target['stock']);
+    }
 }

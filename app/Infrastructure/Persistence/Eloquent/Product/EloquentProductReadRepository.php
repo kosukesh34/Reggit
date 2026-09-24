@@ -31,7 +31,6 @@ class EloquentProductReadRepository implements ProductReadRepository
     public function availableCategoryCounts(): array
     {
         return Product::query()
-            ->where('is_available', true)
             ->select('category', DB::raw('COUNT(*) as count'))
             ->groupBy('category')
             ->pluck('count', 'category')

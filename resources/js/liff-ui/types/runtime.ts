@@ -26,6 +26,8 @@ export interface RuntimeCatalogItem {
   price: number;
   image?: string;
   category?: string;
+  isAvailable: boolean;
+  stock: number | null;
   optionGroups?: RuntimeProductOptionGroup[];
 }
 
