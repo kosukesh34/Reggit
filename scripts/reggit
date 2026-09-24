@@ -702,6 +702,7 @@ rsync_to_production() {
     --exclude '.env' \
     --exclude '.env.*' \
     --exclude 'storage/' \
+    --exclude '/public/storage' \
     --exclude 'bootstrap/cache/' \
     --exclude 'ios/' \
     --exclude 'mobile/' \
@@ -763,7 +764,9 @@ fi
 /usr/bin/php8.4 artisan config:cache
 /usr/bin/php8.4 artisan route:cache
 /usr/bin/php8.4 artisan view:cache
+/usr/bin/php8.4 artisan storage:link
 test -f public/build/manifest.json
+test -L public/storage
 test ! -e public/hot
 /usr/bin/php8.4 artisan --version
 EOF
