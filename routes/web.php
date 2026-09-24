@@ -122,7 +122,9 @@ Route::get('/health', function (Request $request) {
 Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
     ->middleware('verify.smaregi.webhook')
     ->name('smaregi.webhook_no_api_prefix');
-Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])->name('smaregi.idp_no_api_prefix');
+Route::match(['get', 'head', 'post'], '/smaregi/idp', [SmaregiIdpController::class, '__invoke'])
+    ->middleware('verify.smaregi.idp')
+    ->name('smaregi.idp_no_api_prefix');
 
 // ========== LIFF ==========
 Route::prefix('liff')->middleware('bind.project')->group(function () {
