@@ -61,6 +61,8 @@
                     && \App\Support\PlanFeatures::hasFeature($navPlan, \App\Support\PlanFeatures::LIFF_DESIGNER_ADVANCED);
                 $showAnalytics = ($adminUser === null || $adminUser->hasPermission('analytics.view'))
                     && \App\Support\PlanFeatures::hasFeature($navPlan, \App\Support\PlanFeatures::ANALYTICS_ADVANCED);
+                $showGallery = $navStore !== null
+                    && app(\App\Domain\Settings\Repositories\ShopSettingRepository::class)->isFeatureEnabled('feature_gallery_enabled', (int) $navStore->id);
             @endphp
             <div class="sidebar-header">
                 @if($isSystemAdminScreen)
@@ -190,7 +192,7 @@
                         @endif
                     </div>
                     @endif
-                    @if($adminUser === null || $adminUser->hasPermission('gallery.view'))
+                    @if($showGallery && ($adminUser === null || $adminUser->hasPermission('gallery.view')))
                     <a href="{{ admin_route('admin.gallery.items') }}" class="nav-item {{ request()->routeIs('admin.gallery*') ? 'active' : '' }}">
                         <i class="fas fa-images"></i>
                         <span>ギャラリー</span>
@@ -214,15 +216,10 @@
                     </div>
                     @endif
                     <div class="nav-separator" role="presentation"></div>
-                    @if($showLiffDesigner)
-                    <a href="{{ admin_route('admin.settings.liff-designer') }}" class="nav-item {{ request()->routeIs('admin.settings.liff-designer*') ? 'active' : '' }}">
-                        <i class="fas fa-paint-brush"></i>
-                        <span>LIFFデザイン</span>
-                    </a>
-                    @endif
                     @if(
                         $adminUser === null
                         || $adminUser->hasPermission('settings.view')
+                        || $showLiffDesigner
                         || $adminUser->hasPermission('reservations.view')
                         || $adminUser->hasPermission('queue.view')
                         || $adminUser->hasPermission('coupons.view')
@@ -230,7 +227,7 @@
                         || $adminUser->hasPermission('gallery.view')
                         || $adminUser->hasPermission('audit_logs.view')
                     )
-                    <a href="{{ admin_route('admin.settings.index') }}" class="nav-item {{ (request()->routeIs('admin.settings.*') && ! request()->routeIs('admin.settings.liff-designer*')) || request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.settings.index') }}" class="nav-item {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>
                         <span>設定</span>
                     </a>
@@ -289,7 +286,14 @@
                 </div>
             @endif
             <div class="content-body">
+                @if(request()->routeIs('admin.settings.*') && !request()->routeIs('admin.settings.index') && !request()->routeIs('admin.settings.liff-designer*'))
+                    <div class="settings-page-content">
+                        <a href="{{ admin_route('admin.settings.index') }}" class="settings-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 設定一覧</a>
+                        @yield('content')
+                    </div>
+                @else
                 @yield('content')
+                @endif
             </div>
         </main>
     </div>

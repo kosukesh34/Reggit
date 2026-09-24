@@ -17,12 +17,6 @@
     <h1 class="page-header-title"><i class="fas fa-cog"></i> 店舗設定</h1>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success">
-        <i class="fas fa-check-circle"></i> {{ session('success') }}
-    </div>
-@endif
-
 <form action="{{ admin_route('admin.settings.update') }}" method="POST" id="settingsForm">
     @csrf
 
