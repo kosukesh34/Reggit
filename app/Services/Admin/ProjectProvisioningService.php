@@ -11,6 +11,7 @@ use App\Services\Line\LineLiffAdminService;
 use App\Util\StrHelper;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProjectProvisioningService
 {
@@ -169,11 +170,23 @@ class ProjectProvisioningService
             return;
         }
 
-        $this->shopSettingRepository->setValue('smaregi_contract_id', $trimmed, 'string', $projectId);
-        ProjectProfileSmaregiSetting::query()
+        $linkedToAnotherProject = ProjectProfileSmaregiSetting::query()
             ->where('smaregi_contract_id', $trimmed)
             ->where('project_id', '!=', $projectId)
-            ->update(['smaregi_contract_id' => null]);
+            ->exists()
+            || SmaregiContract::query()
+                ->where('contract_id', $trimmed)
+                ->whereNotNull('project_id')
+                ->where('project_id', '!=', $projectId)
+                ->exists();
+
+        if ($linkedToAnotherProject) {
+            throw ValidationException::withMessages([
+                'smaregi_contract_id' => 'このスマレジ契約は別の店舗に紐付いています。',
+            ]);
+        }
+
+        $this->shopSettingRepository->setValue('smaregi_contract_id', $trimmed, 'string', $projectId);
         SmaregiContract::where('project_id', $projectId)->where('contract_id', '!=', $trimmed)->update(['project_id' => null]);
         SmaregiContract::where('contract_id', $trimmed)->update(['project_id' => $projectId]);
     }
