@@ -1,0 +1,17 @@
+appId: com.reggit.default
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "メニューを開く"
+    timeout: 30000
+- tapOn:
+    text: "ホーム"
+    optional: true
+- extendedWaitUntil:
+    visible: "画像を全画面で表示"
+    timeout: 30000
+- tapOn: "画像を全画面で表示"
+- assertVisible: "閉じる"
+- tapOn: "閉じる"
+- assertVisible: "画像を全画面で表示"

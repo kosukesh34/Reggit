@@ -1,0 +1,15 @@
+appId: com.reggit.default
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "メニューを開く"
+    timeout: 30000
+- tapOn: "モバイル注文"
+- extendedWaitUntil:
+    visible: "E2Eテスト商品Aを追加"
+    timeout: 30000
+- tapOn: "E2Eテスト商品Aを追加"
+- assertVisible: "E2Eテスト商品Aの数量を減らす"
+- tapOn: "E2Eテスト商品Aの数量を減らす"
+- assertVisible: "E2Eテスト商品Aを追加"

@@ -15,6 +15,8 @@ make e2e-web
 ```
 
 初回シナリオ: 店舗管理者（`demo_store` / `DemoStore#2026`）で `/admin/login` → ダッシュボード表示。
+`admin-home-images.spec.ts` は管理画面でホーム画像を2枚追加し、APIとプレビューへの反映を確認して追加分を削除する。
+`admin-main-screens.spec.ts` は店舗管理のメニューと設定配下の画面を巡回する。`customer-screens.spec.ts` は顧客向けの主要25画面を巡回する。
 
 設定ファイル: [`e2e/web/playwright.config.ts`](../e2e/web/playwright.config.ts)
 
@@ -29,6 +31,14 @@ make e2e-web
 ```bash
 ./scripts/build-and-install-mobile.sh
 ./scripts/e2e-mobile-android.sh
+# 複数エミュレータがある場合
+ANDROID_SERIAL=emulator-5556 ./scripts/e2e-mobile-android.sh
+# アプリ情報のみ
+./scripts/e2e-mobile-android.sh info
+# ホーム画像のみ
+./scripts/e2e-mobile-android.sh home
+# Google Wallet 連携の資格情報がある環境のみ
+./scripts/e2e-mobile-android.sh wallet
 # または
 make e2e-mobile
 ```
@@ -39,8 +49,14 @@ make e2e-mobile
 
 | フロー | 内容 |
 |--------|------|
-| [`launch.yaml`](../e2e/mobile/flows/launch.yaml) | 起動 →（任意）通知許可 → 「Reggit」表示 |
+| [`launch.yaml`](../e2e/mobile/flows/launch.yaml) | 起動 →（任意）通知許可 → メニューボタン表示 |
+| [`home-image.yaml`](../e2e/mobile/flows/home-image.yaml) | ホーム画像をタップ → 全画面表示 → 閉じる |
+| [`app-info.yaml`](../e2e/mobile/flows/app-info.yaml) | メニュー → アプリ情報 → 端末・バージョン・ユーザーID・時刻を確認 |
+| [`main-screens.yaml`](../e2e/mobile/flows/main-screens.yaml) | ホーム・モバイル注文・あそびの主要画面と3種類の抽選画面を巡回 |
+| [`mobile-order.yaml`](../e2e/mobile/flows/mobile-order.yaml) | 商品を追加 → 数量を減らす → 追加表示に戻る |
 | [`wallet-google.yaml`](../e2e/mobile/flows/wallet-google.yaml) | 会員タブ → 会員証 →「Google Walletに追加」→ Google の保存 UI が開く |
+
+引数なしでは `launch`・`home-image`・`app-info`・`main-screens`・`mobile-order` を実行する。Google Wallet は外部連携の前提があるため `wallet` を指定して実行する。
 
 **Wallet フローの前提**
 

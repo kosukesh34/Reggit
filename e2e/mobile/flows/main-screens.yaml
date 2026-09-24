@@ -1,0 +1,22 @@
+appId: com.reggit.default
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "メニューを開く"
+    timeout: 30000
+- tapOn: "ホーム"
+- assertVisible: "モバイル注文"
+- tapOn: "モバイル注文"
+- extendedWaitUntil:
+    visible: "商品・サービス"
+    timeout: 30000
+- tapOn: "あそび"
+- extendedWaitUntil:
+    visible: "購入特典を楽しむ"
+    timeout: 30000
+- assertVisible: "ガチャ"
+- tapOn: "スクラッチ"
+- assertVisible: "ゴールドスクラッチ"
+- tapOn: "ルーレット"
+- assertVisible: "ラッキールーレット"
