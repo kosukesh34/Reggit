@@ -11,6 +11,8 @@ class QueueEntryFactory extends Factory
 {
     protected $model = QueueEntry::class;
 
+    private static int $nextQueueNumber = 1000;
+
     public function definition(): array
     {
         return [
@@ -20,7 +22,7 @@ class QueueEntryFactory extends Factory
             'guest_phone' => $this->faker->phoneNumber(),
             'party_size' => $this->faker->numberBetween(1, 6),
             'status' => QueueStatus::WAITING,
-            'queue_number' => $this->faker->numberBetween(1, 50),
+            'queue_number' => self::$nextQueueNumber++,
             'called_at' => null,
             'entered_at' => null,
         ];
