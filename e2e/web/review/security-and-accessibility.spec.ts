@@ -78,27 +78,25 @@ test('@component 確認ダイアログをキーボードと支援技術で操作
 });
 
 for (const width of [390, 1280]) {
-  test(`デモのホームからその他へ移動でき横スクロールが発生しない (${width}px)`, async ({ page }) => {
+  test(`デモのホームから順番待ちへ移動でき横スクロールが発生しない (${width}px)`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     const response = await page.goto('/liff#/home');
     expect(response?.status()).toBe(200);
     const loginPrompt = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'ログイン' }) });
     const navigation = page.getByRole('navigation', { name: '主要ナビゲーション' });
     await expect(navigation).toBeVisible();
-    const moreLink = navigation.getByRole('link', { name: 'その他' });
+    const queueLink = navigation.getByRole('link', { name: '順番待ち' });
     if (await loginPrompt.isVisible()) {
       await loginPrompt.getByRole('button', { name: 'あとで' }).click();
     }
     try {
-      await moreLink.click({ timeout: 5000 });
+      await queueLink.click({ timeout: 5000 });
     } catch (error) {
       if (!await loginPrompt.isVisible()) throw error;
       await loginPrompt.getByRole('button', { name: 'あとで' }).click();
-      await moreLink.click();
+      await queueLink.click();
     }
-    await expect(page).toHaveURL(/#\/more$/);
-    await expect(page.getByRole('heading', { name: 'すべてのサービス', exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'ポイント', exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/#\/queue$/);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow).toBe(false);
   });
