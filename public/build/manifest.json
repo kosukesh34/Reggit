@@ -4,11 +4,11 @@
     "name": "pusher"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Dwz83JSO.css",
+    "file": "assets/app-BVkIgqqC.css",
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-CKmZAxd3.js",
+    "file": "assets/main-BNWKDL-v.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
@@ -17,7 +17,7 @@
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-OCwhg3Zo.js",
+    "file": "assets/main-DlEAhC9l.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
@@ -26,7 +26,7 @@
     ],
     "css": [
       "assets/main-wDdkHTF-.css",
-      "assets/app-Dwz83JSO.css",
+      "assets/app-BVkIgqqC.css",
       "assets/tokens-CJDqh8yr.css",
       "assets/globals-D0MfLSEI.css",
       "assets/design-layout-variants-C_xS9JFc.css"
