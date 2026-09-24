@@ -153,7 +153,7 @@ class ProductAdminService
     /** @param array<int, array<string, mixed>> $groups */
     private function syncOptionGroups(Product $product, array $groups, int $projectId): void
     {
-        $product->optionGroups()->delete();
+        $product->optionGroups()->whereNull('smaregi_option_group_id')->delete();
         foreach (array_values($groups) as $groupIndex => $groupData) {
             $selectionType = (string) ($groupData['selection_type'] ?? 'single');
             $required = (bool) ($groupData['is_required'] ?? false);

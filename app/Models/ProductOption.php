@@ -14,6 +14,7 @@ class ProductOption extends Model
     protected $fillable = [
         'project_id',
         'group_id',
+        'smaregi_product_id',
         'name',
         'price_delta',
         'is_default',
