@@ -500,7 +500,10 @@ class SmaregiCustomerPointsInboundSyncService
         }
         $last = $this->stringOrNull($customer[$lastKey] ?? null);
         $first = $this->stringOrNull($customer[$firstKey] ?? null);
-        $joined = trim(implode(' ', array_filter([$last, $first], fn ($value) => $value !== null && $value !== '')));
+        $joined = trim(implode(' ', array_filter(
+            [$last, $first],
+            fn ($value) => $value !== null && ! in_array($value, [SmaregiCustomerUpdatePayloadBuilder::NAME_PLACEHOLDER, SmaregiCustomerUpdatePayloadBuilder::KANA_PLACEHOLDER], true),
+        )));
 
         return $joined !== '' ? $joined : null;
     }
