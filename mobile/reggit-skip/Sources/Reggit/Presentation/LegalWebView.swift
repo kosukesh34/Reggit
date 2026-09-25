@@ -33,8 +33,7 @@ struct LegalWebView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 #else
                 VStack(spacing: 16) {
-                    Image(systemName: "safari")
-                        .font(.largeTitle)
+                    FontAwesomeIcon(systemName: "safari")
                     Link("ブラウザで開く", destination: url)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

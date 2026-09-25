@@ -1,6 +1,6 @@
 import SwiftUI
 
-#if canImport(UIKit) && canImport(PassKit)
+#if !os(Android)
 import UIKit
 import PassKit
 

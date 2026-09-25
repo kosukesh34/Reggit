@@ -91,7 +91,14 @@ final class NativeRootViewModel: PushNotificationHandling {
             if !config.hasNavigationConfiguration {
                 footerItems = Array(tabs.filter { $0.url == nil }.prefix(5))
             }
-            hamburgerItems = Self.items(config.hamburgerItems, availableIn: tabs)
+            let legalItems = Self.items(config.hamburgerItems, availableIn: tabs).filter { $0.url != nil }
+            let menu = Self.testingMenu + legalItems.filter { item in
+                !Self.testingMenu.contains(where: { $0.key == item.key })
+            }
+            for item in menu where !tabs.contains(where: { $0.key == item.key }) {
+                tabs.append(item)
+            }
+            hamburgerItems = menu
             projectName = config.projectName
             let hex = config.primaryColor.trimmingCharacters(in: .whitespacesAndNewlines)
             primaryColorHex = hex.isEmpty ? "#173F35" : hex
@@ -247,7 +254,22 @@ final class NativeRootViewModel: PushNotificationHandling {
     // MARK: - Tabs
 
     static let supportedTabKeys: Set<String> = [
-        "home", "member", "profile", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "terms", "privacy",
+        "home", "member", "profile", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "lottery", "terms", "privacy",
+    ]
+
+    /// テスト用。サーバのメニュー設定に関係なく、実装済み機能を全部出す。
+    static let testingMenu: [AppTabItem] = [
+        AppTabItem(id: "home", key: "home", label: "ホーム", icon: "fa-home", sfSymbol: "house.fill"),
+        AppTabItem(id: "member", key: "member", label: "会員", icon: "fa-user", sfSymbol: "person.crop.circle.fill"),
+        AppTabItem(id: "products", key: "products", label: "注文", icon: "fa-utensils", sfSymbol: "cart.fill"),
+        AppTabItem(id: "orders", key: "orders", label: "注文履歴", icon: "fa-receipt", sfSymbol: "list.clipboard.fill"),
+        AppTabItem(id: "coupons", key: "coupons", label: "クーポン", icon: "fa-ticket", sfSymbol: "ticket.fill"),
+        AppTabItem(id: "stamps", key: "stamps", label: "スタンプ", icon: "fa-stamp", sfSymbol: "star.fill"),
+        AppTabItem(id: "queue", key: "queue", label: "整理券", icon: "fa-hashtag", sfSymbol: "number.circle.fill"),
+        AppTabItem(id: "reservations", key: "reservations", label: "予約", icon: "fa-calendar", sfSymbol: "calendar"),
+        AppTabItem(id: "gallery", key: "gallery", label: "ギャラリー", icon: "fa-image", sfSymbol: "photo.on.rectangle"),
+        AppTabItem(id: "announcements", key: "announcements", label: "お知らせ", icon: "fa-bell", sfSymbol: "bell.fill"),
+        AppTabItem(id: "lottery", key: "lottery", label: "抽選", icon: "fa-dice", sfSymbol: "dice.fill"),
     ]
 
     static let defaultTabs: [AppTabItem] = [
@@ -310,8 +332,12 @@ final class NativeRootViewModel: PushNotificationHandling {
     }
 
     private func loadAppConfig(client _: any ReggitAPIServing) async -> AppConfig {
+        if let cached = SecondaryScreenCache.appConfig {
+            return cached
+        }
         let shell = configRepository.resolveConfig()
         if let fetched = await AppConfigClient(baseUrl: shell.baseUrl, projectKey: shell.projectKey).fetchConfig() {
+            SecondaryScreenCache.appConfig = fetched
             return fetched
         }
         return AppConfig(projectName: "Reggit", tabs: Self.defaultTabs, primaryColor: "#173F35")

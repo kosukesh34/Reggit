@@ -106,8 +106,7 @@ struct LotteryView: View {
             Button {
                 Task { await viewModel.playGacha(reduceMotion: reduceMotion) }
             } label: {
-                Image(systemName: "hand.tap.fill")
-                    .font(.system(size: 22, weight: .bold))
+                FontAwesomeIcon(systemName: "hand.tap.fill")
                     .foregroundStyle(LotteryTheme.night)
                     .frame(width: 64, height: 48)
                     .background(LotteryTheme.goldLight)
@@ -135,8 +134,7 @@ struct LotteryView: View {
 
     private var eligibilityCard: some View {
         HStack(spacing: 10) {
-            Image(systemName: "bag.fill")
-                .font(.system(size: 14, weight: .bold))
+            FontAwesomeIcon(systemName: "bag.fill")
                 .foregroundStyle(accent)
                 .frame(width: 30, height: 30)
                 .background(Color.white.opacity(0.08))
@@ -169,8 +167,7 @@ struct LotteryView: View {
                     }
                 } label: {
                     VStack(spacing: 5) {
-                        Image(systemName: game.icon)
-                            .font(.system(size: 18, weight: .bold))
+                        FontAwesomeIcon(systemName: game.icon)
                         Text(game.title)
                             .font(.system(size: 11, weight: .black))
                     }
@@ -410,8 +407,7 @@ struct LotteryActionButton: View {
                     if isLoading {
                         ProgressView().tint(LotteryTheme.night)
                     } else {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 13, weight: .black))
+                        FontAwesomeIcon(systemName: "play.fill")
                     }
                 }
                 VStack(alignment: .leading, spacing: 1) {
@@ -419,8 +415,7 @@ struct LotteryActionButton: View {
                     Text(subtitle).font(.system(size: 9, weight: .black)).tracking(1.2).opacity(0.64)
                 }
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .black))
+                FontAwesomeIcon(systemName: "chevron.right")
             }
             .foregroundStyle(enabled ? LotteryTheme.night : LotteryTheme.cream.opacity(0.55))
             .padding(.horizontal, 13)
@@ -633,8 +628,7 @@ struct GachaMachineView: View {
                 ZStack {
                     Circle().fill(LotteryTheme.goldLight.opacity(0.17)).frame(width: 108, height: 108).blur(radius: 9)
                     Capsule().fill(LotteryTheme.goldLight.opacity(0.20)).frame(width: 13, height: 105).offset(y: -42)
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 27, weight: .black))
+                    FontAwesomeIcon(systemName: "star.fill")
                         .foregroundStyle(LotteryTheme.goldLight)
                 }
                 .offset(x: 76, y: -85)
@@ -794,8 +788,7 @@ struct ScratchTicketView: View {
                     HStack(spacing: 10) {
                         ZStack {
                             Circle().fill(LotteryTheme.red).frame(width: 38, height: 38)
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 16, weight: .black))
+                            FontAwesomeIcon(systemName: "sparkles")
                                 .foregroundStyle(Color.white)
                         }
                         VStack(alignment: .leading, spacing: 1) {
@@ -817,8 +810,7 @@ struct ScratchTicketView: View {
                             .mask(ScratchFoilMask(scratchedCells: scratchedCells))
                         if progress < 0.18 {
                             VStack(spacing: 4) {
-                                Image(systemName: "hand.draw.fill")
-                                    .font(.system(size: 21, weight: .bold))
+                                FontAwesomeIcon(systemName: "hand.draw.fill")
                                 Text("銀面をこすって結果を確認")
                                     .font(.system(size: 13, weight: .black, design: .rounded))
                             }
@@ -849,7 +841,7 @@ struct ScratchTicketView: View {
                         .fill(Color.black.opacity(0.72))
                         .frame(width: 304, height: 286)
                     VStack(spacing: 8) {
-                        Image(systemName: "lock.fill").font(.title2)
+                        FontAwesomeIcon(systemName: "lock.fill", size: 22)
                         Text("スクラッチ券がありません").font(.headline.weight(.black))
                     }
                     .foregroundStyle(Color.white)
@@ -884,8 +876,7 @@ struct ScratchResultFace: View {
                         ProgressView().tint(LotteryTheme.red)
                         Text("抽選中").font(.system(size: 12, weight: .black)).tracking(1.4)
                     } else {
-                        Image(systemName: result?.isWin == true ? "gift.fill" : (result == nil ? "questionmark" : "xmark"))
-                            .font(.system(size: 29, weight: .black))
+                        FontAwesomeIcon(systemName: result?.isWin == true ? "gift.fill" : (result == nil ? "questionmark" : "xmark"))
                             .foregroundStyle(result?.isWin == true ? LotteryTheme.red : LotteryTheme.night.opacity(0.72))
                         Text(result?.isWin == true ? "あたり" : (result == nil ? "結果" : "はずれ"))
                             .font(.system(size: 22, weight: .black, design: .rounded))
@@ -1044,12 +1035,11 @@ struct RouletteWheelView: View {
                 .frame(width: 296, height: 296)
 
                 ZStack {
-                    Image(systemName: "triangle.fill")
-                        .font(.system(size: 42, weight: .black))
+                    FontAwesomeIcon(systemName: "triangle.fill")
                         .rotationEffect(.degrees(180))
                         .foregroundStyle(LotteryTheme.goldLight)
                         .shadow(color: Color.black.opacity(0.44), radius: 4, x: 0, y: 4)
-                    Image(systemName: "circle.fill").font(.system(size: 9)).foregroundStyle(LotteryTheme.red).offset(y: -7)
+                    FontAwesomeIcon(systemName: "circle.fill", size: 9).foregroundStyle(LotteryTheme.red).offset(y: -7)
                 }
                 .offset(y: -13)
                 .zIndex(4)
@@ -1168,8 +1158,7 @@ struct RewardRevealOverlay: View {
                 ZStack {
                     Circle().fill(result.isWin ? LotteryTheme.gold.opacity(0.18) : Color.white.opacity(0.08)).frame(width: 174, height: 174)
                     Circle().stroke(result.isWin ? LotteryTheme.gold : Color.white.opacity(0.24), lineWidth: 2).frame(width: 146, height: 146)
-                    Image(systemName: result.isWin ? "gift.fill" : "sparkles")
-                        .font(.system(size: 64, weight: .black))
+                    FontAwesomeIcon(systemName: result.isWin ? "gift.fill" : "sparkles")
                         .foregroundStyle(result.isWin ? LotteryTheme.goldLight : Color.white.opacity(0.62))
                 }
                 VStack(spacing: 7) {

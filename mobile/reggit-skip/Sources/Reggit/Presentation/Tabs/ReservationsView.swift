@@ -24,13 +24,21 @@ final class ReservationsViewModel {
         self.apiClient = apiClient
     }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.reservations {
+            reservations = cached
+            courses = SecondaryScreenCache.reservationCourses ?? []
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
             reservations = try await apiClient.fetchMemberReservations()
             courses = (try? await apiClient.fetchReservationCourses()) ?? []
+            SecondaryScreenCache.reservations = reservations
+            SecondaryScreenCache.reservationCourses = courses
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -56,7 +64,7 @@ final class ReservationsViewModel {
             notes = ""
             selectedCourseID = nil
             actionMessage = "予約を作成しました"
-            await load()
+            await load(force: true)
         } catch {
             actionMessage = error.localizedDescription
         }
@@ -69,7 +77,7 @@ final class ReservationsViewModel {
         do {
             try await apiClient.cancelReservationBooking(id: item.id)
             actionMessage = "予約をキャンセルしました"
-            await load()
+            await load(force: true)
         } catch {
             actionMessage = error.localizedDescription
         }
@@ -108,19 +116,20 @@ struct ReservationsView: View {
                     }
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
-                .navigationTitle("予約")
+                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button {
                             viewModel.actionMessage = nil
                             viewModel.showCreate = true
                         } label: {
-                            Image(systemName: "plus")
+                            FontAwesomeIcon(systemName: "plus")
                         }
                         .accessibilityLabel("新しく予約する")
                     }
                 }
-                .refreshable { await viewModel.load() }
+                .refreshable { await viewModel.load(force: true) }
                 .navigationDestination(isPresented: Binding(
                     get: { viewModel.showCreate },
                     set: { viewModel.showCreate = $0 }
@@ -231,7 +240,7 @@ struct ReservationsView: View {
                 ))
             }
         }
-        .navigationTitle("新規予約")
+        .navigationTitle("")
         .tint(accent)
         .scrollContentBackground(.hidden)
         .background(AppDesign.canvas)

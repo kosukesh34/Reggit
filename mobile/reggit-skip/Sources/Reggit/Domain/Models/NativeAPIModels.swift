@@ -46,6 +46,7 @@ struct MemberProfileSnapshot: Equatable {
     let cardLogoURL: String?
     let profileImageURL: String?
     let rankColorHex: String?
+    let pointsExpiryLabel: String?
     /// PUT /member-profile 用。既存プロフィールをマージして必須項目欠落を防ぐ。
     let profilePayload: [String: String]
     let profileListPayload: [String: [String]]
@@ -91,6 +92,8 @@ struct MemberProfileSnapshot: Equatable {
         let logo = (json["member_card_logo_url"] as? String)?.trimmedNonEmpty
         let profileImage = (profile["profile_image_url"] as? String)?.trimmedNonEmpty
         let rankColor = (json["current_rank_color"] as? String)?.trimmedNonEmpty
+        let expiry = json["points_expiry"] as? [String: Any]
+        let pointsExpiryLabel = (expiry?["expires_at_label"] as? String)?.trimmedNonEmpty
         let fields = (json["profile_field_settings"] as? [[String: Any]] ?? []).compactMap(ProfileFieldDefinition.parse)
         return MemberProfileSnapshot(
             isMember: isMember,
@@ -110,6 +113,7 @@ struct MemberProfileSnapshot: Equatable {
             cardLogoURL: logo,
             profileImageURL: profileImage,
             rankColorHex: rankColor,
+            pointsExpiryLabel: pointsExpiryLabel,
             profilePayload: flattenProfilePayload(profile),
             profileListPayload: flattenProfileListPayload(profile),
             profileFields: fields,
@@ -136,6 +140,7 @@ struct MemberProfileSnapshot: Equatable {
             cardLogoURL: cardLogoURL,
             profileImageURL: profileImageURL,
             rankColorHex: rankColorHex,
+            pointsExpiryLabel: pointsExpiryLabel,
             profilePayload: profilePayload,
             profileListPayload: profileListPayload,
             profileFields: profileFields,
@@ -416,7 +421,7 @@ struct DeviceOnceCouponItem: Identifiable, Equatable {
     }
 }
 
-struct CouponRedemptionResult: Identifiable, Equatable {
+struct CouponRedemptionResult: Identifiable, Equatable, Hashable {
     let id: Int
     let couponName: String
     let status: String
@@ -485,7 +490,7 @@ struct StampListResponse {
     }
 }
 
-struct ProductItem: Identifiable, Equatable {
+struct ProductItem: Identifiable, Equatable, Hashable {
     let id: Int
     let name: String
     let description: String
@@ -497,7 +502,7 @@ struct ProductItem: Identifiable, Equatable {
     let optionGroups: [ProductOptionGroupItem]
 }
 
-struct ProductOptionGroupItem: Identifiable, Equatable {
+struct ProductOptionGroupItem: Identifiable, Equatable, Hashable {
     let id: Int
     let name: String
     let selectionType: String
@@ -505,7 +510,7 @@ struct ProductOptionGroupItem: Identifiable, Equatable {
     let options: [ProductOptionItem]
 }
 
-struct ProductOptionItem: Identifiable, Equatable {
+struct ProductOptionItem: Identifiable, Equatable, Hashable {
     let id: Int
     let name: String
     let priceDelta: Int

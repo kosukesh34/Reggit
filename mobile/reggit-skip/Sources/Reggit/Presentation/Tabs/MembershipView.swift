@@ -205,17 +205,8 @@ struct MembershipView: View {
                     }
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
-                .navigationTitle("会員証")
-                .toolbar {
-                    if viewModel.member?.isMember == true {
-                        ToolbarItem(placement: .primaryAction) {
-                            Button(action: viewModel.openProfileEdit) {
-                                Image(systemName: "person.crop.circle")
-                            }
-                            .accessibilityLabel("プロフィール編集")
-                        }
-                    }
-                }
+                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
                 .refreshable { await viewModel.load() }
                 .overlay {
                     AppToastHost(message: Binding(get: { viewModel.profileSuccess }, set: { viewModel.profileSuccess = $0 }))
@@ -245,16 +236,14 @@ struct MembershipView: View {
                         }
                     )
                 }
-                .overlay {
-                    if viewModel.showBarcodeEnlarge, let member = viewModel.member {
-                        ZStack {
-                            Color.black.opacity(0.42)
-                                .ignoresSafeArea()
-                                .onTapGesture { viewModel.showBarcodeEnlarge = false }
-                            barcodeDialog(member)
-                                .padding(.horizontal, 24)
-                        }
-                        .transition(.opacity)
+                .navigationDestination(isPresented: $viewModel.showBarcodeEnlarge) {
+                    if let member = viewModel.member {
+                        barcodeDialog(member)
+                            .padding(24)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                            .background(AppDesign.canvas.ignoresSafeArea())
+                            .navigationTitle("会員コード")
+                            .navigationBarTitleDisplayMode(.inline)
                     }
                 }
                 .alert("Wallet", isPresented: Binding(
@@ -308,6 +297,8 @@ struct MembershipView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
                 }
+
+                profileSummary(member)
 
                 if showRankProgress, member.showRankProgress,
                    let points = member.pointsToNextRank,
@@ -379,7 +370,7 @@ struct MembershipView: View {
                                 .font(.caption).foregroundStyle(AppDesign.inkSecondary)
                         }
                         Spacer()
-                        Image(systemName: "ticket.fill").foregroundStyle(accent)
+                        FontAwesomeIcon(systemName: "ticket.fill").foregroundStyle(accent)
                     }
                     .padding(.vertical, 8)
                     Divider()
@@ -463,7 +454,7 @@ struct MembershipView: View {
                 Text("会員コード").font(.headline)
                 Spacer()
                 Button { viewModel.showBarcodeEnlarge = false } label: {
-                    Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(AppDesign.inkSecondary)
+                    FontAwesomeIcon(systemName: "xmark.circle.fill", size: 22).foregroundStyle(AppDesign.inkSecondary)
                 }
                 .accessibilityLabel("閉じる")
             }
@@ -508,6 +499,11 @@ struct MembershipPassCard: View {
                     Text("会員証")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(cardForeground)
+                    if !member.name.trimmed.isEmpty {
+                        Text(member.name)
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(cardForeground)
+                    }
                 }
                 Spacer(minLength: 8)
                 if !member.rankLabel.isEmpty {
@@ -532,6 +528,16 @@ struct MembershipPassCard: View {
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(cardForeground.opacity(0.72))
                 Spacer()
+                if let expiry = member.pointsExpiryLabel, !expiry.isEmpty {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("ポイント期限")
+                            .font(.caption2)
+                            .foregroundStyle(cardForeground.opacity(0.72))
+                        Text(expiry)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(cardForeground)
+                    }
+                }
                 if let imageURL = member.cardLogoURL {
                     RemoteImageView(
                         urlString: imageURL,
@@ -626,7 +632,7 @@ struct ProfileEditView: View {
         .disabled(isSaving)
         .scrollContentBackground(.hidden)
         .background(AppDesign.canvas)
-        .navigationTitle("プロフィール編集")
+        .navigationTitle("")
         .tint(accent)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -677,7 +683,7 @@ struct ProfileEditView: View {
                     listValues[field.key] = selected
                 } label: {
                     HStack {
-                        Image(systemName: (listValues[field.key] ?? []).contains(choice) ? "checkmark.circle.fill" : "circle")
+                        FontAwesomeIcon(systemName: (listValues[field.key] ?? []).contains(choice) ? "checkmark.circle.fill" : "circle")
                             .foregroundStyle(accent)
                         Text(field.displayValue(choice)).foregroundStyle(AppDesign.ink)
                         Spacer()

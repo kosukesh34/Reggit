@@ -93,6 +93,15 @@ function MembershipPageSkeleton(): JSX.Element {
 function WalletButtons(): JSX.Element | null {
   const showApple = shouldShowAppleWallet();
   const showGoogle = shouldShowGoogleWallet();
+  useEffect(() => {
+    if (!showApple && !showGoogle) {
+      return;
+    }
+    const mm = getMemberManager() as { _setupAddToWallet?: () => void } | undefined;
+    if (mm !== undefined && typeof mm._setupAddToWallet === "function") {
+      mm._setupAddToWallet();
+    }
+  }, [showApple, showGoogle]);
   if (!showApple && !showGoogle) {
     return null;
   }
@@ -212,13 +221,6 @@ function LiveMembershipPage(): JSX.Element {
       document.removeEventListener("liff-wallet-summary-updated", onWalletSummary);
     };
   }, [refresh]);
-
-  useEffect(() => {
-    const mm = getMemberManager() as { _setupAddToWallet?: () => void } | undefined;
-    if (mm !== undefined && typeof mm._setupAddToWallet === "function") {
-      mm._setupAddToWallet();
-    }
-  }, [managerPayload, runtimeMember]);
 
   const member = useMemo(
     () => toMemberProfile(managerPayload, runtimeMember),
@@ -362,6 +364,7 @@ function MembershipMemberBody({
             {codeType === "qrcode" ? <MembershipQr value={barcodeValue} /> : <BarcodeEnlargeView value={barcodeValue} />}
           </CenterPopup>
         ) : null}
+        {m.showWalletActions ? <WalletButtons /> : null}
       </div>
     );
   }

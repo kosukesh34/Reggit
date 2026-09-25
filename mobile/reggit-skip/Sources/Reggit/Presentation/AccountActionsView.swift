@@ -76,6 +76,9 @@ struct AccountActionsView: View {
     let onTransferred: () -> Void
     let onClose: () -> Void
     @State var model: AccountActionsModel
+    @State var transferTab = 0
+    @State var showsIssuedQR = false
+    @State var showsScanner = false
     @Environment(\.brandAccent) var accent
 
     init(
@@ -103,16 +106,16 @@ struct AccountActionsView: View {
             if embedded {
                 form.padding(16).background(AppDesign.surface).clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL))
             } else {
-                NavigationStack {
-                    ScrollView { form.padding(16) }
-                        .background(AppDesign.canvas.ignoresSafeArea())
-                        .navigationTitle(model.mode == "withdraw" ? "退会" : "引き継ぎ")
-                        .toolbar {
-                            ToolbarItem(placement: .primaryAction) {
-                                Button("閉じる", action: onClose)
-                            }
+                ScrollView { form.padding(16) }
+                    .background(AppDesign.canvas.ignoresSafeArea())
+                    .navigationTitle(model.mode == "withdraw" ? "退会" : "引き継ぎ")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar(.visible, for: .navigationBar)
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button("閉じる", action: onClose)
                         }
-                }
+                    }
             }
         }
     }
@@ -150,13 +153,28 @@ struct AccountActionsView: View {
     }
 
     private var transferSection: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            if isMember {
-                sectionTitle("この端末から渡す")
-                Text("新しい端末で、会員IDとコードの両方が必要です。コードは30分で一度だけ使えます。")
+        VStack(alignment: .leading, spacing: 20) {
+            AppSegmentedControl(titles: ["IDを発行", "引き継ぐ"], selectedIndex: $transferTab)
+            if transferTab == 0 {
+                issueSection
+            } else {
+                claimSection
+            }
+        }
+    }
+
+    private var issueSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if !isMember {
+                Text("会員登録後に、この端末の会員IDを発行できます。")
+                    .font(.subheadline)
+                    .foregroundStyle(AppDesign.inkSecondary)
+            } else {
+                Text("新しい端末で読み取るか、会員IDとコードを入力します。コードは30分で一度だけ使えます。")
                     .font(.subheadline)
                     .foregroundStyle(AppDesign.inkSecondary)
                 AppPrimaryButton(title: "IDとコードを発行", isLoading: model.busyAction == "issue", enabled: !model.isBusy) {
+                    showsIssuedQR = false
                     Task { await model.issue() }
                 }
                 if let issued = model.issuedCode {
@@ -165,9 +183,47 @@ struct AccountActionsView: View {
                     Text("有効期限 \(issued.expiresAt)")
                         .font(.footnote)
                         .foregroundStyle(AppDesign.inkSecondary)
+                    Button(showsIssuedQR ? "QRを隠す" : "QRを表示") {
+                        showsIssuedQR.toggle()
+                    }
+                    .buttonStyle(.bordered)
+                    if showsIssuedQR {
+                        QRCodeView(value: "\(issued.memberId):\(issued.code)")
+                            .frame(maxWidth: 240)
+                            .frame(maxWidth: .infinity)
+                            .padding(12)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
+                    }
                 }
             }
-            sectionTitle("この端末で受け取る")
+        }
+    }
+
+    private var claimSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("渡す側の会員IDと引き継ぎコードを入力してください。")
+                .font(.subheadline)
+                .foregroundStyle(AppDesign.inkSecondary)
+            #if !SKIP && os(iOS)
+            Button("QRを読み取る") { showsScanner = true }
+                .buttonStyle(.bordered)
+                .sheet(isPresented: $showsScanner) {
+                    NavigationStack {
+                        TransferQRScanner { raw in
+                            applyScannedCode(raw)
+                        }
+                        .ignoresSafeArea()
+                        .navigationTitle("QRを読み取る")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("閉じる") { showsScanner = false }
+                            }
+                        }
+                    }
+                }
+            #endif
             labeledField(title: "会員ID", text: $model.memberId, keyboard: .numberPad)
             labeledField(title: "引き継ぎコード", text: $model.code, autocapitalize: true)
             AppPrimaryButton(title: "この端末へ引き継ぐ", isLoading: model.busyAction == "claim", enabled: !model.isBusy) {
@@ -178,10 +234,19 @@ struct AccountActionsView: View {
         }
     }
 
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title)
-            .font(.headline)
-            .foregroundStyle(AppDesign.ink)
+    private func applyScannedCode(_ raw: String) {
+        let parts = raw.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+        let memberId = parts.count == 2 ? Int(parts[0].trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0 : 0
+        let code = parts.count == 2 ? parts[1].trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        guard memberId > 0, !code.isEmpty else {
+            model.errorMessage = "引き継ぎ用のQRではありません"
+            showsScanner = false
+            return
+        }
+        model.memberId = String(memberId)
+        model.code = code
+        model.errorMessage = nil
+        showsScanner = false
     }
 
     private func copyRow(title: String, value: String) -> some View {

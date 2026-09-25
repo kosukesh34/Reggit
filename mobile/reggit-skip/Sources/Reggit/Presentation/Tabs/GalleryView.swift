@@ -19,7 +19,14 @@ final class GalleryViewModel {
 
     var mediaBaseURL: String { apiClient.baseURL }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        let key = SecondaryScreenCache.galleryKey(selectedCategoryId)
+        if !force, let cached = SecondaryScreenCache.galleries[key] {
+            categories = cached.categories
+            items = cached.items
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -27,6 +34,7 @@ final class GalleryViewModel {
             let snapshot = try await apiClient.fetchGalleryContent(categoryId: selectedCategoryId)
             categories = snapshot.categories
             items = snapshot.items
+            SecondaryScreenCache.galleries[key] = snapshot
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -80,8 +88,9 @@ struct GalleryView: View {
                     content
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
-                .navigationTitle("ギャラリー")
-                .refreshable { await viewModel.load() }
+                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
+                .refreshable { await viewModel.load(force: true) }
                 .navigationDestination(item: $selectedItem) { item in
                     galleryDetail(item)
                 }
@@ -111,7 +120,7 @@ struct GalleryView: View {
             .padding(20)
         }
         .background(AppDesign.canvas.ignoresSafeArea())
-        .navigationTitle("写真")
+        .navigationTitle("")
     }
 
     private func categoryChip(title: String, id: Int?) -> some View {
