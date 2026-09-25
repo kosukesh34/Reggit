@@ -16,6 +16,8 @@
 	<string>products</string>
 	<key>LIFF_FIXED_TAB</key>
 	<string>products</string>
+	<key>NSCameraUsageDescription</key>
+	<string>会員引き継ぎのQRコードを読み取るためにカメラを使います。</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>
@@ -47,6 +49,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 		</dict>
+	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>fontawesome6free_solid.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

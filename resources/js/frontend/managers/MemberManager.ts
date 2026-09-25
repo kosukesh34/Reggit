@@ -1630,7 +1630,8 @@ export class MemberManager {
     _setupAddToWallet() {
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : '';
         const appleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
-        if (appleBtn) {
+        if (appleBtn && appleBtn.getAttribute('data-wallet-bound') !== '1') {
+            appleBtn.setAttribute('data-wallet-bound', '1');
             appleBtn.addEventListener('click', (e) => this._onAddToAppleWallet(e, appleBtn, projectKey));
             if (this._shouldPrefetchAppleWalletUrl()) {
                 this._setAppleWalletButtonPreparing(appleBtn, true);
@@ -1638,7 +1639,8 @@ export class MemberManager {
             }
         }
         const googleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
-        if (googleBtn) {
+        if (googleBtn && googleBtn.getAttribute('data-wallet-bound') !== '1') {
+            googleBtn.setAttribute('data-wallet-bound', '1');
             googleBtn.addEventListener('click', (e) => this._onAddToGoogleWallet(e, googleBtn, projectKey));
             if (this._shouldPrefetchGoogleWalletUrl()) {
                 this._setGoogleWalletButtonPreparing(googleBtn, true);

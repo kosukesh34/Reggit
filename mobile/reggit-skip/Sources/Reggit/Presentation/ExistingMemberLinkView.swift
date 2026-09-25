@@ -63,8 +63,7 @@ struct ExistingMemberLinkView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let description = model.form?.description, !description.isEmpty {
                         Text(description)
@@ -76,7 +75,7 @@ struct ExistingMemberLinkView: View {
                             .foregroundStyle(AppDesign.ink)
                     }
                     if let form = model.form {
-                        ForEach(form.fields) { field in
+                        ForEach(form.fields, id: \.key) { field in
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(field.label)
                                     .font(.subheadline.weight(.semibold))
@@ -111,12 +110,13 @@ struct ExistingMemberLinkView: View {
             }
             .background(AppDesign.canvas.ignoresSafeArea())
             .navigationTitle("既存会員連携")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("閉じる", action: onClose)
                 }
             }
-        }
         .task { await model.load() }
     }
 

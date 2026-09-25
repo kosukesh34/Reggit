@@ -17,6 +17,8 @@ final class HomeViewModel {
 struct HomeView: View {
     @State var viewModel: HomeViewModel
     @State var selectedHeroIndex = 0
+    @State var loopIndex = 1
+    @State var heroDragOffset: CGFloat = 0
     let homeImageURLs: [String]
     let menuLayout: String
     let tabs: [AppTabItem]
@@ -74,11 +76,12 @@ struct HomeView: View {
         .background(AppDesign.canvas.ignoresSafeArea())
         .task(id: homeImageURLs.count) {
             selectedHeroIndex = 0
+            loopIndex = 1
             guard homeImageURLs.count > 1 else { return }
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 if !Task.isCancelled {
-                    selectedHeroIndex = (selectedHeroIndex + 1) % homeImageURLs.count
+                    advanceHero(1)
                 }
             }
         }
@@ -102,21 +105,22 @@ struct HomeView: View {
 
     private var heroImage: some View {
         GeometryReader { geometry in
-            Group {
+            ZStack(alignment: .bottom) {
                 if homeImageURLs.count > 1 {
-                    heroImagePages
+                    heroSlider(width: geometry.size.width)
                 } else {
                     heroImageButton(at: 0)
+                }
+                if homeImageURLs.count > 1 {
+                    heroPageDots
+                        .padding(.bottom, 14)
+                        .zIndex(1)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.width)
             .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
         }
         .aspectRatio(1, contentMode: .fit)
-        .overlay {
-            RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous)
-                .stroke(Color.white.opacity(0.18), lineWidth: 1)
-        }
     }
 
     private func heroImageButton(at index: Int) -> some View {
@@ -132,22 +136,104 @@ struct HomeView: View {
         .accessibilityLabel("画像を全画面で表示")
     }
 
-    @ViewBuilder
-    private var heroImagePages: some View {
-        #if os(macOS)
-        heroImageTabView
-        #else
-        heroImageTabView.tabViewStyle(.page(indexDisplayMode: .automatic))
-        #endif
+    private var loopPages: [Int] {
+        let count = homeImageURLs.count
+        guard count > 1 else { return Array(homeImageURLs.indices) }
+        return [count - 1] + Array(homeImageURLs.indices) + [0]
     }
 
-    private var heroImageTabView: some View {
-        TabView(selection: $selectedHeroIndex) {
-            ForEach(homeImageURLs.indices, id: \.self) { index in
-                heroImageButton(at: index)
-                    .tag(index)
+    private var visibleHeroIndex: Int {
+        let count = homeImageURLs.count
+        guard count > 1 else { return 0 }
+        if loopIndex <= 0 { return count - 1 }
+        if loopIndex > count { return 0 }
+        return loopIndex - 1
+    }
+
+    private func heroSlider(width: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            ForEach(Array(loopPages.enumerated()), id: \.offset) { _, imageIndex in
+                heroImageContent(at: imageIndex, contentMode: .fill)
+                    .frame(width: width, height: width)
+                    .clipped()
             }
         }
+        .offset(x: -CGFloat(loopIndex) * width + heroDragOffset)
+        .animation(.easeInOut(duration: 0.45), value: loopIndex)
+        .animation(.easeInOut(duration: 0.45), value: heroDragOffset)
+        .frame(width: width, height: width, alignment: .leading)
+        .clipped()
+        .contentShape(Rectangle())
+        .highPriorityGesture(heroDragGesture)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel("画像を全画面で表示")
+        .accessibilityAction { onExpandImage(visibleHeroIndex) }
+    }
+
+    private func advanceHero(_ step: Int) {
+        guard homeImageURLs.count > 1 else { return }
+        loopIndex += step
+        let count = homeImageURLs.count
+        let edge = loopIndex
+        guard edge == 0 || edge == count + 1 else { return }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 460_000_000)
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                loopIndex = edge == 0 ? count : 1
+            }
+        }
+    }
+
+    private var heroDragGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    heroDragOffset = value.translation.width
+                }
+            }
+            .onEnded { value in
+                let travel = value.translation.width
+                let lift = value.translation.height
+                if abs(travel) < 12, abs(lift) < 12 {
+                    heroDragOffset = 0
+                    onExpandImage(visibleHeroIndex)
+                    return
+                }
+                withAnimation(.easeInOut(duration: 0.45)) {
+                    heroDragOffset = 0
+                }
+                if travel < -36 {
+                    advanceHero(1)
+                } else if travel > 36 {
+                    advanceHero(-1)
+                }
+            }
+    }
+
+    private var heroPageDots: some View {
+        HStack(spacing: 8) {
+            ForEach(homeImageURLs.indices, id: \.self) { index in
+                Button {
+                    loopIndex = index + 1
+                } label: {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 8, height: 8)
+                        .opacity(index == visibleHeroIndex ? 1 : 0.4)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(index + 1)枚目の画像")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Capsule().fill(Color.black.opacity(0.45)))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("ホーム画像")
     }
 
     @ViewBuilder
@@ -194,8 +280,7 @@ struct HomeMenuGrid: View {
             let tab = tabs[index]
             Button { onSelect(tab.key) } label: {
                 VStack(spacing: 10) {
-                    Image(systemName: TabIconResolver.systemName(for: tab))
-                        .font(.system(size: 24, weight: .medium))
+                    FontAwesomeIcon(systemName: TabIconResolver.systemName(for: tab))
                         .foregroundStyle(accent)
                     Text(tab.label)
                         .font(.system(size: 12, weight: .semibold))
@@ -247,8 +332,7 @@ struct HomeMenuList: View {
             ForEach(Array(tabs.enumerated()), id: \.element.id) { index, tab in
                 Button { onSelect(tab.key) } label: {
                     HStack(spacing: 14) {
-                        Image(systemName: TabIconResolver.systemName(for: tab))
-                            .font(.system(size: 20, weight: .medium))
+                        FontAwesomeIcon(systemName: TabIconResolver.systemName(for: tab))
                             .foregroundStyle(accent)
                             .frame(width: 30)
                         VStack(alignment: .leading, spacing: 3) {
@@ -260,8 +344,7 @@ struct HomeMenuList: View {
                                 .foregroundStyle(AppDesign.inkSecondary)
                         }
                         Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
+                        FontAwesomeIcon(systemName: "chevron.right")
                             .foregroundStyle(AppDesign.inkSecondary)
                     }
                     .padding(.horizontal, 16)

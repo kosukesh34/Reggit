@@ -91,7 +91,7 @@ struct MobileProjectSelectionView: View {
                                         .foregroundStyle(AppDesign.ink)
                                     Spacer()
                                     if viewModel.selectedProjectKey == project.projectKey {
-                                        Image(systemName: "checkmark")
+                                        FontAwesomeIcon(systemName: "checkmark")
                                             .foregroundStyle(AppDesign.ink)
                                     }
                                 }

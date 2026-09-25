@@ -18,5 +18,6 @@ enum NativeAppSession {
     static func reset() {
         sharedRoot?.onDisappear()
         sharedRoot = nil
+        SecondaryScreenCache.reset()
     }
 }

@@ -12,11 +12,19 @@ final class AnnouncementsViewModel {
 
     init(apiClient: any ReggitAPIServing) { self.apiClient = apiClient }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.announcements {
+            items = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
-        do { items = try await apiClient.fetchPublishedAnnouncements() }
+        do {
+            items = try await apiClient.fetchPublishedAnnouncements()
+            SecondaryScreenCache.announcements = items
+        }
         catch { errorMessage = error.localizedDescription }
     }
 }
@@ -51,8 +59,9 @@ struct AnnouncementsView: View {
                 .scrollContentBackground(.hidden)
             }
             .background(AppDesign.canvas.ignoresSafeArea())
-            .navigationTitle("お知らせ")
-            .refreshable { await viewModel.load() }
+            .navigationBarHidden(true)
+            .toolbar(.hidden, for: .navigationBar)
+            .refreshable { await viewModel.load(force: true) }
         }
         .task { await viewModel.load() }
     }

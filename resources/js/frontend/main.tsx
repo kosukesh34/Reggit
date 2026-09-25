@@ -10,6 +10,7 @@ import { normalizeLegacyLocationHash } from '../liff-ui/navigation/tabPath';
 import '../liff-ui/styles/tokens.css';
 import '../liff-ui/styles/globals.css';
 import '../liff-ui/styles/skip-native.css';
+import '../liff-ui/styles/native-features.css';
 import '../liff-ui/styles/design-layout-variants.css';
 import '../../css/frontend/member-legacy.css';
 

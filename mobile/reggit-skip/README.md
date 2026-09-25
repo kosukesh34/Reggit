@@ -2,6 +2,14 @@
 
 このディレクトリは、`Skip + SwiftUI` で作成した iOS / Android 向け **ネイティブ顧客アプリ**です。
 
+## 対象プラットフォームと実装基準
+
+- Apple側のアプリターゲットは **iOS 17以降（iPhone / iPad）** です。macOS / Mac Catalyst は対象外です。
+- UI実装はiOSのSwiftUIを基準にし、Skip Fuseが同じコードをAndroidのネイティブUIへ橋渡しします。
+- 通常の共通UIで `canImport` は使いません。プラットフォーム差が必要な場合は、Skip公式の推奨に従って `#if os(Android)` / `#if !os(Android)` を使います。
+- `#if SKIP` は、Kotlin / Java APIを直接呼ぶ必要がある箇所だけに限定します。
+- iOS専用フレームワークを使う場合は `#if !os(Android)` で囲み、Android側には代替実装または明示的なフォールバックを用意します。
+
 ## 実装方針
 
 - 画面は SwiftUI（主要タブ: 会員・注文・クーポン・スタンプ・待ち順）
