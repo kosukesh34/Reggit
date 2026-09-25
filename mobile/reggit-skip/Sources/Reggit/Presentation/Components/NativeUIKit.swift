@@ -140,8 +140,7 @@ struct RemoteImageView: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                Image(systemName: "photo")
-                    .font(.title2)
+                FontAwesomeIcon(systemName: "photo")
                     .foregroundStyle(AppDesign.inkSecondary.opacity(0.4))
             }
         }
@@ -207,8 +206,7 @@ struct AppEmptyState: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: systemImage)
-                .font(.system(size: 32, weight: .regular))
+            FontAwesomeIcon(systemName: systemImage)
                 .foregroundStyle(AppDesign.ink)
                 .frame(width: 64, height: 64)
             Text(title)
@@ -410,8 +408,7 @@ struct QtyStepper: View {
         HStack(spacing: 0) {
             if quantity > 0 {
                 Button(action: onMinus) {
-                    Image(systemName: "minus")
-                        .font(.system(size: 14, weight: .bold))
+                    FontAwesomeIcon(systemName: "minus")
                         .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
@@ -422,8 +419,7 @@ struct QtyStepper: View {
                     .frame(minWidth: 22)
                 if expandsToFill { Spacer(minLength: 0) }
                 Button(action: onPlus) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .bold))
+                    FontAwesomeIcon(systemName: "plus")
                         .foregroundStyle(onAccent)
                         .frame(width: 44, height: 44)
                         .background(accent)
@@ -478,8 +474,7 @@ struct QuickActionGrid: View {
             ForEach(Array(tabs.enumerated()), id: \.element.id) { index, tab in
                 Button { onSelect(tab.key) } label: {
                     HStack(spacing: 14) {
-                        Image(systemName: TabIconResolver.systemName(for: tab))
-                            .font(.body.weight(.semibold))
+                        FontAwesomeIcon(systemName: TabIconResolver.systemName(for: tab))
                             .foregroundStyle(accent)
                             .frame(width: 44, height: 44)
                             .background(AppDesign.surfaceMuted)
@@ -491,8 +486,7 @@ struct QuickActionGrid: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer(minLength: 8)
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
+                        FontAwesomeIcon(systemName: "chevron.right")
                             .foregroundStyle(AppDesign.inkSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

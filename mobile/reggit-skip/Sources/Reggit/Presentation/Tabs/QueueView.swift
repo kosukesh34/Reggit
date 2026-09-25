@@ -123,7 +123,8 @@ struct QueueView: View {
                     }
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
-                .navigationTitle("順番待ち")
+                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
                 .refreshable { await viewModel.load() }
                 .overlay {
                     AppToastHost(message: Binding(
@@ -204,8 +205,7 @@ struct QueueView: View {
         VStack(spacing: 24) {
             Spacer(minLength: 32)
             VStack(spacing: 10) {
-                Image(systemName: "person.2")
-                    .font(.system(size: 28, weight: .light))
+                FontAwesomeIcon(systemName: "person.2")
                     .foregroundStyle(AppDesign.coral)
                     .frame(width: 76, height: 76)
                     .background(AppDesign.coral.opacity(0.1)).clipShape(RoundedRectangle(cornerRadius: 24))
@@ -229,8 +229,7 @@ struct QueueView: View {
                         Button {
                             if viewModel.partySize > 1 { viewModel.partySize -= 1 }
                         } label: {
-                            Image(systemName: "minus.circle.fill")
-                                .font(.system(size: 32))
+                            FontAwesomeIcon(systemName: "minus.circle.fill")
                                 .frame(width: 48, height: 48)
                                 .foregroundStyle(AppDesign.inkSecondary)
                         }
@@ -243,8 +242,7 @@ struct QueueView: View {
                         Button {
                             if viewModel.partySize < 20 { viewModel.partySize += 1 }
                         } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 32))
+                            FontAwesomeIcon(systemName: "plus.circle.fill")
                                 .frame(width: 48, height: 48)
                                 .foregroundStyle(accent)
                         }

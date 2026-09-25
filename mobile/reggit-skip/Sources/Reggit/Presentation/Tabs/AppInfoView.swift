@@ -26,8 +26,7 @@ struct AppInfoView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        ScrollView {
                 VStack(spacing: 0) {
                     infoRow("端末", value: PlatformRuntime.deviceModel)
                     infoRow("端末ID", value: device.deviceIdentifier)
@@ -43,12 +42,13 @@ struct AppInfoView: View {
             }
             .background(AppDesign.canvas.ignoresSafeArea())
             .navigationTitle("アプリ情報")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("閉じる", action: onClose)
                 }
             }
-        }
     }
 
     private func infoRow(_ title: String, value: String) -> some View {

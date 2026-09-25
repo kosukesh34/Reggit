@@ -27,7 +27,13 @@ final class CouponsViewModel {
     var usedCouponCount: Int { archiveCoupons.filter { $0.status == "used" }.count }
     var expiredCouponCount: Int { archiveCoupons.filter { $0.status == "expired" }.count }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.coupons {
+            coupons = cached
+            deviceOnceCoupons = SecondaryScreenCache.deviceOnceCoupons ?? []
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -36,6 +42,8 @@ final class CouponsViewModel {
             async let claimable = apiClient.fetchDeviceOnceCoupons()
             coupons = try await owned
             deviceOnceCoupons = (try? await claimable) ?? []
+            SecondaryScreenCache.coupons = coupons
+            SecondaryScreenCache.deviceOnceCoupons = deviceOnceCoupons
         }
         catch { errorMessage = error.localizedDescription }
     }
@@ -47,7 +55,7 @@ final class CouponsViewModel {
         do {
             try await apiClient.claimDeviceOnceCoupon(id: coupon.id)
             actionMessage = "「\(coupon.name)」を獲得しました"
-            await load()
+            await load(force: true)
         } catch {
             actionMessage = error.localizedDescription
         }
@@ -64,7 +72,7 @@ final class CouponsViewModel {
             } else {
                 actionMessage = "「\(coupon.name)」を利用しました"
             }
-            await load()
+            await load(force: true)
         } catch {
             actionMessage = error.localizedDescription
         }
@@ -96,8 +104,9 @@ struct CouponsView: View {
                     content
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
-                .navigationTitle("クーポン")
-                .refreshable { await viewModel.load() }
+                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
+                .refreshable { await viewModel.load(force: true) }
                 .overlay {
                     AppToastHost(message: Binding(
                         get: { viewModel.actionMessage },
@@ -123,7 +132,7 @@ struct CouponsView: View {
                 } message: {
                     Text("スタッフにご確認のうえ利用してください。利用後は元に戻せません。\n" + (viewModel.pendingUse?.name ?? ""))
                 }
-                .sheet(item: Binding(
+                .navigationDestination(item: Binding(
                     get: { viewModel.redemptionResult },
                     set: { viewModel.redemptionResult = $0 }
                 )) { result in
@@ -203,8 +212,7 @@ struct CouponsView: View {
 
     private var historySummary: some View {
         HStack(spacing: 12) {
-            Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 19, weight: .semibold))
+            FontAwesomeIcon(systemName: "clock.arrow.circlepath")
                 .foregroundStyle(AppDesign.forest)
                 .frame(width: 42, height: 42)
                 .background(AppDesign.surface)
@@ -307,7 +315,7 @@ struct CouponsView: View {
                 if !showUse {
                     Divider()
                     HStack(spacing: 8) {
-                        Image(systemName: coupon.status == "used" ? "checkmark.circle.fill" : "clock.badge.exclamationmark")
+                        FontAwesomeIcon(systemName: coupon.status == "used" ? "checkmark.circle.fill" : "clock.badge.exclamationmark")
                         Text(coupon.statusLabel).fontWeight(.semibold)
                         Spacer(minLength: 8)
                         Text(coupon.status == "used" && !coupon.usedAt.isEmpty
@@ -339,10 +347,8 @@ struct CouponBarcodeView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 42))
+        VStack(spacing: 24) {
+                FontAwesomeIcon(systemName: "checkmark.circle.fill")
                     .foregroundStyle(AppDesign.success)
                 VStack(spacing: 8) {
                     Text("クーポンを使用しました")
@@ -377,7 +383,7 @@ struct CouponBarcodeView: View {
             .padding(24)
             .background(AppDesign.canvas.ignoresSafeArea())
             .navigationTitle("クーポン")
-        }
+            .navigationBarTitleDisplayMode(.inline)
         .task {
             while remainingSeconds > 0 && !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)

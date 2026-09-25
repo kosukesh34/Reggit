@@ -10,8 +10,7 @@ struct NativeTabBar: View {
             ForEach(items) { item in
                 Button { selectedTab = item.key } label: {
                     VStack(spacing: 3) {
-                        Image(systemName: TabIconResolver.systemName(for: item))
-                            .font(.system(size: 18, weight: .semibold))
+                        FontAwesomeIcon(systemName: TabIconResolver.systemName(for: item))
                         Text(item.label)
                             .font(.system(size: 10, weight: .medium))
                             .lineLimit(1)
@@ -35,11 +34,14 @@ struct NativeTabBar: View {
 /// タブアイコン解決。純正 TabView の tabItem で使う。
 enum TabIconResolver {
     static func systemName(for tab: AppTabItem) -> String {
-        // The default ordering icon must also suit shops, salons and service businesses.
-        if tab.key == "products" && ["", "fork.knife", "fork.knife.circle", "cart.fill"].contains(tab.sfSymbol.trimmed) {
+        let icon = tab.icon.trimmingCharacters(in: .whitespacesAndNewlines)
+        if icon.hasPrefix("fa-") {
+            return icon
+        }
+        if tab.key == "products" && ["", "fork.knife", "fork.knife.circle", "cart.fill"].contains(tab.sfSymbol.trimmingCharacters(in: .whitespacesAndNewlines)) {
             return "bag"
         }
-        let symbol = tab.sfSymbol.trimmed
+        let symbol = tab.sfSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
         return symbol.isEmpty ? fallback(for: tab.key) : symbol
     }
 

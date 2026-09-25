@@ -71,12 +71,18 @@ final class ProductsViewModel {
         cartLines.reduce(0) { $0 + $1.lineTotal }
     }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.products {
+            products = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
             products = try await apiClient.fetchProducts()
+            SecondaryScreenCache.products = products
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -179,11 +185,11 @@ struct ProductsView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack(spacing: 10) {
-                                Image(systemName: "magnifyingglass").foregroundStyle(AppDesign.inkSecondary)
+                                FontAwesomeIcon(systemName: "magnifyingglass").foregroundStyle(AppDesign.inkSecondary)
                                 TextField("商品・サービスを検索", text: Binding(get: { viewModel.searchText }, set: { viewModel.searchText = $0 }))
                                     .frame(minHeight: 44)
                                 if !viewModel.searchText.isEmpty {
-                                    Button { viewModel.searchText = "" } label: { Image(systemName: "xmark.circle.fill") }
+                                    Button { viewModel.searchText = "" } label: { FontAwesomeIcon(systemName: "xmark.circle.fill") }
                                         .frame(width: 44, height: 44)
                                         .accessibilityLabel("検索をクリア")
                                 }
@@ -210,8 +216,9 @@ struct ProductsView: View {
                     }
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
-                .navigationTitle("商品・サービス")
-                .refreshable { await viewModel.load() }
+                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
+                .refreshable { await viewModel.load(force: true) }
                 .appBottomAction {
                     if viewModel.cartCount > 0 && viewModel.activeOrder == nil {
                         cartBar
@@ -223,8 +230,13 @@ struct ProductsView: View {
                         set: { viewModel.actionMessage = $0 }
                     ))
                 }
-                .sheet(item: $selectedProduct) { product in
-                    productDetail(product)
+                .navigationDestination(isPresented: Binding(
+                    get: { selectedProduct != nil },
+                    set: { if !$0 { selectedProduct = nil } }
+                )) {
+                    if let product = selectedProduct {
+                        productDetail(product)
+                    }
                 }
                 .navigationDestination(isPresented: Binding(
                     get: { viewModel.showConfirm },
@@ -454,8 +466,7 @@ struct ProductsView: View {
     }
 
     private func productDetail(_ product: ProductItem) -> some View {
-        NavigationStack {
-            ScrollView {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     if product.imageURL != nil {
                         RemoteImageView(urlString: product.imageURL, baseURL: viewModel.mediaBaseURL, contentMode: .fit, cornerRadius: AppDesign.radiusXL)
@@ -480,7 +491,7 @@ struct ProductsView: View {
                             ForEach(group.options) { option in
                                 Button { toggleOption(option, in: group) } label: {
                                     HStack {
-                                        Image(systemName: draftOptionIds.contains(option.id) ? "checkmark.circle.fill" : "circle")
+                                        FontAwesomeIcon(systemName: draftOptionIds.contains(option.id) ? "checkmark.circle.fill" : "circle")
                                             .foregroundStyle(accent)
                                         Text(option.name).foregroundStyle(AppDesign.ink)
                                         Spacer()
@@ -498,7 +509,7 @@ struct ProductsView: View {
                 }.padding(24)
             }
             .background(AppDesign.canvas)
-            .navigationTitle("商品・サービスの詳細")
+            .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("閉じる") { selectedProduct = nil }
@@ -516,7 +527,6 @@ struct ProductsView: View {
                     }
                 }
             }
-        }
     }
 
     private func openProduct(_ product: ProductItem) {
@@ -653,7 +663,7 @@ struct OrderConfirmView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .navigationTitle("注文確認")
+        .navigationTitle("")
         .scrollContentBackground(.hidden)
         .background(AppDesign.canvas)
         .appBottomAction {
@@ -678,7 +688,7 @@ struct OrderConfirmView: View {
             paymentMethod = value
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: icon)
+                FontAwesomeIcon(systemName: icon)
                     .frame(width: 28)
                     .foregroundStyle(paymentMethod == value ? accent : AppDesign.inkSecondary)
                 VStack(alignment: .leading, spacing: 2) {
@@ -686,7 +696,7 @@ struct OrderConfirmView: View {
                     Text(subtitle).font(.caption).foregroundStyle(AppDesign.inkSecondary)
                 }
                 Spacer()
-                Image(systemName: paymentMethod == value ? "checkmark.circle.fill" : "circle")
+                FontAwesomeIcon(systemName: paymentMethod == value ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(paymentMethod == value ? accent : AppDesign.hairline)
             }
         }
@@ -766,6 +776,6 @@ struct OrderStatusView: View {
             .padding(20)
         }
         .background(AppDesign.canvas.ignoresSafeArea())
-        .navigationTitle("注文状況")
+        .navigationTitle("")
     }
 }

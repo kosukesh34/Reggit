@@ -66,6 +66,13 @@ final class NativeAPIModelsTests: XCTestCase {
         XCTAssertEqual(AppFormat.date("2026-09-19T12:34:56+09:00"), "2026/09/19")
     }
 
+    func testTransferQRFitsIssuedCode() {
+        let modules = QRCodeMatrix.modules(for: "24:ABCD2345")
+        XCTAssertEqual(modules?.count, 25)
+        XCTAssertEqual(modules?.first?.first, true)
+        XCTAssertNil(QRCodeMatrix.modules(for: String(repeating: "A", count: 33)))
+    }
+
     func testParseMemberProfile() throws {
         let json = """
         {
@@ -79,6 +86,7 @@ final class NativeAPIModelsTests: XCTestCase {
           "show_rank_progress": true,
           "member_card_code_type": "barcode",
           "member_registration_mode": "force",
+          "points_expiry": { "expires_at_label": "2026年12月31日" },
           "profile": { "name": "山田", "phone": "09011112222" },
           "member": { "member_number": "M-001" }
         }
@@ -97,6 +105,7 @@ final class NativeAPIModelsTests: XCTestCase {
         XCTAssertEqual(snapshot.pointsToNextRank, 550)
         XCTAssertTrue(snapshot.showRankProgress)
         XCTAssertEqual(snapshot.cardCodeType, "barcode")
+        XCTAssertEqual(snapshot.pointsExpiryLabel, "2026年12月31日")
         XCTAssertEqual(snapshot.registrationMode, .force)
         XCTAssertTrue(snapshot.registrationMode.requiresRegistrationGate)
     }

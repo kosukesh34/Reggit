@@ -15,12 +15,18 @@ final class OrdersViewModel {
         self.apiClient = apiClient
     }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.orders {
+            orders = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
             orders = try await apiClient.fetchOrders()
+            SecondaryScreenCache.orders = orders
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -73,8 +79,9 @@ struct OrdersView: View {
                     }
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
-                .navigationTitle("注文")
-                .refreshable { await viewModel.load() }
+                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
+                .refreshable { await viewModel.load(force: true) }
                 .navigationDestination(item: $selectedOrder) { order in
                     OrderStatusView(order: order)
                         .environment(\.brandAccent, accent)

@@ -17,11 +17,19 @@ final class StampsViewModel {
 
     var mediaBaseURL: String { apiClient.baseURL }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.stamps {
+            cards = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
-        do { cards = try await apiClient.fetchStampCards() }
+        do {
+            cards = try await apiClient.fetchStampCards()
+            SecondaryScreenCache.stamps = cards
+        }
         catch { errorMessage = error.localizedDescription }
     }
 }
@@ -58,8 +66,9 @@ struct StampsView: View {
                     }
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
-                .navigationTitle("スタンプ")
-                .refreshable { await viewModel.load() }
+                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
+                .refreshable { await viewModel.load(force: true) }
             }
         }
         .task { await viewModel.load() }
@@ -73,8 +82,7 @@ struct StampsView: View {
                         RemoteImageView(urlString: card.imageURL, baseURL: viewModel.mediaBaseURL, contentMode: .fill, cornerRadius: 18)
                             .frame(width: 64, height: 64)
                     } else {
-                        Image(systemName: "seal")
-                            .font(.system(size: 28, weight: .light))
+                        FontAwesomeIcon(systemName: "seal")
                             .frame(width: 64, height: 64)
                             .background(AppDesign.canvas).clipShape(RoundedRectangle(cornerRadius: 18))
                     }
@@ -102,8 +110,7 @@ struct StampsView: View {
                                 .stroke(AppDesign.hairline, lineWidth: 1.5)
                                 .background(Circle().fill(index < card.currentStamps ? AppDesign.ink : AppDesign.canvas))
                             if index < card.currentStamps {
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 14))
+                                FontAwesomeIcon(systemName: "star.fill")
                                     .foregroundStyle(.white)
                             }
                         }

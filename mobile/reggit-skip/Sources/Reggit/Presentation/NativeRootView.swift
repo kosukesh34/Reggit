@@ -22,6 +22,7 @@ struct NativeRootView: View {
     private var accent: Color { themeHex.toNativeColor() }
 
     var body: some View {
+        NavigationStack {
         SkipRefreshing {
             Group {
                 switch viewModel.phase {
@@ -55,6 +56,7 @@ struct NativeRootView: View {
             .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
             .preferredColorScheme(.light)
             .environment(\.apiBaseURL, viewModel.apiClient?.baseURL ?? "")
+            .toolbar(.hidden, for: .navigationBar)
         }
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
@@ -64,7 +66,7 @@ struct NativeRootView: View {
         } message: {
             Text(viewModel.membership?.message ?? "会員登録でポイントやクーポンが使えます。")
         }
-        .sheet(isPresented: Binding(
+        .navigationDestination(isPresented: Binding(
             get: { accountMode != nil },
             set: { if $0 == false { accountMode = nil } }
         )) {
@@ -94,48 +96,26 @@ struct NativeRootView: View {
                 )
             }
         }
-        .sheet(isPresented: $showAppInfo) {
+        .navigationDestination(isPresented: $showAppInfo) {
             AppInfoView(
                 userId: viewModel.membership?.userId,
                 displayedAt: appInfoDisplayedAt,
                 onClose: { showAppInfo = false }
             )
         }
-        .overlay {
-            if viewModel.lotteryModalPresented, let client = viewModel.apiClient {
-                GeometryReader { geometry in
-                    ZStack {
-                        Color.black.opacity(0.64)
-                            .ignoresSafeArea()
-                        ZStack(alignment: .topTrailing) {
-                            LotteryView(apiClient: client, gachaOnly: true)
-                            Button { viewModel.lotteryModalPresented = false } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 36, height: 36)
-                                    .background(Color.black.opacity(0.55))
-                                    .clipShape(Circle())
-                            }
-                            .accessibilityLabel("閉じる")
-                            .padding(12)
-                        }
-                        .frame(maxWidth: 390)
-                        .frame(height: min(geometry.size.height * 0.72, 520))
-                        .background(Color.black)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .padding(.horizontal, 18)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                .zIndex(100)
+        .navigationDestination(isPresented: $viewModel.lotteryModalPresented) {
+            if let client = viewModel.apiClient {
+                LotteryView(apiClient: client, gachaOnly: true)
             }
         }
-        .overlay {
-            if expandedHomeImageIndex != nil, let client = viewModel.apiClient {
+        .navigationDestination(isPresented: Binding(
+            get: { expandedHomeImageIndex != nil },
+            set: { if $0 == false { expandedHomeImageIndex = nil } }
+        )) {
+            if let client = viewModel.apiClient {
                 expandedHomeImage(baseURL: client.baseURL)
-                    .zIndex(101)
             }
+        }
         }
     }
 
@@ -170,8 +150,7 @@ struct NativeRootView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             Button { expandedHomeImageIndex = nil } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 18, weight: .semibold))
+                FontAwesomeIcon(systemName: "xmark")
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
                     .background(Color.black.opacity(0.6))
@@ -207,10 +186,7 @@ struct NativeRootView: View {
             ZStack(alignment: .leading) {
                 VStack(spacing: 0) {
                     NativeSharedHeader(
-                        projectName: viewModel.projectName,
-                        imageURL: viewModel.navigationHeaderImageURL,
                         backgroundColorHex: viewModel.navigationHeaderBackgroundColorHex,
-                        baseURL: client.baseURL,
                         items: viewModel.headerItems,
                         showsHamburger: true,
                         onSelect: { viewModel.selectedTab = $0 },
@@ -273,8 +249,7 @@ struct NativeRootView: View {
                 Button {
                     withAnimation(.easeOut(duration: 0.22)) { showHamburgerMenu = false }
                 } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .bold))
+                    FontAwesomeIcon(systemName: "xmark")
                         .frame(width: 36, height: 36)
                         .foregroundStyle(AppDesign.inkSecondary)
                 }
@@ -293,15 +268,14 @@ struct NativeRootView: View {
                             withAnimation(.easeOut(duration: 0.22)) { showHamburgerMenu = false }
                         } label: {
                             HStack(spacing: 14) {
-                                Image(systemName: TabIconResolver.systemName(for: item))
+                                FontAwesomeIcon(systemName: TabIconResolver.systemName(for: item))
                                     .frame(width: 28)
                                     .foregroundStyle(accent)
                                 Text(item.label)
                                     .font(.body.weight(.semibold))
                                     .foregroundStyle(AppDesign.ink)
                                 Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.bold))
+                                FontAwesomeIcon(systemName: "chevron.right")
                                     .foregroundStyle(AppDesign.inkSecondary)
                             }
                             .padding(.horizontal, 16)
@@ -354,15 +328,14 @@ struct NativeRootView: View {
 
     private func drawerRow(title: String, systemImage: String) -> some View {
         HStack(spacing: 14) {
-            Image(systemName: systemImage)
+            FontAwesomeIcon(systemName: systemImage)
                 .frame(width: 28)
                 .foregroundStyle(accent)
             Text(title)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(AppDesign.ink)
             Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
+            FontAwesomeIcon(systemName: "chevron.right")
                 .foregroundStyle(AppDesign.inkSecondary)
         }
         .padding(.horizontal, 16)
@@ -413,6 +386,8 @@ struct NativeRootView: View {
             GalleryView(apiClient: client)
         case "announcements":
             AnnouncementsView(apiClient: client)
+        case "lottery":
+            LotteryView(apiClient: client)
         default:
             MembershipView(
                 apiClient: client,
@@ -429,10 +404,7 @@ struct NativeRootView: View {
 }
 
 struct NativeSharedHeader: View {
-    let projectName: String
-    let imageURL: String?
     let backgroundColorHex: String
-    let baseURL: String
     let items: [AppTabItem]
     let showsHamburger: Bool
     let onSelect: (String) -> Void
@@ -442,27 +414,10 @@ struct NativeSharedHeader: View {
         let headerColor = backgroundColorHex.toNativeColor(fallback: .white)
         ZStack {
             headerColor
-            if imageURL != nil {
-                RemoteImageView(
-                    urlString: imageURL,
-                    baseURL: baseURL,
-                    contentMode: .fit,
-                    usesDemoFallback: false
-                )
-                .frame(width: PlatformRuntime.navigationHeaderImageWidth, height: 34, alignment: .center)
-                .offset(y: PlatformRuntime.navigationHeaderImageVerticalOffset)
-                .accessibilityLabel(Text(projectName))
-            } else {
-                Text(projectName)
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(BrandPalette(hex: backgroundColorHex).usesDarkForeground ? Color.black : Color.white)
-                    .lineLimit(1)
-            }
             HStack(spacing: 4) {
                 if showsHamburger {
                     Button(action: onOpenHamburger) {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 20, weight: .semibold))
+                        FontAwesomeIcon(systemName: "line.3.horizontal")
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
@@ -471,8 +426,7 @@ struct NativeSharedHeader: View {
                 Spacer()
                 ForEach(items) { item in
                     Button { onSelect(item.key) } label: {
-                        Image(systemName: TabIconResolver.systemName(for: item))
-                            .font(.system(size: 18, weight: .semibold))
+                        FontAwesomeIcon(systemName: TabIconResolver.systemName(for: item))
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)

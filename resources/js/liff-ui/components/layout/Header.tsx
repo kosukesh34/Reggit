@@ -1,212 +1,166 @@
-import { Bell, CalendarDays, ChevronDown, CloudOff, CreditCard, Home, Menu, MoreHorizontal, QrCode, ShoppingBag, Stamp, Ticket, UserRound, type LucideIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { resolveAppBrand } from "../../config/customization";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useAppConfig } from "../../context/AppConfigContext";
 import { useRuntimeData } from "../../context/RuntimeDataContext";
-import { featureDefinitionMap, isFeatureType } from "../../features/demo/featureCatalog";
-import { isUtilityType, utilityLabels } from "../../features/demo/UtilityDemo";
-import type { FeatureType } from "../../types/app";
-import type { HeaderButtonIcon, HeaderShortcut } from "../../types/customization";
+import {
+  nativeTabHref,
+  nativeTabIconClass,
+  useNativeConfig,
+  type NativeTab,
+} from "../../native/nativeConfig";
 import { DesignPicker, OPEN_DESIGN_PICKER_EVENT } from "./DesignPicker";
-import { Button } from "../ui/Button";
 
-const headerShortcutDefinitions: Record<Exclude<HeaderShortcut, "none">, {
-  feature: FeatureType;
-  label: string;
-  path: string;
-  icon: LucideIcon;
-}> = {
-  news: { feature: "news", label: "お知らせ", path: "/news", icon: Bell },
-  membership: { feature: "membership", label: "会員証", path: "/membership", icon: CreditCard },
-  profile: { feature: "membership", label: "プロフィール", path: "/profile", icon: UserRound },
-  coupon: { feature: "coupon", label: "クーポン", path: "/coupon", icon: Ticket },
-  stamp: { feature: "stamp", label: "スタンプ", path: "/stamp", icon: Stamp },
-  reservation: { feature: "reservation", label: "予約", path: "/reservation", icon: CalendarDays },
-  queue: { feature: "queue", label: "順番待ち", path: "/queue", icon: QrCode },
-  mobileOrder: { feature: "mobileOrder", label: "モバイルオーダー", path: "/mobileOrder", icon: ShoppingBag },
-};
+function validColor(value: string | undefined): string {
+  return value !== undefined && /^#[0-9a-f]{6}$/i.test(value) ? value : "#ffffff";
+}
 
-const headerIconDefinitions: Record<HeaderButtonIcon, LucideIcon> = {
-  bell: Bell,
-  creditCard: CreditCard,
-  userRound: UserRound,
-  ticket: Ticket,
-  stamp: Stamp,
-  calendarDays: CalendarDays,
-  qrCode: QrCode,
-  shoppingBag: ShoppingBag,
-  menu: Menu,
-  home: Home,
-  moreHorizontal: MoreHorizontal,
-};
+function foregroundFor(background: string): string {
+  const rgb = [1, 3, 5].map((index) => parseInt(background.slice(index, index + 2), 16) / 255);
+  const luminance = rgb
+    .map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4)
+    .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+  return luminance > 0.179 ? "#18211c" : "#ffffff";
+}
+
+function DrawerTab({ tab, onSelect }: { tab: NativeTab; onSelect: () => void }) {
+  return (
+    <a className="native-drawer__item" href={nativeTabHref(tab)} onClick={onSelect}>
+      <i className={nativeTabIconClass(tab)} aria-hidden="true" />
+      <span>{tab.label}</span>
+      <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+    </a>
+  );
+}
 
 export function Header() {
-  const { activeStore, stores, customization, experienceId } = useAppConfig();
-  const { mode, notificationCount } = useRuntimeData();
-  const [open, setOpen] = useState(false);
+  const { activeStore, stores } = useAppConfig();
+  const { member } = useRuntimeData();
+  const { config } = useNativeConfig();
   const location = useLocation();
-  const navigate = useNavigate();
-  const canSwitchStore = stores.length > 1;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const designerEmbed = typeof window !== "undefined" && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
-  const isLandingShowcase = designerEmbed && experienceId === "landing-showcase";
-  const isSimpleRewards = designerEmbed && experienceId === "simple-rewards";
-  const headerButton = customization.header.rightButton;
-  const effectiveMode = headerButton.mode ?? (customization.header.showNotifications ? "shortcut" : "none");
-  const shortcutKey = effectiveMode === "shortcut" ? (headerButton.shortcut || customization.header.shortcut) : "none";
-  const shortcut = shortcutKey === "none" ? null : headerShortcutDefinitions[shortcutKey];
-  const visibleShortcut = shortcut !== null && activeStore.features[shortcut.feature] ? shortcut : null;
-  const visibleCustomButton = effectiveMode === "custom"
-    ? {
-        label: headerButton.label.trim() || "ボタン",
-        path: headerButton.path.trim(),
-        icon: headerIconDefinitions[headerButton.icon],
-      }
-    : null;
-  const visibleButton = visibleShortcut !== null
-    ? { label: visibleShortcut.label, path: visibleShortcut.path, icon: visibleShortcut.icon, isNotification: shortcutKey === "news" }
-    : (visibleCustomButton !== null && visibleCustomButton.path !== ""
-        ? { ...visibleCustomButton, isNotification: false }
-        : null);
+  const canSwitchStore = designerEmbed && stores.length > 1;
+
+  const background = validColor(config.header?.background_color);
+  const foreground = foregroundFor(background);
+  const projectName = config.header?.text?.trim()
+    || config.project_name?.trim()
+    || activeStore.storeName;
+  const drawerTabs = config.navigation?.hamburger?.length
+    ? config.navigation.hamburger
+    : (config.tabs ?? []);
+  const headerTabs = config.navigation?.header ?? [];
 
   useEffect(() => {
-    const openPicker = () => setOpen(true);
+    setDrawerOpen(false);
+    setInfoOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!drawerOpen && !infoOpen) return undefined;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDrawerOpen(false);
+        setInfoOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [drawerOpen, infoOpen]);
+
+  useEffect(() => {
+    if (drawerOpen) closeButtonRef.current?.focus();
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    if (!canSwitchStore) return undefined;
+    const openPicker = () => setPickerOpen(true);
     window.addEventListener(OPEN_DESIGN_PICKER_EVENT, openPicker);
     return () => window.removeEventListener(OPEN_DESIGN_PICKER_EVENT, openPicker);
-  }, []);
+  }, [canSwitchStore]);
 
-  const openHeaderTarget = (path: string): void => {
-    if (path === "") {
-      return;
-    }
-    if (/^https?:\/\//i.test(path)) {
-      window.location.assign(path);
-      return;
-    }
-    const normalized = path.startsWith("/") ? path : `/${path.replace(/^\/+/, "")}`;
-    navigate(normalized);
-  };
-
-  const title = useMemo(() => {
-    if (location.pathname === "/membership") {
-      return "会員証";
-    }
-    if (location.pathname === "/profile") {
-      return "プロフィール";
-    }
-    if (location.pathname === "/more") {
-      return "その他";
-    }
-    if (location.pathname === "/dev/themes") {
-      return "Theme Preview";
-    }
-    const feature = location.pathname.slice(1);
-    if (isFeatureType(feature)) {
-      return featureDefinitionMap[feature].label;
-    }
-    if (isUtilityType(feature)) {
-      return utilityLabels[feature];
-    }
-    return resolveAppBrand(activeStore, customization).appName;
-  }, [activeStore, customization, location.pathname]);
-
-  const logoUrl = typeof activeStore.logoUrl === 'string' && activeStore.logoUrl.trim() !== ''
-    ? activeStore.logoUrl.trim()
-    : null;
-
-  const brandContent = (
-    <>
-      {customization.header.showLogo ? (
-        <span className={`header__logo${logoUrl !== null ? ' header__logo--image' : ''}`} aria-hidden="true">
-          {logoUrl !== null ? <img src={logoUrl} alt="" /> : <><i />{activeStore.logoText}</>}
-        </span>
-      ) : null}
-      <span className="header__text">
-        {customization.header.showSubtitle ? <span className="header__subtitle">{canSwitchStore ? "デザインを選ぶ" : "REGGIT MEMBER"}</span> : null}
-        <span className="header__title">{title}</span>
-      </span>
-      {canSwitchStore ? <ChevronDown className="header__chevron" size={15} aria-hidden="true" /> : null}
-    </>
-  );
-
-  const showcaseTitle = location.pathname === "/mobileOrder"
-    ? "メニュー"
-    : location.pathname === "/membership"
-      ? "会員証"
-      : location.pathname === "/stamp"
-        ? "スタンプカード"
-        : location.pathname === "/queue"
-          ? "LAUREL & IVY"
-          : location.pathname === "/more"
-          ? "マイページ"
-            : "Reggit";
-  const ShowcaseActionIcon = location.pathname === "/mobileOrder"
-    ? ShoppingBag
-    : location.pathname === "/home"
-      ? CreditCard
-      : UserRound;
+  const headerStyle = {
+    "--native-header-background": background,
+    "--native-header-foreground": foreground,
+  } as CSSProperties;
 
   return (
     <>
-      <header className={`header${isLandingShowcase ? " header--landing-showcase" : isSimpleRewards ? " header--simple-rewards" : ""}`}>
-        {isLandingShowcase ? (
-          <>
-            <button className="header__showcase-menu" onClick={() => navigate("/home")} type="button" aria-label="ホームへ戻る">
-              <span className="header__showcase-mark">R</span>
-            </button>
-            <div className="header__showcase-title">
-              <strong>{showcaseTitle}</strong>
-              {location.pathname === "/home" ? <span>LINE ミニアプリ</span> : null}
-              {location.pathname === "/queue" ? <span>モダンキッチン</span> : null}
-            </div>
-            <button
-              className="header__showcase-action"
-              type="button"
-              aria-label={location.pathname === "/home" ? "会員証を見る" : location.pathname === "/mobileOrder" ? "注文履歴を見る" : "マイページを見る"}
-              onClick={() => {
-                if (location.pathname === "/home") {
-                  navigate("/membership");
-                  return;
-                }
-                navigate(location.pathname === "/mobileOrder" ? "/orderHistory" : "/more");
-              }}
-            >
-              <ShowcaseActionIcon size={location.pathname === "/home" ? 29 : 26} />
-            </button>
-          </>
-        ) : isSimpleRewards ? (
-          canSwitchStore ? (
-            <button className="header__simple-brand" type="button" onClick={() => setOpen(true)} aria-label="デザインを選ぶ">
-              <span>SIMPLE PASS</span><strong>{location.pathname === "/home" ? "ホーム" : title}</strong><ChevronDown size={15} />
-            </button>
-          ) : (
-            <div className="header__simple-brand">
-              <span>SIMPLE PASS</span><strong>{location.pathname === "/home" ? "ホーム" : title}</strong>
-            </div>
-          )
-        ) : (
-          <>
-            {canSwitchStore ? (
-              <button className="header__brand" onClick={() => setOpen(true)} type="button" aria-label="デザインを選ぶ">
-                {brandContent}
-              </button>
-            ) : (
-              <div className="header__brand">{brandContent}</div>
-            )}
-            <div className="header__actions">
-              {mode === "offline" ? <span className="header__connection" aria-label="オフライン"><CloudOff size={14} /></span> : null}
-              {visibleButton !== null ? (
-                <Button className="header__notification header__shortcut" variant="ghost" size="icon" ariaLabel={`${visibleButton.label}を開く`} onClick={() => openHeaderTarget(visibleButton.path)}>
-                  <visibleButton.icon size={18} />
-                  {visibleButton.isNotification && notificationCount > 0 ? <span className="header__notification-dot">{notificationCount}</span> : null}
-                </Button>
-              ) : null}
-            </div>
-          </>
-        )}
+      <header className="native-header" style={headerStyle}>
+        <button
+          className="native-header__action"
+          type="button"
+          aria-label="メニューを開く"
+          aria-controls="native-navigation-drawer"
+          aria-expanded={drawerOpen}
+          onClick={() => setDrawerOpen(true)}
+        >
+          <i className="fa-solid fa-bars" aria-hidden="true" />
+        </button>
+        {canSwitchStore ? (
+          <button className="native-header__brand native-header__brand--button" type="button" aria-label="デザインを選ぶ" onClick={() => setPickerOpen(true)}>
+            <span>{projectName}</span>
+          </button>
+        ) : null}
+        <div className="native-header__trailing">
+          {headerTabs.map((tab) => (
+            <a className="native-header__action" href={nativeTabHref(tab)} key={tab.key} aria-label={tab.label}>
+              <i className={nativeTabIconClass(tab)} aria-hidden="true" />
+            </a>
+          ))}
+        </div>
       </header>
 
-      {canSwitchStore ? <DesignPicker open={open} onClose={() => setOpen(false)} /> : null}
+      {drawerOpen ? (
+        <div className="native-drawer-layer">
+          <button type="button" className="native-drawer-layer__scrim" aria-label="メニューを閉じる" onClick={() => setDrawerOpen(false)} />
+          <aside id="native-navigation-drawer" className="native-drawer" role="dialog" aria-modal="true" aria-label="メニュー">
+            <div className="native-drawer__heading">
+              <strong>メニュー</strong>
+              <button ref={closeButtonRef} type="button" aria-label="閉じる" onClick={() => setDrawerOpen(false)}>
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
+              </button>
+            </div>
+            <nav className="native-drawer__list" aria-label="すべてのメニュー">
+              {drawerTabs.map((tab) => <DrawerTab key={tab.key} tab={tab} onSelect={() => setDrawerOpen(false)} />)}
+              <Link className="native-drawer__item" to="/more/transfer" onClick={() => setDrawerOpen(false)}>
+                <i className="fa-solid fa-right-left" aria-hidden="true" />
+                <span>引き継ぎ</span><i className="fa-solid fa-chevron-right" aria-hidden="true" />
+              </Link>
+              {member.isMember ? (
+                <Link className="native-drawer__item" to="/more/withdraw" onClick={() => setDrawerOpen(false)}>
+                  <i className="fa-solid fa-user-xmark" aria-hidden="true" />
+                  <span>退会</span><i className="fa-solid fa-chevron-right" aria-hidden="true" />
+                </Link>
+              ) : null}
+              <button className="native-drawer__item" type="button" onClick={() => { setDrawerOpen(false); setInfoOpen(true); }}>
+                <i className="fa-solid fa-circle-info" aria-hidden="true" />
+                <span>アプリ情報</span><i className="fa-solid fa-chevron-right" aria-hidden="true" />
+              </button>
+            </nav>
+          </aside>
+        </div>
+      ) : null}
+
+      {infoOpen ? (
+        <div className="native-info-layer" role="presentation" onClick={() => setInfoOpen(false)}>
+          <section className="native-info" role="dialog" aria-modal="true" aria-label="アプリ情報" onClick={(event) => event.stopPropagation()}>
+            <div className="native-info__heading">
+              <strong>アプリ情報</strong>
+              <button type="button" aria-label="閉じる" onClick={() => setInfoOpen(false)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+            </div>
+            <dl>
+              <div><dt>店舗</dt><dd>{projectName}</dd></div>
+              <div><dt>プロジェクト</dt><dd>{config.project_key || window.__PROJECT_KEY__ || "—"}</dd></div>
+              {member.isMember && member.number !== "" ? <div><dt>会員番号</dt><dd>{member.number}</dd></div> : null}
+            </dl>
+          </section>
+        </div>
+      ) : null}
+      {canSwitchStore ? <DesignPicker open={pickerOpen} onClose={() => setPickerOpen(false)} /> : null}
     </>
   );
 }

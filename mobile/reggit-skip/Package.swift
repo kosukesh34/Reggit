@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "reggit-skip",
     defaultLocalization: "en",
-    platforms: [.iOS(.v17), .macOS(.v14)],
+    platforms: [.iOS(.v17)],
     products: [
         .library(name: "Reggit", type: .dynamic, targets: ["Reggit"]),
     ],
