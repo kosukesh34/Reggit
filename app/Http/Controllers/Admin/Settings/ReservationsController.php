@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Models\ReservationCourse;
+use App\UseCases\Admin\Settings\GetReservationCoursesUseCase;
 use App\UseCases\Admin\Settings\GetReservationOnlySettingsUseCase;
+use App\UseCases\Admin\Settings\StoreReservationCourseUseCase;
+use App\UseCases\Admin\Settings\UpdateReservationCourseUseCase;
 use App\UseCases\Admin\Settings\UpdateReservationOnlySettingsUseCase;
 use Illuminate\Http\Request;
 
@@ -16,7 +18,10 @@ class ReservationsController extends AdminBaseController
 
     public function __construct(
         GetReservationOnlySettingsUseCase $getReservationOnlySettingsUseCase,
-        UpdateReservationOnlySettingsUseCase $updateReservationOnlySettingsUseCase
+        UpdateReservationOnlySettingsUseCase $updateReservationOnlySettingsUseCase,
+        private GetReservationCoursesUseCase $getCoursesUseCase,
+        private StoreReservationCourseUseCase $storeCourseUseCase,
+        private UpdateReservationCourseUseCase $updateCourseUseCase,
     ) {
         $this->getReservationOnlySettingsUseCase = $getReservationOnlySettingsUseCase;
         $this->updateReservationOnlySettingsUseCase = $updateReservationOnlySettingsUseCase;
@@ -27,7 +32,7 @@ class ReservationsController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
         $settings = $this->getReservationOnlySettingsUseCase->handle($projectId);
 
-        $courses = ReservationCourse::where('project_id', $projectId)->orderBy('sort_order')->orderBy('id')->get();
+        $courses = $this->getCoursesUseCase->handle($projectId);
 
         return view('admin.settings.reservations', compact('settings', 'courses'));
     }
@@ -58,7 +63,7 @@ class ReservationsController extends AdminBaseController
             'price' => 'required|integer|min:0|max:99999999',
             'description' => 'nullable|string|max:1000',
         ]);
-        ReservationCourse::create($data + ['project_id' => $this->resolveAdminProjectId()]);
+        $this->storeCourseUseCase->handle($this->resolveAdminProjectId(), $data);
 
         return redirect()->route('admin.settings.reservations', $this->buildAdminRouteParams())
             ->with('success', 'コースを追加しました');
@@ -66,14 +71,13 @@ class ReservationsController extends AdminBaseController
 
     public function updateCourse(Request $request, string $projectKey, int $id)
     {
-        $course = ReservationCourse::where('project_id', $this->resolveAdminProjectId())->findOrFail($id);
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'price' => 'required|integer|min:0|max:99999999',
             'description' => 'nullable|string|max:1000',
             'is_active' => 'required|boolean',
         ]);
-        $course->update($data);
+        $this->updateCourseUseCase->handle($this->resolveAdminProjectId(), $id, $data);
 
         return redirect()->route('admin.settings.reservations', $this->buildAdminRouteParams())
             ->with('success', 'コースを更新しました');
