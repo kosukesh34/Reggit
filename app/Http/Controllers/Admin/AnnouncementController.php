@@ -2,19 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Requests\Admin\AnnouncementDeliveryStoreRequest;
 use App\Http\Requests\Admin\AnnouncementUpdateRequest;
 use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\Announcement\AdminAnnouncementAudiencePreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeleteUseCase;
-use App\UseCases\Admin\Announcement\AdminAnnouncementDeliveryFormUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementEditUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementIndexUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementReadsUseCase;
-use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
-use App\UseCases\Admin\Announcement\AdminAnnouncementStoreDeliveryUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementUpdateUseCase;
-use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 
@@ -25,11 +19,6 @@ class AnnouncementController extends AdminBaseController
         private AdminAnnouncementEditUseCase $editUseCase,
         private AdminAnnouncementUpdateUseCase $updateUseCase,
         private AdminAnnouncementDeleteUseCase $deleteUseCase,
-        private AdminAnnouncementStoreDeliveryUseCase $storeDeliveryUseCase,
-        private AdminAnnouncementDeliveryFormUseCase $deliveryFormUseCase,
-        private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
-        private AdminAnnouncementAudiencePreviewUseCase $audiencePreviewUseCase,
-        private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
         private PublicImageStorageService $publicImageStorage,
         private AdminAnnouncementReadsUseCase $readsUseCase,
     ) {}
@@ -93,69 +82,5 @@ class AnnouncementController extends AdminBaseController
         $output = $this->readsUseCase->handle($id);
 
         return view('admin.announcements.reads', ['view' => $output]);
-    }
-
-    public function createDelivery()
-    {
-        $form = $this->deliveryFormUseCase->handle($this->resolveAdminProjectId());
-
-        return view('admin.announcements.delivery-create', ['view' => $form]);
-    }
-
-    public function segmentPreview(Request $request)
-    {
-        $count = $this->segmentPreviewUseCase->handle(
-            $this->resolveAdminProjectId(),
-            $request->query(),
-        );
-
-        return response()->json(['count' => $count]);
-    }
-
-    public function audiencePreview(Request $request)
-    {
-        $preview = $this->audiencePreviewUseCase->handle(
-            $this->resolveAdminProjectId(),
-            $request->query(),
-        );
-
-        return response()->json($preview);
-    }
-
-    public function searchMembers(Request $request)
-    {
-        $members = $this->searchMembersUseCase->handle(
-            $this->resolveAdminProjectId(),
-            (string) $request->query('q', ''),
-        );
-
-        return response()->json(['data' => $members]);
-    }
-
-    public function storeDelivery(AnnouncementDeliveryStoreRequest $request)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validated();
-
-        $imageFile = $request->file('image_file');
-        if ($imageFile instanceof UploadedFile) {
-            $validated['image_url'] = $this->publicImageStorage->store(
-                $imageFile,
-                $projectId,
-                PublicImageStorageService::DIR_ANNOUNCEMENT,
-            );
-        }
-        unset($validated['image_file']);
-
-        $output = $this->storeDeliveryUseCase->handle($projectId, $validated);
-
-        if ($output->hasValidationError) {
-            return back()
-                ->withErrors([$output->validationField => $output->message])
-                ->withInput();
-        }
-
-        return redirect()->route('admin.announcements', $this->buildAdminRouteParams())
-            ->with('success', $output->message);
     }
 }
