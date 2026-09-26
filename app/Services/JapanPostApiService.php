@@ -24,9 +24,9 @@ class JapanPostApiService
 
     public static function fromConfig(): self
     {
-        $host = trim((string) (config('japanpost.host') ?: env('JAPANPOST_API_HOST') ?: getenv('JAPANPOST_API_HOST') ?: ''));
-        $clientId = trim((string) (config('japanpost.client_id') ?: env('JAPANPOST_CLIENT_ID') ?: getenv('JAPANPOST_CLIENT_ID') ?: ''));
-        $clientSecret = trim((string) (config('japanpost.client_secret') ?: env('JAPANPOST_CLIENT_SECRET') ?: getenv('JAPANPOST_CLIENT_SECRET') ?: ''));
+        $host = trim((string) config('japanpost.host', ''));
+        $clientId = trim((string) config('japanpost.client_id', ''));
+        $clientSecret = trim((string) config('japanpost.client_secret', ''));
 
         return new self($host, $clientId, $clientSecret);
     }

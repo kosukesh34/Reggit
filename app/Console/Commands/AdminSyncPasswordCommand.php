@@ -17,12 +17,12 @@ class AdminSyncPasswordCommand extends Command
     {
         $loginId = $this->argument('login_id');
         if ($loginId === null || $loginId === '') {
-            $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
+            $loginId = config('admin.demo.system_login_id');
         }
 
         $user = AdminUser::where('login_id', $loginId)->first();
         if ($user === null) {
-            $demoLoginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
+            $demoLoginId = config('admin.demo.system_login_id');
             if ($loginId === $demoLoginId && app()->environment('production') === false) {
                 AdminUserSeeder::upsertDocumentedDemoSystemAdmin();
                 $user = AdminUser::where('login_id', $loginId)->first();
@@ -35,11 +35,11 @@ class AdminSyncPasswordCommand extends Command
         }
 
         $password = match ($loginId) {
-            env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys') => AdminUserSeeder::demoSystemPassword(),
-            env('DEMO_STORE_LOGIN_ID', 'demo_store') => (string) env('DEMO_STORE_PASSWORD', 'DemoStore#2026'),
-            env('DEMO_PROJECT_LOGIN_ID', 'demo_proj') => (string) env('DEMO_PROJECT_PASSWORD', 'DemoProj#2026'),
-            env('DEMO_STAFF_LOGIN_ID', 'demo_staff') => (string) env('DEMO_STAFF_PASSWORD', 'DemoStaff#2026'),
-            default => (string) env('ADMIN_PASSWORD', 'reserve'),
+            config('admin.demo.system_login_id') => AdminUserSeeder::demoSystemPassword(),
+            config('admin.demo.store_login_id') => (string) config('admin.demo.store_password'),
+            config('admin.demo.project_login_id') => (string) config('admin.demo.project_password'),
+            config('admin.demo.staff_login_id') => (string) config('admin.demo.staff_password'),
+            default => (string) config('admin.password'),
         };
 
         if ($password === '') {
