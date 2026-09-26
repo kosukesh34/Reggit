@@ -3,7 +3,7 @@
 namespace App\UseCases\Admin\Member;
 
 use App\Models\Member;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberHistoryQueryService;
 use App\UseCases\Admin\Member\Data\AdminMemberHistorySectionOutput;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
@@ -33,7 +33,7 @@ class AdminMemberHistorySectionUseCase
     ];
 
     public function __construct(
-        private MemberAdminService $memberAdminService
+        private MemberHistoryQueryService $historyQueryService,
     ) {}
 
     public function handle(
@@ -59,23 +59,23 @@ class AdminMemberHistorySectionUseCase
         $from = trim($from);
         $to = trim($to);
         $paginator = match ($section) {
-            self::SECTION_VISITS => $this->memberAdminService->getPaginatedVisits(
-                $memberId, $keyword, MemberAdminService::HISTORY_PER_PAGE, 'page', $from, $to
+            self::SECTION_VISITS => $this->historyQueryService->getPaginatedVisits(
+                $memberId, $keyword, MemberHistoryQueryService::HISTORY_PER_PAGE, 'page', $from, $to
             ),
-            self::SECTION_POINTS => $this->memberAdminService->getPaginatedPointTransactions(
-                $memberId, $keyword, MemberAdminService::HISTORY_PER_PAGE, 'page', $from, $to
+            self::SECTION_POINTS => $this->historyQueryService->getPaginatedPointTransactions(
+                $memberId, $keyword, MemberHistoryQueryService::HISTORY_PER_PAGE, 'page', $from, $to
             ),
-            self::SECTION_COUPONS => $this->memberAdminService->getPaginatedMemberCoupons(
-                $memberId, $keyword, MemberAdminService::HISTORY_PER_PAGE, 'page', $from, $to
+            self::SECTION_COUPONS => $this->historyQueryService->getPaginatedMemberCoupons(
+                $memberId, $keyword, MemberHistoryQueryService::HISTORY_PER_PAGE, 'page', $from, $to
             ),
-            self::SECTION_STAMPS => $this->memberAdminService->getPaginatedStampTransactions(
-                $memberId, $keyword, MemberAdminService::HISTORY_PER_PAGE, 'page', $from, $to
+            self::SECTION_STAMPS => $this->historyQueryService->getPaginatedStampTransactions(
+                $memberId, $keyword, MemberHistoryQueryService::HISTORY_PER_PAGE, 'page', $from, $to
             ),
-            self::SECTION_RANK => $this->memberAdminService->getPaginatedRankHistories(
-                $memberId, $keyword, MemberAdminService::HISTORY_PER_PAGE, 'page', $from, $to
+            self::SECTION_RANK => $this->historyQueryService->getPaginatedRankHistories(
+                $memberId, $keyword, MemberHistoryQueryService::HISTORY_PER_PAGE, 'page', $from, $to
             ),
-            self::SECTION_REDEMPTIONS => $this->memberAdminService->getPaginatedCouponRedemptions(
-                $memberId, $keyword, MemberAdminService::HISTORY_PER_PAGE, 'page', $from, $to
+            self::SECTION_REDEMPTIONS => $this->historyQueryService->getPaginatedCouponRedemptions(
+                $memberId, $keyword, MemberHistoryQueryService::HISTORY_PER_PAGE, 'page', $from, $to
             ),
         };
 

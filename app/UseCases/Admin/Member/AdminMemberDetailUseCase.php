@@ -3,12 +3,14 @@
 namespace App\UseCases\Admin\Member;
 
 use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberHistoryQueryService;
 use App\UseCases\Admin\Member\Data\AdminMemberDetailOutput;
 
 class AdminMemberDetailUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService
+        private MemberAdminService $memberAdminService,
+        private MemberHistoryQueryService $historyQueryService,
     ) {}
 
     /**
@@ -24,50 +26,50 @@ class AdminMemberDetailUseCase
         return new AdminMemberDetailOutput(
             $member,
             $purchaseSummary,
-            $this->memberAdminService->getPaginatedVisits(
+            $this->historyQueryService->getPaginatedVisits(
                 $memberId,
                 $historyFilters['visits_q'],
-                MemberAdminService::HISTORY_PER_PAGE,
+                MemberHistoryQueryService::HISTORY_PER_PAGE,
                 'visits_page',
                 $historyFilters['visits_from'],
                 $historyFilters['visits_to'],
             ),
-            $this->memberAdminService->getPaginatedPointTransactions(
+            $this->historyQueryService->getPaginatedPointTransactions(
                 $memberId,
                 $historyFilters['points_q'],
-                MemberAdminService::HISTORY_PER_PAGE,
+                MemberHistoryQueryService::HISTORY_PER_PAGE,
                 'points_page',
                 $historyFilters['points_from'],
                 $historyFilters['points_to'],
             ),
-            $this->memberAdminService->getPaginatedMemberCoupons(
+            $this->historyQueryService->getPaginatedMemberCoupons(
                 $memberId,
                 $historyFilters['coupons_q'],
-                MemberAdminService::HISTORY_PER_PAGE,
+                MemberHistoryQueryService::HISTORY_PER_PAGE,
                 'coupons_page',
                 $historyFilters['coupons_from'],
                 $historyFilters['coupons_to'],
             ),
-            $this->memberAdminService->getPaginatedStampTransactions(
+            $this->historyQueryService->getPaginatedStampTransactions(
                 $memberId,
                 $historyFilters['stamps_q'],
-                MemberAdminService::HISTORY_PER_PAGE,
+                MemberHistoryQueryService::HISTORY_PER_PAGE,
                 'stamps_page',
                 $historyFilters['stamps_from'],
                 $historyFilters['stamps_to'],
             ),
-            $this->memberAdminService->getPaginatedRankHistories(
+            $this->historyQueryService->getPaginatedRankHistories(
                 $memberId,
                 $historyFilters['rank_q'],
-                MemberAdminService::HISTORY_PER_PAGE,
+                MemberHistoryQueryService::HISTORY_PER_PAGE,
                 'rank_page',
                 $historyFilters['rank_from'],
                 $historyFilters['rank_to'],
             ),
-            $this->memberAdminService->getPaginatedCouponRedemptions(
+            $this->historyQueryService->getPaginatedCouponRedemptions(
                 $memberId,
                 $historyFilters['redemptions_q'],
-                MemberAdminService::HISTORY_PER_PAGE,
+                MemberHistoryQueryService::HISTORY_PER_PAGE,
                 'redemptions_page',
                 $historyFilters['redemptions_from'],
                 $historyFilters['redemptions_to'],
