@@ -33,6 +33,14 @@ class LayerDependencyTest extends TestCase
                 'App\\UseCases\\',
             ],
         ];
+
+        yield 'use cases do not depend on controllers or HTTP requests' => [
+            dirname(__DIR__, 3).'/app/UseCases',
+            [
+                'App\\Http\\Controllers\\',
+                'Illuminate\\Http\\Request',
+            ],
+        ];
     }
 
     /**

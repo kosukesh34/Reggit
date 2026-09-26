@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\ReservationStoreRequest;
-use App\Models\ReservationCourse;
 use App\UseCases\Admin\Reservation\AdminReservationDestroyUseCase;
 use App\UseCases\Admin\Reservation\AdminReservationDetailUseCase;
 use App\UseCases\Admin\Reservation\AdminReservationIndexUseCase;
 use App\UseCases\Admin\Reservation\AdminReservationStoreUseCase;
 use App\UseCases\Admin\Reservation\AdminReservationUpdateUseCase;
+use App\UseCases\Admin\Settings\GetReservationCoursesUseCase;
 use Illuminate\Http\Request;
 
 class ReservationController extends AdminBaseController
@@ -19,6 +19,7 @@ class ReservationController extends AdminBaseController
         private AdminReservationStoreUseCase $storeUseCase,
         private AdminReservationUpdateUseCase $updateUseCase,
         private AdminReservationDestroyUseCase $destroyUseCase,
+        private GetReservationCoursesUseCase $getReservationCoursesUseCase,
     ) {}
 
     public function reservations(Request $request)
@@ -44,7 +45,7 @@ class ReservationController extends AdminBaseController
 
     public function createReservation()
     {
-        $courses = ReservationCourse::where('project_id', $this->resolveAdminProjectId())->where('is_active', true)->orderBy('sort_order')->get();
+        $courses = $this->getReservationCoursesUseCase->handle($this->resolveAdminProjectId(), activeOnly: true);
 
         return view('admin.reservation-create', compact('courses'));
     }
@@ -61,7 +62,7 @@ class ReservationController extends AdminBaseController
     public function editReservation(string $projectKey, $id)
     {
         $reservation = $this->detailUseCase->handle((int) $id);
-        $courses = ReservationCourse::where('project_id', $this->resolveAdminProjectId())->where('is_active', true)->orderBy('sort_order')->get();
+        $courses = $this->getReservationCoursesUseCase->handle($this->resolveAdminProjectId(), activeOnly: true);
 
         return view('admin.reservation-edit', compact('reservation', 'courses'));
     }
