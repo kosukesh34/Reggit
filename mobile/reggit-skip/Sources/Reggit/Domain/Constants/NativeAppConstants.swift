@@ -15,7 +15,7 @@ public extension Notification.Name {
 enum NativeAppTabs {
     static let allowedFixedTabs: Set<String> = [
         "home", "products", "orders", "stamps", "coupons",
-        "queue", "member", "reservations", "gallery",
+        "queue", "member", "reservations", "gallery", "storeSearch",
     ]
     static let defaultFixedTab = "home"
 }

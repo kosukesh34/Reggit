@@ -18,6 +18,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     var footerItems: [AppTabItem] = []
     var hamburgerItems: [AppTabItem] = []
     var selectedTab: String = "home"
+    var currentProjectKey = ""
     var projectName: String = "Reggit"
     var primaryColorHex: String = "#173F35"
     var navigationHeaderImageURL: String?
@@ -79,6 +80,7 @@ final class NativeRootViewModel: PushNotificationHandling {
         registrationError = nil
         showRegistrationPopup = false
         do {
+            currentProjectKey = configRepository.resolveConfig().projectKey
             let client = try await bootstrap.registerDevice()
             apiClient = client
             let config = await loadAppConfig(client: client)
@@ -254,7 +256,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     // MARK: - Tabs
 
     static let supportedTabKeys: Set<String> = [
-        "home", "member", "profile", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "lottery", "terms", "privacy",
+        "home", "member", "profile", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "lottery", "storeSearch", "terms", "privacy",
     ]
 
     /// テスト用。サーバのメニュー設定に関係なく、実装済み機能を全部出す。
@@ -270,6 +272,7 @@ final class NativeRootViewModel: PushNotificationHandling {
         AppTabItem(id: "gallery", key: "gallery", label: "ギャラリー", icon: "fa-image", sfSymbol: "photo.on.rectangle"),
         AppTabItem(id: "announcements", key: "announcements", label: "お知らせ", icon: "fa-bell", sfSymbol: "bell.fill"),
         AppTabItem(id: "lottery", key: "lottery", label: "抽選", icon: "fa-dice", sfSymbol: "dice.fill"),
+        AppTabItem(id: "storeSearch", key: "storeSearch", label: "店舗を探す", icon: "fa-location-dot", sfSymbol: "location.fill"),
     ]
 
     static let defaultTabs: [AppTabItem] = [
@@ -309,6 +312,7 @@ final class NativeRootViewModel: PushNotificationHandling {
         case "coupon": return "coupons"
         case "stamp": return "stamps"
         case "reservation": return "reservations"
+        case "store", "stores": return "storeSearch"
         default: return key
         }
     }
