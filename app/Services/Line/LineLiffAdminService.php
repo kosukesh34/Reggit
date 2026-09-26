@@ -34,7 +34,7 @@ class LineLiffAdminService
 
         $token = trim((string) ($channelAccessToken ?? ''));
         if ($token === '') {
-            $token = trim((string) (config('line.channel_access_token') ?: env('LINE_CHANNEL_ACCESS_TOKEN', '')));
+            $token = trim((string) config('line.channel_access_token', ''));
         }
         if (StrHelper::isEmptyStringOrNull($token)) {
             LogHelper::warning('[LINE LIFF] skip module mode: channel access token is not configured', [

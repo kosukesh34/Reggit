@@ -567,7 +567,7 @@ class ShopSettingStore
             return $value;
         }
 
-        return trim((string) (config('line.channel_access_token') ?: env('LINE_CHANNEL_ACCESS_TOKEN', '')));
+        return trim((string) config('line.channel_access_token', ''));
     }
 
     public static function setLineChannelAccessToken(?string $token, ?int $projectId = null): void
@@ -586,7 +586,7 @@ class ShopSettingStore
             return $value;
         }
 
-        return trim((string) (config('line.channel_secret') ?: env('LINE_CHANNEL_SECRET', '')));
+        return trim((string) config('line.channel_secret', ''));
     }
 
     public static function setLineChannelSecret(?string $secret, ?int $projectId = null): void

@@ -55,8 +55,10 @@ class AdminWalletSettingsUploadTest extends TestCase
         Storage::fake('public');
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        $logo = UploadedFile::fake()->image('program.png', 120, 120);
-        $hero = UploadedFile::fake()->image('hero.jpg', 320, 200);
+        // このテストは画像のピクセル処理ではなく、画像ファイルの受付・保存を検証する。
+        // GD拡張に依存する fake()->image() は避け、MIME付きのモックファイルを使う。
+        $logo = UploadedFile::fake()->create('program.png', 10, 'image/png');
+        $hero = UploadedFile::fake()->create('hero.jpg', 10, 'image/jpeg');
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.wallet.update', ['project_key' => $project->project_key]), [
