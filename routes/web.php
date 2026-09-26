@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\QueueController as AdminQueueController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
+use App\Http\Controllers\Admin\ReservationStatusController;
 use App\Http\Controllers\Admin\RfmController as AdminRfmController;
 use App\Http\Controllers\Admin\Settings\AdvancedController as SettingsAdvancedController;
 use App\Http\Controllers\Admin\Settings\AnnouncementsController;
@@ -270,8 +271,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/reservations/{id}/edit', [AdminReservationController::class, 'editReservation'])->name('admin.reservations.edit')->middleware('admin.permission:reservations.update');
         Route::put('/reservations/{id}', [AdminReservationController::class, 'updateReservation'])->name('admin.reservations.update')->middleware('admin.permission:reservations.update');
         Route::delete('/reservations/{id}', [AdminReservationController::class, 'destroyReservation'])->name('admin.reservations.destroy')->middleware('admin.permission:reservations.update');
-        Route::post('/reservations/{id}/status', [AdminReservationController::class, 'updateReservationStatus'])->name('admin.reservations.status')->middleware('admin.permission:reservations.update');
-        Route::post('/reservations/{id}/complete', [AdminReservationController::class, 'completeReservation'])->name('admin.reservations.complete')->middleware('admin.permission:reservations.update');
+        Route::post('/reservations/{id}/status', [ReservationStatusController::class, 'update'])->name('admin.reservations.status')->middleware('admin.permission:reservations.update');
+        Route::post('/reservations/{id}/complete', [ReservationStatusController::class, 'complete'])->name('admin.reservations.complete')->middleware('admin.permission:reservations.update');
 
         Route::get('/stamps', [AdminStampController::class, 'stamps'])->name('admin.stamps')->middleware('admin.permission:stamps.view');
         Route::get('/stamps/create', [AdminStampController::class, 'createStamp'])->name('admin.stamps.create')->middleware('admin.permission:stamps.manage');
