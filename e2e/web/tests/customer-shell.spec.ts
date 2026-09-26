@@ -86,20 +86,12 @@ test.describe('顧客向けシェル（LINE LIFF）', () => {
     await expect(page.getByRole('navigation', { name: '主要ナビゲーション' }).getByRole('link').first()).toBeVisible();
   });
 
-  test('デモ画面で店舗デザインを切り替えられる', async ({ page }) => {
+  test('顧客画面に他店舗への切り替え UI を公開しない', async ({ page }) => {
     await gotoLiff(page, `${liffPath}#/home`);
     await expectAppShell(page);
-    const switcher = page.getByRole('button', { name: '店舗を切り替える' });
-    await expect(switcher).toBeVisible({ timeout: 30_000 });
-    await switcher.click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-    const options = page.locator('.store-switcher');
-    await expect(options.first()).toBeVisible();
-    const count = await options.count();
-    expect(count).toBeGreaterThan(1);
-    await options.nth(1).getByRole('button', { name: '切り替え' }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.locator('.app-shell')).toBeVisible();
+    await expect(page.getByRole('button', { name: '店舗を切り替える' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'デザインを選ぶ' })).toHaveCount(0);
+    await expect(page.locator('.store-switcher, .design-picker')).toHaveCount(0);
   });
 
   test('デザインプリセット用の配置CSSが読み込まれる', async ({ page }) => {
@@ -168,16 +160,16 @@ test.describe('顧客向けシェル（LINE LIFF）', () => {
     await expect(page.locator('[data-lottery-section="scratch"], .pp-scratch').first()).toBeVisible();
   });
 
-  test('ガチャ UI が demo=1 なしでも表示される', async ({ page }) => {
+  test('通常の店舗画面では無効な抽選 UI を公開しない', async ({ page }) => {
     await gotoLiff(page, `${liffPath}#/designlab`);
     await expectAppShell(page);
-    await expectGachaStyled(page);
-    await expect(page.locator('.pp-roulette').first()).toBeVisible();
+    await expect(page.getByText('現在あそべるコンテンツはありません')).toBeVisible();
+    await expect(page.locator('.pp-gacha, .pp-scratch, .pp-roulette')).toHaveCount(0);
     await expect(page.locator('#designWonList')).toHaveCount(0);
   });
 
-  test('その他にガチャ・スクラッチ・ルーレット導線がある', async ({ page }) => {
-    await gotoLiff(page, `${liffPath}#/more`);
+  test('デモのその他画面にガチャ・スクラッチ・ルーレット導線がある', async ({ page }) => {
+    await gotoLiff(page, `${liffPath}?demo=1#/more`);
     await expectAppShell(page);
     await expect(page.getByRole('link', { name: 'ガチャ' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'スクラッチ' })).toBeVisible();
