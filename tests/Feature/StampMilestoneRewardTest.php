@@ -15,7 +15,7 @@ use App\Models\MemberLotteryEntitlement;
 use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\User;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use App\Services\CouponIssueService;
 use App\Services\Smaregi\SmaregiInboundAwardApplier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,7 +36,7 @@ class StampMilestoneRewardTest extends TestCase
     {
         [$member, $card, $coupon] = $this->createRewardFixtures();
 
-        resolve(MemberAdminService::class)->addStampsToMember($member, (int) $card->id, 10);
+        resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 10);
 
         $this->assertDatabaseHas('member_coupons', [
             'project_id' => $member->project_id,
@@ -57,7 +57,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_同じマイルストーンではクーポンとガチャを再付与しないこと(): void
     {
         [$member, $card] = $this->createRewardFixtures();
-        $service = resolve(MemberAdminService::class);
+        $service = resolve(MemberBenefitService::class);
         $service->addStampsToMember($member, (int) $card->id, 10);
         $service->adjustStampsToMember($member, (int) $card->id, -5, '減算');
         $service->addStampsToMember($member, (int) $card->id, 5);
@@ -69,11 +69,11 @@ class StampMilestoneRewardTest extends TestCase
     public function test_減算では特典を付与しないこと(): void
     {
         [$member, $card] = $this->createRewardFixtures();
-        resolve(MemberAdminService::class)->addStampsToMember($member, (int) $card->id, 10);
+        resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 10);
         MemberCoupon::query()->delete();
         MemberLotteryEntitlement::query()->delete();
 
-        resolve(MemberAdminService::class)->adjustStampsToMember($member, (int) $card->id, -3, '減算');
+        resolve(MemberBenefitService::class)->adjustStampsToMember($member, (int) $card->id, -3, '減算');
 
         $this->assertSame(0, MemberCoupon::query()->count());
         $this->assertSame(0, MemberLotteryEntitlement::query()->count());
@@ -97,7 +97,7 @@ class StampMilestoneRewardTest extends TestCase
             ],
         ]);
 
-        resolve(MemberAdminService::class)->addStampsToMember($member, (int) $card->id, 5);
+        resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 5);
 
         $this->assertSame(0, MemberCoupon::query()->count());
         $this->assertSame(0, MemberLotteryEntitlement::query()->count());
@@ -106,7 +106,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_未使用の達成クーポンは取引キャンセルで取り消され再付与できること(): void
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
-        $service = resolve(MemberAdminService::class);
+        $service = resolve(MemberBenefitService::class);
         $service->addStampsToMember($member, (int) $card->id, 9);
         $service->addStampsToMember(
             $member,
@@ -157,7 +157,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_使用済みの達成クーポンは取引キャンセルで残ること(): void
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
-        $service = resolve(MemberAdminService::class);
+        $service = resolve(MemberBenefitService::class);
         $service->addStampsToMember($member, (int) $card->id, 9);
         $service->addStampsToMember(
             $member,
@@ -191,7 +191,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_他取引の未使用クーポンは取り消さないこと(): void
     {
         [$member, $card] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
-        resolve(MemberAdminService::class)->addStampsToMember(
+        resolve(MemberBenefitService::class)->addStampsToMember(
             $member,
             (int) $card->id,
             10,
@@ -214,7 +214,7 @@ class StampMilestoneRewardTest extends TestCase
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
         ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $member->project_id);
-        resolve(MemberAdminService::class)->addStampsToMember($member, (int) $card->id, 9);
+        resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 9);
 
         $applier = resolve(SmaregiInboundAwardApplier::class);
         $applier->awardForPurchase($member, 500, '39', true);
@@ -234,7 +234,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_繰り返すカードは周ごとにクーポンを配布すること(): void
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
-        $service = resolve(MemberAdminService::class);
+        $service = resolve(MemberBenefitService::class);
         $service->addStampsToMember(
             $member,
             (int) $card->id,
@@ -265,7 +265,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_複数取引のうちキャンセルした取引の未使用クーポンだけ取り消すこと(): void
     {
         [$member, $card] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
-        $service = resolve(MemberAdminService::class);
+        $service = resolve(MemberBenefitService::class);
         $service->addStampsToMember(
             $member,
             (int) $card->id,
@@ -303,7 +303,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_1取引で複数周した場合は周の数だけ配布しキャンセルで未使用をまとめて取り消すこと(): void
     {
         [$member, $card] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
-        resolve(MemberAdminService::class)->addStampsToMember(
+        resolve(MemberBenefitService::class)->addStampsToMember(
             $member,
             (int) $card->id,
             20,
@@ -331,7 +331,7 @@ class StampMilestoneRewardTest extends TestCase
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
         ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $member->project_id);
-        resolve(MemberAdminService::class)->addStampsToMember($member, (int) $card->id, 9);
+        resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 9);
 
         $applier = resolve(SmaregiInboundAwardApplier::class);
         $applier->awardForPurchase($member, 500, '39', true);

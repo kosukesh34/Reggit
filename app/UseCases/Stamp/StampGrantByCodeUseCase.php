@@ -7,7 +7,7 @@ use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampGrantCode;
 use App\Models\StampGrantRedemption;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use App\Services\MemberRankSyncService;
 use App\UseCases\Stamp\Data\StampGrantByCodeInput;
 use App\UseCases\Stamp\Data\StampGrantOutput;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 class StampGrantByCodeUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberBenefitService $memberBenefitService,
         private StampGrantOutcomeMapper $outcomeMapper,
         private ShopSettingRepository $shopSettingRepository,
         private MemberRankSyncService $memberRankSyncService,
@@ -76,7 +76,7 @@ class StampGrantByCodeUseCase
         }
 
         $amount = StampGrantLimit::normalizeAmount((int) $code->amount);
-        $memberStamp = $this->memberAdminService->addStampsToMember(
+        $memberStamp = $this->memberBenefitService->addStampsToMember(
             $member,
             (int) $card->id,
             $amount,

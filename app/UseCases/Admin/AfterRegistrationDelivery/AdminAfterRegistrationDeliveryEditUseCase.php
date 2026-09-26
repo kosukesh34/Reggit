@@ -4,14 +4,14 @@ namespace App\UseCases\Admin\AfterRegistrationDelivery;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Services\Admin\AfterRegistrationDeliveryAdminService;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\CouponAdminService;
 use App\UseCases\Admin\AfterRegistrationDelivery\Data\AfterRegistrationDeliveryFormView;
 
 class AdminAfterRegistrationDeliveryEditUseCase
 {
     public function __construct(
         private AfterRegistrationDeliveryAdminService $service,
-        private MemberAdminService $memberAdminService,
+        private CouponAdminService $couponAdminService,
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
@@ -29,7 +29,7 @@ class AdminAfterRegistrationDeliveryEditUseCase
         }
 
         return new AfterRegistrationDeliveryFormView(
-            $this->memberAdminService->getActiveCouponsForSelect($projectId),
+            $this->couponAdminService->getActiveCouponsForSelect($projectId),
             $rankOptions,
             $this->service->findOrFail($projectId, $id),
         );

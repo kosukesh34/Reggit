@@ -29,6 +29,7 @@ use App\Models\MemberVisit;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\Stamp\MemberCurrentStampCardResolver;
 use App\Util\AdminContext;
@@ -41,6 +42,7 @@ class OrderService
 
     public function __construct(
         private MemberAdminService $memberAdminService,
+        private MemberBenefitService $memberBenefitService,
         private MemberRepository $memberRepository,
         private OrderRepository $orderRepository,
         private ProductStockRepository $productStockRepository,
@@ -388,7 +390,7 @@ class OrderService
 
         $stampCount = $this->stampEarnPolicy->calculateCount($finalAmount, $stampEarnPerAmount);
         if ($stampCount > 0) {
-            $this->memberAdminService->addStampsToMember(
+            $this->memberBenefitService->addStampsToMember(
                 $member,
                 (int) $stampCard->id,
                 $stampCount,
