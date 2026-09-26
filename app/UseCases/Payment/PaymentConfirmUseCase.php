@@ -7,7 +7,6 @@ use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
-use App\Enums\OrderStatus;
 use App\Enums\PaymentIntentStatus;
 use App\Models\Order;
 use App\Services\OrderNumberAssigner;
@@ -84,7 +83,7 @@ class PaymentConfirmUseCase
             $this->orderService->applyStripePaymentRewardsIfNeeded($order);
 
             // フロント決済完了経路では即時スマレジ同期（Webhook 遅延より先に送る）
-            if ($this->shouldRequestPointsSync($aggregate->status(), $aggregate->isCancelled())) {
+            if ($aggregate->shouldSyncToSmaregi()) {
                 $pointsSyncEvent = new OrderPointsSyncRequested(
                     $aggregate->id()->value(),
                     $aggregate->projectId(),
@@ -116,14 +115,5 @@ class PaymentConfirmUseCase
         }
 
         return $output;
-    }
-
-    private function shouldRequestPointsSync(string $status, bool $isCancelled): bool
-    {
-        if ($isCancelled) {
-            return false;
-        }
-
-        return $status !== OrderStatus::PENDING;
     }
 }
