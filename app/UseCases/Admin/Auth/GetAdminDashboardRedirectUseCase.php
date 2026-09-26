@@ -3,7 +3,7 @@
 namespace App\UseCases\Admin\Auth;
 
 use App\Services\Admin\AdminAuthService;
-use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
+use App\Services\Admin\Data\AdminRedirectResult;
 
 class GetAdminDashboardRedirectUseCase
 {

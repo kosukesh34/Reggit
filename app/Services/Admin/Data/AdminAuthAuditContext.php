@@ -1,6 +1,6 @@
 <?php
 
-namespace App\UseCases\Admin\Auth\Data;
+namespace App\Services\Admin\Data;
 
 final class AdminAuthAuditContext
 {

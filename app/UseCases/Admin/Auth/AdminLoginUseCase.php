@@ -3,8 +3,8 @@
 namespace App\UseCases\Admin\Auth;
 
 use App\Services\Admin\AdminAuthService;
-use App\UseCases\Admin\Auth\Data\AdminLoginInput;
-use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
+use App\Services\Admin\Data\AdminLoginInput;
+use App\Services\Admin\Data\AdminRedirectResult;
 
 class AdminLoginUseCase
 {
