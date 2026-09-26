@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AfterRegistrationDeliveryController as AdminAfter
 use App\Http\Controllers\Admin\AnalysisDeliveryController as AdminAnalysisDeliveryController;
 use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
+use App\Http\Controllers\Admin\AnnouncementDeliveryController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\Auth\AdminLoginController;
 use App\Http\Controllers\Admin\Auth\LogoutController;
@@ -302,11 +303,11 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
         Route::get('/announcements', [AdminAnnouncementController::class, 'announcements'])->name('admin.announcements')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/create', [AdminAnnouncementController::class, 'createAnnouncement'])->name('admin.announcements.create')->middleware('admin.permission:announcements.manage');
-        Route::get('/announcements/delivery', [AdminAnnouncementController::class, 'createDelivery'])->name('admin.announcements.delivery.create')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
-        Route::post('/announcements/delivery', [AdminAnnouncementController::class, 'storeDelivery'])->name('admin.announcements.delivery.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
-        Route::get('/announcements/ajax/members', [AdminAnnouncementController::class, 'searchMembers'])->name('admin.announcements.ajax.members')->middleware('admin.permission:announcements.view');
-        Route::get('/announcements/segment-preview', [AdminAnnouncementController::class, 'segmentPreview'])->name('admin.announcements.segment.preview')->middleware('admin.permission:announcements.view');
-        Route::get('/announcements/audience-preview', [AdminAnnouncementController::class, 'audiencePreview'])->name('admin.announcements.audience.preview')->middleware('admin.permission:announcements.view');
+        Route::get('/announcements/delivery', [AnnouncementDeliveryController::class, 'create'])->name('admin.announcements.delivery.create')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
+        Route::post('/announcements/delivery', [AnnouncementDeliveryController::class, 'store'])->name('admin.announcements.delivery.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
+        Route::get('/announcements/ajax/members', [AnnouncementDeliveryController::class, 'searchMembers'])->name('admin.announcements.ajax.members')->middleware('admin.permission:announcements.view');
+        Route::get('/announcements/segment-preview', [AnnouncementDeliveryController::class, 'segmentPreview'])->name('admin.announcements.segment.preview')->middleware('admin.permission:announcements.view');
+        Route::get('/announcements/audience-preview', [AnnouncementDeliveryController::class, 'audiencePreview'])->name('admin.announcements.audience.preview')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/{id}/reads', [AdminAnnouncementController::class, 'announcementReads'])->name('admin.announcements.reads')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/{id}/edit', [AdminAnnouncementController::class, 'editAnnouncement'])->name('admin.announcements.edit')->middleware('admin.permission:announcements.manage');
         Route::put('/announcements/{id}', [AdminAnnouncementController::class, 'updateAnnouncement'])->name('admin.announcements.update')->middleware('admin.permission:announcements.manage');
