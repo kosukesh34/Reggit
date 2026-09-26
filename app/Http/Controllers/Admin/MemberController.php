@@ -6,45 +6,20 @@ use App\Http\Requests\Admin\MemberUpdateRequest;
 use App\UseCases\Admin\Member\AdminMemberDeleteUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
 use App\UseCases\Admin\Member\AdminMemberEditUseCase;
-use App\UseCases\Admin\Member\AdminMemberExportUseCase;
-use App\UseCases\Admin\Member\AdminMemberListUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
-use App\UseCases\Admin\Member\Data\AdminMemberListView;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
-use App\UseCases\Admin\Member\GetAdminMemberListExtrasUseCase;
 use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class MemberController extends AdminBaseController
 {
     public function __construct(
-        private AdminMemberListUseCase $listUseCase,
         private AdminMemberDetailUseCase $detailUseCase,
         private AdminMemberEditUseCase $editUseCase,
         private AdminMemberUpdateUseCase $updateUseCase,
         private AdminMemberDeleteUseCase $deleteUseCase,
-        private AdminMemberExportUseCase $exportUseCase,
         private AdminMemberTagIndexUseCase $tagIndexUseCase,
-        private GetAdminMemberListExtrasUseCase $memberListExtrasUseCase,
     ) {}
-
-    public function members(Request $request)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $filters = $request->only(['keyword', 'rank', 'channel', 'tag_id', 'visited_from', 'visited_to', 'sort', 'dir']);
-        $output = $this->listUseCase->handle($projectId, $filters);
-        $extras = $this->memberListExtrasUseCase->handle($projectId);
-
-        return view('admin.members', ['view' => new AdminMemberListView(
-            $output->members,
-            $filters,
-            $extras->lineInviteUrl,
-            $extras->lineInviteLabel,
-            $output->rankOptions,
-            $this->tagIndexUseCase->handle($projectId),
-        )]);
-    }
 
     public function memberDetail(Request $request, string $project_key, int $id)
     {
@@ -127,29 +102,5 @@ class MemberController extends AdminBaseController
 
         return redirect()->route('admin.members', $this->buildAdminRouteParams())
             ->with('success', '会員を削除しました');
-    }
-
-    /** 会員一覧CSVエクスポート */
-    public function export(Request $request)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $filters = $request->only(['keyword', 'rank', 'channel', 'tag_id', 'visited_from', 'visited_to', 'sort', 'dir']);
-        $rows = $this->exportUseCase->handle($projectId, $filters);
-
-        $csvHeader = array_keys($rows->first() ?? []);
-        $callback = function () use ($rows, $csvHeader): void {
-            $out = fopen('php://output', 'w');
-            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($out, $csvHeader);
-            foreach ($rows as $row) {
-                fputcsv($out, $row);
-            }
-            fclose($out);
-        };
-
-        return response()->stream($callback, Response::HTTP_OK, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="members_'.now()->format('Ymd_His').'.csv"',
-        ]);
     }
 }
