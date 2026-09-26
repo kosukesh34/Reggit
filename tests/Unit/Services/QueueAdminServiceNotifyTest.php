@@ -50,7 +50,7 @@ class QueueAdminServiceNotifyTest extends TestCase
         UserDevice::query()->create([
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'push_token' => 'onesignal-sub-queue-call',
+            'push_token' => 'fcm-token-queue-call',
             'platform' => 'ios',
         ]);
         $entry = QueueEntry::factory()->create([

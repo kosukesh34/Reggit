@@ -18,7 +18,7 @@
 		499CD4402AC5B799001AE8D8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49F90C2F2A52156300F06D93 /* Assets.xcassets */; };
 		49A001012F01000000000001 /* AppleWalletPassAddHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A001002F01000000000001 /* AppleWalletPassAddHelper.swift */; };
 		49A002012F02000000000001 /* NativeAppURLHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A002002F02000000000001 /* NativeAppURLHandler.swift */; };
-		BE26A638EB0F11C71DCC2239 /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 86A764DD0DDF76194EB5120B /* OneSignalNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		BE26A638EB0F11C71DCC2239 /* ReggitNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 86A764DD0DDF76194EB5120B /* ReggitNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F92AE356670C2E844842AF44 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 36FA31182FC72B45177D75A8 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
@@ -28,7 +28,7 @@
 			containerPortal = 49F90C202A52156200F06D93 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 632D344E3981C97F63FE903F;
-			remoteInfo = OneSignalNotificationServiceExtension;
+			remoteInfo = ReggitNotificationServiceExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -50,7 +50,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				BE26A638EB0F11C71DCC2239 /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */,
+				BE26A638EB0F11C71DCC2239 /* ReggitNotificationServiceExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -74,7 +74,7 @@
 		49A002002F02000000000001 /* NativeAppURLHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NativeAppURLHandler.swift; path = Sources/NativeAppURLHandler.swift; sourceTree = SOURCE_ROOT; };
 		5011DED8D6119BC39F651B3A /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		548F733AEA816F0B3C7D77D6 /* NotificationService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
-		86A764DD0DDF76194EB5120B /* OneSignalNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OneSignalNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		86A764DD0DDF76194EB5120B /* ReggitNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ReggitNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C71EEB8CE08C8E60DDEE5949 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
@@ -104,7 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				496BDBEB2B89A47800C09264 /* Reggit.app */,
-				86A764DD0DDF76194EB5120B /* OneSignalNotificationServiceExtension.appex */,
+				86A764DD0DDF76194EB5120B /* ReggitNotificationServiceExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -129,7 +129,7 @@
 				49AB54462B066A7E007B79B2 /* SkipStone */,
 				496BDBEC2B89A47800C09264 /* Products */,
 				DF1ABDB49D4BDDCCF52BC629 /* Frameworks */,
-				8116D8B161BFB2BD44697ABC /* OneSignalNotificationServiceExtension */,
+				8116D8B161BFB2BD44697ABC /* ReggitNotificationServiceExtension */,
 			);
 			sourceTree = "<group>";
 		};
@@ -147,14 +147,14 @@
 			name = App;
 			sourceTree = "<group>";
 		};
-		8116D8B161BFB2BD44697ABC /* OneSignalNotificationServiceExtension */ = {
+		8116D8B161BFB2BD44697ABC /* ReggitNotificationServiceExtension */ = {
 			isa = PBXGroup;
 			children = (
 				548F733AEA816F0B3C7D77D6 /* NotificationService.swift */,
 				5011DED8D6119BC39F651B3A /* Info.plist */,
 			);
-			name = OneSignalNotificationServiceExtension;
-			path = OneSignalNotificationServiceExtension;
+			name = ReggitNotificationServiceExtension;
+			path = ReggitNotificationServiceExtension;
 			sourceTree = "<group>";
 		};
 		948DB6AECC702B2C7BE9E0CF /* iOS */ = {
@@ -202,9 +202,9 @@
 			productReference = 496BDBEB2B89A47800C09264 /* Reggit.app */;
 			productType = "com.apple.product-type.application";
 		};
-		632D344E3981C97F63FE903F /* OneSignalNotificationServiceExtension */ = {
+		632D344E3981C97F63FE903F /* ReggitNotificationServiceExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA74FCDFE28FD590A6981E93 /* Build configuration list for PBXNativeTarget "OneSignalNotificationServiceExtension" */;
+			buildConfigurationList = AA74FCDFE28FD590A6981E93 /* Build configuration list for PBXNativeTarget "ReggitNotificationServiceExtension" */;
 			buildPhases = (
 				3D6C0E44804EDEC970F57134 /* Sources */,
 				B25DBA4113179D570999D734 /* Frameworks */,
@@ -214,11 +214,11 @@
 			);
 			dependencies = (
 			);
-			name = OneSignalNotificationServiceExtension;
+			name = ReggitNotificationServiceExtension;
 			packageProductDependencies = (
 			);
-			productName = OneSignalNotificationServiceExtension;
-			productReference = 86A764DD0DDF76194EB5120B /* OneSignalNotificationServiceExtension.appex */;
+			productName = ReggitNotificationServiceExtension;
+			productReference = 86A764DD0DDF76194EB5120B /* ReggitNotificationServiceExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -261,7 +261,7 @@
 			projectRoot = "";
 			targets = (
 				499CD4382AC5B799001AE8D8 /* Reggit App */,
-				632D344E3981C97F63FE903F /* OneSignalNotificationServiceExtension */,
+				632D344E3981C97F63FE903F /* ReggitNotificationServiceExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -332,8 +332,8 @@
 /* Begin PBXTargetDependency section */
 		6A8E71A2C84617FAAE101E39 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			name = OneSignalNotificationServiceExtension;
-			target = 632D344E3981C97F63FE903F /* OneSignalNotificationServiceExtension */;
+			name = ReggitNotificationServiceExtension;
+			target = 632D344E3981C97F63FE903F /* ReggitNotificationServiceExtension */;
 			targetProxy = 32CD1670A64098407515EA46 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -347,7 +347,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = T29T2L39T5;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = OneSignalNotificationServiceExtension/Info.plist;
+				INFOPLIST_FILE = ReggitNotificationServiceExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -358,8 +358,8 @@
 				OTHER_LDFLAGS = (
 					"-ObjC",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.reggit.default.OneSignalNotificationServiceExtension;
-				PRODUCT_NAME = OneSignalNotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.reggit.default.ReggitNotificationServiceExtension;
+				PRODUCT_NAME = ReggitNotificationServiceExtension;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -443,7 +443,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = T29T2L39T5;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = OneSignalNotificationServiceExtension/Info.plist;
+				INFOPLIST_FILE = ReggitNotificationServiceExtension/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -454,8 +454,8 @@
 				OTHER_LDFLAGS = (
 					"-ObjC",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.reggit.default.OneSignalNotificationServiceExtension;
-				PRODUCT_NAME = OneSignalNotificationServiceExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.reggit.default.ReggitNotificationServiceExtension;
+				PRODUCT_NAME = ReggitNotificationServiceExtension;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -487,7 +487,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA74FCDFE28FD590A6981E93 /* Build configuration list for PBXNativeTarget "OneSignalNotificationServiceExtension" */ = {
+		AA74FCDFE28FD590A6981E93 /* Build configuration list for PBXNativeTarget "ReggitNotificationServiceExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1D87305BD7E8FC85C9B6E49 /* Release */,

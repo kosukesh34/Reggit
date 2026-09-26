@@ -85,7 +85,7 @@ class CouponNotificationTest extends TestCase
         UserDevice::query()->create([
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'push_token' => 'onesignal-subscription-id-test',
+            'push_token' => 'fcm-registration-token-test',
             'platform' => 'ios',
         ]);
 
@@ -291,7 +291,7 @@ class CouponNotificationTest extends TestCase
         UserDevice::query()->create([
             'project_id' => $project->id,
             'user_id' => $user->id,
-            'push_token' => 'onesignal-subscription-id-test',
+            'push_token' => 'fcm-registration-token-test',
             'platform' => 'ios',
         ]);
 

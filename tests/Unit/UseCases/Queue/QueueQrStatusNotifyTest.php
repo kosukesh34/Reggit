@@ -101,7 +101,7 @@ class QueueQrStatusNotifyTest extends TestCase
             'project_id' => $project->id,
             'user_id' => $user->id,
             'device_identifier' => 'native-device-notify-1',
-            'push_token' => 'onesignal-sub-queue-link',
+            'push_token' => 'fcm-token-queue-link',
             'platform' => 'ios',
         ]);
         $entry = QueueEntry::factory()->create([
