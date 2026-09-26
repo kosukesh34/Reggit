@@ -54,6 +54,7 @@ use App\Http\Controllers\Admin\Settings\ReservationsController;
 use App\Http\Controllers\Admin\Settings\StaffController as SettingsStaffController;
 use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
+use App\Http\Controllers\Admin\StampGrantQrController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\Admin\SystemHelpArticleController;
 use App\Http\Controllers\ExistingMemberLinkConfirmController;
@@ -277,8 +278,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
         Route::get('/stamps', [AdminStampController::class, 'stamps'])->name('admin.stamps')->middleware('admin.permission:stamps.view');
         Route::get('/stamps/create', [AdminStampController::class, 'createStamp'])->name('admin.stamps.create')->middleware('admin.permission:stamps.manage');
-        Route::get('/stamps/{id}/grant-qr', [AdminStampController::class, 'grantQr'])->name('admin.stamps.grant-qr')->middleware('admin.permission:stamps.manage');
-        Route::post('/stamps/{id}/grant-qr', [AdminStampController::class, 'storeGrantQr'])->name('admin.stamps.grant-qr.store')->middleware('admin.permission:stamps.manage');
+        Route::get('/stamps/{id}/grant-qr', [StampGrantQrController::class, 'show'])->name('admin.stamps.grant-qr')->middleware('admin.permission:stamps.manage');
+        Route::post('/stamps/{id}/grant-qr', [StampGrantQrController::class, 'store'])->name('admin.stamps.grant-qr.store')->middleware('admin.permission:stamps.manage');
         Route::post('/stamps', [AdminStampController::class, 'storeStamp'])->name('admin.stamps.store')->middleware('admin.permission:stamps.manage');
         Route::get('/stamps/{id}/edit', [AdminStampController::class, 'editStamp'])->name('admin.stamps.edit')->middleware('admin.permission:stamps.manage');
         Route::put('/stamps/{id}', [AdminStampController::class, 'updateStamp'])->name('admin.stamps.update')->middleware('admin.permission:stamps.manage');
