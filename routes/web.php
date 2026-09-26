@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Account\AccountIndexController;
 use App\Http\Controllers\Admin\Account\AccountStoreController;
 use App\Http\Controllers\Admin\Account\AccountUpdateController;
 use App\Http\Controllers\Admin\AfterRegistrationDeliveryController as AdminAfterRegistrationDeliveryController;
+use App\Http\Controllers\Admin\AfterRegistrationDeliveryMutationController;
 use App\Http\Controllers\Admin\AnalysisDeliveryController as AdminAnalysisDeliveryController;
 use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Admin\Auth\SystemAdminLoginController;
 use App\Http\Controllers\Admin\CouponBulkIssueController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CouponDeliveryController;
+use App\Http\Controllers\Admin\CouponMutationController;
 use App\Http\Controllers\Admin\CouponSmaregiSyncController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryController;
@@ -24,6 +26,7 @@ use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
 use App\Http\Controllers\Admin\HelpController as AdminHelpController;
 use App\Http\Controllers\Admin\MailTestController;
 use App\Http\Controllers\Admin\MemberActivityController as AdminMemberActivityController;
+use App\Http\Controllers\Admin\MemberBenefitController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
 use App\Http\Controllers\Admin\MemberHistoryController;
 use App\Http\Controllers\Admin\MemberIndexController;
@@ -256,9 +259,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/members/{id}', [AdminMemberController::class, 'memberDetail'])->name('admin.members.detail')->middleware('admin.permission:members.view');
         Route::put('/members/{id}', [AdminMemberController::class, 'updateMember'])->name('admin.members.update')->middleware('admin.permission:members.manage');
         Route::delete('/members/{id}', [AdminMemberController::class, 'deleteMember'])->name('admin.members.delete')->middleware('admin.permission:members.manage');
-        Route::post('/members/{id}/issue-coupon', [AdminMemberActivityController::class, 'issueCoupon'])->name('admin.members.issue-coupon')->middleware('admin.permission:members.manage');
-        Route::delete('/members/{id}/coupons/{memberCouponId}', [AdminMemberActivityController::class, 'deleteCoupon'])->name('admin.members.delete-coupon')->middleware('admin.permission:members.manage');
-        Route::post('/members/{id}/adjust-stamps', [AdminMemberActivityController::class, 'adjustStamps'])->name('admin.members.adjust-stamps')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/issue-coupon', [MemberBenefitController::class, 'issueCoupon'])->name('admin.members.issue-coupon')->middleware('admin.permission:members.manage');
+        Route::delete('/members/{id}/coupons/{memberCouponId}', [MemberBenefitController::class, 'deleteCoupon'])->name('admin.members.delete-coupon')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/adjust-stamps', [MemberBenefitController::class, 'adjustStamps'])->name('admin.members.adjust-stamps')->middleware('admin.permission:members.manage');
         Route::post('/members/{id}/visits', [AdminMemberActivityController::class, 'recordVisit'])->name('admin.members.record-visit')->middleware('admin.permission:members.manage');
         Route::post('/members/{id}/tags', [AdminMemberActivityController::class, 'attachTag'])->name('admin.members.tags.attach')->middleware('admin.permission:members.manage');
         Route::delete('/members/{id}/tags/{tagId}', [AdminMemberActivityController::class, 'detachTag'])->name('admin.members.tags.detach')->middleware('admin.permission:members.manage');
@@ -289,7 +292,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
         Route::get('/coupons', [AdminCouponController::class, 'coupons'])->name('admin.coupons')->middleware('admin.permission:coupons.view');
         Route::get('/coupons/create', [AdminCouponController::class, 'createCoupon'])->name('admin.coupons.create')->middleware('admin.permission:coupons.manage');
-        Route::post('/coupons', [AdminCouponController::class, 'storeCoupon'])->name('admin.coupons.store')->middleware('admin.permission:coupons.manage');
+        Route::post('/coupons', [CouponMutationController::class, 'store'])->name('admin.coupons.store')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/bulk-issue', [CouponBulkIssueController::class, 'create'])->name('admin.coupons.bulk-issue')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/bulk-issue', [CouponBulkIssueController::class, 'store'])->name('admin.coupons.bulk-issue.store')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/quick-create', [CouponBulkIssueController::class, 'quickCreate'])->name('admin.coupons.quick-create')->middleware('admin.permission:coupons.manage');
@@ -304,8 +307,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/coupons/deliveries/{id}', [CouponDeliveryController::class, 'show'])->name('admin.coupons.deliveries.show')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/{id}/edit', [AdminCouponController::class, 'editCoupon'])->name('admin.coupons.edit')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/{id}/redemptions', [AdminCouponController::class, 'couponRedemptions'])->name('admin.coupons.redemptions')->middleware('admin.permission:coupons.view');
-        Route::put('/coupons/{id}', [AdminCouponController::class, 'updateCoupon'])->name('admin.coupons.update')->middleware('admin.permission:coupons.manage');
-        Route::delete('/coupons/{id}', [AdminCouponController::class, 'deleteCoupon'])->name('admin.coupons.delete')->middleware('admin.permission:coupons.manage');
+        Route::put('/coupons/{id}', [CouponMutationController::class, 'update'])->name('admin.coupons.update')->middleware('admin.permission:coupons.manage');
+        Route::delete('/coupons/{id}', [CouponMutationController::class, 'destroy'])->name('admin.coupons.delete')->middleware('admin.permission:coupons.manage');
 
         Route::get('/announcements', [AdminAnnouncementController::class, 'announcements'])->name('admin.announcements')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/create', [AdminAnnouncementController::class, 'createAnnouncement'])->name('admin.announcements.create')->middleware('admin.permission:announcements.manage');
@@ -321,10 +324,10 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
         Route::get('/after-registration-deliveries', [AdminAfterRegistrationDeliveryController::class, 'index'])->name('admin.after-registration-deliveries.index')->middleware('admin.permission:announcements.view');
         Route::get('/after-registration-deliveries/create', [AdminAfterRegistrationDeliveryController::class, 'create'])->name('admin.after-registration-deliveries.create')->middleware('admin.permission:announcements.manage');
-        Route::post('/after-registration-deliveries', [AdminAfterRegistrationDeliveryController::class, 'store'])->name('admin.after-registration-deliveries.store')->middleware('admin.permission:announcements.manage');
+        Route::post('/after-registration-deliveries', [AfterRegistrationDeliveryMutationController::class, 'store'])->name('admin.after-registration-deliveries.store')->middleware('admin.permission:announcements.manage');
         Route::get('/after-registration-deliveries/{id}/edit', [AdminAfterRegistrationDeliveryController::class, 'edit'])->name('admin.after-registration-deliveries.edit')->middleware('admin.permission:announcements.manage');
-        Route::put('/after-registration-deliveries/{id}', [AdminAfterRegistrationDeliveryController::class, 'update'])->name('admin.after-registration-deliveries.update')->middleware('admin.permission:announcements.manage');
-        Route::delete('/after-registration-deliveries/{id}', [AdminAfterRegistrationDeliveryController::class, 'destroy'])->name('admin.after-registration-deliveries.destroy')->middleware('admin.permission:announcements.manage');
+        Route::put('/after-registration-deliveries/{id}', [AfterRegistrationDeliveryMutationController::class, 'update'])->name('admin.after-registration-deliveries.update')->middleware('admin.permission:announcements.manage');
+        Route::delete('/after-registration-deliveries/{id}', [AfterRegistrationDeliveryMutationController::class, 'destroy'])->name('admin.after-registration-deliveries.destroy')->middleware('admin.permission:announcements.manage');
 
         Route::get('/queue', [AdminQueueController::class, 'queue'])->name('admin.queue')->middleware('admin.permission:queue.view');
         Route::post('/queue/{id}/status', [AdminQueueController::class, 'updateQueueStatus'])->name('admin.queue.status')->middleware('admin.permission:queue.update');
