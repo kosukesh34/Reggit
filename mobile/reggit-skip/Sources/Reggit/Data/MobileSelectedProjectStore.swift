@@ -1,21 +1,5 @@
 import Foundation
 
-struct MobilePublicProject: Decodable, Identifiable, Hashable {
-    let projectKey: String
-    let name: String
-
-    var id: String { projectKey }
-
-    enum CodingKeys: String, CodingKey {
-        case projectKey = "project_key"
-        case name
-    }
-}
-
-struct MobilePublicProjectsResponse: Decodable {
-    let projects: [MobilePublicProject]
-}
-
 enum MobileSelectedProjectStore {
     private static let projectKeyDefaultsKey = "reggit.selected_project_key"
     private static let selectedFlagKey = "reggit.project_selection_completed"

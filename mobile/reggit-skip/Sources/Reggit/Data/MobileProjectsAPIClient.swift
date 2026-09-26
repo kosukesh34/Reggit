@@ -3,7 +3,7 @@ import Foundation
 import FoundationNetworking
 #endif
 
-struct MobileProjectsAPIClient {
+struct MobileProjectsAPIClient: MobileProjectsServing {
     func fetchProjects(baseURL: String) async throws -> [MobilePublicProject] {
         let trimmed = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard let url = URL(string: "\(trimmed)/api/v1/projects") else {

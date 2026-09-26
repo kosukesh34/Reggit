@@ -57,6 +57,7 @@ enum TabIconResolver {
         case "queue": return "number.circle.fill"
         case "reservations": return "calendar"
         case "gallery": return "photo.on.rectangle"
+        case "storeSearch": return "location.fill"
         case "terms": return "doc.text.fill"
         case "privacy": return "hand.raised.fill"
         default: return "circle.fill"
