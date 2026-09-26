@@ -3,48 +3,27 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\MemberUpdateRequest;
-use App\UseCases\Admin\Member\AdminMemberAdjustStampsUseCase;
-use App\UseCases\Admin\Member\AdminMemberAttachTagUseCase;
-use App\UseCases\Admin\Member\AdminMemberDeleteCouponUseCase;
 use App\UseCases\Admin\Member\AdminMemberDeleteUseCase;
-use App\UseCases\Admin\Member\AdminMemberDetachTagUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
 use App\UseCases\Admin\Member\AdminMemberEditUseCase;
 use App\UseCases\Admin\Member\AdminMemberExportUseCase;
-use App\UseCases\Admin\Member\AdminMemberHistorySectionUseCase;
-use App\UseCases\Admin\Member\AdminMemberIssueCouponUseCase;
 use App\UseCases\Admin\Member\AdminMemberListUseCase;
-use App\UseCases\Admin\Member\AdminMemberRecordVisitUseCase;
-use App\UseCases\Admin\Member\AdminMemberUpdateMemoUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
-use App\UseCases\Admin\Member\AdminMemberVisitDetailUseCase;
 use App\UseCases\Admin\Member\Data\AdminMemberListView;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
 use App\UseCases\Admin\Member\GetAdminMemberListExtrasUseCase;
 use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
-use InvalidArgumentException;
 
 class MemberController extends AdminBaseController
 {
     public function __construct(
         private AdminMemberListUseCase $listUseCase,
         private AdminMemberDetailUseCase $detailUseCase,
-        private AdminMemberHistorySectionUseCase $historySectionUseCase,
         private AdminMemberEditUseCase $editUseCase,
         private AdminMemberUpdateUseCase $updateUseCase,
         private AdminMemberDeleteUseCase $deleteUseCase,
-        private AdminMemberIssueCouponUseCase $issueCouponUseCase,
-        private AdminMemberAdjustStampsUseCase $adjustStampsUseCase,
-        private AdminMemberDeleteCouponUseCase $deleteCouponUseCase,
-        private AdminMemberRecordVisitUseCase $recordVisitUseCase,
-        private AdminMemberVisitDetailUseCase $visitDetailUseCase,
-        private AdminMemberAttachTagUseCase $attachTagUseCase,
-        private AdminMemberDetachTagUseCase $detachTagUseCase,
-        private AdminMemberUpdateMemoUseCase $updateMemoUseCase,
         private AdminMemberExportUseCase $exportUseCase,
         private AdminMemberTagIndexUseCase $tagIndexUseCase,
         private GetAdminMemberListExtrasUseCase $memberListExtrasUseCase,
@@ -67,10 +46,10 @@ class MemberController extends AdminBaseController
         )]);
     }
 
-    public function memberDetail(string $project_key, int $id)
+    public function memberDetail(Request $request, string $project_key, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
-        $filters = request()->only([
+        $filters = $request->only([
             'visits_q', 'visits_from', 'visits_to',
             'points_q', 'points_from', 'points_to',
             'coupons_q', 'coupons_from', 'coupons_to',
@@ -84,43 +63,6 @@ class MemberController extends AdminBaseController
         return view('admin.member-detail', [
             'view' => $output,
             'allTags' => $tags,
-        ]);
-    }
-
-    public function memberHistory(string $project_key, int $id, string $section): JsonResponse
-    {
-        $projectId = $this->resolveAdminProjectId();
-        try {
-            $output = $this->historySectionUseCase->handle(
-                $projectId,
-                $id,
-                $section,
-                (string) request()->query('q', ''),
-                (string) request()->query('from', ''),
-                (string) request()->query('to', ''),
-            );
-        } catch (InvalidArgumentException $e) {
-            return response()->json(['message' => '不正なセクションです'], 422);
-        }
-
-        return response()->json([
-            'html' => $output->html,
-            'total' => $output->total,
-            'section' => $output->section,
-            'keyword' => $output->keyword,
-            'from' => $output->from,
-            'to' => $output->to,
-        ]);
-    }
-
-    public function visitDetail(string $project_key, int $id, int $visitId)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $output = $this->visitDetailUseCase->handle($projectId, $id, $visitId);
-
-        return view('admin.member-visit-detail', [
-            'member' => $output->member,
-            'visit' => $output->visit,
         ]);
     }
 
@@ -185,124 +127,6 @@ class MemberController extends AdminBaseController
 
         return redirect()->route('admin.members', $this->buildAdminRouteParams())
             ->with('success', '会員を削除しました');
-    }
-
-    /** 会員にクーポンを配布 */
-    public function issueCoupon(Request $request, string $project_key, int $id)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validate([
-            'coupon_id' => ['required', 'integer', Rule::exists('coupons', 'id')->where('project_id', $projectId)],
-        ]);
-        try {
-            $this->issueCouponUseCase->handle($projectId, $id, (int) $validated['coupon_id']);
-        } catch (InvalidArgumentException $e) {
-            return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-                ->with('error', $e->getMessage());
-        }
-
-        return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-            ->with('success', 'クーポンを配布しました');
-    }
-
-    /** 会員の発行済みクーポンを削除 */
-    public function deleteCoupon(string $project_key, int $id, int $memberCouponId)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        try {
-            $this->deleteCouponUseCase->handle($projectId, $id, $memberCouponId);
-        } catch (\RuntimeException $e) {
-            return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-                ->with('error', $e->getMessage());
-        }
-
-        return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-            ->with('success', 'クーポンを削除しました');
-    }
-
-    /** 会員のスタンプを加減算 */
-    public function adjustStamps(Request $request, string $project_key, int $id)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validate([
-            'stamp_card_id' => ['required', 'integer', Rule::exists('stamp_cards', 'id')->where('project_id', $projectId)],
-            'stamp_add' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'stamp_subtract' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'stamp_description' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $add = (int) ($validated['stamp_add'] ?? 0);
-        $subtract = (int) ($validated['stamp_subtract'] ?? 0);
-
-        try {
-            $this->adjustStampsUseCase->handle(
-                $projectId,
-                $id,
-                (int) $validated['stamp_card_id'],
-                $add,
-                $subtract,
-                $validated['stamp_description'] ?? null
-            );
-        } catch (InvalidArgumentException $e) {
-            return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-                ->with('error', $e->getMessage());
-        }
-
-        return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-            ->with('success', 'スタンプを更新しました');
-    }
-
-    /** 来店を手動登録 */
-    public function recordVisit(Request $request, string $project_key, int $id)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validate([
-            'visited_at' => ['required', 'date'],
-            'note' => ['nullable', 'string', 'max:500'],
-        ]);
-        $this->recordVisitUseCase->handle(
-            $projectId,
-            $id,
-            $validated['visited_at'],
-            $validated['note'] ?? null
-        );
-
-        return redirect()->route('admin.members.edit', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-            ->with('success', '来店を登録しました');
-    }
-
-    /** 会員にタグを付与 */
-    public function attachTag(Request $request, string $project_key, int $id)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validate([
-            'tag_id' => ['required', 'integer', Rule::exists('member_tags', 'id')->where('project_id', $projectId)],
-        ]);
-        $this->attachTagUseCase->handle($projectId, $id, (int) $validated['tag_id']);
-
-        return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-            ->with('success', 'タグを付与しました');
-    }
-
-    /** 会員のタグを解除 */
-    public function detachTag(string $project_key, int $id, int $tagId)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $this->detachTagUseCase->handle($projectId, $id, $tagId);
-
-        return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-            ->with('success', 'タグを解除しました');
-    }
-
-    /** 会員メモ更新 */
-    public function updateMemo(Request $request, string $project_key, int $id)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validate(['memo' => ['nullable', 'string', 'max:2000']]);
-        $this->updateMemoUseCase->handle($projectId, $id, $validated['memo'] ?? null);
-
-        return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))
-            ->with('success', 'メモを更新しました');
     }
 
     /** 会員一覧CSVエクスポート */
