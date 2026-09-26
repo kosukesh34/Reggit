@@ -9,7 +9,7 @@ use App\Models\MemberStampTransaction;
 use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\User;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,7 +22,7 @@ class StampCycleTest extends TestCase
     public function test_1周で終了するカードは必要数で止まり追加できないこと(): void
     {
         [$member, $card] = $this->createCard(StampCycleMode::ONCE, 5);
-        $service = resolve(MemberAdminService::class);
+        $service = resolve(MemberBenefitService::class);
         $service->addStampsToMember($member, (int) $card->id, 7);
 
         $stamp = MemberStamp::query()->where('member_id', $member->id)->where('stamp_card_id', $card->id)->first();
@@ -38,7 +38,7 @@ class StampCycleTest extends TestCase
     public function test_繰り返すカードは達成後に枠がリセットされること(): void
     {
         [$member, $card] = $this->createCard(StampCycleMode::REPEAT, 5);
-        $service = resolve(MemberAdminService::class);
+        $service = resolve(MemberBenefitService::class);
         $result = $service->addStampsToMember($member, (int) $card->id, 7);
 
         $this->assertSame(2, (int) $result->current_stamps);
@@ -56,7 +56,7 @@ class StampCycleTest extends TestCase
     public function test_繰り返すカードの減算は周回を巻き戻すこと(): void
     {
         [$member, $card] = $this->createCard(StampCycleMode::REPEAT, 5);
-        $service = resolve(MemberAdminService::class);
+        $service = resolve(MemberBenefitService::class);
         $service->addStampsToMember($member, (int) $card->id, 7);
         $service->adjustStampsToMember($member, (int) $card->id, -3, '減算');
 
@@ -87,7 +87,7 @@ class StampCycleTest extends TestCase
             'next_stamp_card_id' => $next->id,
         ]);
 
-        resolve(MemberAdminService::class)->addStampsToMember($member, (int) $current->id, 7);
+        resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $current->id, 7);
 
         $this->assertDatabaseHas('member_stamps', [
             'member_id' => $member->id,
@@ -136,7 +136,7 @@ class StampCycleTest extends TestCase
             ->assertJsonPath('stamp_cards.0.name', 'ブロンズ')
             ->assertJsonPath('stamp_cards.0.is_archived', false);
 
-        resolve(MemberAdminService::class)->addStampsToMember($member, (int) $current->id, 5);
+        resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $current->id, 5);
 
         $this->withHeaders($headers)
             ->get('/api/stamps?project_key='.$project->project_key)

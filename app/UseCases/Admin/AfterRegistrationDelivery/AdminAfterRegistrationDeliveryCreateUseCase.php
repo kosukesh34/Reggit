@@ -3,20 +3,20 @@
 namespace App\UseCases\Admin\AfterRegistrationDelivery;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\CouponAdminService;
 use App\UseCases\Admin\AfterRegistrationDelivery\Data\AfterRegistrationDeliveryFormView;
 
 class AdminAfterRegistrationDeliveryCreateUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private CouponAdminService $couponAdminService,
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId): AfterRegistrationDeliveryFormView
     {
         return new AfterRegistrationDeliveryFormView(
-            $this->memberAdminService->getActiveCouponsForSelect($projectId),
+            $this->couponAdminService->getActiveCouponsForSelect($projectId),
             $this->rankOptions($projectId),
         );
     }

@@ -8,12 +8,12 @@ use App\Enums\CouponDeliveryType;
 use App\Enums\MemberCouponSource;
 use App\Models\CouponDelivery;
 use App\Models\Member;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 
 class IssueCouponOnRankUpService
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberBenefitService $memberBenefitService,
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
@@ -40,7 +40,7 @@ class IssueCouponOnRankUpService
             }
 
             $historyKey = $rankHistoryId !== null ? (string) $rankHistoryId : '0';
-            $result = $this->memberAdminService->issueCouponToMembers(
+            $result = $this->memberBenefitService->issueCouponToMembers(
                 (int) $delivery->project_id,
                 (int) $delivery->coupon_id,
                 [(int) $member->id],

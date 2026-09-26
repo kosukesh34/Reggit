@@ -7,13 +7,13 @@ use App\Enums\CouponDeliveryType;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Services\Admin\CouponDeliveryTargetService;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use App\Util\DateUtil;
 
 class AdminCouponBulkIssueUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberBenefitService $memberBenefitService,
         private CouponDeliveryTargetService $targetService,
     ) {}
 
@@ -99,7 +99,7 @@ class AdminCouponBulkIssueUseCase
             throw new \InvalidArgumentException('配布対象の会員がいません');
         }
 
-        $result = $this->memberAdminService->issueCouponToMembers(
+        $result = $this->memberBenefitService->issueCouponToMembers(
             $projectId,
             $couponId,
             $memberIds,

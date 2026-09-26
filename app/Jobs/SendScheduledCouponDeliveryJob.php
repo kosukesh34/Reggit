@@ -6,7 +6,7 @@ use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Services\Admin\CouponDeliveryTargetService;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -23,10 +23,10 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
     ) {}
 
     public function handle(
-        MemberAdminService $memberAdminService,
+        MemberBenefitService $memberBenefitService,
         CouponDeliveryTargetService $targetService,
     ): void {
-        DB::transaction(function () use ($memberAdminService, $targetService): void {
+        DB::transaction(function () use ($memberBenefitService, $targetService): void {
             $delivery = CouponDelivery::withoutGlobalScopes()
                 ->whereKey($this->couponDeliveryId)
                 ->lockForUpdate()
@@ -36,7 +36,7 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
             }
 
             try {
-                $this->send($delivery, $memberAdminService, $targetService);
+                $this->send($delivery, $memberBenefitService, $targetService);
             } catch (\Throwable $e) {
                 $delivery->update([
                     'status' => CouponDeliveryStatus::FAILED,
@@ -48,7 +48,7 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
 
     private function send(
         CouponDelivery $delivery,
-        MemberAdminService $memberAdminService,
+        MemberBenefitService $memberBenefitService,
         CouponDeliveryTargetService $targetService,
     ): void {
         $deliveryType = (string) $delivery->delivery_type;
@@ -83,7 +83,7 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
             return;
         }
 
-        $result = $memberAdminService->issueCouponToMembers(
+        $result = $memberBenefitService->issueCouponToMembers(
             (int) $delivery->project_id,
             (int) $delivery->coupon_id,
             $normalizedIds,

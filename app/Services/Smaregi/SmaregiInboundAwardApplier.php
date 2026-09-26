@@ -17,6 +17,7 @@ use App\Models\MemberStampTransaction;
 use App\Models\PointTransaction;
 use App\Models\StampCard;
 use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use App\Services\CouponIssueService;
 use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\Stamp\MemberCurrentStampCardResolver;
@@ -30,6 +31,7 @@ class SmaregiInboundAwardApplier
 {
     public function __construct(
         private MemberAdminService $memberAdminService,
+        private MemberBenefitService $memberBenefitService,
         private ShopSettingRepository $shopSettingRepository,
         private StampEarnPolicy $stampEarnPolicy,
         private MemberRepository $memberRepository,
@@ -203,7 +205,7 @@ class SmaregiInboundAwardApplier
             if ($this->hasStampTransaction($member, $description)) {
                 return;
             }
-            $this->memberAdminService->addStampsToMember(
+            $this->memberBenefitService->addStampsToMember(
                 $member,
                 (int) $stampCard->id,
                 $stampCount,
@@ -336,7 +338,7 @@ class SmaregiInboundAwardApplier
                 if ($delta <= 0) {
                     continue;
                 }
-                $this->memberAdminService->adjustStampsToMember(
+                $this->memberBenefitService->adjustStampsToMember(
                     $member,
                     (int) $tx->stamp_card_id,
                     -1 * $delta,
@@ -382,7 +384,7 @@ class SmaregiInboundAwardApplier
             if ($this->hasStampTransaction($member, $reverseDescription)) {
                 return;
             }
-            $this->memberAdminService->adjustStampsToMember(
+            $this->memberBenefitService->adjustStampsToMember(
                 $member,
                 (int) $stampCard->id,
                 -1 * $stampCount,
