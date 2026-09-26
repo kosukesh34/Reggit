@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Member;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberAdminService;
 use App\UseCases\Admin\Member\Data\AdminMemberEditOutput;
 
@@ -10,6 +11,7 @@ class AdminMemberEditUseCase
 {
     public function __construct(
         private MemberAdminService $memberAdminService,
+        private CouponAdminService $couponAdminService,
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
@@ -17,8 +19,8 @@ class AdminMemberEditUseCase
     {
         $member = $this->memberAdminService->findOrFail($memberId, $projectId);
         $rankOptions = $this->memberAdminService->getRankOptionsForSelect($projectId);
-        $activeCoupons = $this->memberAdminService->getActiveCouponsForSelect($projectId);
-        $activeStampCards = $this->memberAdminService->getActiveStampCardsForSelect($projectId);
+        $activeCoupons = $this->couponAdminService->getActiveCouponsForSelect($projectId);
+        $activeStampCards = $this->couponAdminService->getActiveStampCardsForSelect($projectId);
         $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
         $customProfileFields = array_values($profileSettings['custom_fields'] ?? []);
 

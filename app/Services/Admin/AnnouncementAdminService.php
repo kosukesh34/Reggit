@@ -18,6 +18,7 @@ class AnnouncementAdminService
     public function __construct(
         private MemberSegmentService $memberSegmentService,
         private MemberAdminService $memberAdminService,
+        private MemberBenefitService $memberBenefitService,
     ) {}
 
     /** @return list<string> */
@@ -301,7 +302,7 @@ class AnnouncementAdminService
             return;
         }
 
-        $this->memberAdminService->issueCouponToMembers(
+        $this->memberBenefitService->issueCouponToMembers(
             (int) $announcement->project_id,
             (int) $announcement->delivery_coupon_id,
             $targetMemberIds,

@@ -9,7 +9,7 @@ use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\ScheduledDeliverySend;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use App\Util\LogHelper;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -20,7 +20,7 @@ class ScheduledDeliverySendService
     public function __construct(
         private ScheduledDeliveryTargetService $targetService,
         private AnnouncementNotificationService $announcementNotificationService,
-        private MemberAdminService $memberAdminService,
+        private MemberBenefitService $memberBenefitService,
     ) {}
 
     public function processDue(Carbon $now): int
@@ -193,7 +193,7 @@ class ScheduledDeliverySendService
             (string) $member->id,
         ]);
         $issue = function () use ($member, $couponId, $delivery, $grantKey): void {
-            $this->memberAdminService->issueCouponToMember(
+            $this->memberBenefitService->issueCouponToMember(
                 $member,
                 $couponId,
                 null,

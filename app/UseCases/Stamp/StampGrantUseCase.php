@@ -6,7 +6,7 @@ use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampCard;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberBenefitService;
 use App\Services\MemberRankSyncService;
 use App\UseCases\Stamp\Data\StampGrantInput;
 use App\UseCases\Stamp\Data\StampGrantOutput;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
 class StampGrantUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberBenefitService $memberBenefitService,
         private StampGrantOutcomeMapper $outcomeMapper,
         private ShopSettingRepository $shopSettingRepository,
         private MemberRankSyncService $memberRankSyncService,
@@ -70,7 +70,7 @@ class StampGrantUseCase
         }
 
         try {
-            $memberStamp = $this->memberAdminService->addStampsToMember(
+            $memberStamp = $this->memberBenefitService->addStampsToMember(
                 $member,
                 (int) $card->id,
                 $amount,
