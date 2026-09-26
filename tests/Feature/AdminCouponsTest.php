@@ -16,6 +16,9 @@ use App\Models\Member;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\UseCases\Admin\Coupon\AdminCouponFullSyncWithSmaregiUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponPushToSmaregiUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -76,6 +79,54 @@ class AdminCouponsTest extends TestCase
             ->assertDontSee('配布するクーポンを選ぶ')
             ->assertDontSee('同じ会員に1枚ずつ付与します')
             ->assertDontSee('配信履歴');
+    }
+
+    public function test_smaregi_sync_専用controllerから取り込みを実行できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $this->mock(AdminCouponSyncFromSmaregiUseCase::class)
+            ->shouldReceive('handle')
+            ->once()
+            ->with($project->id)
+            ->andReturn(['created' => 2, 'updated' => 1, 'failed' => 0, 'errors' => []]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.sync-smaregi', ['project_key' => $project->project_key]))
+            ->assertRedirect(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]))
+            ->assertSessionHas('success', 'スマレジからクーポンを取り込みました（新規: 2、更新: 1、失敗: 0）');
+    }
+
+    public function test_smaregi_sync_専用controllerからpushを実行できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $this->mock(AdminCouponPushToSmaregiUseCase::class)
+            ->shouldReceive('handle')
+            ->once()
+            ->with($project->id)
+            ->andReturn(['pushed' => 3, 'failed' => 0, 'errors' => []]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.push-smaregi', ['project_key' => $project->project_key]))
+            ->assertRedirect(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]))
+            ->assertSessionHas('success', '管理画面のクーポンをスマレジに反映しました（登録: 3、失敗: 0）');
+    }
+
+    public function test_smaregi_sync_専用controllerから双方向同期を実行できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $this->mock(AdminCouponFullSyncWithSmaregiUseCase::class)
+            ->shouldReceive('handle')
+            ->once()
+            ->with($project->id)
+            ->andReturn(['created' => 1, 'updated' => 2, 'pushed' => 3, 'failed' => 0, 'errors' => []]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.full-sync-smaregi', ['project_key' => $project->project_key]))
+            ->assertRedirect(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]))
+            ->assertSessionHas('success', 'クーポンを完全同期しました（スマレジ→DB: 新規 1・更新 2、DB→スマレジ: 3 件、失敗: 0）');
     }
 
     public function test_segment_preview_rfm条件の件数を返すこと(): void
