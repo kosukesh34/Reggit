@@ -5,7 +5,6 @@ namespace App\UseCases\Payment;
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
-use App\Enums\OrderStatus;
 use App\Jobs\SyncOrderPointsToSmaregiJob;
 use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
@@ -97,7 +96,7 @@ class PaymentWebhookUseCase
 
                 // Stripe Webhook 経路は即時同期しない（決済完了 UI より先にスマレジ Webhook が来るのを防ぐ）
                 // フロント confirm が来ない場合のフォールバックとして遅延ジョブを積む
-                if ($this->shouldRequestPointsSync($aggregate->status(), $aggregate->isCancelled())) {
+                if ($aggregate->shouldSyncToSmaregi()) {
                     $shouldDelaySmaregiSync = true;
                     $syncOrderId = $aggregate->id()->value();
                     $syncProjectId = $aggregate->projectId();
@@ -123,14 +122,5 @@ class PaymentWebhookUseCase
         }
 
         return true;
-    }
-
-    private function shouldRequestPointsSync(string $status, bool $isCancelled): bool
-    {
-        if ($isCancelled) {
-            return false;
-        }
-
-        return $status !== OrderStatus::PENDING;
     }
 }
