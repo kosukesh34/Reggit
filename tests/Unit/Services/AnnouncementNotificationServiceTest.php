@@ -61,7 +61,7 @@ class AnnouncementNotificationServiceTest extends TestCase
                 'sent' => 1,
                 'failed' => 0,
                 'skipped' => 0,
-                'notification_ids' => ['onesignal-id'],
+                'notification_ids' => ['push-message-id'],
             ]);
 
         $lineMock = Mockery::mock(LineService::class);
