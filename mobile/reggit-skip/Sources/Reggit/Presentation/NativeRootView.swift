@@ -388,6 +388,10 @@ struct NativeRootView: View {
             AnnouncementsView(apiClient: client)
         case "lottery":
             LotteryView(apiClient: client)
+        case "storeSearch":
+            StoreSearchView(baseURL: client.baseURL, currentProjectKey: viewModel.currentProjectKey) {
+                Task { await viewModel.start() }
+            }
         default:
             MembershipView(
                 apiClient: client,
