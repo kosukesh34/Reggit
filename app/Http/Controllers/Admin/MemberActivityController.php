@@ -6,24 +6,18 @@ use App\UseCases\Admin\Member\AdminMemberAdjustStampsUseCase;
 use App\UseCases\Admin\Member\AdminMemberAttachTagUseCase;
 use App\UseCases\Admin\Member\AdminMemberDeleteCouponUseCase;
 use App\UseCases\Admin\Member\AdminMemberDetachTagUseCase;
-use App\UseCases\Admin\Member\AdminMemberHistorySectionUseCase;
 use App\UseCases\Admin\Member\AdminMemberIssueCouponUseCase;
 use App\UseCases\Admin\Member\AdminMemberRecordVisitUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateMemoUseCase;
-use App\UseCases\Admin\Member\AdminMemberVisitDetailUseCase;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
 use InvalidArgumentException;
 use RuntimeException;
 
 class MemberActivityController extends AdminBaseController
 {
     public function __construct(
-        private AdminMemberHistorySectionUseCase $historySectionUseCase,
-        private AdminMemberVisitDetailUseCase $visitDetailUseCase,
         private AdminMemberIssueCouponUseCase $issueCouponUseCase,
         private AdminMemberDeleteCouponUseCase $deleteCouponUseCase,
         private AdminMemberAdjustStampsUseCase $adjustStampsUseCase,
@@ -32,41 +26,6 @@ class MemberActivityController extends AdminBaseController
         private AdminMemberDetachTagUseCase $detachTagUseCase,
         private AdminMemberUpdateMemoUseCase $updateMemoUseCase,
     ) {}
-
-    public function history(Request $request, string $project_key, int $id, string $section): JsonResponse
-    {
-        try {
-            $output = $this->historySectionUseCase->handle(
-                $this->resolveAdminProjectId(),
-                $id,
-                $section,
-                (string) $request->query('q', ''),
-                (string) $request->query('from', ''),
-                (string) $request->query('to', ''),
-            );
-        } catch (InvalidArgumentException) {
-            return response()->json(['message' => '不正なセクションです'], 422);
-        }
-
-        return response()->json([
-            'html' => $output->html,
-            'total' => $output->total,
-            'section' => $output->section,
-            'keyword' => $output->keyword,
-            'from' => $output->from,
-            'to' => $output->to,
-        ]);
-    }
-
-    public function visitDetail(string $project_key, int $id, int $visitId): View
-    {
-        $output = $this->visitDetailUseCase->handle($this->resolveAdminProjectId(), $id, $visitId);
-
-        return view('admin.member-visit-detail', [
-            'member' => $output->member,
-            'visit' => $output->visit,
-        ]);
-    }
 
     public function issueCoupon(Request $request, string $project_key, int $id): RedirectResponse
     {
