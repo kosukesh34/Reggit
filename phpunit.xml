@@ -18,6 +18,7 @@
         </include>
     </source>
     <php>
+        <ini name="memory_limit" value="256M"/>
         <!--
             APP_ENV=testing を設定すると Laravel は .env.testing を読み込む。
             DB_DATABASE は Docker env_file (.env) より優先させ、RefreshDatabase が reggit を消さないようにする。
@@ -37,4 +38,3 @@
         <env name="LINE_VERIFY_LIFF_ID_TOKEN" value="false" force="true"/>
     </php>
 </phpunit>
-
