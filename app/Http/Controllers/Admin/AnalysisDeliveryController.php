@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\CouponDeliveryType;
-use App\Models\Coupon;
+use App\UseCases\Admin\Analysis\AdminAnalysisCouponIndexUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\Util\LogHelper;
 use Illuminate\Http\RedirectResponse;
@@ -15,16 +15,13 @@ class AnalysisDeliveryController extends AdminBaseController
 {
     public function __construct(
         private AdminCouponBulkIssueUseCase $adminCouponBulkIssueUseCase,
+        private AdminAnalysisCouponIndexUseCase $couponIndexUseCase,
     ) {}
 
     public function index(): View
     {
         $projectId = $this->resolveAdminProjectId();
-        $coupons = Coupon::query()
-            ->where('project_id', $projectId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $coupons = $this->couponIndexUseCase->handle($projectId);
 
         return view('admin.analysis-delivery', [
             'coupons' => $coupons,
