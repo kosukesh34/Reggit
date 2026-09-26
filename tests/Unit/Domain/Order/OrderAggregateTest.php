@@ -125,4 +125,21 @@ class OrderAggregateTest extends TestCase
 
         $order->cancelUnpaidStripeMobile();
     }
+
+    public function test_smaregi_sync_未確定注文は対象外であること(): void
+    {
+        $this->assertFalse($this->createOrder(OrderStatus::PENDING)->shouldSyncToSmaregi());
+    }
+
+    public function test_smaregi_sync_確定後の有効な注文は対象であること(): void
+    {
+        foreach ([OrderStatus::CONFIRMED, OrderStatus::PREPARING, OrderStatus::READY, OrderStatus::COMPLETED] as $status) {
+            $this->assertTrue($this->createOrder($status)->shouldSyncToSmaregi(), $status);
+        }
+    }
+
+    public function test_smaregi_sync_キャンセル済み注文は対象外であること(): void
+    {
+        $this->assertFalse($this->createOrder(OrderStatus::CANCELLED)->shouldSyncToSmaregi());
+    }
 }

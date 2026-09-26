@@ -78,6 +78,16 @@ final class Order
         return $this->status === OrderStatus::CANCELLED;
     }
 
+    /**
+     * A confirmed, active order is eligible for downstream Smaregi synchronization.
+     * Keeping this rule on the aggregate prevents each payment entry point from
+     * interpreting order statuses independently.
+     */
+    public function shouldSyncToSmaregi(): bool
+    {
+        return ! $this->isCancelled() && $this->status !== OrderStatus::PENDING;
+    }
+
     public function cancelUnpaidStripeMobile(): void
     {
         if ($this->isCancelled()) {
