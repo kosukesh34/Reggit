@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
 use App\Http\Controllers\Admin\MemberTransferController as AdminMemberTransferController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\ProductMutationController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\QueueController as AdminQueueController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
@@ -238,10 +239,10 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
         Route::get('/products', [AdminProductController::class, 'products'])->name('admin.products')->middleware('admin.permission:products.view');
         Route::get('/products/create', [AdminProductController::class, 'createProduct'])->name('admin.products.create')->middleware('admin.permission:products.manage');
-        Route::post('/products', [AdminProductController::class, 'storeProduct'])->name('admin.products.store')->middleware('admin.permission:products.manage');
+        Route::post('/products', [ProductMutationController::class, 'store'])->name('admin.products.store')->middleware('admin.permission:products.manage');
         Route::get('/products/{id}/edit', [AdminProductController::class, 'editProduct'])->name('admin.products.edit')->middleware('admin.permission:products.manage');
-        Route::put('/products/{id}', [AdminProductController::class, 'updateProduct'])->name('admin.products.update')->middleware('admin.permission:products.manage');
-        Route::delete('/products/{id}', [AdminProductController::class, 'deleteProduct'])->name('admin.products.delete')->middleware('admin.permission:products.manage');
+        Route::put('/products/{id}', [ProductMutationController::class, 'update'])->name('admin.products.update')->middleware('admin.permission:products.manage');
+        Route::delete('/products/{id}', [ProductMutationController::class, 'destroy'])->name('admin.products.delete')->middleware('admin.permission:products.manage');
 
         Route::get('/members', [AdminMemberController::class, 'members'])->name('admin.members')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/transfer-code', [AdminMemberTransferController::class, 'store'])->name('admin.members.transfer-code')->middleware('admin.permission:members.manage');
