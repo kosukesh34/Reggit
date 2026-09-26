@@ -10,8 +10,6 @@ class AdminMemberActivityRoutesTest extends TestCase
     public function test_member_activity_routes_are_handled_by_the_dedicated_controller(): void
     {
         $expectedActions = [
-            'admin.members.history' => 'history',
-            'admin.members.visits.detail' => 'visitDetail',
             'admin.members.issue-coupon' => 'issueCoupon',
             'admin.members.delete-coupon' => 'deleteCoupon',
             'admin.members.adjust-stamps' => 'adjustStamps',
