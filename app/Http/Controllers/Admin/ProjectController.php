@@ -4,21 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\ProjectStoreRequest;
-use App\Http\Requests\Admin\ProjectUpdateRequest;
 use App\UseCases\Admin\Project\Data\ProjectFormView;
 use App\UseCases\Admin\Project\ProjectEditUseCase;
 use App\UseCases\Admin\Project\ProjectIndexUseCase;
-use App\UseCases\Admin\Project\ProjectStoreUseCase;
-use App\UseCases\Admin\Project\ProjectUpdateUseCase;
 
 class ProjectController extends Controller
 {
     public function __construct(
         private ProjectIndexUseCase $indexUseCase,
-        private ProjectStoreUseCase $storeUseCase,
         private ProjectEditUseCase $editUseCase,
-        private ProjectUpdateUseCase $updateUseCase,
         private ShopSettingRepository $shopSettingRepository,
     ) {}
 
@@ -48,17 +42,6 @@ class ProjectController extends Controller
         )]);
     }
 
-    public function store(ProjectStoreRequest $request)
-    {
-        $this->storeUseCase->handle(
-            $request->toProjectPayload(),
-            $request->toProjectSettingsPayload(),
-            $request->file('frontend_logo'),
-        );
-
-        return redirect()->route('system-admin.projects.index')->with('success', 'プロジェクトを作成しました');
-    }
-
     public function edit(int $id)
     {
         $project = $this->editUseCase->handle($id);
@@ -81,18 +64,5 @@ class ProjectController extends Controller
                 'smaregi_client_secret' => '',
             ],
         )]);
-    }
-
-    public function update(ProjectUpdateRequest $request, int $id)
-    {
-        $this->updateUseCase->handle(
-            $id,
-            $request->toProjectPayload(),
-            $request->toProjectSettingsPayload(),
-            $request->file('frontend_logo'),
-            $request->input('frontend_logo_clear') === '1',
-        );
-
-        return redirect()->route('system-admin.projects.index')->with('success', 'プロジェクトを更新しました');
     }
 }
