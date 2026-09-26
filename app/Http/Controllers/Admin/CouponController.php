@@ -17,12 +17,9 @@ use App\UseCases\Admin\Coupon\AdminCouponDeliveryDetailUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeliveryPreviewMembersUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeliveryPreviewUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponEditFormUseCase;
-use App\UseCases\Admin\Coupon\AdminCouponFullSyncWithSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
-use App\UseCases\Admin\Coupon\AdminCouponPushToSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponRedemptionsUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
-use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
 use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
 use Illuminate\Http\Request;
@@ -39,9 +36,6 @@ class CouponController extends AdminBaseController
         private AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase,
         private AdminCouponBulkIssueUseCase $bulkIssueUseCase,
         private PublicImageStorageService $publicImageStorage,
-        private AdminCouponSyncFromSmaregiUseCase $syncFromSmaregiUseCase,
-        private AdminCouponPushToSmaregiUseCase $pushToSmaregiUseCase,
-        private AdminCouponFullSyncWithSmaregiUseCase $fullSyncWithSmaregiUseCase,
         private AdminCouponDeliveryPreviewUseCase $deliveryPreviewUseCase,
         private AdminCouponDeliveryPreviewMembersUseCase $deliveryPreviewMembersUseCase,
         private AdminCouponDeliveryDetailUseCase $deliveryDetailUseCase,
@@ -180,78 +174,6 @@ class CouponController extends AdminBaseController
         return redirect()->route('admin.coupons.bulk-issue', array_merge($this->buildAdminRouteParams(), ['coupon_source' => 'existing']))
             ->with('success', 'クーポンを作成しました'.($coupon->smaregi_coupon_id ? '（スマレジにも反映済み）' : '').'。配布設定に進んでください。')
             ->withInput(['coupon_id' => $coupon->id, 'coupon_source' => 'existing']);
-    }
-
-    /** スマレジ → DB: POS のクーポンを取り込む */
-    public function syncCouponsFromSmaregi()
-    {
-        $projectId = $this->resolveAdminProjectId();
-        try {
-            $result = $this->syncFromSmaregiUseCase->handle($projectId);
-            $msg = sprintf(
-                'スマレジからクーポンを取り込みました（新規: %d、更新: %d、失敗: %d）',
-                $result['created'],
-                $result['updated'],
-                $result['failed']
-            );
-            if ($result['failed'] > 0 && $result['errors'] !== []) {
-                $msg .= '。'.implode('; ', array_slice($result['errors'], 0, 3));
-            }
-
-            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
-                ->with('success', $msg);
-        } catch (\Throwable $e) {
-            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
-                ->with('error', $e->getMessage());
-        }
-    }
-
-    /** DB → スマレジ: 未連携クーポンを POS に登録 */
-    public function pushCouponsToSmaregi()
-    {
-        $projectId = $this->resolveAdminProjectId();
-        try {
-            $result = $this->pushToSmaregiUseCase->handle($projectId);
-            $msg = sprintf(
-                '管理画面のクーポンをスマレジに反映しました（登録: %d、失敗: %d）',
-                $result['pushed'],
-                $result['failed']
-            );
-            if ($result['failed'] > 0 && $result['errors'] !== []) {
-                $msg .= '。'.implode('; ', array_slice($result['errors'], 0, 3));
-            }
-
-            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
-                ->with('success', $msg);
-        } catch (\Throwable $e) {
-            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
-                ->with('error', $e->getMessage());
-        }
-    }
-
-    /** クーポン双方向同期（スマレジ取り込み + 未連携の POS 登録） */
-    public function fullSyncCouponsWithSmaregi()
-    {
-        $projectId = $this->resolveAdminProjectId();
-        try {
-            $result = $this->fullSyncWithSmaregiUseCase->handle($projectId);
-            $msg = sprintf(
-                'クーポンを完全同期しました（スマレジ→DB: 新規 %d・更新 %d、DB→スマレジ: %d 件、失敗: %d）',
-                $result['created'],
-                $result['updated'],
-                $result['pushed'],
-                $result['failed']
-            );
-            if ($result['failed'] > 0 && $result['errors'] !== []) {
-                $msg .= '。'.implode('; ', array_slice($result['errors'], 0, 3));
-            }
-
-            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
-                ->with('success', $msg);
-        } catch (\Throwable $e) {
-            return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
-                ->with('error', $e->getMessage());
-        }
     }
 
     /** プレゼント配信（クーポン一括配布）実行 */
