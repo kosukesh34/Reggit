@@ -2,27 +2,19 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\CouponDeliveryType;
 use App\Http\Requests\Admin\CouponBulkIssueRequest;
 use App\Http\Requests\Admin\CouponQuickCreateRequest;
 use App\Http\Requests\Admin\CouponStoreRequest;
 use App\Http\Requests\Admin\CouponUpdateRequest;
 use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\Announcement\AdminAnnouncementAudiencePreviewUseCase;
-use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponDeleteUseCase;
-use App\UseCases\Admin\Coupon\AdminCouponDeliveryDetailUseCase;
-use App\UseCases\Admin\Coupon\AdminCouponDeliveryPreviewMembersUseCase;
-use App\UseCases\Admin\Coupon\AdminCouponDeliveryPreviewUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponEditFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponRedemptionsUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponStoreUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponUpdateUseCase;
-use App\UseCases\Admin\Member\AdminMemberSearchByKeywordUseCase;
-use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 
 class CouponController extends AdminBaseController
@@ -36,13 +28,7 @@ class CouponController extends AdminBaseController
         private AdminCouponBulkIssueFormUseCase $bulkIssueFormUseCase,
         private AdminCouponBulkIssueUseCase $bulkIssueUseCase,
         private PublicImageStorageService $publicImageStorage,
-        private AdminCouponDeliveryPreviewUseCase $deliveryPreviewUseCase,
-        private AdminCouponDeliveryPreviewMembersUseCase $deliveryPreviewMembersUseCase,
-        private AdminCouponDeliveryDetailUseCase $deliveryDetailUseCase,
-        private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
         private AdminCouponRedemptionsUseCase $redemptionsUseCase,
-        private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
-        private AdminAnnouncementAudiencePreviewUseCase $audiencePreviewUseCase,
     ) {}
 
     public function coupons()
@@ -192,113 +178,5 @@ class CouponController extends AdminBaseController
 
         return redirect()->route('admin.coupons', $this->buildAdminRouteParams())
             ->with('success', $result['message']);
-    }
-
-    public function searchMembers(Request $request)
-    {
-        $members = $this->searchMembersUseCase->handle(
-            $this->resolveAdminProjectId(),
-            (string) $request->query('q', ''),
-        );
-
-        return response()->json(['data' => $members]);
-    }
-
-    public function segmentPreview(Request $request)
-    {
-        $count = $this->segmentPreviewUseCase->handle(
-            $this->resolveAdminProjectId(),
-            $request->query(),
-        );
-
-        return response()->json(['count' => $count]);
-    }
-
-    public function audiencePreview(Request $request)
-    {
-        $query = $request->query();
-        if (! isset($query['delivery_coupon_id']) && $request->filled('coupon_id')) {
-            $query['delivery_coupon_id'] = $request->query('coupon_id');
-        }
-
-        return response()->json(
-            $this->audiencePreviewUseCase->handle($this->resolveAdminProjectId(), $query),
-        );
-    }
-
-    public function deliveryPreview()
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $deliveryType = (string) request()->query('delivery_type', CouponDeliveryType::IMMEDIATE_ALL);
-        $params = $this->deliveryPreviewParams();
-
-        $result = $this->deliveryPreviewUseCase->handle($projectId, $deliveryType, $params);
-
-        return response()->json($result);
-    }
-
-    public function deliveryPreviewMembers()
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $deliveryType = (string) request()->query('delivery_type', CouponDeliveryType::IMMEDIATE_ALL);
-        $params = $this->deliveryPreviewParams();
-        $output = $this->deliveryPreviewMembersUseCase->handle($projectId, $deliveryType, $params);
-
-        return response()->json([
-            'members' => $output->members,
-            'total' => $output->totalCount,
-            'error' => $output->error,
-        ]);
-    }
-
-    public function deliveryShow(string $projectKey, $id)
-    {
-        $projectId = $this->resolveAdminProjectId();
-        $output = $this->deliveryDetailUseCase->handle($projectId, (int) $id);
-
-        return view('admin.coupons.delivery-detail', ['view' => $output]);
-    }
-
-    /** @return array<string, mixed> */
-    private function deliveryPreviewParams(): array
-    {
-        $params = request()->only([
-            'target_member_ids',
-            'member_ids_input',
-            'segment_period_days',
-            'segment_condition',
-            'segment_min_amount',
-            'segment_channel',
-            'segment_birthday_month',
-            'segment_sex',
-            'segment_visit_count_min',
-            'segment_visit_count_max',
-            'segment_rank',
-            'segment_product_id',
-            'segment_lifetime_points_min',
-            'segment_lifetime_points_max',
-            'segment_last_visit_mode',
-            'segment_last_visit_days',
-            'segment_stamp_card_id',
-            'segment_stamp_count_min',
-            'segment_stamp_completed',
-            'segment_rfm_segments',
-            'segment_tag_ids',
-            'segment_birthday_months',
-            'birthday_month',
-            'new_member_days',
-            'inactive_days',
-            'target_rank',
-            'stamp_card_id',
-            'stamp_count_min',
-            'stamp_completed',
-            'days_after_last_visit',
-        ]);
-
-        if (request()->has('target_member_ids') && is_string($params['target_member_ids'] ?? null)) {
-            $params['target_member_ids'] = array_filter(array_map('intval', explode(',', $params['target_member_ids'])));
-        }
-
-        return $params;
     }
 }
