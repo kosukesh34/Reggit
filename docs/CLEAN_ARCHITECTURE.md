@@ -92,8 +92,10 @@ app/
 
 ## 5. 既存コードとの整合
 
-- 既に `handle(Request $request, ...)` になっている UseCase は、**新規・変更時**に Input 化を検討する。
+- UseCase は `Request` を直接受け取らない。HTTP の値は Controller / `Http/Support` の Factory で Input またはプリミティブへ変換する。
+- Service が所有する操作専用の Input / Output は `Services/<Context>/Data` に置く。Service から `UseCases` への逆依存を作らない。
 - 一つのファイルが長くなったら UseCase に分割する。Controller に直接処理を書かず UseCase に実装する（CODING_STANDARDS と同一方針）。
+- 層間依存の最低条件は `tests/Unit/Architecture/LayerDependencyTest.php` で継続的に検証する。
 
 ---
 
@@ -112,55 +114,18 @@ app/
 
 ### 6.2 クリーンアーキテクチャ：UseCase の Input / Output 使用状況
 
-#### Input を**使用している** UseCase（Request に依存しない）
-
-| UseCase | Input | Output |
-|---------|--------|--------|
-| `AccountStoreUseCase` | `AccountStoreInput` | `AdminUser` |
-| `AccountUpdateUseCase` | `AccountUpdateInput` | `AdminUser` |
-| `WalletPassDownloadUseCase` | `WalletPassDownloadInput` | `WalletPassDownloadOutput` |
-| `SaveLiffScreenUseCase` | `SaveLiffScreenInput` | `SaveLiffScreenOutput` |
-| `UpdateLiffDesignerUseCase` | `UpdateLiffDesignerInput` | `void` |
-
-#### 引数が**プリミティブ or ドメイン型のみ**の UseCase（Request 非依存で OK）
-
-例: `PaymentConfirmUseCase`(paymentIntentId, orderId), `GetLiffDesignerUseCase`(projectId), `ProductIndexUseCase`(category, availableOnly, includeCategories), `GalleryIndexUseCase`(categoryId), `QueueCancelUseCase`(id), `WalletPassUrlIssueUseCase`(userId, projectId, projectKey), 多くの Admin 系（projectId, id, array payload など）。
-
-#### **Request を直接受けている** UseCase（リファクタ候補：Input 化）
-
-| UseCase | 現在の handle 引数 | 推奨 |
-|---------|---------------------|------|
-| `OrderStoreUseCase` | `Request $request, array $validated` | `OrderStoreInput` を新設し Controller で組み立て |
-| `OrderShowUseCase` | `Request $request, int $id` | `int $id` のみでよい（Request は不要） |
-| `OrderIndexUseCase` | `Request $request, int $perPage` | `OrderIndexInput` または `int $perPage` + projectId など |
-| `ReservationIndexUseCase` | `Request $request` | `ReservationIndexInput`（perPage, フィルタなど） |
-| `ReservationStoreUseCase` | `Request $request, array $validated` | `ReservationStoreInput` |
-| `ReservationUpdateUseCase` | `Request $request, int $id, array $validated` | `ReservationUpdateInput` |
-| `ReservationCancelUseCase` | `Request $request, int $reservationId` | `int $reservationId` + 必要なら User など |
-| `QueueStoreUseCase` | `Request $request, int $partySize, ?string $guestName, ?string $guestPhone` | `QueueStoreInput` |
-| `QueueQrStatusUseCase` | `Request $request, string $token` | `string $token` + 必要なら lineUserId など |
-| `QueueMeUseCase` | `Request $request` | `QueueMeInput`（user や project 情報を Controller で解決して渡す） |
-| `MemberMeUseCase` | `Request $request` | 同上 |
-| `MemberRegisterUseCase` | `Request $request, array $validated` | `MemberRegisterInput` |
-| `MemberUpdateUseCase` | `Request $request, array $validated` | `MemberUpdateInput` |
-| `MemberPointsUseCase` | `Request $request` | Input またはプリミティブ |
-| `MemberPointHistoryUseCase` | `Request $request, int $perPage` | 同上 |
-| `MemberPointCardUseCase` | `Request $request` | 同上 |
-| `MemberAddPointsUseCase` | `Request $request, int $points, ?string $description` | 同上 |
-| `StampIndexUseCase` | `Request $request` | Input またはプリミティブ |
-| `CouponMyCouponsUseCase` | `Request $request` | 同上 |
-| `LineWebhookHandleUseCase` | `Request $request` | `LineWebhookInput`（body, signature など） |
-
-#### Output（戻り値）
-
-- **出力（Output / View）を使用している例**: `WalletPassDownloadOutput`, `PaymentConfirmOutput`, `OrderOutput`, `MemberData`, `QueueEntry`, `ReservationActionOutput`, `LiffDesignerView`, `RankSettingsView` など。多くの UseCase が **Output/View または Model** を返している。
-- 一部は `Order`, `Product`, `AdminUser` など **Model をそのまま返している**（許容）。
+- UseCase から `Illuminate\Http\Request` への直接依存は解消済み。HTTP コンテキストは Controller / Factory で変換する。
+- 複数値を受け取る処理は `*Input`、画面表示用は `*View`、処理結果は `*Output` を使用する。単純な識別子や絞り込み値はプリミティブ引数も許容する。
+- Service が実処理を所有する Admin 認証とスマレジ通知のデータ型は、それぞれ `Services/Admin/Data`、`Services/Smaregi/Data` に置く。
+- `UploadedFile` や HTTP Response などのフレームワーク型が一部の UseCase に残るため、ファイル／レスポンスのポート抽象化は今後の段階的な改善対象とする。
+- 一部の UseCase は Eloquent Model を返す。現行方針では許容するが、外部 API や複数画面で契約を共有する場合は Output 型を優先する。
 
 ### 6.3 今後の進め方
 
 - **新規 UseCase**: 必ず **Input**（または明確なプリミティブ）で受け取り、**Request を渡さない**。
-- **既存の `handle(Request $request, ...)`**: リファクタや機能変更のタイミングで Input 化を検討する（Admin Auth / Settings は Input 化済み）。
-- **UpdateLiffDesignerUseCase**: `UpdateLiffDesignerInput` を UseCase の引数で受け取り、Controller で Input を組み立てて渡す形に変更済み。
+- **HTTP 型の残存**: `UploadedFile` / `Response` を境界インターフェースへ置き換え、Application 層の Laravel 依存をさらに減らす。
+- **巨大クラス**: 設定ストア、会員管理、LIFF 管理クラスを、変更理由ごとの小さな協調オブジェクトへ段階的に分割する。
+- **フロントエンド**: TypeScript の `strict` 有効化と巨大 Manager の feature 単位分割を、小さな範囲から進める。
 
 ## 7. Admin 薄ラッパー UseCase の方針
 

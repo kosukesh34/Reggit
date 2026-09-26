@@ -3,10 +3,10 @@
 namespace Tests\Unit;
 
 use App\Services\Admin\AdminAuthService;
+use App\Services\Admin\Data\AdminAuthAuditContext;
+use App\Services\Admin\Data\AdminLoginInput;
+use App\Services\Admin\Data\AdminRedirectResult;
 use App\UseCases\Admin\Auth\AdminLoginUseCase;
-use App\UseCases\Admin\Auth\Data\AdminAuthAuditContext;
-use App\UseCases\Admin\Auth\Data\AdminLoginInput;
-use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
 use Mockery;
 use Tests\TestCase;
 

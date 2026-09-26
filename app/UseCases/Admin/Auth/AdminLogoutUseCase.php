@@ -3,8 +3,8 @@
 namespace App\UseCases\Admin\Auth;
 
 use App\Services\Admin\AdminAuthService;
-use App\UseCases\Admin\Auth\Data\AdminLogoutInput;
-use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
+use App\Services\Admin\Data\AdminLogoutInput;
+use App\Services\Admin\Data\AdminRedirectResult;
 
 class AdminLogoutUseCase
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\UseCases\Smaregi\Data;
+namespace App\Services\Smaregi\Data;
 
 /**
  * Webhook / IDP 通知の HTTP 入力。Request 非依存。

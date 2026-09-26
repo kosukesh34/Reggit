@@ -2,7 +2,7 @@
 
 namespace App\Http\Support;
 
-use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
+use App\Services\Smaregi\Data\SmaregiNotificationInput;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Support;
 
-use App\UseCases\Admin\Auth\Data\AdminRedirectResult;
+use App\Services\Admin\Data\AdminRedirectResult;
 use Illuminate\Http\RedirectResponse;
 
 final class AdminRedirect

@@ -2,8 +2,8 @@
 
 namespace App\UseCases\Smaregi;
 
+use App\Services\Smaregi\Data\SmaregiNotificationInput;
 use App\Services\Smaregi\SmaregiWebhookNotificationService;
-use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
 
 class SmaregiWebhookHandleUseCase
 {
