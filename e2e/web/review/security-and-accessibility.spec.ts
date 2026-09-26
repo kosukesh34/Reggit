@@ -83,9 +83,9 @@ for (const width of [390, 1280]) {
     const response = await page.goto('/liff#/home');
     expect(response?.status()).toBe(200);
     const loginPrompt = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'ログイン' }) });
-    const navigation = page.getByRole('navigation', { name: '主要ナビゲーション' });
-    await expect(navigation).toBeVisible();
-    const queueLink = navigation.getByRole('link', { name: '順番待ち' });
+    const homeMenu = page.getByRole('navigation', { name: 'ホームメニュー' });
+    await expect(homeMenu).toBeVisible();
+    const queueLink = homeMenu.getByRole('link', { name: '順番待ち' });
     if (await loginPrompt.isVisible()) {
       await loginPrompt.getByRole('button', { name: 'あとで' }).click();
     }
