@@ -5,13 +5,21 @@ namespace App\Http\Controllers\Admin\Settings;
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Models\AdminUser;
 use App\Models\AdminUserPermission;
+use App\UseCases\Admin\Settings\FindStaffUseCase;
+use App\UseCases\Admin\Settings\StoreStaffUseCase;
+use App\UseCases\Admin\Settings\UpdateStaffUseCase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class StaffMutationController extends AdminBaseController
 {
+    public function __construct(
+        private StoreStaffUseCase $storeUseCase,
+        private UpdateStaffUseCase $updateUseCase,
+        private FindStaffUseCase $findStaffUseCase,
+    ) {}
+
     public function store(Request $request): RedirectResponse
     {
         $this->authorizeManager();
@@ -25,19 +33,7 @@ class StaffMutationController extends AdminBaseController
         ]);
         $projectId = $this->resolveAdminProjectId();
 
-        DB::transaction(function () use ($validated, $projectId) {
-            $staff = AdminUser::create([
-                'name' => $validated['name'],
-                'login_id' => $validated['login_id'],
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'role' => AdminUser::ROLE_STAFF,
-                'project_id' => $projectId,
-                'created_by_id' => auth('admin')->id(),
-            ]);
-            $staff->projects()->sync([$projectId]);
-            $staff->syncPermissions($validated['permissions'] ?? []);
-        });
+        $this->storeUseCase->handle($projectId, (int) auth('admin')->id(), $validated);
 
         return $this->redirectToIndex()->with('success', 'スタッフを追加しました');
     }
@@ -45,7 +41,7 @@ class StaffMutationController extends AdminBaseController
     public function update(Request $request, string $projectKey, int $id): RedirectResponse
     {
         $this->authorizeManager();
-        $staff = $this->findStaff($id);
+        $staff = $this->findStaffUseCase->handle($this->resolveAdminProjectId(), $id);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('admin_users', 'email')->ignore($staff->id)],
@@ -54,15 +50,7 @@ class StaffMutationController extends AdminBaseController
             'permissions.*' => ['string', Rule::in(array_keys(AdminUserPermission::ALL_PERMISSIONS))],
         ]);
 
-        DB::transaction(function () use ($staff, $validated) {
-            $staff->name = $validated['name'];
-            $staff->email = $validated['email'];
-            if (($validated['password'] ?? null) !== null) {
-                $staff->password = $validated['password'];
-            }
-            $staff->save();
-            $staff->syncPermissions($validated['permissions'] ?? []);
-        });
+        $this->updateUseCase->handle($staff, $validated);
 
         return $this->redirectToIndex()->with('success', 'スタッフの権限を更新しました');
     }
@@ -70,14 +58,6 @@ class StaffMutationController extends AdminBaseController
     private function authorizeManager(): void
     {
         abort_unless(auth('admin')->user()?->canCreateRole(AdminUser::ROLE_STAFF), 403);
-    }
-
-    private function findStaff(int $id): AdminUser
-    {
-        $staff = AdminUser::query()->where('role', AdminUser::ROLE_STAFF)->findOrFail($id);
-        abort_unless($staff->canAccessProject($this->resolveAdminProjectId()), 404);
-
-        return $staff;
     }
 
     private function redirectToIndex(): RedirectResponse

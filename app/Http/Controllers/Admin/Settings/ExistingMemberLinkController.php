@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Admin\Settings;
 
 use App\Enums\ExistingMemberLinkField;
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Models\ExistingMemberLinkSetting;
-use App\UseCases\Admin\Settings\Data\ExistingMemberLinkPageView;
+use App\UseCases\Admin\Settings\GetExistingMemberLinkPageUseCase;
+use App\UseCases\Admin\Settings\GetExistingMemberLinkSettingUseCase;
+use App\UseCases\Admin\Settings\UpdateExistingMemberLinkSettingsUseCase;
 use App\UseCases\Member\RequestExistingMemberLinkUseCase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,29 +18,19 @@ class ExistingMemberLinkController extends AdminBaseController
 {
     public function __construct(
         private RequestExistingMemberLinkUseCase $requestUseCase,
+        private GetExistingMemberLinkPageUseCase $getPageUseCase,
+        private GetExistingMemberLinkSettingUseCase $getSettingUseCase,
+        private UpdateExistingMemberLinkSettingsUseCase $updateSettingsUseCase,
     ) {}
 
     public function index(): View
     {
         $admin = auth('admin')->user();
         abort_unless($admin !== null && $admin->hasAnyPermission(['settings.view', 'members.manage']), 403);
-        $projectId = $this->resolveAdminProjectId();
-        $setting = ExistingMemberLinkSetting::query()->where('project_id', $projectId)->first();
-        $selected = is_array($setting?->identifier_fields) ? $setting->identifier_fields : [ExistingMemberLinkField::CUSTOMER_CODE];
-        $fields = [];
-        foreach (ExistingMemberLinkField::getValues() as $key => $label) {
-            $fields[] = [
-                'key' => (string) $key,
-                'label' => $label,
-                'isChecked' => in_array($key, $selected, true),
-            ];
-        }
 
         return view('admin.settings.existing-member-link', [
-            'view' => new ExistingMemberLinkPageView(
-                $setting?->is_enabled === true,
-                (string) ($setting?->description ?? ''),
-                $fields,
+            'view' => $this->getPageUseCase->handle(
+                $this->resolveAdminProjectId(),
                 $admin->hasPermission('settings.manage'),
                 $admin->hasPermission('members.manage'),
             ),
@@ -54,13 +45,11 @@ class ExistingMemberLinkController extends AdminBaseController
             'identifier_fields' => ['required', 'array', 'min:1'],
             'identifier_fields.*' => ['string', Rule::in(array_keys(ExistingMemberLinkField::getValues()))],
         ]);
-        ExistingMemberLinkSetting::query()->updateOrCreate(
-            ['project_id' => $this->resolveAdminProjectId()],
-            [
-                'is_enabled' => $request->boolean('is_enabled'),
-                'description' => $validated['description'] ?? null,
-                'identifier_fields' => array_values($validated['identifier_fields']),
-            ],
+        $this->updateSettingsUseCase->handle(
+            $this->resolveAdminProjectId(),
+            $request->boolean('is_enabled'),
+            $validated['description'] ?? null,
+            array_values($validated['identifier_fields']),
         );
 
         return redirect()->route('admin.settings.existing-member-link', $this->buildAdminRouteParams())
@@ -71,7 +60,7 @@ class ExistingMemberLinkController extends AdminBaseController
     {
         abort_unless(auth('admin')->user()?->hasPermission('members.manage') === true, 403);
         $projectId = $this->resolveAdminProjectId();
-        $setting = ExistingMemberLinkSetting::query()->where('project_id', $projectId)->first();
+        $setting = $this->getSettingUseCase->handle($projectId);
         if ($setting === null || $setting->is_enabled === false) {
             return back()->with('error', '既存会員連携は利用できません');
         }
