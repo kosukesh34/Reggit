@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\Account\AccountDestroyController;
+use App\Http\Controllers\Admin\AdminProjectHomeController;
+use App\Http\Controllers\Admin\AdminRootController;
 use App\Http\Controllers\Admin\Account\AccountFormController;
 use App\Http\Controllers\Admin\Account\AccountIndexController;
 use App\Http\Controllers\Admin\Account\AccountStoreController;
@@ -68,6 +70,10 @@ use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\Admin\SystemHelpArticleController;
 use App\Http\Controllers\ExistingMemberLinkConfirmController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
+use App\Http\Controllers\ApiInfoController;
+use App\Http\Controllers\HealthController;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\LiffLegacyRedirectController;
 use App\Http\Controllers\Landing\LandingRegistrationEmailController;
 use App\Http\Controllers\Landing\LandingRegistrationFormController;
 use App\Http\Controllers\Landing\LandingRegistrationVerifyController;
@@ -80,20 +86,10 @@ use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampGrantOpenController;
 use App\Http\Controllers\WalletAddPageController;
-use App\Models\Project;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 // ========== 公開 ==========
-Route::get('/', function () {
-    if (auth('admin')->check()) {
-        return redirect()->route('admin.root');
-    }
-
-    return view('landing');
-});
+Route::get('/', LandingController::class);
 
 Route::post('/lp/register/email', LandingRegistrationEmailController::class)
     ->middleware('throttle:5,1')
@@ -114,34 +110,11 @@ Route::get('/existing-member-link/{token}', ExistingMemberLinkConfirmController:
 Route::get('/legal/{project_key}/terms', [LegalDocumentController::class, 'terms'])->name('legal.terms');
 Route::get('/legal/{project_key}/privacy', [LegalDocumentController::class, 'privacy'])->name('legal.privacy');
 
-Route::get('/api', function () {
-    return response()->json(['message' => 'Reggit API']);
-});
+Route::get('/api', ApiInfoController::class);
 
 // ELB / ロードバランサー用ヘルスチェック（EB の「パス」を /health に設定すること）
 // 既定: DB 到達時 plain `ok`。?deep=1 で JSON {status,db} を返す。DB 障害時は 503。
-Route::get('/health', function (Request $request) {
-    $dbOk = false;
-    try {
-        DB::select('select 1');
-        $dbOk = true;
-    } catch (Throwable) {
-        $dbOk = false;
-    }
-
-    if ($request->query('deep') === '1') {
-        return response()->json(
-            ['status' => $dbOk ? 'ok' : 'error', 'db' => $dbOk],
-            $dbOk ? 200 : 503
-        );
-    }
-
-    if (! $dbOk) {
-        return response('error', 503, ['Content-Type' => 'text/plain']);
-    }
-
-    return response('ok', 200, ['Content-Type' => 'text/plain']);
-});
+Route::get('/health', HealthController::class);
 
 // スマレジ: デベロッパーズに「/api」無しで登録した場合の受け口（POST は CSRF 除外済み）
 Route::match(['get', 'head', 'post'], '/smaregi/webhook', [SmaregiWebhookController::class, '__invoke'])
@@ -156,25 +129,8 @@ Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/', [LiffController::class, 'index'])->name('liff.index');
     Route::get('/{project_key}', [LiffController::class, 'index'])->name('liff.project');
     // 旧リンク（/liff/{project_key}/project_key=...&queue_token=...）互換。
-    Route::get('/{project_key}/{legacy_state}', function (string $project_key, string $legacy_state) {
-        parse_str($legacy_state, $params);
-        $queueToken = is_array($params) ? ($params['queue_token'] ?? null) : null;
-        $queueId = is_array($params) ? ($params['queue_id'] ?? null) : null;
-
-        Log::info('[LIFF] legacy queue url redirected', [
-            'project_key' => $project_key,
-            'legacy_state' => $legacy_state,
-            'queue_token' => $queueToken,
-            'queue_id' => $queueId,
-        ]);
-
-        $query = array_filter([
-            'queue_token' => is_string($queueToken) ? $queueToken : null,
-            'queue_id' => is_string($queueId) ? $queueId : null,
-        ], fn ($v) => $v !== null && $v !== '');
-
-        return redirect()->to('/liff/'.$project_key.($query === [] ? '' : '?'.http_build_query($query)));
-    })->where('legacy_state', 'project_key=.*')->name('liff.project.legacy');
+    Route::get('/{project_key}/{legacy_state}', LiffLegacyRedirectController::class)
+        ->where('legacy_state', 'project_key=.*')->name('liff.project.legacy');
 });
 
 // Wallet 追加用の中間ページ（追加後にアプリへ戻るリンクを表示）
@@ -210,34 +166,15 @@ Route::get('/system-admin/login', [SystemAdminLoginController::class, 'show'])->
 Route::post('/system-admin/login', [SystemAdminLoginController::class, 'login'])->name('system-admin.login.submit')->middleware('throttle:admin-login');
 
 // /admin のみのアクセス時はアクセス可能な先頭プロジェクトへリダイレクト
-Route::get('/admin', function () {
-    if (! auth('admin')->check()) {
-        return redirect()->route('admin.login');
-    }
-    $admin = auth('admin')->user();
-    $first = Project::whereIn('id', $admin->getAllowedProjectIds())
-        ->where('is_active', true)
-        ->orderBy('name')
-        ->first();
-    $projectKey = $first
-        ? $first->project_key
-        : (config('app.default_project_key') ?: Project::where('is_active', true)->orderBy('id')->value('project_key'));
-
-    if ($projectKey === null || $projectKey === '') {
-        return redirect()->route('admin.login');
-    }
-
-    return redirect()->route('admin.dashboard', ['project_key' => $projectKey]);
-})->middleware('web')->name('admin.root');
+Route::get('/admin', AdminRootController::class)->middleware('web')->name('admin.root');
 
 // ========== 店舗管理画面（project_key 必須） ==========
 Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', 'admin.audit'])->group(function () {
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('admin.logout')->withoutMiddleware('bind.admin.project');
 
     Route::prefix('{project_key}')->group(function () {
-        Route::get('/', function (string $project_key) {
-            return redirect()->route('admin.dashboard', ['project_key' => $project_key]);
-        })->name('admin.project.home')->middleware('admin.permission:dashboard.view');
+        Route::get('/', AdminProjectHomeController::class)
+            ->name('admin.project.home')->middleware('admin.permission:dashboard.view');
 
         Route::get('/dashboard', [DashboardController::class, 'dashboard'])
             ->name('admin.dashboard')->middleware('admin.permission:dashboard.view');

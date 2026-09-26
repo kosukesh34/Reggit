@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -20,7 +19,6 @@ class WalletPassService
     private ?string $lastError = null;
 
     public function __construct(
-        private UserService $userService,
         private MemberService $memberService,
         private WalletPassAuthTokenService $walletPassAuthTokenService,
         private MemberCardAppearanceService $memberCardAppearanceService,
@@ -100,44 +98,6 @@ class WalletPassService
         } finally {
             File::deleteDirectory($workDir);
         }
-    }
-
-    /**
-     * 会員用の .pkpass バイナリを生成する（リクエストから会員を解決して buildMembershipPass を呼ぶ）
-     */
-    public function generate(Request $request): ?string
-    {
-        $user = $this->userService->getOrCreateUser($request);
-        $data = $this->memberService->getMemberData($user);
-
-        if (! isset($data['is_member']) || $data['is_member'] === false || ! isset($data['member']) || $data['member'] === null) {
-            $this->setLastError('会員情報が見つかりません。');
-
-            return null;
-        }
-
-        $member = $data['member'];
-        if (! ($member instanceof Member)) {
-            $this->setLastError('会員データが不正です。');
-
-            return null;
-        }
-
-        $project = AdminContext::getCurrentProject();
-        $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
-        $barcodeMessage = $member->member_number ?? (string) $member->id;
-        $serialNumber = 'member-'.(string) $member->id;
-
-        $extraFields = [
-            'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
-            'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
-            'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
-            'appearance' => $this->memberCardAppearanceService->resolveForMember($member),
-        ];
-
-        $projectId = $project !== null ? $project->id : null;
-
-        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, $projectId, $member);
     }
 
     /**

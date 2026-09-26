@@ -177,7 +177,9 @@ class AppServiceProvider extends ServiceProvider
             } elseif ($projects->isNotEmpty()) {
                 $currentProjectId = (int) $projects->first()->id;
             } else {
-                $currentProjectId = $adminUser->project_id ? (int) $adminUser->project_id : 1;
+                // A missing project is not a valid tenant. Never fall back to an
+                // arbitrary project's settings when rendering a shared layout.
+                $currentProjectId = $adminUser->project_id ? (int) $adminUser->project_id : 0;
             }
             $view->with(compact('adminUser', 'currentProjectId', 'projects', 'isSystemAdmin'));
 
@@ -204,7 +206,9 @@ class AppServiceProvider extends ServiceProvider
                 if ($project === null) {
                     $project = AdminContext::getCurrentProject();
                 }
-                $projectId = $project ? ((int) $project->id) : 1;
+                // Keep the no-tenant case isolated from real project data. The
+                // settings repository returns defaults for the sentinel ID 0.
+                $projectId = $project ? ((int) $project->id) : 0;
                 $settingsRepo = app(ShopSettingRepository::class);
                 $view->with('lineTheme', $settingsRepo->getLineThemeColors($projectId));
                 $view->with('frontendMenu', $settingsRepo->getFrontendMenuItems($projectId));
