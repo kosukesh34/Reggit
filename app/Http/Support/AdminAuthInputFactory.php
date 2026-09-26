@@ -3,10 +3,10 @@
 namespace App\Http\Support;
 
 use App\Http\Requests\Admin\LoginRequest;
-use App\UseCases\Admin\Auth\Data\AdminAuthAuditContext;
-use App\UseCases\Admin\Auth\Data\AdminLoginInput;
-use App\UseCases\Admin\Auth\Data\AdminLogoutInput;
-use App\UseCases\Admin\Auth\Data\SystemAdminLoginInput;
+use App\Services\Admin\Data\AdminAuthAuditContext;
+use App\Services\Admin\Data\AdminLoginInput;
+use App\Services\Admin\Data\AdminLogoutInput;
+use App\Services\Admin\Data\SystemAdminLoginInput;
 use Illuminate\Http\Request;
 
 class AdminAuthInputFactory

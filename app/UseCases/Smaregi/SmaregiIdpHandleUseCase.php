@@ -4,7 +4,7 @@ namespace App\UseCases\Smaregi;
 
 use App\Enums\SmaregiEvent;
 use App\Models\SmaregiContract;
-use App\UseCases\Smaregi\Data\SmaregiNotificationInput;
+use App\Services\Smaregi\Data\SmaregiNotificationInput;
 use App\Util\StrHelper;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
