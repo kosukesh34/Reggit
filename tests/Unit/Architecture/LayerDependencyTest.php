@@ -43,6 +43,26 @@ class LayerDependencyTest extends TestCase
         ];
     }
 
+    public function test_refactored_admin_controllers_do_not_import_models(): void
+    {
+        $controllers = [
+            'Admin/HelpController.php',
+            'Admin/AnalysisDeliveryController.php',
+            'Admin/ReservationController.php',
+            'Admin/SystemHelpArticleController.php',
+        ];
+        $violations = [];
+        foreach ($controllers as $controller) {
+            $path = dirname(__DIR__, 3).'/app/Http/Controllers/'.$controller;
+            $source = file_get_contents($path);
+            if (str_contains($source, 'use App\\Models\\')) {
+                $violations[] = $controller;
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */
