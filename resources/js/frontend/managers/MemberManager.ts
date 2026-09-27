@@ -18,6 +18,7 @@ import {
 } from '../member/walletUrlPolicy';
 import { normalizeMemberPayload, normalizeWalletSummary, walletSummariesEqual } from '../member/memberPayload';
 import { buildProfilePayload } from '../member/profilePayload';
+import { renderProfileForm } from '../member/profileFormRenderer';
 import { resolvePostalAddress, validatePostalCode } from '../member/postalAddressPolicy';
 import { formatPointHistoryHtml } from '../member/pointHistoryFormatter';
 import { formatRankUpHistoryHtml } from '../member/rankHistoryFormatter';
@@ -2603,228 +2604,18 @@ export class MemberManager {
         }
     }
 
-    _getProfileEditFormHtml(user, member, options) {
-        options = options || {};
-        const isRegister = options.isRegister === true;
-        const root = (this.memberData && this.memberData.member) ? this.memberData.member : this.memberData;
-        // 会員APIは profile / profile_field_settings をトップレベルで返すため、memberData から直接参照する
-        const fields = (this.memberData && this.memberData.profile_field_settings) ? this.memberData.profile_field_settings : (root && root.profile_field_settings) ? root.profile_field_settings : [
-            { key: 'name', label: 'お名前', required: true },
-            { key: 'kana', label: 'お名前（カナ）', required: false },
-            { key: 'phone', label: '電話番号', required: false },
-            { key: 'email', label: 'メールアドレス', required: false },
-            { key: 'postal_code', label: '郵便番号', required: false },
-            { key: 'address', label: '住所', required: false },
-            { key: 'birthday', label: '誕生日', required: false },
-            { key: 'sex', label: '性別', required: false },
-        ];
-        let profile = (this.memberData && this.memberData.profile && typeof this.memberData.profile === 'object') ? this.memberData.profile : (root && root.profile) ? root.profile : {};
-        if (isRegister && options.initialProfile && typeof options.initialProfile === 'object') {
-            profile = Object.assign({}, profile, options.initialProfile);
-        }
-        const birthdayVal = (member && member.birthday) ? String(member.birthday).split('T')[0] : (profile.birthday || '');
-        const nameParts = (profile.name != null && String(profile.name).trim() !== '') ? String(profile.name).trim().split(/\s+/) : ['', ''];
-        const nameLast = nameParts[0] || '';
-        const nameFirst = nameParts.slice(1).join(' ') || '';
-        const kanaParts = (profile.kana != null && String(profile.kana).trim() !== '') ? String(profile.kana).trim().split(/\s+/) : ['', ''];
-        const kanaLast = kanaParts[0] || '';
-        const kanaFirst = kanaParts.slice(1).join(' ') || '';
-        const rows = fields.flatMap(function (f) {
-            const key = f.key;
-            const label = f.label || key;
-            const required = f.required ? ' required' : '';
-            const val = profile[key] != null ? String(profile[key]) : '';
-            const inputType = f.input_type || 'text';
-            const values = Array.isArray(f.values) ? f.values : [];
-            const description = f.description ? '<p class="member-form-field-hint">' + DomHelper.escapeHtml(String(f.description)) + '</p>' : '';
-            if (key === 'name') {
-                const idLast = 'profileEdit_name_last';
-                const idFirst = 'profileEdit_name_first';
-                const inputLast = '<input type="text" id="' + idLast + '" name="name_last" value="' + DomHelper.escapeHtml(nameLast) + '" maxlength="85" placeholder="例: 山田" autocomplete="family-name"' + required + '>';
-                const inputFirst = '<input type="text" id="' + idFirst + '" name="name_first" value="' + DomHelper.escapeHtml(nameFirst) + '" maxlength="85" placeholder="例: 太郎" autocomplete="given-name"' + required + '>';
-                return [
-                    '<div class="member-form-name-row">' +
-                    '<div class="member-form-group"><label for="' + idLast + '">姓' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputLast + '</div>' +
-                    '<div class="member-form-group"><label for="' + idFirst + '">名' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputFirst + '</div>' +
-                    '</div>',
-                ];
-            }
-            if (key === 'kana') {
-                const idLast = 'profileEdit_kana_last';
-                const idFirst = 'profileEdit_kana_first';
-                const inputLast = '<input type="text" id="' + idLast + '" name="kana_last" value="' + DomHelper.escapeHtml(kanaLast) + '" maxlength="85" placeholder="例: ヤマダ" inputmode="katakana"' + required + '>';
-                const inputFirst = '<input type="text" id="' + idFirst + '" name="kana_first" value="' + DomHelper.escapeHtml(kanaFirst) + '" maxlength="85" placeholder="例: タロウ" inputmode="katakana"' + required + '>';
-                return [
-                    '<div class="member-form-name-row">' +
-                    '<div class="member-form-group"><label for="' + idLast + '">フリガナ（姓）' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputLast + '</div>' +
-                    '<div class="member-form-group"><label for="' + idFirst + '">フリガナ（名）' + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + inputFirst + '</div>' +
-                    '</div>',
-                ];
-            }
-            const id = 'profileEdit_' + key.replace(/[^a-z0-9_]/gi, '_');
-            let input = '';
-            if (key === 'sex') {
-                const selected0 = (!val || val === '0') ? ' selected' : '';
-                const selected1 = val === '1' ? ' selected' : '';
-                const selected2 = val === '2' ? ' selected' : '';
-                input = '<select id="' + id + '" name="sex"' + required + '>' +
-                    '<option value=""' + selected0 + '>未選択</option>' +
-                    '<option value="1"' + selected1 + '>男性</option>' +
-                    '<option value="2"' + selected2 + '>女性</option>' +
-                    '</select>';
-                return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>'];
-            }
-            if (key === 'mail_receive_flag') {
-                const selected1 = val === '1' ? ' selected' : '';
-                const selected0 = val === '0' ? ' selected' : '';
-                input = '<select id="' + id + '" name="mail_receive_flag"' + required + '>' +
-                    '<option value="">未選択</option>' +
-                    '<option value="1"' + selected1 + '>許可する</option>' +
-                    '<option value="0"' + selected0 + '>許可しない</option>' +
-                    '</select>';
-                return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + '</div>'];
-            }
-            if (key === 'notification_preference') {
-                const preference = val || 'all';
-                const isNativeApp = typeof window !== 'undefined' && window.__MOBILE_APP_MODE__ === true;
-                const channelLabel = isNativeApp ? 'Push通知' : 'LINE通知';
-                const options = [
-                    ['all', 'すべて受け取る'],
-                    ['coupon_only', 'クーポン情報のみ'],
-                    ['none', '受け取らない'],
-                ];
-                const optionsHtml = options.map(function (option) {
-                    const selected = preference === option[0] ? ' selected' : '';
-                    return '<option value="' + option[0] + '"' + selected + '>' + option[1] + '</option>';
-                }).join('');
-                input = '<select id="' + id + '" name="notification_preference" required>' + optionsHtml + '</select>';
-                return [
-                    '<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + ' <span class="required">*</span></label>' +
-                    input +
-                    '<p class="member-form-field-hint">' + channelLabel + 'の受け取り範囲を選べます</p></div>',
-                ];
-            }
-            if ((inputType === 'radio' || inputType === 'selectbox') && values.length > 0) {
-                const optionsHtml = ['<option value="">未選択</option>'].concat(values.map(function (option) {
-                    const optionVal = String(option);
-                    const selected = val === optionVal ? ' selected' : '';
-                    return '<option value="' + DomHelper.escapeHtml(optionVal) + '"' + selected + '>' + DomHelper.escapeHtml(optionVal) + '</option>';
-                })).join('');
-                input = '<select id="' + id + '" name="' + DomHelper.escapeHtml(key) + '"' + required + '>' + optionsHtml + '</select>';
-                return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + description + '</div>'];
-            }
-            if (inputType === 'checkbox' && values.length > 0) {
-                let checkedList: string[] = [];
-                if (Array.isArray(profile[key])) {
-                    checkedList = profile[key].map(function (v: any) { return String(v); });
-                } else if (val) {
-                    checkedList = [val];
-                }
-                const optionsHtml = values.map(function (option, optionIndex) {
-                    const optionVal = String(option);
-                    const checked = checkedList.indexOf(optionVal) !== -1 ? ' checked' : '';
-                    return '<label class="member-form-checkbox">' +
-                        '<input type="checkbox" id="' + id + '_' + optionIndex + '" name="' + DomHelper.escapeHtml(key) + '[]" value="' + DomHelper.escapeHtml(optionVal) + '"' + checked + '>' +
-                        '<span>' + DomHelper.escapeHtml(optionVal) + '</span></label>';
-                }).join('');
-                return [
-                    '<fieldset class="member-form-group member-form-group--choice">' +
-                    '<legend class="member-form-group-label">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</legend>' +
-                    '<div class="member-form-checkbox-list">' + optionsHtml + '</div>' +
-                    description +
-                    '</fieldset>',
-                ];
-            }
-            if (inputType === 'textarea' || key === 'address') {
-                const maxLen = key === 'address' ? 85 : 500;
-                input = '<textarea id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" maxlength="' + maxLen + '" rows="3"' + required + '>' + DomHelper.escapeHtml(val) + '</textarea>';
-                return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + description + '</div>'];
-            }
-            if (key === 'birthday') {
-                input = '<input type="date" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val || birthdayVal) + '"' + required + '>';
-            } else if (key === 'email') {
-                input = '<input type="email" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="255"' + required + '>';
-            } else if (key === 'postal_code') {
-                input = '<div class="member-form-postal-row">' +
-                    '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" placeholder="例: 100-0001" maxlength="8" inputmode="numeric" autocomplete="postal-code"' + required + '>' +
-                    '<button type="button" class="member-btn member-btn--secondary postal-code-lookup-btn" data-action="postal-code-lookup"><i class="fas fa-search-location"></i> 住所を自動入力</button>' +
-                    '</div>';
-            } else if (key === 'phone') {
-                input = '<input type="tel" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="20"' + required + '>';
-            } else {
-                input = '<input type="text" id="' + id + '" name="' + DomHelper.escapeHtml(key) + '" value="' + DomHelper.escapeHtml(val) + '" maxlength="255"' + required + '>';
-            }
-            return ['<div class="member-form-group"><label for="' + id + '">' + DomHelper.escapeHtml(label) + (f.required ? ' <span class="required">*</span>' : '') + '</label>' + input + description + '</div>'];
-        });
-        const addressKeys = ['postal_code', 'address'];
-        const groupedRows = [];
-        let addressChunk = [];
-        const flushAddressChunk = function () {
-            if (addressChunk.length === 0) return;
-            const hasPostal = fields.some(function (field) { return field.key === 'postal_code'; });
-            const sectionHint = hasPostal
-                ? '<p class="member-form-section-hint">郵便番号を入力して「住所を自動入力」を押すと住所が入力されます</p>'
-                : '';
-            groupedRows.push(
-                '<section class="member-form-section member-form-section--address">' +
-                '<h4 class="member-form-section-title">住所</h4>' +
-                sectionHint +
-                addressChunk.join('') +
-                '</section>'
-            );
-            addressChunk = [];
-        };
-        rows.forEach(function (rowHtml) {
-            const isAddressRow = addressKeys.some(function (addressKey) {
-                return rowHtml.indexOf('profileEdit_' + addressKey) !== -1;
-            });
-            if (isAddressRow) {
-                addressChunk.push(rowHtml);
-                return;
-            }
-            flushAddressChunk();
-            groupedRows.push(rowHtml);
-        });
-        flushAddressChunk();
-        const title = isRegister ? '会員パスの発行' : 'プロフィール編集';
-        const formId = isRegister ? 'registerForm' : 'profileEditForm';
-        const submitLabel = isRegister ? '登録する' : '保存';
-        const titleIcon = isRegister ? 'fa-user-plus' : 'fa-user-edit';
-        const isFullScreen = options.fullScreen === true;
-        const hideCancel = options.forced === true || (isRegister && this._forcedRegister);
-        const cancelLabel = 'キャンセル';
-        const cancelOnclick = isFullScreen ? 'window.app.memberManager.closeMemberScreen()' : 'window.app.memberManager.closeProfileEdit()';
-        const actionsHtml = hideCancel
-            ? `
-                    <div class="member-form-actions">
-                        <button type="submit" class="member-btn member-btn--primary"${isFullScreen ? ' form="' + formId + '"' : ''}><i class="fas fa-check"></i> ${DomHelper.escapeHtml(submitLabel)}</button>
-                    </div>`
-            : `
-                    <div class="member-form-actions">
-                        <button type="button" class="member-btn member-btn--secondary" onclick="${cancelOnclick}">${DomHelper.escapeHtml(cancelLabel)}</button>
-                        <button type="submit" class="member-btn member-btn--primary"${isFullScreen ? ' form="' + formId + '"' : ''}><i class="fas fa-check"></i> ${DomHelper.escapeHtml(submitLabel)}</button>
-                    </div>`;
-        const formInner = `
-            <div class="member-modal-inner">
-                <h3 class="member-modal-title"><i class="fas ${titleIcon}"></i> ${DomHelper.escapeHtml(title)}</h3>
-                <form id="${formId}" class="member-form">
-                    ${groupedRows.join('')}
-                    ${isFullScreen ? '' : actionsHtml}
-                </form>
-            </div>
-        `;
-        if (isFullScreen) {
-            return `
-                <div class="member-register-fullscreen">
-                    <div class="member-register-fullscreen-header">
-                        <h2 class="member-register-fullscreen-title">${DomHelper.escapeHtml(title)}</h2>
-                    </div>
-                    <div class="member-register-fullscreen-body">${formInner}</div>
-                    <div class="member-register-fullscreen-footer">${actionsHtml}</div>
-                </div>
-            `;
-        }
-        return formInner;
+    _getProfileEditFormHtml(_user, member, options) {
+        const renderOptions = options || {};
+        return renderProfileForm(
+            this.memberData,
+            member,
+            {
+                ...renderOptions,
+                forced: renderOptions.forced === true || (renderOptions.isRegister === true && this._forcedRegister),
+                isNativeApp: typeof window !== "undefined" && window.__MOBILE_APP_MODE__ === true,
+            },
+            DomHelper.escapeHtml,
+        );
     }
 
     async openRegisterModal() {
