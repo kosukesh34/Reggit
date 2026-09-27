@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
+use App\UseCases\Member\Exceptions\MemberWithdrawalException;
 use App\UseCases\Member\MemberWithdrawUseCase;
 use App\Util\LogHelper;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +38,7 @@ class MemberWithdrawController extends Controller
                 'success' => true,
                 'message' => '退会が完了しました。',
             ]);
-        } catch (\RuntimeException $e) {
+        } catch (MemberWithdrawalException $e) {
             LogHelper::error('[Member] withdraw failed (Smaregi or business)', [
                 'error' => $e->getMessage(),
             ]);
@@ -45,8 +46,8 @@ class MemberWithdrawController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-            ], 500);
-        } catch (\Exception $e) {
+            ], 502);
+        } catch (\Throwable $e) {
             LogHelper::error('[Member] withdraw failed', [
                 'error' => $e->getMessage(),
             ]);

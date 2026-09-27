@@ -124,6 +124,8 @@ Post-commit event failure handling is centralized in `PostCommitDomainEventDispa
 
 The test harness clears shared cache state per test, and integration-dependent FCM and Smaregi webhook configuration is explicit in the affected suites. This prevents order-dependent rate-limit and environment failures.
 
+Member profile and withdrawal endpoints now distinguish validation or external-link failures from unexpected failures. Provider diagnostics and local log paths remain server-side, while local withdrawal mutations run in one database transaction.
+
 The first frontend extractions move Wallet/external-URL policy, member API payload normalization, and profile-form payload construction out of `MemberManager.ts`. The manager retains compatibility delegates while URL validation, HTTPS normalization, LIFF return URL construction, Google Wallet URL handling, error-message selection, supported member payload shapes, wallet-summary equality, split-name handling, choice fields, and empty profile values are independently covered by Node unit tests.
 
 Guest, authentication-required, error, and loading-state member-card templates are now pure renderers outside `MemberManager.ts`. Dynamic copy and CSS class values are escaped at the rendering boundary and covered by focused injection-resistance tests.
