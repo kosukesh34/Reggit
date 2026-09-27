@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Queue;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\QueueSettings;
 use App\Models\QueueEntry;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Support\QueueLaunchUrlBuilder;
@@ -13,7 +13,7 @@ use App\Util\StrHelper;
 class QueueOpenUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private QueueSettings $shopSettingRepository,
         private ProjectRepository $projectRepository,
     ) {}
 
