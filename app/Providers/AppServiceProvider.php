@@ -22,6 +22,7 @@ use App\Domain\Settings\Repositories\QueueSettings;
 use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Settings\Repositories\StampSettings;
+use App\Domain\Settings\Repositories\WalletSettings;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Infrastructure\Events\LoggingDomainEventListener;
 use App\Infrastructure\Events\MulticastDomainEventDispatcher;
@@ -104,6 +105,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(QueueEntryRepository::class, EloquentQueueEntryRepository::class);
         $this->app->bind(ShopSettingRepository::class, EloquentShopSettingRepository::class);
         $this->app->bind(StampSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(WalletSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(AdminAppearanceSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(AppConfigSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(CouponNotificationSettings::class, EloquentShopSettingRepository::class);

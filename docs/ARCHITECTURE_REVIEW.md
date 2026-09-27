@@ -96,6 +96,7 @@ The presentation layer no longer depends on the 100+ method `ShopSettingReposito
 - `CouponNotificationSettings`
 - `OrderNotificationSettings`
 - `StampSettings`
+- `WalletSettings`
 
 The Eloquent adapter implements these contracts during the incremental migration. The app-config API, shared home-image reader, queue and reservation flows, LINE identity/webhook handling, and customer notification services have moved to focused contracts. Architecture tests prevent migrated consumers from returning to the broad dependency.
 

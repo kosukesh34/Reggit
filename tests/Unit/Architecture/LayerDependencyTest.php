@@ -197,6 +197,22 @@ class LayerDependencyTest extends TestCase
         }
     }
 
+    public function test_wallet_consumers_depend_on_their_focused_settings_contract(): void
+    {
+        $root = dirname(__DIR__, 3).'/app/';
+
+        foreach ([
+            $root.'UseCases/Admin/Settings/GetWalletSettingsUseCase.php',
+            $root.'UseCases/Admin/Settings/UpdateWalletSettingsUseCase.php',
+            $root.'Services/GoogleWalletPassService.php',
+        ] as $file) {
+            $source = file_get_contents($file);
+            self::assertIsString($source);
+            self::assertStringContainsString('WalletSettings', $source, $file);
+            self::assertStringNotContainsString('ShopSettingRepository', $source, $file);
+        }
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */
