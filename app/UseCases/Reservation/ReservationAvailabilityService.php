@@ -4,7 +4,7 @@ namespace App\UseCases\Reservation;
 
 use App\Domain\Reservation\Policies\ReservationSlotPolicy;
 use App\Domain\Reservation\Repositories\ReservationRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Models\ReservationCourse;
 use App\UseCases\Reservation\Data\ReservationAvailability;
 use App\Util\AdminContext;
@@ -14,7 +14,7 @@ class ReservationAvailabilityService
 {
     public function __construct(
         private ReservationRepository $reservationRepository,
-        private ShopSettingRepository $shopSettingRepository,
+        private ReservationSettings $shopSettingRepository,
         private ReservationSlotPolicy $reservationSlotPolicy,
     ) {}
 

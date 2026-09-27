@@ -132,6 +132,40 @@ class LayerDependencyTest extends TestCase
         }
     }
 
+    public function test_queue_use_cases_depend_on_their_focused_settings_contract(): void
+    {
+        $root = dirname(__DIR__, 3).'/app/';
+        $files = [
+            $root.'UseCases/Queue/QueueOpenUseCase.php',
+            $root.'UseCases/Queue/QueueStatsService.php',
+            $root.'UseCases/Queue/QueueStoreUseCase.php',
+            $root.'UseCases/Admin/Settings/GetQueueSettingsUseCase.php',
+            $root.'UseCases/Admin/Settings/UpdateQueueSettingsUseCase.php',
+        ];
+
+        foreach ($files as $file) {
+            $source = file_get_contents($file);
+            self::assertIsString($source);
+            self::assertStringContainsString('QueueSettings', $source, $file);
+            self::assertStringNotContainsString('ShopSettingRepository', $source, $file);
+        }
+    }
+
+    public function test_reservation_services_depend_on_their_focused_settings_contract(): void
+    {
+        $root = dirname(__DIR__, 3).'/app/';
+
+        foreach ([
+            $root.'UseCases/Reservation/ReservationAvailabilityService.php',
+            $root.'Services/Admin/ReservationAdminService.php',
+        ] as $file) {
+            $source = file_get_contents($file);
+            self::assertIsString($source);
+            self::assertStringContainsString('ReservationSettings', $source, $file);
+            self::assertStringNotContainsString('ShopSettingRepository', $source, $file);
+        }
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */
