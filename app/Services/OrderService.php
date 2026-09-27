@@ -17,7 +17,6 @@ use App\Domain\Order\Repositories\ProductStockRepository;
 use App\Domain\Order\ValueObjects\OrderLineItem;
 use App\Domain\Order\ValueObjects\PendingOrder;
 use App\Domain\Settings\Repositories\OrderSettings;
-use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\LotterySourceType;
 use App\Enums\MemberCouponSource;
 use App\Enums\MemberVisitSource;
@@ -35,7 +34,6 @@ use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\Stamp\MemberCurrentStampCardResolver;
 use App\Util\AdminContext;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
@@ -49,7 +47,7 @@ class OrderService
         private ProductStockRepository $productStockRepository,
         private ProductCatalogRepository $productCatalogRepository,
         private OrderSettings $shopSettingRepository,
-        private DomainEventDispatcher $domainEvents,
+        private PostCommitDomainEventDispatcher $postCommitEvents,
         private OrderPlacementPolicy $orderPlacementPolicy,
         private ProductAvailabilityPolicy $productAvailabilityPolicy,
         private ProductOptionSelectionPolicy $productOptionSelectionPolicy,
@@ -66,8 +64,7 @@ class OrderService
 
     public function createOrder(array $orderData, User $user): Order
     {
-        DB::beginTransaction();
-        try {
+        [$order, $projectId, $paymentMethod] = DB::transaction(function () use ($orderData, $user): array {
             $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
             $orderType = (string) ($orderData['order_type'] ?? OrderType::MOBILE);
             $paymentMethod = (string) ($orderData['payment_method'] ?? '');
@@ -118,22 +115,18 @@ class OrderService
                 }
             }
 
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Order creation error: '.$e->getMessage());
-            throw $e;
-        }
+            return [$order, $projectId, $paymentMethod];
+        });
 
         // commit 後に同期する（失敗しても注文は残す。try/catch 外で rollBack しない）
         if ($paymentMethod !== PaymentMethod::STRIPE) {
             $this->syncMemberRank($user);
-            $this->dispatchBestEffort(new OrderPointsSyncRequested(
+            $this->postCommitEvents->dispatch(new OrderPointsSyncRequested(
                 (int) $order->id,
                 $projectId,
                 (int) $user->id,
             ));
-            $this->dispatchBestEffort(new OrderTransactionSyncRequested(
+            $this->postCommitEvents->dispatch(new OrderTransactionSyncRequested(
                 (int) $order->id,
                 $projectId,
                 (int) $user->id,
@@ -141,18 +134,6 @@ class OrderService
         }
 
         return $order->load('items.product');
-    }
-
-    private function dispatchBestEffort(object $event): void
-    {
-        try {
-            $this->domainEvents->dispatch($event);
-        } catch (\Throwable $e) {
-            Log::error('[DomainEvent] post-commit dispatch failed', [
-                'event' => $event::class,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     /**
@@ -457,8 +438,7 @@ class OrderService
 
         $order->load('user', 'items.product');
 
-        DB::beginTransaction();
-        try {
+        DB::transaction(function () use ($order, $projectId): void {
             if ($order->user !== null) {
                 $member = $this->memberRepository->findByUserId((int) $order->user_id, $projectId);
                 if ($member !== null) {
@@ -479,13 +459,7 @@ class OrderService
             }
 
             $this->restoreProductStock($order, $projectId);
-
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Order cancellation handling failed: '.$e->getMessage(), ['order_id' => $order->id]);
-            throw $e;
-        }
+        });
         if ($order->user !== null) {
             $this->syncMemberRank($order->user);
         }

@@ -120,6 +120,8 @@ Order creation now has one shared request and orchestration path for the legacy 
 
 Stripe confirmation now rolls back payment persistence if reward application fails. Domain events and external synchronization are dispatched after commit as best-effort follow-up work, so a delivery outage cannot turn a committed order into a misleading HTTP failure.
 
+Post-commit event failure handling is centralized in `PostCommitDomainEventDispatcher` instead of being duplicated across order and payment flows. `OrderService` also uses framework-managed transaction closures, ensuring every `Throwable` rolls back consistently.
+
 The test harness clears shared cache state per test, and integration-dependent FCM and Smaregi webhook configuration is explicit in the affected suites. This prevents order-dependent rate-limit and environment failures.
 
 The first frontend extractions move Wallet/external-URL policy, member API payload normalization, and profile-form payload construction out of `MemberManager.ts`. The manager retains compatibility delegates while URL validation, HTTPS normalization, LIFF return URL construction, Google Wallet URL handling, error-message selection, supported member payload shapes, wallet-summary equality, split-name handling, choice fields, and empty profile values are independently covered by Node unit tests.
