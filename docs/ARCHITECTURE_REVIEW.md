@@ -128,6 +128,10 @@ Profile registration/edit form rendering is now isolated from member state and D
 
 React screen modules are loaded at route boundaries with an accessible loading fallback. Home, membership, profile, feature, design-lab, and secondary screens no longer have to share one eagerly evaluated application chunk. The remaining mutually dependent compatibility managers are emitted as one stable cache group instead of inflating the entry chunk.
 
+Application navigation policy is isolated from the `ReggitApp` orchestrator. URL and LIFF-state tabs, deep-link ownership, order mode, and designer-preview parameters are normalized by pure functions with hostile and malformed input coverage.
+
+Legacy application bootstrap is also isolated from the orchestrator. LIFF readiness, persisted identity restoration, loading-state cleanup, and bounded startup fallbacks now live behind an injected application factory.
+
 Rank-history rendering is also isolated as a pure formatter. API-provided labels and dates are escaped at that boundary and covered by focused unit tests. View composers now catch runtime exceptions rather than all PHP throwables, so programming errors such as type violations are no longer silently replaced with fallback presentation data.
 
 ## Recommended sequence

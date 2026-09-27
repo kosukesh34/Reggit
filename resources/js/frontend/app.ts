@@ -19,6 +19,7 @@ import { DesignLabManager } from './managers/DesignLabManager';
 import { MemberManager } from './managers/MemberManager';
 import { LiffPageRouter, parseLiffHash, isDeepLiffHash } from './navigation/LiffPageRouter';
 import type { LiffPageKey } from './navigation/LiffPageRouter';
+import { normalizeOrderMode, resolveAppTab, resolveDesignerPreview, resolveTabFromParsedHash, resolveTabFromSearch, tabForDesignerPreview } from './navigation/appNavigationPolicy';
 import { LIFF_UI_NAVIGATE, pathForLegacyTab } from '../liff-ui/navigation/tabPath';
 import { primaryForTab } from './demo/navigation';
 import { isFixedUiShell } from './demo/demoMode';
@@ -31,6 +32,7 @@ import {
 } from './demo/sampleData';
 import './managers/liff-blocks/renderPremiumBlocks';
 import '../shared/utils/liffInit';
+import { bootstrapLegacyApp } from './bootstrapLegacyApp';
 
 declare const liff: any;
 
@@ -95,9 +97,9 @@ class ReggitApp {
     }
 
     getInitialTab() {
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'profile', 'reservations', 'gallery', 'announcements']);
-        if (typeof window.__NATIVE_TARGET_TAB__ !== 'undefined' && window.__NATIVE_TARGET_TAB__ && allowedTabs.has(window.__NATIVE_TARGET_TAB__)) {
-            return window.__NATIVE_TARGET_TAB__;
+        const nativeTab = resolveAppTab(window.__NATIVE_TARGET_TAB__ || null);
+        if (nativeTab) {
+            return nativeTab;
         }
         const fromUrl = this.getTabFromUrl();
         if (fromUrl) return fromUrl;
@@ -110,109 +112,37 @@ class ReggitApp {
 
     getTabFromUrl() {
         if (typeof window === 'undefined') return null;
-        const allowedTabs = new Set(['home', 'products', 'orders', 'stamps', 'coupons', 'designlab', 'queue', 'member', 'profile', 'reservations', 'gallery', 'announcements']);
-        const aliases: Record<string, string> = {
-            order: 'products',
-            card: 'member',
-            profile: 'profile',
-            visit: 'queue',
-            more: 'home',
-        };
-        const resolve = (raw: string | null): string | null => {
-            if (raw === null || raw === '') {
-                return null;
-            }
-            const mapped = aliases[raw] ?? raw;
-            if (allowedTabs.has(mapped) || /^link_[0-9]+$/.test(mapped)) {
-                return mapped;
-            }
-            return null;
-        };
-        const params = new URLSearchParams(window.location.search || '');
-        const fromQuery = resolve(params.get('tab'));
-        if (fromQuery !== null) {
-            return fromQuery;
-        }
-        const liffState = params.get('liff.state');
-        if (liffState) {
-            const normalized = liffState.startsWith('?') ? liffState.slice(1) : liffState;
-            const stateParams = new URLSearchParams(normalized);
-            return resolve(stateParams.get('tab'));
-        }
-        return null;
+        return resolveTabFromSearch(window.location.search);
     }
 
     getTabFromHash() {
         if (typeof window === 'undefined') return null;
         const parsed = parseLiffHash(window.location.hash || '');
-        if (parsed.kind === 'announcement') {
-            return AppConstants.TABS.ANNOUNCEMENTS;
-        }
-        if (parsed.kind === 'product' || parsed.kind === 'order') {
-            return AppConstants.TABS.PRODUCTS;
-        }
-        if (parsed.kind === 'coupon') {
-            return AppConstants.TABS.COUPONS;
-        }
-        if (parsed.kind === 'gallery') {
-            return AppConstants.TABS.GALLERY;
-        }
-        if (parsed.kind === 'stamp') {
-            return AppConstants.TABS.STAMPS;
-        }
-        if (parsed.kind === 'reservation') {
-            return AppConstants.TABS.RESERVATIONS;
-        }
-        if (parsed.kind === 'tab') {
-            return parsed.tab;
-        }
-        return null;
+        return resolveTabFromParsedHash(parsed);
     }
 
     getOrderMode() {
         if (typeof window === 'undefined') return 'both';
-        const mode = String(window.__ORDER_MODE__ || 'both');
-        if (mode === 'mobile_only' || mode === 'in_store_only' || mode === 'both') return mode;
-        return 'both';
+        return normalizeOrderMode(window.__ORDER_MODE__);
     }
 
     getDesignerPreviewSource() {
         if (typeof window === 'undefined') return null;
-        const params = new URLSearchParams(window.location.search || '');
-        if (params.get('designer_live_preview') !== '1') return null;
-        const source = params.get('designer_source');
-        const allowed = new Set(['products', 'orders', 'stamps', 'coupons', 'queue', 'reservations', 'member', 'member_card', 'profile', 'gallery', 'announcements']);
-        if (!source || !allowed.has(source)) return null;
-        return source;
+        return resolveDesignerPreview(window.location.search).source;
     }
 
     isDesignerPreviewEmbed() {
         if (typeof window === 'undefined') return false;
-        const params = new URLSearchParams(window.location.search || '');
-        return params.get('designer_embed') === '1';
+        return resolveDesignerPreview(window.location.search).embed;
     }
 
     isDesignerPreviewSample() {
         if (typeof window === 'undefined') return false;
-        const params = new URLSearchParams(window.location.search || '');
-        return params.get('designer_sample') === '1';
+        return resolveDesignerPreview(window.location.search).sample;
     }
 
     getDesignerPreviewTab(source) {
-        const map = {
-            products: 'products',
-            orders: 'orders',
-            stamps: 'stamps',
-            coupons: 'coupons',
-            queue: 'queue',
-            reservations: 'reservations',
-            member: 'member',
-            member_card: 'member',
-            profile: 'profile',
-            gallery: 'gallery',
-            announcements: 'announcements',
-        };
-        return map[source] || 'home';
+        return tabForDesignerPreview(source);
     }
 
     shouldOpenMemberRegisterOnLoad() {
@@ -1957,84 +1887,4 @@ class ReggitApp {
     }
 }
 
-if (typeof window !== 'undefined' && !window.__LIFF_APP_BOOTSTRAP__) {
-    window.__LIFF_APP_BOOTSTRAP__ = true;
-    if (typeof window.__clientDebugLog === 'function') {
-        window.__clientDebugLog('app_bootstrap_set', {});
-    }
-
-    function hideLiffLoading() {
-        const el = document.getElementById('liff-loading');
-        if (el) el.classList.add('liff-loading--hidden');
-    }
-
-    function restorePersistedLineUserIdBeforeApp() {
-        // LIFF では liff-ready 後に LIFF トークンで ID を確定するため、ここでは復元しない
-        if (typeof window === 'undefined' || window.__LINE_USER_ID__ || window.__IS_LIFF__) return;
-        try {
-            const projectKey = window.__PROJECT_KEY__ || '';
-            const scoped = String(window.localStorage.getItem('mobile_order_line_user_id_' + projectKey) || '').trim();
-            const legacy = String(window.localStorage.getItem('mobile_order_line_user_id') || '').trim();
-            const cached = /^U[0-9a-f]{32}$/i.test(scoped) ? scoped : (/^U[0-9a-f]{32}$/i.test(legacy) ? legacy : '');
-            if (cached) {
-                window.__LINE_USER_ID__ = cached;
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    function createApp() {
-        if (window.app) return;
-        if (!window.__IS_LIFF__) {
-            restorePersistedLineUserIdBeforeApp();
-        }
-        window.app = new ReggitApp();
-        if (typeof window.__clientDebugLog === 'function') {
-            window.__clientDebugLog('app_created', {
-                require_membership: isMembershipRequired(),
-                project_key: window.__PROJECT_KEY__ || null,
-            });
-        }
-        hideLiffLoading();
-    }
-
-    document.addEventListener(
-        'liff-ready',
-        function fn() {
-            document.removeEventListener('liff-ready', fn);
-            if (!window.app) {
-                createApp();
-            }
-            if (window.app && typeof window.app.onLiffReady === 'function') {
-                if (typeof window.__clientDebugLog === 'function') {
-                    window.__clientDebugLog('app_on_liff_ready_called', {});
-                }
-                window.app.onLiffReady();
-            }
-        },
-        { once: true }
-    );
-
-    function canBootstrapWithoutLiffReady() {
-        if (!window.__IS_LIFF__) return true;
-        if (window.__LIFF_ID_MISSING__) return true;
-        return false;
-    }
-
-    // フォールバック: 5秒以内にliff-readyが来なければ起動（LIFFでは LINE ID 確定後のみ member-profile を叩く）
-    setTimeout(() => {
-        if (!window.app && typeof ReggitApp !== 'undefined' && canBootstrapWithoutLiffReady()) {
-            createApp();
-        }
-        const loadingEl = document.getElementById('liff-loading');
-        if (loadingEl && !loadingEl.classList.contains('liff-loading--hidden')) {
-            loadingEl.classList.add('liff-loading--hidden');
-        }
-    }, 5000);
-
-    // LIFF 初期化が極端に遅い場合の最終フォールバック
-    setTimeout(() => {
-        if (!window.app && typeof ReggitApp !== 'undefined') {
-            createApp();
-        }
-    }, 15000);
-}
+bootstrapLegacyApp(() => new ReggitApp(), isMembershipRequired);
