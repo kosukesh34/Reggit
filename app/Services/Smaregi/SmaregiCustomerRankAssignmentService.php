@@ -2,7 +2,7 @@
 
 namespace App\Services\Smaregi;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Models\Member;
 use App\Models\Scopes\ProjectScope;
 use App\Util\LogHelper;
@@ -17,7 +17,7 @@ class SmaregiCustomerRankAssignmentService
 
     public function __construct(
         private SmaregiApiService $smaregiApi,
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
     ) {}
 
     public function assignRankToCustomer(Member $member, string $rankKey): void

@@ -4,7 +4,7 @@ namespace App\UseCases\Admin\Member;
 
 use App\Domain\Member\Events\PointsEarned;
 use App\Domain\Member\Repositories\MemberRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Services\Admin\MemberAdminService;
 use App\UseCases\Admin\Member\Data\AdminMemberUpdateInput;
@@ -17,7 +17,7 @@ class AdminMemberUpdateUseCase
     public function __construct(
         private MemberAdminService $memberAdminService,
         private MemberRepository $memberRepository,
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
         private DomainEventDispatcher $domainEvents,
     ) {}
 

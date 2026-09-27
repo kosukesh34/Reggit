@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\PointTransactionType;
 use App\Enums\RankAggregationType;
 use App\Models\Member;
@@ -13,7 +13,7 @@ use Carbon\Carbon;
 final class MemberRankMetricCalculator
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
     ) {}
 
     public function points(Member $member, int $projectId): int
