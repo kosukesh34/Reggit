@@ -37,17 +37,20 @@
 
 Xcode で `WaitingSystem.xcodeproj` を開いてビルドしてください。
 
-### 向け先・プロジェクト（ビルド時固定）
+### 店舗端末の登録
 
-接続先とプロジェクトは実行時には変更できません。ビルド前に次のファイルだけ編集します。
+認証・1端末制約・API・スワイプ操作の正式仕様は [`../docs/STORE_APP_SPEC.md`](../docs/STORE_APP_SPEC.md) を参照してください。
 
-- **ファイル**: `WaitingSystem/Core/Constants/AppBuildConfig.swift`
+同じApp Storeビルドをすべての店舗で利用します。店舗オーナーが管理画面の基本設定でKitchen／Waitingごとの登録コードを発行し、初回起動時に入力します。各店舗・各アプリにつき登録できる端末は1台です。
+
+- 接続先だけは `WaitingSystem/Core/Constants/AppBuildConfig.swift` の `serverTarget` で切り替えます。
+- 登録コードは一度だけ使用でき、サーバーにはハッシュだけを保存します。
+- 認証トークンと端末鍵はKeychainに保存され、期限はありません。APIは両方の一致を検証します。
+- 管理画面でコードを再発行すると、登録済み端末は即時失効します。
 
 ```swift
 // 本番
 static let serverTarget: AppServerTarget = .production
-static let projectKey = "sb_skt733n4"
-
 // ローカルに切り替えるとき
 static let serverTarget: AppServerTarget = .local
 // 必要なら localBaseURL を ngrok 等に変更
@@ -56,10 +59,10 @@ static let serverTarget: AppServerTarget = .local
 | 項目 | production | local |
 |------|------------|-------|
 | API URL | `https://reggit.jp` | `http://localhost:8080`（変更可） |
-| プロジェクト | `projectKey` の値 | 同左 |
+| プロジェクト | ログインした店舗 | ログインした店舗 |
 | LINE / LIFF | API から自動取得 | 同左 |
 
-設定画面では向け先・API URL・プロジェクト・API取得の LINE 情報は表示のみです（プリンター・パスコード等は従来どおり編集可）。
+設定画面ではログイン中のプロジェクトを表示します（プリンター・パスコード等は従来どおり編集可）。
 
 ---
 
@@ -84,8 +87,8 @@ static let serverTarget: AppServerTarget = .local
 
 ## セットアップ
 
-1. Xcode で `KitchenMonitor.xcodeproj` を開き、`AppBuildConfig.swift` の `projectKey` / `serverTarget` を設定（Waiting と同じ運用）
-2. 実機でビルドして起動（トークン入力は不要。`project_key` のみで接続）
+1. Xcode で `KitchenMonitor.xcodeproj` を開き、必要なら `AppBuildConfig.swift` の `serverTarget` を設定
+2. 管理画面で端末登録コードを発行し、実機の初回起動画面へ入力
 
 ## API
 
@@ -95,4 +98,4 @@ static let serverTarget: AppServerTarget = .local
 | POST | `/api/kitchen/{project_key}/orders/{id}/status` | ステータス更新 |
 | POST | `/api/kitchen/{project_key}/devices` | Push トークン登録 |
 
-認証: Waiting と同様に `project_key` のみ（トークン不要）。ヘッダ `X-Kitchen-Client: kitchen-monitor` を付与。
+認証: 一度きりの登録コードで発行された無期限Bearerトークンと端末固有鍵。両方ともアプリ種別とプロジェクトIDに固定されます。

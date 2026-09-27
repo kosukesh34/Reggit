@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\AdminUser;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\QueueEntry;
+use App\Models\StoreAppCredential;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Services\UserService;
@@ -179,13 +180,19 @@ class SecurityBoundaryTest extends TestCase
         $this->assertNull($entry->fresh()->user_id);
     }
 
-    public function test_kitchen_requires_the_correct_store_token(): void
+    public function test_kitchen_requires_a_project_scoped_login(): void
     {
-        ShopSettingStore::setKitchenAccessToken('store-secret', $this->project->id);
         $url = '/api/kitchen/security-review/orders';
         $this->getJson($url)->assertUnauthorized();
         $this->withHeader('X-Store-Token', 'wrong')->getJson($url)->assertUnauthorized();
-        $this->withHeader('X-Store-Token', 'store-secret')->getJson($url)->assertOk();
+        $admin = AdminUser::factory()->create(['project_id' => $this->project->id, 'role' => AdminUser::ROLE_ADMIN]);
+        $token = $admin->createToken('test-kitchen', ['app:kitchen', 'project:'.$this->project->id]);
+        StoreAppCredential::query()->create([
+            'project_id' => $this->project->id, 'admin_user_id' => $admin->id, 'app' => 'kitchen',
+            'personal_access_token_id' => $token->accessToken->id,
+            'device_key_hash' => hash('sha256', 'test-device-key'), 'claimed_at' => now(),
+        ]);
+        $this->withToken($token->plainTextToken)->withHeader('X-Device-Key', 'test-device-key')->getJson($url)->assertOk();
     }
 
     public function test_payment_retries_reuse_the_same_session_and_reject_a_second_channel(): void

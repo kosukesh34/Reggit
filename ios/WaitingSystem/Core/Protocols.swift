@@ -7,6 +7,7 @@ protocol QueueAPIClientProtocol: Sendable {
     func createTicket(partySize: Int) async throws -> QueueTicket
     func cancelTicket(id: Int) async throws
     func callNext() async throws -> QueueTicket?
+    func callTicket(id: Int) async throws -> QueueTicket
     func recallTicket(id: Int) async throws -> QueueTicket
     func enterTicket(id: Int) async throws -> QueueTicket
     func fetchTicketStatus(id: Int) async throws -> QueueTicket?

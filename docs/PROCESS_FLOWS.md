@@ -357,7 +357,7 @@ flowchart TB
 | B + プラン | 上記 + `admin.plan:*` |
 | A 顧客 API | `/api` + `web` → `bind.project` |
 | C システム | `web` → `auth:admin` → `system.admin` → `admin.audit` |
-| D Kitchen | `AuthenticateKitchenToken` |
+| D Kitchen / Waiting | `auth:sanctum` → `store-app.auth:{kitchen|waiting}`（Bearer + 端末鍵） |
 | D スマレジ WH | `verify.smaregi.webhook` |
 
 定義: `app/Http/Kernel.php` / `app/Http/Middleware/`。

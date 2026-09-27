@@ -11,10 +11,8 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if appState.needsProjectSelection {
-                ProjectSelectionView {
-                    appState.completeProjectSelection()
-                }
+            if !appState.isAuthenticated {
+                WaitingLoginView()
             } else {
                 mainContent
             }
@@ -63,6 +61,41 @@ struct RootView: View {
             Button(Strings.Common.ok) {}
         } message: {
             Text(appState.errorMessage ?? "")
+        }
+    }
+}
+
+private struct WaitingLoginView: View {
+    @EnvironmentObject private var appState: AppState
+    @State private var enrollmentToken = ""
+    @State private var error: String?
+    @State private var loading = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("端末登録") {
+                    TextField("管理画面で発行した登録コード", text: $enrollmentToken).textInputAutocapitalization(.characters).autocorrectionDisabled()
+                    Text("登録コードは一度だけ使用できます。この店舗のWaiting端末として登録されます。")
+                        .font(.footnote).foregroundStyle(.secondary)
+                    if let error { Text(error).foregroundStyle(.red) }
+                    Button(loading ? "ログイン中…" : "ログイン") { Task { await login() } }
+                        .disabled(loading || enrollmentToken.isEmpty)
+                }
+            }
+            .navigationTitle("Reggit Wait")
+        }
+    }
+
+    private func login() async {
+        loading = true
+        defer { loading = false }
+        do {
+            _ = try await QueueAPIClient().login(enrollmentToken: enrollmentToken)
+            appState.didLogin()
+            await WaitingRemoteConfigStore.refreshFromAPI()
+        } catch {
+            self.error = error.localizedDescription
         }
     }
 }
