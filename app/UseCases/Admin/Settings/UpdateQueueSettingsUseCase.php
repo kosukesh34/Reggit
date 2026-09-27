@@ -2,12 +2,12 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\QueueSettings;
 
 class UpdateQueueSettingsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private QueueSettings $shopSettingRepository,
     ) {}
 
     /**

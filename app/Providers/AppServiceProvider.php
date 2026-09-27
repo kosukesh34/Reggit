@@ -15,6 +15,8 @@ use App\Domain\Settings\Repositories\AppConfigSettings;
 use App\Domain\Settings\Repositories\FrontendShellSettings;
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
 use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
+use App\Domain\Settings\Repositories\QueueSettings;
+use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Infrastructure\Events\LoggingDomainEventListener;
@@ -102,6 +104,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FrontendShellSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(HomeSettingsRepository::class, EloquentShopSettingRepository::class);
         $this->app->bind(MemberCardPreviewSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(QueueSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(ReservationSettings::class, EloquentShopSettingRepository::class);
         $this->app->singleton(DomainEventDispatcher::class, function ($app) {
             return new MulticastDomainEventDispatcher([
                 $app->make(LoggingDomainEventListener::class),

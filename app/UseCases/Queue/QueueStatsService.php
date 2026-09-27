@@ -2,14 +2,14 @@
 
 namespace App\UseCases\Queue;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\QueueSettings;
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry;
 
 class QueueStatsService
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private QueueSettings $shopSettingRepository,
     ) {}
 
     public function getStats(int $projectId, ?int $beforeQueueNumber): array
