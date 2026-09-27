@@ -2,13 +2,13 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineAdminSettings;
 use App\Services\Line\LineLiffAdminService;
 
 class UpdateLiffConnectionSettingsUseCase
 {
     public function __construct(
-        private readonly ShopSettingRepository $shopSettingRepository,
+        private readonly LineAdminSettings $shopSettingRepository,
         private readonly LineLiffAdminService $lineLiffAdminService,
     ) {}
 

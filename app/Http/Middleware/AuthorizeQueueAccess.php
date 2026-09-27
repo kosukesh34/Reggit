@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\KitchenAccessSettings;
 use App\Models\QueueEntry;
 use App\Services\UserService;
 use App\Support\QueueRequestContext;
@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 class AuthorizeQueueAccess
 {
     public function __construct(
-        private ShopSettingRepository $settings,
+        private KitchenAccessSettings $settings,
         private UserService $users,
         private QueueSessionStore $sessions,
     ) {}

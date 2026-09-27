@@ -2,14 +2,14 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Models\StampCard;
 use App\UseCases\Admin\Settings\Data\RankSettingsView;
 
 class GetRankSettingsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId): RankSettingsView
