@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Member;
-use App\UseCases\Member\IssueMemberTransferCodeUseCase;
+use App\UseCases\Admin\Member\IssueAdminMemberTransferCodeUseCase;
 use App\Util\LogHelper;
 use Illuminate\Http\RedirectResponse;
 use InvalidArgumentException;
@@ -11,7 +10,7 @@ use InvalidArgumentException;
 class MemberTransferController extends AdminBaseController
 {
     public function __construct(
-        private IssueMemberTransferCodeUseCase $issueMemberTransferCodeUseCase,
+        private IssueAdminMemberTransferCodeUseCase $issueAdminMemberTransferCodeUseCase,
     ) {}
 
     public function store(string $project_key, string $id): RedirectResponse
@@ -22,15 +21,11 @@ class MemberTransferController extends AdminBaseController
             'project_key' => $project_key,
             'id' => $memberId,
         ]);
-        $member = Member::query()->where('project_id', $projectId)->whereKey($memberId)->first();
-        if ($member === null || $member->user === null) {
-            return $back->withErrors(['transfer' => '会員が見つかりません']);
-        }
-
         try {
             $adminId = auth('admin')->id();
-            $issued = $this->issueMemberTransferCodeUseCase->handle(
-                $member->user,
+            $issued = $this->issueAdminMemberTransferCodeUseCase->handle(
+                $projectId,
+                $memberId,
                 $adminId !== null ? (int) $adminId : null,
             );
         } catch (InvalidArgumentException $e) {

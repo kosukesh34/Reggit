@@ -3,12 +3,12 @@
 namespace App\UseCases\Admin\Account;
 
 use App\Models\AdminUser;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\UseCases\Admin\Account\Data\AccountIndexView;
+use App\UseCases\Admin\Data\RouteContext;
 
 class AccountIndexUseCase
 {
-    /** @return array{adminUsers: LengthAwarePaginator} */
-    public function handle(AdminUser $me): array
+    public function handle(AdminUser $me, RouteContext $context): AccountIndexView
     {
         $query = AdminUser::with('project', 'projects');
 
@@ -28,6 +28,6 @@ class AccountIndexUseCase
 
         $adminUsers = $query->orderBy('role')->orderBy('login_id')->paginate(20);
 
-        return ['adminUsers' => $adminUsers];
+        return new AccountIndexView($adminUsers, $me, $context->routePrefix);
     }
 }

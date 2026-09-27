@@ -63,6 +63,37 @@ class LayerDependencyTest extends TestCase
         self::assertSame([], $violations);
     }
 
+    public function test_refactored_public_controllers_do_not_import_models(): void
+    {
+        $controllers = [
+            'LegalDocumentController.php',
+            'StampGrantCodeController.php',
+            'HealthController.php',
+            'Api/V1/DeviceOnceCouponController.php',
+            'Admin/MemberTransferController.php',
+            'Admin/Account/AccountDestroyController.php',
+            'Admin/Account/AccountFormController.php',
+            'Admin/Account/AccountIndexController.php',
+            'Admin/Settings/StaffController.php',
+            'Admin/Settings/StaffMutationController.php',
+            'Admin/AdminBaseController.php',
+            'Admin/AdminRootController.php',
+            'Admin/Auth/SystemAdminLoginController.php',
+            'Member/MemberTransferClaimController.php',
+        ];
+        $violations = [];
+
+        foreach ($controllers as $controller) {
+            $path = dirname(__DIR__, 3).'/app/Http/Controllers/'.$controller;
+            $source = file_get_contents($path);
+            if (str_contains($source, 'use App\\Models\\') || str_contains($source, 'use Illuminate\\Support\\Facades\\DB')) {
+                $violations[] = $controller;
+            }
+        }
+
+        self::assertSame([], $violations);
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */

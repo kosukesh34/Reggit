@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\Coupon;
 use App\Services\DeviceOnceCouponService;
 use App\Services\UserService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -15,7 +15,7 @@ class DeviceOnceCouponController extends BaseApiController
         private DeviceOnceCouponService $service,
     ) {}
 
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $user = $this->userService->getOrCreateUser($request);
 
@@ -24,10 +24,10 @@ class DeviceOnceCouponController extends BaseApiController
         ]);
     }
 
-    public function claim(Request $request, Coupon $coupon)
+    public function claim(Request $request, int $coupon): JsonResponse
     {
         try {
-            $issued = $this->service->claim(
+            $issued = $this->service->claimById(
                 $this->userService->getOrCreateUser($request),
                 $coupon,
                 $this->deviceIdentifier($request),

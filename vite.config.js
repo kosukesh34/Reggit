@@ -15,6 +15,18 @@ export default defineConfig({
                         return 'realtime-vendor';
                     }
 
+                    if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                        return 'react-vendor';
+                    }
+
+                    if (id.includes('qrcode') || id.includes('jsqr') || id.includes('jsbarcode')) {
+                        return 'scanner-vendor';
+                    }
+
+                    if (id.includes('date-fns')) {
+                        return 'date-vendor';
+                    }
+
                     return 'vendor';
                 },
             },

@@ -3,22 +3,23 @@
 namespace App\Http\Controllers\Admin\Account;
 
 use App\Http\Controllers\Controller;
+use App\Http\Support\AuthenticatedAdminResolver;
 use App\Http\Support\RouteContextResolver;
-use App\Models\AdminUser;
 use App\UseCases\Admin\Account\AccountFormUseCase;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class AccountFormController extends Controller
 {
     public function __construct(
         private AccountFormUseCase $formUseCase,
-        private RouteContextResolver $routeContextResolver
+        private RouteContextResolver $routeContextResolver,
+        private AuthenticatedAdminResolver $authenticatedAdminResolver,
     ) {}
 
-    public function create(Request $request)
+    public function create(Request $request): View
     {
-        /** @var AdminUser $me */
-        $me = $request->user('admin');
+        $me = $this->authenticatedAdminResolver->resolve($request);
 
         $routeContext = $this->routeContextResolver->resolveFromRequest($request);
         $view = $this->formUseCase->getCreateView($me, $routeContext);
@@ -26,10 +27,9 @@ class AccountFormController extends Controller
         return view('admin.accounts.create', ['view' => $view]);
     }
 
-    public function edit(Request $request, int $id)
+    public function edit(Request $request, int $id): View
     {
-        /** @var AdminUser $me */
-        $me = $request->user('admin');
+        $me = $this->authenticatedAdminResolver->resolve($request);
         $routeContext = $this->routeContextResolver->resolveFromRequest($request);
         $view = $this->formUseCase->getEditView($me, $id, $routeContext);
 

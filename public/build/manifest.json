@@ -1,20 +1,39 @@
 {
-  "_customization-9fcUIkD-.js": {
-    "file": "assets/customization-9fcUIkD-.js",
+  "_customization-BiFQD3LR.js": {
+    "file": "assets/customization-BiFQD3LR.js",
     "name": "customization",
     "imports": [
-      "_vendor-B5Tv5u8Z.js"
+      "_react-vendor-CwIYLWUJ.js"
     ]
   },
-  "_realtime-vendor-BMrQiODX.js": {
-    "file": "assets/realtime-vendor-BMrQiODX.js",
+  "_date-vendor-D5ebMS61.js": {
+    "file": "assets/date-vendor-D5ebMS61.js",
+    "name": "date-vendor"
+  },
+  "_react-vendor-CwIYLWUJ.js": {
+    "file": "assets/react-vendor-CwIYLWUJ.js",
+    "name": "react-vendor",
+    "imports": [
+      "_vendor-VyUKa9GO.js"
+    ]
+  },
+  "_realtime-vendor-nf6r-NPB.js": {
+    "file": "assets/realtime-vendor-nf6r-NPB.js",
     "name": "realtime-vendor",
     "imports": [
-      "_vendor-B5Tv5u8Z.js"
+      "_react-vendor-CwIYLWUJ.js"
     ]
   },
-  "_vendor-B5Tv5u8Z.js": {
-    "file": "assets/vendor-B5Tv5u8Z.js",
+  "_scanner-vendor-Bg6OJ_gC.js": {
+    "file": "assets/scanner-vendor-Bg6OJ_gC.js",
+    "name": "scanner-vendor",
+    "imports": [
+      "_react-vendor-CwIYLWUJ.js",
+      "_vendor-VyUKa9GO.js"
+    ]
+  },
+  "_vendor-VyUKa9GO.js": {
+    "file": "assets/vendor-VyUKa9GO.js",
     "name": "vendor"
   },
   "resources/css/app.css": {
@@ -22,25 +41,30 @@
     "src": "resources/css/app.css"
   },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-SfQsa_oE.js",
+    "file": "assets/main-eUK6CtfK.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
     "imports": [
-      "_vendor-B5Tv5u8Z.js",
-      "_customization-9fcUIkD-.js",
-      "_realtime-vendor-BMrQiODX.js"
+      "_react-vendor-CwIYLWUJ.js",
+      "_customization-BiFQD3LR.js",
+      "_scanner-vendor-Bg6OJ_gC.js",
+      "_realtime-vendor-nf6r-NPB.js",
+      "_vendor-VyUKa9GO.js"
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-SYODYFx4.js",
+    "file": "assets/main-D3T9mOXc.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
     "imports": [
-      "_vendor-B5Tv5u8Z.js",
-      "_customization-9fcUIkD-.js",
-      "_realtime-vendor-BMrQiODX.js"
+      "_react-vendor-CwIYLWUJ.js",
+      "_customization-BiFQD3LR.js",
+      "_realtime-vendor-nf6r-NPB.js",
+      "_scanner-vendor-Bg6OJ_gC.js",
+      "_date-vendor-D5ebMS61.js",
+      "_vendor-VyUKa9GO.js"
     ],
     "css": [
       "assets/main-gjH9gtb6.css",
