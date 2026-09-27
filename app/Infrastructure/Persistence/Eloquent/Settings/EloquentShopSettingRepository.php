@@ -2,9 +2,14 @@
 
 namespace App\Infrastructure\Persistence\Eloquent\Settings;
 
+use App\Domain\Settings\Repositories\AdminAppearanceSettings;
+use App\Domain\Settings\Repositories\AppConfigSettings;
+use App\Domain\Settings\Repositories\FrontendShellSettings;
+use App\Domain\Settings\Repositories\HomeSettingsRepository;
+use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 
-class EloquentShopSettingRepository implements ShopSettingRepository
+class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, FrontendShellSettings, HomeSettingsRepository, MemberCardPreviewSettings, ShopSettingRepository
 {
     public function getValue(string $key, mixed $default, int $projectId): mixed
     {
