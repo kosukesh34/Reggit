@@ -2,18 +2,16 @@ import SwiftUI
 
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
+    @EnvironmentObject private var appState: AppState
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("接続") {
-                    SecureField("店舗端末トークン", text: $viewModel.storeToken)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
                     LabeledContent("向け先", value: viewModel.serverLabel)
                     LabeledContent("プロジェクト", value: viewModel.projectKey)
-                    Text("プロジェクトはビルド設定（AppBuildConfig）で固定です。Waiting と同じ運用です。")
+                    Text("プロジェクトはログインした店舗に固定されます。変更する場合はログアウトしてください。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -21,6 +19,12 @@ struct SettingsView: View {
                     TextField("端末名", text: $viewModel.deviceName)
                     SecureField("管理パスコード", text: $viewModel.passcode)
                         .keyboardType(.numberPad)
+                }
+                Section {
+                    Button("ログアウト", role: .destructive) {
+                        appState.logout()
+                        dismiss()
+                    }
                 }
                 if let message = viewModel.message {
                     Section {

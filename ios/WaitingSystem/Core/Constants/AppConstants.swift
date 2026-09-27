@@ -36,11 +36,11 @@ enum AppConstants {
         static let `default` = 2
     }
 
-    // MARK: - デフォルト設定値（向け先・プロジェクトは AppBuildConfig）
+    // MARK: - デフォルト設定値（プロジェクトはログイン後に保存）
 
     enum DefaultSettings {
         static var baseURL: String { AppBuildConfig.baseURL }
-        static var projectKey: String { AppBuildConfig.projectKey }
+        static let projectKey = ""
         static var liffURL: String { WaitingRemoteConfigStore.current.lineLiffUrl }
         /// ローカル iPad と同じライト配色の既定背景
         static let backgroundColorHex = "#F2F4F8"

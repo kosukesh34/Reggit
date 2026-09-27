@@ -12,14 +12,12 @@ final class KitchenSettingsStore {
         }
         var updated = settings
         updated.baseURL = AppBuildConfig.baseURL
-        updated.projectKey = AppBuildConfig.projectKey
         return updated
     }
 
     func save(_ settings: KitchenSettings) {
         var updated = settings
         updated.baseURL = AppBuildConfig.baseURL
-        updated.projectKey = AppBuildConfig.projectKey
         guard let data = try? encoder.encode(updated) else { return }
         UserDefaults.standard.set(data, forKey: key)
     }
