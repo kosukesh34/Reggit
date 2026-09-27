@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
+    "typecheck:strict": "tsc --noEmit -p tsconfig.strict.json",
     "lint": "tsc --noEmit",
     "test:unit:frontend": "node --experimental-strip-types --test resources/js/frontend/member/*.test.mjs resources/js/frontend/navigation/*.test.mjs",
     "test:e2e": "playwright test --config=e2e/web/playwright.config.ts",

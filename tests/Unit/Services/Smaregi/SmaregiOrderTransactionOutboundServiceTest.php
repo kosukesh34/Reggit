@@ -4,7 +4,7 @@ namespace Tests\Unit\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Repositories\OrderRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
@@ -72,7 +72,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(SmaregiSettings::class),
         );
 
         $this->assertFalse($service->syncOrderTransaction(
@@ -136,7 +136,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(SmaregiSettings::class),
         );
 
         $this->assertTrue($service->syncOrderTransaction(
@@ -205,7 +205,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(SmaregiSettings::class),
         );
 
         $this->assertTrue($service->finalizeCashLayaway(
@@ -274,7 +274,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(SmaregiSettings::class),
         );
 
         $this->assertTrue($service->syncOrderTransaction(
@@ -337,7 +337,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(SmaregiSettings::class),
         );
 
         $this->assertFalse($service->syncOrderTransactionWithRetry(
@@ -390,7 +390,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(OrderRepository::class),
             app(MemberRepository::class),
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(SmaregiSettings::class),
         );
 
         $this->assertTrue($service->syncOrderTransaction(

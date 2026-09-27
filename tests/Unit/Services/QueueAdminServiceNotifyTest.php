@@ -3,7 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Domain\Queue\Repositories\QueueEntryRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\QueueAdminSettings;
 use App\Enums\QueueStatus;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
@@ -85,7 +85,7 @@ class QueueAdminServiceNotifyTest extends TestCase
             $lineMock,
             $pushMock,
             app(QueueEntryRepository::class),
-            app(ShopSettingRepository::class),
+            app(QueueAdminSettings::class),
         );
         $service->notifyCalled((int) $entry->id);
 

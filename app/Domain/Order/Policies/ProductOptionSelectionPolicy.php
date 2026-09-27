@@ -2,6 +2,7 @@
 
 namespace App\Domain\Order\Policies;
 
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Domain\Order\ValueObjects\ProductOptionChoice;
 use App\Domain\Order\ValueObjects\ProductOptionGroupSpec;
 
@@ -22,7 +23,7 @@ final class ProductOptionSelectionPolicy
 
         foreach ($optionIds as $optionId) {
             if (isset($optionsById[$optionId]) === false) {
-                throw new \Exception("商品 {$productName} のオプションが不正です");
+                throw new OrderOperationException("商品 {$productName} のオプションが不正です");
             }
 
             $choice = $optionsById[$optionId];
@@ -72,22 +73,22 @@ final class ProductOptionSelectionPolicy
         $minSelect = max($group->minSelect, $group->isRequired ? 1 : 0);
 
         if ($group->isRequired && $count === 0) {
-            throw new \Exception("商品 {$productName} の「{$group->name}」は必須です");
+            throw new OrderOperationException("商品 {$productName} の「{$group->name}」は必須です");
         }
 
         if ($count > 0 && $count < $minSelect) {
-            throw new \Exception("商品 {$productName} の「{$group->name}」は{$minSelect}個以上選択してください");
+            throw new OrderOperationException("商品 {$productName} の「{$group->name}」は{$minSelect}個以上選択してください");
         }
 
         if ($group->selectionType === ProductOptionGroupSpec::SELECTION_SINGLE && $count > 1) {
-            throw new \Exception("商品 {$productName} の「{$group->name}」は1つだけ選択できます");
+            throw new OrderOperationException("商品 {$productName} の「{$group->name}」は1つだけ選択できます");
         }
 
         if ($group->selectionType === ProductOptionGroupSpec::SELECTION_MULTIPLE
             && $group->maxSelect !== null
             && $group->maxSelect > 0
             && $count > $group->maxSelect) {
-            throw new \Exception("商品 {$productName} の「{$group->name}」は最大{$group->maxSelect}個までです");
+            throw new OrderOperationException("商品 {$productName} の「{$group->name}」は最大{$group->maxSelect}個までです");
         }
     }
 }

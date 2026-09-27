@@ -6,6 +6,7 @@ use App\Domain\Member\Aggregates\Member as MemberAggregate;
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Events\OrderTransactionSyncRequested;
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Domain\Order\Policies\OrderPlacementPolicy;
 use App\Domain\Order\Policies\ProductAvailabilityPolicy;
 use App\Domain\Order\Policies\ProductOptionSelectionPolicy;
@@ -127,12 +128,12 @@ class OrderService
         // commit 後に同期する（失敗しても注文は残す。try/catch 外で rollBack しない）
         if ($paymentMethod !== PaymentMethod::STRIPE) {
             $this->syncMemberRank($user);
-            $this->domainEvents->dispatch(new OrderPointsSyncRequested(
+            $this->dispatchBestEffort(new OrderPointsSyncRequested(
                 (int) $order->id,
                 $projectId,
                 (int) $user->id,
             ));
-            $this->domainEvents->dispatch(new OrderTransactionSyncRequested(
+            $this->dispatchBestEffort(new OrderTransactionSyncRequested(
                 (int) $order->id,
                 $projectId,
                 (int) $user->id,
@@ -140,6 +141,18 @@ class OrderService
         }
 
         return $order->load('items.product');
+    }
+
+    private function dispatchBestEffort(object $event): void
+    {
+        try {
+            $this->domainEvents->dispatch($event);
+        } catch (\Throwable $e) {
+            Log::error('[DomainEvent] post-commit dispatch failed', [
+                'event' => $event::class,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -286,7 +299,7 @@ class OrderService
 
         $member = $this->loadMemberForPointUpdate($user);
         if ($member->displayPoints() < $pointsUsed) {
-            throw new \Exception('ポイントが不足しています');
+            throw new OrderOperationException('ポイントが不足しています');
         }
 
         $member->usePoints($pointsUsed, '注文で使用', (int) $order->id);
@@ -342,13 +355,13 @@ class OrderService
         $projectId = (int) ($user->project_id ?? 0);
         $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
         if ($member === null) {
-            throw new \Exception('会員登録が必要です');
+            throw new OrderOperationException('会員登録が必要です');
         }
 
         $this->memberRepository->syncPointsLedger($member->id()->value(), $projectId);
         $locked = $this->memberRepository->findByIdForUpdate($member->id()->value(), $projectId);
         if ($locked === null) {
-            throw new \Exception('会員登録が必要です');
+            throw new OrderOperationException('会員登録が必要です');
         }
 
         return $locked;

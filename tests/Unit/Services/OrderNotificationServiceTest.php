@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\OrderNotificationSettings;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
@@ -54,7 +54,7 @@ class OrderNotificationServiceTest extends TestCase
         $push = Mockery::mock(PushNotificationService::class);
         $push->shouldReceive('sendToUser')->never();
 
-        $service = new OrderNotificationService($line, app(ShopSettingRepository::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -84,7 +84,7 @@ class OrderNotificationServiceTest extends TestCase
         $push = Mockery::mock(PushNotificationService::class);
         $push->shouldReceive('sendToUser')->never();
 
-        $service = new OrderNotificationService($line, app(ShopSettingRepository::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -124,7 +124,7 @@ class OrderNotificationServiceTest extends TestCase
             )
             ->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
 
-        $service = new OrderNotificationService($line, app(ShopSettingRepository::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -154,7 +154,7 @@ class OrderNotificationServiceTest extends TestCase
         $push = Mockery::mock(PushNotificationService::class);
         $push->shouldReceive('sendToUser')->never();
 
-        $service = new OrderNotificationService($line, app(ShopSettingRepository::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
         $service->notifyReady((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }

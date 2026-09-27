@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\WalletSettings;
 use App\Enums\GoogleWalletApi;
 use App\Models\Project;
 use App\Models\User;
@@ -25,7 +25,7 @@ class GoogleWalletPassServiceTest extends TestCase
     {
         return new GoogleWalletPassService(
             new GoogleWalletLoyaltyPayloadBuilder,
-            app(ShopSettingRepository::class)
+            app(WalletSettings::class)
         );
     }
 
