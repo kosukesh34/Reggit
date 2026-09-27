@@ -3,48 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AdminUser;
-use App\Models\Project;
-use App\Support\ProjectKey;
-use App\Util\AdminContext;
+use App\Services\Admin\AdminProjectContextResolver;
 
 class AdminBaseController extends Controller
 {
     /** 現在の管理コンテキストからプロジェクトIDを解決する */
     protected function resolveAdminProjectId(): int
     {
-        $id = AdminContext::getCurrentProjectId();
-        if ($id !== null) {
-            return $id;
-        }
-        $admin = auth('admin')->user();
-
-        return AdminUser::resolveCurrentProjectId(
-            $admin,
-            (int) session('admin_project_id'),
-            request()->input('project_id') ? (int) request()->input('project_id') : null
-        );
+        return app(AdminProjectContextResolver::class)->projectId();
     }
 
     /** 現在の管理コンテキストからプロジェクトキーを解決する */
     protected function resolveAdminProjectKey(): string
     {
-        $project = AdminContext::getCurrentProject();
-        if ($project !== null && trim((string) $project->project_key) !== '') {
-            return (string) $project->project_key;
-        }
-
-        $configured = ProjectKey::fromConfig();
-        if ($configured !== null) {
-            return $configured;
-        }
-
-        $defaultKey = Project::where('is_active', true)->orderBy('id')->value('project_key');
-        if (! is_string($defaultKey) || trim($defaultKey) === '') {
-            throw new \RuntimeException('No active project available for admin context.');
-        }
-
-        return $defaultKey;
+        return app(AdminProjectContextResolver::class)->projectKey();
     }
 
     /** 管理画面ルート用のパラメータ配列を組み立てる */

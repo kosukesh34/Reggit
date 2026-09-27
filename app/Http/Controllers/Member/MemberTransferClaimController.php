@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
-use App\Models\UserDevice;
-use App\Repositories\Contracts\UserDeviceRepository;
+use App\Services\Member\AuthenticatedDeviceResolver;
 use App\Services\UserService;
 use App\UseCases\Member\ClaimMemberTransferCodeUseCase;
 use App\Util\AdminContext;
@@ -17,7 +16,7 @@ class MemberTransferClaimController extends BaseApiController
 {
     public function __construct(
         private UserService $userService,
-        private UserDeviceRepository $userDeviceRepository,
+        private AuthenticatedDeviceResolver $authenticatedDeviceResolver,
         private ClaimMemberTransferCodeUseCase $claimMemberTransferCodeUseCase,
     ) {}
 
@@ -29,7 +28,7 @@ class MemberTransferClaimController extends BaseApiController
         }
 
         try {
-            $device = $this->resolveDevice($request, $user->id);
+            $device = $this->authenticatedDeviceResolver->resolve($request, $user->id);
             $this->claimMemberTransferCodeUseCase->handle(
                 $user,
                 $device,
@@ -49,23 +48,5 @@ class MemberTransferClaimController extends BaseApiController
 
             return $this->error('引き継ぎに失敗しました', 500);
         }
-    }
-
-    private function resolveDevice(Request $request, int $userId): ?UserDevice
-    {
-        $identifier = trim((string) $request->header('X-Device-Identifier'));
-        if ($identifier === '') {
-            return null;
-        }
-
-        $projectId = AdminContext::requireCurrentProjectId();
-        $device = $this->userDeviceRepository->findLatestByProjectAndIdentifier($projectId, $identifier);
-        $token = $request->header('X-Device-Token');
-        $token = is_string($token) ? $token : null;
-        if ($device === null || $device->authenticates($token) === false || (int) $device->user_id !== $userId) {
-            throw new InvalidArgumentException('端末を確認できません。アプリを開き直してください');
-        }
-
-        return $device;
     }
 }

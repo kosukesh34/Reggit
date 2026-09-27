@@ -110,4 +110,11 @@ class DeviceOnceCouponService
             throw ValidationException::withMessages(['coupon' => 'この端末ではすでに獲得済みです']);
         }
     }
+
+    public function claimById(User $user, int $couponId, string $deviceIdentifier): MemberCoupon
+    {
+        $coupon = Coupon::query()->findOrFail($couponId);
+
+        return $this->claim($user, $coupon, $deviceIdentifier);
+    }
 }

@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LoginRequest;
 use App\Http\Support\AdminAuthInputFactory;
 use App\Http\Support\AdminRedirect;
-use App\Models\AdminUser;
+use App\Services\Admin\AdminSessionInspector;
 use App\UseCases\Admin\Auth\GetAdminDashboardRedirectUseCase;
 use App\UseCases\Admin\Auth\SystemAdminLoginUseCase;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Contracts\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class SystemAdminLoginController extends Controller
 {
@@ -17,14 +18,13 @@ class SystemAdminLoginController extends Controller
         private GetAdminDashboardRedirectUseCase $getDashboardRedirectUseCase,
         private SystemAdminLoginUseCase $systemAdminLoginUseCase,
         private AdminAuthInputFactory $inputFactory,
+        private AdminSessionInspector $adminSessionInspector,
     ) {}
 
-    public function show()
+    public function show(): Response|View
     {
-        if (Auth::guard('admin')->check()) {
-            /** @var AdminUser|null $user */
-            $user = Auth::guard('admin')->user();
-            if ($user !== null && $user->isSystemAdmin()) {
+        if ($this->adminSessionInspector->isAuthenticated()) {
+            if ($this->adminSessionInspector->isSystemAdmin()) {
                 return redirect()->route('system-admin.projects.index');
             }
 

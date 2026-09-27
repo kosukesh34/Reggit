@@ -3,29 +3,30 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
-use App\Models\AdminUser;
-use App\Models\AdminUserPermission;
+use App\Http\Support\StaffManagementAuthorizer;
+use App\Http\Support\StaffPermissionCatalog;
 use App\UseCases\Admin\Settings\GetStaffListUseCase;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class StaffController extends AdminBaseController
 {
-    public function __construct(private GetStaffListUseCase $getStaffListUseCase) {}
+    public function __construct(
+        private GetStaffListUseCase $getStaffListUseCase,
+        private StaffManagementAuthorizer $staffManagementAuthorizer,
+        private StaffPermissionCatalog $staffPermissionCatalog,
+    ) {}
 
-    public function index()
+    public function index(Request $request): View
     {
-        $this->authorizeManager();
+        $this->staffManagementAuthorizer->authorize($request);
         $projectId = $this->resolveAdminProjectId();
         $staff = $this->getStaffListUseCase->handle($projectId);
 
         return view('admin.settings.staff', [
             'staff' => $staff,
-            'permissionGroups' => AdminUserPermission::PERMISSION_GROUPS,
-            'permissionLabels' => AdminUserPermission::ALL_PERMISSIONS,
+            'permissionGroups' => $this->staffPermissionCatalog->groups(),
+            'permissionLabels' => $this->staffPermissionCatalog->labels(),
         ]);
-    }
-
-    private function authorizeManager(): void
-    {
-        abort_unless(auth('admin')->user()?->canCreateRole(AdminUser::ROLE_STAFF), 403);
     }
 }

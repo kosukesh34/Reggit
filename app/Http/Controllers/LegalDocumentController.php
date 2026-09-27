@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Project;
+use App\UseCases\Legal\GetLegalProjectUseCase;
 use Illuminate\Contracts\View\View;
 
 class LegalDocumentController extends Controller
 {
+    public function __construct(private GetLegalProjectUseCase $getLegalProjectUseCase) {}
+
     public function terms(string $project_key): View
     {
-        $project = $this->project($project_key);
+        $project = $this->getLegalProjectUseCase->handle($project_key);
 
         return view('legal.document', [
             'project' => $project,
@@ -30,7 +32,7 @@ class LegalDocumentController extends Controller
 
     public function privacy(string $project_key): View
     {
-        $project = $this->project($project_key);
+        $project = $this->getLegalProjectUseCase->handle($project_key);
 
         return view('legal.document', [
             'project' => $project,
@@ -47,13 +49,5 @@ class LegalDocumentController extends Controller
                 ['title' => '8. お問い合わせ', 'body' => '個人情報の取り扱いに関するお問い合わせは、店舗スタッフまたは当店が案内する窓口までご連絡ください。'],
             ],
         ]);
-    }
-
-    private function project(string $projectKey): Project
-    {
-        return Project::query()
-            ->where('project_key', $projectKey)
-            ->where('is_active', true)
-            ->firstOrFail();
     }
 }

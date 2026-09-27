@@ -1,4 +1,4 @@
-import{r as _,j}from"./vendor-B5Tv5u8Z.js";class er{static async show(r,t="確認"){return new Promise(o=>{const a=document.createElement("div");a.className="confirm-dialog",a.innerHTML=`
+import{r as _,j}from"./react-vendor-CwIYLWUJ.js";class er{static async show(r,t="確認"){return new Promise(o=>{const a=document.createElement("div");a.className="confirm-dialog",a.innerHTML=`
                 <div class="confirm-dialog-content">
                     <div class="confirm-dialog-title">
                     </div>
