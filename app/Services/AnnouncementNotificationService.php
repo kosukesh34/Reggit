@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Models\Announcement;
 use App\Models\Coupon;
@@ -20,7 +20,7 @@ class AnnouncementNotificationService
     public function __construct(
         private PushNotificationService $pushNotificationService,
         private LineService $lineService,
-        private ShopSettingRepository $shopSettingRepository,
+        private LineConnectionSettings $shopSettingRepository,
     ) {}
 
     /**

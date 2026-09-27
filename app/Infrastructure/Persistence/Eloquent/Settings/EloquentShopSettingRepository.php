@@ -4,14 +4,17 @@ namespace App\Infrastructure\Persistence\Eloquent\Settings;
 
 use App\Domain\Settings\Repositories\AdminAppearanceSettings;
 use App\Domain\Settings\Repositories\AppConfigSettings;
+use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Domain\Settings\Repositories\FrontendShellSettings;
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
+use App\Domain\Settings\Repositories\OrderNotificationSettings;
 use App\Domain\Settings\Repositories\QueueSettings;
 use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
 
-class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, FrontendShellSettings, HomeSettingsRepository, MemberCardPreviewSettings, QueueSettings, ReservationSettings, ShopSettingRepository
+class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, CouponNotificationSettings, FrontendShellSettings, HomeSettingsRepository, LineConnectionSettings, MemberCardPreviewSettings, OrderNotificationSettings, QueueSettings, ReservationSettings, ShopSettingRepository
 {
     public function getValue(string $key, mixed $default, int $projectId): mixed
     {

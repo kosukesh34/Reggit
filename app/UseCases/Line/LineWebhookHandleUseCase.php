@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Line;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Enums\MemberStatus;
 use App\Models\Project;
 use App\Models\User;
@@ -21,7 +21,7 @@ class LineWebhookHandleUseCase
     public function __construct(
         private LineService $lineService,
         private LineWebhookProjectResolver $projectResolver,
-        private ShopSettingRepository $shopSettingRepository,
+        private LineConnectionSettings $shopSettingRepository,
     ) {}
 
     public function handle(LineWebhookInput $input): array

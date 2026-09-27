@@ -12,9 +12,12 @@ use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Settings\Repositories\AdminAppearanceSettings;
 use App\Domain\Settings\Repositories\AppConfigSettings;
+use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Domain\Settings\Repositories\FrontendShellSettings;
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
+use App\Domain\Settings\Repositories\OrderNotificationSettings;
 use App\Domain\Settings\Repositories\QueueSettings;
 use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
@@ -101,9 +104,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ShopSettingRepository::class, EloquentShopSettingRepository::class);
         $this->app->bind(AdminAppearanceSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(AppConfigSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(CouponNotificationSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(FrontendShellSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(HomeSettingsRepository::class, EloquentShopSettingRepository::class);
+        $this->app->bind(LineConnectionSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(MemberCardPreviewSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(OrderNotificationSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(QueueSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(ReservationSettings::class, EloquentShopSettingRepository::class);
         $this->app->singleton(DomainEventDispatcher::class, function ($app) {
