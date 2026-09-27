@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Member;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberAdminService;
 use App\UseCases\Admin\Member\Data\AdminMemberEditOutput;
@@ -12,7 +12,7 @@ class AdminMemberEditUseCase
     public function __construct(
         private MemberAdminService $memberAdminService,
         private CouponAdminService $couponAdminService,
-        private ShopSettingRepository $shopSettingRepository,
+        private ProfileSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId, int $memberId): AdminMemberEditOutput

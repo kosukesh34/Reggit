@@ -14,6 +14,8 @@ interface RankSettings extends MemberCardPreviewSettings, SettingValueReader, Se
 
     public function getPointEarnRate(int $projectId): int;
 
+    public function getPointEarnRateForRank(int $projectId, ?string $rankKey): int;
+
     public function getPointsPerOrder(int $projectId): int;
 
     public function getPointsValidDays(int $projectId): int;

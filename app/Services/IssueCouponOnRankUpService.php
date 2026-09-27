@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Enums\MemberCouponSource;
@@ -14,7 +14,7 @@ class IssueCouponOnRankUpService
 {
     public function __construct(
         private MemberBenefitService $memberBenefitService,
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
     ) {}
 
     public function handle(Member $member, string $previousRank, string $newRank, ?int $rankHistoryId = null): void

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Models\Member;
 use App\Models\MemberRankHistory;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
@@ -12,7 +12,7 @@ class MemberRankSyncService
 {
     public function __construct(
         private MemberRankCalculator $rankCalculator,
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
         private IssueCouponOnRankUpService $issueCouponOnRankUpService,
         private ScheduledDeliverySendService $scheduledDeliverySendService,
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,

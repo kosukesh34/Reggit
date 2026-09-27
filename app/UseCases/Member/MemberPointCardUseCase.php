@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Member;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
 use App\Models\User;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
@@ -14,7 +14,7 @@ class MemberPointCardUseCase
     public function __construct(
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator,
-        private ShopSettingRepository $shopSettingRepository,
+        private MemberCardPreviewSettings $shopSettingRepository,
     ) {}
 
     public function handle(User $user): MemberPointCardView

@@ -2,7 +2,7 @@
 
 namespace App\Services\Admin;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\MemberStatus;
 use App\Models\Member;
 use App\Support\MemberChannel;
@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 /** 会員一覧とエクスポートで共通の絞り込み・並び替えを担当する。 */
 class MemberAdminListQueryService
 {
-    public function __construct(private ShopSettingRepository $shopSettingRepository) {}
+    public function __construct(private RankSettings $shopSettingRepository) {}
 
     /** @var array<string, string> */
     private const LIST_SORT_COLUMNS = [
