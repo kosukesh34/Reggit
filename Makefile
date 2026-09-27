@@ -1,7 +1,7 @@
 # Reggit - Docker 経由で artisan を実行するための Makefile
 # 使い方: make up → make migrate → make route-list など
 
-.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db npm-build deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe e2e-web e2e-mobile
+.PHONY: up down migrate seed reconcile-points test-env setup-dev route-list shell composer test test-db quality lint typecheck npm-build deploy ngrok-sync smaregi-webhook-doctor smaregi-webhook-probe e2e-web e2e-mobile
 
 # コンテナ起動（バックグラウンド）
 up:
@@ -69,6 +69,15 @@ test-db:
 # テスト実行（reggit_test のみ使用。開発 DB reggit は触らない）
 test: test-env test-db
 	docker-compose exec -e DB_DATABASE=reggit_test app php artisan test
+
+# Docker 内で PHP / フロントエンドの品質チェックを一括実行
+quality: lint typecheck test
+
+lint:
+	docker-compose exec app ./vendor/bin/pint --test
+
+typecheck:
+	docker-compose exec app npm run typecheck
 
 # 依存関係の脆弱性チェック（セキュリティ）
 audit:
