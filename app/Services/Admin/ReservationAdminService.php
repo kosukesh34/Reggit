@@ -3,7 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Domain\Reservation\Repositories\ReservationRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\ReservationCourse;
@@ -15,7 +15,7 @@ class ReservationAdminService
 {
     public function __construct(
         private ReservationRepository $reservationRepository,
-        private ShopSettingRepository $shopSettingRepository,
+        private ReservationSettings $shopSettingRepository,
     ) {}
 
     public function getReservationIndexPayload(?string $status, ?string $selectedDate, int $projectId, int $perPage = 20): array
