@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Stamp;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\StampSettings;
 use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampCard;
@@ -18,7 +18,7 @@ class StampGrantUseCase
     public function __construct(
         private MemberBenefitService $memberBenefitService,
         private StampGrantOutcomeMapper $outcomeMapper,
-        private ShopSettingRepository $shopSettingRepository,
+        private StampSettings $shopSettingRepository,
         private MemberRankSyncService $memberRankSyncService,
     ) {}
 
