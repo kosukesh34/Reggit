@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Models\Coupon;
 use App\Models\Member;
@@ -19,7 +19,7 @@ class CouponNotificationService
     public function __construct(
         private PushNotificationService $pushNotificationService,
         private LineService $lineService,
-        private ShopSettingRepository $shopSettingRepository,
+        private CouponNotificationSettings $shopSettingRepository,
     ) {}
 
     public function notifyIssued(MemberCoupon $memberCoupon): void

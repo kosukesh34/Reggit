@@ -166,6 +166,24 @@ class LayerDependencyTest extends TestCase
         }
     }
 
+    public function test_notification_and_line_services_do_not_depend_on_the_broad_settings_contract(): void
+    {
+        $root = dirname(__DIR__, 3).'/app/';
+
+        foreach ([
+            $root.'Services/AnnouncementNotificationService.php',
+            $root.'Services/CouponNotificationService.php',
+            $root.'Services/OrderNotificationService.php',
+            $root.'Services/Line/LineWebhookProjectResolver.php',
+            $root.'Services/Line/LineIdTokenVerifier.php',
+            $root.'UseCases/Line/LineWebhookHandleUseCase.php',
+        ] as $file) {
+            $source = file_get_contents($file);
+            self::assertIsString($source);
+            self::assertStringNotContainsString('ShopSettingRepository', $source, $file);
+        }
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */

@@ -2,14 +2,14 @@
 
 namespace App\Services\Line;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Models\Project;
 
 class LineWebhookProjectResolver
 {
     public function __construct(
         private LineService $lineService,
-        private ShopSettingRepository $shopSettingRepository,
+        private LineConnectionSettings $shopSettingRepository,
     ) {}
 
     public function resolveProjectId(string $body, ?string $signature): ?int
