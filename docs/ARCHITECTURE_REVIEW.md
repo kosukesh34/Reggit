@@ -122,6 +122,8 @@ Guest, authentication-required, error, and loading-state member-card templates a
 
 Postal-code normalization, validation, and API address-shape conversion are also isolated from profile-edit DOM orchestration. Both snake-case and camel-case response shapes are covered by frontend unit tests.
 
+Point-history normalization and rendering are isolated from API and DOM orchestration. Numeric strings, invalid values, empty results, dates, and untrusted descriptions are handled at one tested boundary.
+
 Rank-history rendering is also isolated as a pure formatter. API-provided labels and dates are escaped at that boundary and covered by focused unit tests. View composers now catch runtime exceptions rather than all PHP throwables, so programming errors such as type violations are no longer silently replaced with fallback presentation data.
 
 ## Recommended sequence
