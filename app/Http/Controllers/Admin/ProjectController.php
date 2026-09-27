@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\ProjectSettings;
 use App\Http\Controllers\Controller;
 use App\UseCases\Admin\Project\Data\ProjectFormView;
 use App\UseCases\Admin\Project\ProjectEditUseCase;
@@ -13,7 +13,7 @@ class ProjectController extends Controller
     public function __construct(
         private ProjectIndexUseCase $indexUseCase,
         private ProjectEditUseCase $editUseCase,
-        private ShopSettingRepository $shopSettingRepository,
+        private ProjectSettings $shopSettingRepository,
     ) {}
 
     public function index()

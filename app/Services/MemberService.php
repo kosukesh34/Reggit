@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Member\Services\MemberRankResolver;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\MemberSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\MemberRegistrationMode;
 use App\Enums\MemberStatus;
@@ -39,7 +39,7 @@ class MemberService
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
         private MemberRankResolver $memberRankResolver,
-        private ShopSettingRepository $shopSettingRepository,
+        private MemberSettings $shopSettingRepository,
     ) {}
 
     public function getMemberData(User $user): array

@@ -4,7 +4,7 @@ namespace App\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Repositories\OrderRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
@@ -35,7 +35,7 @@ class SmaregiOrderTransactionOutboundService
         private OrderRepository $orderRepository,
         private MemberRepository $memberRepository,
         private SmaregiApiService $smaregiApi,
-        private ShopSettingRepository $shopSettingRepository,
+        private SmaregiSettings $shopSettingRepository,
     ) {}
 
     /**
