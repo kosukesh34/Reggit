@@ -28,14 +28,14 @@ class MemberUpdateController extends Controller
             return response()->json($dto->toArray());
         } catch (ValidationException $e) {
             throw $e;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             LogHelper::error('[Member] update failed', [
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
-                'error' => $e->getMessage(),
-            ], 400);
+                'error' => '会員情報の更新に失敗しました。しばらくしてから再度お試しください。',
+            ], 500);
         }
     }
 }

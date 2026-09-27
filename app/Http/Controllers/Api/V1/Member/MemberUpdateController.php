@@ -8,6 +8,7 @@ use App\Services\UserService;
 use App\UseCases\Member\Data\MemberUpdateInput;
 use App\UseCases\Member\MemberUpdateUseCase;
 use App\Util\LogHelper;
+use Illuminate\Validation\ValidationException;
 
 class MemberUpdateController extends BaseApiController
 {
@@ -25,12 +26,14 @@ class MemberUpdateController extends BaseApiController
             ));
 
             return $this->success(['member' => $dto->toArray()], '更新しました');
-        } catch (\Exception $e) {
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
             LogHelper::error('[Member] update failed', [
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->error($e->getMessage(), 400);
+            return $this->error('会員情報の更新に失敗しました。しばらくしてから再度お試しください。', 500);
         }
     }
 }
