@@ -2,12 +2,12 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\FeatureSettings;
 
 class UpdateCouponsSettingsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private FeatureSettings $shopSettingRepository,
     ) {}
 
     /** @param array<string, mixed> $validated */

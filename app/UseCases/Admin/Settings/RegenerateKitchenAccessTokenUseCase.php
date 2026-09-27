@@ -2,13 +2,13 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\KitchenAccessSettings;
 use Illuminate\Support\Str;
 
 class RegenerateKitchenAccessTokenUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private KitchenAccessSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId): string

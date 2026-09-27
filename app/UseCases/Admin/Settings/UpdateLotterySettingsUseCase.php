@@ -2,14 +2,14 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Services\Admin\LotteryAdminService;
 
 class UpdateLotterySettingsUseCase
 {
     public function __construct(
         private LotteryAdminService $lotteryAdminService,
-        private ShopSettingRepository $shopSettingRepository,
+        private FeatureSettings $shopSettingRepository,
     ) {}
 
     /**

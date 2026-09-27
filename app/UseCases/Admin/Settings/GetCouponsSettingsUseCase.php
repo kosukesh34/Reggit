@@ -2,13 +2,13 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\FeatureSettings;
 use App\UseCases\Admin\Settings\Data\CouponsSettingsView;
 
 class GetCouponsSettingsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private FeatureSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId): CouponsSettingsView
