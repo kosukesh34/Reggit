@@ -1,12 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\Account\AccountDestroyController;
-use App\Http\Controllers\Admin\AdminProjectHomeController;
-use App\Http\Controllers\Admin\AdminRootController;
 use App\Http\Controllers\Admin\Account\AccountFormController;
 use App\Http\Controllers\Admin\Account\AccountIndexController;
 use App\Http\Controllers\Admin\Account\AccountStoreController;
 use App\Http\Controllers\Admin\Account\AccountUpdateController;
+use App\Http\Controllers\Admin\AdminProjectHomeController;
+use App\Http\Controllers\Admin\AdminRootController;
 use App\Http\Controllers\Admin\AfterRegistrationDeliveryController as AdminAfterRegistrationDeliveryController;
 use App\Http\Controllers\Admin\AfterRegistrationDeliveryMutationController;
 use App\Http\Controllers\Admin\AnalysisDeliveryController as AdminAnalysisDeliveryController;
@@ -68,17 +68,17 @@ use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\StampGrantQrController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\Admin\SystemHelpArticleController;
+use App\Http\Controllers\ApiInfoController;
 use App\Http\Controllers\ExistingMemberLinkConfirmController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
-use App\Http\Controllers\ApiInfoController;
 use App\Http\Controllers\HealthController;
-use App\Http\Controllers\LandingController;
-use App\Http\Controllers\LiffLegacyRedirectController;
 use App\Http\Controllers\Landing\LandingRegistrationEmailController;
 use App\Http\Controllers\Landing\LandingRegistrationFormController;
 use App\Http\Controllers\Landing\LandingRegistrationVerifyController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LegalDocumentController;
 use App\Http\Controllers\LiffController;
+use App\Http\Controllers\LiffLegacyRedirectController;
 use App\Http\Controllers\Onboarding\OnboardingPageController;
 use App\Http\Controllers\Payment\PaymentReturnController;
 use App\Http\Controllers\Queue\QueueOpenController;

@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\HomeSettingsRepository;
 use App\Models\Project;
 use App\Support\HomeImageUrls;
 use App\Support\LiffDesignerSanitizer;
@@ -10,7 +10,7 @@ use App\Support\LiffDesignerSanitizer;
 class GetHomeSettingsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private HomeSettingsRepository $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId): array

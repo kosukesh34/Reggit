@@ -7,6 +7,18 @@ import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleMemberData } from '../demo/sampleData';
 import { isReactOwnedMount } from '../utils/reactOwnedMount';
 import { getLiffEcho } from '../realtime/liffEcho';
+import {
+    buildLiffEntryUrl,
+    formatWalletErrorMessage,
+    isValidHttpUrl,
+    normalizeExternalUrl,
+    resolveApiUrl,
+    resolveAppOrigin,
+    resolveGoogleWalletOpenUrl,
+} from '../member/walletUrlPolicy';
+import { normalizeMemberPayload, normalizeWalletSummary, walletSummariesEqual } from '../member/memberPayload';
+import { buildProfilePayload } from '../member/profilePayload';
+import { formatRankUpHistoryHtml } from '../member/rankHistoryFormatter';
 
 declare const liff: any;
 declare const JsBarcode: any;
@@ -184,67 +196,29 @@ export class MemberManager {
 
     /** Wallet 追加後に LINE アプリへ戻るための LIFF エントリ URL */
     static buildLiffEntryUrl(projectKey) {
-        const liffId = MemberManager.getLineLiffIdFromMeta();
-        const pk = (projectKey && String(projectKey).trim()) || '';
-        if (!liffId) return null;
-        const liffState = new URLSearchParams({ project_key: pk }).toString();
-        return 'https://liff.line.me/' + liffId + '?' + new URLSearchParams({ 'liff.state': liffState }).toString();
+        return buildLiffEntryUrl(MemberManager.getLineLiffIdFromMeta(), projectKey);
     }
 
     /** LIFF / WebView でも使えるアプリのオリジン（https://example.com） */
     static resolveAppOrigin() {
-        if (typeof window === 'undefined' || !window.location) {
-            return '';
-        }
-        try {
-            if (window.location.origin && window.location.origin !== 'null') {
-                return window.location.origin;
-            }
-        } catch (e) { /* ignore */ }
         const apiBase = (typeof window !== 'undefined' && window.__API_BASE__) ? window.__API_BASE__ : '/api';
-        if (typeof apiBase === 'string' && (apiBase.startsWith('http://') || apiBase.startsWith('https://'))) {
-            try {
-                return new URL(apiBase).origin;
-            } catch (e) { /* ignore */ }
-        }
-        return '';
+        const location = typeof window !== 'undefined' ? window.location : null;
+        return resolveAppOrigin(location, apiBase);
     }
 
     /** API パス（/api/...）を絶対 URL にする */
     static resolveApiUrl(path) {
-        const normalizedPath = (path && path.startsWith('/')) ? path : ('/' + (path || ''));
-        if (normalizedPath.startsWith('http://') || normalizedPath.startsWith('https://')) {
-            return normalizedPath;
-        }
-        const origin = MemberManager.resolveAppOrigin();
-        return origin ? (origin + normalizedPath) : normalizedPath;
+        return resolveApiUrl(path, MemberManager.resolveAppOrigin());
     }
 
     static isValidHttpUrl(url) {
-        if (!url || typeof url !== 'string') return false;
-        try {
-            const parsed = new URL(url);
-            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-        } catch (e) {
-            return false;
-        }
+        return isValidHttpUrl(url);
     }
 
     /** LIFF / Safari 向けに https を優先（ngrok 等で http が混ざるのを防ぐ） */
     static normalizeExternalUrl(url) {
-        if (!MemberManager.isValidHttpUrl(url)) {
-            return null;
-        }
-        try {
-            const parsed = new URL(url, typeof window !== 'undefined' ? window.location.href : undefined);
-            const host = parsed.hostname;
-            if (host !== 'localhost' && host !== '127.0.0.1' && parsed.protocol === 'http:') {
-                parsed.protocol = 'https:';
-            }
-            return parsed.href;
-        } catch (e) {
-            return null;
-        }
+        const baseHref = typeof window !== 'undefined' ? window.location.href : undefined;
+        return normalizeExternalUrl(url, baseHref);
     }
 
     /**
@@ -252,32 +226,12 @@ export class MemberManager {
      * サーバー短縮 URL（/google-wallet/save/…）と pay.google.com 直リンクの両方に対応。
      */
     static resolveGoogleWalletOpenUrl(issueUrl) {
-        const normalized = MemberManager.normalizeExternalUrl(issueUrl);
-        if (!normalized) {
-            return null;
-        }
-        try {
-            const parsed = new URL(normalized);
-            if (parsed.hostname === 'pay.google.com' && parsed.pathname.indexOf('/gp/v/save/') === 0) {
-                return parsed.href;
-            }
-            if (parsed.pathname.indexOf('/google-wallet/save/') === 0) {
-                return parsed.href;
-            }
-        } catch (e) { /* ignore */ }
-
-        return normalized;
+        const baseHref = typeof window !== 'undefined' ? window.location.href : undefined;
+        return resolveGoogleWalletOpenUrl(issueUrl, baseHref);
     }
 
     static formatWalletErrorMessage(err, fallback) {
-        const raw = err && err.message ? String(err.message) : '';
-        if (/pattern/i.test(raw)) {
-            return 'Safari で Wallet を開けませんでした。LINE の設定で外部ブラウザを許可するか、しばらくしてから再度お試しください。';
-        }
-        if (/外部ブラウザ|Wallet Pass の URL/i.test(raw)) {
-            return raw;
-        }
-        return raw || fallback || '処理に失敗しました';
+        return formatWalletErrorMessage(err, fallback);
     }
 
     static isDesignerMemberPreview() {
@@ -767,18 +721,7 @@ export class MemberManager {
      * @returns {object|null} is_member を持つオブジェクト、または null
      */
     _normalizeMemberPayload(resultData) {
-        if (!resultData || typeof resultData !== 'object') return null;
-        let candidate = resultData;
-        if (resultData.data && typeof resultData.data === 'object') {
-            candidate = resultData.data;
-        }
-        if (candidate.member && typeof candidate.member === 'object' && typeof candidate.member.is_member !== 'undefined') {
-            return candidate.member;
-        }
-        if (typeof candidate.is_member !== 'undefined') {
-            return candidate;
-        }
-        return null;
+        return normalizeMemberPayload(resultData);
     }
 
     async ensureGuestMemberContext() {
@@ -1539,20 +1482,7 @@ export class MemberManager {
     }
 
     _formatRankUpHistoryHtml(history) {
-        if (!history || history.length === 0) {
-            return '<div class="member-rank-history-empty">まだランクアップ履歴がありません</div>';
-        }
-        return history.map(function (item) {
-            const date = item.achieved_at || '';
-            const fromLabel = (item.from_rank_label || '—');
-            const toLabel = (item.to_rank_label || '—');
-            return '<div class="member-rank-history-item">' +
-                '<span class="member-rank-history-from">' + DomHelper.escapeHtml(fromLabel) + '</span>' +
-                ' <i class="fas fa-arrow-right member-rank-history-arrow" aria-hidden="true"></i> ' +
-                '<span class="member-rank-history-to">' + DomHelper.escapeHtml(toLabel) + '</span>' +
-                '<span class="member-rank-history-date">' + DomHelper.escapeHtml(date) + '</span>' +
-                '</div>';
-        }).join('');
+        return formatRankUpHistoryHtml(history);
     }
 
     _setupRankHistoryToggle() {
@@ -3228,61 +3158,15 @@ export class MemberManager {
     }
 
     _collectProfileFormPayload(form: HTMLFormElement, fields: any[]): Record<string, any> {
-        const payload: Record<string, any> = {};
-        const asInput = (el: Element | null): HTMLInputElement | null => el as HTMLInputElement | null;
-        const fieldList = Array.isArray(fields) ? fields : [];
-        fieldList.forEach((field) => {
-            const key = field && field.key != null ? String(field.key) : '';
-            if (key === '') {
-                return;
-            }
-            const inputType = field.input_type || 'text';
-            if (key === 'name') {
-                const elLast = asInput(form.querySelector('[name="name_last"]'));
-                const elFirst = asInput(form.querySelector('[name="name_first"]'));
-                const lastVal = elLast ? (elLast.value || '').trim() : '';
-                const firstVal = elFirst ? (elFirst.value || '').trim() : '';
-                payload.name = (lastVal + ' ' + firstVal).trim() || null;
-                return;
-            }
-            if (key === 'kana') {
-                const elLast = asInput(form.querySelector('[name="kana_last"]'));
-                const elFirst = asInput(form.querySelector('[name="kana_first"]'));
-                const lastVal = elLast ? (elLast.value || '').trim() : '';
-                const firstVal = elFirst ? (elFirst.value || '').trim() : '';
-                payload.kana = (lastVal + ' ' + firstVal).trim() || null;
-                return;
-            }
-            if (inputType === 'checkbox') {
-                const checked = Array.from(form.querySelectorAll('[name="' + key.replace(/"/g, '\\"') + '[]"]:checked')) as HTMLInputElement[];
-                payload[key] = checked.map((el) => (el.value || '').trim()).filter((v) => v !== '');
-                return;
-            }
-            if (inputType === 'radio' || inputType === 'selectbox' || key === 'sex' || key === 'mail_receive_flag' || key === 'notification_preference') {
-                const checked = asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]:checked'));
-                const el = checked ?? asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
-                if (el) {
-                    const v = (el.value || '').trim();
-                    if (key === 'mail_receive_flag' || key === 'notification_preference') {
-                        payload[key] = v;
-                    } else {
-                        payload[key] = v || null;
-                    }
-                } else if (key === 'sex') {
-                    payload[key] = null;
-                }
-                return;
-            }
-            const el = asInput(form.querySelector('[name="' + key.replace(/"/g, '\\"') + '"]'));
-            if (el) {
-                let v: any = (el.value || '').trim();
-                if (key === 'birthday' && !v) {
-                    v = null;
-                }
-                payload[key] = v || null;
-            }
+        const selector = (name: string) => `[name="${name.replace(/"/g, '\\"')}"]`;
+        const input = (query: string) => form.querySelector(query) as HTMLInputElement | null;
+
+        return buildProfilePayload(fields, {
+            value: (name) => input(selector(name))?.value,
+            checkedValue: (name) => input(`${selector(name)}:checked`)?.value,
+            checkedValues: (name) => Array.from(form.querySelectorAll(`${selector(name)}:checked`))
+                .map((element) => (element as HTMLInputElement).value),
         });
-        return payload;
     }
 
     /**
@@ -3384,19 +3268,12 @@ export class MemberManager {
         if (src === null || src === undefined) {
             return;
         }
-        const normalized = {
-            points: Number(src.points ?? 0),
-            stamps_total: Number(src.stamps_total ?? 0),
-            pending_lottery_count: Number(src.pending_lottery_count ?? 0),
-        };
+        const normalized = normalizeWalletSummary(src);
         const prev = this._walletSummaryLast;
         this._walletSummaryLast = normalized;
         const displayedPoints = this.memberData !== null ? Number(this.memberData.points ?? 0) : null;
         const pointsDifferFromUi = displayedPoints !== null && displayedPoints !== normalized.points;
-        if (prev !== null
-            && prev.points === normalized.points
-            && prev.stamps_total === normalized.stamps_total
-            && prev.pending_lottery_count === normalized.pending_lottery_count) {
+        if (walletSummariesEqual(prev, normalized)) {
             return;
         }
 
