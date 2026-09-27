@@ -2,7 +2,7 @@
 
 namespace App\Services\Line;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Support\MemberChannel;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\Http;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 class LineIdTokenVerifier
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private LineConnectionSettings $shopSettingRepository,
     ) {}
 
     public function verify(string $idToken, int $projectId): ?string

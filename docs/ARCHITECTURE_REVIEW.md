@@ -32,7 +32,6 @@ Split contracts by consumer capability, for example:
 - `OrderSettings`
 - `QueueSettings`
 - `ReservationSettings`
-- `ReservationSettings`
 - `WalletSettings`
 
 Keep the current implementation as an adapter while migrating consumers, then split persistence only after the interfaces are stable.
@@ -92,8 +91,12 @@ The presentation layer no longer depends on the 100+ method `ShopSettingReposito
 - `AppConfigSettings`
 - `HomeSettingsRepository`
 - `QueueSettings`
+- `ReservationSettings`
+- `LineConnectionSettings`
+- `CouponNotificationSettings`
+- `OrderNotificationSettings`
 
-The Eloquent adapter implements these contracts during the incremental migration. The app-config API, shared home-image reader, queue settings use cases, and reservation availability services have also moved to focused contracts. Architecture tests prevent migrated consumers from returning to the broad dependency.
+The Eloquent adapter implements these contracts during the incremental migration. The app-config API, shared home-image reader, queue and reservation flows, LINE identity/webhook handling, and customer notification services have moved to focused contracts. Architecture tests prevent migrated consumers from returning to the broad dependency.
 
 The first frontend extractions move Wallet/external-URL policy, member API payload normalization, and profile-form payload construction out of `MemberManager.ts`. The manager retains compatibility delegates while URL validation, HTTPS normalization, LIFF return URL construction, Google Wallet URL handling, error-message selection, supported member payload shapes, wallet-summary equality, split-name handling, choice fields, and empty profile values are independently covered by Node unit tests.
 
