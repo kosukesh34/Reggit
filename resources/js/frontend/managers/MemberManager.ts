@@ -19,6 +19,7 @@ import {
 import { normalizeMemberPayload, normalizeWalletSummary, walletSummariesEqual } from '../member/memberPayload';
 import { buildProfilePayload } from '../member/profilePayload';
 import { resolvePostalAddress, validatePostalCode } from '../member/postalAddressPolicy';
+import { formatPointHistoryHtml } from '../member/pointHistoryFormatter';
 import { formatRankUpHistoryHtml } from '../member/rankHistoryFormatter';
 import {
     renderGuestNoCardTemplate,
@@ -2421,31 +2422,7 @@ export class MemberManager {
             const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_POINTS);
             listEl.setAttribute('data-loaded', 'true');
             const transactions = (result.data && result.data.transactions) ? result.data.transactions : [];
-            if (!transactions.length) {
-                listEl.innerHTML = '<div class="member-purchase-history-empty">ポイント履歴がありません</div>';
-                return;
-            }
-            const rows = transactions.map((tx) => {
-                const date = tx.created_at ? new Date(tx.created_at).toLocaleDateString('ja-JP', {
-                    year: 'numeric', month: 'short', day: 'numeric',
-                }) : '';
-                const points = tx.points || 0;
-                const label = points >= 0 ? '獲得' : '使用';
-                const cls = points >= 0 ? 'member-point-history-earned' : 'member-point-history-used';
-                return `
-                    <div class="member-point-history-item ${cls}">
-                        <div class="member-point-history-row">
-                            <span class="member-point-history-label">${DomHelper.escapeHtml(label)}</span>
-                            <span class="member-point-history-points">${points > 0 ? '+' : ''}${points.toLocaleString()}pt</span>
-                        </div>
-                        <div class="member-point-history-meta">
-                            <span>${DomHelper.escapeHtml(date)}</span>
-                            ${tx.description ? `<span>${DomHelper.escapeHtml(tx.description)}</span>` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            listEl.innerHTML = rows;
+            listEl.innerHTML = formatPointHistoryHtml(transactions, DomHelper.escapeHtml);
         } catch (error) {
             console.error('Failed to load point history:', error);
             listEl.innerHTML = '<div class="member-purchase-history-error"><p>ポイント履歴の読み込みに失敗しました</p></div>';
