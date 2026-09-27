@@ -18,6 +18,7 @@ import {
 } from '../member/walletUrlPolicy';
 import { normalizeMemberPayload, normalizeWalletSummary, walletSummariesEqual } from '../member/memberPayload';
 import { buildProfilePayload } from '../member/profilePayload';
+import { resolvePostalAddress, validatePostalCode } from '../member/postalAddressPolicy';
 import { formatRankUpHistoryHtml } from '../member/rankHistoryFormatter';
 import {
     renderGuestNoCardTemplate,
@@ -2555,18 +2556,13 @@ export class MemberManager {
             if (postalInput.disabled) {
                 return;
             }
-            const raw = (postalInput.value || '').trim().replace(/[‐－−ー]/g, '-');
-            const digits = raw.replace(/\D/g, '');
-            if (digits.length < 3) {
-                showInputFailed('郵便番号を3桁以上入力してください。');
-                return;
-            }
-            if (digits.length < 7) {
-                showInputFailed('郵便番号は7桁で入力してください。');
+            const validation = validatePostalCode(postalInput.value);
+            if (validation.errorMessage) {
+                showInputFailed(validation.errorMessage);
                 return;
             }
 
-            const url = AppConstants.API_ENDPOINTS.POSTAL_CODE + '?postal_code=' + encodeURIComponent(digits);
+            const url = AppConstants.API_ENDPOINTS.POSTAL_CODE + '?postal_code=' + encodeURIComponent(validation.digits);
             const lookupBtnHtml = lookupBtn ? lookupBtn.innerHTML : '';
             postalInput.disabled = true;
             if (lookupBtn) {
@@ -2584,21 +2580,15 @@ export class MemberManager {
                     const serverError = data.error || null;
                     const addresses = Array.isArray(data.addresses) ? data.addresses : (Array.isArray(data) ? data : []);
                     if (addresses.length > 0) {
-                        const first = addresses[0];
-                        const full = (first && (first.full_address || first.fullAddress)) ? (first.full_address || first.fullAddress) : '';
-                        if (full) {
-                            addressInput.value = full;
+                        const address = resolvePostalAddress(addresses[0]);
+                        if (address) {
+                            addressInput.value = address.fullAddress;
                             const prefectureInput = (doc.getElementById('profileEdit_prefecture') || doc.getElementById('profileEditPrefecture')) as HTMLInputElement | null;
                             const cityInput = (doc.getElementById('profileEdit_city') || doc.getElementById('profileEditCity')) as HTMLInputElement | null;
                             const streetInput = (doc.getElementById('profileEdit_street') || doc.getElementById('profileEditStreet')) as HTMLInputElement | null;
-                            const pref = first.pref_name || first.prefName || '';
-                            const city = first.city_name || first.cityName || '';
-                            const town = first.town_name || first.townName || '';
-                            const block = first.block_name || first.blockName || '';
-                            const streetPart = [town, block].filter(Boolean).join('');
-                            if (prefectureInput) prefectureInput.value = pref;
-                            if (cityInput) cityInput.value = city;
-                            if (streetInput) streetInput.value = streetPart;
+                            if (prefectureInput) prefectureInput.value = address.prefecture;
+                            if (cityInput) cityInput.value = address.city;
+                            if (streetInput) streetInput.value = address.street;
                             if (addresses.length > 1 && typeof ToastManager !== 'undefined') {
                                 ToastManager.success('住所を入力しました。複数候補がある場合は修正してください。');
                             } else if (typeof ToastManager !== 'undefined') {
