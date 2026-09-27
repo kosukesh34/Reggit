@@ -8,6 +8,9 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks(id) {
+                    if (id.includes('/resources/js/frontend/managers/')) {
+                        return 'legacy-managers';
+                    }
                     if (!id.includes('node_modules')) {
                         return undefined;
                     }
