@@ -120,6 +120,8 @@ The first frontend extractions move Wallet/external-URL policy, member API paylo
 
 Guest, authentication-required, error, and loading-state member-card templates are now pure renderers outside `MemberManager.ts`. Dynamic copy and CSS class values are escaped at the rendering boundary and covered by focused injection-resistance tests.
 
+Postal-code normalization, validation, and API address-shape conversion are also isolated from profile-edit DOM orchestration. Both snake-case and camel-case response shapes are covered by frontend unit tests.
+
 Rank-history rendering is also isolated as a pure formatter. API-provided labels and dates are escaped at that boundary and covered by focused unit tests. View composers now catch runtime exceptions rather than all PHP throwables, so programming errors such as type violations are no longer silently replaced with fallback presentation data.
 
 ## Recommended sequence
