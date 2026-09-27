@@ -13,8 +13,9 @@ use App\Domain\Settings\Repositories\OrderNotificationSettings;
 use App\Domain\Settings\Repositories\QueueSettings;
 use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\StampSettings;
 
-class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, CouponNotificationSettings, FrontendShellSettings, HomeSettingsRepository, LineConnectionSettings, MemberCardPreviewSettings, OrderNotificationSettings, QueueSettings, ReservationSettings, ShopSettingRepository
+class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, CouponNotificationSettings, FrontendShellSettings, HomeSettingsRepository, LineConnectionSettings, MemberCardPreviewSettings, OrderNotificationSettings, QueueSettings, ReservationSettings, ShopSettingRepository, StampSettings
 {
     public function getValue(string $key, mixed $default, int $projectId): mixed
     {

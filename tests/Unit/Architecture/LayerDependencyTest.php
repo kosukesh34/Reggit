@@ -184,6 +184,19 @@ class LayerDependencyTest extends TestCase
         }
     }
 
+    public function test_stamp_use_cases_depend_on_their_focused_settings_contract(): void
+    {
+        $directory = dirname(__DIR__, 3).'/app/UseCases/Stamp';
+
+        foreach (['StampGrantUseCase.php', 'StampGrantByCodeUseCase.php', 'StampIndexUseCase.php'] as $filename) {
+            $file = $directory.'/'.$filename;
+            $source = file_get_contents($file);
+            self::assertIsString($source);
+            self::assertStringContainsString('StampSettings', $source, $file);
+            self::assertStringNotContainsString('ShopSettingRepository', $source, $file);
+        }
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */

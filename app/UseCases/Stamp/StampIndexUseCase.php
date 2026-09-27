@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Stamp;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\StampSettings;
 use App\Enums\StampCycleMode;
 use App\Models\MemberStamp;
 use App\Models\StampCard;
@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 class StampIndexUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private StampSettings $shopSettingRepository,
     ) {}
 
     public function handle(User $user): StampListView
