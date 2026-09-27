@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\OrderNotificationSettings;
 use App\Enums\OrderType;
 use App\Models\Order;
 use App\Models\Project;
@@ -14,7 +14,7 @@ class OrderNotificationService
 {
     public function __construct(
         private LineService $lineService,
-        private ShopSettingRepository $shopSettingRepository,
+        private OrderNotificationSettings $shopSettingRepository,
         private PushNotificationService $pushNotificationService,
     ) {}
 
