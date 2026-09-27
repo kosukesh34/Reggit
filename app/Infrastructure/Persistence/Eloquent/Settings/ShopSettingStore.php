@@ -23,7 +23,7 @@ use App\Util\StrHelper;
 
 /**
  * 店舗設定の永続化ストア。キーごとのテーブル（project_business_settings 等）を参照する。
- * EloquentShopSettingRepository 経由で使用する。外部からの直接参照禁止。
+ * 設定リポジトリアダプター経由で使用する。外部からの直接参照禁止。
  */
 class ShopSettingStore
 {

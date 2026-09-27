@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\OperationalSettings;
 use App\Domain\Settings\ShopSettingKeys;
 use App\Util\AdminContext;
 
@@ -10,10 +10,10 @@ class SettingsService
 {
     private const HEX_REGEX = '/^#[0-9A-Fa-f]{6}$/';
 
-    /** @var ShopSettingRepository */
+    /** @var OperationalSettings */
     private $shopSettingRepository;
 
-    public function __construct(ShopSettingRepository $shopSettingRepository)
+    public function __construct(OperationalSettings $shopSettingRepository)
     {
         $this->shopSettingRepository = $shopSettingRepository;
     }
