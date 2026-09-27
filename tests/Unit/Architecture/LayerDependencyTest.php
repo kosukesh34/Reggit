@@ -213,14 +213,14 @@ class LayerDependencyTest extends TestCase
         }
     }
 
-    public function test_admin_settings_and_kitchen_middleware_do_not_depend_on_the_broad_settings_contract(): void
+    public function test_admin_settings_and_store_app_middleware_do_not_depend_on_the_broad_settings_contract(): void
     {
         $root = dirname(__DIR__, 3).'/app/';
         $files = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($root.'UseCases/Admin/Settings')
         );
         $targets = [
-            $root.'Http/Middleware/AuthenticateKitchenToken.php',
+            $root.'Http/Middleware/AuthenticateStoreApp.php',
             $root.'Http/Middleware/AuthorizeQueueAccess.php',
         ];
 
@@ -272,7 +272,6 @@ class LayerDependencyTest extends TestCase
     {
         $root = dirname(__DIR__, 3).'/app';
         $allowed = [
-            $root.'/Domain/Settings/Repositories/ShopSettingRepository.php',
             $root.'/Infrastructure/Persistence/Eloquent/Settings/EloquentShopSettingRepository.php',
             $root.'/Providers/AppServiceProvider.php',
         ];

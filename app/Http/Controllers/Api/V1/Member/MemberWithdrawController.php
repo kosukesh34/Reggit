@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Member;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\UserService;
+use App\UseCases\Member\Exceptions\MemberWithdrawalException;
 use App\UseCases\Member\MemberWithdrawUseCase;
 use App\Util\LogHelper;
 use Illuminate\Http\JsonResponse;
@@ -31,13 +32,13 @@ class MemberWithdrawController extends BaseApiController
             $this->userService->clearUserSession($request);
 
             return $this->success([], '退会が完了しました。');
-        } catch (\RuntimeException $e) {
+        } catch (MemberWithdrawalException $e) {
             LogHelper::error('[Member] withdraw failed (Smaregi or business)', [
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->error($e->getMessage(), 500);
-        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 502);
+        } catch (\Throwable $e) {
             LogHelper::error('[Member] withdraw failed', [
                 'error' => $e->getMessage(),
             ]);

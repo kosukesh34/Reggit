@@ -21,21 +21,41 @@
     <h1 class="page-header-title"><i class="fas fa-sliders-h"></i> 基本設定</h1>
 </div>
 
-
-@if(auth('admin')->user()?->hasPermission('settings.manage'))
+@if(!auth('admin')->user()->isStaff())
 <div class="card">
-    <div class="card-header"><h2 class="card-title">受付・キッチン端末の認証</h2></div>
+    <div class="card-header">
+        <h2 class="card-title"><i class="fas fa-tablet-alt"></i> 店舗端末の登録</h2>
+    </div>
     <div class="card-body">
-        <label for="storeDeviceToken" class="form-label">店舗端末トークン</label>
-        <input id="storeDeviceToken" type="text" class="form-control" readonly autocomplete="off" value="{{ $settings['storeDeviceToken'] ?? '' }}">
-        <p class="form-text">この値を受付・キッチンアプリの設定に入力してください。再発行すると、接続中のすべての端末で再設定が必要です。</p>
-        <form action="{{ admin_route('admin.settings.kitchen-token.regenerate') }}" method="POST">
-            @csrf
-            <button type="submit" class="btn btn-secondary">端末トークンを発行・再発行</button>
-        </form>
+        <p>Kitchen／Waiting は店舗ごとに各1台だけ登録できます。コードは一度だけ使用でき、再発行すると現在の端末は即時ログアウトされます。</p>
+        @if(session('store_app_enrollment'))
+            <div class="alert alert-warning" role="alert">
+                <strong>{{ session('store_app_enrollment.app') === 'kitchen' ? 'Kitchen' : 'Waiting' }} 登録コード（この画面でのみ表示）</strong>
+                <div style="font-size:1.35rem;font-weight:700;letter-spacing:.08em;margin-top:.5rem;word-break:break-all">{{ session('store_app_enrollment.token') }}</div>
+                <small>対象iPadへ入力後、このコードは再利用できません。</small>
+            </div>
+        @endif
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem">
+            @foreach(['kitchen' => 'Kitchen', 'waiting' => 'Waiting'] as $app => $label)
+                @php($credential = $storeAppCredentials->get($app))
+                <div class="card" style="margin:0">
+                    <div class="card-body">
+                        <h3>{{ $label }}</h3>
+                        <p>{{ $credential?->claimed_at ? '登録済み: '.$credential->device_name : ($credential?->enrollment_token_hash ? '登録待ち' : '未登録') }}</p>
+                        <form action="{{ admin_route('admin.settings.store-app-credential.store') }}" method="POST" onsubmit="return confirm('現在の端末認証を失効し、新しい登録コードを発行します。よろしいですか？')">
+                            @csrf
+                            <input type="hidden" name="app" value="{{ $app }}">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> {{ $credential ? '登録コードを再発行' : '登録コードを発行' }}</button>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
+        </div>
     </div>
 </div>
 @endif
+
+
 <form action="{{ admin_route('admin.settings.basic.update') }}" method="POST" id="settingsBasicForm">
     @csrf
     <div class="card">

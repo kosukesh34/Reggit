@@ -23,12 +23,11 @@ use App\Domain\Settings\Repositories\QueueAdminSettings;
 use App\Domain\Settings\Repositories\QueueSettings;
 use App\Domain\Settings\Repositories\RankSettings;
 use App\Domain\Settings\Repositories\ReservationSettings;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
 use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Domain\Settings\Repositories\StampSettings;
 use App\Domain\Settings\Repositories\WalletSettings;
 
-class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, CouponNotificationSettings, FeatureSettings, FrontendShellSettings, HomeSettingsRepository, KitchenAccessSettings, LiffDesignerSettings, LineAdminSettings, LineConnectionSettings, MemberCardPreviewSettings, MemberSettings, OperationalSettings, OrderNotificationSettings, OrderSettings, ProfileSettings, ProjectSettings, QueueAdminSettings, QueueSettings, RankSettings, ReservationSettings, ShopSettingRepository, SmaregiSettings, StampSettings, WalletSettings
+class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, CouponNotificationSettings, FeatureSettings, FrontendShellSettings, HomeSettingsRepository, KitchenAccessSettings, LiffDesignerSettings, LineAdminSettings, LineConnectionSettings, MemberCardPreviewSettings, MemberSettings, OperationalSettings, OrderNotificationSettings, OrderSettings, ProfileSettings, ProjectSettings, QueueAdminSettings, QueueSettings, RankSettings, ReservationSettings, SmaregiSettings, StampSettings, WalletSettings
 {
     public function getValue(string $key, mixed $default, int $projectId): mixed
     {

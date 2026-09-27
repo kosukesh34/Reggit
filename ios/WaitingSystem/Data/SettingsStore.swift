@@ -26,9 +26,8 @@ final class SettingsStore: SettingsStoreProtocol {
 
     private func normalize(_ settings: AppSettings) -> AppSettings {
         var updated = settings
-        // 向け先・プロジェクトはビルド時固定。LINE URL は API 取得値を使う。
+        // 接続先は固定し、プロジェクトはログイン結果を使う。LINE URL は API 取得値を使う。
         updated.baseURL = AppBuildConfig.baseURL
-        updated.projectKey = AppBuildConfig.projectKey
         let remoteLiff = WaitingRemoteConfigStore.current.lineLiffUrl
         if !remoteLiff.isEmpty {
             updated.liffURL = remoteLiff

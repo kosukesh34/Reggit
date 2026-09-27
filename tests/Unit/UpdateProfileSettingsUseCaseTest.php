@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
@@ -30,7 +30,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             $sync->shouldReceive('sync')->andReturn([]);
         }
 
-        return new UpdateProfileSettingsUseCase(app(ShopSettingRepository::class), $sync);
+        return new UpdateProfileSettingsUseCase(app(ProfileSettings::class), $sync);
     }
 
     public function test_handle_プロフィール項目設定を保存できること(): void

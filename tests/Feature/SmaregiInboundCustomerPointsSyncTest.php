@@ -37,6 +37,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi.id_base_url' => 'https://id.smaregi.dev',
             'smaregi.api_base_url' => 'https://api.smaregi.dev',
             'smaregi.contract_id' => '',
+            'smaregi.webhook_secret' => '',
         ]);
     }
 

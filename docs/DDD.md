@@ -10,7 +10,7 @@ Reggit はクリーンアーキテクチャ（UseCase 層）完了後、**Bounde
 | **Application (UseCase)** | オーケストレーション | ✅ Domain / Repository 経由 |
 | **Infrastructure** | Eloquent・外部 API | ✅ `app/Infrastructure/Persistence` |
 
-**DDD コア移行: 完了**。Settings は `ShopSettingRepository` / `ShopSettingStore`。LIFF 顧客フロントは React `features/*`。全体図は [ARCHITECTURE.md](./ARCHITECTURE.md)。
+**DDD コア移行: 完了**。Settings は用途別 contract / `ShopSettingStore`。LIFF 顧客フロントは React `features/*`。全体図は [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
 ## 2. ディレクトリ構成
 
@@ -29,7 +29,7 @@ app/Infrastructure/Events/
 | **Coupon** | ✅ | 利用・発行・表示・配信セグメント Policy / TargetRepository |
 | **Reservation** | ✅ | 作成・キャンセル・編集・空き枠・管理ステータス |
 | **Queue** | ✅ | キャンセル・呼び出し・入店・管理ステータス。待ち時間は設定値ベース |
-| **Settings** | ✅ 完全 DDD | `ShopSettingRepository` + `ShopSettingStore`（Infrastructure）。`Project*Setting` 直 R/W。旧 `Models\ShopSetting` 削除済み |
+| **Settings** | ✅ 完全 DDD | 用途別 contract + `ShopSettingStore`（Infrastructure）。`Project*Setting` 直 R/W。旧 broad repository / `Models\ShopSetting` 削除済み |
 
 ## 4. 依存の向き
 
@@ -52,7 +52,7 @@ Domain → Eloquent / ShopSetting に依存しない
 
 ## 6. 残作業と方針
 
-- Admin Settings / LIFF / テーマ等の書き込み・View Composer → **✅ W1 完了**（`ShopSettingRepository` / `ShopSettingStore`、旧 `Models\ShopSetting` 削除）
+- Admin Settings / LIFF / テーマ等の書き込み・View Composer → **✅ W1 完了**（用途別 settings contract / `ShopSettingStore`、旧 broad repository / `Models\ShopSetting` 削除）
 - `OrderIndex` / `OrderShow` 等の **読み取り専用 Eloquent**（CQRS 読みモデルとして許容）
 - Eloquent `Member::syncPointsLedger` / `MemberRepository::syncPointsLedger` のバックフィル（レガシーデータ整合。読取時は自動実行せず、ポイント更新前など明示呼び出しのみ）
 - **薄 UseCase ラッパー**はクリーンアーキテクチャ方針として**維持**する（削除・統合しない。Request 直受けの Input 化のみ進める）

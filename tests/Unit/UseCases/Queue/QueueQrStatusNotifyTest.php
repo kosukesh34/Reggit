@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\UseCases\Queue;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
 use App\Models\QueueEntry;
@@ -75,7 +75,7 @@ class QueueQrStatusNotifyTest extends TestCase
             $lineMock,
             $pushMock,
             app(DeviceService::class),
-            app(ShopSettingRepository::class),
+            app(LineConnectionSettings::class),
         );
 
         $output = $useCase->handle(new QueueQrStatusInput(
@@ -133,7 +133,7 @@ class QueueQrStatusNotifyTest extends TestCase
             $lineMock,
             $pushMock,
             app(DeviceService::class),
-            app(ShopSettingRepository::class),
+            app(LineConnectionSettings::class),
         );
 
         $output = $useCase->handle(new QueueQrStatusInput(
