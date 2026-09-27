@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Domain\Order\Repositories\OrderRepository;
-use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
@@ -14,6 +13,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
+use App\Services\PostCommitDomainEventDispatcher;
 use App\UseCases\Admin\Order\AdminOrderUpdateStatusUseCase;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -103,7 +103,7 @@ class MultiDeviceOrderFlowTest extends TestCase
         $webhook = new PaymentWebhookUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );

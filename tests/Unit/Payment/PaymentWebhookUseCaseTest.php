@@ -13,6 +13,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
+use App\Services\PostCommitDomainEventDispatcher;
 use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,7 +55,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $useCase = new PaymentWebhookUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
@@ -101,7 +102,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $useCase = new PaymentWebhookUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
@@ -146,7 +147,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $useCase = new PaymentWebhookUseCase(
             $gateway,
             app(OrderRepository::class),
-            $dispatcher,
+            app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
@@ -190,7 +191,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $useCase = new PaymentWebhookUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
@@ -236,7 +237,7 @@ class PaymentWebhookUseCaseTest extends TestCase
         $useCase = new PaymentWebhookUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             $orderService,
         );

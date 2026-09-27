@@ -4,12 +4,12 @@ namespace App\UseCases\Payment;
 
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Repositories\OrderRepository;
-use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Jobs\SyncOrderPointsToSmaregiJob;
 use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
+use App\Services\PostCommitDomainEventDispatcher;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +23,7 @@ class PaymentWebhookUseCase
     public function __construct(
         private PaymentGateway $gateway,
         private OrderRepository $orderRepository,
-        private DomainEventDispatcher $domainEvents,
+        private PostCommitDomainEventDispatcher $postCommitEvents,
         private OrderNumberAssigner $orderNumberAssigner,
         private OrderService $orderService,
     ) {}
@@ -117,7 +117,7 @@ class PaymentWebhookUseCase
         });
 
         if ($confirmedEvent !== null) {
-            $this->dispatchBestEffort($confirmedEvent);
+            $this->postCommitEvents->dispatch($confirmedEvent);
         }
         if ($shouldDelaySmaregiSync) {
             SyncOrderPointsToSmaregiJob::dispatch($syncOrderId, $syncProjectId, $syncUserId)
@@ -127,17 +127,5 @@ class PaymentWebhookUseCase
         }
 
         return true;
-    }
-
-    private function dispatchBestEffort(object $event): void
-    {
-        try {
-            $this->domainEvents->dispatch($event);
-        } catch (\Throwable $e) {
-            LogHelper::error('[DomainEvent] post-commit dispatch failed', [
-                'event' => $event::class,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 }
