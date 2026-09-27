@@ -118,6 +118,8 @@ All application consumers have now migrated away from `ShopSettingRepository`. T
 
 The first frontend extractions move Wallet/external-URL policy, member API payload normalization, and profile-form payload construction out of `MemberManager.ts`. The manager retains compatibility delegates while URL validation, HTTPS normalization, LIFF return URL construction, Google Wallet URL handling, error-message selection, supported member payload shapes, wallet-summary equality, split-name handling, choice fields, and empty profile values are independently covered by Node unit tests.
 
+Guest, authentication-required, error, and loading-state member-card templates are now pure renderers outside `MemberManager.ts`. Dynamic copy and CSS class values are escaped at the rendering boundary and covered by focused injection-resistance tests.
+
 Rank-history rendering is also isolated as a pure formatter. API-provided labels and dates are escaped at that boundary and covered by focused unit tests. View composers now catch runtime exceptions rather than all PHP throwables, so programming errors such as type violations are no longer silently replaced with fallback presentation data.
 
 ## Recommended sequence
