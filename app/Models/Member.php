@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\OrderSettings;
 use App\Enums\PointTransactionType;
 use App\Models\Concerns\BelongsToProject;
 use App\Models\Scopes\ProjectScope;
@@ -189,7 +189,7 @@ class Member extends Model
             'points' => $points,
             'description' => self::POINTS_LEDGER_BACKFILL_DESCRIPTION,
             'order_id' => null,
-            'expires_at' => now()->addDays(app(ShopSettingRepository::class)->getPointsValidDays((int) $this->project_id)),
+            'expires_at' => now()->addDays(app(OrderSettings::class)->getPointsValidDays((int) $this->project_id)),
         ]);
         $this->recalcPointsFromTransactions();
     }

@@ -5,7 +5,7 @@ namespace App\Services\Smaregi;
 use App\Domain\Member\Events\PointsEarned;
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Policies\StampEarnPolicy;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\OrderSettings;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Domain\Smaregi\Services\PurchasePointCalculator;
 use App\Domain\Smaregi\Services\SmaregiInboundAwardDescription;
@@ -32,7 +32,7 @@ class SmaregiInboundAwardApplier
     public function __construct(
         private MemberAdminService $memberAdminService,
         private MemberBenefitService $memberBenefitService,
-        private ShopSettingRepository $shopSettingRepository,
+        private OrderSettings $shopSettingRepository,
         private StampEarnPolicy $stampEarnPolicy,
         private MemberRepository $memberRepository,
         private DomainEventDispatcher $domainEvents,

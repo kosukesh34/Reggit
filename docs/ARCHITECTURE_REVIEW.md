@@ -39,6 +39,12 @@ Split contracts by consumer capability, for example:
 - `LiffDesignerSettings`
 - `LineAdminSettings`
 - `KitchenAccessSettings`
+- `MemberSettings`
+- `OperationalSettings`
+- `OrderSettings`
+- `ProjectSettings`
+- `QueueAdminSettings`
+- `SmaregiSettings`
 
 Keep the current implementation as an adapter while migrating consumers, then split persistence only after the interfaces are stable.
 
@@ -107,6 +113,8 @@ The presentation layer no longer depends on the 100+ method `ShopSettingReposito
 The Eloquent adapter implements these contracts during the incremental migration. The app-config API, shared home-image reader, queue and reservation flows, LINE identity/webhook handling, and customer notification services have moved to focused contracts. Architecture tests prevent migrated consumers from returning to the broad dependency.
 
 Member rank calculation and synchronization, rank-driven delivery forms, member profile validation, member-card reads, coupon presentation, and queue LINE-link flows now also use focused settings contracts. This removes the broad dependency from cross-cutting member workflows without changing the shared persistence adapter.
+
+All application consumers have now migrated away from `ShopSettingRepository`. The broad contract remains temporarily as a compatibility surface implemented by the shared Eloquent adapter, but architecture tests restrict its use to the contract, adapter, and dependency-registration provider. Future application code must select a capability-focused contract.
 
 The first frontend extractions move Wallet/external-URL policy, member API payload normalization, and profile-form payload construction out of `MemberManager.ts`. The manager retains compatibility delegates while URL validation, HTTPS normalization, LIFF return URL construction, Google Wallet URL handling, error-message selection, supported member payload shapes, wallet-summary equality, split-name handling, choice fields, and empty profile values are independently covered by Node unit tests.
 

@@ -2,7 +2,7 @@
 
 namespace App\Services\Admin;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\ProjectSettings;
 use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\Settings\ProjectProfileSmaregiSetting;
@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 class ProjectProvisioningService
 {
     public function __construct(
-        private readonly ShopSettingRepository $shopSettingRepository,
+        private readonly ProjectSettings $shopSettingRepository,
         private readonly LineLiffAdminService $lineLiffAdminService,
         private readonly PublicImageStorageService $publicImageStorage,
     ) {}

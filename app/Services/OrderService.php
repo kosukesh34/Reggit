@@ -15,7 +15,7 @@ use App\Domain\Order\Repositories\ProductCatalogRepository;
 use App\Domain\Order\Repositories\ProductStockRepository;
 use App\Domain\Order\ValueObjects\OrderLineItem;
 use App\Domain\Order\ValueObjects\PendingOrder;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\OrderSettings;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\LotterySourceType;
 use App\Enums\MemberCouponSource;
@@ -47,7 +47,7 @@ class OrderService
         private OrderRepository $orderRepository,
         private ProductStockRepository $productStockRepository,
         private ProductCatalogRepository $productCatalogRepository,
-        private ShopSettingRepository $shopSettingRepository,
+        private OrderSettings $shopSettingRepository,
         private DomainEventDispatcher $domainEvents,
         private OrderPlacementPolicy $orderPlacementPolicy,
         private ProductAvailabilityPolicy $productAvailabilityPolicy,
