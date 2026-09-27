@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\RankAggregationType;
 use App\Services\Admin\LiffSettingsService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
@@ -15,7 +15,7 @@ class UpdateRankSettingsUseCase
     public function __construct(
         private SmaregiCustomerRankSyncService $smaregiRankSync,
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
         private LiffSettingsService $liffSettingsService,
     ) {}
 

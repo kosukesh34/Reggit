@@ -2,14 +2,14 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Services\Admin\PublicImageStorageService;
 use Illuminate\Http\UploadedFile;
 
 class UpdateFeatureSettingsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private FeatureSettings $shopSettingRepository,
         private PublicImageStorageService $publicImageStorage,
     ) {}
 

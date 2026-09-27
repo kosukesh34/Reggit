@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\KitchenAccessSettings;
 use App\Models\Project;
 use App\Util\AdminContext;
 use Closure;
@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AuthenticateKitchenToken
 {
-    public function __construct(private ShopSettingRepository $settings) {}
+    public function __construct(private KitchenAccessSettings $settings) {}
 
     public function handle(Request $request, Closure $next): Response
     {

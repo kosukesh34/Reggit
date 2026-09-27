@@ -213,6 +213,30 @@ class LayerDependencyTest extends TestCase
         }
     }
 
+    public function test_admin_settings_and_kitchen_middleware_do_not_depend_on_the_broad_settings_contract(): void
+    {
+        $root = dirname(__DIR__, 3).'/app/';
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root.'UseCases/Admin/Settings')
+        );
+        $targets = [
+            $root.'Http/Middleware/AuthenticateKitchenToken.php',
+            $root.'Http/Middleware/AuthorizeQueueAccess.php',
+        ];
+
+        foreach ($files as $file) {
+            if ($file->isFile() && $file->getExtension() === 'php') {
+                $targets[] = $file->getPathname();
+            }
+        }
+
+        foreach ($targets as $file) {
+            $source = file_get_contents($file);
+            self::assertIsString($source);
+            self::assertStringNotContainsString('ShopSettingRepository', $source, $file);
+        }
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */

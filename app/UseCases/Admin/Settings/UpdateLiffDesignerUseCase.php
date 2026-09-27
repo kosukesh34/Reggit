@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LiffDesignerSettings;
 use App\Enums\MemberRegistrationMode;
 use App\Services\Admin\LiffSettingsService;
 use App\Support\LiffThemePresets;
@@ -15,7 +15,7 @@ class UpdateLiffDesignerUseCase
 {
     public function __construct(
         private LiffSettingsService $liffSettingsService,
-        private ShopSettingRepository $shopSettingRepository,
+        private LiffDesignerSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId, UpdateLiffDesignerInput $input): void

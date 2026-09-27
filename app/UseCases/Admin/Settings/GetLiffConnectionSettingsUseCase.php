@@ -2,14 +2,14 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineAdminSettings;
 use App\Models\Project;
 use App\UseCases\Admin\Settings\Data\LiffConnectionSettingsView;
 
 class GetLiffConnectionSettingsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private LineAdminSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId): LiffConnectionSettingsView
