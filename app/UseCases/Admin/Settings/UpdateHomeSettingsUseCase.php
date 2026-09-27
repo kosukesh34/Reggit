@@ -2,14 +2,14 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\HomeSettingsRepository;
 use App\Support\LiffDesignerSanitizer;
 use App\Util\StrHelper;
 
 class UpdateHomeSettingsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private HomeSettingsRepository $shopSettingRepository,
     ) {}
 
     /** @param array<int, array{tab?: string, label?: string, icon?: string, order?: int, enabled?: bool}> $rawTabs */

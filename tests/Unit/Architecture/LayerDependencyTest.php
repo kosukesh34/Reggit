@@ -94,6 +94,44 @@ class LayerDependencyTest extends TestCase
         self::assertSame([], $violations);
     }
 
+    public function test_view_composers_depend_on_focused_settings_contracts(): void
+    {
+        $directory = dirname(__DIR__, 3).'/app/View/Composers';
+        $violations = [];
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory));
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $source = file_get_contents($file->getPathname());
+            if (str_contains($source, 'ShopSettingRepository')) {
+                $violations[] = $file->getPathname().' imports the broad settings repository';
+            }
+        }
+
+        self::assertSame([], $violations, implode(PHP_EOL, $violations));
+    }
+
+    public function test_app_config_depends_on_its_focused_settings_contract(): void
+    {
+        $source = file_get_contents(dirname(__DIR__, 3).'/app/Services/AppConfigService.php');
+
+        self::assertStringContainsString('use App\\Domain\\Settings\\Repositories\\AppConfigSettings;', $source);
+        self::assertStringNotContainsString('ShopSettingRepository', $source);
+    }
+
+    public function test_home_settings_use_cases_depend_on_their_focused_contract(): void
+    {
+        foreach (['GetHomeSettingsUseCase.php', 'UpdateHomeSettingsUseCase.php'] as $file) {
+            $source = file_get_contents(dirname(__DIR__, 3).'/app/UseCases/Admin/Settings/'.$file);
+
+            self::assertStringContainsString('use App\\Domain\\Settings\\Repositories\\HomeSettingsRepository;', $source);
+            self::assertStringNotContainsString('ShopSettingRepository', $source);
+        }
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */

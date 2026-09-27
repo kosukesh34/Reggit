@@ -2,12 +2,12 @@
 
 namespace App\Support;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\SettingValueReader;
 
 final class HomeImageUrls
 {
     /** @return list<string> */
-    public static function forProject(ShopSettingRepository $settings, int $projectId): array
+    public static function forProject(SettingValueReader $settings, int $projectId): array
     {
         $urls = $settings->getValue('home_image_urls', null, $projectId);
         if (is_array($urls)) {

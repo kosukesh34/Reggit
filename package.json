@@ -9,6 +9,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
+    "test:unit:frontend": "node --experimental-strip-types --test resources/js/frontend/member/*.test.mjs",
     "test:e2e": "playwright test --config=e2e/web/playwright.config.ts",
     "test:e2e:ui": "playwright test --config=e2e/web/playwright.config.ts --ui"
   },

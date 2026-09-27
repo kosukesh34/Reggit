@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\AppConfigSettings;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Support\HomeImageUrls;
 use App\Support\LiffThemePresets;
@@ -15,7 +15,7 @@ class AppConfigService
 {
     public function __construct(
         private ProjectRepository $projectRepository,
-        private ShopSettingRepository $shopSettingRepository,
+        private AppConfigSettings $shopSettingRepository,
     ) {}
 
     /**
