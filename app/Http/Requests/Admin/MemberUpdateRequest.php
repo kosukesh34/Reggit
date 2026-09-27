@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Models\Member;
@@ -128,7 +128,7 @@ class MemberUpdateRequest extends FormRequest
         if ($member === null) {
             return [];
         }
-        $settings = resolve(ShopSettingRepository::class)->getProfileFieldSettings((int) $member->project_id);
+        $settings = resolve(ProfileSettings::class)->getProfileFieldSettings((int) $member->project_id);
 
         return array_values($settings['custom_fields'] ?? []);
     }

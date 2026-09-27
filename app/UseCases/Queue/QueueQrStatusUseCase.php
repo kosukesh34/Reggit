@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Queue;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\User;
@@ -24,7 +24,7 @@ class QueueQrStatusUseCase
         private LineService $lineService,
         private PushNotificationService $pushNotificationService,
         private DeviceService $deviceService,
-        private ShopSettingRepository $shopSettingRepository,
+        private LineConnectionSettings $shopSettingRepository,
     ) {}
 
     public function handle(QueueQrStatusInput $input): ?QueueQrStatusOutput

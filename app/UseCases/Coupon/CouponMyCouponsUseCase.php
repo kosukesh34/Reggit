@@ -3,7 +3,7 @@
 namespace App\UseCases\Coupon;
 
 use App\Domain\Coupon\Policies\CouponDisplayStatusPolicy;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Models\Coupon;
 use App\Models\User;
 use App\UseCases\Coupon\Data\CouponListView;
@@ -13,7 +13,7 @@ use App\Util\AdminContext;
 class CouponMyCouponsUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private CouponNotificationSettings $shopSettingRepository,
         private CouponDisplayStatusPolicy $couponDisplayStatusPolicy,
     ) {}
 

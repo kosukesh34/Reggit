@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Domain\Member\Services\MemberRankDownGuard;
 use App\Domain\Member\Services\MemberRankResolver;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\RankAggregationType;
 use App\Models\Member;
 use App\Util\AdminContext;
@@ -12,7 +12,7 @@ use App\Util\AdminContext;
 class MemberRankCalculator
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
         private MemberRankResolver $memberRankResolver,
         private MemberRankMetricCalculator $memberRankMetricCalculator,
         private MemberRankDownGuard $memberRankDownGuard,
