@@ -3,7 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Domain\Queue\Repositories\QueueEntryRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\QueueAdminSettings;
 use App\Enums\QueueStatus;
 use App\Models\Project;
 use App\Models\QueueCallLog;
@@ -23,13 +23,13 @@ class QueueAdminService
 
     private QueueEntryRepository $queueEntryRepository;
 
-    private ShopSettingRepository $shopSettingRepository;
+    private QueueAdminSettings $shopSettingRepository;
 
     public function __construct(
         LineService $lineService,
         PushNotificationService $pushNotificationService,
         QueueEntryRepository $queueEntryRepository,
-        ShopSettingRepository $shopSettingRepository,
+        QueueAdminSettings $shopSettingRepository,
     ) {
         $this->lineService = $lineService;
         $this->pushNotificationService = $pushNotificationService;

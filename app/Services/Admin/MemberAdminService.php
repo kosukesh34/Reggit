@@ -2,7 +2,7 @@
 
 namespace App\Services\Admin;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\MemberSettings;
 use App\Enums\MemberVisitSource;
 use App\Enums\OrderStatus;
 use App\Models\Member;
@@ -32,7 +32,7 @@ class MemberAdminService
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator,
-        private ShopSettingRepository $shopSettingRepository,
+        private MemberSettings $shopSettingRepository,
         private UserService $userService,
     ) {}
 

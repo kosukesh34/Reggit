@@ -5,7 +5,7 @@ namespace App\Services\Smaregi;
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\MemberSettings;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Enums\SmaregiWebhookAction;
@@ -24,7 +24,7 @@ class SmaregiCustomerPointsInboundSyncService
     public function __construct(
         private SmaregiApiService $smaregiApi,
         private MemberRepository $memberRepository,
-        private ShopSettingRepository $shopSettingRepository,
+        private MemberSettings $shopSettingRepository,
         private SmaregiPointsSyncService $pointsSync,
         private OrderRepository $orderRepository,
         private DomainEventDispatcher $domainEvents,

@@ -268,6 +268,31 @@ class LayerDependencyTest extends TestCase
         }
     }
 
+    public function test_application_consumers_do_not_depend_on_the_broad_settings_contract(): void
+    {
+        $root = dirname(__DIR__, 3).'/app';
+        $allowed = [
+            $root.'/Domain/Settings/Repositories/ShopSettingRepository.php',
+            $root.'/Infrastructure/Persistence/Eloquent/Settings/EloquentShopSettingRepository.php',
+            $root.'/Providers/AppServiceProvider.php',
+        ];
+        $violations = [];
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php' || in_array($file->getPathname(), $allowed, true)) {
+                continue;
+            }
+
+            $source = file_get_contents($file->getPathname());
+            if (is_string($source) && str_contains($source, 'ShopSettingRepository')) {
+                $violations[] = $file->getPathname();
+            }
+        }
+
+        self::assertSame([], $violations, implode(PHP_EOL, $violations));
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */

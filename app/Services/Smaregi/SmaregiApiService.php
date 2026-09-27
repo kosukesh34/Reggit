@@ -2,7 +2,7 @@
 
 namespace App\Services\Smaregi;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Enums\SmaregiContractStatus;
 use App\Models\SmaregiContract;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +17,7 @@ class SmaregiApiService
     public function __construct(
         private SmaregiApiClient $client,
         private SmaregiTransactionCustomerResolver $transactionCustomerResolver,
-        private ShopSettingRepository $shopSettingRepository,
+        private SmaregiSettings $shopSettingRepository,
     ) {}
 
     public function getLastErrorDetail(): ?string

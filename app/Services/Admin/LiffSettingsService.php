@@ -2,7 +2,7 @@
 
 namespace App\Services\Admin;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LiffDesignerSettings;
 use App\Support\LiffDesignerSanitizer;
 use App\Support\MemberCardDesignMap;
 
@@ -11,10 +11,10 @@ use App\Support\MemberCardDesignMap;
  */
 class LiffSettingsService
 {
-    /** @var ShopSettingRepository */
+    /** @var LiffDesignerSettings */
     private $shopSettingRepository;
 
-    public function __construct(ShopSettingRepository $shopSettingRepository)
+    public function __construct(LiffDesignerSettings $shopSettingRepository)
     {
         $this->shopSettingRepository = $shopSettingRepository;
     }

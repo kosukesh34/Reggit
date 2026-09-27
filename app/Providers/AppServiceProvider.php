@@ -21,12 +21,18 @@ use App\Domain\Settings\Repositories\LiffDesignerSettings;
 use App\Domain\Settings\Repositories\LineAdminSettings;
 use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
+use App\Domain\Settings\Repositories\MemberSettings;
+use App\Domain\Settings\Repositories\OperationalSettings;
 use App\Domain\Settings\Repositories\OrderNotificationSettings;
+use App\Domain\Settings\Repositories\OrderSettings;
 use App\Domain\Settings\Repositories\ProfileSettings;
+use App\Domain\Settings\Repositories\ProjectSettings;
+use App\Domain\Settings\Repositories\QueueAdminSettings;
 use App\Domain\Settings\Repositories\QueueSettings;
 use App\Domain\Settings\Repositories\RankSettings;
 use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Domain\Settings\Repositories\StampSettings;
 use App\Domain\Settings\Repositories\WalletSettings;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
@@ -123,11 +129,17 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(LineAdminSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(LineConnectionSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(MemberCardPreviewSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(MemberSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(OperationalSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(OrderNotificationSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(OrderSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(ProfileSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(ProjectSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(QueueAdminSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(QueueSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(RankSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(ReservationSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(SmaregiSettings::class, EloquentShopSettingRepository::class);
         $this->app->singleton(DomainEventDispatcher::class, function ($app) {
             return new MulticastDomainEventDispatcher([
                 $app->make(LoggingDomainEventListener::class),
