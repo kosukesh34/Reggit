@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Coupon;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\CouponDeliveryType;
 use App\Models\Coupon;
 use App\Models\Member;
@@ -19,7 +19,7 @@ class AdminCouponBulkIssueFormUseCase
     public function __construct(
         private CouponAdminService $couponAdminService,
         private SmaregiCouponSyncService $smaregiCouponSync,
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
         private RfmAnalysisService $rfmAnalysisService,
         private MemberTagAdminService $memberTagAdminService,
     ) {}

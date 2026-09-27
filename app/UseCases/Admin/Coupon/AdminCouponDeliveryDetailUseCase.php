@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Coupon;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 class AdminCouponDeliveryDetailUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId, int $deliveryId): AdminCouponDeliveryDetailOutput

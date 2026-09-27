@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\AfterRegistrationDelivery;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Services\Admin\CouponAdminService;
 use App\UseCases\Admin\AfterRegistrationDelivery\Data\AfterRegistrationDeliveryFormView;
 
@@ -10,7 +10,7 @@ class AdminAfterRegistrationDeliveryCreateUseCase
 {
     public function __construct(
         private CouponAdminService $couponAdminService,
-        private ShopSettingRepository $shopSettingRepository,
+        private RankSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId): AfterRegistrationDeliveryFormView

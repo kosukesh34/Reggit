@@ -2,14 +2,14 @@
 
 namespace App\UseCases\Admin\Member;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\FrontendShellSettings;
 use App\Models\Project;
 use App\UseCases\Admin\Member\Data\AdminMemberListExtras;
 
 class GetAdminMemberListExtrasUseCase
 {
     public function __construct(
-        private ShopSettingRepository $shopSettingRepository,
+        private FrontendShellSettings $shopSettingRepository,
     ) {}
 
     public function handle(int $projectId): AdminMemberListExtras

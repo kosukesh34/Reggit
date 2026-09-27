@@ -237,6 +237,37 @@ class LayerDependencyTest extends TestCase
         }
     }
 
+    public function test_member_rank_profile_and_queue_consumers_use_focused_settings_contracts(): void
+    {
+        $root = dirname(__DIR__, 3).'/app/';
+
+        foreach ([
+            'Services/Admin/MemberAdminListQueryService.php',
+            'Services/IssueCouponOnRankUpService.php',
+            'Services/MemberRankCalculator.php',
+            'Services/MemberRankMetricCalculator.php',
+            'Services/MemberRankSyncService.php',
+            'Services/Smaregi/SmaregiCustomerRankAssignmentService.php',
+            'UseCases/Admin/AfterRegistrationDelivery/AdminAfterRegistrationDeliveryCreateUseCase.php',
+            'UseCases/Admin/AfterRegistrationDelivery/AdminAfterRegistrationDeliveryEditUseCase.php',
+            'UseCases/Admin/Coupon/AdminCouponBulkIssueFormUseCase.php',
+            'UseCases/Admin/Coupon/AdminCouponDeliveryDetailUseCase.php',
+            'UseCases/Admin/Member/AdminMemberEditUseCase.php',
+            'UseCases/Admin/Member/AdminMemberUpdateUseCase.php',
+            'UseCases/Admin/Member/GetAdminMemberListExtrasUseCase.php',
+            'UseCases/Coupon/CouponMyCouponsUseCase.php',
+            'UseCases/Member/MemberPointCardUseCase.php',
+            'UseCases/Queue/QueueQrStatusUseCase.php',
+            'Support/QueueLiffUrlBuilder.php',
+            'Http/Requests/Admin/MemberUpdateRequest.php',
+        ] as $relativePath) {
+            $file = $root.$relativePath;
+            $source = file_get_contents($file);
+            self::assertIsString($source);
+            self::assertStringNotContainsString('ShopSettingRepository', $source, $file);
+        }
+    }
+
     /**
      * @param  list<string>  $forbiddenNamespaces
      */
