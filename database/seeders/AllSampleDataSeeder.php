@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domain\Member\Repositories\MemberRepository;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\SettingValueWriter;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\ReservationStatus;
@@ -81,7 +81,7 @@ class AllSampleDataSeeder extends Seeder
     {
         $contractId = config('smaregi.contract_id');
         if (is_string($contractId) && trim($contractId) !== '') {
-            app(ShopSettingRepository::class)->setValue('smaregi_contract_id', trim($contractId), 'string', $this->project->id);
+            app(SettingValueWriter::class)->setValue('smaregi_contract_id', trim($contractId), 'string', $this->project->id);
             $this->command->info('スマレジ契約IDを .env の値で設定しました: '.trim($contractId));
         }
     }

@@ -38,6 +38,7 @@ class SmaregiWebhookWalletSyncTest extends TestCase
             'smaregi.client_secret' => 'test_client_secret',
             'smaregi.id_base_url' => 'https://id.smaregi.dev',
             'smaregi.api_base_url' => 'https://api.smaregi.dev',
+            'smaregi.webhook_secret' => '',
             'wallet_pass.enabled' => true,
             'wallet_pass.type_id' => 'pass.IDNect',
             'wallet_pass.web_service_url' => 'https://example.test/api/apple-wallet',

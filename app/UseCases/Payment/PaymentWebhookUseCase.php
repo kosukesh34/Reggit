@@ -73,46 +73,51 @@ class PaymentWebhookUseCase
 
             try {
                 $didConfirm = $aggregate->confirmStripePayment();
-                $this->orderRepository->save($aggregate);
-                if ($didConfirm) {
-                    $confirmedEvent = new OrderConfirmed(
-                        $aggregate->id()->value(),
-                        $aggregate->projectId(),
-                        $aggregate->userId(),
-                    );
-                }
-                $this->orderNumberAssigner->assignIfMissing(
-                    $aggregate->id()->value(),
-                    $aggregate->projectId(),
-                );
-
-                $order = Order::query()
-                    ->whereKey($aggregate->id()->value())
-                    ->where('project_id', $aggregate->projectId())
-                    ->first();
-                if ($order !== null) {
-                    $this->orderService->applyStripePaymentRewardsIfNeeded($order);
-                }
-
-                // Stripe Webhook 経路は即時同期しない（決済完了 UI より先にスマレジ Webhook が来るのを防ぐ）
-                // フロント confirm が来ない場合のフォールバックとして遅延ジョブを積む
-                if ($aggregate->shouldSyncToSmaregi()) {
-                    $shouldDelaySmaregiSync = true;
-                    $syncOrderId = $aggregate->id()->value();
-                    $syncProjectId = $aggregate->projectId();
-                    $syncUserId = $aggregate->userId();
-                }
             } catch (\Exception $e) {
                 LogHelper::warning('[Payment] webhook confirm skipped', [
                     'order_id' => (int) $orderId,
                     'project_id' => $aggregate->projectId(),
                     'error' => $e->getMessage(),
                 ]);
+
+                return;
+            }
+
+            // From this point on, failures must escape the transaction. Otherwise an
+            // order can be committed as paid while rewards and follow-up work are lost.
+            $this->orderRepository->save($aggregate);
+            if ($didConfirm) {
+                $confirmedEvent = new OrderConfirmed(
+                    $aggregate->id()->value(),
+                    $aggregate->projectId(),
+                    $aggregate->userId(),
+                );
+            }
+            $this->orderNumberAssigner->assignIfMissing(
+                $aggregate->id()->value(),
+                $aggregate->projectId(),
+            );
+
+            $order = Order::query()
+                ->whereKey($aggregate->id()->value())
+                ->where('project_id', $aggregate->projectId())
+                ->first();
+            if ($order !== null) {
+                $this->orderService->applyStripePaymentRewardsIfNeeded($order);
+            }
+
+            // Stripe Webhook 経路は即時同期しない（決済完了 UI より先にスマレジ Webhook が来るのを防ぐ）
+            // フロント confirm が来ない場合のフォールバックとして遅延ジョブを積む
+            if ($aggregate->shouldSyncToSmaregi()) {
+                $shouldDelaySmaregiSync = true;
+                $syncOrderId = $aggregate->id()->value();
+                $syncProjectId = $aggregate->projectId();
+                $syncUserId = $aggregate->userId();
             }
         });
 
         if ($confirmedEvent !== null) {
-            $this->domainEvents->dispatch($confirmedEvent);
+            $this->dispatchBestEffort($confirmedEvent);
         }
         if ($shouldDelaySmaregiSync) {
             SyncOrderPointsToSmaregiJob::dispatch($syncOrderId, $syncProjectId, $syncUserId)
@@ -122,5 +127,17 @@ class PaymentWebhookUseCase
         }
 
         return true;
+    }
+
+    private function dispatchBestEffort(object $event): void
+    {
+        try {
+            $this->domainEvents->dispatch($event);
+        } catch (\Throwable $e) {
+            LogHelper::error('[DomainEvent] post-commit dispatch failed', [
+                'event' => $event::class,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

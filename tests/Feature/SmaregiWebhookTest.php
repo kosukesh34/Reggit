@@ -17,7 +17,10 @@ class SmaregiWebhookTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['smaregi.idp_callback_token' => self::IDP_TOKEN]);
+        config([
+            'smaregi.idp_callback_token' => self::IDP_TOKEN,
+            'smaregi.webhook_secret' => '',
+        ]);
     }
 
     private function idpUrl(string $prefix = '/api'): string

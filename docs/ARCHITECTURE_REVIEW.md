@@ -15,13 +15,13 @@ The recommended direction is incremental modularization by business capability. 
 - Controllers are generally thin; read and mutation controllers are already separated in several admin areas.
 - Tenant isolation and security boundaries have explicit feature tests.
 - The test suite covers the main business flows, including ordering, points, stamps, coupons, reservations, queues, settings, and external-integration boundaries.
-- TypeScript strict checking is available through `npm run typecheck`.
+- TypeScript checking is available through `npm run typecheck`; extracted member and navigation modules additionally pass the full strict profile through `npm run typecheck:strict`.
 
 ## Priority findings
 
-### P1: Settings has a wide interface and implementation
+### Resolved: Settings had a wide interface
 
-`ShopSettingRepository` and `EloquentShopSettingRepository` each expose more than 100 methods, and `ShopSettingStore` exceeds 1,200 lines. This violates interface segregation and makes unrelated settings changes share one dependency and one regression surface.
+The former `ShopSettingRepository` exposed more than 100 methods. It has been removed, and consumers now depend on capability-focused contracts. The shared Eloquent adapter and `ShopSettingStore` remain intentionally consolidated behind those interfaces; persistence can be split later without changing consumers.
 
 Split contracts by consumer capability, for example:
 
@@ -114,7 +114,13 @@ The Eloquent adapter implements these contracts during the incremental migration
 
 Member rank calculation and synchronization, rank-driven delivery forms, member profile validation, member-card reads, coupon presentation, and queue LINE-link flows now also use focused settings contracts. This removes the broad dependency from cross-cutting member workflows without changing the shared persistence adapter.
 
-All application consumers have now migrated away from `ShopSettingRepository`. The broad contract remains temporarily as a compatibility surface implemented by the shared Eloquent adapter, but architecture tests restrict its use to the contract, adapter, and dependency-registration provider. Future application code must select a capability-focused contract.
+All application consumers have migrated away from `ShopSettingRepository`, and the broad contract has been deleted. Architecture tests prevent its reintroduction. Future application code must select a capability-focused contract.
+
+Order creation now has one shared request and orchestration path for the legacy and v1 HTTP endpoints. Domain-safe order failures use `OrderOperationException`; unexpected exception details are no longer returned to clients.
+
+Stripe confirmation now rolls back payment persistence if reward application fails. Domain events and external synchronization are dispatched after commit as best-effort follow-up work, so a delivery outage cannot turn a committed order into a misleading HTTP failure.
+
+The test harness clears shared cache state per test, and integration-dependent FCM and Smaregi webhook configuration is explicit in the affected suites. This prevents order-dependent rate-limit and environment failures.
 
 The first frontend extractions move Wallet/external-URL policy, member API payload normalization, and profile-form payload construction out of `MemberManager.ts`. The manager retains compatibility delegates while URL validation, HTTPS normalization, LIFF return URL construction, Google Wallet URL handling, error-message selection, supported member payload shapes, wallet-summary equality, split-name handling, choice fields, and empty profile values are independently covered by Node unit tests.
 

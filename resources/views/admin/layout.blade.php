@@ -62,7 +62,7 @@
                 $showAnalytics = ($adminUser === null || $adminUser->hasPermission('analytics.view'))
                     && \App\Support\PlanFeatures::hasFeature($navPlan, \App\Support\PlanFeatures::ANALYTICS_ADVANCED);
                 $showGallery = $navStore !== null
-                    && app(\App\Domain\Settings\Repositories\ShopSettingRepository::class)->isFeatureEnabled('feature_gallery_enabled', (int) $navStore->id);
+                    && app(\App\Domain\Settings\Repositories\FeatureSettings::class)->isFeatureEnabled('feature_gallery_enabled', (int) $navStore->id);
             @endphp
             <div class="sidebar-header">
                 @if($isSystemAdminScreen)

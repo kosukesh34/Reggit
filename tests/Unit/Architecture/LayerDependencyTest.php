@@ -272,7 +272,6 @@ class LayerDependencyTest extends TestCase
     {
         $root = dirname(__DIR__, 3).'/app';
         $allowed = [
-            $root.'/Domain/Settings/Repositories/ShopSettingRepository.php',
             $root.'/Infrastructure/Persistence/Eloquent/Settings/EloquentShopSettingRepository.php',
             $root.'/Providers/AppServiceProvider.php',
         ];

@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "useUnknownInCatchVariables": true
+  },
+  "include": [
+    "resources/js/types/strict-globals.d.ts",
+    "resources/js/frontend/member/**/*.ts",
+    "resources/js/frontend/navigation/**/*.ts"
+  ]
+}
