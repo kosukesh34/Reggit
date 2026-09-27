@@ -126,6 +126,8 @@ Point-history normalization and rendering are isolated from API and DOM orchestr
 
 Profile registration/edit form rendering is now isolated from member state and DOM orchestration. Field definitions, initial values, native notification copy, address grouping, forced-registration actions, and output escaping are covered by focused unit tests.
 
+React screen modules are loaded at route boundaries with an accessible loading fallback. Home, membership, profile, feature, design-lab, and secondary screens no longer have to share one eagerly evaluated application chunk. The remaining mutually dependent compatibility managers are emitted as one stable cache group instead of inflating the entry chunk.
+
 Rank-history rendering is also isolated as a pure formatter. API-provided labels and dates are escaped at that boundary and covered by focused unit tests. View composers now catch runtime exceptions rather than all PHP throwables, so programming errors such as type violations are no longer silently replaced with fallback presentation data.
 
 ## Recommended sequence
