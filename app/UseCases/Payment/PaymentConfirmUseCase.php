@@ -6,13 +6,12 @@ use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Order\Repositories\OrderRepository;
-use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\PaymentIntentStatus;
 use App\Models\Order;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
+use App\Services\PostCommitDomainEventDispatcher;
 use App\UseCases\Payment\Data\PaymentConfirmOutput;
-use App\Util\LogHelper;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +20,7 @@ class PaymentConfirmUseCase
     public function __construct(
         private PaymentGateway $gateway,
         private OrderRepository $orderRepository,
-        private DomainEventDispatcher $domainEvents,
+        private PostCommitDomainEventDispatcher $postCommitEvents,
         private OrderNumberAssigner $orderNumberAssigner,
         private OrderService $orderService,
     ) {}
@@ -106,27 +105,15 @@ class PaymentConfirmUseCase
         });
 
         if ($confirmedEvent !== null) {
-            $this->dispatchBestEffort($confirmedEvent);
+            $this->postCommitEvents->dispatch($confirmedEvent);
         }
         if ($pointsSyncEvent !== null) {
-            $this->dispatchBestEffort($pointsSyncEvent);
+            $this->postCommitEvents->dispatch($pointsSyncEvent);
         }
         if ($transactionSyncEvent !== null) {
-            $this->dispatchBestEffort($transactionSyncEvent);
+            $this->postCommitEvents->dispatch($transactionSyncEvent);
         }
 
         return $output;
-    }
-
-    private function dispatchBestEffort(object $event): void
-    {
-        try {
-            $this->domainEvents->dispatch($event);
-        } catch (\Throwable $e) {
-            LogHelper::error('[DomainEvent] post-commit dispatch failed', [
-                'event' => $event::class,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 }
