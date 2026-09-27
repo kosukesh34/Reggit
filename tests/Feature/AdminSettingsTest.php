@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
+use App\Models\StoreAppCredential;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -40,6 +41,60 @@ class AdminSettingsTest extends TestCase
         $response->assertSee('settings-back-link', false);
         $response->assertDontSee('settings-workspace-nav', false);
         $response->assertSee('設定一覧', false);
+    }
+
+    public function test_settings_店舗管理者が一度きりの端末登録コードを発行できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        $response = $this->actingAs($admin, 'admin')->post(
+            route('admin.settings.store-app-credential.store', ['project_key' => $project->project_key]),
+            ['app' => 'kitchen'],
+        );
+
+        $response->assertRedirect()->assertSessionHas('store_app_enrollment');
+        $credential = StoreAppCredential::query()->where('project_id', $project->id)->where('app', 'kitchen')->firstOrFail();
+        $plainToken = session('store_app_enrollment.token');
+        $this->assertNotSame($plainToken, $credential->enrollment_token_hash);
+        $this->assertSame(hash('sha256', $plainToken), $credential->enrollment_token_hash);
+    }
+
+    public function test_settings_登録コード再発行で旧端末トークンを失効できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $token = $admin->createToken('old-device', ['app:kitchen', 'project:'.$project->id]);
+        StoreAppCredential::query()->create([
+            'project_id' => $project->id, 'admin_user_id' => $admin->id, 'app' => 'kitchen',
+            'personal_access_token_id' => $token->accessToken->id,
+            'device_key_hash' => hash('sha256', 'old-key'), 'claimed_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'admin')->post(
+            route('admin.settings.store-app-credential.store', ['project_key' => $project->project_key]),
+            ['app' => 'kitchen'],
+        )->assertRedirect();
+
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $token->accessToken->id]);
+        $this->assertDatabaseHas('store_app_credentials', [
+            'project_id' => $project->id, 'app' => 'kitchen',
+            'personal_access_token_id' => null, 'claimed_at' => null,
+        ]);
+    }
+
+    public function test_settings_スタッフは端末登録コードを発行できないこと(): void
+    {
+        $project = $this->createProject();
+        $staff = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_STAFF, 'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($staff, 'admin')->post(
+            route('admin.settings.store-app-credential.store', ['project_key' => $project->project_key]),
+            ['app' => 'waiting'],
+        )->assertForbidden();
+        $this->assertDatabaseCount('store_app_credentials', 0);
     }
 
     public function test_settings_注文_lin_e通知トグルを保存できること(): void

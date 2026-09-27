@@ -15,6 +15,7 @@ final class AppState: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var needsProjectSelection: Bool
+    @Published var isAuthenticated = WaitingCredentialStore.token() != nil
 
     private var unlockUntil: Date?
     private let settingsStore: SettingsStoreProtocol
@@ -26,10 +27,6 @@ final class AppState: ObservableObject {
     }
 
     static func shouldShowProjectSelection(_ projectKey: String) -> Bool {
-        // ビルド時にプロジェクトが固定されていれば選択画面は出さない
-        if AppBuildConfig.hasFixedProjectKey {
-            return false
-        }
         let key = projectKey.trimmingCharacters(in: .whitespacesAndNewlines)
         return key.isEmpty
     }
@@ -37,6 +34,20 @@ final class AppState: ObservableObject {
     func completeProjectSelection() {
         let settings = settingsStore.load()
         needsProjectSelection = Self.shouldShowProjectSelection(settings.projectKey)
+    }
+
+    func didLogin() {
+        isAuthenticated = true
+        needsProjectSelection = false
+    }
+
+    func logout() {
+        WaitingCredentialStore.clear()
+        var settings = settingsStore.load()
+        settings.projectKey = ""
+        settingsStore.save(settings)
+        isAuthenticated = false
+        needsProjectSelection = true
     }
 
     var isUnlocked: Bool {

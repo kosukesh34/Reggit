@@ -2,7 +2,7 @@
 //  AppBuildConfig.swift
 //  WaitingSystem
 //
-//  ビルド前に「向け先」と「プロジェクト」だけここを書き換える。
+//  接続先だけをビルド設定で切り替える。プロジェクトは店舗ログインで決まる。
 //  LINE / LIFF 設定は API（/api/v1/app-config）から取得する。
 //
 
@@ -20,9 +20,6 @@ enum AppBuildConfig {
 
     /// 接続先。`.production` か `.local` を選んでビルドする。
     static let serverTarget: AppServerTarget = .production
-
-    /// このビルドが対象とするプロジェクトキー（オンボーディングで作成したキー）。
-    static let projectKey = "sb_skt733n4"
 
     // MARK: - URL 定義
 
@@ -50,7 +47,4 @@ enum AppBuildConfig {
         }
     }
 
-    static var hasFixedProjectKey: Bool {
-        !projectKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
 }

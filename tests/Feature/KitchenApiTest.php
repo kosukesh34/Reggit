@@ -5,11 +5,12 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\AdminUser;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Project;
+use App\Models\StoreAppCredential;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -26,11 +27,22 @@ class KitchenApiTest extends TestCase
         );
     }
 
+    private function authenticate(Project $project): void
+    {
+        $admin = AdminUser::factory()->create(['project_id' => $project->id, 'role' => AdminUser::ROLE_ADMIN]);
+        $token = $admin->createToken('test-kitchen', ['app:kitchen', 'project:'.$project->id]);
+        StoreAppCredential::query()->create([
+            'project_id' => $project->id, 'admin_user_id' => $admin->id, 'app' => 'kitchen',
+            'personal_access_token_id' => $token->accessToken->id,
+            'device_key_hash' => hash('sha256', 'test-device-key'), 'claimed_at' => now(),
+        ]);
+        $this->withToken($token->plainTextToken)->withHeader('X-Device-Key', 'test-device-key');
+    }
+
     public function test_kitchen_店舗トークンで注文一覧を取得できること(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setKitchenAccessToken('test-store-token', $project->id);
-        $this->withHeader('X-Store-Token', 'test-store-token');
+        $this->authenticate($project);
         $user = User::factory()->create(['project_id' => $project->id]);
         $order = Order::create([
             'project_id' => $project->id,
@@ -63,8 +75,7 @@ class KitchenApiTest extends TestCase
     public function test_kitchen_product_nameが空でも商品名を取得できること(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setKitchenAccessToken('test-store-token', $project->id);
-        $this->withHeader('X-Store-Token', 'test-store-token');
+        $this->authenticate($project);
         $user = User::factory()->create(['project_id' => $project->id]);
         $product = Product::factory()->create([
             'project_id' => $project->id,
@@ -99,6 +110,8 @@ class KitchenApiTest extends TestCase
 
     public function test_kitchen_存在しないproject_keyは404になること(): void
     {
+        $project = $this->createProject();
+        $this->authenticate($project);
         $this->getJson('/api/kitchen/missing-project/orders')
             ->assertStatus(404);
     }
@@ -106,8 +119,7 @@ class KitchenApiTest extends TestCase
     public function test_kitchen_ステータスを更新できること(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setKitchenAccessToken('test-store-token', $project->id);
-        $this->withHeader('X-Store-Token', 'test-store-token');
+        $this->authenticate($project);
         $user = User::factory()->create(['project_id' => $project->id]);
         $order = Order::create([
             'project_id' => $project->id,

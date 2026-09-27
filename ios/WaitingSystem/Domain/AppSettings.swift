@@ -9,12 +9,11 @@ struct AppSettings: Codable, Equatable {
     var printerName: String?
     var shouldPrintTicket: Bool
     var passcode: String
-    var storeToken: String? = nil
 
     static let `default` = AppSettings(
         baseURL: AppConstants.DefaultSettings.baseURL,
         liffURL: AppConstants.DefaultSettings.liffURL,
-        projectKey: AppConstants.DefaultSettings.projectKey,
+        projectKey: "",
         backgroundColorHex: AppConstants.DefaultSettings.backgroundColorHex,
         printerURL: nil,
         printerName: nil,

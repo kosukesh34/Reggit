@@ -76,6 +76,7 @@ struct BoardView: View {
 struct OrderCardView: View {
     let order: KitchenOrder
     let onAdvance: () -> Void
+    @State private var horizontalOffset: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -125,12 +126,31 @@ struct OrderCardView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(statusColor)
+                Text("← 左へスワイプでも「\(label)」")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
             }
         }
         .padding(16)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
+        .offset(x: horizontalOffset)
+        .gesture(
+            DragGesture(minimumDistance: 24)
+                .onChanged { value in
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    horizontalOffset = min(0, value.translation.width * 0.35)
+                }
+                .onEnded { value in
+                    let shouldAdvance = value.translation.width < -90
+                        && abs(value.translation.width) > abs(value.translation.height)
+                        && order.nextStatusLabel != nil
+                    withAnimation(.spring(response: 0.25)) { horizontalOffset = 0 }
+                    if shouldAdvance { onAdvance() }
+                }
+        )
     }
 
     private var statusColor: Color {

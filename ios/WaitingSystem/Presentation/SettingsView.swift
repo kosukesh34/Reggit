@@ -21,6 +21,10 @@ struct SettingsSheetView: View {
             },
             onClose: {
                 appState.isShowingSettings = false
+            },
+            onLogout: {
+                appState.isShowingSettings = false
+                appState.logout()
             }
         )
     }
@@ -35,6 +39,7 @@ struct SettingsView: View {
     let onQueueMutated: () -> Void
     let onSave: () -> Void
     let onClose: () -> Void
+    let onLogout: () -> Void
 
     var body: some View {
         NavigationView {
@@ -45,6 +50,9 @@ struct SettingsView: View {
                 printerSection
                 screenSection
                 securitySection
+                Section {
+                    Button("ログアウト", role: .destructive, action: onLogout)
+                }
             }
             .navigationTitle(Strings.Settings.navigationTitle)
             .toolbar {
@@ -72,6 +80,12 @@ struct SettingsView: View {
                     QueueEntryRow(
                         entry: entry,
                         isActing: viewModel.actingEntryId == entry.id,
+                        onCall: {
+                            Task {
+                                await viewModel.call(id: entry.id)
+                                onQueueMutated()
+                            }
+                        },
                         onRecall: {
                             Task {
                                 await viewModel.recall(id: entry.id)
@@ -131,13 +145,7 @@ struct SettingsView: View {
         return Section {
             LabeledContent("向け先", value: AppBuildConfig.serverTargetLabel)
             LabeledContent("API URL", value: AppBuildConfig.baseURL)
-            LabeledContent("プロジェクト", value: AppBuildConfig.projectKey)
-            SecureField("店舗端末トークン", text: Binding(
-                get: { viewModel.settings.storeToken ?? "" },
-                set: { viewModel.settings.storeToken = $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            ))
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
+            LabeledContent("プロジェクト", value: viewModel.settings.projectKey)
             if !remote.projectName.isEmpty {
                 LabeledContent("店舗名", value: remote.projectName)
             }
@@ -150,7 +158,7 @@ struct SettingsView: View {
         } header: {
             Text(Strings.Settings.serverSection)
         } footer: {
-            Text("接続先とプロジェクトはビルド時固定。LINE / LIFF はサーバー設定を API から取得します。")
+            Text("プロジェクトはログインした店舗に固定されます。LINE / LIFF はサーバー設定を API から取得します。")
                 .font(.footnote)
         }
     }
@@ -214,6 +222,7 @@ struct SettingsView: View {
 private struct QueueEntryRow: View {
     let entry: QueueListEntry
     let isActing: Bool
+    let onCall: () -> Void
     let onRecall: () -> Void
     let onEnter: () -> Void
 
@@ -267,6 +276,23 @@ private struct QueueEntryRow: View {
             }
         }
         .padding(.vertical, Theme.Spacing.xs)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if isCalled {
+                Button(action: onEnter) {
+                    Label(Strings.Settings.enterButton, systemImage: "checkmark.circle.fill")
+                }
+                .tint(Theme.Colors.success)
+                Button(action: onRecall) {
+                    Label(Strings.Settings.recallButton, systemImage: "bell.fill")
+                }
+                .tint(Theme.Colors.accent)
+            } else {
+                Button(action: onCall) {
+                    Label(Strings.Settings.callNextButton, systemImage: "bell.badge.fill")
+                }
+                .tint(Theme.Colors.accent)
+            }
+        }
     }
 
     private func linkBadges(for channel: QueueLinkChannel) -> [(label: String, color: Color)] {

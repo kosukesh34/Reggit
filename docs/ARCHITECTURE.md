@@ -170,10 +170,12 @@ flowchart TB
 | 店舗 Admin | `auth:admin` セッション + `admin.permission` + `admin.plan` | `bind.admin.project` |
 | システム Admin | `auth:admin` + `system.admin` | 横断（プロジェクト CRUD） |
 | API v1 | Bearer / `X-Api-Token` | トークンの project または URL `{project_key}` |
-| Kitchen | project_key で店舗特定 | ルート `project_key` |
+| Kitchen / Waiting店舗端末 | Sanctum Bearer + 端末固有鍵。アプリ種別・project能力を検証 | ルート `project_key` |
 | Webhook | 署名検証ミドルウェア等 | ペイロード / 契約 ID から解決 |
 
 登録元: `app/Providers/RouteServiceProvider.php`。
+
+店舗端末の登録、1端末制約、失効、スワイプ操作の詳細は [`STORE_APP_SPEC.md`](STORE_APP_SPEC.md) を参照。
 
 ---
 
