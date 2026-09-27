@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\WalletSettings;
 use App\Services\Admin\WalletAssetService;
 use App\UseCases\Admin\Settings\Data\UpdateWalletSettingsInput;
 
@@ -14,7 +14,7 @@ class UpdateWalletSettingsUseCase
 {
     public function __construct(
         private WalletAssetService $walletAssetService,
-        private ShopSettingRepository $shopSettingRepository,
+        private WalletSettings $walletSettings,
     ) {}
 
     /**
@@ -50,11 +50,11 @@ class UpdateWalletSettingsUseCase
                 'program_logo',
             );
             if ($url !== null) {
-                $this->shopSettingRepository->setWalletGoogleProgramLogoUrl($url, $input->projectId);
+                $this->walletSettings->setWalletGoogleProgramLogoUrl($url, $input->projectId);
                 $messages[] = 'Google Wallet プログラムロゴを更新しました。';
             }
         } elseif ($input->clearGoogleProgramLogo) {
-            $this->shopSettingRepository->setWalletGoogleProgramLogoUrl(null, $input->projectId);
+            $this->walletSettings->setWalletGoogleProgramLogoUrl(null, $input->projectId);
             $messages[] = 'Google Wallet プログラムロゴをクリアしました。';
         }
 
@@ -65,11 +65,11 @@ class UpdateWalletSettingsUseCase
                 'hero',
             );
             if ($url !== null) {
-                $this->shopSettingRepository->setWalletGoogleHeroImageUrl($url, $input->projectId);
+                $this->walletSettings->setWalletGoogleHeroImageUrl($url, $input->projectId);
                 $messages[] = 'Google Wallet ヒーロー画像を更新しました。';
             }
         } elseif ($input->clearGoogleHero) {
-            $this->shopSettingRepository->setWalletGoogleHeroImageUrl(null, $input->projectId);
+            $this->walletSettings->setWalletGoogleHeroImageUrl(null, $input->projectId);
             $messages[] = 'Google Wallet ヒーロー画像をクリアしました。';
         }
 
