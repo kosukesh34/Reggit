@@ -104,4 +104,48 @@ class MemberWithdrawTest extends TestCase
         $this->assertTrue($member->fresh()->trashed());
         $this->assertTrue($user->fresh()->trashed());
     }
+
+    public function test_withdraw_外部連携失敗時は内部情報を返さずローカル会員を保持すること(): void
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        config([
+            'smaregi.client_id' => 'test_client_id',
+            'smaregi.client_secret' => 'test_client_secret',
+            'smaregi.id_base_url' => 'https://id.smaregi.dev',
+            'smaregi.api_base_url' => 'https://api.smaregi.dev',
+            'smaregi.contract_id' => '',
+        ]);
+
+        $user = User::factory()->create([
+            'line_user_id' => self::LINE_USER_ID,
+            'project_id' => $project->id,
+        ]);
+        $member = Member::factory()->create([
+            'user_id' => $user->id,
+            'project_id' => $project->id,
+            'smaregi_customer_id' => '500',
+        ]);
+
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/token')) {
+                return Http::response(['access_token' => 'fake_access_token', 'expires_in' => 3600]);
+            }
+
+            return Http::response(['detail' => 'provider internal failure'], 500);
+        });
+
+        $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->post('/api/members/withdraw?project_key=default');
+
+        $response->assertStatus(502)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', '外部会員連携の解除に失敗しました。しばらくしてから再度お試しください。');
+        $this->assertStringNotContainsString('storage/logs/laravel.log', $response->getContent());
+        $this->assertStringNotContainsString('provider internal failure', $response->getContent());
+
+        $this->assertFalse($member->fresh()->trashed());
+        $this->assertFalse($user->fresh()->trashed());
+        $this->assertSame(self::LINE_USER_ID, $user->fresh()->line_user_id);
+    }
 }

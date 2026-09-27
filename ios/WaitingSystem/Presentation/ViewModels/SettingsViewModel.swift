@@ -79,6 +79,18 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    func call(id: Int) async {
+        actingEntryId = id
+        actionMessage = nil
+        defer { actingEntryId = nil }
+        do {
+            let ticket = try await apiClient.callTicket(id: id)
+            actionMessage = "呼び出し: \(ticket.displayNumber)"
+        } catch {
+            actionMessage = error.localizedDescription
+        }
+    }
+
     func enter(id: Int) async {
         actingEntryId = id
         actionMessage = nil

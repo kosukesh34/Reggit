@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Persistence\Eloquent\Order;
 
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Domain\Order\Repositories\ProductStockRepository;
 use App\Models\Product;
 
@@ -23,7 +24,7 @@ class EloquentProductStockRepository implements ProductStockRepository
         }
 
         if ((int) $product->stock < $quantity) {
-            throw new \InvalidArgumentException('商品の在庫が不足しています');
+            throw new OrderOperationException('商品の在庫が不足しています');
         }
 
         $product->stock = (int) $product->stock - $quantity;

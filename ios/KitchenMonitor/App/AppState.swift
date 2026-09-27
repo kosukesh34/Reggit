@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class AppState: ObservableObject {
     @Published var isShowingPasscode = false
+    @Published var isAuthenticated = StoreAppCredentialStore.token(app: "kitchen") != nil
     private var unlockUntil: Date?
     private var pendingUnlockAction: (() -> Void)?
     private let settingsStore = KitchenSettingsStore()
@@ -36,5 +37,15 @@ final class AppState: ObservableObject {
 
     var expectedPasscode: String {
         settingsStore.load().passcode
+    }
+
+    func didLogin() { isAuthenticated = true }
+
+    func logout() {
+        StoreAppCredentialStore.clear(app: "kitchen")
+        var settings = settingsStore.load()
+        settings.projectKey = ""
+        settingsStore.save(settings)
+        isAuthenticated = false
     }
 }

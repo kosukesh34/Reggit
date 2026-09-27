@@ -11,6 +11,7 @@
 ### API
 - **Web API（LIFF等）**: `X-Line-Id-Token` を LINE の Verify ID token API で検証し、`sub` を利用者 ID とする。`X-Line-User-Id` だけでは本人確認しない。ネイティブは `X-Device-Identifier`。`project_key` はクエリまたはヘッダ。
 - **API v1（モバイルアプリ）**: `Authorization: Bearer <token>` または `X-Api-Token`。`AuthenticateApiToken` でトークン検証し、`project_id` でスコープ。トークンは平文を保存せず `token_hash`（SHA-256）のみ保存。
+- **Kitchen／Waiting店舗端末**: 管理画面で発行する一度きりの登録コードで端末を登録する。登録後はSanctum BearerとKeychain内の端末固有鍵を併用し、アプリ種別・プロジェクト・端末を毎回照合する。各店舗・各アプリ1台で、再発行時は旧端末を即時失効する。詳細は [`STORE_APP_SPEC.md`](STORE_APP_SPEC.md) を参照。
 
 ### ログイン試行制限
 - 管理画面ログインは **5回/分** まで（`admin-login` レートリミット）。同一 `login_id` + IP でカウント。超過時は HTTP 429。

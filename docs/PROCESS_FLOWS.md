@@ -159,7 +159,7 @@ flowchart LR
 ```mermaid
 flowchart LR
   Form[設定画面] --> UC[Update*SettingsUseCase]
-  UC --> Repo[ShopSettingRepository]
+  UC --> Repo[用途別 Settings Contract]
   Repo --> Row[Project*Setting 1行]
 ```
 
@@ -326,7 +326,7 @@ flowchart TB
 flowchart LR
   GET[GET settings] --> GetUC[Get*UseCase]
   POST[POST update] --> UpdUC[Update*UseCase]
-  GetUC --> Repo[ShopSettingRepository]
+  GetUC --> Repo[用途別 Settings Contract]
   UpdUC --> Repo
   Repo --> T[(Project*Setting)]
 ```
@@ -357,7 +357,7 @@ flowchart TB
 | B + プラン | 上記 + `admin.plan:*` |
 | A 顧客 API | `/api` + `web` → `bind.project` |
 | C システム | `web` → `auth:admin` → `system.admin` → `admin.audit` |
-| D Kitchen | `AuthenticateKitchenToken` |
+| D Kitchen / Waiting | `auth:sanctum` → `store-app.auth:{kitchen|waiting}`（Bearer + 端末鍵） |
 | D スマレジ WH | `verify.smaregi.webhook` |
 
 定義: `app/Http/Kernel.php` / `app/Http/Middleware/`。
@@ -369,7 +369,7 @@ flowchart TB
 | ルートと permission | `routes/web.php`, `routes/api.php` |
 | Controller → UseCase | `app/Http/Controllers/...` |
 | 業務 | `app/UseCases/...` |
-| 設定保存 | `ShopSettingRepository` |
+| 設定保存 | 用途別 Settings contract |
 | 注文の副作用 | Domain Event → Jobs |
 
 ---

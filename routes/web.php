@@ -63,6 +63,7 @@ use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksControll
 use App\Http\Controllers\Admin\Settings\ReservationsController;
 use App\Http\Controllers\Admin\Settings\StaffController as SettingsStaffController;
 use App\Http\Controllers\Admin\Settings\StaffMutationController;
+use App\Http\Controllers\Admin\Settings\StoreAppCredentialController;
 use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\StampGrantQrController;
@@ -276,7 +277,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/settings', [SettingsIndexController::class, 'index'])->name('admin.settings.index');
         Route::get('/settings/basic', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
         Route::post('/settings/basic', [SettingsBasicController::class, 'update'])->name('admin.settings.basic.update')->middleware('admin.permission:settings.manage');
-        Route::post('/settings/kitchen-token/regenerate', [SettingsBasicController::class, 'regenerateKitchenToken'])->name('admin.settings.kitchen-token.regenerate')->middleware('admin.permission:settings.manage');
+        Route::post('/settings/store-app-credential', [StoreAppCredentialController::class, 'store'])->name('admin.settings.store-app-credential.store')->middleware('admin.permission:settings.manage');
         Route::get('/settings/advanced', [SettingsAdvancedController::class, 'index'])->name('admin.settings.advanced')->middleware('admin.permission:settings.view');
         Route::post('/settings/advanced', [SettingsAdvancedController::class, 'update'])->name('admin.settings.advanced.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/menu', [SettingsMenuController::class, 'index'])->name('admin.settings.menu')->middleware('admin.permission:settings.view');

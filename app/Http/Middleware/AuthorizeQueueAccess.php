@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Domain\Settings\Repositories\KitchenAccessSettings;
+use App\Models\AdminUser;
 use App\Models\QueueEntry;
 use App\Services\UserService;
 use App\Support\QueueRequestContext;
@@ -15,7 +15,6 @@ use Symfony\Component\HttpFoundation\Response;
 class AuthorizeQueueAccess
 {
     public function __construct(
-        private KitchenAccessSettings $settings,
         private UserService $users,
         private QueueSessionStore $sessions,
     ) {}
@@ -24,14 +23,12 @@ class AuthorizeQueueAccess
     {
         $projectId = AdminContext::requireCurrentProjectId();
         $admin = $request->user('admin');
+        if (! $admin instanceof AdminUser && $request->user() instanceof AdminUser) {
+            $admin = $request->user();
+        }
         $permission = $request->isMethod('GET') ? 'queue.view' : 'queue.update';
         if ($admin !== null && $admin->canAccessProject($projectId)
             && (! $admin->isStaff() || $admin->hasPermission($permission))) {
-            return $next($request);
-        }
-        $expected = $this->settings->getKitchenAccessToken($projectId);
-        $provided = (string) $request->header('X-Store-Token', '');
-        if ($expected !== '' && $provided !== '' && hash_equals($expected, $provided)) {
             return $next($request);
         }
         if ($mode === 'staff') {
