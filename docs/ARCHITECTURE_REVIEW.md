@@ -124,6 +124,8 @@ Postal-code normalization, validation, and API address-shape conversion are also
 
 Point-history normalization and rendering are isolated from API and DOM orchestration. Numeric strings, invalid values, empty results, dates, and untrusted descriptions are handled at one tested boundary.
 
+Profile registration/edit form rendering is now isolated from member state and DOM orchestration. Field definitions, initial values, native notification copy, address grouping, forced-registration actions, and output escaping are covered by focused unit tests.
+
 Rank-history rendering is also isolated as a pure formatter. API-provided labels and dates are escaped at that boundary and covered by focused unit tests. View composers now catch runtime exceptions rather than all PHP throwables, so programming errors such as type violations are no longer silently replaced with fallback presentation data.
 
 ## Recommended sequence
