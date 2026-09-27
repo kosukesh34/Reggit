@@ -5,12 +5,8 @@ namespace App\Domain\Settings\Repositories;
 /**
  * 店舗設定の読み書き抽象。
  */
-interface ShopSettingRepository
+interface ShopSettingRepository extends SettingValueReader, SettingValueWriter
 {
-    public function getValue(string $key, mixed $default, int $projectId): mixed;
-
-    public function setValue(string $key, mixed $value, string $type, int $projectId): void;
-
     // ── ビジネス設定 ──
 
     /** @return array{start: string, end: string} */
