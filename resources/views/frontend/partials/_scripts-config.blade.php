@@ -30,7 +30,7 @@
     $filteredMenu = $isDemoFixedUi
         ? []
         : array_filter(
-            $frontendMenu ?? app(\App\Domain\Settings\Repositories\ShopSettingRepository::class)->defaultFrontendMenuItems(),
+            $frontendMenu ?? app(\App\Domain\Settings\Repositories\FrontendShellSettings::class)->defaultFrontendMenuItems(),
             fn ($item) => ($flags[$tabFeatureMap[$item['tab'] ?? ''] ?? ''] ?? true)
         );
     $scriptFrontendMenu = $isDemoFixedUi

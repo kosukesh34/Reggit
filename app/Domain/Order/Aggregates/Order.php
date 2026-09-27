@@ -2,6 +2,7 @@
 
 namespace App\Domain\Order\Aggregates;
 
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Domain\Order\ValueObjects\OrderId;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
@@ -95,11 +96,11 @@ final class Order
         }
 
         if ($this->orderType !== OrderType::MOBILE || $this->paymentMethod !== PaymentMethod::STRIPE) {
-            throw new \Exception('この注文は未決済キャンセル対象ではありません');
+            throw new OrderOperationException('この注文は未決済キャンセル対象ではありません');
         }
 
         if (in_array($this->status, self::NON_CANCELLABLE_UNPAID_STATUSES, true)) {
-            throw new \Exception('決済済みまたは進行中の注文はキャンセルできません');
+            throw new OrderOperationException('決済済みまたは進行中の注文はキャンセルできません');
         }
 
         $this->status = OrderStatus::CANCELLED;
@@ -111,11 +112,11 @@ final class Order
     public function confirmStripePayment(): bool
     {
         if ($this->orderType !== OrderType::MOBILE) {
-            throw new \Exception('店内注文は決済確認の対象外です');
+            throw new OrderOperationException('店内注文は決済確認の対象外です');
         }
 
         if ($this->isCancelled()) {
-            throw new \Exception('キャンセル済みの注文は決済確認できません');
+            throw new OrderOperationException('キャンセル済みの注文は決済確認できません');
         }
 
         if ($this->status !== OrderStatus::PENDING) {

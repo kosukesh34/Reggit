@@ -14,6 +14,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
+use App\Services\PostCommitDomainEventDispatcher;
 use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -70,7 +71,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         $useCase = new PaymentConfirmUseCase(
             $gateway,
             app(OrderRepository::class),
-            $dispatcher,
+            app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
@@ -132,7 +133,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         $useCase = new PaymentConfirmUseCase(
             $gateway,
             app(OrderRepository::class),
-            $dispatcher,
+            app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
@@ -167,7 +168,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         $useCase = new PaymentConfirmUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
@@ -201,7 +202,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         $useCase = new PaymentConfirmUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
@@ -218,7 +219,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         $useCase = new PaymentConfirmUseCase(
             $gateway,
             app(OrderRepository::class),
-            app(DomainEventDispatcher::class),
+            app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );

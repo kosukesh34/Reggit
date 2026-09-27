@@ -6,7 +6,8 @@ function readNativeAppMeta(name: string, fallback: string): string {
         return fallback;
     }
     const el = document.querySelector(`meta[name="${name}"]`);
-    const value = el !== null && el.getAttribute('content') ? el.getAttribute('content').trim() : '';
+    const content = el?.getAttribute('content') ?? '';
+    const value = content.trim();
     return value || fallback;
 }
 

@@ -24,7 +24,7 @@ enum WaitingRemoteConfigStore {
     static func refreshFromAPI() async {
         let client = WaitingAppConfigClient(
             baseURL: AppBuildConfig.baseURL,
-            projectKey: AppBuildConfig.projectKey
+            projectKey: SettingsStore().load().projectKey
         )
         if let config = await client.fetch() {
             current = config

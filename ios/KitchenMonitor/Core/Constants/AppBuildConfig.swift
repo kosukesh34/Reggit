@@ -12,8 +12,6 @@ enum AppServerTarget: String {
 
 enum AppBuildConfig {
     static let serverTarget: AppServerTarget = .production
-    static let projectKey = "sb_skt733n4"
-
     static let productionBaseURL = "https://reggit.jp"
     static let localBaseURL = "http://localhost:8080"
 

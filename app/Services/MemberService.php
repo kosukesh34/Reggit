@@ -410,7 +410,7 @@ class MemberService
     {
         $member = $user->member;
         if ($member === null) {
-            throw new \Exception('会員登録が必要です');
+            throw ValidationException::withMessages(['member' => '会員登録が必要です']);
         }
 
         $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);

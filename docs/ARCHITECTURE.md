@@ -170,10 +170,12 @@ flowchart TB
 | 店舗 Admin | `auth:admin` セッション + `admin.permission` + `admin.plan` | `bind.admin.project` |
 | システム Admin | `auth:admin` + `system.admin` | 横断（プロジェクト CRUD） |
 | API v1 | Bearer / `X-Api-Token` | トークンの project または URL `{project_key}` |
-| Kitchen | project_key で店舗特定 | ルート `project_key` |
+| Kitchen / Waiting店舗端末 | Sanctum Bearer + 端末固有鍵。アプリ種別・project能力を検証 | ルート `project_key` |
 | Webhook | 署名検証ミドルウェア等 | ペイロード / 契約 ID から解決 |
 
 登録元: `app/Providers/RouteServiceProvider.php`。
+
+店舗端末の登録、1端末制約、失効、スワイプ操作の詳細は [`STORE_APP_SPEC.md`](STORE_APP_SPEC.md) を参照。
 
 ---
 
@@ -274,18 +276,18 @@ flowchart TB
 | Coupon | 利用・発行・配信セグメント Policy |
 | Reservation | 予約・空き枠・ステータス |
 | Queue | 順番待ち・呼出・入店 |
-| Settings | `ShopSettingRepository`（設定の唯一の入口） |
+| Settings | 用途別の設定契約（`OrderSettings`、`QueueSettings`、`FeatureSettings` 等） |
 
 ---
 
 ## 8. 設定（Settings）の設計
 
 旧 EAV / `ShopSetting` 静的ファサードは廃止済み。  
-**読み書きは必ず `ShopSettingRepository` 経由。**
+**読み書きは必ず用途別の小さな設定契約経由。** 共通の Eloquent adapter は保存方式を隠蔽する。
 
 ```mermaid
 flowchart LR
-  UC[UseCase / Service] --> IF[ShopSettingRepository]
+  UC[UseCase / Service] --> IF[Capability Settings Contract]
   IF --> Impl[EloquentShopSettingRepository]
   Impl --> Store[ShopSettingStore]
   Store --> T1[ProjectBusinessSetting]
@@ -296,7 +298,7 @@ flowchart LR
 
 | ファイル | 役割 |
 |----------|------|
-| `app/Domain/Settings/Repositories/ShopSettingRepository.php` | IF |
+| `app/Domain/Settings/Repositories/*Settings.php` | 用途別 IF |
 | `app/Domain/Settings/ShopSettingKeys.php` | 定数（ORDER_MODE 等） |
 | `app/Infrastructure/.../EloquentShopSettingRepository.php` | 実装 |
 | `app/Infrastructure/.../ShopSettingStore.php` | KEY → 正規化テーブル |
@@ -403,7 +405,7 @@ sequenceDiagram
   participant A as 店舗管理者
   participant AC as Admin Settings Controller
   participant UC as Update*SettingsUseCase
-  participant Repo as ShopSettingRepository
+  participant Repo as 用途別 Settings Contract
   participant DB as Project*Setting
 
   A->>AC: POST /admin/{project_key}/settings/...
@@ -465,7 +467,7 @@ erDiagram
 | 不変条件・権限ポリシー | `Domain/...` |
 | DB アクセス抽象 | `Domain/.../Repositories` + `Infrastructure/Persistence` |
 | スマレジ・LINE・Wallet | `Services/...`（UseCase から呼ぶ） |
-| 店舗設定の読み書き | `ShopSettingRepository` のみ |
+| 店舗設定の読み書き | 用途別の `*Settings` contract |
 | 非同期副作用 | Domain Event → Listener / Job |
 | LIFF UI | `resources/js/frontend/features` |
 | Admin LIFF デザイン | `resources/js/admin/liff-designer` |

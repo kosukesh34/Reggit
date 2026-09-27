@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\UseCases\Line;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
 use App\Models\User;
@@ -116,9 +116,9 @@ class LineWebhookHandleUseCaseTest extends TestCase
 
     private function makeUseCase(LineService $line): LineWebhookHandleUseCase
     {
-        $resolver = new LineWebhookProjectResolver($line, app(ShopSettingRepository::class));
+        $resolver = new LineWebhookProjectResolver($line, app(LineConnectionSettings::class));
 
-        return new LineWebhookHandleUseCase($line, $resolver, app(ShopSettingRepository::class));
+        return new LineWebhookHandleUseCase($line, $resolver, app(LineConnectionSettings::class));
     }
 
     private function mockLineService(string $matchingSecret): LineService

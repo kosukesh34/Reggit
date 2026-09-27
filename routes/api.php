@@ -3,6 +3,7 @@
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
 use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
+use App\Http\Controllers\Api\StoreAppAuthController;
 use App\Http\Controllers\Api\V1\Analysis\AnalysisDeliveryController as ApiV1AnalysisDeliveryController;
 use App\Http\Controllers\Api\V1\Analysis\AnalysisSummaryController as ApiV1AnalysisSummaryController;
 use App\Http\Controllers\Api\V1\AnnouncementCancelledIdsController as ApiV1AnnouncementCancelledIdsController;
@@ -59,6 +60,7 @@ use App\Http\Controllers\Payment\PaymentCreateIntentController;
 use App\Http\Controllers\Payment\PaymentWebhookController;
 use App\Http\Controllers\PostalCodeController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Queue\QueueCallController;
 use App\Http\Controllers\Queue\QueueCallNextController;
 use App\Http\Controllers\Queue\QueueCancelController;
 use App\Http\Controllers\Queue\QueueEnterController;
@@ -80,18 +82,34 @@ use App\Http\Controllers\StampGrantCodeController;
 use App\Http\Controllers\StampGrantController;
 use App\Http\Controllers\Wallet\AppleWalletPasskitController;
 use App\Http\Middleware\AuthenticateApiToken;
-use App\Http\Middleware\AuthenticateKitchenToken;
 use App\Http\Middleware\CheckApiProject;
 use Illuminate\Support\Facades\Route;
 
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
 
-Route::prefix('kitchen/{project_key}')->middleware([AuthenticateKitchenToken::class])->group(function () {
+Route::post('/store-app/login', [StoreAppAuthController::class, 'login'])->middleware('throttle:admin-login');
+Route::post('/store-app/logout', [StoreAppAuthController::class, 'logout'])->middleware('auth:sanctum');
+
+Route::prefix('kitchen/{project_key}')->middleware(['auth:sanctum', 'store-app.auth:kitchen'])->group(function () {
     Route::get('/orders', [KitchenOrderController::class, 'index']);
     Route::post('/orders/{id}/status', [KitchenOrderController::class, 'updateStatus']);
     Route::post('/devices', [KitchenDeviceController::class, 'store']);
     Route::delete('/devices', [KitchenDeviceController::class, 'destroy']);
 });
+
+Route::prefix('store-app/waiting/{project_key}')
+    ->middleware(['auth:sanctum', 'store-app.auth:waiting'])
+    ->group(function () {
+        Route::post('/queue', [QueueStoreController::class, '__invoke']);
+        Route::get('/queue/me', [QueueMeController::class, '__invoke']);
+        Route::get('/queue/list', [QueueListController::class, '__invoke'])->middleware('queue.access:staff');
+        Route::get('/queue/{id}', [QueueStatusController::class, '__invoke'])->middleware('queue.access:staff');
+        Route::post('/queue/{id}/cancel', [QueueCancelController::class, '__invoke'])->middleware('queue.access:staff');
+        Route::post('/queue/{id}/recall', [QueueRecallController::class, '__invoke'])->middleware('queue.access:staff');
+        Route::post('/queue/{id}/call', QueueCallController::class)->middleware('queue.access:staff');
+        Route::post('/queue/{id}/enter', [QueueEnterController::class, '__invoke'])->middleware('queue.access:staff');
+        Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke'])->middleware('queue.access:staff');
+    });
 
 // スマレジ・プラットフォームAPI 連携（利用者契約通知・Webhook）
 // 公式: HTTPS POST / JSON。接続確認で GET/HEAD が来る場合があるため許可。
@@ -293,12 +311,18 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 
     Route::post('/queue', [QueueStoreController::class, '__invoke']);
     Route::get('/queue/me', [QueueMeController::class, '__invoke']);
-    Route::get('/queue/list', [QueueListController::class, '__invoke'])->middleware('queue.access:staff');
+    Route::get('/queue/list', [QueueListController::class, '__invoke'])
+        ->middleware(['auth:sanctum', 'store-app.auth:waiting', 'queue.access:staff']);
     Route::get('/queue/{id}', [QueueStatusController::class, '__invoke'])->middleware('queue.access');
     Route::post('/queue/{id}/cancel', [QueueCancelController::class, '__invoke'])->middleware('queue.access');
-    Route::post('/queue/{id}/recall', [QueueRecallController::class, '__invoke'])->middleware('queue.access:staff');
-    Route::post('/queue/{id}/enter', [QueueEnterController::class, '__invoke'])->middleware('queue.access:staff');
-    Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke'])->middleware('queue.access:staff');
+    Route::post('/queue/{id}/recall', [QueueRecallController::class, '__invoke'])
+        ->middleware(['auth:sanctum', 'store-app.auth:waiting', 'queue.access:staff']);
+    Route::post('/queue/{id}/call', QueueCallController::class)
+        ->middleware(['auth:sanctum', 'store-app.auth:waiting', 'queue.access:staff']);
+    Route::post('/queue/{id}/enter', [QueueEnterController::class, '__invoke'])
+        ->middleware(['auth:sanctum', 'store-app.auth:waiting', 'queue.access:staff']);
+    Route::post('/queue/call-next', [QueueCallNextController::class, '__invoke'])
+        ->middleware(['auth:sanctum', 'store-app.auth:waiting', 'queue.access:staff']);
     Route::get('/queue/qr/{token}', [QueueQrStatusController::class, '__invoke']);
 });
 

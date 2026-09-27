@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SendCouponIssuedNotificationJob;
@@ -113,7 +113,7 @@ class CouponNotificationTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -162,7 +162,7 @@ class CouponNotificationTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -210,7 +210,7 @@ class CouponNotificationTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -260,7 +260,7 @@ class CouponNotificationTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -301,7 +301,7 @@ class CouponNotificationTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -336,7 +336,7 @@ class CouponNotificationTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(ShopSettingRepository::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
