@@ -33,6 +33,12 @@ Split contracts by consumer capability, for example:
 - `QueueSettings`
 - `ReservationSettings`
 - `WalletSettings`
+- `FeatureSettings`
+- `ProfileSettings`
+- `RankSettings`
+- `LiffDesignerSettings`
+- `LineAdminSettings`
+- `KitchenAccessSettings`
 
 Keep the current implementation as an adapter while migrating consumers, then split persistence only after the interfaces are stable.
 

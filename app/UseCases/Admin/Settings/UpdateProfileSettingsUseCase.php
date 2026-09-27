@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Domain\Settings\ShopSettingKeys;
 use App\Enums\MemberRegistrationMode;
 use App\Enums\ProfileCustomFieldInputType;
@@ -11,12 +11,12 @@ use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 
 class UpdateProfileSettingsUseCase
 {
-    private ShopSettingRepository $shopSettingRepository;
+    private ProfileSettings $shopSettingRepository;
 
     private SmaregiCustomerCustomFieldLabelSyncService $customFieldLabelSync;
 
     public function __construct(
-        ShopSettingRepository $shopSettingRepository,
+        ProfileSettings $shopSettingRepository,
         SmaregiCustomerCustomFieldLabelSyncService $customFieldLabelSync
     ) {
         $this->shopSettingRepository = $shopSettingRepository;
