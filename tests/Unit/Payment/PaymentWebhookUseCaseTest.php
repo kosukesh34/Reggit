@@ -200,4 +200,57 @@ class PaymentWebhookUseCaseTest extends TestCase
         $this->assertSame(OrderStatus::PREPARING, $order->fresh()->status);
         $this->assertSame(DailySequenceNumber::build(5), $order->fresh()->order_number);
     }
+
+    public function test_handle_特典付与に失敗した場合は決済確定もロールバックすること(): void
+    {
+        Queue::fake();
+
+        Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
+        );
+        $user = User::factory()->create(['project_id' => 1]);
+        $order = Order::create([
+            'project_id' => 1,
+            'user_id' => $user->id,
+            'total_amount' => 1000,
+            'status' => OrderStatus::PENDING,
+            'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 0,
+            'points_earned' => 0,
+            'order_type' => 'mobile',
+        ]);
+
+        $gateway = new FakePaymentGateway;
+        $gateway->event = [
+            'type' => 'payment_intent.succeeded',
+            'metadata' => ['order_id' => $order->id],
+            'amount' => 1000,
+        ];
+
+        $orderService = \Mockery::mock(OrderService::class);
+        $orderService->shouldReceive('applyStripePaymentRewardsIfNeeded')
+            ->once()
+            ->andThrow(new \RuntimeException('reward persistence failed'));
+
+        $useCase = new PaymentWebhookUseCase(
+            $gateway,
+            app(OrderRepository::class),
+            app(DomainEventDispatcher::class),
+            app(OrderNumberAssigner::class),
+            $orderService,
+        );
+
+        try {
+            $useCase->handle('{}', 'sig', 'secret');
+            $this->fail('Expected the reward failure to escape the transaction.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('reward persistence failed', $exception->getMessage());
+        }
+
+        $fresh = $order->fresh();
+        $this->assertSame(OrderStatus::PENDING, $fresh->status);
+        $this->assertNull($fresh->order_number);
+        Queue::assertNothingPushed();
+    }
 }

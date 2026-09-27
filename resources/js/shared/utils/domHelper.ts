@@ -6,12 +6,15 @@ type GetTabMountOptions = {
 
 export class DomHelper {
     static getLiffGlobalSetting(key: string, fallback: string): string {
-        const settings =
+        const rawSettings =
             typeof window !== 'undefined'
             && window.__LIFF_TAB_SETTINGS__
             && window.__LIFF_TAB_SETTINGS__._global
                 ? window.__LIFF_TAB_SETTINGS__._global
                 : {};
+        const settings: Record<string, unknown> = typeof rawSettings === 'object' && rawSettings !== null
+            ? rawSettings as Record<string, unknown>
+            : {};
         const value =
             settings && Object.prototype.hasOwnProperty.call(settings, key) ? settings[key] : null;
         return value !== null && value !== undefined && String(value) !== '' ? String(value) : fallback;

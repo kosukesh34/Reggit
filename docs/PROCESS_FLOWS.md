@@ -159,7 +159,7 @@ flowchart LR
 ```mermaid
 flowchart LR
   Form[設定画面] --> UC[Update*SettingsUseCase]
-  UC --> Repo[ShopSettingRepository]
+  UC --> Repo[用途別 Settings Contract]
   Repo --> Row[Project*Setting 1行]
 ```
 
@@ -326,7 +326,7 @@ flowchart TB
 flowchart LR
   GET[GET settings] --> GetUC[Get*UseCase]
   POST[POST update] --> UpdUC[Update*UseCase]
-  GetUC --> Repo[ShopSettingRepository]
+  GetUC --> Repo[用途別 Settings Contract]
   UpdUC --> Repo
   Repo --> T[(Project*Setting)]
 ```
@@ -369,7 +369,7 @@ flowchart TB
 | ルートと permission | `routes/web.php`, `routes/api.php` |
 | Controller → UseCase | `app/Http/Controllers/...` |
 | 業務 | `app/UseCases/...` |
-| 設定保存 | `ShopSettingRepository` |
+| 設定保存 | 用途別 Settings contract |
 | 注文の副作用 | Domain Event → Jobs |
 
 ---

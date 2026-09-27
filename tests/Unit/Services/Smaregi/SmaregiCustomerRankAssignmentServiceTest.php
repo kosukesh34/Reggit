@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Services\Smaregi;
 
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -48,7 +48,7 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
 
         $service = new SmaregiCustomerRankAssignmentService(
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(RankSettings::class),
         );
         $service->assignRankToCustomer($member, 'silver');
 
@@ -70,7 +70,7 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
 
         $service = new SmaregiCustomerRankAssignmentService(
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(RankSettings::class),
         );
         $service->assignRankToCustomer($member, 'silver');
 
@@ -107,7 +107,7 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
 
         $service = new SmaregiCustomerRankAssignmentService(
             $smaregiApi,
-            app(ShopSettingRepository::class),
+            app(RankSettings::class),
         );
         $service->syncPointRatesForProject((int) $project->id);
 

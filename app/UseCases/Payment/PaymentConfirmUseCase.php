@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
 use App\UseCases\Payment\Data\PaymentConfirmOutput;
+use App\Util\LogHelper;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
@@ -105,15 +106,27 @@ class PaymentConfirmUseCase
         });
 
         if ($confirmedEvent !== null) {
-            $this->domainEvents->dispatch($confirmedEvent);
+            $this->dispatchBestEffort($confirmedEvent);
         }
         if ($pointsSyncEvent !== null) {
-            $this->domainEvents->dispatch($pointsSyncEvent);
+            $this->dispatchBestEffort($pointsSyncEvent);
         }
         if ($transactionSyncEvent !== null) {
-            $this->domainEvents->dispatch($transactionSyncEvent);
+            $this->dispatchBestEffort($transactionSyncEvent);
         }
 
         return $output;
+    }
+
+    private function dispatchBestEffort(object $event): void
+    {
+        try {
+            $this->domainEvents->dispatch($event);
+        } catch (\Throwable $e) {
+            LogHelper::error('[DomainEvent] post-commit dispatch failed', [
+                'event' => $event::class,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -25,7 +25,7 @@ export function buildProfilePayload(
             continue;
         }
         if (inputType === 'checkbox') {
-            payload[key] = values.checkedValues(`${key}[]`).map(trim).filter(Boolean);
+            payload[key] = values.checkedValues(`${key}[]`).map(trim).filter(isString);
             continue;
         }
         if (isChoiceField(key, inputType)) {
@@ -61,4 +61,8 @@ function isChoiceField(key: string, inputType: string): boolean {
 
 function trim(value: string | undefined): string | undefined {
     return value === undefined ? undefined : value.trim();
+}
+
+function isString(value: string | undefined): value is string {
+    return typeof value === 'string' && value !== '';
 }

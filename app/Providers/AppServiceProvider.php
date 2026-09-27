@@ -31,7 +31,7 @@ use App\Domain\Settings\Repositories\QueueAdminSettings;
 use App\Domain\Settings\Repositories\QueueSettings;
 use App\Domain\Settings\Repositories\RankSettings;
 use App\Domain\Settings\Repositories\ReservationSettings;
-use App\Domain\Settings\Repositories\ShopSettingRepository;
+use App\Domain\Settings\Repositories\SettingValueWriter;
 use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Domain\Settings\Repositories\StampSettings;
 use App\Domain\Settings\Repositories\WalletSettings;
@@ -115,7 +115,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CouponDeliveryTargetRepository::class, EloquentCouponDeliveryTargetRepository::class);
         $this->app->bind(ReservationRepository::class, EloquentReservationRepository::class);
         $this->app->bind(QueueEntryRepository::class, EloquentQueueEntryRepository::class);
-        $this->app->bind(ShopSettingRepository::class, EloquentShopSettingRepository::class);
         $this->app->bind(StampSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(WalletSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(AdminAppearanceSettings::class, EloquentShopSettingRepository::class);
@@ -139,6 +138,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(QueueSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(RankSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(ReservationSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(SettingValueWriter::class, EloquentShopSettingRepository::class);
         $this->app->bind(SmaregiSettings::class, EloquentShopSettingRepository::class);
         $this->app->singleton(DomainEventDispatcher::class, function ($app) {
             return new MulticastDomainEventDispatcher([

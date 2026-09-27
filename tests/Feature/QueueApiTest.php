@@ -16,6 +16,13 @@ class QueueApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['push.fcm.enabled' => false]);
+    }
+
     private function createProject(): Project
     {
         return Project::firstOrCreate(
