@@ -9,7 +9,7 @@ function renderMemberLineQr(root: HTMLElement): void {
         return;
     }
     root.innerHTML = '';
-    // eslint-disable-next-line no-new
+
     new QRCodeCompat(root, {
         text: url,
         width: 180,

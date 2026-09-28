@@ -193,9 +193,8 @@ export function CheckoutModal(): JSX.Element | null {
                 requestClose(true);
             });
         return () => {
-            if (setupToken.current === token) {
-                cm.stripePayment?.destroyPaymentForm();
-            }
+            setupToken.current += 1;
+            cm.stripePayment?.destroyPaymentForm();
         };
     }, [order, requestClose]);
 

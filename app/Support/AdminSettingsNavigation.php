@@ -14,6 +14,7 @@ final class AdminSettingsNavigation
 
         $sections = [
             ['title' => '店舗・運用', 'items' => [
+                ['route' => 'admin.stores.index', 'icon' => 'fas fa-store', 'label' => '利用店舗', 'hint' => 'スマレジ店舗の同期・利用店舗の選択'],
                 $can('settings.view') ? ['route' => 'admin.settings.basic', 'icon' => 'fas fa-store', 'label' => '店舗の基本', 'hint' => '営業時間・注文'] : null,
                 $can('settings.view') ? ['route' => 'admin.settings.features', 'icon' => 'fas fa-toggle-on', 'label' => '機能の表示', 'hint' => '機能の有効化'] : null,
                 $can('reservations.view') ? ['route' => 'admin.settings.reservations', 'icon' => 'fas fa-calendar-check', 'label' => '予約', 'hint' => '時間帯・予約枠'] : null,

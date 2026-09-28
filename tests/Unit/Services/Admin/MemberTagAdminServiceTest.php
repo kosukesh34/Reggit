@@ -26,7 +26,7 @@ class MemberTagAdminServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Test', 'description' => 'Test', 'is_active' => true]
         );
-        $this->service = new MemberTagAdminService;
+        $this->service = app(MemberTagAdminService::class);
     }
 
     public function test_create_tag_タグが作成される(): void

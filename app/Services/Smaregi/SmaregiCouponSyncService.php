@@ -140,10 +140,16 @@ class SmaregiCouponSyncService
         }
 
         $newId = $this->extractCouponIdFromResponse($result);
-        if ($newId !== null) {
-            $coupon->smaregi_coupon_id = $newId;
-            $coupon->save();
+        if ($newId === null) {
+            Log::warning('[Smaregi] coupon sync response has no coupon ID', [
+                'project_id' => $coupon->project_id,
+                'coupon_id' => $coupon->id,
+            ]);
+
+            return false;
         }
+        $coupon->smaregi_coupon_id = $newId;
+        $coupon->save();
 
         return true;
     }

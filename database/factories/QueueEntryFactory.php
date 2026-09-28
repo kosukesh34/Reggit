@@ -17,7 +17,7 @@ class QueueEntryFactory extends Factory
     {
         return [
             'project_id' => 1,
-            'member_id' => Member::factory(),
+            'member_id' => fn (array $attributes) => Member::factory()->create(['project_id' => $attributes['project_id']])->id,
             'guest_name' => $this->faker->name(),
             'guest_phone' => $this->faker->phoneNumber(),
             'party_size' => $this->faker->numberBetween(1, 6),

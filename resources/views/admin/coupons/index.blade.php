@@ -65,7 +65,11 @@
                             <span class="badge badge-success" title="ID: {{ $coupon->smaregi_coupon_id }}">連携済</span>
                         @else
                             <span class="badge badge-secondary">未連携</span>
-                            <a href="{{ admin_route('admin.coupons.bulk-issue') }}#smaregi-sync" class="d-block small mt-1">スマレジへ反映</a>
+                            <form action="{{ admin_route('admin.coupons.push-smaregi') }}" method="POST" class="mt-1">
+                                @csrf
+                                <input type="hidden" name="coupon_id" value="{{ $coupon->id }}">
+                                <button type="submit" class="btn btn-action btn-edit">スマレジへ反映</button>
+                            </form>
                         @endif
                     </td>
                     <td><span class="badge badge-{{ $coupon->is_active ? 'success' : 'danger' }}">{{ $coupon->is_active ? '有効' : '無効' }}</span></td>
@@ -81,7 +85,7 @@
                 @endforeach
             </tbody>
         </table>
-        {{ $coupons->links('vendor.pagination.admin') }}
+        {{ $coupons->appends(['deliveries_page' => $deliveryHistories->currentPage()])->links('vendor.pagination.admin') }}
         @endif
     </div>
 </div>
@@ -91,7 +95,7 @@
         <h2 class="card-title">配布履歴</h2>
     </div>
     <div class="card-body">
-        @if(($deliveryHistories ?? []) === [])
+        @if($deliveryHistories->isEmpty())
         <div class="empty-state">
             <i class="fas fa-history"></i>
             <p>まだ配布履歴がありません</p>
@@ -116,7 +120,11 @@
                     <tr>
                         <td>{{ $history['timing_label'] }}</td>
                         <td>
-                            <strong>{{ $history['coupon_name'] }}</strong>
+                            @if($history['coupon_id'] !== null)
+                                <a href="{{ admin_route('admin.coupons.show', ['id' => $history['coupon_id']]) }}"><strong>{{ $history['coupon_name'] }}</strong></a>
+                            @else
+                                <strong>{{ $history['coupon_name'] }}</strong>
+                            @endif
                             <span class="d-block text-muted small"><code>{{ $history['coupon_code'] }}</code></span>
                         </td>
                         <td>{{ $history['delivery_type_label'] }}</td>
@@ -131,6 +139,7 @@
                 </tbody>
             </table>
         </div>
+        {{ $deliveryHistories->appends(['coupons_page' => $coupons->currentPage()])->links('vendor.pagination.admin') }}
         @endif
     </div>
 </div>

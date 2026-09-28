@@ -18,9 +18,8 @@
                 <th>日時</th>
                 <th>操作内容</th>
                 <th>管理者</th>
-                <th>プロジェクト</th>
-                <th>メソッド</th>
-                <th>IP</th>
+                <th>対象</th>
+                <th>変更項目</th>
             </tr>
         </thead>
         <tbody>
@@ -35,13 +34,12 @@
                         @endif
                     </td>
                     <td>{{ $log->adminUser?->name ?? '－' }}</td>
-                    <td>{{ $log->project?->name ?? '－' }}</td>
-                    <td><code>{{ $log->method }}</code></td>
-                    <td>{{ $log->ip ?? '－' }}</td>
+                    <td>{{ $log->getTargetLabel() }}</td>
+                    <td>{{ $log->getChangedFieldsLabel() }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="6" class="empty-state">
                         <i class="fas fa-clipboard-list"></i>
                         <p>監査ログがありません</p>
                     </td>

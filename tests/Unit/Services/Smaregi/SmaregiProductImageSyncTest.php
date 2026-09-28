@@ -5,6 +5,7 @@ namespace Tests\Unit\Services\Smaregi;
 use App\Models\Product;
 use App\Models\Project;
 use App\Services\Admin\ProductDeduplicationService;
+use App\Services\Admin\PublicImageStorageService;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiProductOptionSyncService;
 use App\Services\Smaregi\SmaregiProductRegisterService;
@@ -51,6 +52,7 @@ class SmaregiProductImageSyncTest extends TestCase
             $register,
             Mockery::mock(ProductDeduplicationService::class),
             Mockery::mock(SmaregiProductOptionSyncService::class),
+            app(PublicImageStorageService::class),
         );
 
         $result = $sync->syncAllImagesToSmaregi((int) $project->id);

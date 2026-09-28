@@ -4,10 +4,18 @@
 @section('page-title', 'お知らせ配信')
 @section('page-kind', 'announcement-delivery')
 
+@section('page-header-actions')
+    <button type="submit" form="deliveryForm" class="btn btn-primary ad-header-submit no-loading" id="deliverySubmitButton">
+        <i class="fas fa-paper-plane" aria-hidden="true"></i> <span id="deliverySubmitLabel">配信内容を確認する</span>
+    </button>
+@endsection
+
 @section('content')
 @php
-    $selectedCouponId = (int) old('delivery_coupon_id', request('coupon_id'));
-    $hasSelectedCoupon = $selectedCouponId > 0 && ($view->coupons ?? collect())->contains('id', $selectedCouponId);
+    $selectedCouponIds = collect((array) old('delivery_coupon_ids', request('coupon_id') ? [request('coupon_id')] : []))
+        ->map(fn ($id) => (int) $id)->filter()->unique()->values();
+    $hasSelectedCoupon = $selectedCouponIds->isNotEmpty();
+    $segmentOperators = (array) old('segment_operators', []);
     $selectedMemberIds = collect((array) old('target_member_ids', []))->map(fn ($id) => (int) $id)->filter()->values();
     $selectedBirthdayMonths = collect((array) old(
         'segment_birthday_months',
@@ -24,7 +32,7 @@
         : \App\Models\Announcement::DELIVERY_TIMING_IMMEDIATE);
     $advancedSegmentOpen = collect([
         'segment_visit_count_min', 'segment_visit_count_max', 'segment_lifetime_points_min',
-        'segment_lifetime_points_max', 'segment_last_visit_mode', 'segment_sex', 'segment_rank',
+        'segment_lifetime_points_max', 'segment_last_visit_mode', 'segment_rank',
         'segment_product_id', 'segment_condition',
     ])->contains(fn ($field) => filled(old($field)));
     $announcementPreviewBaseUrl = admin_front_url();
@@ -52,11 +60,27 @@
         </div>
     @endif
 
-    <form action="{{ admin_route('admin.announcements.delivery.store') }}" method="POST" id="deliveryForm" enctype="multipart/form-data">
+    <div class="ad-form-guide">
+        <div><h2>お知らせを作成して配信</h2><p>内容と届け先を設定し、最後に確認画面で配信を確定します。</p></div>
+        <nav aria-label="配信設定の手順">
+            <ol class="ad-form-steps">
+                <li><a href="#delivery-content"><span>1</span>内容を作成</a></li>
+                <li><a href="#delivery-audience"><span>2</span>対象・日時</a></li>
+                <li><a href="#delivery-options"><span>3</span>通知・掲載</a></li>
+            </ol>
+        </nav>
+    </div>
+
+    <p class="alert alert-info">配信店舗：{{ $selectedStore?->name ?? '全店舗' }}。対象者にはアプリ内のお知らせを表示し、通知設定に応じてLINE・Pushを送信します。</p>
+        <form action="{{ admin_route('admin.announcements.delivery.store') }}" method="POST" id="deliveryForm" enctype="multipart/form-data">
         @csrf
         <div class="ad-studio">
             <div class="ad-studio-main">
                 <div class="andel-card" role="region" id="delivery-content" aria-label="お知らせの内容">
+                    <header class="andel-card-head">
+                        <span class="andel-card-icon" aria-hidden="true"><i class="fas fa-pen"></i></span>
+                        <div><p>STEP 1</p><h2>お知らせの内容</h2><span>会員に表示するタイトル・本文・画像を入力してください。</span></div>
+                    </header>
                     <div class="form-group">
                         <div class="ad-label-row">
                             <label for="title" class="form-label">タイトル <span class="ad-required">必須</span></label>
@@ -80,24 +104,20 @@
                             'logoInputName' => 'image_file',
                             'logoClearName' => 'image_file_clear',
                             'logoFieldId' => 'ann_image',
-                            'logoCurrentUrl' => (string) old('image_url', ''),
-                            'logoLabel' => 'キービジュアル',
+                            'logoCurrentUrl' => '',
+                            'logoLabel' => 'お知らせの画像（任意）',
                             'logoHelp' => '',
                             'logoCompact' => false,
                         ])
-                        <details class="ad-details" @if(old('image_url')) open @endif>
-                            <summary><span><i class="fas fa-link" aria-hidden="true"></i> 画像URLを使う</span></summary>
-                            <div class="form-group mb-0 mt-2">
-                                <label for="image_url" class="form-label">画像URL</label>
-                                <input type="url" name="image_url" id="image_url" class="form-control" value="{{ old('image_url') }}" maxlength="500" placeholder="https://example.com/image.png">
-                                @error('image_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
-                                @error('image_file')<span class="invalid-feedback">{{ $message }}</span>@enderror
-                            </div>
-                        </details>
+                        @error('image_file')<span class="invalid-feedback">{{ $message }}</span>@enderror
                     </div>
                 </div>
 
                 <div class="andel-card" role="region" id="delivery-audience" aria-label="届け先と配信タイミング">
+                    <header class="andel-card-head">
+                        <span class="andel-card-icon" aria-hidden="true"><i class="fas fa-users"></i></span>
+                        <div><p>STEP 2</p><h2>配信対象と日時</h2><span>いつ、誰に届けるかを選びます。対象者一覧で会員を確認できます。</span></div>
+                    </header>
                     <fieldset class="ad-delivery-fieldset ad-timing-fieldset">
                         <legend>配信タイミング <span class="ad-required">必須</span></legend>
                         <div class="ad-timing-types">
@@ -165,12 +185,24 @@
 
                     <div id="segmentBlock" class="ad-segment-panel" hidden>
                         <div class="ad-segment-head">
-                            <div><strong>絞り込み条件</strong><small>指定した条件をすべて満たす会員へ配信します（AND条件）</small></div>
+                            <div><strong>絞り込み条件</strong><small>必要なカテゴリを開いて条件を選択</small></div>
                             <span id="segmentPreview"><i class="fas fa-spinner fa-spin" aria-hidden="true"></i> 人数を確認中</span>
                         </div>
+                    <section class="ad-confirm-conditions" id="deliverySummaryConditionBlock" aria-labelledby="deliverySummaryConditionTitle" hidden>
+                        <div class="ad-confirm-conditions-head">
+                            <span id="deliverySummaryConditionTitle"><i class="fas fa-filter" aria-hidden="true"></i> 選択中の条件</span>
+
+                        </div>
+                        <div class="ad-condition-chips" id="deliverySummaryConditions" aria-live="polite"></div>
+
+                    </section>
+                        <details class="ad-condition-help"><summary>条件の組み合わせについて</summary><p>空欄は条件に含めません。上から順に、ANDで絞り込み、ORで対象を広げます。</p></details>
+                        <details class="ad-details ad-segment-details" @if(filled(old('segment_channel')) || filled(old('segment_sex')) || $selectedBirthdayMonths->isNotEmpty() || $selectedRfmSegments->isNotEmpty() || $selectedTagIds->isNotEmpty()) open @endif>
+                            <summary><span><i class="fas fa-user" aria-hidden="true"></i> 会員の属性</span><small>誕生月・タグなど</small></summary>
+                            <div class="ad-segment-advanced">
                         <div class="ad-filter-grid">
                             <div class="form-group mb-0">
-                                <label for="segment_channel" class="form-label">登録チャネル</label>
+                                <div class="ad-filter-label"><label for="segment_channel" class="form-label">登録チャネル</label>@include('admin.announcements.partials.segment-operator', ['key' => 'channel', 'operators' => $segmentOperators])</div>
                                 <select name="segment_channel" id="segment_channel" class="form-control segment-filter">
                                     <option value="">指定しない</option>
                                     @foreach(\App\Support\MemberChannel::filterOptions() as $value => $label)
@@ -179,7 +211,7 @@
                                 </select>
                             </div>
                             <fieldset class="ad-multi-filter mb-0">
-                                <legend class="form-label">誕生月 <small>複数選択可</small></legend>
+                                <legend class="form-label">誕生月 <small>複数選択可</small> @include('admin.announcements.partials.segment-operator', ['key' => 'birthday', 'operators' => $segmentOperators])</legend>
                                 <div class="ad-multi-filter-options ad-multi-filter-options--months">
                                     @for($m = 1; $m <= 12; $m++)
                                         <label><input type="checkbox" name="segment_birthday_months[]" value="{{ $m }}" data-label="{{ $m }}月" class="segment-filter" {{ $selectedBirthdayMonths->contains($m) ? 'checked' : '' }}><span>{{ $m }}月</span></label>
@@ -187,7 +219,7 @@
                                 </div>
                             </fieldset>
                             <div class="form-group mb-0">
-                                <label for="segment_sex" class="form-label">性別</label>
+                                <div class="ad-filter-label"><label for="segment_sex" class="form-label">性別</label>@include('admin.announcements.partials.segment-operator', ['key' => 'sex', 'operators' => $segmentOperators])</div>
                                 <select name="segment_sex" id="segment_sex" class="form-control segment-filter">
                                     <option value="">指定しない</option>
                                     <option value="1" {{ old('segment_sex') === '1' ? 'selected' : '' }}>男性</option>
@@ -195,7 +227,7 @@
                                 </select>
                             </div>
                             <fieldset class="ad-multi-filter ad-filter-group-wide mb-0">
-                                <legend class="form-label">RFMセグメント <small>複数選択可・いずれかに一致</small></legend>
+                                <legend class="form-label">RFMセグメント <small>複数選択可・いずれかに一致</small> @include('admin.announcements.partials.segment-operator', ['key' => 'rfm', 'operators' => $segmentOperators])</legend>
                                 <div class="ad-multi-filter-options ad-multi-filter-options--tags">
                                     @foreach($view->rfmSegments as $rfmKey => $rfm)
                                         <label style="--ad-tag-color: {{ $rfm['color'] }}"><input type="checkbox" name="segment_rfm_segments[]" value="{{ $rfmKey }}" data-label="{{ $rfm['label'] }}" class="segment-filter" {{ $selectedRfmSegments->contains($rfmKey) ? 'checked' : '' }}><span><i aria-hidden="true"></i>{{ $rfm['label'] }}</span></label>
@@ -203,7 +235,7 @@
                                 </div>
                             </fieldset>
                             <fieldset class="ad-multi-filter ad-filter-group-wide mb-0">
-                                <legend class="form-label">会員タグ <small>複数選択可・いずれかのタグに一致</small></legend>
+                                <legend class="form-label">会員タグ <small>複数選択可・いずれかのタグに一致</small> @include('admin.announcements.partials.segment-operator', ['key' => 'tags', 'operators' => $segmentOperators])</legend>
                                 @if(($view->memberTags ?? collect())->isEmpty())
                                     <p class="ad-multi-filter-empty">会員タグはまだ登録されていません。</p>
                                 @else
@@ -216,24 +248,28 @@
                             </fieldset>
                         </div>
 
+
+                            </div>
+                        </details>
+
                         <details class="ad-details ad-segment-details" @if($advancedSegmentOpen) open @endif>
                             <summary>
-                                <span><i class="fas fa-sliders" aria-hidden="true"></i> 来店・購入状況でさらに絞り込む</span>
-                                <small>来店回数、ポイント、最終来店、商品、売上</small>
+                                <span><i class="fas fa-sliders" aria-hidden="true"></i> 来店・購入</span>
+                                <small>来店回数・購入額など</small>
                             </summary>
                             <div class="ad-segment-advanced">
                                 <div class="ad-filter-grid">
-                                    <div class="form-group mb-0"><label for="segment_visit_count_min" class="form-label">来店回数（以上）</label><input type="number" name="segment_visit_count_min" id="segment_visit_count_min" class="form-control segment-filter" value="{{ old('segment_visit_count_min') }}" min="0" placeholder="例：3"></div>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_visit_count_min" class="form-label">来店回数（以上）</label>@include('admin.announcements.partials.segment-operator', ['key' => 'visits', 'operators' => $segmentOperators])</div><input type="number" name="segment_visit_count_min" id="segment_visit_count_min" class="form-control segment-filter" value="{{ old('segment_visit_count_min') }}" min="0" placeholder="例：3"></div>
                                     <div class="form-group mb-0"><label for="segment_visit_count_max" class="form-label">来店回数（以下）</label><input type="number" name="segment_visit_count_max" id="segment_visit_count_max" class="form-control segment-filter" value="{{ old('segment_visit_count_max') }}" min="0" placeholder="例：10"></div>
-                                    <div class="form-group mb-0"><label for="segment_rank" class="form-label">会員ランク</label><input type="text" name="segment_rank" id="segment_rank" class="form-control segment-filter" value="{{ old('segment_rank') }}" maxlength="64" placeholder="例：gold"></div>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_rank" class="form-label">会員ランク</label>@include('admin.announcements.partials.segment-operator', ['key' => 'rank', 'operators' => $segmentOperators])</div><input type="text" name="segment_rank" id="segment_rank" class="form-control segment-filter" value="{{ old('segment_rank') }}" maxlength="64" placeholder="例：gold"></div>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2">
-                                    <div class="form-group mb-0"><label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label><input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control segment-filter" value="{{ old('segment_lifetime_points_min') }}" min="0" placeholder="例：1000"></div>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label>@include('admin.announcements.partials.segment-operator', ['key' => 'points', 'operators' => $segmentOperators])</div><input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control segment-filter" value="{{ old('segment_lifetime_points_min') }}" min="0" placeholder="例：1000"></div>
                                     <div class="form-group mb-0"><label for="segment_lifetime_points_max" class="form-label">累計付与ポイント（以下）</label><input type="number" name="segment_lifetime_points_max" id="segment_lifetime_points_max" class="form-control segment-filter" value="{{ old('segment_lifetime_points_max') }}" min="0" placeholder="例：5000"></div>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2">
                                     <div class="form-group mb-0">
-                                        <label for="segment_last_visit_mode" class="form-label">最終来店</label>
+                                        <div class="ad-filter-label"><label for="segment_last_visit_mode" class="form-label">最終来店</label>@include('admin.announcements.partials.segment-operator', ['key' => 'last_visit', 'operators' => $segmentOperators])</div>
                                         <select name="segment_last_visit_mode" id="segment_last_visit_mode" class="form-control segment-filter">
                                             <option value="">指定しない</option>
                                             <option value="inactive_days" {{ old('segment_last_visit_mode') === 'inactive_days' ? 'selected' : '' }}>N日以上来店なし</option>
@@ -250,7 +286,7 @@
                                     </div>
                                 </div>
                                 <div class="form-group mb-0">
-                                    <label for="segment_product_id" class="form-label">購入した商品</label>
+                                    <div class="ad-filter-label"><label for="segment_product_id" class="form-label">購入した商品</label>@include('admin.announcements.partials.segment-operator', ['key' => 'product', 'operators' => $segmentOperators])</div>
                                     <select name="segment_product_id" id="segment_product_id" class="form-control segment-filter">
                                         <option value="">指定しない</option>
                                         @foreach(($view->products ?? []) as $product)
@@ -269,7 +305,7 @@
                                         </select>
                                     </div>
                                     <fieldset>
-                                        <legend class="form-label">売上条件</legend>
+                                        <legend class="form-label">売上条件 @include('admin.announcements.partials.segment-operator', ['key' => 'sales', 'operators' => $segmentOperators])</legend>
                                         <label><input type="radio" name="segment_condition" value="" {{ old('segment_condition', '') === '' ? 'checked' : '' }} class="segment-filter"> 指定しない</label>
                                         <label><input type="radio" name="segment_condition" value="min_amount" {{ old('segment_condition') === 'min_amount' ? 'checked' : '' }} class="segment-filter"> 購入額以上</label>
                                         <label><input type="radio" name="segment_condition" value="no_orders" {{ old('segment_condition') === 'no_orders' ? 'checked' : '' }} class="segment-filter"> 未購入</label>
@@ -281,6 +317,39 @@
                                 </div>
                             </div>
                         </details>
+                            <details class="ad-details ad-segment-details ad-profile-category" @if(filled(old('segment_profile'))) open @endif>
+                                <summary><span><i class="fas fa-id-card" aria-hidden="true"></i> 追加プロフィール項目</span><small>{{ count($view->profileFields) }}項目</small></summary>
+                                <div class="ad-segment-advanced"><div class="ad-filter-grid">
+                                    @forelse($view->profileFields as $profileField)
+                                        @php
+                                            $profileKey = (string) ($profileField['key'] ?? '');
+                                            $profileLabel = (string) ($profileField['label'] ?? $profileKey);
+                                            $profileValues = array_values((array) ($profileField['values'] ?? []));
+                                            $profileOld = (array) old('segment_profile.'.$profileKey, []);
+                                        @endphp
+                                        @if($profileKey !== '')
+                                            <div class="form-group mb-0 ad-profile-filter" data-profile-label="{{ $profileLabel }}">
+                                                <div class="ad-filter-label"><label class="form-label" for="segment_profile_{{ $profileKey }}">{{ $profileLabel }}</label>@include('admin.announcements.partials.segment-operator', ['key' => 'profile_'.$profileKey, 'operators' => $segmentOperators])</div>
+                                                @if($profileValues !== [])
+                                                    <div class="ad-multi-filter-options">
+                                                        @foreach($profileValues as $value)
+                                                            <label><input type="checkbox" name="segment_profile[{{ $profileKey }}][]" value="{{ $value }}" class="segment-filter" {{ in_array((string) $value, array_map('strval', $profileOld), true) ? 'checked' : '' }}><span>{{ $value }}</span></label>
+                                                        @endforeach
+                                                    </div>
+                                                    <p class="ad-field-help">複数選択可・いずれかに一致</p>
+                                                @else
+                                                    <input id="segment_profile_{{ $profileKey }}" name="segment_profile[{{ $profileKey }}]" class="form-control segment-filter" value="{{ old('segment_profile.'.$profileKey) }}" placeholder="{{ $profileLabel }}の値を入力" maxlength="255">
+                                                    <p class="ad-field-help">入力値と完全一致</p>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    @empty
+                                        <div class="ad-profile-empty"><p>この店舗には追加プロフィール項目がまだありません。</p><a href="{{ admin_route('admin.settings.profile') }}">プロフィール設定で項目を追加する <i class="fas fa-arrow-right" aria-hidden="true"></i></a></div>
+                                    @endforelse
+                                </div></div>
+                            </details>
+
+
                     </div>
 
                     <div id="audienceResolveBlock" class="ad-context-panel ad-context-panel--stack" hidden>
@@ -329,6 +398,10 @@
                 </div>
 
                 <div class="andel-card" role="region" id="delivery-coupon" aria-label="クーポン設定">
+                    <header class="andel-card-head">
+                        <span class="andel-card-icon" aria-hidden="true"><i class="fas fa-ticket-alt"></i></span>
+                        <div><p>任意</p><h2>クーポンを一緒に配布</h2><span>特典を付けたい場合に設定してください。</span></div>
+                    </header>
                     @if(($view->coupons ?? collect())->isEmpty())
                         <div class="ad-empty-coupon">
                             <span><i class="fas fa-ticket-alt" aria-hidden="true"></i></span>
@@ -339,13 +412,12 @@
                         <label class="ad-coupon-switch">
                             <input type="checkbox" id="attachCoupon" {{ $hasSelectedCoupon ? 'checked' : '' }}>
                             <span class="ad-switch-ui" aria-hidden="true"></span>
-                            <span><strong>このお知らせでクーポンを配布する</strong><small>同じ会員に1枚ずつ付与します</small></span>
+                            <span><strong>このお知らせでクーポンを配布する</strong><small>選択した各クーポンを、対象会員に1枚ずつ付与します</small></span>
                         </label>
                         <div class="ad-coupon-panel" id="couponPanel" {{ $hasSelectedCoupon ? '' : 'hidden' }}>
                             <div class="form-group mb-0">
                                 <label for="delivery_coupon_id" class="form-label">配布するクーポン <span class="ad-required">必須</span></label>
-                                <select name="delivery_coupon_id" id="delivery_coupon_id" class="form-control" {{ $hasSelectedCoupon ? '' : 'disabled' }}>
-                                    <option value="">選択してください</option>
+                                <select name="delivery_coupon_ids[]" id="delivery_coupon_id" class="form-control" multiple size="{{ min(8, max(3, $view->coupons->count())) }}" {{ $hasSelectedCoupon ? '' : 'disabled' }}>
                                     @foreach($view->coupons as $coupon)
                                         @php
                                             $benefit = $coupon->type === 'percent'
@@ -353,13 +425,14 @@
                                                 : number_format((float) $coupon->value).'円OFF';
                                             $period = $coupon->end_at ? $coupon->end_at->format('Y/m/d').'まで' : '期限なし';
                                         @endphp
-                                        <option value="{{ $coupon->id }}" data-benefit="{{ $benefit }}" data-period="{{ $period }}" {{ $selectedCouponId === (int) $coupon->id ? 'selected' : '' }}>{{ $coupon->name }}</option>
+                                        <option value="{{ $coupon->id }}" data-benefit="{{ $benefit }}" data-period="{{ $period }}" {{ $selectedCouponIds->contains((int) $coupon->id) ? 'selected' : '' }}>{{ $coupon->name }}</option>
                                     @endforeach
                                 </select>
+                                <p class="ad-field-help">複数選ぶ場合は、Macでは⌘、WindowsではCtrlを押しながらクリックしてください。</p>
                             </div>
                             <div class="ad-selected-coupon" id="selectedCouponPreview" hidden>
                                 <span><i class="fas fa-ticket-alt" aria-hidden="true"></i></span>
-                                <div><strong id="selectedCouponName"></strong><small><span id="selectedCouponBenefit"></span>・<span id="selectedCouponPeriod"></span></small></div>
+                                <div><strong id="selectedCouponName"></strong><small><span id="selectedCouponBenefit"></span></small></div>
                                 <span class="ad-coupon-ready"><i class="fas fa-check" aria-hidden="true"></i> 配布対象</span>
                             </div>
                         </div>
@@ -367,6 +440,10 @@
                 </div>
 
                 <div class="andel-card" role="region" id="delivery-options" aria-label="掲載設定">
+                    <header class="andel-card-head">
+                        <span class="andel-card-icon" aria-hidden="true"><i class="fas fa-bell"></i></span>
+                        <div><p>STEP 3</p><h2>通知と掲載方法</h2><span>会員への通知と、アプリ内での表示方法を設定します。</span></div>
+                    </header>
                     <div class="ad-option-grid">
                         <label class="ad-pin-option">
                             <input type="hidden" name="is_pinned" value="0">
@@ -400,36 +477,17 @@
 
             </div>
 
-            <aside class="ad-studio-aside" aria-label="配信内容の確認">
-                <div class="ad-confirm-panel">
-                    <div class="ad-confirm-head"><span>入力内容</span><i class="fas fa-circle-check" aria-hidden="true"></i></div>
-                    <dl>
-                        <div><dt><i class="fas fa-users" aria-hidden="true"></i> 届け先</dt><dd><a class="ad-summary-audience-link" href="#delivery-audience"><span id="deliverySummaryAudience">{{ number_format($view->memberCount) }}人（全会員）</span><small>一覧を見る <i class="fas fa-chevron-down" aria-hidden="true"></i></small></a></dd></div>
-                        <div><dt><i class="far fa-clock" aria-hidden="true"></i> 配信日時</dt><dd id="deliverySummaryTiming">今すぐ</dd></div>
-                        <div id="deliverySummaryResolveRow" hidden><dt><i class="fas fa-user-lock" aria-hidden="true"></i> 対象者</dt><dd id="deliverySummaryResolve">今の一覧で固定</dd></div>
-                        <div><dt><i class="fas fa-bell" aria-hidden="true"></i> 通知</dt><dd id="deliverySummaryNotifications">通知先を確認中…</dd></div>
-                        <div><dt><i class="fas fa-ticket-alt" aria-hidden="true"></i> クーポン</dt><dd id="deliverySummaryCoupon">配布しない</dd></div>
-                        <div><dt><i class="fas fa-thumbtack" aria-hidden="true"></i> 固定表示</dt><dd id="deliverySummaryPinned">しない</dd></div>
-                    </dl>
-                    <section class="ad-confirm-conditions" id="deliverySummaryConditionBlock" aria-labelledby="deliverySummaryConditionTitle" hidden>
-                        <div class="ad-confirm-conditions-head">
-                            <span id="deliverySummaryConditionTitle"><i class="fas fa-filter" aria-hidden="true"></i> 絞り込み条件</span>
-                            <a href="#delivery-audience"><i class="fas fa-pen" aria-hidden="true"></i> 変更</a>
-                        </div>
-                        <div class="ad-condition-chips" id="deliverySummaryConditions" aria-live="polite"></div>
-                        <p><i class="fas fa-circle-info" aria-hidden="true"></i> すべての条件に一致する会員へ配信します</p>
-                    </section>
+            <div class="ad-delivery-actions" aria-label="最終確認へ進む">
                     <div id="deliveryFormError" class="ad-form-error" role="alert" hidden></div>
                     <div class="ad-form-footer">
                         <a href="{{ admin_route('admin.announcements') }}" class="btn btn-secondary">キャンセル</a>
-                        <button type="submit" class="btn btn-primary ad-submit no-loading" id="deliverySubmitButton">
-                            <span><i class="fas fa-eye" aria-hidden="true"></i> <span id="deliverySubmitLabel">確認画面へ</span></span>
+                        <button type="submit" class="btn btn-primary ad-submit no-loading">
+                            <span><i class="fas fa-paper-plane" aria-hidden="true"></i> 配信内容を確認する</span>
                             <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </button>
                     </div>
                     <p class="ad-submit-note"><i class="fas fa-circle-info" aria-hidden="true"></i> 確認画面で内容を最終チェックしてから配信します</p>
-                </div>
-            </aside>
+            </div>
         </div>
 
         <div class="ad-review-modal" id="deliveryReviewModal" hidden>
@@ -437,7 +495,7 @@
             <section class="ad-review-dialog" role="dialog" aria-modal="true" aria-labelledby="deliveryReviewTitle">
                 <header class="ad-review-head">
                     <div>
-                        <span>FINAL CHECK</span>
+                        <span>最終確認</span>
                         <h2 id="deliveryReviewTitle">配信内容の最終確認</h2>
                         <p>内容・対象者・通知方法を確認してから配信してください。</p>
                     </div>
@@ -541,7 +599,7 @@
                     <section class="ad-review-card ad-review-conditions" id="deliveryReviewConditionBlock" hidden>
                         <h3><i class="fas fa-filter" aria-hidden="true"></i> 絞り込み条件</h3>
                         <div class="ad-condition-chips" id="deliveryReviewConditions"></div>
-                        <p>すべての条件に一致する会員が対象です。</p>
+                        <p>条件ごとに指定した AND / OR の順で対象者を判定します。</p>
                     </section>
 
                     <div class="ad-review-warning" id="deliveryReviewWarning">

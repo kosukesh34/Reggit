@@ -11,7 +11,7 @@ class MemberStampTransaction extends Model
     use BelongsToProject;
 
     protected $fillable = [
-        'project_id',
+        'project_id', 'store_id', 'origin',
         'member_id',
         'stamp_card_id',
         'delta',

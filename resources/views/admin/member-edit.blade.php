@@ -133,6 +133,15 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="customer_store_id" class="form-label">対象店舗</label>
+                    <select name="customer_store_id" id="customer_store_id" class="form-control">
+                        <option value="">未設定</option>
+                        @foreach($view->customerStoreOptions as $option)
+                        <option value="{{ $option['value'] }}" @selected((string) old('customer_store_id', $view->member->customer_store_id) === $option['value'])>{{ $option['label'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="mail_receive_flag" class="form-label">店舗からの案内メールを受け取る</label>
                     <select name="mail_receive_flag" id="mail_receive_flag" class="form-control">
                         <option value="">— 未設定 —</option>

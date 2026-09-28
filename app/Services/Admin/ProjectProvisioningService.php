@@ -28,6 +28,7 @@ class ProjectProvisioningService
      *     description?: string|null,
      *     is_active?: bool,
      *     plan?: string,
+     *     max_active_stores?: int,
      * }  $projectPayload
      * @param  array{
      *     line_liff_id?: string,
@@ -59,7 +60,9 @@ class ProjectProvisioningService
                 'name' => $projectPayload['name'],
                 'description' => $projectPayload['description'] ?? null,
                 'is_active' => (bool) ($projectPayload['is_active'] ?? true),
+                'service_status' => $projectPayload['service_status'] ?? 'active',
                 'plan' => $projectPayload['plan'] ?? 'normal',
+                'max_active_stores' => $projectPayload['max_active_stores'] ?? 1,
             ]);
 
             $this->syncProjectSettings((int) $project->id, $settingsPayload);
@@ -96,12 +99,16 @@ class ProjectProvisioningService
         $this->shopSettingRepository->setLineLiffId($liffId, $projectId);
         $this->shopSettingRepository->setLineLiffUrl((string) ($settingsPayload['line_liff_url'] ?? ''), $projectId);
         $this->shopSettingRepository->setValue('frontend_header_text', (string) ($settingsPayload['frontend_header_text'] ?? ''), 'string', $projectId);
-        $this->shopSettingRepository->setValue('business_hours_start', (string) ($settingsPayload['business_hours_start'] ?? '10:00'), 'time', $projectId);
-        $this->shopSettingRepository->setValue('business_hours_end', (string) ($settingsPayload['business_hours_end'] ?? '22:00'), 'time', $projectId);
-        $this->shopSettingRepository->setValue('line_primary_color', (string) ($settingsPayload['line_primary_color'] ?? '#000000'), 'string', $projectId);
-        $this->shopSettingRepository->setValue('line_primary_dark', (string) ($settingsPayload['line_primary_dark'] ?? '#333333'), 'string', $projectId);
-        $this->shopSettingRepository->setValue('line_success_color', (string) ($settingsPayload['line_success_color'] ?? '#000000'), 'string', $projectId);
-        $this->shopSettingRepository->setValue('line_danger_color', (string) ($settingsPayload['line_danger_color'] ?? '#dc3545'), 'string', $projectId);
+        foreach (['business_hours_start', 'business_hours_end'] as $key) {
+            if (array_key_exists($key, $settingsPayload)) {
+                $this->shopSettingRepository->setValue($key, (string) $settingsPayload[$key], 'time', $projectId);
+            }
+        }
+        foreach (['line_primary_color', 'line_primary_dark', 'line_success_color', 'line_danger_color'] as $key) {
+            if (array_key_exists($key, $settingsPayload)) {
+                $this->shopSettingRepository->setValue($key, (string) $settingsPayload[$key], 'string', $projectId);
+            }
+        }
 
         if (config('line.auto_enable_liff_module_mode', true) && trim($liffId) !== '') {
             $this->lineLiffAdminService->hideActionMenu($liffId);

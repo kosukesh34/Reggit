@@ -35,7 +35,7 @@ class AdminAuditLogControllerTest extends TestCase
 
         $response = $this->get('/system-admin/audit-logs');
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)->assertSee('管理者')->assertSee('対象')->assertSee('変更項目');
     }
 
     public function test_show_監査ログ詳細が表示されること(): void
@@ -54,6 +54,25 @@ class AdminAuditLogControllerTest extends TestCase
 
         $response = $this->get('/system-admin/audit-logs/'.$log->id);
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)->assertSee('変更項目')->assertDontSee('Payload')->assertDontSee('User-Agent');
+    }
+
+    public function test_audit_logger_個人情報と自由入力値を保存しない(): void
+    {
+        $admin = $this->loginSystemAdmin();
+        $this->post('/system-admin/projects', [
+            'name' => '公開用名称',
+            'email' => 'private@example.com',
+            'phone' => '09012345678',
+            'password' => 'secret-password',
+            'service_status' => 'active',
+        ]);
+
+        $log = AdminAuditLog::query()->latest('id')->first();
+        $this->assertNotNull($log);
+        $this->assertSame(['service_status'], array_keys($log->payload));
+        $this->assertNull($log->ip);
+        $this->assertNull($log->user_agent);
+        $this->assertStringNotContainsString('private@example.com', $log->url);
     }
 }

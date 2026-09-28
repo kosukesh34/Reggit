@@ -92,6 +92,14 @@ interface CouponDeliveryTargetRepository
      */
     public function findIdsByPurchasedProduct(int $projectId, int $productId): array;
 
+    /**
+     * プロフィール任意項目が指定値のいずれかに一致する会員。
+     *
+     * @param  list<string>  $values
+     * @return list<int>
+     */
+    public function findIdsByProfileField(int $projectId, string $key, array $values): array;
+
     public function countAll(int $projectId): int;
 
     /** @return list<int> */

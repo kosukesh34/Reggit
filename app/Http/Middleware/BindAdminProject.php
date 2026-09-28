@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Repositories\Contracts\ProjectRepository;
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use App\Util\StrHelper;
 use Closure;
 use Illuminate\Http\Request;
@@ -35,11 +36,36 @@ class BindAdminProject
         }
 
         AdminContext::setCurrentProject($project);
+        app(StoreContext::class)->bind($request, (int) $project->id, $admin);
+        if ($this->requiresStoreSelection($request)) {
+            app(StoreContext::class)->useDefaultForOperation();
+        }
+        if (app(StoreContext::class)->projectStoreCount > 1 && ! $request->isMethod('GET') && ! $admin->isSystemAdmin() && ! $admin->isProjectAdmin()) {
+            $path = $request->path();
+            if (preg_match('~/(products|gallery|coupons|stamps|accounts|after-registration-deliveries|coupon-deliveries)(/|$)~', $path) || preg_match('~/members/[^/]+$|/members/[^/]+/(tags|transfer-code)(/|$)~', $path)) {
+                abort(403, 'プロジェクト共通情報は本部管理者が変更してください。');
+            }
+        }
         session(['admin_project_id' => $project->id]);
         View::share('currentProject', $project);
         View::share('currentProjectId', $project->id);
         View::share('adminProjectId', $project->id);
 
         return $next($request);
+    }
+
+    private function requiresStoreSelection(Request $request): bool
+    {
+        if ($request->isMethod('GET') && $request->routeIs('admin.members.*')) {
+            return false;
+        }
+        $path = trim((string) $request->route()?->uri(), '/');
+        foreach (['orders', 'reservations', 'queue', 'visits', 'point-transactions', 'stamp-transactions', 'coupon-redemptions'] as $segment) {
+            if (preg_match('~(?:^|/)(?:'.$segment.')(?:/|$)~', $path)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -6,6 +6,7 @@ use App\UseCases\Admin\Coupon\AdminCouponFullSyncWithSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponPushToSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class CouponSmaregiSyncController extends AdminBaseController
 {
@@ -34,19 +35,20 @@ class CouponSmaregiSyncController extends AdminBaseController
     }
 
     /** DB → スマレジ: 未連携クーポンを POS に登録 */
-    public function push(): RedirectResponse
+    public function push(Request $request): RedirectResponse
     {
         try {
-            $result = $this->pushToSmaregiUseCase->handle($this->resolveAdminProjectId());
+            $couponId = $request->validate(['coupon_id' => ['nullable', 'integer', 'min:1']])['coupon_id'] ?? null;
+            $result = $this->pushToSmaregiUseCase->handle($this->resolveAdminProjectId(), $couponId);
             $message = sprintf(
                 '管理画面のクーポンをスマレジに反映しました（登録: %d、失敗: %d）',
                 $result['pushed'],
                 $result['failed'],
             );
 
-            return $this->successResponse($message, $result);
+            return $this->successResponse($message, $result, $couponId !== null);
         } catch (\Throwable $exception) {
-            return $this->errorResponse($exception);
+            return $this->errorResponse($exception, $request->filled('coupon_id'));
         }
     }
 
@@ -70,19 +72,19 @@ class CouponSmaregiSyncController extends AdminBaseController
     }
 
     /** @param array{failed: int, errors: list<string>} $result */
-    private function successResponse(string $message, array $result): RedirectResponse
+    private function successResponse(string $message, array $result, bool $toIndex = false): RedirectResponse
     {
         if ($result['failed'] > 0 && $result['errors'] !== []) {
             $message .= '。'.implode('; ', array_slice($result['errors'], 0, 3));
         }
 
-        return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+        return redirect()->route($toIndex ? 'admin.coupons' : 'admin.coupons.bulk-issue', $this->buildAdminRouteParams())
             ->with('success', $message);
     }
 
-    private function errorResponse(\Throwable $exception): RedirectResponse
+    private function errorResponse(\Throwable $exception, bool $toIndex = false): RedirectResponse
     {
-        return redirect()->route('admin.coupons.bulk-issue', $this->buildAdminRouteParams())
+        return redirect()->route($toIndex ? 'admin.coupons' : 'admin.coupons.bulk-issue', $this->buildAdminRouteParams())
             ->with('error', $exception->getMessage());
     }
 }

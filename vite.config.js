@@ -8,9 +8,6 @@ export default defineConfig({
         rollupOptions: {
             output: {
                 manualChunks(id) {
-                    if (id.includes('/resources/js/frontend/managers/')) {
-                        return 'legacy-managers';
-                    }
                     if (!id.includes('node_modules')) {
                         return undefined;
                     }
@@ -38,8 +35,9 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                'resources/js/frontend/main.tsx',
                 'resources/js/admin/main.tsx',
+                'resources/js/frontend/main.tsx',
+                'resources/js/liff-demo/main.tsx',
             ],
             refresh: true,
         }),

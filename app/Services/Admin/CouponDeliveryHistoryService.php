@@ -6,6 +6,7 @@ use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Models\Member;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class CouponDeliveryHistoryService
@@ -25,16 +26,17 @@ class CouponDeliveryHistoryService
      *     recipients_title: string
      * }>
      */
-    public function listForProject(int $projectId, int $limit = 30): array
+    public function paginateForProject(int $projectId, int $perPage = 20): LengthAwarePaginator
     {
         $deliveries = CouponDelivery::query()
             ->where('project_id', $projectId)
             ->with('coupon')
             ->orderByDesc('id')
-            ->limit($limit)
-            ->get();
+            ->paginate($perPage, ['*'], 'deliveries_page');
 
-        return $this->buildRows($deliveries, CouponDeliveryType::getValues());
+        $deliveries->setCollection(collect($this->buildRows($deliveries->getCollection(), CouponDeliveryType::getValues())));
+
+        return $deliveries;
     }
 
     /**
@@ -64,6 +66,7 @@ class CouponDeliveryHistoryService
             $recipients = $this->formatRecipients($delivery, $memberLabels);
             $rows[] = [
                 'id' => (int) $delivery->id,
+                'coupon_id' => $delivery->coupon?->id,
                 'coupon_name' => (string) ($delivery->coupon?->name ?: $delivery->coupon?->code ?: '—'),
                 'coupon_code' => (string) ($delivery->coupon?->code ?: '—'),
                 'delivery_type_label' => $deliveryTypeOptions[$delivery->delivery_type] ?? (string) $delivery->delivery_type,

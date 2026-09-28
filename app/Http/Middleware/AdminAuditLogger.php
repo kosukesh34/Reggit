@@ -13,7 +13,13 @@ class AdminAuditLogger
 {
     private const WRITE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
-    private const SENSITIVE_KEYS = ['password', 'password_confirmation'];
+    /** Only retain operational fields that are safe and useful for auditing. */
+    private const SAFE_FIELDS = [
+        'status', 'service_status', 'is_active', 'price', 'sort_order',
+        'role', 'permissions', 'permission_ids', 'project_id', 'admin_user_id',
+        'product_id', 'coupon_id', 'reservation_id', 'order_id', 'store_id',
+        'id', 'type', 'action', 'enabled', 'display_order',
+    ];
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -28,31 +34,22 @@ class AdminAuditLogger
             return $response;
         }
 
-        $payload = $this->sanitizePayload($request->all());
-        foreach (self::SENSITIVE_KEYS as $key) {
-            if (array_key_exists($key, $payload)) {
-                $payload[$key] = '***';
-            }
-        }
+        $payload = $this->safePayload($request->all());
 
         $projectId = AdminContext::getCurrentProjectId();
         $projectId = (is_int($projectId) || $projectId === null) ? $projectId : null;
 
         $route = $request->route();
         $routeName = $route ? $route->getName() : null;
-        $url = $request->fullUrl();
-        if (strlen($url) > 500) {
-            $url = substr($url, 0, 497).'...';
-        }
-
         AdminAuditLog::create([
             'admin_user_id' => $admin->id,
             'project_id' => $projectId,
             'route_name' => $routeName !== null ? (string) $routeName : null,
             'method' => $request->getMethod(),
-            'url' => $url,
-            'ip' => $request->ip(),
-            'user_agent' => substr((string) $request->userAgent(), 0, 500),
+            // URLs, IP addresses and user agents can contain identifying data.
+            'url' => $request->path(),
+            'ip' => null,
+            'user_agent' => null,
             'payload' => $payload,
         ]);
 
@@ -63,22 +60,25 @@ class AdminAuditLogger
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
-    private function sanitizePayload(array $payload): array
+    private function safePayload(array $payload): array
     {
+        $safe = [];
         foreach ($payload as $key => $value) {
+            if (! in_array((string) $key, self::SAFE_FIELDS, true)) {
+                continue;
+            }
             if ($value instanceof UploadedFile) {
-                $payload[$key] = [
-                    'original_name' => $value->getClientOriginalName(),
-                    'size' => $value->getSize(),
-                ];
-
                 continue;
             }
             if (is_array($value)) {
-                $payload[$key] = $this->sanitizePayload($value);
+                // Keep only simple values; free text and nested form data may hold PII.
+                $value = array_filter($value, fn ($item) => is_scalar($item) || $item === null);
+            }
+            if (is_scalar($value) || $value === null || is_array($value)) {
+                $safe[$key] = $value;
             }
         }
 
-        return $payload;
+        return $safe;
     }
 }

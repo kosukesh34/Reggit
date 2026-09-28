@@ -117,7 +117,7 @@ class PushNotificationServiceTest extends TestCase
         ]);
 
         $http = $this->mockFcmHttpClient();
-        $result = (new PushNotificationService($http))->sendAnnouncement($announcement);
+        $result = $this->createService($http)->sendAnnouncement($announcement);
 
         $this->assertSame(1, $result['target_tokens']);
         $this->assertSame(1, $result['sent']);
@@ -152,7 +152,7 @@ class PushNotificationServiceTest extends TestCase
             $capturedToken = $message['token'] ?? null;
         });
 
-        $result = (new PushNotificationService($http))->sendAnnouncement($announcement);
+        $result = $this->createService($http)->sendAnnouncement($announcement);
 
         $this->assertSame(1, $result['target_tokens']);
         $this->assertSame('fcm-token-coupon-only', $capturedToken);
@@ -178,7 +178,7 @@ class PushNotificationServiceTest extends TestCase
             $cancelPayload = $message;
         });
 
-        (new PushNotificationService($http))->cancelAnnouncementPush($announcement);
+        $this->createService($http)->cancelAnnouncementPush($announcement);
 
         $this->assertIsArray($cancelPayload);
         $this->assertSame('reggit:announcement:'.$announcement->id, $cancelPayload['android']['collapse_key'] ?? null);
@@ -211,7 +211,7 @@ class PushNotificationServiceTest extends TestCase
         $http = $this->createMock(Client::class);
         $http->expects($this->never())->method('post');
 
-        (new PushNotificationService($http))->cancelAnnouncementPush($announcement);
+        $this->createService($http)->cancelAnnouncementPush($announcement);
 
         $this->assertSame(
             [(int) $announcement->id],
@@ -239,7 +239,7 @@ class PushNotificationServiceTest extends TestCase
                 ]))
             );
 
-        $result = (new PushNotificationService($http))->sendQueueCalledToUser((int) $project->id, (int) $user->id, '8');
+        $result = $this->createService($http)->sendQueueCalledToUser((int) $project->id, (int) $user->id, '8');
 
         $this->assertSame(1, $result['target_tokens']);
         $this->assertSame(0, $result['sent']);
@@ -259,7 +259,7 @@ class PushNotificationServiceTest extends TestCase
         $http = $this->mockFcmHttpClient(function (array $message) use (&$captured): void {
             $captured = $message;
         });
-        $callback(new PushNotificationService($http));
+        $callback($this->createService($http));
         $this->assertIsArray($captured);
 
         return $captured;
@@ -294,6 +294,11 @@ class PushNotificationServiceTest extends TestCase
             });
 
         return $http;
+    }
+
+    private function createService(Client $http): PushNotificationService
+    {
+        return new PushNotificationService($http, app(CancelledAnnouncementIdStore::class));
     }
 
     private function createUserDevice(Project $project, User $user, string $pushToken): void

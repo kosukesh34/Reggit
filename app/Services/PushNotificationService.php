@@ -16,12 +16,10 @@ class PushNotificationService
 
     public const DATA_TYPE_ANNOUNCEMENT_CANCELLED = 'announcement_cancelled';
 
-    private Client $http;
-
-    public function __construct(Client $http)
-    {
-        $this->http = $http;
-    }
+    public function __construct(
+        private readonly Client $http,
+        private readonly CancelledAnnouncementIdStore $cancelledAnnouncementIdStore,
+    ) {}
 
     /** @return array{target_tokens:int,sent:int,failed:int,skipped:int,notification_ids:list<string>} */
     public function sendAnnouncement(Announcement $announcement): array
@@ -53,7 +51,7 @@ class PushNotificationService
     /** 取消し ID を記憶し、端末へ取消しプッシュ（collapse 上書き）。失敗しても例外は投げない。 */
     public function cancelAnnouncementPush(Announcement $announcement): void
     {
-        app(CancelledAnnouncementIdStore::class)->remember(
+        $this->cancelledAnnouncementIdStore->remember(
             (int) $announcement->project_id,
             (int) $announcement->id,
             (string) $announcement->title
@@ -225,7 +223,7 @@ class PushNotificationService
                 $query->whereNull('notification_preference')
                     ->orWhereIn(
                         'notification_preference',
-                        MemberNotificationPreference::eligibleValues($announcement->delivery_coupon_id !== null),
+                        MemberNotificationPreference::eligibleValues($announcement->hasDeliveryCoupons()),
                     );
             });
         if ($hasTargetSnapshot) {
@@ -235,6 +233,9 @@ class PushNotificationService
             $memberQuery->whereIn('id', $targetMemberIds);
         }
 
+        if (is_array($announcement->store_ids)) {
+            $memberQuery->whereHas('stores', fn ($q) => $q->whereIn('stores.id', $announcement->store_ids)->where('stores.project_id', $announcement->project_id)->where('stores.is_active', true));
+        }
         $userIds = $memberQuery->pluck('user_id')
             ->map(fn ($id) => (int) $id)
             ->all();
