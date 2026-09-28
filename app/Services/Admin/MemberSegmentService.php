@@ -9,7 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * 会員属性によるセグメント絞り込み（AND）。お知らせ・クーポン配布で共有する。
+ * 会員属性によるセグメント絞り込み。お知らせ・クーポン配布で共有する。
  */
 class MemberSegmentService
 {
@@ -33,6 +33,13 @@ class MemberSegmentService
     public function buildCriteriaFromInput(array $input): ?array
     {
         $criteria = [];
+
+        $operators = collect((array) ($input['segment_operators'] ?? []))
+            ->mapWithKeys(fn ($value, $key): array => [(string) $key => $value === 'or' ? 'or' : 'and'])
+            ->all();
+        if ($operators !== []) {
+            $criteria['operators'] = $operators;
+        }
 
         $channel = trim((string) ($input['segment_channel'] ?? $input['channel'] ?? ''));
         if (in_array($channel, [MemberChannel::LINE, MemberChannel::APP, MemberChannel::BOTH], true)) {
@@ -140,7 +147,26 @@ class MemberSegmentService
             }
         }
 
-        return $criteria === [] ? null : $criteria;
+        $profileFilters = [];
+        foreach ((array) ($input['segment_profile'] ?? []) as $key => $value) {
+            if (preg_match('/^[a-z0-9_]+$/', (string) $key) !== 1) {
+                continue;
+            }
+            $values = collect(is_array($value) ? $value : [$value])
+                ->map(fn ($item): string => trim((string) $item))
+                ->filter(fn (string $item): bool => $item !== '')
+                ->unique()
+                ->values()
+                ->all();
+            if ($values !== []) {
+                $profileFilters[(string) $key] = $values;
+            }
+        }
+        if ($profileFilters !== []) {
+            $criteria['profile'] = $profileFilters;
+        }
+
+        return array_diff_key($criteria, ['operators' => true]) === [] ? null : $criteria;
     }
 
     /**
@@ -149,14 +175,18 @@ class MemberSegmentService
      */
     public function getMemberIds(int $projectId, array $criteria): Collection
     {
+        /** @var list<array{key: string, ids: list<int>}> $sets */
         $sets = [];
+        $add = static function (string $key, array $ids) use (&$sets): void {
+            $sets[] = ['key' => $key, 'ids' => $ids];
+        };
 
         if (isset($criteria['channel']) && is_string($criteria['channel'])) {
-            $sets[] = $this->targetRepository->findIdsByChannel($projectId, $criteria['channel']);
+            $add('channel', $this->targetRepository->findIdsByChannel($projectId, $criteria['channel']));
         }
 
         if (isset($criteria['birthday_month'])) {
-            $sets[] = $this->targetRepository->findIdsByBirthdayMonth($projectId, (int) $criteria['birthday_month']);
+            $add('birthday', $this->targetRepository->findIdsByBirthdayMonth($projectId, (int) $criteria['birthday_month']));
         }
 
         if (isset($criteria['birthday_months']) && is_array($criteria['birthday_months'])) {
@@ -166,67 +196,67 @@ class MemberSegmentService
                 ->unique()
                 ->values()
                 ->all();
-            $sets[] = $birthdayIds;
+            $add('birthday', $birthdayIds);
         }
 
         if (isset($criteria['tag_ids']) && is_array($criteria['tag_ids'])) {
-            $sets[] = $this->targetRepository->findIdsByTagIds($projectId, $criteria['tag_ids']);
+            $add('tags', $this->targetRepository->findIdsByTagIds($projectId, $criteria['tag_ids']));
         }
 
         $hasVisitMin = array_key_exists('visit_count_min', $criteria);
         $hasVisitMax = array_key_exists('visit_count_max', $criteria);
         if ($hasVisitMin || $hasVisitMax) {
-            $sets[] = $this->targetRepository->findIdsByVisitCount(
+            $add('visits', $this->targetRepository->findIdsByVisitCount(
                 $projectId,
                 $hasVisitMin ? (int) $criteria['visit_count_min'] : null,
                 $hasVisitMax ? (int) $criteria['visit_count_max'] : null,
-            );
+            ));
         }
 
         $hasPointsMin = array_key_exists('lifetime_points_min', $criteria);
         $hasPointsMax = array_key_exists('lifetime_points_max', $criteria);
         if ($hasPointsMin || $hasPointsMax) {
-            $sets[] = $this->targetRepository->findIdsByLifetimeGrantedPoints(
+            $add('points', $this->targetRepository->findIdsByLifetimeGrantedPoints(
                 $projectId,
                 $hasPointsMin ? (int) $criteria['lifetime_points_min'] : null,
                 $hasPointsMax ? (int) $criteria['lifetime_points_max'] : null,
-            );
+            ));
         }
 
         if (isset($criteria['last_visit_mode'], $criteria['last_visit_days'])) {
-            $sets[] = $this->targetRepository->findIdsByLastVisited(
+            $add('last_visit', $this->targetRepository->findIdsByLastVisited(
                 $projectId,
                 (string) $criteria['last_visit_mode'],
                 (int) $criteria['last_visit_days'],
-            );
+            ));
         }
 
         if (isset($criteria['sex']) && is_string($criteria['sex'])) {
-            $sets[] = $this->targetRepository->findIdsBySex($projectId, $criteria['sex']);
+            $add('sex', $this->targetRepository->findIdsBySex($projectId, $criteria['sex']));
         }
 
         if (isset($criteria['rank']) && is_string($criteria['rank'])) {
-            $sets[] = $this->targetRepository->findIdsByRank($projectId, $criteria['rank']);
+            $add('rank', $this->targetRepository->findIdsByRank($projectId, $criteria['rank']));
         }
 
         if (isset($criteria['rfm_segments']) && is_array($criteria['rfm_segments'])) {
-            $sets[] = $this->rfmAnalysisService->findMemberIdsBySegments($projectId, $criteria['rfm_segments']);
+            $add('rfm', $this->rfmAnalysisService->findMemberIdsBySegments($projectId, $criteria['rfm_segments']));
         }
 
         if (isset($criteria['product_id'])) {
-            $sets[] = $this->targetRepository->findIdsByPurchasedProduct($projectId, (int) $criteria['product_id']);
+            $add('product', $this->targetRepository->findIdsByPurchasedProduct($projectId, (int) $criteria['product_id']));
         }
 
         $hasStampFilter = isset($criteria['stamp_card_id'])
             || isset($criteria['stamp_count_min'])
             || (($criteria['stamp_completed'] ?? false) === true);
         if ($hasStampFilter) {
-            $sets[] = $this->targetRepository->findIdsByStampProgress(
+            $add('stamp', $this->targetRepository->findIdsByStampProgress(
                 $projectId,
                 isset($criteria['stamp_card_id']) ? (int) $criteria['stamp_card_id'] : null,
                 isset($criteria['stamp_count_min']) ? (int) $criteria['stamp_count_min'] : null,
                 ($criteria['stamp_completed'] ?? false) === true,
-            );
+            ));
         }
 
         $periodDays = isset($criteria['period_days']) ? (int) $criteria['period_days'] : 0;
@@ -236,9 +266,15 @@ class MemberSegmentService
             $end = Carbon::today()->endOfDay();
             $start = Carbon::today()->subDays($periodDays)->startOfDay();
             if ($noOrders) {
-                $sets[] = $this->targetRepository->findIdsWithNoOrdersInPeriod($projectId, $start, $end);
+                $add('sales', $this->targetRepository->findIdsWithNoOrdersInPeriod($projectId, $start, $end));
             } elseif ($minAmount !== null) {
-                $sets[] = $this->targetRepository->findIdsByMinSales($projectId, $start, $end, $minAmount);
+                $add('sales', $this->targetRepository->findIdsByMinSales($projectId, $start, $end, $minAmount));
+            }
+        }
+
+        foreach ((array) ($criteria['profile'] ?? []) as $key => $values) {
+            if (is_array($values)) {
+                $add('profile_'.$key, $this->targetRepository->findIdsByProfileField($projectId, (string) $key, $values));
             }
         }
 
@@ -246,12 +282,26 @@ class MemberSegmentService
             return collect();
         }
 
-        $intersected = array_shift($sets);
+        $displayOrder = ['channel', 'birthday', 'sex', 'rfm', 'tags', 'visits', 'rank', 'points', 'last_visit', 'product', 'stamp', 'sales'];
+        usort($sets, static function (array $left, array $right) use ($displayOrder): int {
+            $leftPosition = array_search($left['key'], $displayOrder, true);
+            $rightPosition = array_search($right['key'], $displayOrder, true);
+            $leftPosition = $leftPosition === false ? count($displayOrder) : $leftPosition;
+            $rightPosition = $rightPosition === false ? count($displayOrder) : $rightPosition;
+
+            return $leftPosition <=> $rightPosition;
+        });
+
+        $first = array_shift($sets);
+        $resolved = $first['ids'];
+        $operators = is_array($criteria['operators'] ?? null) ? $criteria['operators'] : [];
         foreach ($sets as $set) {
-            $intersected = array_values(array_intersect($intersected, $set));
+            $resolved = ($operators[$set['key']] ?? 'and') === 'or'
+                ? array_values(array_unique(array_merge($resolved, $set['ids'])))
+                : array_values(array_intersect($resolved, $set['ids']));
         }
 
-        return collect($intersected)->map(fn ($id) => (int) $id)->values();
+        return collect($resolved)->map(fn ($id) => (int) $id)->values();
     }
 
     /**

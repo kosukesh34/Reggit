@@ -26,21 +26,27 @@ class LandingRegistrationTest extends TestCase
         $this->withoutMiddleware(ThrottleRequests::class);
     }
 
-    public function test_トップにメール登録フォームがあること(): void
+    public function test_トップから専用のメール認証ページへ進めること(): void
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('認証メールを送る')
+            ->assertSee(route('landing.register.email.show'), false)
+            ->assertDontSee('name="email"', false)
             ->assertSee('導入登録');
+
+        $this->get(route('landing.register.email.show'))
+            ->assertOk()
+            ->assertSee('認証メールを送る')
+            ->assertSee('name="email"', false);
     }
 
     public function test_メール入力で認証メールが送られること(): void
     {
         Mail::fake();
 
-        $this->from('/#register')
+        $this->from(route('landing.register.email.show'))
             ->post(route('landing.register.email'), ['email' => 'Shop@Example.com'])
-            ->assertRedirect('/#register')
+            ->assertRedirect(route('landing.register.email.show'))
             ->assertSessionHas('status');
 
         $this->assertDatabaseHas('landing_registrations', [
@@ -55,9 +61,9 @@ class LandingRegistrationTest extends TestCase
     {
         Mail::fake();
 
-        $this->from('/#register')
+        $this->from(route('landing.register.email.show'))
             ->post(route('landing.register.email'), ['email' => 'invalid'])
-            ->assertRedirect('/#register')
+            ->assertRedirect(route('landing.register.email.show'))
             ->assertSessionHasErrors('email');
 
         Mail::assertNothingSent();
@@ -256,9 +262,9 @@ class LandingRegistrationTest extends TestCase
             'email_verified_at' => now(),
         ]);
 
-        $this->from('/#register')
+        $this->from(route('landing.register.email.show'))
             ->post(route('landing.register.email'), ['email' => 'shop@example.com'])
-            ->assertRedirect('/#register');
+            ->assertRedirect(route('landing.register.email.show'));
 
         Mail::assertSent(LandingFormUrlMail::class);
         Mail::assertNotSent(LandingVerificationMail::class);
@@ -273,9 +279,9 @@ class LandingRegistrationTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $this->from('/#register')
+        $this->from(route('landing.register.email.show'))
             ->post(route('landing.register.email'), ['email' => 'shop@example.com'])
-            ->assertRedirect('/#register')
+            ->assertRedirect(route('landing.register.email.show'))
             ->assertSessionHas('status', 'このメールアドレスは登録済みです。');
 
         Mail::assertNothingSent();

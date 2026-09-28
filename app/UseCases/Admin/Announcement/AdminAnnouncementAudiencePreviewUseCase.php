@@ -26,7 +26,8 @@ class AdminAnnouncementAudiencePreviewUseCase
     public function handle(int $projectId, array $query): array
     {
         $audienceType = (string) ($query['audience_type'] ?? Announcement::DELIVERY_TYPE_IMMEDIATE_BULK);
-        $hasCoupon = (int) ($query['delivery_coupon_id'] ?? 0) > 0;
+        $hasCoupon = collect((array) ($query['delivery_coupon_ids'] ?? []))->contains(fn ($id): bool => (int) $id > 0)
+            || (int) ($query['delivery_coupon_id'] ?? 0) > 0;
         $memberIds = $this->resolveMemberIds($projectId, $audienceType, $query);
         $count = $memberIds->count();
         $lastPage = max(1, (int) ceil($count / self::PER_PAGE));

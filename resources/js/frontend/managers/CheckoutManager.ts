@@ -63,7 +63,7 @@ export class CheckoutManager {
             };
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.ORDERS, payload);
             if (!result || result.success !== true) {
-                // eslint-disable-next-line no-console
+
                 console.error(
                     'In-store order failed:',
                     result && result.success !== true ? result.error : 'unknown error',
@@ -116,7 +116,7 @@ export class CheckoutManager {
                 || !result.data
                 || !(result.data as { order?: OrderLike }).order
             ) {
-                // eslint-disable-next-line no-console
+
                 console.error(
                     'Mobile order failed:',
                     result && result.success !== true ? result.error : 'unknown error',

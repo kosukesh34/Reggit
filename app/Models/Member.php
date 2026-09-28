@@ -6,16 +6,60 @@ use App\Domain\Settings\Repositories\OrderSettings;
 use App\Enums\PointTransactionType;
 use App\Models\Concerns\BelongsToProject;
 use App\Models\Scopes\ProjectScope;
+use App\Models\Scopes\StoreAccessScope;
+use App\Util\StoreContext;
 use Database\Factories\MemberFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
 class Member extends Model
 {
     use BelongsToProject, HasFactory, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::saved(function (self $member) {
+            if ($member->customer_store_id !== null && ($member->wasRecentlyCreated || $member->wasChanged('customer_store_id'))) {
+                $member->stores()->syncWithoutDetaching([(int) $member->customer_store_id => ['project_id' => $member->project_id]]);
+            }
+        });
+        static::deleting(function (self $member) {
+            $admin = app(StoreContext::class)->admin;
+            abort_unless(app(StoreContext::class)->projectStoreCount <= 1 || $admin === null || $admin->isSystemAdmin() || $admin->isProjectAdmin(), 403, '共通会員の退会は本部管理者が行ってください。');
+        });
+    }
+
+    public function getMemoAttribute($value)
+    {
+        $context = app(StoreContext::class);
+        if ($context->projectStoreCount > 1 && $context->admin !== null && ! $context->admin->isSystemAdmin() && ! $context->admin->isProjectAdmin()) {
+            if ($context->store === null) {
+                return null;
+            }
+
+            return DB::table('member_stores')->where('member_id', $this->id)->where('project_id', $this->project_id)->where('store_id', $context->store->id)->value('memo');
+        }
+        if ($context->projectStoreCount > 1 && $context->store !== null && $context->admin !== null) {
+            return DB::table('member_stores')->where('member_id', $this->id)->where('project_id', $this->project_id)->where('store_id', $context->store->id)->value('memo');
+        }
+
+        return $value;
+    }
+
+    public function getLastVisitedAtAttribute($value)
+    {
+        $context = app(StoreContext::class);
+        if ($context->projectStoreCount > 1 && $context->admin !== null && $context->visibleStoreIds !== null) {
+            $value = MemberVisit::where('project_id', $this->project_id)->where('member_id', $this->id)->max('visited_at');
+        }
+
+        return $value === null ? null : $this->asDateTime($value);
+    }
 
     protected static function newFactory()
     {
@@ -40,6 +84,7 @@ class Member extends Model
         'street',
         'sex',
         'mail_receive_flag',
+        'customer_store_id',
         'notification_preference',
         'profile_extra',
         'memo',
@@ -54,37 +99,42 @@ class Member extends Model
         'profile_extra' => 'array',
     ];
 
-    public function project()
+    public function stores(): BelongsToMany
+    {
+        return $this->belongsToMany(Store::class, 'member_stores')->withPivot('project_id')->withTimestamps();
+    }
+
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function pointTransactions()
+    public function pointTransactions(): HasMany
     {
         return $this->hasMany(PointTransaction::class);
     }
 
-    public function memberStamps()
+    public function memberStamps(): HasMany
     {
         return $this->hasMany(MemberStamp::class);
     }
 
-    public function stampTransactions()
+    public function stampTransactions(): HasMany
     {
         return $this->hasMany(MemberStampTransaction::class);
     }
 
-    public function visits()
+    public function visits(): HasMany
     {
         return $this->hasMany(MemberVisit::class);
     }
 
-    public function memberCoupons()
+    public function memberCoupons(): HasMany
     {
         return $this->hasMany(MemberCoupon::class);
     }
@@ -95,17 +145,17 @@ class Member extends Model
         return $this->belongsToMany(MemberTag::class, 'member_tag_members');
     }
 
-    public function couponRedemptions()
+    public function couponRedemptions(): HasMany
     {
         return $this->hasMany(CouponRedemption::class);
     }
 
-    public function rankHistories()
+    public function rankHistories(): HasMany
     {
         return $this->hasMany(MemberRankHistory::class);
     }
 
-    public function queueEntries()
+    public function queueEntries(): HasMany
     {
         return $this->hasMany(QueueEntry::class);
     }
@@ -135,7 +185,7 @@ class Member extends Model
 
     public function getTotalPointsFromTransactions(): int
     {
-        return (int) $this->pointTransactions()
+        return (int) $this->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
             ->withoutGlobalScope(ProjectScope::class)
             ->sum('points');
     }
@@ -229,7 +279,7 @@ class Member extends Model
     /** 台帳から累計付与ポイントを再計算して保存する */
     public function recalcLifetimeGrantedPoints(): void
     {
-        $total = (int) $this->pointTransactions()
+        $total = (int) $this->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
             ->withoutGlobalScope(ProjectScope::class)
             ->get(['type', 'points'])
             ->sum(fn (PointTransaction $tx) => self::lifetimeGrantedDelta((string) $tx->type, (int) $tx->points));

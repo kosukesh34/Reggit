@@ -219,19 +219,19 @@ function initAnnouncementDelivery(): void {
         const birthdayMonths = checkedValues('segment_birthday_months[]').map((month) => `${month}月`);
         add('誕生月', 'いずれか', birthdayMonths.join('・'));
         add('性別', '=', selectedOptionText('segment_sex'));
-        add('会員タグ', 'いずれか', checkedOptionLabels('segment_tag_ids[]').join('・'));
         add('RFMセグメント', 'いずれか', checkedOptionLabels('segment_rfm_segments[]').join('・'));
+        add('会員タグ', 'いずれか', checkedOptionLabels('segment_tag_ids[]').join('・'));
 
         const visitMin = fieldValue('segment_visit_count_min');
         const visitMax = fieldValue('segment_visit_count_max');
         add('来店回数', '≥', visitMin === '' ? '' : `${formattedNumber(visitMin)}回`);
         add('来店回数', '≤', visitMax === '' ? '' : `${formattedNumber(visitMax)}回`);
 
+        add('会員ランク', '=', fieldValue('segment_rank'));
         const pointsMin = fieldValue('segment_lifetime_points_min');
         const pointsMax = fieldValue('segment_lifetime_points_max');
         add('累計付与ポイント', '≥', pointsMin === '' ? '' : `${formattedNumber(pointsMin)}pt`);
         add('累計付与ポイント', '≤', pointsMax === '' ? '' : `${formattedNumber(pointsMax)}pt`);
-        add('会員ランク', '=', fieldValue('segment_rank'));
 
         const lastVisitMode = fieldValue('segment_last_visit_mode');
         const lastVisitDays = fieldValue('segment_last_visit_days');
@@ -262,6 +262,13 @@ function initAnnouncementDelivery(): void {
         } else if (salesCondition === 'no_orders') {
             add(`購入履歴（${period}）`, '=', 'なし');
         }
+
+        form.querySelectorAll<HTMLElement>('.ad-profile-filter').forEach((group) => {
+            const values = Array.from(group.querySelectorAll<HTMLInputElement>('[name^="segment_profile["]'))
+                .filter((input) => input.type !== 'checkbox' || input.checked)
+                .map((input) => input.value.trim()).filter(Boolean);
+            add(group.dataset.profileLabel || 'プロフィール', 'いずれか', values.join('・'));
+        });
 
         return chips;
     }
@@ -330,10 +337,10 @@ function initAnnouncementDelivery(): void {
         setText(counterId, `${input.value.length.toLocaleString('ja-JP')} / ${max.toLocaleString('ja-JP')}`);
     }
 
-    function couponOption(): HTMLOptionElement | null {
+    function couponOptions(): HTMLOptionElement[] {
         const attached = isCouponDelivery || couponToggle?.checked === true;
-        if (!couponSelect || !attached || couponSelect.value === '') return null;
-        return couponSelect.selectedOptions[0] ?? null;
+        if (!couponSelect || !attached) return [];
+        return Array.from(couponSelect.selectedOptions);
     }
 
     function syncCoupon(): void {
@@ -344,15 +351,15 @@ function initAnnouncementDelivery(): void {
             couponSelect.required = enabled;
         }
 
-        const option = couponOption();
-        if (selectedCouponPreview) selectedCouponPreview.hidden = option === null;
+        const options = couponOptions();
+        if (selectedCouponPreview) selectedCouponPreview.hidden = options.length === 0;
 
-        if (option) {
-            const name = option.textContent?.trim() || '選択したクーポン';
-            setText('selectedCouponName', name);
-            setText('selectedCouponBenefit', option.dataset.benefit || '');
-            setText('selectedCouponPeriod', option.dataset.period || '');
-            setText('deliverySummaryCoupon', name);
+        if (options.length > 0) {
+            const names = options.map((option) => option.textContent?.trim() || '選択したクーポン');
+            setText('selectedCouponName', couponSelect?.multiple ? `${options.length}件のクーポン` : names[0]);
+            setText('selectedCouponBenefit', couponSelect?.multiple ? names.join('・') : (options[0].dataset.benefit || ''));
+            setText('selectedCouponPeriod', options[0].dataset.period || '');
+            setText('deliverySummaryCoupon', names.join('・'));
         } else {
             setText('deliverySummaryCoupon', enabled ? 'クーポンを選択' : '配布しない');
         }
@@ -596,6 +603,16 @@ function initAnnouncementDelivery(): void {
         const condition = document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '';
         if (condition !== '') params.set('segment_condition', condition);
         if (field<HTMLInputElement>('stamp_completed')?.checked === true) params.set('stamp_completed', '1');
+        form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[name^="segment_operators["], [name^="segment_profile["]')
+            .forEach((control) => {
+                if (control.disabled) return;
+                if (control instanceof HTMLInputElement && control.type === 'checkbox' && !control.checked) return;
+                if (control instanceof HTMLSelectElement && control.multiple) {
+                    Array.from(control.selectedOptions).forEach((option) => params.append(control.name, option.value));
+                } else if (control.value.trim() !== '') {
+                    params.append(control.name, control.value);
+                }
+            });
         return params;
     }
 
@@ -603,8 +620,7 @@ function initAnnouncementDelivery(): void {
         const params = segmentParams();
         params.set('audience_type', selectedAudienceType());
         params.set('page', String(page));
-        const couponId = couponOption()?.value || '';
-        if (couponId !== '') params.set('delivery_coupon_id', couponId);
+        couponOptions().forEach((option) => params.append('delivery_coupon_ids[]', option.value));
         if (selectedAudienceType() === 'personal') {
             selectedMembers.forEach((_label, id) => params.append('target_member_ids[]', String(id)));
         }
@@ -814,13 +830,24 @@ function initAnnouncementDelivery(): void {
             || field<HTMLInputElement>('event_rank_up')?.checked === true
             || (field<HTMLInputElement | HTMLSelectElement>('stamp_card_id')?.value || '').trim() !== ''
             || (field<HTMLInputElement>('stamp_count_min')?.value || '').trim() !== ''
-            || field<HTMLInputElement>('stamp_completed')?.checked === true;
+            || field<HTMLInputElement>('stamp_completed')?.checked === true
+            || Array.from(form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[name^="segment_profile["]'))
+                .some((control) => control instanceof HTMLSelectElement && control.multiple
+                    ? control.selectedOptions.length > 0
+                    : control instanceof HTMLInputElement && control.type === 'checkbox'
+                        ? control.checked
+                        : control.value.trim() !== '');
     }
 
     function showFormError(message: string, target?: HTMLElement | null): void {
         if (formError) {
             formError.textContent = message;
             formError.hidden = false;
+        }
+        let ancestor = target?.parentElement;
+        while (ancestor) {
+            if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+            ancestor = ancestor.parentElement;
         }
         target?.focus();
     }
@@ -865,7 +892,8 @@ function initAnnouncementDelivery(): void {
         const reviewResolveRow = field<HTMLElement>('deliveryReviewResolveRow');
         if (reviewResolveRow) reviewResolveRow.hidden = !canChooseResolveMode();
         setText('deliveryReviewResolve', resolveModeText());
-        setText('deliveryReviewCoupon', couponOption()?.textContent?.trim() || (isCouponDelivery ? '未選択' : '配布しない'));
+        const couponNames = couponOptions().map((option) => option.textContent?.trim() || '選択したクーポン');
+        setText('deliveryReviewCoupon', couponNames.join('・') || (isCouponDelivery ? '未選択' : '配布しない'));
         if (pinInput) setText('deliveryReviewPinned', pinInput.checked ? 'する' : 'しない');
         const sending = shouldSendNotification();
         setText('deliveryReviewLineCount', `${notificationChannels.line.toLocaleString('ja-JP')}人`);
@@ -1064,7 +1092,7 @@ function initAnnouncementDelivery(): void {
             showFormError('セグメント配信では、絞り込み条件を1つ以上指定してください。', field('segment_channel'));
             return;
         }
-        if ((isCouponDelivery || couponToggle?.checked) && (!couponSelect || couponSelect.value === '')) {
+        if ((isCouponDelivery || couponToggle?.checked) && couponOptions().length === 0) {
             event.preventDefault();
             showFormError('配布するクーポンを選択してください。', couponSelect);
             return;

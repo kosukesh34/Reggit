@@ -5,12 +5,14 @@ namespace App\Jobs;
 use App\Models\Announcement;
 use App\Services\Admin\AnnouncementAdminService;
 use App\Services\AnnouncementNotificationService;
+use App\Services\AnnouncementStoreAudience;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SendScheduledAnnouncementJob implements ShouldQueue
 {
@@ -34,6 +36,12 @@ class SendScheduledAnnouncementJob implements ShouldQueue
                 return null;
             }
 
+            if (! app(AnnouncementStoreAudience::class)->authorizedForSend($locked)) {
+                $locked->update(['delivery_status' => 'held']);
+                Log::warning('配信を保留しました。作成者の店舗権限を確認してください。', ['announcement_id' => $locked->id]);
+
+                return null;
+            }
             $announcementAdminService->finalizeAudienceForSend($locked);
             $locked = $locked->fresh() ?? $locked;
             $announcementAdminService->issueDeliveryCouponIfSet($locked);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminUser;
+use App\Models\Store;
 use App\Models\StoreAppCredential;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,13 +24,13 @@ class StoreAppAuthController extends Controller
         ]);
 
         [$credential, $token] = DB::transaction(function () use ($data): array {
-            $credential = StoreAppCredential::query()
+            $credential = StoreAppCredential::withoutGlobalScopes()
                 ->with('project')
                 ->where('app', $data['app'])
                 ->where('enrollment_token_hash', hash('sha256', trim($data['enrollment_token'])))
                 ->lockForUpdate()
                 ->first();
-            if ($credential === null || $credential->claimed_at !== null || ! $credential->project?->is_active) {
+            if ($credential === null || $credential->claimed_at !== null || ! $credential->project?->isServiceAvailable() || ! Store::where('project_id', $credential->project_id)->whereKey($credential->store_id)->where('is_active', true)->exists()) {
                 throw ValidationException::withMessages([
                     'enrollment_token' => ['登録コードが無効または使用済みです。'],
                 ]);
@@ -39,7 +40,7 @@ class StoreAppAuthController extends Controller
             $project = $credential->project;
             $token = $admin->createToken(
                 $this->tokenName($data['app'], (int) $project->id, (string) ($data['device_name'] ?? 'iPad')),
-                ["app:{$data['app']}", "project:{$project->id}"],
+                ["app:{$data['app']}", "project:{$project->id}", "store:{$credential->store_id}"],
             );
             $credential->update([
                 'personal_access_token_id' => $token->accessToken->id,
@@ -60,6 +61,7 @@ class StoreAppAuthController extends Controller
                 'key' => $project->project_key,
                 'name' => $project->name,
             ],
+            'store_id' => $credential->store_id,
             'admin' => ['name' => AdminUser::query()->find($credential->admin_user_id)?->name],
         ]);
     }
@@ -68,7 +70,7 @@ class StoreAppAuthController extends Controller
     {
         $accessToken = $request->user()?->currentAccessToken();
         if ($accessToken !== null) {
-            StoreAppCredential::query()->where('personal_access_token_id', $accessToken->id)->update([
+            StoreAppCredential::withoutGlobalScopes()->where('personal_access_token_id', $accessToken->id)->update([
                 'personal_access_token_id' => null,
                 'device_key_hash' => null,
                 'claimed_at' => null,

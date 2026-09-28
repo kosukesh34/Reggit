@@ -233,7 +233,7 @@ class AllScreensAccessibleTest extends TestCase
             'audit-logs.show' => ['system-admin.audit-logs.show', ['id' => 1]],
             'help-articles.index' => ['system-admin.help-articles.index', []],
             'help-articles.create' => ['system-admin.help-articles.create', []],
-            'mail-test.show' => ['system-admin.mail-test.show', []],
+            'notices.index' => ['system-admin.notices.index', []],
         ];
     }
 

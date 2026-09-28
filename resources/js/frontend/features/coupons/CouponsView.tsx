@@ -139,7 +139,7 @@ function openDetail(id: number | string): void {
     }
 }
 
-function useCoupon(opts: {
+function openCouponUse(opts: {
     memberCouponId: string;
     couponName: string;
     useDisplay: string;
@@ -280,7 +280,7 @@ function ClassicCouponCard({
                         className="btn btn-primary coupon-use-btn"
                         onClick={(e) => {
                             e.stopPropagation();
-                            useCoupon({
+                            openCouponUse({
                                 memberCouponId: String(cp.id),
                                 couponName: cp.coupon_name || 'クーポン',
                                 useDisplay,
@@ -372,7 +372,7 @@ function FixedCouponCard({
                         className="ios-coupon__use coupon-use-btn"
                         onClick={(e) => {
                             e.stopPropagation();
-                            useCoupon({
+                            openCouponUse({
                                 memberCouponId: String(cp.id),
                                 couponName: cp.coupon_name || 'クーポン',
                                 useDisplay,

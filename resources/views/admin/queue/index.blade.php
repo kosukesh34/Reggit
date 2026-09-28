@@ -98,7 +98,13 @@
                     <td>
                         @php
                             $member = $e->member ?? $e->user?->member;
-                            $displayName = $member?->user?->name ?? $e->user?->name ?? $e->guest_name ?? '—';
+                            $displayName = admin_person_name($member?->user?->name);
+                            if ($displayName === '氏名未登録') {
+                                $displayName = admin_person_name($e->user?->name);
+                            }
+                            if ($displayName === '氏名未登録') {
+                                $displayName = admin_person_name($e->guest_name);
+                            }
                         @endphp
                         @if($member !== null)
                             <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}">{{ $displayName }}</a>

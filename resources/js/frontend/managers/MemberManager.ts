@@ -514,11 +514,6 @@ export class MemberManager {
         return !!window.__LINE_USER_ID__;
     }
 
-    /** @deprecated resolveLineUserIdForClient を使用 */
-    async resolveLineUserIdForNativeApp() {
-        return this.resolveLineUserIdForClient();
-    }
-
     _registerLiffIdentityRetry() {
         if (this._liffIdentityRetryRegistered || typeof document === 'undefined') return;
         this._liffIdentityRetryRegistered = true;
@@ -2950,7 +2945,7 @@ export class MemberManager {
             this._applyNormalizedWalletSummary(src as Record<string, unknown>);
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : 'unknown';
-            // eslint-disable-next-line no-console
+
             console.warn('[LotteryUI]', 'wallet_summary_error', { message });
         }
     }

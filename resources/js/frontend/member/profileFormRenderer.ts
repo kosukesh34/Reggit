@@ -6,6 +6,7 @@ export type ProfileField = {
     required?: unknown;
     input_type?: unknown;
     values?: unknown;
+    options?: Array<{ value: string; label: string }>;
     description?: unknown;
 };
 
@@ -86,6 +87,11 @@ function renderField(field: ProfileField, profile: Record<string, unknown>, name
     }
     if (key === 'mail_receive_flag') {
         return group(labelHtml, `<select id="${id}" name="mail_receive_flag"${required}><option value="">未選択</option><option value="1"${value === '1' ? ' selected' : ''}>許可する</option><option value="0"${value === '0' ? ' selected' : ''}>許可しない</option></select>`);
+    }
+    if (key === 'customer_store_id') {
+        const choices = field.options ?? [];
+        const html = choices.map((option) => `<option value="${escapeHtml(option.value)}"${value === option.value ? ' selected' : ''}>${escapeHtml(option.label)}</option>`).join('');
+        return group(labelHtml, `<select id="${id}" name="customer_store_id"${required}><option value="">未選択</option>${html}</select>${description}`);
     }
     if (key === 'notification_preference') {
         const selected = value || 'all';

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\Scopes\StoreAccessScope;
 use App\Support\DailySequenceNumber;
 use Illuminate\Support\Facades\DB;
 
@@ -38,7 +39,7 @@ class OrderNumberAssigner
     {
         $prefix = DailySequenceNumber::datePrefix();
         $maxSeq = 0;
-        $existing = Order::query()
+        $existing = Order::withoutGlobalScope(StoreAccessScope::class)
             ->where('project_id', $projectId)
             ->where('order_number', 'like', $prefix.'%')
             ->lockForUpdate()

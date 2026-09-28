@@ -4,13 +4,14 @@ namespace App\Services;
 
 use App\Models\Member;
 use App\Models\PointTransaction;
+use App\Models\Scopes\StoreAccessScope;
 
 class MemberPointsExpiryCalculator
 {
     /** @return array{expires_at: string, expires_at_label: string, points_expiring: int}|null */
     public function getExpiryInfo(Member $member): ?array
     {
-        $earliest = PointTransaction::where('member_id', $member->id)
+        $earliest = PointTransaction::withoutGlobalScope(StoreAccessScope::class)->where('member_id', $member->id)
             ->where('type', 'earned')
             ->whereNotNull('expires_at')
             ->where('expires_at', '>', now())
@@ -21,7 +22,7 @@ class MemberPointsExpiryCalculator
             return null;
         }
 
-        $pointsExpiring = PointTransaction::where('member_id', $member->id)
+        $pointsExpiring = PointTransaction::withoutGlobalScope(StoreAccessScope::class)->where('member_id', $member->id)
             ->where('type', 'earned')
             ->where('expires_at', $earliest->expires_at)
             ->sum('points');

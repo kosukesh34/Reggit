@@ -19,7 +19,7 @@ export function mountStampGrantQr(): void {
         if (url === '') {
             return;
         }
-        // eslint-disable-next-line no-new
+
         new QRCodeCompat(root, { text: url, width: 240, height: 240, colorDark: '#243f38' });
     });
 

@@ -9,6 +9,11 @@
         <h1 class="page-header-title"><i class="fas fa-utensils"></i> 商品管理</h1>
     </div>
     <div class="page-header-actions">
+        @if(auth('admin')->user()->hasPermission('products.manage'))
+        <form method="POST" action="{{ admin_route('admin.products.import-smaregi') }}" onsubmit="return confirm('スマレジの商品情報を取り込み、既存の商品名・価格などを更新します。続行しますか？')">
+            @csrf <button class="btn btn-secondary" onclick="this.form.addEventListener('submit', () => { this.disabled = true; })">スマレジから取り込む</button>
+        </form>
+        @endif
         <a href="{{ admin_route('admin.products.create') }}" class="btn btn-primary">
             <i class="fas fa-plus"></i> 新規追加
         </a>

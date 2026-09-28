@@ -27,7 +27,6 @@ use App\Http\Controllers\Admin\Gallery\CategoryController as GalleryCategoryCont
 use App\Http\Controllers\Admin\Gallery\ItemController as GalleryItemController;
 use App\Http\Controllers\Admin\Gallery\ItemMutationController as GalleryItemMutationController;
 use App\Http\Controllers\Admin\HelpController as AdminHelpController;
-use App\Http\Controllers\Admin\MailTestController;
 use App\Http\Controllers\Admin\MemberActivityController as AdminMemberActivityController;
 use App\Http\Controllers\Admin\MemberBenefitController;
 use App\Http\Controllers\Admin\MemberController as AdminMemberController;
@@ -67,8 +66,10 @@ use App\Http\Controllers\Admin\Settings\StoreAppCredentialController;
 use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\StampGrantQrController;
+use App\Http\Controllers\Admin\StoreController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\Admin\SystemHelpArticleController;
+use App\Http\Controllers\Admin\SystemNoticeController;
 use App\Http\Controllers\ApiInfoController;
 use App\Http\Controllers\ExistingMemberLinkConfirmController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
@@ -91,7 +92,9 @@ use Illuminate\Support\Facades\Route;
 
 // ========== 公開 ==========
 Route::get('/', LandingController::class);
+Route::view('/demo/liff', 'demo.liff')->name('demo.liff');
 
+Route::view('/lp/register/email', 'landing.email')->name('landing.register.email.show');
 Route::post('/lp/register/email', LandingRegistrationEmailController::class)
     ->middleware('throttle:5,1')
     ->name('landing.register.email');
@@ -174,11 +177,18 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('admin.logout')->withoutMiddleware('bind.admin.project');
 
     Route::prefix('{project_key}')->group(function () {
+        Route::get('/stores', [StoreController::class, 'index'])->name('admin.stores.index');
+        Route::post('/stores', [StoreController::class, 'store'])->name('admin.stores.store')->middleware('admin.permission:settings.manage');
+        Route::put('/stores/{store}/admins', [StoreController::class, 'updateAdmins'])->name('admin.stores.admins')->middleware('admin.permission:settings.manage');
+        Route::put('/stores/active', [StoreController::class, 'updateActiveStores'])->name('admin.stores.active')->middleware('admin.permission:settings.manage');
+        Route::post('/stores/select', [StoreController::class, 'select'])->name('admin.stores.select');
         Route::get('/', AdminProjectHomeController::class)
             ->name('admin.project.home')->middleware('admin.permission:dashboard.view');
 
         Route::get('/dashboard', [DashboardController::class, 'dashboard'])
             ->name('admin.dashboard')->middleware('admin.permission:dashboard.view');
+        Route::get('/dashboard/notices/{id}', [DashboardController::class, 'notice'])
+            ->name('admin.dashboard.notice')->middleware('admin.permission:dashboard.view');
 
         Route::get('/orders', [AdminOrderController::class, 'orders'])->name('admin.orders')->middleware('admin.permission:orders.view');
         Route::get('/orders/{id}', [AdminOrderController::class, 'orderDetail'])->name('admin.orders.detail')->middleware('admin.permission:orders.view');
@@ -186,6 +196,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/orders/{id}/complete', [AdminOrderController::class, 'completeOrder'])->name('admin.orders.complete')->middleware('admin.permission:orders.update');
 
         Route::get('/products', [AdminProductController::class, 'products'])->name('admin.products')->middleware('admin.permission:products.view');
+        Route::post('/products/import-smaregi', [AdminProductController::class, 'importSmaregi'])->name('admin.products.import-smaregi')->middleware('admin.permission:products.manage');
         Route::get('/products/create', [AdminProductController::class, 'createProduct'])->name('admin.products.create')->middleware('admin.permission:products.manage');
         Route::post('/products', [ProductMutationController::class, 'store'])->name('admin.products.store')->middleware('admin.permission:products.manage');
         Route::get('/products/{id}/edit', [AdminProductController::class, 'editProduct'])->name('admin.products.edit')->middleware('admin.permission:products.manage');
@@ -247,6 +258,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/coupons/delivery-preview', [CouponDeliveryController::class, 'preview'])->name('admin.coupons.delivery.preview')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/delivery-preview-members', [CouponDeliveryController::class, 'previewMembers'])->name('admin.coupons.delivery.preview-members')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/deliveries/{id}', [CouponDeliveryController::class, 'show'])->name('admin.coupons.deliveries.show')->middleware('admin.permission:coupons.manage');
+        Route::get('/coupons/{id}', [AdminCouponController::class, 'showCoupon'])->name('admin.coupons.show')->middleware('admin.permission:coupons.view');
         Route::get('/coupons/{id}/edit', [AdminCouponController::class, 'editCoupon'])->name('admin.coupons.edit')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/{id}/redemptions', [AdminCouponController::class, 'couponRedemptions'])->name('admin.coupons.redemptions')->middleware('admin.permission:coupons.view');
         Route::put('/coupons/{id}', [CouponMutationController::class, 'update'])->name('admin.coupons.update')->middleware('admin.permission:coupons.manage');
@@ -317,6 +329,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
         Route::get('/analytics', [AdminAnalyticsController::class, 'analytics'])->name('admin.analytics')->middleware(['admin.permission:analytics.view', 'admin.plan:analytics_advanced']);
         Route::get('/analysis-deliveries', [AdminAnalysisDeliveryController::class, 'index'])->name('admin.analysis-deliveries')->middleware(['admin.permission:analytics.view', 'admin.plan:analytics_advanced']);
+        Route::post('/analysis-deliveries/settings', [AdminAnalysisDeliveryController::class, 'updateSettings'])->name('admin.analysis-deliveries.settings')->middleware(['admin.permission:settings.manage', 'admin.permission:coupons.manage', 'admin.plan:analytics_advanced']);
+        Route::post('/analysis-deliveries/token', [AdminAnalysisDeliveryController::class, 'issueToken'])->name('admin.analysis-deliveries.token')->middleware(['admin.permission:settings.manage', 'admin.permission:coupons.manage', 'admin.plan:analytics_advanced']);
+        Route::delete('/analysis-deliveries/token/{token}', [AdminAnalysisDeliveryController::class, 'revokeToken'])->name('admin.analysis-deliveries.token.revoke')->middleware(['admin.permission:settings.manage', 'admin.permission:coupons.manage', 'admin.plan:analytics_advanced']);
         Route::post('/analysis-deliveries', [AdminAnalysisDeliveryController::class, 'store'])->name('admin.analysis-deliveries.store')->middleware(['admin.permission:coupons.manage', 'admin.plan:analytics_advanced']);
         Route::get('/help', [AdminHelpController::class, 'index'])->name('admin.help');
         Route::get('/help/{slug}', [AdminHelpController::class, 'show'])->name('admin.help.show');
@@ -356,14 +371,17 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
     Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('system-admin.audit-logs.index');
     Route::get('/audit-logs/{id}', [AdminAuditLogController::class, 'show'])->name('system-admin.audit-logs.show');
 
+    Route::get('/notices', [SystemNoticeController::class, 'index'])->name('system-admin.notices.index');
+    Route::post('/notices/preview', [SystemNoticeController::class, 'preview'])->name('system-admin.notices.preview');
+    Route::post('/notices', [SystemNoticeController::class, 'store'])->name('system-admin.notices.store');
+    Route::put('/notices/{id}', [SystemNoticeController::class, 'update'])->name('system-admin.notices.update');
+    Route::delete('/notices/{id}', [SystemNoticeController::class, 'destroy'])->name('system-admin.notices.destroy');
     Route::get('/help-articles', [SystemHelpArticleController::class, 'index'])->name('system-admin.help-articles.index');
     Route::get('/help-articles/create', [SystemHelpArticleController::class, 'create'])->name('system-admin.help-articles.create');
     Route::post('/help-articles', [SystemHelpArticleController::class, 'store'])->name('system-admin.help-articles.store');
     Route::get('/help-articles/{id}/edit', [SystemHelpArticleController::class, 'edit'])->name('system-admin.help-articles.edit');
     Route::put('/help-articles/{id}', [SystemHelpArticleController::class, 'update'])->name('system-admin.help-articles.update');
     Route::delete('/help-articles/{id}', [SystemHelpArticleController::class, 'destroy'])->name('system-admin.help-articles.destroy');
-    Route::get('/mail-test', [MailTestController::class, 'show'])->name('system-admin.mail-test.show');
-    Route::post('/mail-test', [MailTestController::class, 'send'])->name('system-admin.mail-test.send')->middleware('throttle:10,1');
 });
 Route::get('/mobile/payment/return', PaymentReturnController::class)
     ->name('mobile.payment.return');

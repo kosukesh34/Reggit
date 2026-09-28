@@ -21,6 +21,7 @@ class AnnouncementNotificationService
         private PushNotificationService $pushNotificationService,
         private LineService $lineService,
         private LineConnectionSettings $shopSettingRepository,
+        private CouponNotificationService $couponNotificationService,
     ) {}
 
     /**
@@ -83,7 +84,7 @@ class AnnouncementNotificationService
         );
         $title = trim((string) $announcement->title);
         $body = trim((string) ($announcement->body ?? ''));
-        $rawImageUrl = trim((string) ($announcement->image_url ?? ''));
+        $rawImageUrl = $announcement->private_image_path !== null ? '' : trim((string) ($announcement->image_url ?? ''));
         $imageUrl = NotificationImageUrl::forLine($rawImageUrl !== '' ? $rawImageUrl : null);
         if ($rawImageUrl !== '' && $imageUrl === null) {
             LogHelper::warning('[Announcement] LINE image URL skipped (not publicly accessible via HTTPS)', [
@@ -170,7 +171,7 @@ class AnnouncementNotificationService
                 $query->whereNull('notification_preference')
                     ->orWhereIn(
                         'notification_preference',
-                        MemberNotificationPreference::eligibleValues($announcement->delivery_coupon_id !== null),
+                        MemberNotificationPreference::eligibleValues($announcement->hasDeliveryCoupons()),
                     );
             })
             ->whereHas('user', function ($q): void {
@@ -189,6 +190,10 @@ class AnnouncementNotificationService
                 return collect();
             }
             $query->whereIn('id', $targetMemberIds);
+        }
+
+        if (is_array($announcement->store_ids)) {
+            $query->whereHas('stores', fn ($q) => $q->whereIn('stores.id', $announcement->store_ids)->where('stores.project_id', $announcement->project_id)->where('stores.is_active', true));
         }
 
         return $query->get();
@@ -225,17 +230,18 @@ class AnnouncementNotificationService
         string $projectKey,
         bool $includeImage,
     ): ?array {
-        if ($announcement->delivery_coupon_id === null) {
+        $couponId = $announcement->deliveryCouponIds()[0] ?? null;
+        if ($couponId === null) {
             return null;
         }
         $coupon = Coupon::query()
             ->where('project_id', $projectId)
-            ->find((int) $announcement->delivery_coupon_id);
+            ->find($couponId);
         if ($coupon === null) {
             return null;
         }
 
-        return resolve(CouponNotificationService::class)->buildIssuedLineFlex(
+        return $this->couponNotificationService->buildIssuedLineFlex(
             $coupon,
             $projectId,
             $projectKey,

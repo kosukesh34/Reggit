@@ -150,7 +150,7 @@
                 <tr>
                     <td><span class="id-badge">{{ $member->id }}</span></td>
                     <td>
-                        <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}"><strong>{{ $member->user->name ?? 'N/A' }}</strong></a>
+                        <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}"><strong>{{ admin_person_name($member->user?->name) }}</strong></a>
                         @if($member->tags->isNotEmpty())
                         <span class="table-cell-sub member-list-tags">
                             @foreach($member->tags as $tag)

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AnnouncementRead extends Model
 {
@@ -17,12 +18,12 @@ class AnnouncementRead extends Model
         'read_at' => 'datetime',
     ];
 
-    public function announcement()
+    public function announcement(): BelongsTo
     {
         return $this->belongsTo(Announcement::class);
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

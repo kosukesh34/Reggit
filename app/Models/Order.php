@@ -6,6 +6,8 @@ use App\Models\Concerns\BelongsToProject;
 use App\Support\DailySequenceNumber;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
@@ -14,7 +16,7 @@ class Order extends Model
     protected $hidden = ['payment_session'];
 
     protected $fillable = [
-        'project_id',
+        'project_id', 'store_id',
         'user_id',
         'order_number',
         'order_type',
@@ -44,22 +46,22 @@ class Order extends Model
         'smaregi_transaction_sync_started_at' => 'datetime',
     ];
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
 
-    public function pointTransactions()
+    public function pointTransactions(): HasMany
     {
         return $this->hasMany(PointTransaction::class);
     }

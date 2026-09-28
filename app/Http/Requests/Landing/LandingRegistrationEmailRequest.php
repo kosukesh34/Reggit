@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class LandingRegistrationEmailRequest extends FormRequest
 {
-    protected $redirect = '/#register';
+    protected $redirectRoute = 'landing.register.email.show';
 
     public function authorize(): bool
     {

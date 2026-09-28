@@ -13,6 +13,7 @@ use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\CouponRedemption;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
@@ -58,6 +59,36 @@ class AdminCouponsTest extends TestCase
             ->assertDontSee('お知らせで配布');
     }
 
+    public function test_coupons_一覧と配布履歴を個別にページ送りできること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupons = collect(range(1, 21))->map(fn ($number) => Coupon::factory()->create([
+            'project_id' => $project->id,
+            'code' => 'PAGE'.$number,
+        ]));
+        foreach (range(1, 21) as $number) {
+            CouponDelivery::create([
+                'project_id' => $project->id,
+                'coupon_id' => $coupons->first()->id,
+                'delivery_type' => CouponDeliveryType::IMMEDIATE_ALL,
+                'status' => CouponDeliveryStatus::SENT,
+                'issued_count' => $number,
+            ]);
+        }
+
+        $response = $this->actingAs($admin, 'admin')->get(route('admin.coupons', [
+            'project_key' => $project->project_key,
+            'coupons_page' => 2,
+            'deliveries_page' => 2,
+        ]));
+
+        $response->assertOk()
+            ->assertViewHas('coupons', fn ($page) => $page->currentPage() === 2 && $page->count() === 1)
+            ->assertViewHas('deliveryHistories', fn ($page) => $page->currentPage() === 2 && $page->count() === 1)
+            ->assertSee('PAGE1');
+    }
+
     public function test_bulk_issue_一括配布画面にアクセスできること(): void
     {
         $project = $this->createProject();
@@ -79,6 +110,53 @@ class AdminCouponsTest extends TestCase
             ->assertDontSee('配布するクーポンを選ぶ')
             ->assertDontSee('同じ会員に1枚ずつ付与します')
             ->assertDontSee('配信履歴');
+    }
+
+    public function test_coupons_配布履歴からクーポンを表示できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id,
+            'name' => '発行済みクーポン',
+            'description' => '対象商品に利用できます',
+        ]);
+        CouponDelivery::create([
+            'project_id' => $project->id,
+            'coupon_id' => $coupon->id,
+            'delivery_type' => CouponDeliveryType::IMMEDIATE_ALL,
+            'status' => CouponDeliveryStatus::SENT,
+        ]);
+        $member = Member::factory()->create(['project_id' => $project->id]);
+        MemberCoupon::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $member->id,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCoupon::STATUS_UNUSED,
+        ]);
+
+        $url = route('admin.coupons.show', ['project_key' => $project->project_key, 'id' => $coupon->id]);
+        $this->actingAs($admin, 'admin')->get(route('admin.coupons', ['project_key' => $project->project_key]))
+            ->assertSee($url);
+        $this->get($url)->assertOk()
+            ->assertSee('発行済みクーポン')->assertSee('対象商品に利用できます')
+            ->assertSee('配布回数')->assertSee('発行枚数')->assertSee('未使用')->assertSee('設定内容')
+            ->assertViewHas('stats', fn ($stats) => $stats['delivery_count'] === 1 && $stats['issued_count'] === 1 && $stats['unused_count'] === 1);
+    }
+
+    public function test_smaregi_push_一覧のボタンで対象クーポンのみ反映すること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'smaregi_coupon_id' => null]);
+        $this->mock(AdminCouponPushToSmaregiUseCase::class)
+            ->shouldReceive('handle')->once()->with($project->id, $coupon->id)
+            ->andReturn(['pushed' => 1, 'failed' => 0, 'errors' => []]);
+
+        $this->actingAs($admin, 'admin')->get(route('admin.coupons', ['project_key' => $project->project_key]))
+            ->assertSee('name="coupon_id" value="'.$coupon->id.'"', false);
+        $this->post(route('admin.coupons.push-smaregi', ['project_key' => $project->project_key]), ['coupon_id' => $coupon->id])
+            ->assertRedirect(route('admin.coupons', ['project_key' => $project->project_key]));
     }
 
     public function test_smaregi_sync_専用controllerから取り込みを実行できること(): void
@@ -104,7 +182,7 @@ class AdminCouponsTest extends TestCase
         $this->mock(AdminCouponPushToSmaregiUseCase::class)
             ->shouldReceive('handle')
             ->once()
-            ->with($project->id)
+            ->with($project->id, null)
             ->andReturn(['pushed' => 3, 'failed' => 0, 'errors' => []]);
 
         $this->actingAs($admin, 'admin')

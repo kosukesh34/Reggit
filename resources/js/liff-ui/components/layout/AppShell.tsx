@@ -6,6 +6,7 @@ import { themeMap } from "../../themes/themes";
 import { themeToCssVars } from "../../utils/theme";
 import { contrastCssVars, customizationToCssVars } from "../../utils/customization";
 import { resolveHomeLayout } from "../../config/customization";
+import { StorePicker } from "./StorePicker";
 import { Header } from "./Header";
 import { BottomNavigation } from "./BottomNavigation";
 
@@ -58,6 +59,7 @@ export function AppShell({ children, gateSettled = true }: PropsWithChildren<{ g
       <div className="app-shell__backdrop" />
       <div className="app-shell__frame">
         <Header />
+        <StorePicker />
         {showNavigationBelowHeader ? <BottomNavigation /> : null}
         <main className="app-shell__main" ref={mainRef}>{children}</main>
         {!showNavigationBelowHeader ? <BottomNavigation /> : null}

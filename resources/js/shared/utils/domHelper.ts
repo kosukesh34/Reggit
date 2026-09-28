@@ -50,13 +50,13 @@ export class DomHelper {
                 return fallbackElement;
             }
             if (!silent) {
-                // eslint-disable-next-line no-console
+
                 console.error('Mount not found: .' + mountClass + ' / #' + fallbackId);
             }
             return null;
         }
         if (!silent) {
-            // eslint-disable-next-line no-console
+
             console.error('Mount not found: .' + mountClass);
         }
         return null;
@@ -99,7 +99,7 @@ export class DomHelper {
     static getElementById(id: string): HTMLElement | null {
         const element = document.getElementById(id);
         if (!element) {
-            // eslint-disable-next-line no-console
+
             console.error(`Element with id "${id}" not found`);
         }
         return element;

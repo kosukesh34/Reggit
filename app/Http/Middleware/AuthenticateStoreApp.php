@@ -6,6 +6,7 @@ use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\StoreAppCredential;
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use Closure;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -23,7 +24,7 @@ class AuthenticateStoreApp
 
         if ($token instanceof PersonalAccessToken && $token->getKey() !== null) {
             $deviceKey = (string) $request->header('X-Device-Key', '');
-            $credential = StoreAppCredential::query()
+            $credential = StoreAppCredential::withoutGlobalScopes()
                 ->where('personal_access_token_id', $token->id)
                 ->where('app', $app)
                 ->first();
@@ -36,6 +37,7 @@ class AuthenticateStoreApp
         $project = Project::query()
             ->where('project_key', $projectKey)
             ->where('is_active', true)
+            ->where('service_status', 'active')
             ->first();
         if ($project === null) {
             return response()->json(['error' => 'プロジェクトが見つかりません。'], 404);
@@ -44,7 +46,13 @@ class AuthenticateStoreApp
             return response()->json(['error' => 'このプロジェクトにはアクセスできません。'], 403);
         }
 
+        if (isset($credential)) {
+            abort_unless((int) $credential->project_id === (int) $project->id && $credential->store_id !== null, 403);
+            $request->merge(['store_id' => $credential->store_id]);
+        }
         AdminContext::setCurrentProject($project);
+        app(StoreContext::class)->bind($request, (int) $project->id, $admin);
+        app(StoreContext::class)->resolveForWrite((int) $project->id);
         $request->attributes->set('currentProject', $project);
 
         return $next($request);

@@ -8,6 +8,8 @@ Reggit already has a meaningful application/domain/infrastructure split and stro
 
 The recommended direction is incremental modularization by business capability. A repository-wide rewrite would discard useful tests and introduce unnecessary regression risk.
 
+The end-user LIFF runtime is currently a minimal rebuild placeholder. Its API, authentication, business logic, and saved designer settings remain intact, while the former React UI, external browser SDKs, and legacy CSS are no longer loaded by `/liff`. Legacy UI sources remain temporarily because the admin preview imports parts of them and they are useful migration references.
+
 ## What is working well
 
 - `app/Domain` has no dependency on Laravel HTTP classes, Eloquent models, or infrastructure implementations.
@@ -66,24 +68,25 @@ Some use cases depend on domain repository contracts, while many depend directly
 
 Introduce ports only at external or volatile boundaries. Do not create a repository for every Eloquent query. Prioritize notification delivery, external APIs, storage, payment, and time/identity providers.
 
-### P2: Two repository conventions coexist
+### Resolved: Repository conventions are documented
 
 The codebase contains both `app/Domain/*/Repositories` with `app/Infrastructure/Persistence/Eloquent/*` and `app/Repositories/Contracts` with `app/Repositories/Eloquent`. Both work, but contributors must guess where a new abstraction belongs.
 
-Adopt the domain/infrastructure convention for business aggregates. Reserve application-local contracts for non-domain read models, and document that rule in `AGENTS.md` or a short architecture decision record.
+The placement rule is recorded in `ADR-001-REPOSITORY-CONVENTIONS.md`: business aggregates use the domain/infrastructure convention, while the older application repository locations are reserved for identity, tenant-resolution, and non-domain read models.
 
-### P2: Exceptions are hidden at presentation composition boundaries
+### Resolved: Presentation fallbacks do not hide programming errors
 
-View composition intentionally falls back on defaults. The extracted composers now report failures before applying those defaults; catch expected exceptions more narrowly as failure modes become explicit.
+View composition intentionally falls back on defaults for runtime failures. The extracted composers report those failures and catch `RuntimeException`, allowing programming errors such as type violations to surface.
 
-### P2: Static quality gates are incomplete
+### Resolved: Static quality gates are available
 
-PHP formatting and TypeScript type checking exist, but there is no PHP static analyzer, dependency-boundary checker, ESLint rule set, or frontend unit-test runner. Add gates gradually:
+The repository now has PHP formatting, Larastan, dependency-boundary tests, TypeScript checking, ESLint with React Hooks rules, and focused frontend unit tests. The initial Larastan level is intentionally conservative and can be raised incrementally.
 
-- PHPStan/Larastan at a conservative initial level.
-- ESLint with React hooks and import-boundary rules.
-- Vitest for pure functions, hooks, and API adapters.
-- Automated architecture tests preventing `Domain` from importing Laravel, `Models`, `Http`, or `Infrastructure`.
+- `composer analyse`
+- `npm run lint`
+- `npm run typecheck:strict`
+- `npm run test:unit:frontend`
+- `tests/Unit/Architecture/LayerDependencyTest.php`
 
 ## Refactoring completed in this review
 
@@ -122,6 +125,8 @@ Stripe confirmation now rolls back payment persistence if reward application fai
 
 Post-commit event failure handling is centralized in `PostCommitDomainEventDispatcher` instead of being duplicated across order and payment flows. `OrderService` also uses framework-managed transaction closures, ensuring every `Throwable` rolls back consistently.
 
+`GoogleWalletPassService` now declares member-data and card-appearance collaborators in its constructor. The previous service-locator lookups hid required dependencies and made isolated substitution harder; an architecture test prevents those lookups from returning.
+
 The test harness clears shared cache state per test, and integration-dependent FCM and Smaregi webhook configuration is explicit in the affected suites. This prevents order-dependent rate-limit and environment failures.
 
 Member profile and withdrawal endpoints now distinguish validation or external-link failures from unexpected failures. Provider diagnostics and local log paths remain server-side, while local withdrawal mutations run in one database transaction.
@@ -143,6 +148,8 @@ Application navigation policy is isolated from the `ReggitApp` orchestrator. URL
 Legacy application bootstrap is also isolated from the orchestrator. LIFF readiness, persisted identity restoration, loading-state cleanup, and bounded startup fallbacks now live behind an injected application factory.
 
 Rank-history rendering is also isolated as a pure formatter. API-provided labels and dates are escaped at that boundary and covered by focused unit tests. View composers now catch runtime exceptions rather than all PHP throwables, so programming errors such as type violations are no longer silently replaced with fallback presentation data.
+
+Dead-code cleanup removed unreferenced compatibility aliases from the legacy frontend and two standalone debug HTML pages from the public web root. Feature sources that are still imported by the admin designer preview remain intentionally retained; runtime entry-point removal alone is not sufficient evidence that those modules are dead.
 
 ## Recommended sequence
 

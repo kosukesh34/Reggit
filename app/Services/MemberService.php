@@ -35,6 +35,7 @@ class MemberService
         private CouponIssueService $couponIssueService,
         private SmaregiApiService $smaregiApi,
         private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
+        private CustomerStoreProfile $customerStoreProfile,
         private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
@@ -49,7 +50,7 @@ class MemberService
         if ($member === null) {
             $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
             $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
-            $profileFormFields = $this->buildProfileFormFields($profileSettings);
+            $profileFormFields = $this->buildProfileFormFields($profileSettings, $projectId);
 
             return [
                 'is_member' => false,
@@ -73,7 +74,7 @@ class MemberService
 
         $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
         $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
-        $profileFormFields = $this->buildProfileFormFields($profileSettings);
+        $profileFormFields = $this->buildProfileFormFields($profileSettings, $projectId);
         $profileValues = $this->getProfileValues($member->user, $member);
 
         return [
@@ -213,6 +214,9 @@ class MemberService
             foreach ($formatRules[$key] ?? ['string', 'max:'.ProfileValidationRules::CUSTOM_TEXT_MAX] as $formatRule) {
                 $rule[] = $formatRule;
             }
+            if ($key === 'customer_store_id') {
+                $rule[] = $this->customerStoreProfile->rule($projectId);
+            }
             $rules[$key] = $rule;
         }
         foreach ($settings['custom_fields'] ?? [] as $cf) {
@@ -273,7 +277,7 @@ class MemberService
     }
 
     /** プロフィール設定で有効な項目のみのフォーム用定義（キー・ラベル・必須） */
-    private function buildProfileFormFields(array $profileSettings): array
+    private function buildProfileFormFields(array $profileSettings, int $projectId): array
     {
         $out = [];
         foreach ($profileSettings['smaregi_fields'] ?? [] as $key => $field) {
@@ -288,6 +292,8 @@ class MemberService
                 'label' => $field['label'] ?? $key,
                 'required' => (bool) ($field['required'] ?? false) === true,
                 'input_type' => $this->resolveBasicFieldInputType($key),
+                'options' => $key === 'customer_store_id' ? $this->customerStoreProfile->options($projectId) : [],
+                'description' => $key === 'customer_store_id' ? '主に利用する店舗を選択してください。' : null,
             ];
         }
         foreach ($profileSettings['custom_fields'] ?? [] as $cf) {
@@ -321,6 +327,7 @@ class MemberService
     {
         return match ($key) {
             'birthday' => 'date',
+            'customer_store_id' => ProfileCustomFieldInputType::SELECTBOX,
             'sex', 'mail_receive_flag' => ProfileCustomFieldInputType::RADIO,
             'address' => ProfileCustomFieldInputType::TEXTAREA,
             default => ProfileCustomFieldInputType::TEXT,
@@ -366,6 +373,7 @@ class MemberService
             'birthday' => $member->birthday ? $member->birthday->format('Y-m-d') : null,
             'sex' => $member->sex ?? null,
             'mail_receive_flag' => $member->mail_receive_flag ?? null,
+            'customer_store_id' => $member->customer_store_id === null ? null : (string) $member->customer_store_id,
             'notification_preference' => MemberNotificationPreference::normalize($member->notification_preference),
         ];
         $extra = $member->profile_extra ?? [];
@@ -432,7 +440,7 @@ class MemberService
             $userUpdates[$key] = $val === '' ? null : $val;
         }
 
-        $memberKeys = ['birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'notification_preference'];
+        $memberKeys = ['birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'customer_store_id', 'notification_preference'];
         foreach ($memberKeys as $key) {
             if (! array_key_exists($key, $data)) {
                 continue;
@@ -471,7 +479,7 @@ class MemberService
             $contractId = is_string($contractId) ? trim($contractId) : '';
             if ($contractId !== '') {
                 $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData(
-                    $data,
+                    $this->customerStoreProfile->forSmaregi($data, $projectId),
                     $settings['custom_fields'] ?? [],
                 );
                 if ($body !== []) {
@@ -588,6 +596,7 @@ class MemberService
                 'street' => $data['street'] ?? null,
                 'sex' => $data['sex'] ?? null,
                 'mail_receive_flag' => $data['mail_receive_flag'] ?? null,
+                'customer_store_id' => ($data['customer_store_id'] ?? '') !== '' ? $data['customer_store_id'] : null,
                 'notification_preference' => MemberNotificationPreference::normalize(
                     isset($data['notification_preference']) ? (string) $data['notification_preference'] : null
                 ),
@@ -635,7 +644,7 @@ class MemberService
         ?int $projectId = null,
     ): array {
         $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData(
-            $data,
+            $projectId !== null ? $this->customerStoreProfile->forSmaregi($data, $projectId) : $data,
             $projectId !== null
                 ? ($this->shopSettingRepository->getProfileFieldSettings($projectId)['custom_fields'] ?? [])
                 : [],
