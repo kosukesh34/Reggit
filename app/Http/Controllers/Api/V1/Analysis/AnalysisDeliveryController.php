@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Analysis;
 
 use App\Enums\CouponDeliveryType;
 use App\Http\Controllers\Api\V1\BaseApiController;
+use App\Models\Coupon;
 use App\UseCases\Admin\Coupon\AdminCouponBulkIssueUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -25,6 +26,10 @@ class AnalysisDeliveryController extends BaseApiController
         ]);
         $projectId = AdminContext::requireCurrentProjectId();
         $couponId = (int) $validated['coupon_id'];
+
+        if (! Coupon::where('project_id', $projectId)->whereKey($couponId)->where('is_active', true)->exists()) {
+            return $this->error('配信可能なクーポンが見つかりません', 422);
+        }
         $sendNotification = $request->exists('send_notification')
             ? $request->boolean('send_notification')
             : true;

@@ -238,7 +238,7 @@ export class StampsManager {
             this.lastDefaultImage = defaultImage;
             this.render(this.cache, defaultImage);
         } catch (error) {
-            // eslint-disable-next-line no-console
+
             console.error('Failed to load stamps:', error);
             section.innerHTML = this.getErrorTemplate(error as Error);
         }

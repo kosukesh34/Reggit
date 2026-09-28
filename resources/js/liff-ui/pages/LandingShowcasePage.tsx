@@ -309,7 +309,7 @@ function formatShowcaseDate(value: string): string {
 
 export function LandingShowcaseUtility({ feature }: { feature: FeatureType | string }) {
   const { activeStore } = useAppConfig();
-  const { member, coupons, news, stores, history, usedCouponIds, useCoupon, createReservation } = useRuntimeData();
+  const { member, coupons, news, stores, history, usedCouponIds, useCoupon: redeemCoupon, createReservation } = useRuntimeData();
   const [selectedDate, setSelectedDate] = useState("9月21日(月)");
   const [selectedTime, setSelectedTime] = useState("11:30");
   const [reserved, setReserved] = useState(false);
@@ -389,7 +389,7 @@ export function LandingShowcaseUtility({ feature }: { feature: FeatureType | str
               <button type="button" disabled={couponSubmitting} onClick={async () => {
                 setCouponSubmitting(true);
                 try {
-                  await useCoupon(selectedCoupon.id);
+                  await redeemCoupon(selectedCoupon.id);
                   setCouponMessage(`「${selectedCoupon.title}」を使用済みにしました。`);
                   setSelectedCoupon(undefined);
                   setCouponTab("history");

@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#00344d">
     <meta name="description" content="Reggitは、LINEミニアプリと店舗管理画面で会員証・注文・予約・順番待ちをまとめる店舗向けサービスです。">
     <title>Reggit｜会員・注文・予約を、ひとつの店舗アプリに</title>
-    <link rel="icon" type="image/svg+xml" href="{{ asset('images/landing/enterprise-logos/reggit-mark.svg') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/reggit-logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="{{ asset('images/landing/app/actual-admin.webp') }}">
-    <link rel="stylesheet" href="{{ asset('css/landing-home.css') }}?v=4">
+    <link rel="stylesheet" href="{{ asset('css/landing-home.css') }}?v=6">
 </head>
 <body class="lp">
     <a class="lp-skip" href="#main">本文へ移動</a>
     <header class="lp-header">
         <div class="lp-container lp-header__inner">
             <a class="lp-brand" href="/" aria-label="Reggit トップへ">
-                <img src="{{ asset('images/landing/enterprise-logos/reggit-wordmark.svg') }}" alt="Reggit" width="160" height="36">
+                <img src="{{ asset('images/reggit-logo.png') }}" alt="Reggit" width="72" height="72">
             </a>
             <nav class="lp-nav" aria-label="メインナビゲーション">
                 <a href="#features">機能</a>
@@ -28,7 +28,7 @@
             </nav>
             <div class="lp-header__actions">
                 <a class="lp-login" href="{{ route('admin.login') }}">管理画面ログイン</a>
-                <a class="lp-button lp-button--header" href="#register">導入登録を始める</a>
+                <a class="lp-button lp-button--header" href="{{ route('landing.register.email.show') }}">導入登録を始める</a>
             </div>
             <details class="lp-mobile-nav">
                 <summary>メニュー<span aria-hidden="true"></span></summary>
@@ -38,7 +38,7 @@
                     <a href="#scenes">利用シーン</a>
                     <a href="#faq">よくある質問</a>
                     <a href="{{ route('admin.login') }}">管理画面ログイン</a>
-                    <a href="#register">導入登録を始める</a>
+                    <a href="{{ route('landing.register.email.show') }}">導入登録を始める</a>
                 </nav>
             </details>
         </div>
@@ -55,8 +55,8 @@
                     <div class="lp-hero__aside">
                         <p>Reggitは、LINEミニアプリと店舗管理画面で、会員証・モバイルオーダー・予約・順番待ちをまとめるサービスです。</p>
                         <div class="lp-hero__actions">
-                            <a class="lp-button" href="#register">導入登録を始める</a>
-                            <a class="lp-link" href="/liff">アプリのデモを体験する</a>
+                            <a class="lp-button" href="{{ route('landing.register.email.show') }}">導入登録を始める</a>
+                            <a class="lp-link" href="{{ route('demo.liff') }}">アプリのデモを体験する</a>
                         </div>
                     </div>
                 </div>
@@ -231,27 +231,20 @@
                     <p>まずはメールアドレスをご登録ください。認証後、店舗情報の入力フォームをご案内します。</p>
                     <img src="{{ asset('images/landing/editorial/storefront-detail.webp') }}" alt="街のお店の外観イメージ" width="1536" height="1024" loading="lazy">
                 </div>
-                <form class="lp-register__form" method="POST" action="{{ route('landing.register.email') }}">
-                    @csrf
-                    @if (session('status'))
-                        <p class="lp-alert lp-alert--success" role="status">{{ session('status') }}</p>
-                    @endif
-                    @if ($errors->has('email'))
-                        <p class="lp-alert lp-alert--error" role="alert">{{ $errors->first('email') }}</p>
-                    @endif
-                    <label for="lp-email">メールアドレス</label>
-                    <input id="lp-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required maxlength="255" placeholder="name@company.jp">
-                    <button class="lp-button" type="submit">認証メールを送る</button>
+                <div class="lp-register__form">
+                    <h3>導入登録を始める</h3>
+                    <p>メールアドレスの認証後、店舗情報を入力していただきます。</p>
+                    <a class="lp-button" href="{{ route('landing.register.email.show') }}">メール認証へ進む</a>
                     <small>登録後すぐに契約が発生することはありません。</small>
-                </form>
+                </div>
             </div>
         </section>
     </main>
 
     <footer class="lp-footer">
         <div class="lp-container lp-footer__main">
-            <div><a href="/" aria-label="Reggit トップへ"><img src="{{ asset('images/landing/enterprise-logos/reggit-wordmark-light.svg') }}" alt="Reggit" width="160" height="36"></a><p>店舗向けLINEミニアプリ・管理システム</p></div>
-            <nav aria-label="フッターナビゲーション"><a href="#features">機能</a><a href="#screens">実際の画面</a><a href="/liff">アプリのデモ</a><a href="{{ route('admin.login') }}">管理画面ログイン</a></nav>
+            <div><a href="/" aria-label="Reggit トップへ"><img src="{{ asset('images/reggit-logo.png') }}" alt="Reggit" width="72" height="72"></a><p>店舗向けLINEミニアプリ・管理システム</p></div>
+            <nav aria-label="フッターナビゲーション"><a href="#features">機能</a><a href="#screens">実際の画面</a><a href="{{ route('demo.liff') }}">アプリのデモ</a><a href="{{ route('admin.login') }}">管理画面ログイン</a></nav>
         </div>
         <div class="lp-container lp-footer__bottom"><span>&copy; {{ date('Y') }} Reggit</span><span>Reggit</span></div>
     </footer>

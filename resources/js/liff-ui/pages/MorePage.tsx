@@ -29,6 +29,8 @@ export function MorePage() {
   const { activeStore, experienceId } = useAppConfig();
   const { member, mode, refresh } = useRuntimeData();
   const isMember = member.isMember;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
 
   if (isDesignShowcaseMode() && experienceId === "landing-showcase") {
     return <LandingShowcaseMore />;
@@ -41,9 +43,6 @@ export function MorePage() {
       { to: "/designlab", label: "ルーレット", icon: Sparkles, focus: "roulette" },
     ]
     : [];
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
-
   const runLogout = async () => {
     if (!window.confirm("ログアウトしますか？\n（会員データは残ります。再度開くと同じアカウントに戻れます）")) {
       return;

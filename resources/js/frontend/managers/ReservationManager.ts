@@ -118,7 +118,7 @@ export class ReservationManager {
                 throw new Error(response.error);
             }
         } catch (error) {
-            // eslint-disable-next-line no-console
+
             console.error(AppConstants.RESERVATION_MESSAGES.LOAD_ERROR, error);
             if (this.reservationsSection) {
                 const message = error instanceof Error ? error.message : '';
@@ -696,7 +696,7 @@ export class ReservationManager {
                 this.setInitialCalendarMonth();
             }
         } catch (error) {
-            // eslint-disable-next-line no-console
+
             console.error('Failed to load available dates:', error);
             this.availableDates = [];
             this.courses = [];

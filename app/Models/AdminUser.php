@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -108,28 +111,46 @@ class AdminUser extends Authenticatable
         'password' => 'hashed',
     ];
 
+    protected static function booted(): void
+    {
+        static::created(function (self $admin) {
+            if ($admin->project_id !== null) {
+                $stores = Store::where('project_id', $admin->project_id)->limit(2)->get();
+                if ($stores->count() === 1) {
+                    $store = $stores->first();
+                    $admin->stores()->syncWithoutDetaching([$store->id => ['project_id' => $store->project_id]]);
+                }
+            }
+        });
+    }
+
     // ── リレーション ──
 
-    public function project()
+    public function stores(): BelongsToMany
+    {
+        return $this->belongsToMany(Store::class, 'admin_user_stores')->withPivot('project_id')->withTimestamps();
+    }
+
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    /** 担当店舗（複数可） */
-    public function projects()
+    /** 担当プロジェクト（複数可） */
+    public function projects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'admin_user_projects')
             ->withTimestamps();
     }
 
     /** スタッフ権限 */
-    public function permissions()
+    public function permissions(): HasMany
     {
         return $this->hasMany(AdminUserPermission::class);
     }
 
     /** 作成者 */
-    public function createdBy()
+    public function createdBy(): BelongsTo
     {
         return $this->belongsTo(self::class, 'created_by_id');
     }

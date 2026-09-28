@@ -20,7 +20,8 @@ const MOCK_STORE_IDS = new Set([
   ...additionalStores.map((store) => store.storeId),
 ]);
 
-const storageKey = "reggit-runtime-data-v2";
+const storageKey = typeof document !== "undefined" && document.body.dataset.appMode === "demo"
+  ? "reggit-demo-runtime-data-v1" : "reggit-runtime-data-v2";
 
 interface LocalStoreState {
   usedCouponIds: string[];
@@ -260,9 +261,12 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   }), [activeStore.storeName]);
 
   const baseData = remoteData ?? (usePreviewData ? mockData : emptyLiveData);
-  const data = announcementFormPreview === undefined
-    ? baseData
-    : { ...baseData, news: [announcementFormPreview], notificationCount: 1 };
+  const data = useMemo(
+    () => announcementFormPreview === undefined
+      ? baseData
+      : { ...baseData, news: [announcementFormPreview], notificationCount: 1 },
+    [announcementFormPreview, baseData],
+  );
   // 初回ロード中はモック店舗データを画面に出さない（ユーザー困惑防止）
   const isBootstrapping = loading && remoteData === undefined && !usePreviewData;
   const markAnnouncementRead = useCallback(async (announcementId: string) => {

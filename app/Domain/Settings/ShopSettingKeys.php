@@ -62,6 +62,7 @@ class ShopSettingKeys
         'birthday' => '生年月日',
         'sex' => '性別',
         'mail_receive_flag' => '店舗からの案内メールを受け取る',
+        'customer_store_id' => '対象店舗',
     ];
 
     public const PROFILE_SMAREGI_LINKED_KEYS = [
@@ -74,6 +75,7 @@ class ShopSettingKeys
         'birthday',
         'sex',
         'mail_receive_flag',
+        'customer_store_id',
     ];
 
     public static function isSmaregiLinkedProfileField(string $key): bool

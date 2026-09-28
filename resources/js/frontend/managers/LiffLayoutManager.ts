@@ -52,7 +52,7 @@ export class LiffLayoutManager {
             this._initSliders(container);
             this._mountDataSources(container);
         } catch (err) {
-            // eslint-disable-next-line no-console
+
             console.error('LiffLayoutManager.renderCustomLayout failed:', err);
             delete container.dataset.layoutRendered;
             this._loadDefaultTabContent(tab);

@@ -425,3 +425,40 @@ body.lp {
     .lp-marquee__track { animation: none; }
     .lp-button { transition: none; }
 }
+
+/* Registration pages share the public home and admin palette. */
+body.lp-sub {
+    --ink: #4c575e;
+    --forest: #0085c7;
+    --forest-deep: #006fa7;
+    --paper: #f2f5f6;
+    --paper-light: #f2f5f6;
+    --muted: #606b73;
+    --line: #dce3e7;
+    background: var(--paper);
+}
+.lp-sub .lp-container { width: min(calc(100% - 40px), 1200px); margin-inline: auto; }
+.lp-sub .lp-header { background: #080a0b; color: #fff; border-bottom: 0; }
+.lp-sub .lp-header__inner { display: flex; justify-content: space-between; gap: 24px; }
+.lp-sub .lp-header__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.lp-sub .lp-brand img { width: 128px; height: 32px; border-radius: 0; }
+.lp-sub .lp-button { border-radius: 4px; box-shadow: 0 2px 4px #00344d20; }
+.lp-sub .lp-button:hover { transform: none; }
+.lp-sub .lp-button--small { min-height: 40px; padding: 10px 14px; font-size: 12px; }
+.lp-sub .lp-button--outline { background: #fff; color: #0085c7 !important; border-color: #dce3e7; }
+.lp-sub .lp-status, .lp-sub .lp-onboarding { max-width: 840px; margin: 48px auto; padding: 32px; background: #fff; border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 1px 3px #00344d14; }
+.lp-sub .lp-footer { background: #00344d; }
+.lp-sub .lp-footer__inner > p { color: #bacdd7; }
+.lp-sub .lp-alert--error { color: #9d382d; background: #fae8e6; }
+.lp-sub .lp-alert--success { color: #175a40; background: #e1f1e8; }
+@media (max-width: 580px) {
+    .lp-sub .lp-header__inner { flex-wrap: wrap; padding-block: 14px; gap: 12px; }
+    .lp-sub .lp-status, .lp-sub .lp-onboarding { margin-block: 24px; padding: 20px; }
+}
+.lp-sub .lp-inquiry { max-width: 840px; margin: 48px auto; padding: 32px; background: #fff; border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 1px 3px #00344d14; }
+.lp-sub .lp-inquiry__form { display: grid; gap: 20px; }
+.lp-sub .lp-field > span { color: var(--ink); font-size: 13px; margin: 0 0 8px; }
+.lp-sub .lp-field input, .lp-sub .lp-field select, .lp-sub .lp-field textarea { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); background: #fff; font: inherit; }
+@media (max-width: 580px) { .lp-sub .lp-inquiry { margin-block: 24px; padding: 20px; } }
+
+.lp-sub .lp-brand img { width: 72px; height: 72px; object-fit: contain; }

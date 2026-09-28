@@ -29,8 +29,12 @@ class AuthenticateApiToken
             return response()->json(['success' => false, 'message' => 'APIトークンの有効期限が切れています'], 401);
         }
 
+        if ($apiToken->scope === 'analysis' && ! $request->is('api/v1/*/analysis/*')) {
+            return response()->json(['success' => false, 'message' => 'このトークンは分析API専用です'], 403);
+        }
+
         $project = Project::find($apiToken->project_id);
-        if ($project === null || $project->is_active === false) {
+        if ($project === null || ! $project->isServiceAvailable()) {
             return response()->json(['success' => false, 'message' => 'プロジェクトが無効です'], 403);
         }
 

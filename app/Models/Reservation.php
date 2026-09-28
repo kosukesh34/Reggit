@@ -10,6 +10,7 @@ use App\Util\AdminContext;
 use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Reservation extends Model
 {
@@ -21,7 +22,7 @@ class Reservation extends Model
     }
 
     protected $fillable = [
-        'project_id',
+        'project_id', 'store_id',
         'user_id',
         'reservation_number',
         'reserved_at',
@@ -40,17 +41,17 @@ class Reservation extends Model
         'course_price' => 'integer',
     ];
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function course()
+    public function course(): BelongsTo
     {
         return $this->belongsTo(ReservationCourse::class, 'reservation_course_id');
     }

@@ -28,13 +28,30 @@ class Project extends Model
         'description',
         'is_active',
         'plan',
+        'service_status',
+        'max_active_stores',
+        'analysis_api_enabled',
+        'analysis_delivery_enabled',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'is_active' => 'boolean',
         'plan' => 'string',
+        'max_active_stores' => 'integer',
+        'analysis_api_enabled' => 'boolean',
+        'analysis_delivery_enabled' => 'boolean',
     ];
+
+    public function isServiceAvailable(): bool
+    {
+        return $this->is_active && ($this->service_status ?? 'active') === 'active';
+    }
+
+    public function stores(): HasMany
+    {
+        return $this->hasMany(Store::class);
+    }
 
     public function users(): HasMany
     {

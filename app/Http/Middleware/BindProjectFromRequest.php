@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Repositories\Contracts\ProjectRepository;
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use App\Util\StrHelper;
 use Closure;
 use Illuminate\Http\Request;
@@ -62,7 +63,12 @@ class BindProjectFromRequest
             abort(404, 'プロジェクトが見つかりません。');
         }
 
+        if (! $project->isServiceAvailable()) {
+            abort(403, 'このプロジェクトは利用停止または解約されています。');
+        }
+
         AdminContext::setCurrentProject($project);
+        app(StoreContext::class)->bind($request, (int) $project->id);
         $request->attributes->set('currentProject', $project);
         View::share('currentProject', $project);
         View::share('currentProjectId', $project->id);

@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\AnnouncementRead;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Services\AnnouncementStoreAudience;
 use App\Support\MemberChannel;
 use App\Util\DateUtil;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -19,6 +20,7 @@ class AnnouncementAdminService
         private MemberSegmentService $memberSegmentService,
         private MemberAdminService $memberAdminService,
         private MemberBenefitService $memberBenefitService,
+        private readonly AnnouncementStoreAudience $storeAudience,
     ) {}
 
     /** @return list<string> */
@@ -229,20 +231,22 @@ class AnnouncementAdminService
             ->keyBy(fn (AnnouncementRead $read) => (int) $read->user_id);
 
         $memberCoupons = collect();
-        if ($announcement->delivery_coupon_id !== null) {
+        $deliveryCouponIds = $announcement->deliveryCouponIds();
+        if ($deliveryCouponIds !== []) {
             $memberCoupons = MemberCoupon::query()
                 ->where('project_id', (int) $announcement->project_id)
-                ->where('coupon_id', (int) $announcement->delivery_coupon_id)
+                ->whereIn('coupon_id', $deliveryCouponIds)
                 ->where('issue_source_type', MemberCouponSource::ANNOUNCEMENT)
                 ->where('issue_source_id', (string) $announcement->id)
                 ->whereIn('member_id', $targetMemberIds)
                 ->orderByDesc('id')
                 ->get()
+                ->sortByDesc(fn (MemberCoupon $coupon): bool => $coupon->status === 'used')
                 ->unique('member_id')
                 ->keyBy(fn (MemberCoupon $memberCoupon) => (int) $memberCoupon->member_id);
         }
 
-        $hasCoupon = $announcement->delivery_coupon_id !== null;
+        $hasCoupon = $announcement->hasDeliveryCoupons();
 
         return collect($targetMemberIds)
             ->map(function (int $memberId) use ($members, $reads, $memberCoupons, $hasCoupon): ?array {
@@ -287,7 +291,8 @@ class AnnouncementAdminService
 
     public function issueDeliveryCouponIfSet(Announcement $announcement): void
     {
-        if ($announcement->delivery_coupon_id === null) {
+        $couponIds = $announcement->deliveryCouponIds();
+        if ($couponIds === []) {
             return;
         }
 
@@ -302,18 +307,25 @@ class AnnouncementAdminService
             return;
         }
 
-        $this->memberBenefitService->issueCouponToMembers(
-            (int) $announcement->project_id,
-            (int) $announcement->delivery_coupon_id,
-            $targetMemberIds,
-            MemberCouponSource::ANNOUNCEMENT,
-            (string) $announcement->id,
-            false,
-        );
+        foreach ($couponIds as $couponId) {
+            $this->memberBenefitService->issueCouponToMembers(
+                (int) $announcement->project_id,
+                $couponId,
+                $targetMemberIds,
+                MemberCouponSource::ANNOUNCEMENT,
+                (string) $announcement->id,
+                false,
+            );
+        }
     }
 
     /** @return Collection<int, int> */
     public function liveMemberIds(Announcement $announcement): Collection
+    {
+        return $this->storeAudience->filter($announcement, $this->resolveLiveMemberIds($announcement));
+    }
+
+    private function resolveLiveMemberIds(Announcement $announcement): Collection
     {
         $projectId = (int) $announcement->project_id;
         if ($announcement->delivery_type === Announcement::DELIVERY_TYPE_PERSONAL) {

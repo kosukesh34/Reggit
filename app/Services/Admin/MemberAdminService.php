@@ -11,6 +11,7 @@ use App\Models\MemberVisit;
 use App\Models\Order;
 use App\Models\Scopes\ProjectScope;
 use App\Models\User;
+use App\Services\CustomerStoreProfile;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Services\Smaregi\SmaregiApiService;
@@ -29,6 +30,7 @@ class MemberAdminService
     public function __construct(
         private SmaregiApiService $smaregiApi,
         private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
+        private CustomerStoreProfile $customerStoreProfile,
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator,
@@ -180,7 +182,7 @@ class MemberAdminService
             'smaregi_transaction_head_id' => $smaregiTransactionHeadId,
         ]);
 
-        $currentLast = $member->last_visited_at;
+        $currentLast = DateUtil::nullableCarbon($member->getRawOriginal('last_visited_at'));
         if ($currentLast === null || $visitedCarbon->gt($currentLast)) {
             $member->update(['last_visited_at' => $visitedCarbon]);
             $member->refresh();
@@ -305,12 +307,12 @@ class MemberAdminService
 
         $allowedMember = [
             'member_number', 'status', 'rank', 'birthday', 'address',
-            'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'notification_preference', 'profile_extra',
+            'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'customer_store_id', 'notification_preference', 'profile_extra',
         ];
         $updateMember = array_intersect_key($memberData, array_flip($allowedMember));
         $updateMember = array_filter(
             $updateMember,
-            static fn ($value, string $key): bool => $key === 'profile_extra' || $key === 'mail_receive_flag' || $value !== null,
+            static fn ($value, string $key): bool => $key === 'profile_extra' || $key === 'mail_receive_flag' || $key === 'customer_store_id' || $value !== null,
             ARRAY_FILTER_USE_BOTH
         );
         $previousRank = (string) ($member->rank ?? '');
@@ -355,12 +357,12 @@ class MemberAdminService
 
         $mergedUser = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
         $customFieldDefs = $this->shopSettingRepository->getProfileFieldSettings((int) $member->project_id)['custom_fields'] ?? [];
-        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromAdminMemberData($mergedUser, array_merge(
+        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromAdminMemberData($mergedUser, $this->customerStoreProfile->forSmaregi(array_merge(
             $member->only([
-                'member_number', 'birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag',
+                'member_number', 'birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'customer_store_id',
             ]),
             ['profile_extra' => $member->profile_extra],
-        ), $customFieldDefs);
+        ), (int) $member->project_id), $customFieldDefs);
         if ($body === []) {
             return;
         }
