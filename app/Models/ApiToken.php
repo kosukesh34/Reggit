@@ -14,6 +14,7 @@ class ApiToken extends Model
         'is_active',
         'last_used_at',
         'expires_at',
+        'scope',
     ];
 
     /** @var array<string, string> */
@@ -28,7 +29,7 @@ class ApiToken extends Model
         return $this->belongsTo(Project::class);
     }
 
-    public static function issue(Project $project, string $name, ?\DateTimeInterface $expiresAt = null): array
+    public static function issue(Project $project, string $name, ?\DateTimeInterface $expiresAt = null, string $scope = 'general'): array
     {
         $plain = bin2hex(random_bytes(32));
         $token = self::create([
@@ -37,6 +38,7 @@ class ApiToken extends Model
             'token_hash' => hash('sha256', $plain),
             'is_active' => true,
             'expires_at' => $expiresAt,
+            'scope' => $scope,
         ]);
 
         return ['token' => $token, 'plain' => $plain];

@@ -5,6 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToProject;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -43,32 +46,32 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
     ];
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function member()
+    public function member(): HasOne
     {
         return $this->hasOne(Member::class);
     }
 
-    public function orders()
+    public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
     }
 
-    public function reservations()
+    public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class);
     }
 
-    public function devices()
+    public function devices(): HasMany
     {
         return $this->hasMany(UserDevice::class);
     }
 
-    public function announcementReads()
+    public function announcementReads(): HasMany
     {
         return $this->hasMany(AnnouncementRead::class);
     }

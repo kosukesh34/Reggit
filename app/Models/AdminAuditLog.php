@@ -150,4 +150,49 @@ class AdminAuditLog extends Model
         'announcements' => 'お知らせ',
         'settings' => '設定',
     ];
+
+    /** A human-readable, PII-safe description of the affected area. */
+    public function getTargetLabel(): string
+    {
+        $route = (string) ($this->route_name ?? '');
+        $segments = explode('.', $route);
+        $resource = $segments[count($segments) - 2] ?? '';
+        $resourceLabel = self::RESOURCE_LABELS[$resource] ?? match ($resource) {
+            'api-tokens' => 'APIトークン',
+            'accounts' => 'アカウント',
+            'projects' => 'プロジェクト',
+            'settings' => '設定',
+            default => '',
+        };
+
+        if ($resourceLabel === '') {
+            return $this->project?->name ?? '管理画面';
+        }
+
+        $payload = is_array($this->payload) ? $this->payload : [];
+        $id = $payload['id'] ?? null;
+        $params = request()->route()?->parameters() ?? [];
+        $id ??= $params['id'] ?? null;
+
+        return $resourceLabel.($id ? ' #'.$id : '');
+    }
+
+    /** PII-safe list of the changed field names, never their submitted values. */
+    public function getChangedFieldsLabel(): string
+    {
+        $payload = is_array($this->payload) ? $this->payload : [];
+        $labels = [
+            'name' => '名称', 'title' => 'タイトル', 'price' => '価格',
+            'status' => 'ステータス', 'service_status' => 'サービス状態',
+            'is_active' => '公開状態', 'role' => '権限', 'permissions' => '権限設定',
+            'permission_ids' => '権限設定', 'sort_order' => '表示順',
+            'display_order' => '表示順', 'type' => '種類',
+        ];
+        $fields = array_values(array_unique(array_filter(array_map(
+            fn ($key) => $labels[$key] ?? null,
+            array_keys($payload)
+        ))));
+
+        return $fields === [] ? '変更項目の詳細は記録されていません' : implode('、', $fields);
+    }
 }

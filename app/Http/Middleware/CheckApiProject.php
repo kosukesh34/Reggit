@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AdminUser;
 use App\Models\Project;
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +19,7 @@ class CheckApiProject
         $project = Project::query()
             ->where('project_key', $projectKey)
             ->where('is_active', true)
+            ->where('service_status', 'active')
             ->first();
 
         if ($project === null) {
@@ -29,6 +32,8 @@ class CheckApiProject
         }
 
         AdminContext::setCurrentProject($project);
+        $admin = $request->user();
+        app(StoreContext::class)->bind($request, (int) $project->id, $admin instanceof AdminUser ? $admin : null);
         $request->attributes->set('currentProject', $project);
 
         return $next($request);

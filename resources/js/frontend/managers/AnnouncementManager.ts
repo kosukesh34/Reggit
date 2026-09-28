@@ -75,7 +75,7 @@ export class AnnouncementManager {
             this.bindAdaptiveMedia(section);
             this.bindListClicks(section);
         } catch (error) {
-            // eslint-disable-next-line no-console
+
             console.error('Failed to load announcements:', error);
             if (isIosHome) {
                 section.innerHTML = `

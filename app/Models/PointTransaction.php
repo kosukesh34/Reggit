@@ -5,13 +5,14 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PointTransaction extends Model
 {
     use BelongsToProject, HasFactory;
 
     protected $fillable = [
-        'project_id',
+        'project_id', 'store_id', 'origin',
         'member_id',
         'type',
         'points',
@@ -26,17 +27,17 @@ class PointTransaction extends Model
         'expires_at' => 'date',
     ];
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function member()
+    public function member(): BelongsTo
     {
         return $this->belongsTo(Member::class);
     }
 
-    public function order()
+    public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
     }

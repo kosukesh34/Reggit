@@ -116,6 +116,8 @@
                         <td>
                             @if($a->delivery_status === 'sent')
                                 <span class="badge badge-success">{{ $view->deliveryStatusLabels['sent'] }}</span>
+                            @elseif($a->delivery_status === 'held')
+                                <span class="badge badge-warning" title="作成者の権限または店舗状態が変更されたため保留しています。本部で対象を確認してください。">保留（権限確認）</span>
                             @elseif($a->delivery_status === 'scheduled')
                                 <span class="badge badge-info">{{ $view->deliveryStatusLabels['scheduled'] }}</span>
                             @else

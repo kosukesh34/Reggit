@@ -39,6 +39,7 @@ class AdminAnnouncementStoreDeliveryUseCase
      *     segment_condition?: string,
      *     segment_min_amount?: string,
      *     delivery_coupon_id?: string,
+     *     delivery_coupon_ids?: string[],
      *     audience_resolve_mode?: string,
      *     send_notification?: string|int|bool,
      * } $validated
@@ -144,6 +145,7 @@ class AdminAnnouncementStoreDeliveryUseCase
         $isScheduled = $deliveryTiming === Announcement::DELIVERY_TIMING_SCHEDULED;
         $scheduledAt = $isScheduled ? DateUtil::nullableCarbon((string) $validated['scheduled_at']) : null;
         $now = now();
+        $deliveryCouponIds = $this->resolveDeliveryCouponIds($projectId, $validated);
 
         return $this->announcementAdminService->create($projectId, [
             'title' => (string) $validated['title'],
@@ -153,6 +155,8 @@ class AdminAnnouncementStoreDeliveryUseCase
             'send_notification' => $this->shouldSendNotification($validated),
             'expires_at' => $validated['expires_at'] ?? null,
             'delivery_type' => $audienceType,
+            'visibility' => 'recipients',
+            'private_image_path' => $validated['private_image_path'] ?? null,
             'delivery_timing' => $deliveryTiming,
             'scheduled_at' => $scheduledAt,
             'delivery_status' => $isScheduled
@@ -167,7 +171,8 @@ class AdminAnnouncementStoreDeliveryUseCase
             'segment_criteria' => $audienceType === Announcement::DELIVERY_TYPE_SEGMENT
                 ? $this->memberSegmentService->buildCriteriaFromInput($validated)
                 : null,
-            'delivery_coupon_id' => $this->resolveDeliveryCouponId($projectId, $validated),
+            'delivery_coupon_id' => $deliveryCouponIds[0] ?? null,
+            'delivery_coupon_ids' => $deliveryCouponIds,
         ]);
     }
 
@@ -208,18 +213,20 @@ class AdminAnnouncementStoreDeliveryUseCase
     }
 
     /** @param array<string, string|string[]> $validated */
-    private function resolveDeliveryCouponId(int $projectId, array $validated): ?int
+    /** @return list<int> */
+    private function resolveDeliveryCouponIds(int $projectId, array $validated): array
     {
-        if (! isset($validated['delivery_coupon_id'])) {
-            return null;
+        $rawIds = (array) ($validated['delivery_coupon_ids'] ?? []);
+        if (isset($validated['delivery_coupon_id'])) {
+            $rawIds[] = $validated['delivery_coupon_id'];
         }
 
-        $couponId = (int) $validated['delivery_coupon_id'];
-        if ($couponId <= 0) {
-            return null;
-        }
-
-        return $this->couponAdminService->existsForProject($projectId, $couponId) ? $couponId : null;
+        return collect($rawIds)
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0 && $this->couponAdminService->existsForProject($projectId, $id))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

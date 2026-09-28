@@ -31,6 +31,9 @@ class MemberMutationController extends AdminBaseController
                 : null,
             'notification_preference' => (string) $request->input('notification_preference'),
         ];
+        if ($request->has('customer_store_id')) {
+            $memberData['customer_store_id'] = $request->input('customer_store_id') ?: null;
+        }
         $profileExtra = $request->getProfileExtraArray();
         if ($profileExtra !== null) {
             $memberData['profile_extra'] = $profileExtra;

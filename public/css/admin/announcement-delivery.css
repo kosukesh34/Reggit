@@ -1,3 +1,104 @@
+body[data-page-kind="announcement-delivery"] .ad-header-submit {
+    margin-left: auto;
+    flex-shrink: 0;
+    min-height: 42px;
+    border-radius: 10px;
+    gap: 8px;
+    background: #315fd4;
+    color: #fff;
+}
+
+.announcement-delivery-admin .ad-bottom-summary .ad-confirm-panel {
+    padding: 26px;
+    box-shadow: 0 8px 26px rgba(24, 35, 61, .055);
+}
+
+.ad-bottom-summary .ad-confirm-head h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.ad-bottom-summary .ad-confirm-head p {
+    margin: 6px 0 0;
+    color: #6f7787;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.ad-bottom-summary .ad-confirm-panel dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 24px;
+}
+
+.ad-bottom-summary .ad-confirm-panel dl > div {
+    display: block;
+    padding: 16px 0;
+}
+
+.ad-bottom-summary .ad-confirm-panel dl > div[hidden] {
+    display: none;
+}
+
+.ad-bottom-summary .ad-confirm-panel dt {
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.ad-bottom-summary .ad-confirm-panel dd {
+    text-align: left;
+    font-size: 14px;
+}
+
+.ad-bottom-summary .ad-summary-audience-link {
+    align-items: flex-start;
+}
+
+.ad-bottom-summary .ad-summary-audience-link small,
+.ad-bottom-summary .ad-confirm-panel .ad-confirm-conditions > p,
+.ad-bottom-summary .ad-submit-note {
+    font-size: 12px;
+}
+
+.ad-bottom-summary .ad-form-footer {
+    justify-content: flex-end;
+    border-top: 1px solid #edf0f4;
+    padding-top: 20px;
+}
+
+.ad-bottom-summary .ad-form-footer .ad-submit {
+    width: auto;
+    min-width: 210px;
+    flex: none;
+}
+
+@media (max-width: 680px) {
+    .ad-bottom-summary .ad-confirm-panel dl {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body[data-page-kind="announcement-delivery"] .ad-header-submit {
+        font-size: 12px;
+        padding: 9px 12px;
+    }
+}
+
+.ad-profile-filters {
+    margin-top: 24px;
+    padding: 22px;
+    border: 1px solid #dce4f3;
+    border-radius: 16px;
+    background: #f8faff;
+}
+
+.ad-profile-filters-head h3 { margin: 0; font-size: 16px; color: #263b68; }
+.ad-profile-filters-head p { margin: 8px 0 18px; font-size: 13px; color: #64748b; line-height: 1.7; }
+.ad-profile-filters .ad-segment-advanced { padding: 0; }
+.ad-profile-filter { padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+.ad-profile-filter .ad-filter-label { margin-bottom: 12px; }
+.ad-profile-filter .ad-filter-label .form-label { margin-bottom: 0; }
+.ad-profile-filter .ad-field-help { margin-top: 10px; line-height: 1.6; }
+
 .announcement-delivery-admin {
     --ad-ink: #172033;
     --ad-muted: #6f7787;
@@ -214,7 +315,7 @@
 
 .ad-studio {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: 22px;
     overflow-anchor: none;
@@ -228,8 +329,7 @@
 }
 
 .ad-studio-aside {
-    position: sticky;
-    top: 18px;
+    position: static;
 }
 
 .ad-summary-audience-link {
@@ -2958,9 +3058,7 @@ body.ad-review-open {
     }
 
     .ad-confirm-panel {
-        position: sticky;
-        bottom: 7px;
-        z-index: 5;
+        position: static;
         box-shadow: 0 12px 34px rgba(24, 35, 61, 0.16);
     }
 
@@ -3176,4 +3274,92 @@ body.ad-review-open {
     .ad-member-detail-body dl {
         grid-template-columns: 1fr;
     }
+}
+.ad-filter-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.ad-segment-operator {
+    display: inline-flex;
+    margin-left: .5rem;
+    vertical-align: middle;
+}
+
+.ad-segment-operator select {
+    min-width: 4.5rem;
+    padding: .25rem .5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    color: #334155;
+    background: #f8fafc;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+#delivery_coupon_id[multiple] {
+    min-height: 8rem;
+}
+
+/* 配信フォームの手順と各設定のまとまり */
+.ad-form-guide { margin: 18px 0 24px; }
+.ad-form-guide h2 { margin: 0; font-size: 22px; color: var(--ad-ink); }
+.ad-form-guide p { margin: 8px 0 18px; color: #596579; font-size: 14px; line-height: 1.7; }
+.ad-form-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 0; margin: 0; list-style: none; }
+.ad-form-steps a { display: flex; align-items: center; gap: 10px; padding: 14px; border: 1px solid var(--ad-line); border-radius: 12px; background: #fff; color: #334155; font-size: 14px; font-weight: 700; text-decoration: none; }
+.ad-form-steps a span { display: grid; place-items: center; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--ad-primary-soft); color: var(--ad-primary); }
+.ad-form-steps a:hover { border-color: var(--ad-primary); background: #f8faff; }
+.ad-form-steps a:focus-visible { outline: 3px solid var(--ad-primary); outline-offset: 3px; }
+.announcement-delivery-admin .andel-card-head { padding-bottom: 18px; border-bottom: 1px solid var(--ad-line); }
+.announcement-delivery-admin .andel-card-head p { font-size: 11px; }
+.announcement-delivery-admin .andel-card-head span:not(.andel-card-icon) { color: #596579; font-size: 13px; }
+#delivery-summary { scroll-margin-top: 18px; }
+@media (max-width: 680px) {
+    .ad-form-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ad-form-steps a { padding: 12px; font-size: 13px; }
+    .ad-form-guide h2 { font-size: 19px; }
+}
+body[data-page-kind="announcement-delivery"] .ad-header-submit span,
+body[data-page-kind="announcement-delivery"] .ad-header-submit i {
+    color: #fff;
+}
+
+.ad-segment-instructions { margin: 0 0 20px; padding: 14px 16px; border-radius: 10px; background: #eef3ff; color: #334155; font-size: 13px; line-height: 1.8; }
+.ad-profile-empty { grid-column: 1 / -1; font-size: 14px; line-height: 1.7; }
+.ad-profile-empty p { margin: 0 0 8px; }
+.ad-profile-empty a { color: #315fd4; text-decoration: underline; }
+.announcement-delivery-admin .ad-segment-operator { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.announcement-delivery-admin .ad-segment-operator > span { color: #596579; font-size: 11px; }
+.announcement-delivery-admin .ad-segment-operator select { max-width: 100%; font-size: 12px; }
+.announcement-delivery-admin .ad-segment-details + .ad-segment-details { margin-top: 16px; }
+
+/* 条件は必要なカテゴリだけ開いて編集する */
+.announcement-delivery-admin .ad-segment-details { border: 1px solid #e2e8f0; border-radius: 12px; padding: 0; background: #fff; }
+.announcement-delivery-admin .ad-segment-details > summary { padding: 16px; min-height: 54px; font-size: 14px; }
+.announcement-delivery-admin .ad-segment-details > summary small { font-size: 12px; }
+.announcement-delivery-admin .ad-segment-details > .ad-segment-advanced { padding: 16px; border-top: 1px solid #edf0f4; }
+.announcement-delivery-admin .ad-profile-filter { padding: 0; border: 0; border-radius: 0; }
+.announcement-delivery-admin .ad-profile-filter + .ad-profile-filter { padding-top: 16px; border-top: 1px solid #edf0f4; }
+.announcement-delivery-admin .ad-segment-operator { display: inline-flex; flex-direction: row; margin-left: 8px; }
+.announcement-delivery-admin .ad-segment-operator > .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.ad-condition-help { margin-top: 12px; color: #64748b; font-size: 12px; line-height: 1.7; }
+.ad-condition-help summary { cursor: pointer; }
+.ad-condition-help p { margin: 8px 0 0; }
+#segmentBlock .ad-confirm-conditions { margin: 12px 0; padding: 12px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; }
+@media (max-width: 680px) {
+    .announcement-delivery-admin .ad-segment-details > summary { flex-wrap: wrap; gap: 6px; }
+    .announcement-delivery-admin .ad-segment-details > summary small { margin-left: 0; }
+}
+
+.announcement-delivery-admin .ad-form-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ad-delivery-actions { padding: 4px 0; }
+.ad-delivery-actions .ad-form-footer { justify-content: flex-end; margin-top: 0; }
+.ad-delivery-actions .ad-submit { flex: none; width: auto; min-width: 210px; }
+.ad-delivery-actions .ad-submit-note { text-align: right; font-size: 12px; }
+@media (max-width: 680px) {
+    .announcement-delivery-admin .ad-form-steps a { gap: 6px; padding: 10px 8px; font-size: 12px; }
+    .ad-delivery-actions .ad-form-footer { flex-wrap: wrap; }
+    .ad-delivery-actions .ad-submit { min-width: 0; }
 }

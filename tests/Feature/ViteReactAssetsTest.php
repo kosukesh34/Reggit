@@ -24,20 +24,19 @@ class ViteReactAssetsTest extends TestCase
         return $project;
     }
 
-    public function test_liff画面にreactとviteの読み込みが含まれること(): void
+    public function test_liff画面は_ski_pのreactシェルを表示すること(): void
     {
         $this->createProject();
 
         $response = $this->get('/liff?project_key=default');
 
         $response->assertStatus(200);
-        $response->assertSee('id="react-frontend-root"', false);
-        $response->assertSee('css/frontend/components/29-system-ui-customization.css', false);
-        $response->assertSee('css/frontend/components/38-liff-fixed-ui.css', false);
+        $response->assertSee('id="app-container"', false);
+        $response->assertDontSee('ただいま準備中です');
         $response->assertSee('/build/assets/', false);
     }
 
-    public function test_ネイティブユーザーエージェントのliff画面でも機能スタイルとシェルが含まれること(): void
+    public function test_ネイティブユーザーエージェントでもreactシェルを表示すること(): void
     {
         $this->createProject();
 
@@ -48,9 +47,7 @@ class ViteReactAssetsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('native-app-embed', false);
         $response->assertSee('id="app-container"', false);
-        $response->assertSee('css/frontend/components/22-chrome-accent.css', false);
-        $response->assertSee('css/frontend/components/29-system-ui-customization.css', false);
-        $response->assertSee('css/frontend/components/38-liff-fixed-ui.css', false);
+        $response->assertSee('/build/assets/', false);
     }
 
     public function test_管理画面にreactとviteの読み込みが含まれること(): void

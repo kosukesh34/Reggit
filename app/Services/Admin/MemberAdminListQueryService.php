@@ -7,14 +7,16 @@ use App\Enums\MemberStatus;
 use App\Models\Member;
 use App\Support\MemberChannel;
 use App\Util\DateUtil;
+use App\Util\StoreContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 
 /** 会員一覧とエクスポートで共通の絞り込み・並び替えを担当する。 */
 class MemberAdminListQueryService
 {
-    public function __construct(private RankSettings $shopSettingRepository) {}
+    public function __construct(private RankSettings $shopSettingRepository, private StoreContext $storeContext) {}
 
     /** @var array<string, string> */
     private const LIST_SORT_COLUMNS = [
@@ -98,11 +100,11 @@ class MemberAdminListQueryService
 
         $visitedFrom = DateUtil::nullableCarbon($filters['visited_from'] ?? null);
         if ($visitedFrom !== null) {
-            $query->where('members.last_visited_at', '>=', $visitedFrom->startOfDay());
+            $query->where($this->lastVisitColumn(), '>=', $visitedFrom->startOfDay());
         }
         $visitedTo = DateUtil::nullableCarbon($filters['visited_to'] ?? null);
         if ($visitedTo !== null) {
-            $query->where('members.last_visited_at', '<=', $visitedTo->endOfDay());
+            $query->where($this->lastVisitColumn(), '<=', $visitedTo->endOfDay());
         }
     }
 
@@ -139,8 +141,19 @@ class MemberAdminListQueryService
         if (! array_key_exists($sort, self::LIST_SORT_COLUMNS)) {
             $sort = 'created_at';
         }
-        $query->orderBy(self::LIST_SORT_COLUMNS[$sort], $dir)
+        $query->orderBy($sort === 'last_visited_at' ? $this->lastVisitColumn() : self::LIST_SORT_COLUMNS[$sort], $dir)
             ->orderByDesc('members.id');
+    }
+
+    private function lastVisitColumn(): string|Expression
+    {
+        if ($this->storeContext->projectStoreCount <= 1 || $this->storeContext->visibleStoreIds === null) {
+            return 'members.last_visited_at';
+        }
+        $ids = implode(',', array_map('intval', $this->storeContext->visibleStoreIds));
+        $ids = $ids === '' ? '0' : $ids;
+
+        return new Expression("(select max(visited_at) from member_visits where member_visits.member_id = members.id and member_visits.project_id = members.project_id and member_visits.store_id in ($ids))");
     }
 
     private function applyMemberListRankSort(Builder $query, int $projectId, string $dir): void

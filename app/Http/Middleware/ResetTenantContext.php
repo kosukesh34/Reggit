@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use App\Util\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -27,6 +28,16 @@ class ResetTenantContext
     private function clear(): void
     {
         AdminContext::setCurrentProject(null);
+        $storeContext = app(StoreContext::class);
+        $storeContext->bound = false;
+        $storeContext->projectStoreCount = 0;
+        $storeContext->store = null;
+        $storeContext->projectId = null;
+        $storeContext->visibleStoreIds = null;
+        $storeContext->admin = null;
+        View::share('availableStores', null);
+        View::share('selectedStore', null);
+        View::share('canManageStores', false);
         app(TenantContext::class)->requireProject(false);
         View::share('currentProject', null);
         View::share('currentProjectId', null);

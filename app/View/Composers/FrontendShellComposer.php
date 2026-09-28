@@ -9,6 +9,7 @@ use App\Services\GoogleWalletPassService;
 use App\Services\WalletPassService;
 use App\Util\AdminContext;
 use Illuminate\View\View;
+use RuntimeException;
 
 final class FrontendShellComposer
 {
@@ -48,7 +49,7 @@ final class FrontendShellComposer
                 'memberRegistrationMode' => $this->settings->getMemberRegistrationMode($projectId),
                 'designerPreviewMemberPayload' => $this->previewPayload($projectId),
             ]);
-        } catch (\Exception $exception) {
+        } catch (RuntimeException $exception) {
             report($exception);
             $this->applyFallbacks($view);
         }

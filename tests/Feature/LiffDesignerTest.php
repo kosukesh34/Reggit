@@ -664,7 +664,7 @@ class LiffDesignerTest extends TestCase
         $this->assertSame('https://example.com', $link['url']);
     }
 
-    public function test_liff_designer_保存内容がエンドユーザー画面に反映されること(): void
+    public function test_liff_designer_保存内容を保持し店舗シェルとデモを分離すること(): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -716,35 +716,16 @@ class LiffDesignerTest extends TestCase
         $withKey = $this->get(route('liff.project', ['project_key' => $project->project_key]));
         $withKey->assertOk();
         $withKeyHtml = $withKey->getContent();
-        $this->assertStringNotContainsString('class="liff-fixed-ui"', $withKeyHtml);
-        $this->assertStringNotContainsString("class='liff-fixed-ui'", $withKeyHtml);
-        $this->assertTrue(
-            str_contains($withKeyHtml, '反映テスト店')
-            || str_contains($withKeyHtml, substr(json_encode('反映テスト店'), 1, -1)),
-            'エンドユーザー画面に店舗名が含まれること'
-        );
-        $this->assertTrue(
-            str_contains($withKeyHtml, '反映確認ホーム')
-            || str_contains($withKeyHtml, substr(json_encode('反映確認ホーム'), 1, -1)),
-            'エンドユーザー画面に保存レイアウトが含まれること'
-        );
-        $this->assertStringContainsString('theme-citrus', $withKeyHtml);
-        $this->assertStringContainsString('coupon-screen-ticket', $withKeyHtml);
-        $this->assertStringContainsString('runtime-reflect-marker', $withKeyHtml);
+        $this->assertStringContainsString('id="app-container"', $withKeyHtml);
         $this->assertStringContainsString('__LIFF_TAB_LAYOUTS__', $withKeyHtml);
 
         $withoutKey = $this->get(route('liff.index'));
         $withoutKey->assertOk();
-        $withoutKeyHtml = $withoutKey->getContent();
-        $this->assertStringNotContainsString('class="liff-fixed-ui"', $withoutKeyHtml);
-        $this->assertTrue(
-            str_contains($withoutKeyHtml, '反映確認ホーム')
-            || str_contains($withoutKeyHtml, substr(json_encode('反映確認ホーム'), 1, -1)),
-            '/liff でも保存レイアウトが含まれること'
-        );
+        $this->assertStringContainsString('id="app-container"', $withoutKey->getContent());
 
-        $demo = $this->get(route('liff.index', ['demo' => '1']));
+        $demo = $this->get(route('demo.liff'));
         $demo->assertOk();
-        $this->assertMatchesRegularExpression('/<(html|body)[^>]*liff-fixed-ui/', $demo->getContent());
+        $this->assertStringContainsString('id="demo-root"', $demo->getContent());
+        $this->assertStringNotContainsString('runtime-reflect-marker', $demo->getContent());
     }
 }

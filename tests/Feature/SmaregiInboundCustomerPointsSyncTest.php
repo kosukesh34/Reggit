@@ -129,6 +129,9 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $project = Project::factory()->create();
         ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
+        $store = $project->stores()->firstOrFail();
+        $store->update(['smaregi_store_id' => 'smaregi-store-12']);
+
         $user = User::factory()->create([
             'project_id' => $project->id,
             'name' => '旧姓 旧名',
@@ -147,6 +150,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         $this->fakeSmaregiHttpSingleCustomer([
             'customerId' => '43',
+            'storeId' => 'smaregi-store-12',
             'customerCode' => 'NEW001',
             'lastName' => '山田',
             'firstName' => '太郎',
@@ -166,6 +170,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         $member->refresh();
         $user->refresh();
+        $this->assertSame($store->id, (int) $member->customer_store_id);
         $this->assertSame('NEW001', $member->member_number);
         $this->assertSame('山田 太郎', $user->name);
         $this->assertSame('ヤマダ タロウ', $user->kana);

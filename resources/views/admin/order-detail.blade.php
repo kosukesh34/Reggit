@@ -18,9 +18,9 @@
                 <div class="info-label">ユーザー</div>
                 <div class="info-value">
                     @if($order->user?->member !== null)
-                        <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ $order->user->name ?? 'N/A' }}</a>
+                        <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ admin_person_name($order->user?->name) }}</a>
                     @else
-                        {{ $order->user->name ?? 'N/A' }}
+                        {{ admin_person_name($order->user?->name) }}
                     @endif
                 </div>
             </div>
@@ -40,7 +40,7 @@
             </div>
             <div class="info-item">
                 <div class="info-label">支払い方法</div>
-                <div class="info-value">{{ $order->payment_method ?? 'N/A' }}</div>
+                <div class="info-value">{{ $order->payment_method ?? '未設定' }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">ステータス</div>
@@ -167,7 +167,7 @@
         <tbody>
             @foreach($order->items as $item)
             <tr>
-                <td>{{ $item->product->name ?? 'N/A' }}</td>
+                <td>{{ $item->product->name ?? '商品情報なし' }}</td>
                 <td>{{ $item->quantity }}</td>
                 <td>¥{{ number_format($item->price) }}</td>
                 <td>¥{{ number_format($item->price * $item->quantity) }}</td>

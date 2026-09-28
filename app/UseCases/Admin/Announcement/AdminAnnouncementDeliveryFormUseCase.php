@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\Announcement;
 
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Models\Product;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberAdminService;
@@ -16,6 +17,7 @@ class AdminAnnouncementDeliveryFormUseCase
         private CouponAdminService $couponAdminService,
         private MemberTagAdminService $memberTagAdminService,
         private RfmAnalysisService $rfmAnalysisService,
+        private ProfileSettings $profileSettings,
     ) {}
 
     public function handle(int $projectId): AdminAnnouncementDeliveryFormView
@@ -31,6 +33,7 @@ class AdminAnnouncementDeliveryFormUseCase
             $products,
             $this->memberTagAdminService->getListByProject($projectId),
             $this->rfmAnalysisService->segmentOptions(),
+            array_values($this->profileSettings->getProfileFieldSettings($projectId)['custom_fields'] ?? []),
         );
     }
 }

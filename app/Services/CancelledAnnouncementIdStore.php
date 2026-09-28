@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Announcement;
 use App\Models\CancelledAnnouncementPush;
 use Illuminate\Support\Carbon;
 
@@ -17,6 +18,10 @@ class CancelledAnnouncementIdStore
             return;
         }
 
+        $announcement = Announcement::withoutGlobalScopes()->where('project_id', $projectId)->find($announcementId);
+        if ($announcement?->visibility === 'recipients') {
+            $title = null;
+        }
         CancelledAnnouncementPush::query()->updateOrCreate(
             [
                 'project_id' => $projectId,

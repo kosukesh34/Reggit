@@ -19,6 +19,7 @@ use App\Support\LiffDesignerSanitizer;
 use App\Support\MemberCardDesignMap;
 use App\Support\ShopSettingLiffDefaults;
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use App\Util\StrHelper;
 
 /**
@@ -136,6 +137,11 @@ class ShopSettingStore
             return $default;
         }
 
+        $store = app(StoreContext::class)->store;
+        if (($modelClass === ProjectBusinessSetting::class || in_array($key, ['order_mode', 'order_line_notify_enabled', 'order_ready_line_notify_enabled'], true)) && $store !== null && (int) $store->project_id === $projectId && array_key_exists($key, $store->settings ?? [])) {
+            return $store->settings[$key];
+        }
+
         $row = $modelClass::firstOrCreate(
             ['project_id' => $projectId],
             $modelClass::getDefaultAttributes()
@@ -155,6 +161,19 @@ class ShopSettingStore
         $modelClass = self::KEY_TO_MODEL[$key] ?? null;
         if ($modelClass === null) {
             return;
+        }
+
+        $context = app(StoreContext::class);
+        if (($modelClass === ProjectBusinessSetting::class || in_array($key, ['order_mode', 'order_line_notify_enabled', 'order_ready_line_notify_enabled'], true)) && $context->projectStoreCount > 1 && $context->store !== null && (int) $context->store->project_id === $projectId) {
+            if ($type === 'json' && is_string($value)) {
+                $value = json_decode($value, true) ?? $value;
+            }
+            $context->store->update(['settings' => [...($context->store->settings ?? []), $key => $value]]);
+
+            return;
+        }
+        if ($context->bound && $context->projectStoreCount > 1 && $context->admin !== null && ! $context->admin->isSystemAdmin() && ! $context->admin->isProjectAdmin()) {
+            abort(403, 'プロジェクト共通設定は本部管理者が変更してください。');
         }
 
         $row = $modelClass::firstOrCreate(

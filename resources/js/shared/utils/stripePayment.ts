@@ -64,7 +64,7 @@ export class StripePayment {
         const stripeMeta = document.querySelector('meta[name="stripe-key"]');
         const stripeKey = stripeMeta instanceof HTMLMetaElement ? stripeMeta.content.trim() : '';
         if (stripeKey === '') {
-            // eslint-disable-next-line no-console
+
             console.error('Stripe key not found. Please set STRIPE_KEY in .env file.');
             return;
         }

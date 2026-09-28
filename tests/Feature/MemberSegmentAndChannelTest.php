@@ -227,6 +227,58 @@ class MemberSegmentAndChannelTest extends TestCase
         $this->assertSame([$member->id], $ids->all());
     }
 
+    public function test_member_segment_service_項目ごとに_or結合できること(): void
+    {
+        $project = $this->createProject();
+        $service = app(MemberSegmentService::class);
+        $julyMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'birthday' => '1990-07-15',
+            'sex' => '2',
+        ]);
+        $maleMember = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'birthday' => '1990-01-01',
+            'sex' => '1',
+        ]);
+
+        $criteria = $service->buildCriteriaFromInput([
+            'segment_birthday_months' => [7],
+            'segment_sex' => '1',
+            'segment_operators' => ['sex' => 'or'],
+        ]);
+
+        $this->assertNotNull($criteria);
+        $this->assertEqualsCanonicalizing(
+            [$julyMember->id, $maleMember->id],
+            $service->getMemberIds($project->id, $criteria)->all(),
+        );
+    }
+
+    public function test_member_segment_service_プロフィール任意項目で絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $matching = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'profile_extra' => ['favorite_color' => '青'],
+        ]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'profile_extra' => ['favorite_color' => '赤'],
+        ]);
+        $service = app(MemberSegmentService::class);
+        $criteria = $service->buildCriteriaFromInput([
+            'segment_profile' => ['favorite_color' => ['青']],
+        ]);
+
+        $this->assertNotNull($criteria);
+        $this->assertSame([$matching->id], $service->getMemberIds($project->id, $criteria)->all());
+    }
+
     public function test_lifetime_granted_points_付与で累計が増え絞り込みできること(): void
     {
         $project = $this->createProject();

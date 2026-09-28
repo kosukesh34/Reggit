@@ -274,7 +274,7 @@ export class QueueManager {
             this.attachQueueHandlers(section, entry);
             this.afterQueueCardRendered(entry);
         } catch (error) {
-            // eslint-disable-next-line no-console
+
             console.error('Failed to load queue:', error);
             if (this.shouldShowSampleQueue()) {
                 this.renderSampleQueueCard();
@@ -348,7 +348,7 @@ export class QueueManager {
             this.attachQueueHandlers(section, entry);
             this.afterQueueCardRendered(entry);
         } catch (error) {
-            // eslint-disable-next-line no-console
+
             console.error('Failed to load queue by token:', error);
             const message = error instanceof Error ? error.message : undefined;
             section.innerHTML = this.getErrorTemplate(message);

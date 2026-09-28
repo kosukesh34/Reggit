@@ -288,7 +288,7 @@ class AdminAnalyticsUseCase
         foreach ($rows as $row) {
             $result[] = [
                 'product_id' => (int) $row->product_id,
-                'name' => $names[$row->product_id] ?? 'N/A',
+                'name' => $names[$row->product_id] ?? '商品情報なし',
                 'quantity' => (int) $row->quantity,
                 'revenue' => (float) $row->revenue,
             ];

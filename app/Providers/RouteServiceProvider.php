@@ -41,6 +41,14 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip());
         });
 
+        RateLimiter::for('analysis-read', function (Request $request) {
+            return Limit::perMinute(30)->by('analysis-read:'.$request->attributes->get('apiToken')?->token_hash.':'.$request->path());
+        });
+
+        RateLimiter::for('analysis-delivery', function (Request $request) {
+            return Limit::perMinute(2)->by('analysis-delivery:'.$request->attributes->get('apiToken')?->token_hash);
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

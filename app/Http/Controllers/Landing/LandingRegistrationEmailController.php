@@ -23,11 +23,11 @@ class LandingRegistrationEmailController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect('/#register')
+            return redirect()->route('landing.register.email.show')
                 ->withInput()
                 ->withErrors(['email' => 'メールを送信できませんでした。しばらくしてから再度お試しください。']);
         }
 
-        return redirect('/#register')->with('status', $message);
+        return redirect()->route('landing.register.email.show')->with('status', $message);
     }
 }

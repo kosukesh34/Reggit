@@ -33,19 +33,5 @@ export function isDemoDataMode(): boolean {
         || document.body.classList.contains('ios-demo-data')) {
         return true;
     }
-    try {
-        const params = new URLSearchParams(window.location.search || '');
-        if (params.get('demo') === '1') {
-            return true;
-        }
-        const path = window.location.pathname.replace(/\/+$/, '') || '/';
-        return path === '/liff';
-    } catch (_e) {
-        return false;
-    }
-}
-
-/** @deprecated isDemoDataMode を使う */
-export function isIosFixedUiDemo(): boolean {
-    return isDemoDataMode();
+    return false;
 }

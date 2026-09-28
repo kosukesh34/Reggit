@@ -74,3 +74,12 @@ if (! function_exists('admin_route')) {
         return route($name, $params, $absolute);
     }
 }
+
+if (! function_exists('admin_person_name')) {
+    function admin_person_name(?string $name): string
+    {
+        $normalized = trim((string) $name);
+
+        return $normalized !== '' && strtoupper($normalized) !== 'N/A' ? $name : '氏名未登録';
+    }
+}
