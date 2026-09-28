@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import { createPortal } from "react-dom";
 import { nativeTabHref, nativeTabIconClass, useNativeConfig } from "../native/nativeConfig";
 import "../styles/native-home.css";
@@ -22,7 +22,10 @@ function HomeImageViewer({ images, initialIndex, projectName, onClose }: {
   const [index, setIndex] = useState(initialIndex);
   const closeRef = useRef<HTMLButtonElement>(null);
   const touchStartX = useRef<number | null>(null);
-  const move = (step: number) => setIndex((current) => (current + step + images.length) % images.length);
+  const move = useCallback(
+    (step: number) => setIndex((current) => (current + step + images.length) % images.length),
+    [images.length],
+  );
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -38,7 +41,7 @@ function HomeImageViewer({ images, initialIndex, projectName, onClose }: {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [images.length, onClose]);
+  }, [images.length, move, onClose]);
 
   const onTouchStart = (event: TouchEvent) => { touchStartX.current = event.touches[0]?.clientX ?? null; };
   const onTouchEnd = (event: TouchEvent) => {

@@ -9,7 +9,9 @@ use App\Enums\OrderType;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\Scopes\ProjectScope;
+use App\Models\Store;
 use App\Services\MemberRankSyncService;
+use App\Util\StoreContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -28,6 +30,7 @@ class SmaregiTransactionInboundSyncService
         private SmaregiInboundOrderRecorder $orderRecorder,
         private OrderRepository $orderRepository,
         private MemberRankSyncService $memberRankSyncService,
+        private readonly StoreContext $storeContext,
     ) {}
 
     /**
@@ -130,11 +133,24 @@ class SmaregiTransactionInboundSyncService
                 continue;
             }
 
-            if ($inbound->isReturn()) {
-                $this->applyReturn($member, $headId, $inbound, $visitedAt);
-            } else {
-                $this->applySale($member, $headId, $inbound, $visitedAt);
+            $stores = Store::where('project_id', $member->project_id)->where('is_active', true)->get();
+            $externalStoreId = (string) ($transaction['storeId'] ?? '');
+            $store = $externalStoreId !== '' ? $stores->firstWhere('smaregi_store_id', $externalStoreId) : null;
+            if ($store === null && $stores->count() === 1) {
+                $store = $stores->first();
             }
+            if ($store === null) {
+                Log::warning('[Smaregi] 店舗マッピングが未設定のため取引同期を保留しました。', ['project_id' => $member->project_id, 'transaction_head_id' => $headId, 'store_id' => $externalStoreId]);
+
+                continue;
+            }
+            $this->storeContext->runForStore($store, function () use ($inbound, $member, $headId, $visitedAt) {
+                if ($inbound->isReturn()) {
+                    $this->applyReturn($member, $headId, $inbound, $visitedAt);
+                } else {
+                    $this->applySale($member, $headId, $inbound, $visitedAt);
+                }
+            });
         }
     }
 

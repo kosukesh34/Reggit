@@ -121,7 +121,7 @@ function initMemberDetailHistory(): void {
                 body.innerHTML = data.html;
                 updateBrowserQuery(keyword, from, to);
             } catch (error) {
-                // eslint-disable-next-line no-console
+
                 console.error('[member-detail-history]', error);
             } finally {
                 if (currentId === requestId) {

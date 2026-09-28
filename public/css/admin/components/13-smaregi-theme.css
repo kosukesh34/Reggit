@@ -1,0 +1,124 @@
+/* Reference-inspired administration chrome, shared by store and system screens. */
+body:has(.admin-container) {
+    --primary: #0085c7;
+    --primary-hover: #006fa7;
+    --primary-light: #209cdb;
+    --primary-bg: #edf7fc;
+    --primary-bg-hover: #dceffa;
+    --bg-secondary: #f2f5f6;
+    --text-primary: #4c575e;
+    --text-secondary: #606b73;
+    --text-tertiary: #869ba9;
+    --border: #dce3e7;
+    --border-light: #e8edef;
+    --radius: 4px;
+    --radius-md: 4px;
+    --radius-lg: 5px;
+    --sidebar-width: 210px;
+    --topbar-height: 48px;
+}
+.admin-topbar {
+    position: fixed;
+    inset: 0 0 auto;
+    height: var(--topbar-height);
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 18px;
+    background: #080a0b;
+    color: #fff;
+}
+.admin-topbar-brand {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.admin-topbar-brand-line { display: flex; align-items: center; gap: 4px; }
+.admin-topbar-logo { display: block; width: 96px; height: 24px; object-fit: contain; }
+.admin-topbar-brand small { color: #9da9b0; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-topbar .content-header-actions { flex-wrap: nowrap; gap: 16px; }
+.admin-topbar .content-header-user { padding: 0; background: transparent; color: #dce3e7; }
+.admin-topbar .content-header-role { background: #283238; border-color: #39454d; color: #ccd6dc; }
+.admin-topbar .btn { background: transparent; border-color: #404a50; color: #e4e9ec; box-shadow: none; }
+.admin-topbar .btn:hover { background: #26343d; }
+.sidebar {
+    top: var(--topbar-height);
+    height: calc(100dvh - var(--topbar-height));
+    background: #00344d;
+    border: 0;
+}
+.sidebar-header { background: #002d43; border-bottom: 1px solid #19475d; padding: 16px 18px; }
+.sidebar-kicker { color: #8fabb9; font-size: 10px; }
+.sidebar-header h1 { color: #e4edf2; font-size: 14px; }
+.sidebar-store-switcher-toggle { background: #00344d; border-color: #386074; color: #edf5f9; }
+.sidebar-nav { padding: 8px 0; display: flex; flex-direction: column; }
+.nav-item { border-radius: 0; margin: 0; min-height: 49px; padding: 12px 18px; gap: 16px; color: #aac2cf; font-size: 14px; font-weight: 600; }
+.nav-item i { width: 25px; font-size: 21px; color: #8dafc0; }
+.nav-item:hover { background: #084660; color: #fff; }
+.nav-item.active { background: #006394; color: #fff; }
+.nav-item.active i { color: #fff; }
+.nav-item.active::before { display: none; }
+.nav-group { margin: 0; }
+.nav-group-label { padding: 12px 18px 4px; color: #89a8b9; font-size: 10px; }
+.nav-separator { background: #245268; margin: 12px 18px; flex-shrink: 0; }
+.nav-group-footer { border-top-color: #245268; margin-top: auto; padding-top: 8px; }
+.main-content { padding-top: var(--topbar-height); min-width: 0; }
+.content-header { top: var(--topbar-height); padding: 16px 22px; min-height: 65px; border-bottom: 0; box-shadow: 0 2px 5px #233c4810; }
+.content-header h2 { font-size: 21px; }
+.content-body { width: 100%; max-width: 1400px; margin: 0 auto; padding: 28px 44px 48px; }
+.card { border-radius: 4px; border-color: #dce3e7; box-shadow: 0 1px 3px #233c4814; padding: 24px; margin-bottom: 26px; }
+.card:hover { box-shadow: 0 1px 3px #233c4814; }
+.card-header { border-bottom-color: var(--border); padding-bottom: 20px; }
+.card-title { font-size: 17px; color: var(--text-primary); }
+.table thead th { background: #fff; color: #58636b; border-bottom: 1px solid var(--border); font-size: 12px; padding-top: 18px; padding-bottom: 18px; }
+.table td { border-bottom-color: var(--border); padding-top: 16px; padding-bottom: 16px; }
+.table tbody tr:hover { background: #f6fafc; }
+.btn { border-radius: 4px; }
+.btn-primary { background: var(--primary); border-color: var(--primary); box-shadow: 0 2px 4px #00344d26; }
+.btn-primary, .btn-primary i { color: #fff !important; }
+.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+.form-control { border-radius: 4px; border-color: #d8e1e6; background: #fff; }
+.dashboard-section-label { color: #4c575e; font-size: 17px; letter-spacing: 0; margin: 0 0 12px; }
+.stats-grid--actions { gap: 24px; margin-bottom: 32px; }
+.stats-grid--metrics { gap: 24px; margin-bottom: 32px; }
+.stat-card { border-radius: 4px; border: 1px solid var(--border); box-shadow: 0 1px 3px #233c4814; padding: 26px; }
+.stat-card:hover { transform: none; box-shadow: 0 2px 5px #233c4820; }
+.stat-icon { background: #edf3f6 !important; color: #8daabb !important; border-radius: 3px; }
+.stat-value { font-weight: 400; font-size: 34px; color: #4c575e; }
+.stat-value--alert { color: var(--danger); }
+.stat-label { color: #78858d; }
+.stat-link { color: var(--primary); }
+.stat-card--alert { border-color: #edcd86; }
+:where(.admin-topbar a, .sidebar a, .sidebar summary):focus-visible { outline: 2px solid #80d2fc; outline-offset: -3px; }
+@media (min-width: 1600px) { .content-body { padding-left: 64px; padding-right: 64px; } }
+@media (max-width: 1100px) { .content-body { padding: 24px; } .stats-grid--metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 768px) {
+    .admin-topbar { padding: 0 12px; gap: 8px; }
+    .admin-topbar .content-header-actions { gap: 8px; }
+    .admin-topbar .content-header-user { font-size: 11px; max-width: 120px; overflow: hidden; white-space: nowrap; }
+    .admin-topbar .content-header-role { display: none; }
+    .admin-topbar .btn { padding: 6px 8px; }
+    .main-content { margin-left: 0; }
+    .sidebar { width: 240px; }
+    .sidebar-overlay { top: var(--topbar-height); }
+    .content-header { padding: 12px 16px; min-height: 58px; }
+    .content-header h2 { font-size: 18px; }
+    .content-body { padding: 20px 16px 32px; }
+    .card { padding: 18px; }
+    .stats-grid--actions, .stats-grid--metrics { gap: 12px; }
+    .stat-card { padding: 18px; }
+    .stat-value { font-size: 28px; }
+}
+@media (max-width: 480px) { .stats-grid--metrics { grid-template-columns: 1fr; } .admin-topbar-brand { max-width: 120px; } }
+
+/* Use the same logo asset as the Skip launch screen. */
+.admin-topbar-brand { flex-direction: row; align-items: center; gap: 8px; }
+.admin-topbar-logo { width: 48px; height: 48px; flex-shrink: 0; }
+.admin-topbar-brand small { max-width: 230px; }
+@media (max-width: 480px) { .admin-topbar-brand { max-width: 200px; } .admin-topbar-brand small { max-width: 145px; } }

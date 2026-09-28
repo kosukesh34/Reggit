@@ -5,6 +5,7 @@ namespace App\UseCases\Admin\Member;
 use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberAdminService;
+use App\Services\CustomerStoreProfile;
 use App\UseCases\Admin\Member\Data\AdminMemberEditOutput;
 
 class AdminMemberEditUseCase
@@ -13,6 +14,7 @@ class AdminMemberEditUseCase
         private MemberAdminService $memberAdminService,
         private CouponAdminService $couponAdminService,
         private ProfileSettings $shopSettingRepository,
+        private CustomerStoreProfile $customerStoreProfile,
     ) {}
 
     public function handle(int $projectId, int $memberId): AdminMemberEditOutput
@@ -30,6 +32,7 @@ class AdminMemberEditUseCase
             $activeCoupons,
             $activeStampCards,
             $customProfileFields,
+            $this->customerStoreProfile->options($projectId),
         );
     }
 }

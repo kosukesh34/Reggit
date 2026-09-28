@@ -144,7 +144,7 @@
         <div class="info-grid">
             @foreach($view->breakdowns['payment_methods'] as $row)
             <div class="info-item">
-                <div class="info-label">{{ $row['label'] ?? ($row['method'] ?? 'N/A') }}</div>
+                <div class="info-label">{{ $row['label'] ?? ($row['method'] ?? '不明') }}</div>
                 <div class="info-value">{{ number_format($row['count']) }}</div>
             </div>
             @endforeach

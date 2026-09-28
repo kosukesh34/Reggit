@@ -29,6 +29,20 @@
             @error('plan')<span class="invalid-feedback">{{ $message }}</span>@enderror
         </div>
         <div class="form-group">
+            <label for="max_active_stores" class="form-label">利用可能な店舗数 <span class="text-danger">*</span></label>
+            <input type="number" name="max_active_stores" id="max_active_stores" class="form-control" value="{{ old('max_active_stores', $view->project?->max_active_stores ?? 1) }}" required min="1" max="1000" step="1">
+            @error('max_active_stores')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="service_status">利用状態</label>
+            <select id="service_status" name="service_status" class="form-control">
+                @foreach(['active'=>'利用中', 'unpaid'=>'未払い・利用停止', 'cancelled'=>'解約'] as $value=>$label)
+                <option value="{{ $value }}" @selected(old('service_status', $view->project?->service_status ?? 'active') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            <p>未払い・解約にすると店舗管理者のログインとアプリの利用を停止します。</p>
+        </div>
+        <div class="form-group">
             <label class="checkbox-label">
                 <input type="checkbox" name="is_active" value="1" {{ ((bool) old('is_active', optional($view->project)->is_active ?? true)) ? 'checked' : '' }}>
                 <span>有効化する</span>
@@ -135,53 +149,4 @@
     </div>
 </div>
 
-<div class="card mt-3">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-clock"></i> 営業設定（必須）</h3>
-    </div>
-    <div class="card-body">
-        <div class="form-row">
-            <div class="form-group col-md-6">
-                <label for="business_hours_start" class="form-label">営業時間 開始 <span class="text-danger">*</span></label>
-                <input type="time" name="business_hours_start" id="business_hours_start" class="form-control" value="{{ old('business_hours_start', $view->projectSettings['business_hours_start'] ?? '10:00') }}" required>
-                @error('business_hours_start')<span class="invalid-feedback">{{ $message }}</span>@enderror
-            </div>
-            <div class="form-group col-md-6">
-                <label for="business_hours_end" class="form-label">営業時間 終了 <span class="text-danger">*</span></label>
-                <input type="time" name="business_hours_end" id="business_hours_end" class="form-control" value="{{ old('business_hours_end', $view->projectSettings['business_hours_end'] ?? '22:00') }}" required>
-                @error('business_hours_end')<span class="invalid-feedback">{{ $message }}</span>@enderror
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card mt-3">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-palette"></i> テーマカラー</h3>
-    </div>
-    <div class="card-body">
-        <div class="form-row">
-            <div class="form-group col-md-3">
-                <label for="line_primary_color" class="form-label">メイン色</label>
-                <input type="text" name="line_primary_color" id="line_primary_color" class="form-control" value="{{ old('line_primary_color', $view->projectSettings['line_primary_color'] ?? '#000000') }}" maxlength="7" placeholder="#000000">
-                @error('line_primary_color')<span class="invalid-feedback">{{ $message }}</span>@enderror
-            </div>
-            <div class="form-group col-md-3">
-                <label for="line_primary_dark" class="form-label">メイン色（濃い）</label>
-                <input type="text" name="line_primary_dark" id="line_primary_dark" class="form-control" value="{{ old('line_primary_dark', $view->projectSettings['line_primary_dark'] ?? '#333333') }}" maxlength="7" placeholder="#333333">
-                @error('line_primary_dark')<span class="invalid-feedback">{{ $message }}</span>@enderror
-            </div>
-            <div class="form-group col-md-3">
-                <label for="line_success_color" class="form-label">成功色</label>
-                <input type="text" name="line_success_color" id="line_success_color" class="form-control" value="{{ old('line_success_color', $view->projectSettings['line_success_color'] ?? '#000000') }}" maxlength="7" placeholder="#000000">
-                @error('line_success_color')<span class="invalid-feedback">{{ $message }}</span>@enderror
-            </div>
-            <div class="form-group col-md-3">
-                <label for="line_danger_color" class="form-label">警告色</label>
-                <input type="text" name="line_danger_color" id="line_danger_color" class="form-control" value="{{ old('line_danger_color', $view->projectSettings['line_danger_color'] ?? '#dc3545') }}" maxlength="7" placeholder="#dc3545">
-                @error('line_danger_color')<span class="invalid-feedback">{{ $message }}</span>@enderror
-            </div>
-        </div>
-    </div>
-</div>
 @endif

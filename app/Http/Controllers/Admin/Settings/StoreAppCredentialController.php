@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Settings;
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\Models\AdminUser;
 use App\Models\StoreAppCredential;
+use App\Util\StoreContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ class StoreAppCredentialController extends AdminBaseController
         DB::transaction(function () use ($admin, $projectId, $data, $plainToken): void {
             $credential = StoreAppCredential::query()->firstOrNew([
                 'project_id' => $projectId,
+                'store_id' => app(StoreContext::class)->resolveForWrite($projectId),
                 'app' => $data['app'],
             ]);
             if ($credential->personal_access_token_id !== null) {

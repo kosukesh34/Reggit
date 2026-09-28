@@ -9,6 +9,7 @@ use App\Models\Member;
 use App\Models\Scopes\ProjectScope;
 use App\Rules\ProfileValidationRules;
 use App\Support\PersonNameParts;
+use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -66,6 +67,7 @@ class MemberUpdateRequest extends FormRequest
             'address' => array_merge(['nullable'], $format['address']),
             'postal_code' => array_merge(['nullable'], $format['postal_code']),
             'sex' => array_merge(['nullable'], $format['sex']),
+            'customer_store_id' => ['nullable', 'integer', Rule::exists('stores', 'id')->where('project_id', AdminContext::requireCurrentProjectId())->where('is_active', true)],
             'mail_receive_flag' => array_merge(['nullable'], $format['mail_receive_flag']),
             'notification_preference' => ['required', Rule::in(MemberNotificationPreference::keys())],
 

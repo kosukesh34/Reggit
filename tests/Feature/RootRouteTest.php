@@ -31,22 +31,15 @@ class RootRouteTest extends TestCase
         $response->assertSee('actual-coupon.webp', false);
         $response->assertSee('actual-queue.webp', false);
         $response->assertSee('actual-admin.webp', false);
-        $response->assertSee('enterprise-logos/reggit-wordmark.svg', false);
-        $response->assertSee('enterprise-logos/tonoma.svg', false);
-        $response->assertSee('enterprise-logos/nolena.svg', false);
-        $response->assertSee('enterprise-logos/mareto.svg', false);
-        $response->assertSee('enterprise-logos/oruma.svg', false);
-        $response->assertSee('enterprise-logos/senoma.svg', false);
-        $response->assertSee('実際の導入企業を示すものではありません');
         $response->assertSee('landing-home.css', false);
         $response->assertSee('LINEミニアプリ');
         $response->assertSee('iOS / Android');
         $response->assertSee('スタンプ');
         $response->assertSee('画面はデモデータを使用しています');
-        $response->assertSee('認証メールを送る');
+        $response->assertSee('メール認証へ進む');
     }
 
-    public function test_root_ログイン済みは管理画面へリダイレクトすること(): void
+    public function test_root_ログイン済みもランディングページを表示すること(): void
     {
         $project = Project::factory()->create(['project_key' => 'store_a', 'is_active' => true]);
         $admin = AdminUser::factory()->create([
@@ -57,6 +50,7 @@ class RootRouteTest extends TestCase
 
         $response = $this->actingAs($admin, 'admin')->get('/');
 
-        $response->assertRedirect(route('admin.root'));
+        $response->assertOk();
+        $response->assertViewIs('landing');
     }
 }

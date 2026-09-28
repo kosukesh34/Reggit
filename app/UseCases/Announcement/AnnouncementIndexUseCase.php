@@ -5,6 +5,7 @@ namespace App\UseCases\Announcement;
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
 use App\Models\User;
+use App\Services\AnnouncementVisibility;
 use App\UseCases\Announcement\Data\AnnouncementIndexView;
 use App\Util\AdminContext;
 
@@ -14,7 +15,7 @@ class AnnouncementIndexUseCase
     {
         $projectId = AdminContext::requireCurrentProjectId();
 
-        $announcements = Announcement::where('project_id', $projectId)
+        $announcements = app(AnnouncementVisibility::class)->apply(Announcement::where('project_id', $projectId), $user)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
             ->where(function ($query) {
@@ -24,7 +25,7 @@ class AnnouncementIndexUseCase
             ->orderBy('is_pinned', 'desc')
             ->orderBy('published_at', 'desc')
             ->take(10)
-            ->get(['id', 'title', 'body', 'image_url', 'published_at', 'is_pinned']);
+            ->get(['id', 'title', 'body', 'image_url', 'private_image_path', 'published_at', 'is_pinned']);
 
         $readAtByAnnouncement = collect();
         if ($user !== null && $announcements->isNotEmpty()) {

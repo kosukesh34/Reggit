@@ -34,6 +34,10 @@
             <div>{{ $log->adminUser?->name ?? '－' }}</div>
         </div>
         <div class="form-group">
+            <label class="form-label">対象</label>
+            <div>{{ $log->getTargetLabel() }}</div>
+        </div>
+        <div class="form-group">
             <label class="form-label">プロジェクト</label>
             <div>{{ $log->project?->name ?? '－' }}</div>
         </div>
@@ -46,20 +50,8 @@
             <div><code>{{ $log->method }}</code></div>
         </div>
         <div class="form-group">
-            <label class="form-label">URL</label>
-            <div class="text-muted">{{ $log->url }}</div>
-        </div>
-        <div class="form-group">
-            <label class="form-label">IP</label>
-            <div>{{ $log->ip ?? '－' }}</div>
-        </div>
-        <div class="form-group">
-            <label class="form-label">User-Agent</label>
-            <div class="text-muted">{{ $log->user_agent ?? '－' }}</div>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Payload</label>
-            <pre class="code-block">{{ json_encode($log->payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+            <label class="form-label">変更項目</label>
+            <div>{{ $log->getChangedFieldsLabel() }}</div>
         </div>
         <div class="form-actions">
             <a href="{{ $indexUrl }}" class="btn btn-secondary">戻る</a>

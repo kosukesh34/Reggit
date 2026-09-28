@@ -16,6 +16,7 @@
                 <th>プロジェクト名</th>
                 <th>キー</th>
                 <th>プラン</th>
+                <th>利用店舗数</th>
                 <th>状態</th>
                 <th class="table-actions-cell">操作</th>
             </tr>
@@ -36,16 +37,17 @@
                             <span class="badge badge-secondary">{{ $planLabel }}</span>
                         @endif
                     </td>
+                    <td>{{ $project->active_stores_count }} / {{ $project->max_active_stores ?? 1 }}</td>
                     <td>
-                        @if($project->is_active)
+                        @if($project->isServiceAvailable())
                             <span class="badge badge-success">有効</span>
                         @else
-                            <span class="badge badge-secondary">無効</span>
+                            <span class="badge badge-danger">{{ ['unpaid'=>'未払い・利用停止', 'cancelled'=>'解約'][$project->service_status] ?? '無効' }}</span>
                         @endif
                     </td>
                     <td class="table-actions-cell">
                         <div class="table-actions">
-                            @if($project->is_active)
+                            @if($project->isServiceAvailable())
                                 <a href="{{ route('admin.dashboard', ['project_key' => $project->project_key]) }}" class="btn btn-action btn-edit"><i class="fas fa-th-large"></i> ダッシュボード</a>
                                 <a href="{{ route('liff.project', ['project_key' => $project->project_key]) }}" class="btn btn-action btn-outline" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt"></i> フロント</a>
                             @endif
@@ -55,7 +57,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="empty-state">
+                    <td colspan="7" class="empty-state">
                         <i class="fas fa-building"></i>
                         <p>プロジェクトがありません</p>
                     </td>

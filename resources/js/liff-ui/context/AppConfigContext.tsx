@@ -6,7 +6,7 @@ import { themeMap } from '../themes/themes';
 import type { StoreAppConfig } from '../types/app';
 import type { AppCustomization, AppCustomizationPatch, AppExperienceId, CouponStatus } from '../types/customization';
 
-const customizationStorageKey = 'reggit-app-customization-v4';
+const customizationStorageKey = isDesignShowcaseMode() ? 'reggit-demo-customization-v1' : 'reggit-app-customization-v4';
 const showcaseStoreStorageKey = 'reggit-showcase-store-id-v2';
 const SHOWCASE_DEFAULT_STORE_ID = 'store_landing_showcase';
 const experienceVersion = 16;

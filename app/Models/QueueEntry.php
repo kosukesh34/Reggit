@@ -16,7 +16,7 @@ class QueueEntry extends Model
     use HasFactory;
 
     protected $fillable = [
-        'project_id', 'member_id', 'user_id', 'guest_name', 'guest_phone', 'party_size',
+        'project_id', 'store_id', 'member_id', 'user_id', 'guest_name', 'guest_phone', 'party_size',
         'status', 'queue_number', 'qr_token', 'called_at', 'entered_at',
     ];
 

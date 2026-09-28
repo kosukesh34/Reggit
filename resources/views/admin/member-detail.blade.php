@@ -9,7 +9,7 @@
     $adminUser = auth('admin')->user();
     $canManage = $adminUser === null || $adminUser->hasPermission('members.manage');
     $user = $view->member->user;
-    $hasName = trim((string) ($user?->name ?? '')) !== '';
+    $hasName = admin_person_name($user?->name) !== '氏名未登録';
     $memberName = $hasName ? $user->name : $view->member->member_number;
     $lineName = trim((string) ($user?->line_name ?? ''));
     $kana = trim((string) ($user?->kana ?? ''));

@@ -8,6 +8,7 @@ use App\Enums\RankAggregationType;
 use App\Models\Member;
 use App\Models\MemberStampTransaction;
 use App\Models\PointTransaction;
+use App\Models\Scopes\StoreAccessScope;
 use Carbon\Carbon;
 
 final class MemberRankMetricCalculator
@@ -41,7 +42,7 @@ final class MemberRankMetricCalculator
 
     private function sumPeriodPoints(Member $member, int $projectId): int
     {
-        $sum = (int) PointTransaction::query()
+        $sum = (int) PointTransaction::withoutGlobalScope(StoreAccessScope::class)
             ->where('project_id', $projectId)
             ->where('member_id', $member->id)
             ->whereIn('type', [
@@ -57,7 +58,7 @@ final class MemberRankMetricCalculator
 
     private function sumPeriodStamps(Member $member, int $projectId): int
     {
-        $sum = (int) MemberStampTransaction::query()
+        $sum = (int) MemberStampTransaction::withoutGlobalScope(StoreAccessScope::class)
             ->where('project_id', $projectId)
             ->where('member_id', $member->id)
             ->where('created_at', '>=', $this->periodStartedAt($projectId))

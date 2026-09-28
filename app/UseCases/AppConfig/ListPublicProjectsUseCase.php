@@ -14,6 +14,7 @@ class ListPublicProjectsUseCase
     {
         return Project::query()
             ->where('is_active', true)
+            ->where('service_status', 'active')
             ->orderBy('name')
             ->get(['project_key', 'name'])
             ->map(static fn (Project $project): PublicProjectItem => new PublicProjectItem(

@@ -7,6 +7,7 @@ export type ProfileFieldSetting = {
     required?: boolean;
     input_type?: string;
     values?: unknown[];
+    options?: Array<{ value: string; label: string }>;
     description?: string;
 };
 
@@ -363,6 +364,11 @@ function ProfileFieldRows({
                     />
                 ),
             });
+            return;
+        }
+
+        if (key === 'customer_store_id') {
+            rowNodes.push({ key, isAddress: false, node: <ChoiceSelect id={id} name={key} label={label} required={required} defaultValue={val} options={f.options ?? []} description={f.description} /> });
             return;
         }
 

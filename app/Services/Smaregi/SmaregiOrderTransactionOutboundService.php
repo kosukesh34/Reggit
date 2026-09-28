@@ -15,6 +15,7 @@ use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Scopes\ProjectScope;
+use App\Models\Store;
 use App\Util\LogHelper;
 use Illuminate\Support\Carbon;
 
@@ -301,8 +302,10 @@ class SmaregiOrderTransactionOutboundService
             return null;
         }
 
-        $storeId = $this->resolveStoreId($projectId, $contractId);
-        $terminalId = $this->resolveTerminalId($projectId, $contractId, $storeId);
+        $store = Store::where('project_id', $projectId)->find($order->store_id);
+        $multipleStores = Store::where('project_id', $projectId)->count() > 1;
+        $storeId = $store?->smaregi_store_id ?: ($multipleStores ? null : $this->resolveStoreId($projectId, $contractId));
+        $terminalId = $store?->smaregi_terminal_id ?: ($multipleStores && $storeId !== null ? $this->smaregiApi->getFirstTerminalId($contractId, $storeId) : $this->resolveTerminalId($projectId, $contractId, $storeId));
         if ($storeId === null || $terminalId === null) {
             LogHelper::warning('[Smaregi] order transaction sync skipped: store/terminal missing', [
                 'order_id' => $orderId,

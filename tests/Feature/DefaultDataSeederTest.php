@@ -6,12 +6,18 @@ use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Product;
 use App\Models\Project;
 use App\Services\Admin\ProductDeduplicationService;
+use App\Services\Admin\PublicImageStorageService;
+use App\Services\Smaregi\SmaregiApiService;
+use App\Services\Smaregi\SmaregiProductOptionSyncService;
+use App\Services\Smaregi\SmaregiProductRegisterService;
 use App\Services\Smaregi\SmaregiProductSyncService;
 use Database\Seeders\DefaultDataSeeder;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Mockery;
 use Tests\TestCase;
 
 class DefaultDataSeederTest extends TestCase
@@ -89,6 +95,55 @@ class DefaultDataSeederTest extends TestCase
         $products = Product::withoutGlobalScopes()->where('project_id', $project->id)->get();
         $this->assertCount(1, $products);
         $this->assertSame('8000999', $products->first()->smaregi_product_id);
+    }
+
+    public function test_smaregi_sync_スマレジの商品画像で古い画像を置き換えること(): void
+    {
+        Storage::fake('public');
+        Http::fake(['https://pos-cache.smaregi.dev/*' => Http::response('fake-image', 200, ['Content-Type' => 'image/png'])]);
+        $project = Project::factory()->create();
+        Product::withoutGlobalScopes()->create([
+            'project_id' => $project->id,
+            'name' => '同名商品',
+            'price' => 100,
+            'category' => 'food',
+            'is_available' => true,
+            'smaregi_product_id' => 'NEW-ID',
+            'image_url' => 'https://cdn.example.com/wrong.png',
+        ]);
+
+        $api = Mockery::mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->with($project->id)->andReturn('contract-1');
+        $api->shouldReceive('request')->with('contract-1', 'GET', 'pos/products', ['limit' => 100, 'page' => 1])
+            ->andReturn(['products' => [
+                ['productId' => 'NEW-ID', 'productName' => '同名商品', 'price' => '100', 'displayFlag' => '1'],
+            ]]);
+        $api->shouldReceive('request')->with('contract-1', 'GET', 'pos/products', ['limit' => 100, 'page' => 2])
+            ->andReturn(['products' => []]);
+        $api->shouldReceive('request')->with('contract-1', 'GET', 'pos/products/images', ['limit' => 100, 'page' => 1])
+            ->andReturn([
+                ['productId' => 'NEW-ID', 'url' => 'https://pos-cache.smaregi.dev/new.png'],
+            ]);
+
+        $optionSync = Mockery::mock(SmaregiProductOptionSyncService::class);
+        $optionSync->shouldReceive('sync')->once()->andReturn(['updated' => 0, 'failed' => 0, 'errors' => []]);
+        $deduplication = Mockery::mock(ProductDeduplicationService::class);
+        $deduplication->shouldReceive('deduplicateForProject')->once()->with($project->id)->andReturn(0);
+
+        $sync = new SmaregiProductSyncService(
+            $api,
+            Mockery::mock(SmaregiProductRegisterService::class),
+            $deduplication,
+            $optionSync,
+            app(PublicImageStorageService::class),
+        );
+
+        $sync->sync((int) $project->id);
+
+        $products = Product::withoutGlobalScopes()->where('project_id', $project->id)->get()->keyBy('smaregi_product_id');
+        $this->assertCount(1, $products);
+        $this->assertStringContainsString('/storage/product_images/'.$project->id.'/smaregi_', $products['NEW-ID']->image_url);
+        $this->assertNotSame('https://pos-cache.smaregi.dev/new.png', $products['NEW-ID']->image_url);
     }
 
     public function test_deduplicate_smaregi_products_同名の重複商品を削除すること(): void

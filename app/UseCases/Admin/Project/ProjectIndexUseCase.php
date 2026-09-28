@@ -9,6 +9,7 @@ class ProjectIndexUseCase
 {
     public function handle(): LengthAwarePaginator
     {
-        return Project::orderBy('name')->paginate(20);
+        return Project::withCount(['stores as active_stores_count' => fn ($query) => $query->where('is_active', true)])
+            ->orderBy('name')->paginate(20);
     }
 }

@@ -5,6 +5,26 @@
 
 @section('content')
 
+<section class="dashboard-notices" aria-labelledby="dashboard-notices-heading">
+    <div class="dashboard-notices-header">
+        <h3 id="dashboard-notices-heading">お知らせ</h3>
+        <span class="dashboard-notices-count">{{ $systemNotices->count() }}件</span>
+    </div>
+    <div class="dashboard-notices-scroll" tabindex="0" role="region" aria-label="運営からのお知らせ一覧">
+        @forelse($systemNotices as $systemNotice)
+            <a class="dashboard-notice-item" href="{{ admin_route('admin.dashboard.notice', ['id' => $systemNotice->id]) }}">
+                <time class="dashboard-notice-list-date" datetime="{{ $systemNotice->created_at->toIso8601String() }}">{{ $systemNotice->created_at->format('Y/m/d H:i') }}</time>
+                @unless(in_array($systemNotice->id, $readNoticeIds))
+                    <span class="dashboard-notice-new" aria-label="未読のお知らせ">NEW</span>
+                @endunless
+                <span class="dashboard-notice-title">{{ $systemNotice->title }}</span>
+            </a>
+        @empty
+            <p class="dashboard-notices-empty">現在、お知らせはありません。</p>
+        @endforelse
+    </div>
+</section>
+
 <div class="dashboard-section-label">今日やること</div>
 <div class="stats-grid stats-grid--actions">
     <a href="{{ admin_route('admin.orders', ['status' => 'pending']) }}" class="stat-card stat-card--link {{ $stats['pending_orders'] > 0 ? 'stat-card-warning' : 'stat-card-secondary' }}{{ $stats['pending_orders'] > 0 ? ' stat-card--alert' : '' }}">
@@ -122,9 +142,9 @@
                     <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->formattedOrderNumber() }}</a></td>
                     <td>
                         @if($order->user?->member !== null)
-                            <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ $order->user->name ?? 'N/A' }}</a>
+                            <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ admin_person_name($order->user?->name) }}</a>
                         @else
-                            {{ $order->user->name ?? 'N/A' }}
+                            {{ admin_person_name($order->user?->name) }}
                         @endif
                     </td>
                     <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>

@@ -68,11 +68,8 @@ class AnnouncementDeliveryController extends AdminBaseController
 
         $imageFile = $request->file('image_file');
         if ($imageFile instanceof UploadedFile) {
-            $validated['image_url'] = $this->publicImageStorage->store(
-                $imageFile,
-                $projectId,
-                PublicImageStorageService::DIR_ANNOUNCEMENT,
-            );
+            $validated['private_image_path'] = $imageFile->store('announcement-private/'.$projectId, 'local');
+            $validated['image_url'] = null;
         }
         unset($validated['image_file']);
 

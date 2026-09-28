@@ -28,9 +28,9 @@ class LandingRegistrationVerifyController extends Controller
             return view('landing.status', [
                 'view' => new LandingRegistrationStatusView(
                     '認証は完了しました',
-                    '入力フォームの案内メールを送れませんでした。トップの登録欄から同じメールアドレスを再送信してください。',
-                    '/',
-                    'トップへ戻る',
+                    '入力フォームの案内メールを送れませんでした。メール認証ページから同じメールアドレスを再送信してください。',
+                    route('landing.register.email.show'),
+                    'メール認証ページへ',
                 ),
             ]);
         }

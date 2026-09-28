@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services\Smaregi;
 
+use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Services\Smaregi\SmaregiApiClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -25,7 +26,7 @@ class SmaregiApiClientTest extends TestCase
 
     public function test_request開始時に前回のエラー詳細がクリアされること(): void
     {
-        $client = new SmaregiApiClient;
+        $client = new SmaregiApiClient(app(SmaregiSettings::class));
         $detailProp = new ReflectionProperty(SmaregiApiClient::class, 'lastErrorDetail');
         $statusProp = new ReflectionProperty(SmaregiApiClient::class, 'lastHttpStatus');
         $detailProp->setValue($client, 'stale-error');

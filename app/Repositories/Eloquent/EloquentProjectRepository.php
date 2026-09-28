@@ -12,6 +12,7 @@ class EloquentProjectRepository implements ProjectRepository
         return Project::query()
             ->where('project_key', $projectKey)
             ->where('is_active', true)
+            ->where('service_status', 'active')
             ->first();
     }
 
@@ -19,6 +20,7 @@ class EloquentProjectRepository implements ProjectRepository
     {
         return Project::query()
             ->where('is_active', true)
+            ->where('service_status', 'active')
             ->orderBy('id')
             ->first();
     }
@@ -32,6 +34,7 @@ class EloquentProjectRepository implements ProjectRepository
         return Project::query()
             ->whereIn('id', $projectIds)
             ->where('is_active', true)
+            ->where('service_status', 'active')
             ->orderBy('name')
             ->first();
     }

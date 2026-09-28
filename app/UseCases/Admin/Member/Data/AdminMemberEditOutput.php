@@ -23,5 +23,6 @@ class AdminMemberEditOutput
         public Collection $activeCoupons,
         public Collection $activeStampCards,
         public array $customProfileFields = [],
+        public array $customerStoreOptions = [],
     ) {}
 }

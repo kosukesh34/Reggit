@@ -88,8 +88,11 @@ class SmaregiCouponImportSyncService
      *
      * @return array{pushed: int, failed: int, errors: list<string>}
      */
-    public function pushUnlinkedToSmaregi(int $projectId): array
+    public function pushUnlinkedToSmaregi(int $projectId, ?int $couponId = null): array
     {
+        if ($couponId !== null) {
+            Coupon::where('project_id', $projectId)->findOrFail($couponId);
+        }
         if (! $this->smaregiCouponSync->hasSmaregiContract($projectId)) {
             throw new \RuntimeException('スマレジの契約IDが設定されていません。設定画面で契約を紐付けてください。');
         }
@@ -99,6 +102,7 @@ class SmaregiCouponImportSyncService
         $errors = [];
 
         $coupons = Coupon::where('project_id', $projectId)
+            ->when($couponId !== null, fn ($query) => $query->whereKey($couponId))
             ->where(function ($q) {
                 $q->whereNull('smaregi_coupon_id')->orWhere('smaregi_coupon_id', '');
             })

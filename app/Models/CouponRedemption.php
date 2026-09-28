@@ -10,7 +10,7 @@ class CouponRedemption extends Model
 {
     use BelongsToProject;
 
-    protected $fillable = ['project_id', 'coupon_id', 'member_id', 'member_coupon_id', 'order_id', 'used_at'];
+    protected $fillable = ['project_id', 'store_id', 'coupon_id', 'member_id', 'member_coupon_id', 'order_id', 'used_at'];
 
     /** @var array<string, string> */
     protected $casts = ['used_at' => 'datetime'];

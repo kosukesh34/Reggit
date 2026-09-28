@@ -140,9 +140,12 @@ export function OrderDemo({ dineIn, image, config, storeId, venueName }: OrderDe
   const [selectedCategory, setSelectedCategory] = useState("all");
   const profile = orderProfiles[storeId] ?? defaultOrderProfile;
   const hasLiveCatalog = mode === "live" && (commerce?.items?.length ?? 0) > 0;
-  const orderItems = hasLiveCatalog || mode !== "live"
-    ? (commerce?.items?.length ? commerce.items : profile.items)
-    : [];
+  const orderItems = useMemo(
+    () => hasLiveCatalog || mode !== "live"
+      ? (commerce?.items?.length ? commerce.items : profile.items)
+      : [],
+    [commerce?.items, hasLiveCatalog, mode, profile.items],
+  );
   const pickupTime = commerce?.pickupEstimate || profile.pickupTime;
   const dineInDetail = commerce?.dineInDetail || profile.dineInDetail;
   const count = orderItems.reduce((sum, item) => item.isAvailable === false ? sum : sum + (quantities[item.id] ?? 0), 0);

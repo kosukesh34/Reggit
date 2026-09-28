@@ -2375,6 +2375,60 @@ body[data-page-kind="coupon-edit"] .content-body,
     }
 }
 
+.cp-display-card {
+    max-width: 640px;
+    overflow: hidden;
+}
+
+.cp-display-image {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    object-fit: cover;
+}
+
+.cp-display-benefit {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.cp-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.cp-detail-stats .card-body {
+    display: grid;
+    gap: 4px;
+}
+
+.cp-detail-stats strong { font-size: 1.75rem; }
+.cp-detail-stats small { color: #6b7280; }
+
+.cp-detail-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.cp-detail-list {
+    display: grid;
+    grid-template-columns: minmax(120px, 38%) minmax(0, 1fr);
+    gap: 12px 16px;
+    margin: 0;
+}
+
+.cp-detail-list dt { color: #6b7280; }
+.cp-detail-list dd { margin: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 800px) {
+    .cp-detail-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cp-detail-layout { grid-template-columns: 1fr; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .coupon-admin *,
     .coupon-admin *::before,
