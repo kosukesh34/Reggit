@@ -12,7 +12,7 @@ class MemberVisit extends Model
     use BelongsToProject;
 
     protected $fillable = [
-        'project_id',
+        'project_id', 'store_id',
         'member_id',
         'visited_at',
         'source',

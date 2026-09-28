@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Enums\AnnouncementAudienceResolveMode;
 use App\Enums\MemberCouponSource;
 use App\Enums\MemberNotificationPreference;
@@ -137,6 +138,30 @@ class AdminAnnouncementsTest extends TestCase
         $response->assertDontSee('冬のキャンペーン');
     }
 
+    public function test_delivery_form_shows_saved_custom_profile_fields_for_the_current_project(): void
+    {
+        $project = $this->createDistributionProject();
+        $otherProject = $this->createDistributionProject();
+        $settings = app(ProfileSettings::class);
+        $settings->setProfileFieldSettings(['custom_fields' => [
+            ['key' => 'favorite_color', 'label' => '好きな色', 'input_type' => 'checkbox', 'values' => ['青', '赤']],
+            ['key' => 'occupation', 'label' => '職業', 'input_type' => 'text'],
+        ]], $project->id);
+        $settings->setProfileFieldSettings(['custom_fields' => [
+            ['key' => 'other_field', 'label' => '別店舗の項目', 'input_type' => 'text'],
+        ]], $otherProject->id);
+
+        $this->actingAs($this->createAdmin($project), 'admin')
+            ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('好きな色')
+            ->assertSee('職業')
+            ->assertSee('name="segment_profile[favorite_color][]"', false)
+            ->assertSee('name="segment_profile[occupation]"', false)
+            ->assertDontSee('別店舗の項目')
+            ->assertDontSee('name="image_url"', false);
+    }
+
     public function test_delivery_form_配信画面にアクセスできること(): void
     {
         $project = $this->createDistributionProject();
@@ -177,14 +202,15 @@ class AdminAnnouncementsTest extends TestCase
             ->assertSee('複数選択可')
             ->assertSee('配信対象者一覧')
             ->assertSee('id="deliverySummaryConditionBlock"', false)
-            ->assertSee('すべての条件に一致する会員へ配信します')
+            ->assertSee('条件ごとに指定した AND / OR の順で対象者を判定します')
             ->assertDontSee('クーポンを一緒に届ける')
             ->assertDontSee('選択したクーポンを、お知らせの配信対象と同じ会員へ1枚ずつ付与します。')
             ->assertDontSee('掲載方法を整える')
             ->assertDontSee('重要なお知らせは上部に固定し、必要に応じて掲載終了日を設定できます。')
             ->assertDontSee('届け先とタイミングを選ぶ')
             ->assertDontSee('誰に、いつ届けるかを選択します。セグメントでは条件に合う人数を確認できます。')
-            ->assertSee('入力内容')
+            ->assertDontSee('id="delivery-summary"', false)
+            ->assertSee('配信内容を確認する')
             ->assertSee('LINE・Push通知を送る')
             ->assertSee('配信後の見え方をプレビュー')
             ->assertSee('配信内容の最終確認')
@@ -527,6 +553,41 @@ class AdminAnnouncementsTest extends TestCase
             'issue_source_id' => (string) Announcement::where('title', 'クーポン付き配信')->value('id'),
         ]);
         Queue::assertNotPushed(SendCouponIssuedNotificationJob::class);
+    }
+
+    public function test_store_delivery_複数クーポンを同時に配布できること(): void
+    {
+        $project = $this->createDistributionProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $coupons = Coupon::factory()->count(2)->create(['project_id' => $project->id]);
+        $this->mock(AnnouncementNotificationService::class, function ($mock): void {
+            $mock->shouldReceive('send')->once()->andReturn([
+                'target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0,
+                'notification_ids' => [], 'line_sent' => 0, 'line_failed' => 0, 'line_skipped' => 0,
+            ]);
+        });
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.announcements.delivery.store', ['project_key' => $project->project_key]), [
+                'title' => '複数クーポン付き配信',
+                'audience_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+                'delivery_timing' => Announcement::DELIVERY_TIMING_IMMEDIATE,
+                'delivery_coupon_ids' => $coupons->pluck('id')->all(),
+            ])
+            ->assertRedirect();
+
+        $announcement = Announcement::where('title', '複数クーポン付き配信')->firstOrFail();
+        $this->assertEqualsCanonicalizing($coupons->pluck('id')->all(), $announcement->deliveryCouponIds());
+        foreach ($coupons as $coupon) {
+            $this->assertDatabaseHas('member_coupons', [
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'issue_source_type' => MemberCouponSource::ANNOUNCEMENT,
+                'issue_source_id' => (string) $announcement->id,
+            ]);
+        }
     }
 
     public function test_store_delivery_属性セグメントで配信できること(): void
@@ -876,6 +937,35 @@ class AdminAnnouncementsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('既読');
         $response->assertSee('1人');
+    }
+
+    public function test_delivery_results_count_a_member_as_used_when_any_attached_coupon_is_used(): void
+    {
+        $project = $this->createProject();
+        $member = Member::factory()->create(['project_id' => $project->id]);
+        $coupons = Coupon::factory()->count(2)->create(['project_id' => $project->id]);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'delivery_coupon_id' => $coupons[0]->id,
+            'delivery_coupon_ids' => $coupons->pluck('id')->all(),
+            'target_member_ids' => [$member->id],
+        ]);
+        foreach ($coupons as $index => $coupon) {
+            MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'issue_source_type' => MemberCouponSource::ANNOUNCEMENT,
+                'issue_source_id' => (string) $announcement->id,
+                'status' => $index === 0 ? MemberCoupon::STATUS_USED : MemberCoupon::STATUS_UNUSED,
+                'used_at' => $index === 0 ? now() : null,
+            ]);
+        }
+
+        $recipients = app(AnnouncementAdminService::class)->getDeliveryRecipients($announcement);
+        $this->assertCount(1, $recipients);
+        $this->assertSame(MemberCoupon::STATUS_USED, $recipients[0]['coupon_status']);
+        $this->assertNotNull($recipients[0]['coupon_used_at']);
     }
 
     public function test_announcement_reads_既読者一覧を表示できること(): void

@@ -17,7 +17,7 @@ class SendFcmTestCommand extends Command
 
     protected $description = 'FCM HTTP v1 で登録端末（user_devices の push_token）にテストプッシュを送信する';
 
-    public function handle(): int
+    public function handle(PushNotificationService $pushNotificationService): int
     {
         $client = new FcmHttpV1Client(new Client(['timeout' => 15]));
         if (! $client->isConfigured()) {
@@ -55,8 +55,7 @@ class SendFcmTestCommand extends Command
             return self::SUCCESS;
         }
 
-        $service = new PushNotificationService(new Client(['timeout' => 15]));
-        $result = $service->sendToSubscriptionIds(
+        $result = $pushNotificationService->sendToSubscriptionIds(
             $tokens,
             $title,
             $body,

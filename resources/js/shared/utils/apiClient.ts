@@ -199,6 +199,10 @@ export class ApiClient {
         if (projectKey) {
             requestHeaders['X-Project-Key'] = projectKey;
         }
+        if (typeof window !== 'undefined') {
+            const storeId = new URLSearchParams(window.location.search).get('store_id');
+            if (storeId && /^\d+$/.test(storeId)) requestHeaders['X-Store-Id'] = storeId;
+        }
         if (typeof window !== 'undefined' && window.__API_TOKEN__) {
             requestHeaders.Authorization = `Bearer ${window.__API_TOKEN__}`;
         }
@@ -286,7 +290,7 @@ export class ApiClient {
                 method,
                 message: message || 'unknown',
             });
-            // eslint-disable-next-line no-console
+
             console.error(`API request failed: ${endpoint}`, error);
             return { success: false, error: message || 'An error occurred' };
         }

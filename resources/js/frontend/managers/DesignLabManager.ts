@@ -41,7 +41,7 @@ export class DesignLabManager {
             return;
         }
         const body = { event, ...payload, ts: Date.now() };
-        // eslint-disable-next-line no-console
+
         console.info('[LotteryUI]', event, body);
         if (typeof window.__clientDebugLog === 'function') {
             window.__clientDebugLog('lottery_ui_' + event, body);

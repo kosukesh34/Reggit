@@ -11,6 +11,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\AnnouncementNotificationService;
+use App\Services\CouponNotificationService;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -76,7 +77,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
         $result = $service->send($announcement);
 
         $this->assertSame(1, $result['sent']);
@@ -132,7 +133,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
         $result = $service->send($announcement);
 
         $this->assertSame(1, $result['line_sent']);
@@ -184,7 +185,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
         $result = $service->send($announcement);
 
         $this->assertSame(1, $result['line_sent']);
@@ -255,7 +256,7 @@ class AnnouncementNotificationServiceTest extends TestCase
                 return [];
             });
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
         $result = $service->send($announcement);
 
         $this->assertSame(2, $result['line_sent']);
@@ -298,7 +299,7 @@ class AnnouncementNotificationServiceTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
         $result = $service->send($announcement);
 
         $this->assertSame(0, $result['line_sent']);
@@ -341,7 +342,7 @@ class AnnouncementNotificationServiceTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
         $result = $service->send($announcement);
 
         $this->assertSame(0, $result['line_sent']);
@@ -417,7 +418,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
         $this->assertSame(0, $service->send($withoutCoupon)['line_sent']);
         $this->assertSame(1, $service->send($withCoupon)['line_sent']);
     }

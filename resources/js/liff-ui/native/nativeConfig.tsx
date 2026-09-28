@@ -99,7 +99,8 @@ function normalizeConfig(config: NativeConfig): NativeConfig {
 function loadNativeConfig(key: string): Promise<NativeConfig> {
   const cached = configRequests.get(key);
   if (cached) return cached;
-  const request = fetch(`/api/v1/app-config?project_key=${encodeURIComponent(key)}`, {
+  const selectedStoreId = new URLSearchParams(window.location.search).get("store_id");
+  const request = fetch(`/api/v1/app-config?project_key=${encodeURIComponent(key)}${selectedStoreId ? `&store_id=${encodeURIComponent(selectedStoreId)}` : ""}`, {
     headers: { Accept: 'application/json' },
     credentials: 'same-origin',
   })

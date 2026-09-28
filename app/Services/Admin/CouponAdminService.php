@@ -24,7 +24,7 @@ class CouponAdminService
         return Coupon::where('project_id', $projectId)
             ->with('stampCard')
             ->orderByDesc('id')
-            ->paginate($perPage);
+            ->paginate($perPage, ['*'], 'coupons_page');
     }
 
     public function getActiveStampCardsForSelect(int $projectId): Collection

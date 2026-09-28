@@ -10,6 +10,7 @@ use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Enums\SmaregiWebhookAction;
 use App\Models\Member;
+use App\Models\Store;
 use App\Services\MemberRankSyncService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,7 @@ class SmaregiCustomerPointsInboundSyncService
         private OrderRepository $orderRepository,
         private DomainEventDispatcher $domainEvents,
         private SmaregiContractProjectResolver $projectResolver,
+        private MemberRankSyncService $memberRankSyncService,
     ) {}
 
     /**
@@ -207,7 +209,7 @@ class SmaregiCustomerPointsInboundSyncService
                     $this->applyRemotePointsForMember($member, $remotePoints);
                     $fresh = $member->fresh();
                     if ($fresh !== null) {
-                        resolve(MemberRankSyncService::class)->sync($fresh);
+                        $this->memberRankSyncService->sync($fresh);
                     }
                 }
             }
@@ -386,6 +388,12 @@ class SmaregiCustomerPointsInboundSyncService
         }
         if (array_key_exists('mailReceiveFlag', $customer)) {
             $updates['mail_receive_flag'] = $this->stringOrNull($customer['mailReceiveFlag']);
+        }
+        if (isset($customer['storeId']) && (string) $customer['storeId'] !== '') {
+            $storeId = Store::where('project_id', $member->project_id)->where('smaregi_store_id', (string) $customer['storeId'])->value('id');
+            if ($storeId !== null) {
+                $updates['customer_store_id'] = (int) $storeId;
+            }
         }
         $extraUpdates = $this->profileExtraFromRemoteCustomFields($member, $customer);
         if ($extraUpdates !== []) {

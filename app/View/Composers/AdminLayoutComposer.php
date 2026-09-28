@@ -5,6 +5,7 @@ namespace App\View\Composers;
 use App\Domain\Settings\Repositories\AdminAppearanceSettings;
 use App\Models\Project;
 use Illuminate\View\View;
+use RuntimeException;
 
 final class AdminLayoutComposer
 {
@@ -38,7 +39,7 @@ final class AdminLayoutComposer
             $view->with('adminSidebarColor', $this->settings->getAdminSidebarColor($currentProjectId));
             $view->with('adminHeaderColor', $this->settings->getAdminHeaderColor($currentProjectId));
             $view->with('adminPrimaryColor', $this->settings->getAdminPrimaryColor($currentProjectId));
-        } catch (\Exception $exception) {
+        } catch (RuntimeException $exception) {
             report($exception);
             $view->with('adminSidebarColor', null);
             $view->with('adminHeaderColor', null);

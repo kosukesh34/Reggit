@@ -4,6 +4,7 @@ namespace App\UseCases\Announcement;
 
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
+use App\Services\AnnouncementVisibility;
 use App\UseCases\Announcement\Data\AnnouncementMarkReadInput;
 use App\Util\AdminContext;
 use Illuminate\Validation\ValidationException;
@@ -14,7 +15,7 @@ class AnnouncementMarkReadUseCase
     public function handle(AnnouncementMarkReadInput $input): array
     {
         $projectId = AdminContext::requireCurrentProjectId();
-        $announcement = Announcement::where('project_id', $projectId)
+        $announcement = app(AnnouncementVisibility::class)->apply(Announcement::where('project_id', $projectId), $input->user)
             ->where('id', $input->announcementId)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())

@@ -86,6 +86,10 @@ class SmaregiCustomerUpdatePayloadBuilder
             }
         }
 
+        if (isset($data['smaregi_store_id']) && trim((string) $data['smaregi_store_id']) !== '') {
+            $body['storeId'] = (string) $data['smaregi_store_id'];
+        }
+
         $customFields = $this->buildSmaregiCustomFields($data, $customFieldDefs);
         if ($customFields !== []) {
             $body['customFields'] = $customFields;

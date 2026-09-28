@@ -19,7 +19,7 @@ class AdminCouponIndexUseCase
     {
         return new AdminCouponIndexOutput(
             $this->couponAdminService->getPaginatedList($projectId, self::PER_PAGE),
-            $this->deliveryHistoryService->listForProject($projectId),
+            $this->deliveryHistoryService->paginateForProject($projectId, self::PER_PAGE),
         );
     }
 }

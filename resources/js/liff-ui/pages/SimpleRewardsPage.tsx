@@ -48,14 +48,14 @@ export function SimpleRewardsMembership() {
 }
 
 export function SimpleRewardsCoupons() {
-  const { coupons, usedCouponIds, useCoupon } = useRuntimeData();
+  const { coupons, usedCouponIds, useCoupon: redeemCoupon } = useRuntimeData();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const selected = coupons.find((coupon) => coupon.id === selectedId);
 
   const confirm = async () => {
     if (selected === undefined) return;
-    await useCoupon(selected.id);
+    await redeemCoupon(selected.id);
     setMessage(`「${selected.title}」を使用しました。`);
     setSelectedId(null);
   };

@@ -89,6 +89,7 @@ use App\Services\Smaregi\SmaregiApiClient;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\UseCases\Product\Contracts\ProductReadRepository;
+use App\Util\StoreContext;
 use App\Util\TenantContext;
 use App\View\Composers\AdminLayoutComposer;
 use App\View\Composers\FrontendShellComposer;
@@ -102,6 +103,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(TenantContext::class);
+        $this->app->scoped(StoreContext::class);
         $this->app->bind(ProjectRepository::class, EloquentProjectRepository::class);
         $this->app->bind(AdminUserRepository::class, EloquentAdminUserRepository::class);
         $this->app->bind(UserDeviceRepository::class, EloquentUserDeviceRepository::class);

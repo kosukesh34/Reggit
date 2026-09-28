@@ -39,6 +39,9 @@ class AdminAuthService
             return new AdminRedirectResult('admin.dashboard', ['project_key' => $first->project_key]);
         }
 
+        Auth::guard('admin')->logout();
+        Session::forget('admin_project_id');
+
         return new AdminRedirectResult('admin.login');
     }
 
@@ -78,6 +81,13 @@ class AdminAuthService
                     'login_id' => ['IDまたはパスワードが正しくありません。'],
                 ]);
             }
+        }
+
+        if (! $user->isSystemAdmin() && $this->projectRepository->findFirstActiveByIds($user->getAllowedProjectIds()) === null) {
+            throw ValidationException::withMessages(['login_id' => ['このプロジェクトは利用停止または解約されています。運営にお問い合わせください。']]);
+        }
+        if ($input->projectKey !== null && ! $user->canAccessProject((int) $project->id)) {
+            throw ValidationException::withMessages(['login_id' => ['このプロジェクトへのアクセス権がありません。']]);
         }
 
         Log::info('[AdminLogin] success', ['login_id' => $user->login_id, 'project_key' => $input->projectKey]);

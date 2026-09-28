@@ -327,7 +327,7 @@ function AdminBootstrap(): null {
     try {
       exposeAdminLegacyGlobals();
     } catch (error) {
-      // eslint-disable-next-line no-console
+
       console.error('[admin-bootstrap] failed:', error);
     }
   }, []);

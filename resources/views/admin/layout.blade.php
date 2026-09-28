@@ -45,8 +45,7 @@
 
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <aside class="sidebar" id="sidebar">
-            @php
+        @php
                 $adminUser = auth('admin')->user();
                 $isSystemAdminScreen = request()->routeIs('system-admin.*');
                 $navProjects = $projects ?? collect();
@@ -54,6 +53,9 @@
                     ? $currentProject
                     : $navProjects->firstWhere('id', $currentProjectId ?? 0);
                 $navStoreName = $navStore !== null ? (string) $navStore->name : '店舗管理';
+                $navContractId = $navStore !== null
+                    ? app(\App\Services\Smaregi\SmaregiApiService::class)->getContractIdForProject((int) $navStore->id)
+                    : null;
                 $navPlan = $navStore !== null
                     ? (string) ($navStore->plan ?? \App\Enums\ProjectPlan::NORMAL)
                     : \App\Enums\ProjectPlan::NORMAL;
@@ -64,6 +66,34 @@
                 $showGallery = $navStore !== null
                     && app(\App\Domain\Settings\Repositories\FeatureSettings::class)->isFeatureEnabled('feature_gallery_enabled', (int) $navStore->id);
             @endphp
+            <header class="admin-topbar">
+                <a class="admin-topbar-brand" href="{{ $isSystemAdminScreen ? route('system-admin.dashboard') : admin_route('admin.dashboard') }}">
+                    <span class="admin-topbar-brand-line"><img class="admin-topbar-logo" src="{{ asset('images/reggit-logo.png') }}" alt="Reggit" width="48" height="48"></span>
+                    <small>{{ $isSystemAdminScreen ? 'システム管理' : '契約ID: '.($navContractId ?? '未設定') }}</small>
+                </a>
+                @auth('admin')
+                <div class="content-header-actions">
+                    @include('admin.partials.store-selector')
+                    @if(auth('admin')->user()->isSystemAdmin() && !request()->routeIs('system-admin.*'))
+                    <a href="{{ route('system-admin.dashboard') }}" class="btn btn-sm btn-outline-primary" title="システム管理画面へ">
+                        <i class="fas fa-shield-alt"></i> <span class="hide-mobile">システム管理</span>
+                    </a>
+                    @endif
+                    <span class="content-header-user" title="{{ auth('admin')->user()->name }}">
+                        <i class="fas fa-user-shield"></i>
+                        {{ Str::limit(auth('admin')->user()->name, 12) }}
+                        <span class="content-header-role">{{ \App\Models\AdminUser::getRoleLabelShort(auth('admin')->user()->role) }}</span>
+                    </span>
+                    <form action="{{ request()->routeIs('system-admin.*') ? route('system-admin.logout') : route('admin.logout') }}" method="POST" class="content-header-logout-form" onsubmit="return confirm('ログアウトしますか？');">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-secondary no-loading">
+                            <i class="fas fa-sign-out-alt"></i> <span class="hide-mobile">ログアウト</span>
+                        </button>
+                    </form>
+                </div>
+                @endauth
+            </header>
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 @if($isSystemAdminScreen)
                     <p class="sidebar-kicker">Reggit</p>
@@ -101,7 +131,7 @@
             <nav class="sidebar-nav" aria-label="メインメニュー">
                 @if($isSystemAdminScreen)
                     <a href="{{ route('system-admin.dashboard') }}" class="nav-item {{ request()->routeIs('system-admin.dashboard') ? 'active' : '' }}">
-                        <i class="fas fa-th-large"></i>
+                        <i class="fas fa-house"></i>
                         <span>ダッシュボード</span>
                     </a>
                     <a href="{{ route('system-admin.projects.index') }}" class="nav-item {{ request()->routeIs('system-admin.projects*') ? 'active' : '' }}">
@@ -120,10 +150,7 @@
                         <i class="fas fa-book"></i>
                         <span>ヘルプ記事</span>
                     </a>
-                    <a href="{{ route('system-admin.mail-test.show') }}" class="nav-item {{ request()->routeIs('system-admin.mail-test.*') ? 'active' : '' }}">
-                        <i class="fas fa-envelope"></i>
-                        <span>メール送信テスト</span>
-                    </a>
+                    <a href="{{ route('system-admin.notices.index') }}" class="nav-item {{ request()->routeIs('system-admin.notices.*') ? 'active' : '' }}"><i class="fas fa-bullhorn"></i><span>店舗向けのお知らせ</span></a>
                     @if($navProjects->isNotEmpty())
                     <div class="nav-separator" role="presentation"></div>
                     <a href="{{ route('admin.dashboard', ['project_key' => $navProjects->first()->project_key]) }}" class="nav-item">
@@ -134,7 +161,7 @@
                 @else
                     @if($adminUser === null || $adminUser->hasPermission('dashboard.view'))
                     <a href="{{ admin_route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                        <i class="fas fa-th-large"></i>
+                        <i class="fas fa-house"></i>
                         <span>ダッシュボード</span>
                     </a>
                     @endif
@@ -236,7 +263,7 @@
                         || $adminUser->hasPermission('audit_logs.view')
                         || $adminUser->hasPermission('members.manage')
                     )
-                    <a href="{{ admin_route('admin.settings.index') }}" class="nav-item {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
+                    <a href="{{ admin_route('admin.settings.index') }}" class="nav-item {{ request()->routeIs('admin.settings.*') || request()->routeIs('admin.stores.*') || request()->routeIs('admin.audit-logs*') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>
                         <span>設定</span>
                     </a>
@@ -266,26 +293,15 @@
                     </button>
                     <h2>@yield('page-title', 'ダッシュボード')</h2>
                 </div>
-                @auth('admin')
-                <div class="content-header-actions">
-                    @if(auth('admin')->user()->isSystemAdmin() && !request()->routeIs('system-admin.*'))
-                    <a href="{{ route('system-admin.dashboard') }}" class="btn btn-sm btn-outline-primary" title="システム管理画面へ">
-                        <i class="fas fa-shield-alt"></i> <span class="hide-mobile">システム管理</span>
-                    </a>
-                    @endif
-                    <span class="content-header-user" title="{{ auth('admin')->user()->name }}">
-                        <i class="fas fa-user-shield"></i>
-                        {{ Str::limit(auth('admin')->user()->name, 12) }}
-                        <span class="content-header-role">{{ \App\Models\AdminUser::getRoleLabelShort(auth('admin')->user()->role) }}</span>
-                    </span>
-                    <form action="{{ request()->routeIs('system-admin.*') ? route('system-admin.logout') : route('admin.logout') }}" method="POST" class="content-header-logout-form" onsubmit="return confirm('ログアウトしますか？');">
-                        @csrf
-                        <button type="submit" class="btn btn-sm btn-outline-secondary no-loading">
-                            <i class="fas fa-sign-out-alt"></i> <span class="hide-mobile">ログアウト</span>
-                        </button>
-                    </form>
-                </div>
-                @endauth
+                @if(
+                    ($selectedStore ?? null) !== null
+                    && ($canManageStores ?? false)
+                    && session('admin_store.'.($currentProjectId ?? '')) === 'all'
+                    && (request()->routeIs('admin.queue*') || request()->routeIs('admin.reservations*') || request()->routeIs('admin.orders*'))
+                )
+                    <span class="content-header-store"><i class="fas fa-store" aria-hidden="true"></i> 表示中の店舗：{{ $selectedStore->name }}</span>
+                @endif
+                @yield('page-header-actions')
             </header>
             @if(session('success'))
                 <div class="alert alert-success" role="alert"><i class="fas fa-check-circle"></i> {{ session('success') }}</div>
@@ -299,10 +315,10 @@
                 </div>
             @endif
             <div class="content-body">
-                @if(request()->routeIs('admin.settings.*') && !request()->routeIs('admin.settings.index') && !request()->routeIs('admin.settings.liff-designer*'))
+                @if((request()->routeIs('admin.settings.*') || request()->routeIs('admin.stores.*')) && !request()->routeIs('admin.settings.index') && !request()->routeIs('admin.settings.liff-designer*'))
                     <div class="settings-page-content">
                         <a href="{{ admin_route('admin.settings.index') }}" class="settings-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 設定一覧</a>
-                        @yield('content')
+                @yield('content')
                     </div>
                 @else
                 @yield('content')

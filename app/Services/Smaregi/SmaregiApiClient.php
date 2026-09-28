@@ -23,6 +23,10 @@ class SmaregiApiClient
 
     private ?int $lastHttpStatus = null;
 
+    public function __construct(
+        private readonly SmaregiSettings $smaregiSettings,
+    ) {}
+
     public function getLastErrorDetail(): ?string
     {
         return $this->lastErrorDetail;
@@ -108,9 +112,8 @@ class SmaregiApiClient
     {
         $projectId = $this->resolveProjectIdForContract($contractId);
         if ($projectId !== null) {
-            $repo = app(SmaregiSettings::class);
-            $clientId = $repo->getValue('smaregi_client_id', null, $projectId);
-            $clientSecret = $repo->getValue('smaregi_client_secret', null, $projectId);
+            $clientId = $this->smaregiSettings->getValue('smaregi_client_id', null, $projectId);
+            $clientSecret = $this->smaregiSettings->getValue('smaregi_client_secret', null, $projectId);
             $clientId = is_string($clientId) ? trim($clientId) : '';
             $clientSecret = is_string($clientSecret) ? trim($clientSecret) : '';
             if ($clientId !== '' && $clientSecret !== '') {

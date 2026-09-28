@@ -213,6 +213,42 @@ class LayerDependencyTest extends TestCase
         }
     }
 
+    public function test_google_wallet_service_declares_its_collaborators(): void
+    {
+        $file = dirname(__DIR__, 3).'/app/Services/GoogleWalletPassService.php';
+        $source = file_get_contents($file);
+
+        self::assertIsString($source);
+        self::assertStringContainsString('private readonly MemberService $memberService', $source);
+        self::assertStringContainsString(
+            'private readonly MemberCardAppearanceService $memberCardAppearanceService',
+            $source
+        );
+        self::assertStringNotContainsString('app(MemberService::class)', $source);
+        self::assertStringNotContainsString('app(MemberCardAppearanceService::class)', $source);
+    }
+
+    public function test_services_do_not_hide_collaborators_behind_the_container(): void
+    {
+        $directory = dirname(__DIR__, 3).'/app/Services';
+        $violations = [];
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory));
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $source = file_get_contents($file->getPathname());
+            self::assertIsString($source);
+            if (preg_match('/\\b(?:app|resolve)\\s*\\(\\s*[A-Z][A-Za-z0-9_\\\\]*::class/', $source) === 1) {
+                $violations[] = $file->getPathname();
+            }
+        }
+
+        self::assertSame([], $violations, implode(PHP_EOL, $violations));
+    }
+
     public function test_admin_settings_and_store_app_middleware_do_not_depend_on_the_broad_settings_contract(): void
     {
         $root = dirname(__DIR__, 3).'/app/';

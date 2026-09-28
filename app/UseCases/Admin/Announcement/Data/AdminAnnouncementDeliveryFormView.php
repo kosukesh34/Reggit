@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
  * @param  Collection<int, Product>  $products
  * @param  Collection<int, MemberTag>  $memberTags
  * @param  array<string, array{label: string, color: string}>  $rfmSegments
+ * @param  list<array<string, mixed>>  $profileFields
  */
 class AdminAnnouncementDeliveryFormView
 {
@@ -21,5 +22,6 @@ class AdminAnnouncementDeliveryFormView
         public readonly Collection $products = new Collection,
         public readonly Collection $memberTags = new Collection,
         public readonly array $rfmSegments = [],
+        public readonly array $profileFields = [],
     ) {}
 }

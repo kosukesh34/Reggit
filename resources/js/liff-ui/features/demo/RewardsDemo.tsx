@@ -117,7 +117,7 @@ export function CouponDemo({ coupons, config }: { coupons: CouponItem[]; config:
     }
   };
 
-  const useCoupon = (coupon: CouponItem) => {
+  const selectCoupon = (coupon: CouponItem) => {
     if (config.requireConfirmation) {
       setSelected(coupon);
       return;
@@ -151,7 +151,7 @@ export function CouponDemo({ coupons, config }: { coupons: CouponItem[]; config:
                 {config.showDescription ? <p>{coupon.description}</p> : null}
                 {config.showExpiryDate ? <span className="benefit-card__date"><Clock3 size={13} /> {upcoming ? `${coupon.validFrom}から利用可能` : `${coupon.validUntil}まで`}</span> : null}
               </div>
-              <Button variant={ended || upcoming ? "outline" : "solid"} disabled={ended || upcoming} onClick={() => useCoupon(coupon)}>{ended ? "利用終了" : upcoming ? "利用開始前" : "利用する"}</Button>
+              <Button variant={ended || upcoming ? "outline" : "solid"} disabled={ended || upcoming} onClick={() => selectCoupon(coupon)}>{ended ? "利用終了" : upcoming ? "利用開始前" : "利用する"}</Button>
             </Card>
           );
         })}

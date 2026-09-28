@@ -13,8 +13,8 @@ class AdminCouponPushToSmaregiUseCase
     /**
      * @return array{pushed: int, failed: int, errors: list<string>}
      */
-    public function handle(int $projectId): array
+    public function handle(int $projectId, ?int $couponId = null): array
     {
-        return $this->smaregiCouponImportSyncService->pushUnlinkedToSmaregi($projectId);
+        return $this->smaregiCouponImportSyncService->pushUnlinkedToSmaregi($projectId, $couponId);
     }
 }

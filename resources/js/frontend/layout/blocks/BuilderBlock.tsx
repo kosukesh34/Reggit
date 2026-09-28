@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { baseStyleObject, marginBottomStyle, mergeStyles } from './blockStyles';
 import { isExternalHref } from './builderNav';
@@ -334,7 +334,10 @@ function BannerBlock({ block }: BuilderBlockProps): JSX.Element {
 }
 
 function CollectionBlock({ block }: BuilderBlockProps): JSX.Element {
-    const items = (Array.isArray(block.items) ? block.items : []) as BuilderNavItem[];
+    const items = useMemo(
+        () => (Array.isArray(block.items) ? block.items : []) as BuilderNavItem[],
+        [block.items],
+    );
     const design = block.design != null ? String(block.design) : 'product_shelf';
     const base = baseStyleObject(block);
 
@@ -425,7 +428,10 @@ function DataBlock({ block }: BuilderBlockProps): JSX.Element {
 }
 
 function StatsRowBlock({ block }: BuilderBlockProps): JSX.Element {
-    const items = (Array.isArray(block.items) ? block.items : []) as BuilderNavItem[];
+    const items = useMemo(
+        () => (Array.isArray(block.items) ? block.items : []) as BuilderNavItem[],
+        [block.items],
+    );
     const [values, setValues] = useState<Record<number, string>>(() => {
         const init: Record<number, string> = {};
         items.forEach((it, i) => {
@@ -454,7 +460,7 @@ function StatsRowBlock({ block }: BuilderBlockProps): JSX.Element {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [items]);
 
     return (
         <section className="builder-block builder-stats-row" data-source="stats_row" style={marginBottomStyle(block)}>

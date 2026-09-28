@@ -94,13 +94,13 @@
                     </td>
                     <td>
                         @if($order->user?->member !== null)
-                            <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ $order->user->name ?? 'N/A' }}</a>
+                            <a href="{{ admin_route('admin.members.detail', ['id' => $order->user->member->id]) }}">{{ admin_person_name($order->user?->name) }}</a>
                         @else
-                            {{ $order->user->name ?? 'N/A' }}
+                            {{ admin_person_name($order->user?->name) }}
                         @endif
                     </td>
                     <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
-                    <td>{{ $order->payment_method ?? 'N/A' }}</td>
+                    <td>{{ $order->payment_method ?? '未設定' }}</td>
                     <td>
                         @php
                             $statusLabels = [

@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\AnnouncementImageController;
 use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
 use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
 use App\Http\Controllers\Api\StoreAppAuthController;
+use App\Http\Controllers\Api\V1\Analysis\AnalysisCouponsController as ApiV1AnalysisCouponsController;
 use App\Http\Controllers\Api\V1\Analysis\AnalysisDeliveryController as ApiV1AnalysisDeliveryController;
 use App\Http\Controllers\Api\V1\Analysis\AnalysisSummaryController as ApiV1AnalysisSummaryController;
 use App\Http\Controllers\Api\V1\AnnouncementCancelledIdsController as ApiV1AnnouncementCancelledIdsController;
@@ -80,8 +82,10 @@ use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampController;
 use App\Http\Controllers\StampGrantCodeController;
 use App\Http\Controllers\StampGrantController;
+use App\Http\Controllers\StoreListController;
 use App\Http\Controllers\Wallet\AppleWalletPasskitController;
 use App\Http\Middleware\AuthenticateApiToken;
+use App\Http\Middleware\CheckAnalysisApiAccess;
 use App\Http\Middleware\CheckApiProject;
 use Illuminate\Support\Facades\Route;
 
@@ -232,13 +236,16 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::c
     Route::post('/{project_key}/queue/{id}/cancel', ApiV1QueueCancelController::class)->middleware('queue.access');
     Route::post('/{project_key}/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/{project_key}/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
-    Route::get('/{project_key}/analysis/summary', ApiV1AnalysisSummaryController::class);
-    Route::post('/{project_key}/analysis/deliveries', ApiV1AnalysisDeliveryController::class);
+    Route::get('/{project_key}/analysis/summary', ApiV1AnalysisSummaryController::class)->middleware([CheckAnalysisApiAccess::class, 'throttle:analysis-read']);
+    Route::get('/{project_key}/analysis/coupons', ApiV1AnalysisCouponsController::class)->middleware([CheckAnalysisApiAccess::class, 'throttle:analysis-read']);
+    Route::post('/{project_key}/analysis/deliveries', ApiV1AnalysisDeliveryController::class)->middleware([CheckAnalysisApiAccess::class, 'throttle:analysis-delivery']);
 });
 
 // ネイティブアプリ設定（認証不要・project_key クエリで取得）
-Route::get('/v1/app-config', AppConfigController::class);
+Route::get('/v1/app-config', AppConfigController::class)->middleware(['web', 'bind.project']);
 Route::get('/v1/projects', ApiV1ProjectListController::class);
+Route::get('/v1/announcements/{id}/image', AnnouncementImageController::class)->middleware(['web', 'bind.project']);
+Route::get('/v1/stores', StoreListController::class)->middleware(['web', 'bind.project']);
 // 削除済みお知らせ通知の取消しID（認証不要・起動時掃除用）
 Route::get('/v1/announcements/cancelled-ids', ApiV1AnnouncementCancelledIdsController::class);
 

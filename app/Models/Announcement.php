@@ -4,8 +4,11 @@ namespace App\Models;
 
 use App\Enums\AnnouncementAudienceResolveMode;
 use App\Models\Concerns\BelongsToProject;
+use App\Util\StoreContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Announcement extends Model
 {
@@ -31,8 +34,64 @@ class Announcement extends Model
 
     public const DELIVERY_TIMING_SCHEDULED = 'scheduled';
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $announcement) {
+            if (is_array($announcement->target_member_ids) || in_array($announcement->delivery_type, [self::DELIVERY_TYPE_PERSONAL, self::DELIVERY_TYPE_SEGMENT, self::DELIVERY_TYPE_AFTER_REGISTRATION], true)) {
+                $announcement->visibility = 'recipients';
+            }
+            $context = app(StoreContext::class);
+            if ($context->bound && $context->admin !== null) {
+                if (! $context->admin->isSystemAdmin() && ! $context->admin->isProjectAdmin()) {
+                    $context->resolveForWrite((int) $announcement->project_id);
+                }
+                $announcement->store_ids = $context->store !== null ? [(int) $context->store->id] : null;
+                $announcement->created_by_admin_id = $context->admin->id;
+                if ($announcement->delivery_type !== null) {
+                    $announcement->visibility = 'recipients';
+                }
+            }
+        });
+        static::saving(function (self $announcement) {
+            $context = app(StoreContext::class);
+            if (! $announcement->exists || ! $context->bound || $context->admin === null || $context->admin->isSystemAdmin() || $context->admin->isProjectAdmin()) {
+                return;
+            }
+            $ids = $announcement->exists ? $announcement->getOriginal('store_ids') : $announcement->store_ids;
+            if ($ids === null && $context->projectStoreCount === 1) {
+                $announcement->store_ids = $context->visibleStoreIds;
+
+                return;
+            }
+            abort_unless(is_array($ids) && $ids !== [] && count(array_diff($ids, $context->visibleStoreIds ?? [])) === 0, 403, '担当店舗の配信だけを変更できます。');
+        });
+        static::deleting(function (self $announcement) {
+            $context = app(StoreContext::class);
+            if ($context->bound && $context->admin !== null && ! $context->admin->isSystemAdmin() && ! $context->admin->isProjectAdmin()) {
+                if ($announcement->store_ids === null && $context->projectStoreCount === 1) {
+                    return;
+                }
+                abort_unless(is_array($announcement->store_ids) && count(array_diff($announcement->store_ids, $context->visibleStoreIds ?? [])) === 0, 403);
+            }
+        });
+    }
+
+    public function getImageUrlAttribute($value)
+    {
+        if ($this->private_image_path !== null && $this->exists) {
+            $projectKey = Project::whereKey($this->project_id)->value('project_key');
+
+            return url('/api/v1/announcements/'.$this->id.'/image').'?project_key='.urlencode((string) $projectKey);
+        }
+
+        return $value;
+    }
+
+    protected $hidden = ['private_image_path'];
+
     protected $fillable = [
         'project_id',
+        'store_ids', 'visibility', 'created_by_admin_id', 'private_image_path',
         'title',
         'body',
         'image_url',
@@ -48,21 +107,22 @@ class Announcement extends Model
         'audience_resolve_mode',
         'segment_criteria',
         'delivery_coupon_id',
+        'delivery_coupon_ids',
         'delivery_status',
         'push_notification_ids',
     ];
 
-    public function project()
+    public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function reads()
+    public function reads(): HasMany
     {
         return $this->hasMany(AnnouncementRead::class);
     }
 
-    public function deliveryCoupon()
+    public function deliveryCoupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class, 'delivery_coupon_id');
     }
@@ -76,7 +136,9 @@ class Announcement extends Model
         'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
         'target_member_ids' => 'array',
+        'store_ids' => 'array',
         'segment_criteria' => 'array',
+        'delivery_coupon_ids' => 'array',
         'push_notification_ids' => 'array',
     ];
 
@@ -90,5 +152,21 @@ class Announcement extends Model
     {
         return $this->audience_resolve_mode === AnnouncementAudienceResolveMode::AT_SEND
             && $this->delivery_type !== self::DELIVERY_TYPE_PERSONAL;
+    }
+
+    /** @return list<int> */
+    public function deliveryCouponIds(): array
+    {
+        $ids = is_array($this->delivery_coupon_ids) ? $this->delivery_coupon_ids : [];
+        if ($this->delivery_coupon_id !== null) {
+            array_unshift($ids, (int) $this->delivery_coupon_id);
+        }
+
+        return collect($ids)->map(fn ($id): int => (int) $id)->filter()->unique()->values()->all();
+    }
+
+    public function hasDeliveryCoupons(): bool
+    {
+        return $this->deliveryCouponIds() !== [];
     }
 }

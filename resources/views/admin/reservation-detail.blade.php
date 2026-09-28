@@ -43,9 +43,9 @@
                 <div class="info-label">ユーザー</div>
                 <div class="info-value">
                     @if($reservation->user?->member !== null)
-                        <a href="{{ admin_route('admin.members.detail', ['id' => $reservation->user->member->id]) }}">{{ $reservation->user->name ?? 'N/A' }}</a>
+                        <a href="{{ admin_route('admin.members.detail', ['id' => $reservation->user->member->id]) }}">{{ admin_person_name($reservation->user?->name) }}</a>
                     @else
-                        {{ $reservation->user->name ?? 'N/A' }}
+                        {{ admin_person_name($reservation->user?->name) }}
                     @endif
                 </div>
             </div>

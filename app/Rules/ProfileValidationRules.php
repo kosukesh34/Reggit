@@ -60,6 +60,7 @@ class ProfileValidationRules
             'birthday' => ['date'],
             'sex' => ['in:0,1,2'],
             'mail_receive_flag' => ['in:0,1'],
+            'customer_store_id' => ['integer'],
         ];
     }
 
