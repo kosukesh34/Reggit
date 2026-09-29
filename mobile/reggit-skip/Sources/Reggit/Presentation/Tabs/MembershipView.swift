@@ -738,6 +738,7 @@ struct ProfileEditView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.visible, for: .navigationBar)
         .tint(accent)
+        #if !os(Android)
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
                 if attemptedSave && !isValid {
@@ -762,6 +763,29 @@ struct ProfileEditView: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
             .background(AppDesign.surface)
+        }
+        #endif
+        .overlay(alignment: .bottom) {
+            #if os(Android)
+            VStack(spacing: 8) {
+                if attemptedSave && !isValid {
+                    Text("入力内容をご確認ください").font(.caption).foregroundStyle(AppDesign.danger)
+                }
+                Button {
+                    attemptedSave = true
+                    if isValid { onSave(values, listValues) }
+                } label: {
+                    Text(isSaving ? "保存中…" : "変更を保存").fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .foregroundStyle((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground))
+                        .background((buttonColors["primary_button_background"] ?? "").toNativeColor(fallback: accent))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .disabled(isSaving || fields.isEmpty)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(AppDesign.surface)
+            #endif
         }
         .onAppear {
             guard !didInitialize else { return }
