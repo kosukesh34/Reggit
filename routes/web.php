@@ -251,6 +251,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/coupons/quick-create', [CouponBulkIssueController::class, 'quickCreate'])->name('admin.coupons.quick-create')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/sync-smaregi', [CouponSmaregiSyncController::class, 'pull'])->name('admin.coupons.sync-smaregi')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/push-smaregi', [CouponSmaregiSyncController::class, 'push'])->name('admin.coupons.push-smaregi')->middleware('admin.permission:coupons.manage');
+        Route::post('/coupons/sync-to-smaregi', [CouponSmaregiSyncController::class, 'syncToSmaregi'])->name('admin.coupons.sync-to-smaregi')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/full-sync-smaregi', [CouponSmaregiSyncController::class, 'sync'])->name('admin.coupons.full-sync-smaregi')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/ajax/members', [CouponDeliveryController::class, 'searchMembers'])->name('admin.coupons.ajax.members')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/segment-preview', [CouponDeliveryController::class, 'segmentPreview'])->name('admin.coupons.segment.preview')->middleware('admin.permission:coupons.manage');

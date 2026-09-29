@@ -92,7 +92,7 @@ struct GalleryView: View {
                 .toolbar(.hidden, for: .navigationBar)
                 .refreshable { await viewModel.load(force: true) }
                 .navigationDestination(item: $selectedItem) { item in
-                    galleryDetail(item)
+                    galleryDetail(item).headerBackDestination()
                 }
             }
         }

@@ -27,6 +27,8 @@ class ProjectAdminUiSetting extends Model
         'home_image_url',
         'home_image_urls',
         'home_menu_layout',
+        'home_show_member_card',
+        'native_chrome_colors',
         'product_display_layout',
         'native_navigation_items',
         'member_show_rank_progress',
@@ -37,6 +39,8 @@ class ProjectAdminUiSetting extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'home_show_member_card' => 'boolean',
+        'native_chrome_colors' => 'array',
         'home_image_urls' => 'array',
         'native_navigation_items' => 'array',
         'member_show_rank_progress' => 'boolean',

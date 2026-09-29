@@ -92,4 +92,21 @@ class SmaregiCouponImportSyncServiceTest extends TestCase
         $this->assertSame(1, $result['pushed']);
         $this->assertSame(0, $result['failed']);
     }
+
+    public function test_sync_to_smaregi_未連携を登録し連携済みを更新すること(): void
+    {
+        $project = Project::factory()->create();
+        $unlinked = Coupon::factory()->create(['project_id' => $project->id, 'smaregi_coupon_id' => null]);
+        $linked = Coupon::factory()->create(['project_id' => $project->id, 'smaregi_coupon_id' => 'sm-existing']);
+
+        $api = Mockery::mock(SmaregiApiService::class);
+        $sync = Mockery::mock(SmaregiCouponSyncService::class);
+        $sync->shouldReceive('hasSmaregiContract')->once()->with($project->id)->andReturn(true);
+        $sync->shouldReceive('sync')->once()->with(Mockery::on(fn ($coupon) => $coupon->id === $unlinked->id))->andReturn(true);
+        $sync->shouldReceive('updateOnSmaregi')->once()->with($project->id, 'sm-existing', Mockery::on(fn ($data) => $data['id'] === $linked->id))->andReturn(true);
+
+        $result = (new SmaregiCouponImportSyncService($api, $sync))->syncToSmaregi($project->id);
+
+        $this->assertSame(['created' => 1, 'updated' => 1, 'failed' => 0, 'errors' => []], $result);
+    }
 }

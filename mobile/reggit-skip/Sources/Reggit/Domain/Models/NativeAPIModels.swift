@@ -148,6 +148,33 @@ struct MemberProfileSnapshot: Equatable {
         )
     }
 
+    func withWalletPoints(_ latestPoints: Int) -> MemberProfileSnapshot {
+        MemberProfileSnapshot(
+            isMember: isMember,
+            userId: userId,
+            memberId: memberId,
+            name: name,
+            phone: phone,
+            memberNumber: memberNumber,
+            points: latestPoints,
+            rankLabel: rankLabel,
+            nextRankLabel: nextRankLabel,
+            pointsToNextRank: pointsToNextRank.map { max(0, $0 - (latestPoints - points)) },
+            showRankProgress: showRankProgress,
+            cardCodeType: cardCodeType,
+            message: message,
+            registrationMode: registrationMode,
+            cardLogoURL: cardLogoURL,
+            profileImageURL: profileImageURL,
+            rankColorHex: rankColorHex,
+            pointsExpiryLabel: pointsExpiryLabel,
+            profilePayload: profilePayload,
+            profileListPayload: profileListPayload,
+            profileFields: profileFields,
+            profileImageEnabled: profileImageEnabled
+        )
+    }
+
     var editableProfileFields: [ProfileFieldDefinition] {
         // An explicit server definition is authoritative, including optional/disabled fields.
         if !profileFields.isEmpty { return profileFields }

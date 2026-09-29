@@ -257,6 +257,36 @@ class MemberSegmentAndChannelTest extends TestCase
         );
     }
 
+    public function test_member_segment_service_全体の一致方法で_and_orを切り替えられること(): void
+    {
+        $project = $this->createProject();
+        $service = app(MemberSegmentService::class);
+        $femaleJuly = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'birthday' => '1990-07-15', 'sex' => '2',
+        ]);
+        $maleJanuary = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'birthday' => '1990-01-01', 'sex' => '1',
+        ]);
+        $input = ['segment_birthday_months' => [7], 'segment_sex' => '1'];
+
+        $all = $service->buildCriteriaFromInput($input + ['segment_match_mode' => 'all']);
+        $any = $service->buildCriteriaFromInput($input + ['segment_match_mode' => 'any']);
+
+        $this->assertSame([], $service->getMemberIds($project->id, $all)->all());
+        $this->assertEqualsCanonicalizing([$femaleJuly->id, $maleJanuary->id], $service->getMemberIds($project->id, $any)->all());
+
+        $multipleMonths = $service->buildCriteriaFromInput([
+            'segment_birthday_months' => [1, 7],
+            'segment_sex' => '2',
+            'segment_match_mode' => 'all',
+        ]);
+        $this->assertSame([$femaleJuly->id], $service->getMemberIds($project->id, $multipleMonths)->all());
+    }
+
     public function test_member_segment_service_プロフィール任意項目で絞り込めること(): void
     {
         $project = $this->createProject();

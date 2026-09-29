@@ -22,6 +22,16 @@
             }
         }
         $adminCssVersion = $adminCssMtime > 0 ? (string) $adminCssMtime : (string) time();
+        $adminSidebarCss = (isset($adminSidebarColor) && is_string($adminSidebarColor) && preg_match('/^#[0-9A-Fa-f]{6}$/', $adminSidebarColor) === 1)
+            ? $adminSidebarColor
+            : null;
+        $adminSidebarText = '#ffffff';
+        if ($adminSidebarCss !== null) {
+            $rgb = array_map(fn ($offset) => hexdec(substr($adminSidebarCss, $offset, 2)) / 255, [1, 3, 5]);
+            $linear = array_map(fn ($channel) => $channel <= 0.04045 ? $channel / 12.92 : pow(($channel + 0.055) / 1.055, 2.4), $rgb);
+            $luminance = 0.2126 * $linear[0] + 0.7152 * $linear[1] + 0.0722 * $linear[2];
+            $adminSidebarText = $luminance > 0.179 ? '#111827' : '#ffffff';
+        }
         $adminPrimaryCss = (isset($adminPrimaryColor) && is_string($adminPrimaryColor) && preg_match('/^#[0-9A-Fa-f]{6}$/', $adminPrimaryColor) === 1)
             ? $adminPrimaryColor
             : null;
@@ -36,6 +46,34 @@
             --primary-bg: color-mix(in srgb, {{ $adminPrimaryCss }} 12%, #ffffff);
             --primary-bg-hover: color-mix(in srgb, {{ $adminPrimaryCss }} 18%, #ffffff);
         }
+    </style>
+    @endif
+    @if($adminSidebarCss !== null)
+    <style>
+        .sidebar {
+            --sidebar-custom-bg: {{ $adminSidebarCss }};
+            --sidebar-custom-text: {{ $adminSidebarText }};
+            background: var(--sidebar-custom-bg);
+        }
+        .sidebar .sidebar-header,
+        .sidebar .sidebar-store-switcher-toggle { background: var(--sidebar-custom-bg); }
+        .sidebar .sidebar-header h1,
+        .sidebar .sidebar-kicker,
+        .sidebar .sidebar-store-switcher-toggle,
+        .sidebar .nav-group-label,
+        .sidebar .nav-item,
+        .sidebar .nav-item i { color: var(--sidebar-custom-text); }
+        .sidebar .nav-item:hover,
+        .sidebar .nav-item.active {
+            background: color-mix(in srgb, var(--sidebar-custom-bg) 82%, var(--sidebar-custom-text));
+            color: var(--sidebar-custom-text);
+        }
+        .sidebar .sidebar-header,
+        .sidebar .sidebar-store-switcher-toggle,
+        .sidebar .nav-group-footer { border-color: color-mix(in srgb, var(--sidebar-custom-bg) 75%, var(--sidebar-custom-text)); }
+        .sidebar .nav-separator { background: color-mix(in srgb, var(--sidebar-custom-bg) 75%, var(--sidebar-custom-text)); }
+        .sidebar a:focus-visible,
+        .sidebar summary:focus-visible { outline-color: var(--sidebar-custom-text); }
     </style>
     @endif
     @stack('styles')

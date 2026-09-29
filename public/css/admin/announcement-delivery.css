@@ -3347,6 +3347,17 @@ body[data-page-kind="announcement-delivery"] .ad-header-submit i {
 .ad-condition-help { margin-top: 12px; color: #64748b; font-size: 12px; line-height: 1.7; }
 .ad-condition-help summary { cursor: pointer; }
 .ad-condition-help p { margin: 8px 0 0; }
+.ad-match-mode { margin: 14px 0 18px; padding: 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; }
+.ad-match-mode legend { padding: 0 6px; color: #1e293b; font-weight: 700; }
+.ad-match-mode-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.ad-match-mode-options label { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; cursor: pointer; }
+.ad-match-mode-options label:has(input:checked) { border-color: #315fd4; background: #eef3ff; }
+.ad-match-mode-options input { margin-top: 3px; }
+.ad-match-mode-options span { display: grid; gap: 3px; }
+.ad-match-mode-options small, .ad-match-mode > p { color: #475569; font-size: 12px; line-height: 1.5; }
+.ad-match-mode > p { margin: 10px 0 0; }
+.ad-condition-match-mode { align-self: center; color: #315fd4; font-size: 12px; }
+@media (max-width: 680px) { .ad-match-mode-options { grid-template-columns: 1fr; } }
 #segmentBlock .ad-confirm-conditions { margin: 12px 0; padding: 12px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; }
 @media (max-width: 680px) {
     .announcement-delivery-admin .ad-segment-details > summary { flex-wrap: wrap; gap: 6px; }

@@ -14,6 +14,10 @@ class SettingsHomeRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'design_tab' => 'nullable|in:home,header,footer,menu,products,buttons',
+            'home_show_member_card' => 'nullable|boolean',
+            'native_chrome_colors' => 'nullable|array:header_icon,footer_background,footer_icon,footer_active_icon,footer_active_background,primary_button_background,primary_button_text,secondary_button_background,secondary_button_text',
+            'native_chrome_colors.*' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'tabs' => 'nullable|array',
             'tabs.*.tab' => 'nullable|string|max:64',
             'tabs.*.label' => 'nullable|string|max:255',

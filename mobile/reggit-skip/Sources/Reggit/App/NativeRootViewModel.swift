@@ -14,6 +14,7 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     var phase: Phase = .loading
     var tabs: [AppTabItem] = []
+    var homeTabs: [AppTabItem] = []
     var headerItems: [AppTabItem] = []
     var footerItems: [AppTabItem] = []
     var hamburgerItems: [AppTabItem] = []
@@ -22,12 +23,16 @@ final class NativeRootViewModel: PushNotificationHandling {
     var projectName: String = "Reggit"
     var primaryColorHex: String = "#173F35"
     var navigationHeaderImageURL: String?
+    var navigationHeaderText: String?
     var navigationHeaderBackgroundColorHex = "#FFFFFF"
     var homeImageURLs: [String] = []
+    var nativeChromeColors: [String: String] = [:]
+    var homeShowMemberCard = true
     var homeMenuLayout = "grid_3x2"
     var productDisplayLayout = "list_with_image"
     var lotteryModalPresented = false
     var pendingLotteryCount = 0
+    private var lastStampsTotal: Int?
     private var realtimeWebSocketURL: String?
     var memberShowRankProgress = true
     var memberShowPointHistory = true
@@ -36,7 +41,11 @@ final class NativeRootViewModel: PushNotificationHandling {
     var membership: MemberProfileSnapshot?
     /// プロフィール更新などで会員タブを再読込させるための世代カウンタ
     var membershipRevision = 0
+    var queueRevision = 0
+    var ordersRevision = 0
+    var lotteryRevision = 0
     var paymentReturnOrderID: Int?
+    var paymentReturnSucceeded = false
     var paymentReturnRevision = 0
     var registrationName = ""
     var registrationPhone = ""
@@ -49,6 +58,9 @@ final class NativeRootViewModel: PushNotificationHandling {
     private let pushObserver: any PushNotificationObserving
     private let configRepository: any MobileWebConfigRepository
     private let walletRealtime = MemberWalletRealtime()
+    private var walletRefreshTask: Task<Void, Never>?
+    private var queueRefreshTask: Task<Void, Never>?
+    private var hasStarted = false
 
     init(
         bootstrap: DeviceBootstrapService = DeviceBootstrapService(),
@@ -62,12 +74,23 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     func onAppear() {
         pushObserver.startObserving(handler: self)
+        if hasStarted {
+            if !walletRealtime.isRunning { connectRealtimeIfPossible() }
+            return
+        }
+        hasStarted = true
         Task { await start() }
     }
 
     func onDisappear() {
         pushObserver.stopObserving()
+    }
+
+    func shutdown() {
+        pushObserver.stopObserving()
         walletRealtime.stop()
+        walletRefreshTask?.cancel()
+        queueRefreshTask?.cancel()
     }
 
     func retry() {
@@ -76,11 +99,17 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     func start() async {
         walletRealtime.stop()
-        phase = .loading
+        let hadReadyScreen = phase == .ready
+        if !hadReadyScreen { phase = .loading }
         registrationError = nil
         showRegistrationPopup = false
         do {
+            let previousProjectKey = currentProjectKey
             currentProjectKey = configRepository.resolveConfig().projectKey
+            if previousProjectKey != currentProjectKey {
+                pendingLotteryCount = 0
+                lastStampsTotal = nil
+            }
             let client = try await bootstrap.registerDevice()
             apiClient = client
             let config = await loadAppConfig(client: client)
@@ -88,15 +117,15 @@ final class NativeRootViewModel: PushNotificationHandling {
                 Self.uniqueItems(config.tabs + config.headerItems + config.footerItems + config.hamburgerItems)
             )
             tabs = filtered.isEmpty ? Self.defaultTabs : filtered
+            homeTabs = Self.filterNativeTabs(config.tabs)
             headerItems = Array(Self.items(config.headerItems, availableIn: tabs).prefix(1))
             footerItems = Array(Self.items(config.footerItems, availableIn: tabs).prefix(5))
             if !config.hasNavigationConfiguration {
                 footerItems = Array(tabs.filter { $0.url == nil }.prefix(5))
             }
-            let legalItems = Self.items(config.hamburgerItems, availableIn: tabs).filter { $0.url != nil }
-            let menu = Self.testingMenu + legalItems.filter { item in
-                !Self.testingMenu.contains(where: { $0.key == item.key })
-            }
+            let menu = config.hasNavigationConfiguration
+                ? Self.items(config.hamburgerItems, availableIn: tabs)
+                : Self.testingMenu
             for item in menu where !tabs.contains(where: { $0.key == item.key }) {
                 tabs.append(item)
             }
@@ -105,8 +134,11 @@ final class NativeRootViewModel: PushNotificationHandling {
             let hex = config.primaryColor.trimmingCharacters(in: .whitespacesAndNewlines)
             primaryColorHex = hex.isEmpty ? "#173F35" : hex
             navigationHeaderImageURL = config.navigationHeaderImageURL
+            navigationHeaderText = config.navigationHeaderText
             navigationHeaderBackgroundColorHex = config.navigationHeaderBackgroundColor
             homeImageURLs = config.homeImageURLs
+            nativeChromeColors = config.nativeChromeColors
+            homeShowMemberCard = config.homeShowMemberCard
             homeMenuLayout = config.homeMenuLayout
             productDisplayLayout = config.productDisplayLayout
             realtimeWebSocketURL = config.realtimeWebSocketURL
@@ -114,10 +146,12 @@ final class NativeRootViewModel: PushNotificationHandling {
             memberShowPointHistory = config.memberShowPointHistory
             memberShowCouponActivity = config.memberShowCouponActivity
             let preferred = configRepository.resolveConfig().fixedTab
-            if tabs.contains(where: { $0.key == preferred }) {
-                selectedTab = preferred
-            } else if let first = tabs.first {
-                selectedTab = first.key
+            if previousProjectKey != currentProjectKey || !tabs.contains(where: { $0.key == selectedTab }) {
+                if tabs.contains(where: { $0.key == preferred }) {
+                    selectedTab = preferred
+                } else if let first = tabs.first {
+                    selectedTab = first.key
+                }
             }
 
             let member = try await loadMembership(using: client)
@@ -136,7 +170,7 @@ final class NativeRootViewModel: PushNotificationHandling {
                 handleQueueDeepLink(queueToken: token)
             }
         } catch {
-            phase = .failed(error.localizedDescription)
+            if !hadReadyScreen { phase = .failed(error.localizedDescription) }
             logger.error("Native bootstrap failed: \(error.localizedDescription)")
         }
     }
@@ -172,19 +206,49 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     func applyMembership(_ member: MemberProfileSnapshot) {
         membership = member
-        membershipRevision &+= 1
         connectRealtimeIfPossible()
     }
 
     private func connectRealtimeIfPossible() {
-        guard let member = membership, member.isMember,
-              let memberID = member.memberId,
-              let websocketURL = realtimeWebSocketURL,
-              let nativeClient = apiClient as? ReggitAPIClient else { return }
-        walletRealtime.start(websocketURL: websocketURL, client: nativeClient, memberID: memberID) { [weak self] count in
+        guard let websocketURL = realtimeWebSocketURL,
+              !websocketURL.isEmpty,
+              !currentProjectKey.isEmpty else { return }
+        let memberID = membership?.isMember == true ? membership?.memberId : nil
+        let nativeClient = apiClient as? ReggitAPIClient
+        walletRealtime.start(
+            websocketURL: websocketURL,
+            client: nativeClient,
+            memberID: memberID,
+            projectKey: currentProjectKey,
+            onWalletUpdated: { [weak self] points, stampsTotal, count in
             guard let self else { return }
+            let pointsChanged = points != nil && points != self.membership?.points
+            let stampsChanged = stampsTotal != nil && stampsTotal != self.lastStampsTotal
+            let lotteryChanged = count != self.pendingLotteryCount
+            guard pointsChanged || stampsChanged || lotteryChanged else { return }
+            if pointsChanged, let points, let member = self.membership {
+                self.membership = member.withWalletPoints(points)
+                SecondaryScreenCache.pointHistory = nil
+                SecondaryScreenCache.memberProfileNeedsRefresh = true
+                if self.selectedTab == "member" {
+                    self.walletRefreshTask?.cancel()
+                    self.walletRefreshTask = Task {
+                        try? await Task.sleep(nanoseconds: 350_000_000)
+                        if !Task.isCancelled { self.membershipRevision &+= 1 }
+                    }
+                }
+            }
+            if stampsChanged {
+                SecondaryScreenCache.stamps = nil
+                self.lastStampsTotal = stampsTotal
+            }
+            if lotteryChanged {
+                SecondaryScreenCache.lottery = nil
+                if self.selectedTab == "lottery" { self.lotteryRevision &+= 1 }
+            }
             if count > self.pendingLotteryCount {
                 Task {
+                    guard let nativeClient else { return }
                     guard let state = try? await nativeClient.fetchLotteryState(),
                           state.gachaEnabled,
                           state.pending(for: "gacha") != nil else { return }
@@ -192,7 +256,34 @@ final class NativeRootViewModel: PushNotificationHandling {
                 }
             }
             self.pendingLotteryCount = count
-        }
+        }, onProjectUpdated: { [weak self] topic in
+            guard let self else { return }
+            SecondaryScreenCache.invalidate(topic: topic)
+            if topic == "orders", self.selectedTab == "orders" {
+                self.queueRefreshTask?.cancel()
+                self.queueRefreshTask = Task {
+                    try? await Task.sleep(nanoseconds: 350_000_000)
+                    if !Task.isCancelled { self.ordersRevision &+= 1 }
+                }
+            }
+            if topic == "orders", self.selectedTab == "lottery" {
+                self.lotteryRevision &+= 1
+            }
+            if topic == "orders", self.selectedTab == "products" {
+                SecondaryScreenCache.orders = nil
+                SecondaryScreenCache.lottery = nil
+                self.lotteryRevision &+= 1
+            }
+            if topic == "queue", self.selectedTab == "queue" {
+                self.queueRefreshTask?.cancel()
+                self.queueRefreshTask = Task {
+                    try? await Task.sleep(nanoseconds: 350_000_000)
+                    if !Task.isCancelled, SecondaryScreenCache.queue == nil {
+                        self.queueRevision &+= 1
+                    }
+                }
+            }
+        })
     }
 
     func skipRegistration() {
@@ -219,9 +310,12 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     func handlePaymentReturn(orderID: Int, succeeded: Bool) {
         paymentReturnOrderID = orderID
+        paymentReturnSucceeded = succeeded
         paymentReturnRevision &+= 1
         selectedTab = "products"
         if succeeded {
+            SecondaryScreenCache.memberProfileNeedsRefresh = true
+            SecondaryScreenCache.pointHistory = nil
             membershipRevision &+= 1
         }
     }
@@ -256,7 +350,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     // MARK: - Tabs
 
     static let supportedTabKeys: Set<String> = [
-        "home", "member", "profile", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "lottery", "storeSearch", "terms", "privacy",
+        "home", "member", "profile", "profileEdit", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "lottery", "storeSearch", "terms", "privacy",
     ]
 
     /// テスト用。サーバのメニュー設定に関係なく、実装済み機能を全部出す。

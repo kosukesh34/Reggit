@@ -21,7 +21,7 @@ final class NativeAPIModelsTests: XCTestCase {
         let data = try JSONSerialization.data(withJSONObject: [
             "project_name": "Demo",
             "theme": ["primary_color": "#173F35"],
-            "header": ["image_url": "https://example.com/header.webp", "background_color": "#F6F1E8"],
+            "header": ["image_url": "https://example.com/header.webp", "background_color": "#F6F1E8", "text": "設定したタイトル"],
             "realtime": ["websocket_url": "wss://example.com/app/demo?protocol=7"],
             "home": [
                 "menu_layout": "grid_3x2",
@@ -39,6 +39,7 @@ final class NativeAPIModelsTests: XCTestCase {
         ])
         let config = try XCTUnwrap(AppConfigClient.parse(data))
         XCTAssertEqual(config.navigationHeaderImageURL, "https://example.com/header.webp")
+        XCTAssertEqual(config.navigationHeaderText, "設定したタイトル")
         XCTAssertEqual(config.navigationHeaderBackgroundColor, "#F6F1E8")
         XCTAssertEqual(config.homeImageURL, "https://example.com/home.webp")
         XCTAssertEqual(config.homeImageURLs, ["https://example.com/home.webp", "https://example.com/second.webp"])

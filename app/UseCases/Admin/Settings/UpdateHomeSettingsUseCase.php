@@ -23,7 +23,15 @@ class UpdateHomeSettingsUseCase
         string $productDisplayLayout = 'list_with_image',
         ?array $nativeNavigation = null,
         ?array $homeImageUrls = null,
+        ?bool $homeShowMemberCard = null,
+        ?array $nativeChromeColors = null,
     ): void {
+        if ($nativeChromeColors !== null) {
+            $this->shopSettingRepository->setValue('native_chrome_colors', array_map('strtoupper', array_intersect_key($nativeChromeColors, array_flip(['header_icon', 'footer_background', 'footer_icon', 'footer_active_icon', 'footer_active_background', 'primary_button_background', 'primary_button_text', 'secondary_button_background', 'secondary_button_text']))), 'json', $projectId);
+        }
+        if ($homeShowMemberCard !== null) {
+            $this->shopSettingRepository->setValue('home_show_member_card', $homeShowMemberCard, 'boolean', $projectId);
+        }
         $defaults = collect($this->shopSettingRepository->defaultFrontendMenuItems())->keyBy('tab');
         $existingLinks = collect($this->existingLinkMenuItems($projectId))->keyBy('tab');
         $items = [];
@@ -75,7 +83,7 @@ class UpdateHomeSettingsUseCase
         if ($nativeNavigation !== null) {
             $allowedNavigationKeys = array_merge(
                 array_values(array_filter(array_column($items, 'tab'), fn ($tab) => $tab !== 'designlab')),
-                ['terms', 'privacy'],
+                ['terms', 'privacy', 'profileEdit'],
             );
             $normalizedNavigation = [];
             foreach (['header' => 1, 'footer' => 5, 'hamburger' => null] as $placement => $limit) {
