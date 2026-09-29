@@ -38,10 +38,14 @@
             <div class="form-group">
                 <label for="admin_sidebar_color" class="form-label">サイドバー背景色</label>
                 <div class="flex-row-gap-8">
-                    <input type="color" name="admin_sidebar_color" id="admin_sidebar_color" value="{{ $view->adminSidebarColor ?? '#ffffff' }}" class="color-input">
-                    <input type="text" class="form-control input-max-200" value="{{ $view->adminSidebarColor ?? '' }}" placeholder="#ffffff" oninput="document.getElementById('admin_sidebar_color').value=this.value">
+                    <input type="color" id="admin_sidebar_color_picker" value="{{ old('admin_sidebar_color', $view->adminSidebarColor) ?: '#00344d' }}" class="color-input" aria-label="サイドバー背景色を選択" oninput="document.getElementById('admin_sidebar_color').value=this.value">
+                    <input type="text" name="admin_sidebar_color" id="admin_sidebar_color" class="form-control input-max-200" value="{{ old('admin_sidebar_color', $view->adminSidebarColor) }}" placeholder="#00344d" pattern="#[0-9a-fA-F]{6}" maxlength="7" oninput="if (/^#[0-9a-fA-F]{6}$/.test(this.value)) document.getElementById('admin_sidebar_color_picker').value=this.value" aria-describedby="admin_sidebar_color_help">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('admin_sidebar_color').value=''; document.getElementById('admin_sidebar_color_picker').value='#00344d'">標準色に戻す</button>
                 </div>
-                <p class="form-text text-muted">ライトテーマでは背景は白のままです。アクセントカラーがメニューやボタンに使われます。</p>
+                <p id="admin_sidebar_color_help" class="form-text text-muted">カラーピッカーまたはカラーコード（例: #00344d）で指定できます。文字色は背景に合わせて自動調整されます。空欄で保存すると標準色に戻ります。</p>
+                @error('admin_sidebar_color')
+                    <p class="text-danger">{{ $message }}</p>
+                @enderror
             </div>
             <div class="form-group">
                 <label for="admin_header_color" class="form-label">ヘッダー背景色</label>

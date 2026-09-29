@@ -9,7 +9,8 @@ struct NativeRootView: View {
     @State var appInfoDisplayedAt = Date()
     @State var expandedHomeImageIndex: Int? = nil
     @State var expandedHomePage = 0
-    @State var isHeaderShown = false
+    @State var headerNavigation = HeaderNavigationState()
+    @State var menuHistory: [String] = []
 
     init(viewModel: NativeRootViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -22,6 +23,22 @@ struct NativeRootView: View {
     private var accent: Color { themeHex.toNativeColor() }
 
     var body: some View {
+        VStack(spacing: 0) {
+            if expandedHomeImageIndex == nil && (viewModel.phase == .ready || viewModel.phase == .needsRegistration) {
+                NativeSharedHeader(
+                    backgroundColorHex: viewModel.navigationHeaderBackgroundColorHex,
+                    colors: viewModel.nativeChromeColors,
+                    imageURL: viewModel.navigationHeaderImageURL,
+                    title: viewModel.navigationHeaderText ?? viewModel.projectName,
+                    baseURL: viewModel.apiClient?.baseURL ?? "",
+                    items: viewModel.headerItems,
+                    showsHamburger: true,
+                    menuOpen: showHamburgerMenu,
+                    showsBack: !showHamburgerMenu && (headerNavigation.backAction != nil || !menuHistory.isEmpty || accountMode != nil || showAppInfo || expandedHomeImageIndex != nil || viewModel.lotteryModalPresented),
+                    onSelect: { selectMenu($0) },
+                    onOpenHamburger: { handleHeaderBack() }
+                )
+            }
         NavigationStack {
         SkipRefreshing {
             Group {
@@ -52,6 +69,7 @@ struct NativeRootView: View {
                     mainChrome
                 }
             }
+            .environment(\.appButtonColors, viewModel.nativeChromeColors)
             .environment(\.brandAccent, accent)
             .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
             .preferredColorScheme(.light)
@@ -117,6 +135,27 @@ struct NativeRootView: View {
             }
         }
         }
+        .environment(\.headerNavigation, headerNavigation)
+        }
+    }
+
+    private func selectMenu(_ key: String) {
+        guard key != viewModel.selectedTab else { showHamburgerMenu = false; return }
+        menuHistory.append(viewModel.selectedTab)
+        headerNavigation.backAction = nil
+        viewModel.selectedTab = key
+        showHamburgerMenu = false
+    }
+
+    private func handleHeaderBack() {
+        if showHamburgerMenu { showHamburgerMenu = false }
+        else if let back = headerNavigation.backAction { back() }
+        else if accountMode != nil { accountMode = nil }
+        else if showAppInfo { showAppInfo = false }
+        else if expandedHomeImageIndex != nil { expandedHomeImageIndex = nil }
+        else if viewModel.lotteryModalPresented { viewModel.lotteryModalPresented = false }
+        else if let previous = menuHistory.popLast() { viewModel.selectedTab = previous }
+        else { showHamburgerMenu = true }
     }
 
     private func expandedHomeImage(baseURL: String) -> some View {
@@ -160,6 +199,8 @@ struct NativeRootView: View {
             .padding(16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     private var splash: some View {
@@ -185,20 +226,6 @@ struct NativeRootView: View {
         if let client = viewModel.apiClient {
             ZStack(alignment: .leading) {
                 VStack(spacing: 0) {
-                    NativeSharedHeader(
-                        backgroundColorHex: viewModel.navigationHeaderBackgroundColorHex,
-                        items: viewModel.headerItems,
-                        showsHamburger: true,
-                        onSelect: { viewModel.selectedTab = $0 },
-                        onOpenHamburger: {
-                            withAnimation(.easeOut(duration: 0.24)) { showHamburgerMenu = true }
-                        }
-                    )
-                    .offset(y: isHeaderShown ? 0 : -PlatformRuntime.navigationHeaderHeight)
-                    .onAppear {
-                        guard !isHeaderShown else { return }
-                        withAnimation(.easeOut(duration: 0.28)) { isHeaderShown = true }
-                    }
                     ZStack {
                         AppDesign.canvas.ignoresSafeArea()
                         if let selectedTab = viewModel.tabs.first(where: { $0.key == viewModel.selectedTab }) {
@@ -212,9 +239,10 @@ struct NativeRootView: View {
                     if !viewModel.footerItems.isEmpty {
                         NativeTabBar(
                             items: viewModel.footerItems,
+                            colors: viewModel.nativeChromeColors,
                             selectedTab: Binding(
                                 get: { viewModel.selectedTab },
-                                set: { viewModel.selectedTab = $0 }
+                                set: { menuHistory = []; headerNavigation.backAction = nil; viewModel.selectedTab = $0 }
                             )
                         )
                     }
@@ -264,7 +292,7 @@ struct NativeRootView: View {
                 VStack(spacing: 8) {
                     ForEach(viewModel.hamburgerItems) { item in
                         Button {
-                            viewModel.selectedTab = item.key
+                            selectMenu(item.key)
                             withAnimation(.easeOut(duration: 0.22)) { showHamburgerMenu = false }
                         } label: {
                             HStack(spacing: 14) {
@@ -353,9 +381,11 @@ struct NativeRootView: View {
             HomeView(
                 apiClient: client,
                 homeImageURLs: viewModel.homeImageURLs,
+                member: viewModel.homeShowMemberCard ? viewModel.membership : nil,
+                projectName: viewModel.projectName,
                 menuLayout: viewModel.homeMenuLayout,
-                tabs: viewModel.tabs,
-                onSelectTab: { viewModel.selectedTab = $0 },
+                tabs: viewModel.homeTabs,
+                onSelectTab: { selectMenu($0) },
                 onExpandImage: { index in
                     expandedHomePage = index
                     expandedHomeImageIndex = index
@@ -366,10 +396,11 @@ struct NativeRootView: View {
                 apiClient: client,
                 displayLayout: viewModel.productDisplayLayout,
                 paymentReturnOrderID: viewModel.paymentReturnOrderID,
+                paymentReturnSucceeded: viewModel.paymentReturnSucceeded,
                 paymentReturnRevision: viewModel.paymentReturnRevision
             )
         case "orders":
-            OrdersView(apiClient: client)
+            OrdersView(apiClient: client, reloadRevision: viewModel.ordersRevision)
         case "coupons":
             CouponsView(apiClient: client)
         case "stamps":
@@ -377,6 +408,7 @@ struct NativeRootView: View {
         case "queue":
             QueueView(
                 apiClient: client,
+                refreshRevision: viewModel.queueRevision,
                 pendingQueueToken: viewModel.pendingQueueToken,
                 onConsumePendingToken: { viewModel.pendingQueueToken = nil }
             )
@@ -387,7 +419,7 @@ struct NativeRootView: View {
         case "announcements":
             AnnouncementsView(apiClient: client)
         case "lottery":
-            LotteryView(apiClient: client)
+            LotteryView(apiClient: client, refreshRevision: viewModel.lotteryRevision)
         case "storeSearch":
             StoreSearchView(baseURL: client.baseURL, currentProjectKey: viewModel.currentProjectKey) {
                 Task { await viewModel.start() }
@@ -398,6 +430,7 @@ struct NativeRootView: View {
                 projectName: viewModel.projectName,
                 initialMember: viewModel.membership,
                 membershipRevision: viewModel.membershipRevision,
+                opensProfileEditor: tab.key == "profileEdit" || tab.key == "profile",
                 showRankProgress: viewModel.memberShowRankProgress,
                 showPointHistory: viewModel.memberShowPointHistory,
                 showCouponActivity: viewModel.memberShowCouponActivity,
@@ -409,8 +442,14 @@ struct NativeRootView: View {
 
 struct NativeSharedHeader: View {
     let backgroundColorHex: String
+    var colors: [String: String] = [:]
+    var imageURL: String? = nil
+    var title: String = ""
+    var baseURL: String = ""
     let items: [AppTabItem]
     let showsHamburger: Bool
+    var menuOpen = false
+    var showsBack = false
     let onSelect: (String) -> Void
     let onOpenHamburger: () -> Void
 
@@ -421,13 +460,23 @@ struct NativeSharedHeader: View {
             HStack(spacing: 4) {
                 if showsHamburger {
                     Button(action: onOpenHamburger) {
-                        FontAwesomeIcon(systemName: "line.3.horizontal")
+                        FontAwesomeIcon(systemName: showsBack ? "chevron.left" : "line.3.horizontal")
                             .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text("メニューを開く"))
+                    .accessibilityLabel(Text(showsBack ? "戻る" : menuOpen ? "メニューを閉じる" : "メニューを開く"))
                 }
-                Spacer()
+                Group {
+                    if let imageURL = imageURL, !imageURL.isEmpty {
+                        RemoteImageView(urlString: imageURL, baseURL: baseURL, contentMode: .fit, cornerRadius: 0)
+                            .accessibilityLabel(Text(title))
+                    } else {
+                        Text(title).font(.headline).lineLimit(1).minimumScaleFactor(0.75)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .padding(.horizontal, 12)
                 ForEach(items) { item in
                     Button { onSelect(item.key) } label: {
                         FontAwesomeIcon(systemName: TabIconResolver.systemName(for: item))
@@ -436,9 +485,10 @@ struct NativeSharedHeader: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(item.label))
                 }
+                if items.isEmpty { Color.clear.frame(width: 44, height: 44) }
             }
             .padding(.horizontal, 8)
-            .foregroundStyle(BrandPalette(hex: backgroundColorHex).usesDarkForeground ? Color.black : Color.white)
+            .foregroundStyle((colors["header_icon"] ?? "").toNativeColor(fallback: BrandPalette(hex: backgroundColorHex).usesDarkForeground ? .black : .white))
         }
         .frame(maxWidth: .infinity)
         .frame(height: PlatformRuntime.navigationHeaderHeight, alignment: .center)

@@ -8,6 +8,7 @@ final class OrdersViewModel {
     var isLoading = true
     var errorMessage: String?
     var orders: [OrderSnapshot] = []
+    var reloadRevision = 0
 
     private let apiClient: any ReggitAPIServing
 
@@ -35,12 +36,14 @@ final class OrdersViewModel {
 
 struct OrdersView: View {
     @State var viewModel: OrdersViewModel
+    @Environment(\.appButtonColors) var buttonColors
     @Environment(\.brandAccent) var accent
     @State var selectedOrder: OrderSnapshot?
     @State var selectedSegment = 0
 
-    init(apiClient: any ReggitAPIServing) {
+    init(apiClient: any ReggitAPIServing, reloadRevision: Int = 0) {
         _viewModel = State(initialValue: OrdersViewModel(apiClient: apiClient))
+        _viewModel.wrappedValue.reloadRevision = reloadRevision
     }
 
     var body: some View {
@@ -85,9 +88,15 @@ struct OrdersView: View {
                 .navigationDestination(item: $selectedOrder) { order in
                     OrderStatusView(order: order)
                         .environment(\.brandAccent, accent)
+                        .environment(\.appButtonColors, buttonColors)
+                        .headerBackDestination()
                 }
             }
         }
         .task { await viewModel.load() }
+        .task(id: viewModel.reloadRevision) {
+            guard viewModel.reloadRevision > 0 else { return }
+            await viewModel.load(force: true)
+        }
     }
 }

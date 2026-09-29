@@ -38,11 +38,17 @@ final class CouponsViewModel {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            async let owned = apiClient.fetchMemberCoupons()
-            async let claimable = apiClient.fetchDeviceOnceCoupons()
-            coupons = try await owned
-            deviceOnceCoupons = (try? await claimable) ?? []
+            if !force, let cached = SecondaryScreenCache.recentMemberCoupons {
+                coupons = cached
+                deviceOnceCoupons = (try? await apiClient.fetchDeviceOnceCoupons()) ?? []
+            } else {
+                async let owned = apiClient.fetchMemberCoupons()
+                async let claimable = apiClient.fetchDeviceOnceCoupons()
+                coupons = try await owned
+                deviceOnceCoupons = (try? await claimable) ?? []
+            }
             SecondaryScreenCache.coupons = coupons
+            SecondaryScreenCache.recentMemberCoupons = coupons
             SecondaryScreenCache.deviceOnceCoupons = deviceOnceCoupons
         }
         catch { errorMessage = error.localizedDescription }
@@ -139,6 +145,7 @@ struct CouponsView: View {
                     CouponBarcodeView(result: result) {
                         viewModel.redemptionResult = nil
                     }
+                    .headerBackDestination()
                 }
             }
         }
@@ -179,7 +186,7 @@ struct CouponsView: View {
 
     private var deviceCouponSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("この端末で獲得できるクーポン", systemImage: "gift.fill")
+            FontAwesomeLabel("この端末で獲得できるクーポン", systemImage: "gift.fill")
                 .font(.headline)
                 .foregroundStyle(AppDesign.ink)
             ForEach(viewModel.deviceOnceCoupons) { coupon in
@@ -264,17 +271,17 @@ struct CouponsView: View {
                     }
                     VStack(alignment: .leading, spacing: 6) {
                         if !coupon.validFrom.isEmpty {
-                            Label("利用開始 \(AppFormat.dateTime(coupon.validFrom))", systemImage: "calendar.badge.clock")
+                            FontAwesomeLabel("利用開始 \(AppFormat.dateTime(coupon.validFrom))", systemImage: "calendar.badge.clock")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(AppDesign.inkSecondary)
                         }
                         if !coupon.validUntil.isEmpty {
-                            Label("利用終了 \(AppFormat.dateTime(coupon.validUntil))", systemImage: "calendar")
+                            FontAwesomeLabel("利用終了 \(AppFormat.dateTime(coupon.validUntil))", systemImage: "calendar")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(AppDesign.inkSecondary)
                         }
                         if coupon.validFrom.isEmpty, coupon.validUntil.isEmpty {
-                            Label("期間中いつでも利用できます", systemImage: "infinity")
+                            FontAwesomeLabel("期間中いつでも利用できます", systemImage: "infinity")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(AppDesign.inkSecondary)
                         }
@@ -303,7 +310,7 @@ struct CouponsView: View {
                     } else if showUse {
                         HStack {
                             Spacer(minLength: 0)
-                            Label("利用開始前", systemImage: "lock")
+                            FontAwesomeLabel("利用開始前", systemImage: "lock")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(AppDesign.inkSecondary)
                             Spacer(minLength: 0)

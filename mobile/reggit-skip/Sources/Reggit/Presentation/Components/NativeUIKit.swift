@@ -1,5 +1,58 @@
 import SkipFuse
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+
+@MainActor
+private enum NativeImageCache {
+    static let images = NSCache<NSURL, UIImage>()
+    static var missingURLs: Set<URL> = []
+}
+
+private struct CachedRemoteImage: View {
+    let url: URL
+    let contentMode: ContentMode
+    @State private var image: UIImage?
+    @State private var failed = false
+
+    var body: some View {
+        Group {
+            if let image = image ?? NativeImageCache.images.object(forKey: url as NSURL) {
+                Image(uiImage: image).resizable().aspectRatio(contentMode: contentMode)
+            } else if failed {
+                AppDesign.surfaceMuted
+            } else {
+                SkeletonBlock(height: 1, cornerRadius: 0)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task(id: url) {
+            if let cached = NativeImageCache.images.object(forKey: url as NSURL) {
+                image = cached
+                return
+            }
+            if NativeImageCache.missingURLs.contains(url) {
+                failed = true
+                return
+            }
+            do {
+                let (data, response) = try await URLSession.shared.data(from: url)
+                if let response = response as? HTTPURLResponse,
+                   response.statusCode == 404 || response.statusCode == 410 {
+                    NativeImageCache.missingURLs.insert(url)
+                    failed = true
+                    return
+                }
+                guard let response = response as? HTTPURLResponse,
+                      (200..<300).contains(response.statusCode),
+                      let loaded = UIImage(data: data) else { failed = true; return }
+                NativeImageCache.images.setObject(loaded, forKey: url as NSURL, cost: data.count)
+                image = loaded
+            } catch { if !Task.isCancelled { failed = true } }
+        }
+    }
+}
+#endif
 
 private struct APIBaseURLKey: EnvironmentKey {
     static let defaultValue = ""
@@ -23,20 +76,30 @@ extension EnvironmentValues {
     }
 }
 
+private struct AppButtonColorsKey: EnvironmentKey {
+    static let defaultValue: [String: String] = [:]
+}
+
+extension EnvironmentValues {
+    var appButtonColors: [String: String] {
+        get { self[AppButtonColorsKey.self] }
+        set { self[AppButtonColorsKey.self] = newValue }
+    }
+}
+
 // MARK: - Design tokens
 
 enum AppDesign {
-    // The native shell mirrors the LIFF storefront: warm paper, white content
-    // surfaces, forest actions, and a restrained coral editorial accent.
+    // Neutral gray surfaces keep content and store-colored actions distinct.
     static let usesStoreTheme = true
     static let forest = Color(red: 0.09, green: 0.25, blue: 0.21)
     static let coral = Color(red: 0.91, green: 0.46, blue: 0.34)
-    static let canvas = Color(red: 0.975, green: 0.965, blue: 0.93)
+    static let canvas = Color(red: 0.95, green: 0.96, blue: 0.97)
     static let surface = Color.white
-    static let surfaceMuted = Color(red: 0.93, green: 0.95, blue: 0.93)
+    static let surfaceMuted = Color(red: 0.94, green: 0.95, blue: 0.96)
     static let ink = Color(red: 0.09, green: 0.13, blue: 0.11)
-    static let inkSecondary = Color(red: 0.39, green: 0.44, blue: 0.41)
-    static let hairline = Color(red: 0.86, green: 0.89, blue: 0.87)
+    static let inkSecondary = Color(red: 0.34, green: 0.38, blue: 0.42)
+    static let hairline = Color(red: 0.84, green: 0.87, blue: 0.90)
     static let danger = Color(red: 0.77, green: 0.25, blue: 0.21)
     static let success = Color(red: 0.16, green: 0.52, blue: 0.32)
 
@@ -59,6 +122,8 @@ extension EnvironmentValues {
 
 extension String {
     func toNativeColor(fallback: Color = AppDesign.ink) -> Color {
+        let value = trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
+        guard value.count == 6, UInt32(value, radix: 16) != nil else { return fallback }
         let palette = BrandPalette(hex: self)
         return Color(red: palette.red, green: palette.green, blue: palette.blue)
     }
@@ -104,6 +169,9 @@ struct RemoteImageView: View {
     var body: some View {
         Group {
             if let url = resolvedURL {
+                #if canImport(UIKit)
+                CachedRemoteImage(url: url, contentMode: contentMode)
+                #else
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
@@ -119,6 +187,7 @@ struct RemoteImageView: View {
                         imagePlaceholder
                     }
                 }
+                #endif
             } else {
                 imagePlaceholder
             }
@@ -157,21 +226,23 @@ struct AppPrimaryButton: View {
     @Environment(\.brandAccent) var accent
     @Environment(\.brandForeground) var onAccent
 
+    @Environment(\.appButtonColors) var colors
+
     var body: some View {
         Button(action: action) {
             Group {
                 if isLoading {
-                    ProgressView().tint(.white)
+                    ProgressView().tint((colors["primary_button_text"] ?? "").toNativeColor(fallback: onAccent))
                 } else {
                     Text(title).fontWeight(.semibold)
                 }
             }
             .frame(maxWidth: .infinity)
             .frame(minHeight: 52)
-            .foregroundStyle(enabled && !isLoading ? onAccent : Color.white)
+            .foregroundStyle((colors["primary_button_text"] ?? "").toNativeColor(fallback: onAccent))
             .background {
                 RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous)
-                    .fill(enabled && !isLoading ? accent : AppDesign.inkSecondary.opacity(0.5))
+                    .fill(enabled ? (colors["primary_button_background"] ?? "").toNativeColor(fallback: accent) : AppDesign.inkSecondary.opacity(0.5))
             }
         }
         .buttonStyle(.plain)
@@ -183,14 +254,16 @@ struct AppSecondaryButton: View {
     let title: String
     let action: () -> Void
 
+    @Environment(\.appButtonColors) var colors
+
     var body: some View {
         Button(action: action) {
             Text(title)
                 .fontWeight(.semibold)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 52)
-                .foregroundStyle(AppDesign.ink)
-                .background(AppDesign.surfaceMuted)
+                .foregroundStyle((colors["secondary_button_text"] ?? "").toNativeColor(fallback: AppDesign.ink))
+                .background((colors["secondary_button_background"] ?? "").toNativeColor(fallback: AppDesign.surfaceMuted))
                 .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -404,6 +477,8 @@ struct QtyStepper: View {
     @Environment(\.brandAccent) var accent
     @Environment(\.brandForeground) var onAccent
 
+    @Environment(\.appButtonColors) var colors
+
     var body: some View {
         HStack(spacing: 0) {
             if quantity > 0 {
@@ -420,9 +495,9 @@ struct QtyStepper: View {
                 if expandsToFill { Spacer(minLength: 0) }
                 Button(action: onPlus) {
                     FontAwesomeIcon(systemName: "plus")
-                        .foregroundStyle(onAccent)
+                        .foregroundStyle((colors["primary_button_text"] ?? "").toNativeColor(fallback: onAccent))
                         .frame(width: 44, height: 44)
-                        .background(accent)
+                        .background((colors["primary_button_background"] ?? "").toNativeColor(fallback: accent))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -432,10 +507,10 @@ struct QtyStepper: View {
                 Button(action: onPlus) {
                     Text("追加")
                         .font(.subheadline.weight(.bold))
-                        .foregroundStyle(onAccent)
+                        .foregroundStyle((colors["primary_button_text"] ?? "").toNativeColor(fallback: onAccent))
                         .padding(.horizontal, 18)
                         .frame(maxWidth: expandsToFill ? .infinity : nil, minHeight: 44)
-                        .background(accent)
+                        .background((colors["primary_button_background"] ?? "").toNativeColor(fallback: accent))
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)

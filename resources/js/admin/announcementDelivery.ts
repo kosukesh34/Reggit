@@ -224,14 +224,16 @@ function initAnnouncementDelivery(): void {
 
         const visitMin = fieldValue('segment_visit_count_min');
         const visitMax = fieldValue('segment_visit_count_max');
-        add('来店回数', '≥', visitMin === '' ? '' : `${formattedNumber(visitMin)}回`);
-        add('来店回数', '≤', visitMax === '' ? '' : `${formattedNumber(visitMax)}回`);
+        add('来店回数', '=', visitMin !== '' && visitMax !== ''
+            ? `${formattedNumber(visitMin)}〜${formattedNumber(visitMax)}回`
+            : visitMin !== '' ? `${formattedNumber(visitMin)}回以上` : visitMax !== '' ? `${formattedNumber(visitMax)}回以下` : '');
 
         add('会員ランク', '=', fieldValue('segment_rank'));
         const pointsMin = fieldValue('segment_lifetime_points_min');
         const pointsMax = fieldValue('segment_lifetime_points_max');
-        add('累計付与ポイント', '≥', pointsMin === '' ? '' : `${formattedNumber(pointsMin)}pt`);
-        add('累計付与ポイント', '≤', pointsMax === '' ? '' : `${formattedNumber(pointsMax)}pt`);
+        add('累計付与ポイント', '=', pointsMin !== '' && pointsMax !== ''
+            ? `${formattedNumber(pointsMin)}〜${formattedNumber(pointsMax)}pt`
+            : pointsMin !== '' ? `${formattedNumber(pointsMin)}pt以上` : pointsMax !== '' ? `${formattedNumber(pointsMax)}pt以下` : '');
 
         const lastVisitMode = fieldValue('segment_last_visit_mode');
         const lastVisitDays = fieldValue('segment_last_visit_days');
@@ -291,6 +293,12 @@ function initAnnouncementDelivery(): void {
             container.appendChild(empty);
             return;
         }
+
+        const matchMode = form.querySelector<HTMLInputElement>('input[name="segment_match_mode"]:checked')?.value;
+        const mode = document.createElement('strong');
+        mode.className = 'ad-condition-match-mode';
+        mode.textContent = matchMode === 'any' ? '項目間：OR' : '項目間：AND';
+        container.appendChild(mode);
 
         chips.forEach((condition) => {
             const chip = document.createElement('span');
@@ -600,10 +608,12 @@ function initAnnouncementDelivery(): void {
         checkedValues('segment_birthday_months[]').forEach((value) => params.append('segment_birthday_months[]', value));
         checkedValues('segment_tag_ids[]').forEach((value) => params.append('segment_tag_ids[]', value));
         checkedValues('segment_rfm_segments[]').forEach((value) => params.append('segment_rfm_segments[]', value));
+        const matchMode = form.querySelector<HTMLInputElement>('input[name="segment_match_mode"]:checked');
+        if (matchMode && !matchMode.disabled) params.set('segment_match_mode', matchMode.value);
         const condition = document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '';
         if (condition !== '') params.set('segment_condition', condition);
         if (field<HTMLInputElement>('stamp_completed')?.checked === true) params.set('stamp_completed', '1');
-        form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[name^="segment_operators["], [name^="segment_profile["]')
+        form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[name^="segment_profile["]')
             .forEach((control) => {
                 if (control.disabled) return;
                 if (control instanceof HTMLInputElement && control.type === 'checkbox' && !control.checked) return;

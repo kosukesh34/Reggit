@@ -12,7 +12,7 @@ class UpdateFeatureSettingsRequest extends FormRequest
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, string|array<int, string>>
      */
     public function rules(): array
     {
@@ -22,7 +22,7 @@ class UpdateFeatureSettingsRequest extends FormRequest
             'frontend_header_text' => 'nullable|string|max:255',
             'stamp_default_image' => 'nullable|image|max:2048',
             'stamp_default_image_clear' => 'nullable|in:0,1',
-            'admin_sidebar_color' => 'nullable|string|max:32',
+            'admin_sidebar_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'admin_header_color' => 'nullable|string|max:32',
             'admin_primary_color' => 'nullable|string|max:32',
             'features' => 'nullable|array',

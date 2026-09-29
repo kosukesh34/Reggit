@@ -34,9 +34,12 @@ struct AppConfig {
     let hasNavigationConfiguration: Bool
     let primaryColor: String
     let navigationHeaderImageURL: String?
+    let navigationHeaderText: String?
     let navigationHeaderBackgroundColor: String
     let homeImageURL: String?
     let homeImageURLs: [String]
+    let nativeChromeColors: [String: String]
+    let homeShowMemberCard: Bool
     let homeMenuLayout: String
     let productDisplayLayout: String
     let memberShowRankProgress: Bool
@@ -53,9 +56,12 @@ struct AppConfig {
         hamburgerItems: [AppTabItem] = [],
         hasNavigationConfiguration: Bool = false,
         navigationHeaderImageURL: String? = nil,
+        navigationHeaderText: String? = nil,
         navigationHeaderBackgroundColor: String = "#FFFFFF",
         homeImageURL: String? = nil,
         homeImageURLs: [String] = [],
+        nativeChromeColors: [String: String] = [:],
+        homeShowMemberCard: Bool = true,
         homeMenuLayout: String = "grid_3x2",
         productDisplayLayout: String = "list_with_image",
         memberShowRankProgress: Bool = true,
@@ -71,9 +77,12 @@ struct AppConfig {
         self.hasNavigationConfiguration = hasNavigationConfiguration
         self.primaryColor = primaryColor
         self.navigationHeaderImageURL = navigationHeaderImageURL
+        self.navigationHeaderText = navigationHeaderText
         self.navigationHeaderBackgroundColor = navigationHeaderBackgroundColor
         self.homeImageURL = homeImageURL
         self.homeImageURLs = homeImageURLs.isEmpty ? (homeImageURL.map { [$0] } ?? []) : homeImageURLs
+        self.nativeChromeColors = nativeChromeColors
+        self.homeShowMemberCard = homeShowMemberCard
         self.homeMenuLayout = homeMenuLayout
         self.productDisplayLayout = productDisplayLayout
         self.memberShowRankProgress = memberShowRankProgress

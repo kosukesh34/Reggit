@@ -44,13 +44,19 @@ final class LotteryViewModel {
         self.roulettePlanner = roulettePlanner
     }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.lottery {
+            state = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
             let latest = try await service.fetchState()
             state = latest
+            SecondaryScreenCache.lottery = latest
             if let pendingGame = availableGames.first(where: { latest.pending(for: $0.rawValue) != nil }) {
                 selectedGame = pendingGame
             } else if !availableGames.contains(selectedGame), let firstGame = availableGames.first {
@@ -210,7 +216,10 @@ final class LotteryViewModel {
     }
 
     private func refreshState() async {
-        if let latest = try? await service.fetchState() { state = latest }
+        if let latest = try? await service.fetchState() {
+            state = latest
+            SecondaryScreenCache.lottery = latest
+        }
     }
 
     private func present(_ result: LotteryPlayResult) async {

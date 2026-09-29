@@ -35,6 +35,7 @@ struct AppConfigClient {
         let projectName = json["project_name"] as? String ?? "Reggit"
         let primaryColor = (json["theme"] as? [String: Any])?["primary_color"] as? String ?? "#173F35"
         let navigationHeaderImageURL = ((json["header"] as? [String: Any])?["image_url"] as? String)?.trimmedNonEmpty
+        let navigationHeaderText = ((json["header"] as? [String: Any])?["text"] as? String)?.trimmedNonEmpty
         let navigationHeaderBackgroundColor = ((json["header"] as? [String: Any])?["background_color"] as? String)?.trimmedNonEmpty ?? "#FFFFFF"
         let homeImageURL = ((json["home"] as? [String: Any])?["image_url"] as? String)?.trimmedNonEmpty
         let homeImageURLs = (((json["home"] as? [String: Any])?["image_urls"] as? [String]) ?? [])
@@ -63,9 +64,12 @@ struct AppConfigClient {
             hamburgerItems: hamburgerItems,
             hasNavigationConfiguration: navigation != nil,
             navigationHeaderImageURL: navigationHeaderImageURL,
+            navigationHeaderText: navigationHeaderText,
             navigationHeaderBackgroundColor: navigationHeaderBackgroundColor,
             homeImageURL: homeImageURL,
             homeImageURLs: homeImageURLs,
+            nativeChromeColors: json["native_chrome_colors"] as? [String: String] ?? [:],
+            homeShowMemberCard: (json["home"] as? [String: Any])?["show_member_card"] as? Bool ?? true,
             homeMenuLayout: homeMenuLayout,
             productDisplayLayout: productDisplayLayout,
             memberShowRankProgress: memberScreen["show_rank_progress"] as? Bool ?? true,

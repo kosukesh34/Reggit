@@ -123,11 +123,11 @@ struct StampsView: View {
                         .font(.caption).foregroundStyle(AppDesign.inkSecondary)
                 }
                 if card.currentStamps >= card.requiredStamps && card.requiredStamps > 0 {
-                    Label("スタンプが貯まりました", systemImage: "checkmark.seal.fill")
+                    FontAwesomeLabel("スタンプが貯まりました", systemImage: "checkmark.seal.fill")
                         .font(.subheadline.weight(.semibold))
                 }
                 if !card.rewardDescription.isEmpty {
-                    Label(card.rewardDescription, systemImage: "gift")
+                    FontAwesomeLabel(card.rewardDescription, systemImage: "gift")
                         .font(.subheadline).foregroundStyle(AppDesign.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16).background(AppDesign.surfaceMuted)

@@ -86,6 +86,8 @@ class ShopSettingStore
         'home_image_url' => ProjectAdminUiSetting::class,
         'home_image_urls' => ProjectAdminUiSetting::class,
         'home_menu_layout' => ProjectAdminUiSetting::class,
+        'home_show_member_card' => ProjectAdminUiSetting::class,
+        'native_chrome_colors' => ProjectAdminUiSetting::class,
         'product_display_layout' => ProjectAdminUiSetting::class,
         'native_navigation_items' => ProjectAdminUiSetting::class,
         'member_show_rank_progress' => ProjectAdminUiSetting::class,
@@ -337,6 +339,11 @@ class ShopSettingStore
         $defaults = collect(self::defaultFrontendMenuItems())->keyBy('tab');
         $fallback = (string) ($defaults->get($tab)['icon'] ?? 'fa-circle');
         if ($icon === '') {
+            return $fallback;
+        }
+
+        // A saved home icon on another built-in screen obscures its purpose.
+        if ($tab !== 'home' && in_array($icon, ['fa-home', 'fa-house'], true)) {
             return $fallback;
         }
 

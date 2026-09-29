@@ -24,18 +24,20 @@ final class QueueViewModel {
         return entry.status != "cancelled" && entry.status != "entered"
     }
 
-    func load() async {
-        isLoading = true
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.queue {
+            snapshot = cached
+            isLoading = false
+            return
+        }
+        if snapshot == nil { isLoading = true }
         errorMessage = nil
         defer { isLoading = false }
-        do { snapshot = try await apiClient.fetchCurrentQueueStatus() }
-        catch { errorMessage = error.localizedDescription }
-    }
-
-    func refreshQuietly() async {
-        if let latest = try? await apiClient.fetchCurrentQueueStatus() {
-            snapshot = latest
+        do {
+            snapshot = try await apiClient.fetchCurrentQueueStatus()
+            SecondaryScreenCache.queue = snapshot
         }
+        catch { errorMessage = error.localizedDescription }
     }
 
     func createTicket() async {
@@ -51,6 +53,7 @@ final class QueueViewModel {
                 estimatedWaitMinutes: entry.estimatedWaitMinutes,
                 message: nil
             )
+            SecondaryScreenCache.queue = snapshot
             actionMessage = "整理券を発行しました"
         } catch {
             actionMessage = error.localizedDescription
@@ -64,7 +67,7 @@ final class QueueViewModel {
         defer { isSubmitting = false }
         do {
             try await apiClient.cancelQueueEntry(id: id)
-            await load()
+            await load(force: true)
             actionMessage = "キャンセルしました"
         } catch {
             actionMessage = error.localizedDescription
@@ -80,6 +83,7 @@ final class QueueViewModel {
                 estimatedWaitMinutes: entry.estimatedWaitMinutes,
                 message: nil
             )
+            SecondaryScreenCache.queue = snapshot
         } catch {
             actionMessage = error.localizedDescription
         }
@@ -88,16 +92,19 @@ final class QueueViewModel {
 
 struct QueueView: View {
     @State var viewModel: QueueViewModel
+    let refreshRevision: Int
     @Environment(\.brandAccent) var accent
     let pendingQueueToken: String?
     let onConsumePendingToken: () -> Void
 
     init(
         apiClient: any ReggitAPIServing,
+        refreshRevision: Int = 0,
         pendingQueueToken: String?,
         onConsumePendingToken: @escaping () -> Void
     ) {
         _viewModel = State(initialValue: QueueViewModel(apiClient: apiClient))
+        self.refreshRevision = refreshRevision
         self.pendingQueueToken = pendingQueueToken
         self.onConsumePendingToken = onConsumePendingToken
     }
@@ -125,7 +132,7 @@ struct QueueView: View {
                 .background(AppDesign.canvas.ignoresSafeArea())
                 .navigationBarHidden(true)
                 .toolbar(.hidden, for: .navigationBar)
-                .refreshable { await viewModel.load() }
+                .refreshable { await viewModel.load(force: true) }
                 .overlay {
                     AppToastHost(message: Binding(
                         get: { viewModel.actionMessage },
@@ -147,19 +154,11 @@ struct QueueView: View {
                 }
             }
         }
-        .task {
+        .task(id: refreshRevision) {
             await viewModel.load()
             if let pendingQueueToken, !pendingQueueToken.isEmpty {
                 await viewModel.applyQueueToken(pendingQueueToken)
                 onConsumePendingToken()
-            }
-        }
-        .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 8_000_000_000)
-                if viewModel.hasActiveTicket {
-                    await viewModel.refreshQuietly()
-                }
             }
         }
     }
@@ -171,7 +170,7 @@ struct QueueView: View {
             AppCard {
                 VStack(spacing: 0) {
                     VStack(spacing: 14) {
-                        Label("順番待ち整理券", systemImage: "ticket.fill")
+                        FontAwesomeLabel("順番待ち整理券", systemImage: "ticket.fill")
                             .font(.subheadline).foregroundStyle(.white.opacity(0.7))
                         Text(entry.queueNumber)
                             .font(.system(size: 64, weight: .semibold, design: .rounded))

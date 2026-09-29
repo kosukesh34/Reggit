@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
 use App\Support\HomeImageUrls;
 use App\Support\LiffDesignerSanitizer;
@@ -25,7 +26,7 @@ class GetHomeSettingsUseCase
             return [
                 'tab' => $item['tab'],
                 'label' => $saved['label'] ?? $item['label'],
-                'icon' => $saved['icon'] ?? $item['icon'],
+                'icon' => ShopSettingStore::normalizeFrontendMenuIcon($item['tab'], (string) ($saved['icon'] ?? $item['icon'])),
                 'order' => $saved['order'] ?? $item['order'],
                 'enabled' => $this->normalizeEnabled($saved['enabled'] ?? null),
             ];
@@ -42,7 +43,7 @@ class GetHomeSettingsUseCase
         ]);
         $tabs = $tabs->concat($linkTabs)->sortBy('order')->values()->all();
 
-        $availableIcons = collect($defaults)->pluck('icon')->push('fa-globe')->unique()->values()->all();
+        $availableIcons = collect($defaults)->pluck('icon')->merge(collect($tabs)->pluck('icon'))->push('fa-globe')->unique()->values()->all();
         $savedNavigation = $this->shopSettingRepository->getValue('native_navigation_items', null, $projectId);
         $nativeTabs = collect($tabs)->reject(fn ($tab) => $tab['tab'] === 'designlab');
         $defaultFooter = $nativeTabs->where('enabled', true)->pluck('tab')->take(5)->values()->all();
@@ -61,6 +62,7 @@ class GetHomeSettingsUseCase
                 'label' => (string) $tab['label'],
             ])->all(),
             [
+                ['key' => 'profileEdit', 'label' => 'プロフィール編集'],
                 ['key' => 'terms', 'label' => '利用規約', 'url' => $termsUrl],
                 ['key' => 'privacy', 'label' => 'プライバシーポリシー', 'url' => $privacyUrl],
             ],
@@ -68,6 +70,8 @@ class GetHomeSettingsUseCase
         $legalKeys = ['terms', 'privacy'];
 
         return [
+            'nativeChromeColors' => $this->shopSettingRepository->getValue('native_chrome_colors', [], $projectId),
+            'homeShowMemberCard' => (bool) $this->shopSettingRepository->getValue('home_show_member_card', true, $projectId),
             'tabs' => $tabs,
             'availableIcons' => $availableIcons,
             'navigationHeaderImageUrl' => (string) $this->shopSettingRepository->getValue('navigation_header_image_url', '', $projectId),

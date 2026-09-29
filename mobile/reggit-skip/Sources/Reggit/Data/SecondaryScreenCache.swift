@@ -1,6 +1,6 @@
 import Foundation
 
-/// ホーム・会員証以外の一覧。プロセス内だけ持つので、アプリを起動し直すと空になり API を叩き直す。
+/// タブを切り替えても保持するプロセス内キャッシュ。明示更新や関連イベントで無効化する。
 @MainActor
 enum SecondaryScreenCache {
     static var products: [ProductItem]?
@@ -13,9 +13,34 @@ enum SecondaryScreenCache {
     static var reservationCourses: [ReservationCourseItem]?
     static var galleries: [String: GallerySnapshot] = [:]
     static var appConfig: AppConfig?
+    static var pointHistory: [PointHistoryItem]?
+    static var recentMemberCoupons: [CouponItem]?
+    static var queue: CurrentQueueSnapshot?
+    static var lottery: LotteryStateSnapshot?
+    static var projects: [MobilePublicProject]?
+    static var memberProfileNeedsRefresh = false
+    static var handledPaymentReturnRevision = 0
 
     static func galleryKey(_ categoryId: Int?) -> String {
         categoryId.map(String.init) ?? "all"
+    }
+
+    static func invalidate(topic: String) {
+        switch topic {
+        case "queue": queue = nil
+        case "orders": orders = nil
+        case "coupons": coupons = nil; recentMemberCoupons = nil
+        case "points": pointHistory = nil
+        case "stamps": stamps = nil
+        case "all":
+            queue = nil
+            orders = nil
+            coupons = nil
+            recentMemberCoupons = nil
+            pointHistory = nil
+            stamps = nil
+        default: break
+        }
     }
 
     static func reset() {
@@ -29,5 +54,12 @@ enum SecondaryScreenCache {
         reservationCourses = nil
         galleries.removeAll()
         appConfig = nil
+        pointHistory = nil
+        recentMemberCoupons = nil
+        queue = nil
+        lottery = nil
+        projects = nil
+        memberProfileNeedsRefresh = false
+        handledPaymentReturnRevision = 0
     }
 }

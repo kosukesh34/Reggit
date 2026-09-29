@@ -20,6 +20,9 @@ struct HomeView: View {
     @State var loopIndex = 1
     @State var heroDragOffset: CGFloat = 0
     let homeImageURLs: [String]
+    var member: MemberProfileSnapshot? = nil
+    var projectName: String = ""
+    @State var showMemberCode = false
     let menuLayout: String
     let tabs: [AppTabItem]
     let onSelectTab: (String) -> Void
@@ -28,12 +31,16 @@ struct HomeView: View {
     init(
         apiClient: any ReggitAPIServing,
         homeImageURLs: [String] = [],
+        member: MemberProfileSnapshot? = nil,
+        projectName: String = "",
         menuLayout: String = "grid_3x2",
         tabs: [AppTabItem],
         onSelectTab: @escaping (String) -> Void,
         onExpandImage: @escaping (Int) -> Void
     ) {
         _viewModel = State(initialValue: HomeViewModel(apiClient: apiClient))
+        self.member = member
+        self.projectName = projectName
         self.homeImageURLs = homeImageURLs
         self.menuLayout = menuLayout
         self.tabs = tabs
@@ -60,12 +67,38 @@ struct HomeView: View {
 
     var body: some View {
         SkipRefreshing { homeContent }
+            .sheet(isPresented: $showMemberCode) {
+                if let member = member {
+                    MemberCodeSheet(member: member, onClose: { showMemberCode = false })
+                        .presentationDetents([.medium, .large])
+                        .presentationDragIndicator(.visible)
+                }
+            }
     }
 
     private var homeContent: some View {
         ScrollView {
             VStack(spacing: 16) {
                 heroImage
+                if let member = member, member.isMember, !member.memberNumber.isEmpty {
+                    Button { showMemberCode = true } label: {
+                        VStack(spacing: 8) {
+                            MemberCodeView(value: member.memberNumber, codeType: member.cardCodeType, height: 56)
+                            Text(member.memberNumber)
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundStyle(Color.black)
+                            Text("タップして拡大")
+                                .font(.caption)
+                                .foregroundStyle(Color.gray)
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("会員コードを拡大して表示")
+                }
                 homeMenu
             }
             .padding(.horizontal, PlatformRuntime.homeHorizontalPadding)
@@ -88,7 +121,7 @@ struct HomeView: View {
     }
 
     private var menuTabs: [AppTabItem] {
-        Array(tabs.filter { $0.key != "home" }.prefix(6))
+        tabs.filter { $0.key != "home" && $0.key != "terms" && $0.key != "privacy" }
     }
 
     @ViewBuilder
@@ -263,7 +296,7 @@ struct HomeMenuGrid: View {
             columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: columns),
             spacing: 0
         ) {
-            ForEach(0..<6, id: \.self) { index in
+            ForEach(0..<tabs.count, id: \.self) { index in
                 gridCell(at: index)
             }
         }
@@ -299,7 +332,7 @@ struct HomeMenuGrid: View {
                 }
             }
             .overlay(alignment: .bottom) {
-                if index < columns {
+                if index < tabs.count - columns {
                     Rectangle().fill(AppDesign.hairline).frame(height: 0.5)
                 }
             }
@@ -314,7 +347,7 @@ struct HomeMenuGrid: View {
                     }
                 }
                 .overlay(alignment: .bottom) {
-                    if index < columns {
+                    if index < tabs.count - columns {
                         Rectangle().fill(AppDesign.hairline).frame(height: 0.5)
                     }
                 }
@@ -339,9 +372,7 @@ struct HomeMenuList: View {
                             Text(tab.label)
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundStyle(AppDesign.ink)
-                            Text(tab.key)
-                                .font(.system(size: 11))
-                                .foregroundStyle(AppDesign.inkSecondary)
+
                         }
                         Spacer()
                         FontAwesomeIcon(systemName: "chevron.right")

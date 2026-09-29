@@ -42,7 +42,7 @@ struct StoreSearchView: View {
                 .navigationTitle("店舗を探す")
                 .navigationBarTitleDisplayMode(.inline)
                 .searchable(text: $viewModel.query, prompt: "店舗名で検索")
-                .refreshable { await viewModel.load() }
+                .refreshable { await viewModel.load(force: true) }
             }
         }
         .task { await viewModel.load() }
