@@ -23,6 +23,7 @@ deploy-docker.zip
 
 # Skip / Android ビルド成果物（大容量）
 mobile/reggit-skip/.build/
+mobile/reggit-skip/.derivedData/
 mobile/reggit-skip/.spm-checkouts/
 mobile/reggit-skip/Android/.gradle/
 
