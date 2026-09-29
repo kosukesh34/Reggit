@@ -320,6 +320,20 @@ final class NativeRootViewModel: PushNotificationHandling {
         }
     }
 
+    func paymentConfirmed() async {
+        guard let apiClient else { return }
+        SecondaryScreenCache.orders = nil
+        SecondaryScreenCache.lottery = nil
+        ordersRevision &+= 1
+        lotteryRevision &+= 1
+        if let state = try? await apiClient.fetchLotteryState() {
+            pendingLotteryCount = state.entitlements.count
+            if !state.entitlements.isEmpty {
+                lotteryModalPresented = true
+            }
+        }
+    }
+
     // MARK: - PushNotificationHandling
 
     func handleNotificationDeepLink(tab: String, notificationType: String?) {

@@ -14,6 +14,13 @@ class FakePaymentGateway implements PaymentGateway
 
     public array $event = [];
 
+    public array $checkoutSession = [];
+
+    public function retrieveCheckoutSession(string $sessionId): array
+    {
+        return $this->checkoutSession ?: ['payment_status' => 'paid', 'payment_intent_id' => 'pi_test_123'];
+    }
+
     public function createPaymentIntent(int $amount, ?int $orderId): array
     {
         $this->created = ['amount' => $amount, 'order_id' => $orderId];

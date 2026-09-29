@@ -245,6 +245,15 @@ struct ReggitAPIClient: ReggitAPIServing {
         return try PaymentCheckoutSession.parse(data)
     }
 
+    func confirmPaymentCheckout(orderId: Int) async throws -> OrderSnapshot {
+        let data = try await requestData(
+            path: "/api/payment/checkout/confirm",
+            method: "POST",
+            body: ["order_id": orderId]
+        )
+        return try OrderSnapshot.parse(data)
+    }
+
     func cancelUnpaidOrder(id: Int) async throws {
         _ = try await requestData(path: "/api/orders/\(id)/cancel-unpaid", method: "POST")
     }

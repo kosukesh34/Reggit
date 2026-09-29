@@ -16,5 +16,7 @@ interface PaymentGateway
 
     public function retrievePaymentIntent(string $paymentIntentId): array;
 
+    public function retrieveCheckoutSession(string $sessionId): array;
+
     public function constructWebhookEvent(string $payload, string $sigHeader, string $secret): array;
 }
