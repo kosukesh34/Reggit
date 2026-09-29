@@ -134,7 +134,7 @@ struct ReservationsView: View {
                     get: { viewModel.showCreate },
                     set: { viewModel.showCreate = $0 }
                 )) {
-                    createForm
+                    createForm.headerBackDestination()
                 }
                 .overlay {
                     AppToastHost(message: Binding(
@@ -170,14 +170,14 @@ struct ReservationsView: View {
     private func reservationCard(_ item: ReservationItem) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Label("ご予約", systemImage: "calendar")
+                FontAwesomeLabel("ご予約", systemImage: "calendar")
                     .font(.subheadline.weight(.medium)).foregroundStyle(AppDesign.inkSecondary)
                 Spacer()
                 StatusBadge(text: item.statusLabel, emphasized: item.isCancellable)
             }
             Text(AppFormat.dateTime(item.reservedAt)).font(.title3.weight(.semibold)).foregroundStyle(AppDesign.ink)
             HStack(spacing: 20) {
-                Label("\(item.numberOfPeople)名", systemImage: "person.2")
+                FontAwesomeLabel("\(item.numberOfPeople)名", systemImage: "person.2")
                 Text("予約番号 \(item.reservationNumber)")
             }.font(.caption).foregroundStyle(AppDesign.inkSecondary)
             if let courseName = item.courseName, !courseName.isEmpty {

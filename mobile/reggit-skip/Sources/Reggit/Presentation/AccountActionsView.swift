@@ -265,7 +265,7 @@ struct AccountActionsView: View {
                     model.message = "\(title)をコピーしました"
                     model.errorMessage = nil
                 } label: {
-                    Label("コピー", systemImage: "doc.on.doc")
+                    FontAwesomeLabel("コピー", systemImage: "doc.on.doc")
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.bordered)

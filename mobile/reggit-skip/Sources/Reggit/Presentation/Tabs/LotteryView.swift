@@ -15,12 +15,14 @@ private enum LotteryTheme {
 struct LotteryView: View {
     @State var viewModel: LotteryViewModel
     let gachaOnly: Bool
+    let refreshRevision: Int
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.brandAccent) var accent
 
-    init(apiClient: any ReggitAPIServing, gachaOnly: Bool = false) {
+    init(apiClient: any ReggitAPIServing, gachaOnly: Bool = false, refreshRevision: Int = 0) {
         _viewModel = State(initialValue: LotteryViewModel(apiClient: apiClient))
         self.gachaOnly = gachaOnly
+        self.refreshRevision = refreshRevision
     }
 
     var body: some View {
@@ -61,7 +63,7 @@ struct LotteryView: View {
                                 .padding(.top, gachaOnly ? 46 : 18)
                                 .padding(.bottom, 32)
                             }
-                            .refreshable { await viewModel.load() }
+                            .refreshable { await viewModel.load(force: true) }
                         }
                     }
                     .background(Color.clear)
@@ -90,7 +92,7 @@ struct LotteryView: View {
 
             }
         }
-        .task { await viewModel.load() }
+        .task(id: refreshRevision) { await viewModel.load() }
     }
 
     private var gachaModalContent: some View {

@@ -14,6 +14,7 @@ final class MembershipViewModel {
     var registerPhone = ""
     var isRegistering = false
     var registerError: String?
+    var showProfileDetails = false
     var showProfileEdit = false
     var editName = ""
     var editPhone = ""
@@ -48,20 +49,40 @@ final class MembershipViewModel {
     var mediaBaseURL: String { apiClient.baseURL }
     var canAddToWallet: Bool { NativeWalletBridge.canAddAppleWalletPass }
 
-    func load() async {
-        if member?.isMember != true { isLoading = true }
+    func load(latestMember: MemberProfileSnapshot? = nil, force: Bool = false) async {
+        if let latestMember { member = latestMember }
+        if member == nil { isLoading = true }
         errorMessage = nil
         defer { isLoading = false }
         do {
-            var snapshot = try await apiClient.fetchMemberProfile()
-            if snapshot.isMember, snapshot.memberNumber.isEmpty,
-               let card = try? await apiClient.fetchPointCard() {
-                snapshot = snapshot.withCard(card)
+            if member == nil || force || SecondaryScreenCache.memberProfileNeedsRefresh {
+                var snapshot = try await apiClient.fetchMemberProfile()
+                if snapshot.isMember, snapshot.memberNumber.isEmpty,
+                   let card = try? await apiClient.fetchPointCard() {
+                    snapshot = snapshot.withCard(card)
+                }
+                member = snapshot
+                SecondaryScreenCache.memberProfileNeedsRefresh = false
             }
-            member = snapshot
-            if snapshot.isMember {
-                if showPointHistory { pointHistory = (try? await apiClient.fetchPointHistory()) ?? [] }
-                if showCouponActivity { recentCoupons = (try? await apiClient.fetchMemberCoupons()) ?? [] }
+            if member?.isMember == true {
+                if showPointHistory {
+                    if !force, let cached = SecondaryScreenCache.pointHistory { pointHistory = cached }
+                    else {
+                        if let latest = try? await apiClient.fetchPointHistory() {
+                            pointHistory = latest
+                            SecondaryScreenCache.pointHistory = latest
+                        }
+                    }
+                }
+                if showCouponActivity {
+                    if !force, let cached = SecondaryScreenCache.recentMemberCoupons { recentCoupons = cached }
+                    else {
+                        if let latest = try? await apiClient.fetchMemberCoupons() {
+                            recentCoupons = latest
+                            SecondaryScreenCache.recentMemberCoupons = latest
+                        }
+                    }
+                }
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -150,8 +171,13 @@ final class MembershipViewModel {
 
 struct MembershipView: View {
     @State var viewModel: MembershipViewModel
+    @Environment(\.appButtonColors) var buttonColors
+    @Environment(\.brandForeground) var brandForeground
+    let initialMember: MemberProfileSnapshot?
     let projectName: String
     let membershipRevision: Int
+    @State var didOpenProfileEditor = false
+    let opensProfileEditor: Bool
     let showRankProgress: Bool
     let showPointHistory: Bool
     let showCouponActivity: Bool
@@ -163,6 +189,7 @@ struct MembershipView: View {
         projectName: String,
         initialMember: MemberProfileSnapshot? = nil,
         membershipRevision: Int = 0,
+        opensProfileEditor: Bool = false,
         showRankProgress: Bool = true,
         showPointHistory: Bool = true,
         showCouponActivity: Bool = true,
@@ -174,8 +201,10 @@ struct MembershipView: View {
             showPointHistory: showPointHistory,
             showCouponActivity: showCouponActivity
         ))
+        self.initialMember = initialMember
         self.projectName = projectName
         self.membershipRevision = membershipRevision
+        self.opensProfileEditor = opensProfileEditor
         self.showRankProgress = showRankProgress
         self.showPointHistory = showPointHistory
         self.showCouponActivity = showCouponActivity
@@ -207,9 +236,22 @@ struct MembershipView: View {
                 .background(AppDesign.canvas.ignoresSafeArea())
                 .navigationBarHidden(true)
                 .toolbar(.hidden, for: .navigationBar)
-                .refreshable { await viewModel.load() }
+                .refreshable { await viewModel.load(force: true) }
                 .overlay {
                     AppToastHost(message: Binding(get: { viewModel.profileSuccess }, set: { viewModel.profileSuccess = $0 }))
+                }
+                .navigationDestination(isPresented: $viewModel.showProfileDetails) {
+                    if let member = viewModel.member {
+                        ScrollView {
+                            profileSummary(member)
+                                .padding(16)
+                        }
+                        .background(AppDesign.canvas.ignoresSafeArea())
+                        .headerBackDestination()
+                        .navigationTitle("プロフィール")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar(.visible, for: .navigationBar)
+                    }
                 }
                 .navigationDestination(isPresented: Binding(
                     get: { viewModel.showProfileEdit },
@@ -235,15 +277,16 @@ struct MembershipView: View {
                             }
                         }
                     )
+                    .environment(\.appButtonColors, buttonColors)
+                        .headerBackDestination()
+                    .environment(\.brandAccent, accent)
+                    .environment(\.brandForeground, brandForeground)
                 }
-                .navigationDestination(isPresented: $viewModel.showBarcodeEnlarge) {
+                .sheet(isPresented: $viewModel.showBarcodeEnlarge) {
                     if let member = viewModel.member {
-                        barcodeDialog(member)
-                            .padding(24)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                            .background(AppDesign.canvas.ignoresSafeArea())
-                            .navigationTitle("会員コード")
-                            .navigationBarTitleDisplayMode(.inline)
+                        MemberCodeSheet(member: member, onClose: { viewModel.showBarcodeEnlarge = false })
+                            .presentationDetents([.medium, .large])
+                            .presentationDragIndicator(.visible)
                     }
                 }
                 .alert("Wallet", isPresented: Binding(
@@ -265,7 +308,11 @@ struct MembershipView: View {
             }
         }
         .task(id: membershipRevision) {
-            await viewModel.load()
+            await viewModel.load(latestMember: initialMember)
+            if opensProfileEditor && !didOpenProfileEditor && viewModel.member?.isMember == true {
+                didOpenProfileEditor = true
+                viewModel.openProfileEdit()
+            }
         }
     }
 
@@ -278,6 +325,34 @@ struct MembershipView: View {
                     baseURL: viewModel.mediaBaseURL,
                     onEnlargeCode: { viewModel.showBarcodeEnlarge = true }
                 )
+
+                if !member.editableProfileFields.isEmpty {
+                    Button { viewModel.openProfileEdit() } label: {
+                        HStack(spacing: 12) {
+                            FontAwesomeIcon(systemName: "person.crop.circle")
+                                .foregroundStyle(accent)
+                                .frame(width: 36, height: 36)
+                                .background(AppDesign.surfaceMuted)
+                                .clipShape(Circle())
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("プロフィール編集")
+                                    .font(.subheadline.weight(.semibold))
+                                Text("登録情報を確認・編集")
+                                    .font(.caption)
+                                    .foregroundStyle(AppDesign.inkSecondary)
+                            }
+                            Spacer()
+                            FontAwesomeIcon(systemName: "chevron.right")
+                                .foregroundStyle(AppDesign.inkSecondary)
+                        }
+                        .foregroundStyle(AppDesign.ink)
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity, minHeight: 64)
+                        .background(AppDesign.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 if viewModel.canAddToWallet {
                     VStack(spacing: 10) {
@@ -297,8 +372,6 @@ struct MembershipView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
                 }
-
-                profileSummary(member)
 
                 if showRankProgress, member.showRankProgress,
                    let points = member.pointsToNextRank,
@@ -384,25 +457,28 @@ struct MembershipView: View {
         let visibleFields = member.editableProfileFields
         return Group {
             if !visibleFields.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    AppSectionHeader(title: "プロフィール情報", actionTitle: "編集", action: viewModel.openProfileEdit)
+                VStack(alignment: .leading, spacing: 16) {
+                    AppSectionHeader(title: "登録情報", subtitle: "会員情報の確認と変更", actionTitle: "編集", action: viewModel.openProfileEdit)
                     VStack(spacing: 0) {
                         ForEach(Array(visibleFields.enumerated()), id: \.element.id) { index, field in
                             let value = member.profileValue(for: field)
-                            VStack(alignment: .leading, spacing: 5) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 Text(field.label)
                                     .font(.caption)
                                     .foregroundStyle(AppDesign.inkSecondary)
-                                Text(value)
+                                Text(value.isEmpty ? "未登録" : value)
                                     .font(.body.weight(.medium))
-                                    .foregroundStyle(AppDesign.ink)
+                                    .foregroundStyle(value.isEmpty ? AppDesign.inkSecondary : AppDesign.ink)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
-                            .padding(.vertical, 12)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
                             if index < visibleFields.count - 1 { Divider() }
                         }
                     }
+                    .background(AppDesign.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
                 }
             }
         }
@@ -598,55 +674,94 @@ struct ProfileEditView: View {
     @State var didInitialize = false
     @Environment(\.brandAccent) var accent
 
+    @Environment(\.appButtonColors) var buttonColors
+    @Environment(\.brandForeground) var foreground
+    @State var attemptedSave = false
+    @Environment(\.dismiss) var dismiss
+
+    private var groups: [String] { ["基本情報", "住所", "その他の情報"] }
+
+    private func group(for field: ProfileFieldDefinition) -> String {
+        if ["postal_code", "address", "address1", "address2", "prefecture", "city"].contains(field.key) { return "住所" }
+        if ["name", "kana", "name_kana", "phone", "email", "birthday", "birth_date", "sex"].contains(field.key) { return "基本情報" }
+        return "その他の情報"
+    }
+
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
-                ForEach(fields) { field in
-                    VStack(alignment: .leading, spacing: 7) {
-                        fieldLabel(field)
-                        fieldEditor(field)
-                        if let description = field.description {
-                            Text(description).font(.caption).foregroundStyle(AppDesign.inkSecondary)
+            VStack(alignment: .leading, spacing: 24) {
+                Text("連絡先や登録情報を変更できます。必須項目を入力して保存してください。")
+                    .font(.subheadline)
+                    .foregroundStyle(AppDesign.inkSecondary)
+                ForEach(groups, id: \.self) { title in
+                    let groupFields = fields.filter { group(for: $0) == title }
+                    if !groupFields.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(AppDesign.inkSecondary)
+                            VStack(spacing: 0) {
+                                ForEach(Array(groupFields.enumerated()), id: \.element.id) { index, field in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        fieldLabel(field)
+                                        fieldEditor(field)
+                                        if let description = field.description, !description.isEmpty {
+                                            Text(description).font(.caption).foregroundStyle(AppDesign.inkSecondary)
+                                        }
+                                        if let message = validationMessage(for: field) {
+                                            FontAwesomeLabel(message, systemImage: "exclamationmark.circle.fill")
+                                                .font(.caption).foregroundStyle(AppDesign.danger)
+                                        }
+                                    }
+                                    .padding(16)
+                                    if index < groupFields.count - 1 {
+                                        Divider().padding(.horizontal, 16)
+                                    }
+                                }
+                            }
+                            .background(AppDesign.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL))
                         }
-                        if let message = validationMessage(for: field) {
-                            Label(message, systemImage: "exclamationmark.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(AppDesign.danger)
-                        }
-                    }
-                    .padding(14)
-                    .background(AppDesign.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous)
-                            .stroke(validationMessage(for: field) == nil ? AppDesign.hairline : AppDesign.danger, lineWidth: 1)
                     }
                 }
                 if let errorMessage, !errorMessage.isEmpty {
-                    Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                    FontAwesomeLabel(errorMessage, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(AppDesign.danger).font(.footnote)
                 }
             }
             .padding(16)
         }
+        .foregroundStyle(AppDesign.ink)
+        .scrollDismissesKeyboard(.interactively)
         .disabled(isSaving)
-        .scrollContentBackground(.hidden)
-        .background(AppDesign.canvas)
-        .navigationTitle("")
+        .background(AppDesign.canvas.ignoresSafeArea())
+        .navigationTitle("プロフィール編集")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.visible, for: .navigationBar)
         .tint(accent)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    onSave(values, listValues)
-                } label: {
-                    if isSaving {
-                        ProgressView()
-                    } else {
-                        Text("保存").fontWeight(.semibold)
-                    }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 8) {
+                if attemptedSave && !isValid {
+                    Text("入力内容をご確認ください").font(.caption).foregroundStyle(AppDesign.danger)
                 }
-                .disabled(!isValid || isSaving)
+                Button {
+                    attemptedSave = true
+                    if isValid { onSave(values, listValues) }
+                } label: {
+                    HStack(spacing: 8) {
+                        if isSaving { ProgressView().tint((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground)) }
+                        else { FontAwesomeIcon(systemName: "checkmark") }
+                        Text(isSaving ? "保存中…" : "変更を保存").fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .foregroundStyle((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground))
+                    .background((buttonColors["primary_button_background"] ?? "").toNativeColor(fallback: accent))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
+                .disabled(isSaving || fields.isEmpty)
             }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+            .background(AppDesign.surface)
         }
         .onAppear {
             guard !didInitialize else { return }
@@ -664,8 +779,9 @@ struct ProfileEditView: View {
     }
 
     private func validationMessage(for field: ProfileFieldDefinition) -> String? {
-        field.validationMessage(value: values[field.key] ?? "", selections: listValues[field.key] ?? [])
-            ?? serverFieldErrors[field.key]
+        if let message = serverFieldErrors[field.key] { return message }
+        guard attemptedSave else { return nil }
+        return field.validationMessage(value: values[field.key] ?? "", selections: listValues[field.key] ?? [])
     }
 
     private func textBinding(_ key: String) -> Binding<String> {
@@ -683,7 +799,7 @@ struct ProfileEditView: View {
                     listValues[field.key] = selected
                 } label: {
                     HStack {
-                        FontAwesomeIcon(systemName: (listValues[field.key] ?? []).contains(choice) ? "checkmark.circle.fill" : "circle")
+                        FontAwesomeIcon(systemName: (listValues[field.key] ?? []).contains(choice) ? "square.checkmark" : "square.empty")
                             .foregroundStyle(accent)
                         Text(field.displayValue(choice)).foregroundStyle(AppDesign.ink)
                         Spacer()
@@ -699,6 +815,10 @@ struct ProfileEditView: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+            .padding(.horizontal, 12)
+            .background(AppDesign.surfaceMuted)
+            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusS))
         } else if field.inputType == "date" {
             Toggle("登録する", isOn: Binding(
                 get: { !(values[field.key] ?? "").isEmpty },
@@ -717,9 +837,12 @@ struct ProfileEditView: View {
                 .padding(10)
                 .background(AppDesign.surfaceMuted)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay { RoundedRectangle(cornerRadius: 10).stroke(AppDesign.hairline, lineWidth: 1) }
+                .scrollContentBackground(.hidden)
                 .accessibilityLabel(Text(field.label))
         } else {
-            TextField(field.label, text: textBinding(field.key))
+            TextField(placeholder(for: field), text: textBinding(field.key))
+                .accessibilityLabel(Text(field.label))
                 .padding(.horizontal, 12)
                 .frame(minHeight: 46)
                 .background(AppDesign.surfaceMuted)
@@ -730,6 +853,17 @@ struct ProfileEditView: View {
                 .keyboardType(field.key == "phone" || field.inputType == "tel" ? .phonePad : field.key == "email" || field.inputType == "email" ? .emailAddress : field.key == "postal_code" ? .numberPad : .default)
                 .textInputAutocapitalization(.never)
                 #endif
+        }
+    }
+
+    private func placeholder(for field: ProfileFieldDefinition) -> String {
+        switch field.key {
+        case "name": return "例：山田 太郎"
+        case "kana", "name_kana": return "例：ヤマダ タロウ"
+        case "phone": return "例：09012345678"
+        case "email": return "例：name@example.com"
+        case "postal_code": return "例：1234567"
+        default: return field.label
         }
     }
 
@@ -753,7 +887,7 @@ struct ProfileEditView: View {
         HStack(spacing: 8) {
             Text(field.label).font(.subheadline.weight(.semibold))
             if field.required {
-                Text("必須").font(.caption2).foregroundStyle(AppDesign.inkSecondary)
+                Text("必須").font(.caption2.weight(.semibold)).foregroundStyle(AppDesign.danger)
                     .padding(.horizontal, 6).padding(.vertical, 3)
                     .background(AppDesign.canvas).clipShape(Capsule())
             }

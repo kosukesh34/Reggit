@@ -15,7 +15,6 @@
     $selectedCouponIds = collect((array) old('delivery_coupon_ids', request('coupon_id') ? [request('coupon_id')] : []))
         ->map(fn ($id) => (int) $id)->filter()->unique()->values();
     $hasSelectedCoupon = $selectedCouponIds->isNotEmpty();
-    $segmentOperators = (array) old('segment_operators', []);
     $selectedMemberIds = collect((array) old('target_member_ids', []))->map(fn ($id) => (int) $id)->filter()->values();
     $selectedBirthdayMonths = collect((array) old(
         'segment_birthday_months',
@@ -196,13 +195,20 @@
                         <div class="ad-condition-chips" id="deliverySummaryConditions" aria-live="polite"></div>
 
                     </section>
-                        <details class="ad-condition-help"><summary>条件の組み合わせについて</summary><p>空欄は条件に含めません。上から順に、ANDで絞り込み、ORで対象を広げます。</p></details>
+                        <fieldset class="ad-match-mode">
+                            <legend>異なる条件項目の組み合わせ</legend>
+                            <div class="ad-match-mode-options">
+                                <label><input type="radio" name="segment_match_mode" value="all" class="segment-filter" {{ old('segment_match_mode', 'all') === 'all' ? 'checked' : '' }}><span><strong>項目間は AND</strong><small>例：誕生月にも、タグにも一致</small></span></label>
+                                <label><input type="radio" name="segment_match_mode" value="any" class="segment-filter" {{ old('segment_match_mode') === 'any' ? 'checked' : '' }}><span><strong>項目間は OR</strong><small>例：誕生月か、タグのどちらかに一致</small></span></label>
+                            </div>
+                            <p>この設定は異なる項目の間だけに適用します。1つの項目で複数選べる誕生月・タグなどは、そのうち1つに一致すれば該当します。性別・売上条件などの単一選択項目には、項目内の AND/OR はありません。空欄は対象外です。</p>
+                        </fieldset>
                         <details class="ad-details ad-segment-details" @if(filled(old('segment_channel')) || filled(old('segment_sex')) || $selectedBirthdayMonths->isNotEmpty() || $selectedRfmSegments->isNotEmpty() || $selectedTagIds->isNotEmpty()) open @endif>
                             <summary><span><i class="fas fa-user" aria-hidden="true"></i> 会員の属性</span><small>誕生月・タグなど</small></summary>
                             <div class="ad-segment-advanced">
                         <div class="ad-filter-grid">
                             <div class="form-group mb-0">
-                                <div class="ad-filter-label"><label for="segment_channel" class="form-label">登録チャネル</label>@include('admin.announcements.partials.segment-operator', ['key' => 'channel', 'operators' => $segmentOperators])</div>
+                                <div class="ad-filter-label"><label for="segment_channel" class="form-label">登録チャネル</label></div>
                                 <select name="segment_channel" id="segment_channel" class="form-control segment-filter">
                                     <option value="">指定しない</option>
                                     @foreach(\App\Support\MemberChannel::filterOptions() as $value => $label)
@@ -211,7 +217,7 @@
                                 </select>
                             </div>
                             <fieldset class="ad-multi-filter mb-0">
-                                <legend class="form-label">誕生月 <small>複数選択可</small> @include('admin.announcements.partials.segment-operator', ['key' => 'birthday', 'operators' => $segmentOperators])</legend>
+                                <legend class="form-label">誕生月 <small>複数選択可・選んだ月のいずれかに一致</small></legend>
                                 <div class="ad-multi-filter-options ad-multi-filter-options--months">
                                     @for($m = 1; $m <= 12; $m++)
                                         <label><input type="checkbox" name="segment_birthday_months[]" value="{{ $m }}" data-label="{{ $m }}月" class="segment-filter" {{ $selectedBirthdayMonths->contains($m) ? 'checked' : '' }}><span>{{ $m }}月</span></label>
@@ -219,7 +225,7 @@
                                 </div>
                             </fieldset>
                             <div class="form-group mb-0">
-                                <div class="ad-filter-label"><label for="segment_sex" class="form-label">性別</label>@include('admin.announcements.partials.segment-operator', ['key' => 'sex', 'operators' => $segmentOperators])</div>
+                                <div class="ad-filter-label"><label for="segment_sex" class="form-label">性別</label></div>
                                 <select name="segment_sex" id="segment_sex" class="form-control segment-filter">
                                     <option value="">指定しない</option>
                                     <option value="1" {{ old('segment_sex') === '1' ? 'selected' : '' }}>男性</option>
@@ -227,7 +233,7 @@
                                 </select>
                             </div>
                             <fieldset class="ad-multi-filter ad-filter-group-wide mb-0">
-                                <legend class="form-label">RFMセグメント <small>複数選択可・いずれかに一致</small> @include('admin.announcements.partials.segment-operator', ['key' => 'rfm', 'operators' => $segmentOperators])</legend>
+                                <legend class="form-label">RFMセグメント <small>複数選択可・選んだ区分のいずれかに一致</small></legend>
                                 <div class="ad-multi-filter-options ad-multi-filter-options--tags">
                                     @foreach($view->rfmSegments as $rfmKey => $rfm)
                                         <label style="--ad-tag-color: {{ $rfm['color'] }}"><input type="checkbox" name="segment_rfm_segments[]" value="{{ $rfmKey }}" data-label="{{ $rfm['label'] }}" class="segment-filter" {{ $selectedRfmSegments->contains($rfmKey) ? 'checked' : '' }}><span><i aria-hidden="true"></i>{{ $rfm['label'] }}</span></label>
@@ -235,7 +241,7 @@
                                 </div>
                             </fieldset>
                             <fieldset class="ad-multi-filter ad-filter-group-wide mb-0">
-                                <legend class="form-label">会員タグ <small>複数選択可・いずれかのタグに一致</small> @include('admin.announcements.partials.segment-operator', ['key' => 'tags', 'operators' => $segmentOperators])</legend>
+                                <legend class="form-label">会員タグ <small>複数選択可・選んだタグのいずれかに一致</small></legend>
                                 @if(($view->memberTags ?? collect())->isEmpty())
                                     <p class="ad-multi-filter-empty">会員タグはまだ登録されていません。</p>
                                 @else
@@ -259,17 +265,17 @@
                             </summary>
                             <div class="ad-segment-advanced">
                                 <div class="ad-filter-grid">
-                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_visit_count_min" class="form-label">来店回数（以上）</label>@include('admin.announcements.partials.segment-operator', ['key' => 'visits', 'operators' => $segmentOperators])</div><input type="number" name="segment_visit_count_min" id="segment_visit_count_min" class="form-control segment-filter" value="{{ old('segment_visit_count_min') }}" min="0" placeholder="例：3"></div>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_visit_count_min" class="form-label">来店回数（以上）</label></div><input type="number" name="segment_visit_count_min" id="segment_visit_count_min" class="form-control segment-filter" value="{{ old('segment_visit_count_min') }}" min="0" placeholder="例：3"></div>
                                     <div class="form-group mb-0"><label for="segment_visit_count_max" class="form-label">来店回数（以下）</label><input type="number" name="segment_visit_count_max" id="segment_visit_count_max" class="form-control segment-filter" value="{{ old('segment_visit_count_max') }}" min="0" placeholder="例：10"></div>
-                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_rank" class="form-label">会員ランク</label>@include('admin.announcements.partials.segment-operator', ['key' => 'rank', 'operators' => $segmentOperators])</div><input type="text" name="segment_rank" id="segment_rank" class="form-control segment-filter" value="{{ old('segment_rank') }}" maxlength="64" placeholder="例：gold"></div>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_rank" class="form-label">会員ランク</label></div><input type="text" name="segment_rank" id="segment_rank" class="form-control segment-filter" value="{{ old('segment_rank') }}" maxlength="64" placeholder="例：gold"></div>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2">
-                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label>@include('admin.announcements.partials.segment-operator', ['key' => 'points', 'operators' => $segmentOperators])</div><input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control segment-filter" value="{{ old('segment_lifetime_points_min') }}" min="0" placeholder="例：1000"></div>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label></div><input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control segment-filter" value="{{ old('segment_lifetime_points_min') }}" min="0" placeholder="例：1000"></div>
                                     <div class="form-group mb-0"><label for="segment_lifetime_points_max" class="form-label">累計付与ポイント（以下）</label><input type="number" name="segment_lifetime_points_max" id="segment_lifetime_points_max" class="form-control segment-filter" value="{{ old('segment_lifetime_points_max') }}" min="0" placeholder="例：5000"></div>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2">
                                     <div class="form-group mb-0">
-                                        <div class="ad-filter-label"><label for="segment_last_visit_mode" class="form-label">最終来店</label>@include('admin.announcements.partials.segment-operator', ['key' => 'last_visit', 'operators' => $segmentOperators])</div>
+                                        <div class="ad-filter-label"><label for="segment_last_visit_mode" class="form-label">最終来店</label></div>
                                         <select name="segment_last_visit_mode" id="segment_last_visit_mode" class="form-control segment-filter">
                                             <option value="">指定しない</option>
                                             <option value="inactive_days" {{ old('segment_last_visit_mode') === 'inactive_days' ? 'selected' : '' }}>N日以上来店なし</option>
@@ -286,7 +292,7 @@
                                     </div>
                                 </div>
                                 <div class="form-group mb-0">
-                                    <div class="ad-filter-label"><label for="segment_product_id" class="form-label">購入した商品</label>@include('admin.announcements.partials.segment-operator', ['key' => 'product', 'operators' => $segmentOperators])</div>
+                                    <div class="ad-filter-label"><label for="segment_product_id" class="form-label">購入した商品</label></div>
                                     <select name="segment_product_id" id="segment_product_id" class="form-control segment-filter">
                                         <option value="">指定しない</option>
                                         @foreach(($view->products ?? []) as $product)
@@ -305,7 +311,7 @@
                                         </select>
                                     </div>
                                     <fieldset>
-                                        <legend class="form-label">売上条件 @include('admin.announcements.partials.segment-operator', ['key' => 'sales', 'operators' => $segmentOperators])</legend>
+                                        <legend class="form-label">売上条件 <small>1つだけ選択</small></legend>
                                         <label><input type="radio" name="segment_condition" value="" {{ old('segment_condition', '') === '' ? 'checked' : '' }} class="segment-filter"> 指定しない</label>
                                         <label><input type="radio" name="segment_condition" value="min_amount" {{ old('segment_condition') === 'min_amount' ? 'checked' : '' }} class="segment-filter"> 購入額以上</label>
                                         <label><input type="radio" name="segment_condition" value="no_orders" {{ old('segment_condition') === 'no_orders' ? 'checked' : '' }} class="segment-filter"> 未購入</label>
@@ -329,7 +335,7 @@
                                         @endphp
                                         @if($profileKey !== '')
                                             <div class="form-group mb-0 ad-profile-filter" data-profile-label="{{ $profileLabel }}">
-                                                <div class="ad-filter-label"><label class="form-label" for="segment_profile_{{ $profileKey }}">{{ $profileLabel }}</label>@include('admin.announcements.partials.segment-operator', ['key' => 'profile_'.$profileKey, 'operators' => $segmentOperators])</div>
+                                                <div class="ad-filter-label"><label class="form-label" for="segment_profile_{{ $profileKey }}">{{ $profileLabel }}</label></div>
                                                 @if($profileValues !== [])
                                                     <div class="ad-multi-filter-options">
                                                         @foreach($profileValues as $value)

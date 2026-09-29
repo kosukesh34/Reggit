@@ -21,7 +21,7 @@ final class AdminSettingsNavigation
                 $can('queue.view') ? ['route' => 'admin.settings.queue', 'icon' => 'fas fa-list-ol', 'label' => '順番待ち', 'hint' => '待ち時間'] : null,
             ]],
             ['title' => 'お客様向け画面', 'items' => [
-                $can('settings.view') ? ['route' => 'admin.settings.home', 'icon' => 'fas fa-home', 'label' => 'ホーム・メニュー', 'hint' => 'SkipとLINEの共通画面'] : null,
+                $can('settings.view') ? ['route' => 'admin.settings.home', 'icon' => 'fas fa-home', 'label' => 'デザイン・ホーム', 'hint' => '会員証・画像・メニュー配置'] : null,
                 $can('settings.view') ? ['route' => 'admin.settings.advanced', 'icon' => 'fas fa-palette', 'label' => '配色', 'hint' => '成功・注意などの色'] : null,
             ]],
             ['title' => '会員・販促', 'items' => [

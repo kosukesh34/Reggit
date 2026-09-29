@@ -22,6 +22,15 @@ final class StoreSearchViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.filteredProjects.map(\.projectKey), ["osaka"])
         viewModel.query = "tok"
         XCTAssertEqual(viewModel.filteredProjects.map(\.projectKey), ["tokyo"])
+
+        let reopened = StoreSearchViewModel(
+            baseURL: "https://example.com",
+            currentProjectKey: "tokyo",
+            projectService: StubMobileProjectsService(shouldFail: true)
+        )
+        await reopened.load()
+        XCTAssertEqual(reopened.projects, projects)
+        XCTAssertNil(reopened.errorMessage)
     }
 
     func testLoadFailureExposesErrorWithoutFakeStores() async {
@@ -31,7 +40,7 @@ final class StoreSearchViewModelTests: XCTestCase {
             projectService: StubMobileProjectsService(shouldFail: true)
         )
 
-        await viewModel.load()
+        await viewModel.load(force: true)
 
         XCTAssertTrue(viewModel.projects.isEmpty)
         XCTAssertNotNil(viewModel.errorMessage)

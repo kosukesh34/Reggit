@@ -25,6 +25,10 @@
     <div class="card-header card-header-with-action">
         <h2 class="card-title">クーポン一覧</h2>
         <div class="table-actions">
+            <form action="{{ admin_route('admin.coupons.sync-to-smaregi') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> スマレジへ同期</button>
+            </form>
             <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-secondary"><i class="fas fa-paper-plane"></i> クーポンを配信</a>
             <a href="{{ admin_route('admin.coupons.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 作成</a>
         </div>

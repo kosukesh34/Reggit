@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Services\Smaregi\SmaregiCouponImportSyncService;
 use App\UseCases\Admin\Coupon\AdminCouponFullSyncWithSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponPushToSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
@@ -14,6 +15,7 @@ class CouponSmaregiSyncController extends AdminBaseController
         private AdminCouponSyncFromSmaregiUseCase $syncFromSmaregiUseCase,
         private AdminCouponPushToSmaregiUseCase $pushToSmaregiUseCase,
         private AdminCouponFullSyncWithSmaregiUseCase $fullSyncWithSmaregiUseCase,
+        private SmaregiCouponImportSyncService $couponSyncService,
     ) {}
 
     /** スマレジ → DB: POS のクーポンを取り込む */
@@ -31,6 +33,20 @@ class CouponSmaregiSyncController extends AdminBaseController
             return $this->successResponse($message, $result);
         } catch (\Throwable $exception) {
             return $this->errorResponse($exception);
+        }
+    }
+
+    /** DB → スマレジ: 全クーポンを登録または更新する。 */
+    public function syncToSmaregi(): RedirectResponse
+    {
+        try {
+            $result = $this->couponSyncService->syncToSmaregi($this->resolveAdminProjectId());
+            $message = sprintf('スマレジへクーポンを同期しました（新規: %d、更新: %d、失敗: %d）',
+                $result['created'], $result['updated'], $result['failed']);
+
+            return $this->successResponse($message, $result, true);
+        } catch (\Throwable $exception) {
+            return $this->errorResponse($exception, true);
         }
     }
 

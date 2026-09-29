@@ -34,6 +34,11 @@ class MemberSegmentService
     {
         $criteria = [];
 
+        $matchMode = $input['segment_match_mode'] ?? null;
+        if (in_array($matchMode, ['all', 'any'], true)) {
+            $criteria['match_mode'] = $matchMode;
+        }
+
         $operators = collect((array) ($input['segment_operators'] ?? []))
             ->mapWithKeys(fn ($value, $key): array => [(string) $key => $value === 'or' ? 'or' : 'and'])
             ->all();
@@ -166,7 +171,7 @@ class MemberSegmentService
             $criteria['profile'] = $profileFilters;
         }
 
-        return array_diff_key($criteria, ['operators' => true]) === [] ? null : $criteria;
+        return array_diff_key($criteria, ['operators' => true, 'match_mode' => true]) === [] ? null : $criteria;
     }
 
     /**
@@ -296,7 +301,12 @@ class MemberSegmentService
         $resolved = $first['ids'];
         $operators = is_array($criteria['operators'] ?? null) ? $criteria['operators'] : [];
         foreach ($sets as $set) {
-            $resolved = ($operators[$set['key']] ?? 'and') === 'or'
+            $operator = match ($criteria['match_mode'] ?? null) {
+                'any' => 'or',
+                'all' => 'and',
+                default => $operators[$set['key']] ?? 'and',
+            };
+            $resolved = $operator === 'or'
                 ? array_values(array_unique(array_merge($resolved, $set['ids'])))
                 : array_values(array_intersect($resolved, $set['ids']));
         }

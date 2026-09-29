@@ -36,13 +36,18 @@ final class StoreSearchViewModel {
         }
     }
 
-    func load() async {
+    func load(force: Bool = false) async {
+        if !force, let cached = SecondaryScreenCache.projects {
+            projects = cached
+            return
+        }
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
             projects = try await projectService.fetchProjects(baseURL: baseURL)
+            SecondaryScreenCache.projects = projects
         } catch {
             errorMessage = error.localizedDescription
         }

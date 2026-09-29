@@ -38,6 +38,7 @@ final class ProductsViewModel {
     var activeOrder: OrderSnapshot?
     var paymentMethod = "stripe"
     var checkoutURL: URL?
+    var isVerifyingPayment = false
 
     private let apiClient: any ReggitAPIServing
 
@@ -126,6 +127,7 @@ final class ProductsViewModel {
                 }
             }
             cart.removeAll()
+            SecondaryScreenCache.orders = nil
             showConfirm = false
             activeOrder = order
             return paymentURL
@@ -149,23 +151,27 @@ final class ProductsViewModel {
 
 struct ProductsView: View {
     @State var viewModel: ProductsViewModel
+    @Environment(\.appButtonColors) var buttonColors
     @Environment(\.brandAccent) var accent
     @Environment(\.openURL) var openURL
     @State var selectedProduct: ProductItem?
     @State var draftOptionIds: [Int] = []
     let displayLayout: ProductDisplayLayout
     let paymentReturnOrderID: Int?
+    let paymentReturnSucceeded: Bool
     let paymentReturnRevision: Int
 
     init(
         apiClient: any ReggitAPIServing,
         displayLayout: String = "list_with_image",
         paymentReturnOrderID: Int? = nil,
+        paymentReturnSucceeded: Bool = false,
         paymentReturnRevision: Int = 0
     ) {
         _viewModel = State(initialValue: ProductsViewModel(apiClient: apiClient))
         self.displayLayout = ProductDisplayLayout.parse(displayLayout)
         self.paymentReturnOrderID = paymentReturnOrderID
+        self.paymentReturnSucceeded = paymentReturnSucceeded
         self.paymentReturnRevision = paymentReturnRevision
     }
 
@@ -235,7 +241,7 @@ struct ProductsView: View {
                     set: { if !$0 { selectedProduct = nil } }
                 )) {
                     if let product = selectedProduct {
-                        productDetail(product)
+                        productDetail(product).headerBackDestination()
                     }
                 }
                 .navigationDestination(isPresented: Binding(
@@ -260,6 +266,8 @@ struct ProductsView: View {
                         }
                     )
                     .environment(\.brandAccent, accent)
+                        .environment(\.appButtonColors, buttonColors)
+                        .headerBackDestination()
                 }
                 .navigationDestination(item: Binding(
                     get: { viewModel.activeOrder },
@@ -267,11 +275,14 @@ struct ProductsView: View {
                 )) { order in
                     OrderStatusView(
                         order: order,
+                        isVerifyingPayment: viewModel.isVerifyingPayment,
                         onContinuePayment: viewModel.checkoutURL.map { url in
                             { openURL(url) }
                         }
                     )
                         .environment(\.brandAccent, accent)
+                        .environment(\.appButtonColors, buttonColors)
+                        .headerBackDestination()
                     .task(id: order.id) {
                         while !Task.isCancelled {
                             await viewModel.refreshActiveOrder()
@@ -284,13 +295,36 @@ struct ProductsView: View {
         }
         .task { await viewModel.load() }
         .task(id: paymentReturnRevision) {
-            guard let orderID = paymentReturnOrderID else { return }
-            if let order = try? await viewModel.fetchOrder(id: orderID) {
-                viewModel.activeOrder = order
-                viewModel.showConfirm = false
-                if !order.isAwaitingCardPayment {
-                    viewModel.checkoutURL = nil
+            guard paymentReturnRevision > SecondaryScreenCache.handledPaymentReturnRevision,
+                  let orderID = paymentReturnOrderID else { return }
+            SecondaryScreenCache.handledPaymentReturnRevision = paymentReturnRevision
+            SecondaryScreenCache.orders = nil
+            viewModel.isVerifyingPayment = paymentReturnSucceeded
+            viewModel.showConfirm = false
+            // Stripe can redirect before its webhook updates the order. Keep the
+            // status screen visible and retry instead of showing an unpaid result.
+            for attempt in 0..<12 {
+                if Task.isCancelled { return }
+                if let order = try? await viewModel.fetchOrder(id: orderID) {
+                    viewModel.activeOrder = order
+                    if !order.isAwaitingCardPayment {
+                        viewModel.checkoutURL = nil
+                        viewModel.isVerifyingPayment = false
+                        return
+                    }
+                } else {
+                    // 読み込み失敗時も、決済結果を成功扱いで終わらせず再試行する。
+                    viewModel.actionMessage = "決済状況を確認できません。通信を確認して再試行してください。"
                 }
+                if !paymentReturnSucceeded { break }
+                if attempt < 11 {
+                    try? await Task.sleep(nanoseconds: 2_500_000_000)
+                }
+            }
+            viewModel.isVerifyingPayment = false
+            if paymentReturnSucceeded,
+               viewModel.activeOrder?.isAwaitingCardPayment == true {
+                viewModel.actionMessage = "決済結果の反映に時間がかかっています。注文履歴を更新してご確認ください。"
             }
         }
     }
@@ -706,6 +740,7 @@ struct OrderConfirmView: View {
 
 struct OrderStatusView: View {
     let order: OrderSnapshot
+    var isVerifyingPayment = false
     var onContinuePayment: (() -> Void)? = nil
     @Environment(\.brandAccent) var accent
 
@@ -713,7 +748,7 @@ struct OrderStatusView: View {
         ScrollView {
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
-                    Text(order.isAwaitingCardPayment ? "カード決済は完了していません" : order.isActive ? "ご注文を受け付けました" : order.statusLabel)
+                    Text(order.isAwaitingCardPayment ? (isVerifyingPayment ? "決済を確認しています" : "カード決済を確認できていません") : order.isActive ? "ご注文を受け付けました" : order.statusLabel)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(AppDesign.inkSecondary)
                     Text(order.pickupNumberLabel)
@@ -725,7 +760,7 @@ struct OrderStatusView: View {
                 }
                 .padding(.top, 8)
 
-                if order.isAwaitingCardPayment, let onContinuePayment {
+                if order.isAwaitingCardPayment && !isVerifyingPayment, let onContinuePayment {
                     VStack(spacing: 10) {
                         AppPrimaryButton(title: "カード決済を続ける", action: onContinuePayment)
                         Text("決済完了後に受取番号が発行されます")

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Domain\Settings\Repositories\AppConfigSettings;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Support\HomeImageUrls;
 use App\Support\LiffThemePresets;
@@ -73,6 +74,7 @@ class AppConfigService
             })
             ->values()
             ->all();
+        $nativeNavigationCandidates[] = ['tab' => 'profileEdit', 'label' => 'プロフィール編集', 'icon' => 'fa-user-pen'];
         $nativeNavigationCandidates[] = [
             'tab' => 'terms',
             'label' => '利用規約',
@@ -157,6 +159,7 @@ class AppConfigService
                 'activity_screen_design' => (string) ($global['activity_screen_design'] ?? 'cards'),
                 'require_membership' => ($global['require_membership'] ?? true) !== false,
             ],
+            'native_chrome_colors' => array_intersect_key((array) $repo->getValue('native_chrome_colors', [], $projectId), array_flip(['header_icon', 'footer_background', 'footer_icon', 'footer_active_icon', 'footer_active_background', 'primary_button_background', 'primary_button_text', 'secondary_button_background', 'secondary_button_text'])),
             'header' => [
                 'logo_url' => $repo->getFrontendLogoUrl($projectId),
                 'image_url' => (string) $repo->getValue('navigation_header_image_url', '', $projectId),
@@ -166,6 +169,7 @@ class AppConfigService
                     : $repo->getFrontendHeaderText($projectId),
             ],
             'home' => [
+                'show_member_card' => (bool) $repo->getValue('home_show_member_card', true, $projectId),
                 'menu_layout' => (string) $repo->getValue('home_menu_layout', 'grid_3x2', $projectId),
                 'image_url' => $homeImageUrls[0] ?? '',
                 'image_urls' => $homeImageUrls,
@@ -224,7 +228,7 @@ class AppConfigService
             'designlab' => 'dice.fill',
             'coupons' => 'ticket.fill',
             'queue' => 'person.3.fill',
-            'member' => 'person.crop.circle.fill',
+            'member', 'profileEdit' => 'person.crop.circle.fill',
             'reservations' => 'calendar',
             'gallery' => 'photo.on.rectangle.angled',
             'announcements' => 'megaphone.fill',
@@ -250,7 +254,7 @@ class AppConfigService
                 return [
                     'key' => $key,
                     'label' => (string) ($item['label'] ?? $key),
-                    'icon' => (string) ($item['icon'] ?? 'fa-circle'),
+                    'icon' => ShopSettingStore::normalizeFrontendMenuIcon($key, (string) ($item['icon'] ?? 'fa-circle')),
                     'sf_symbol' => $this->sfSymbolForTab($key),
                     'url' => isset($item['url']) ? (string) $item['url'] : null,
                 ];

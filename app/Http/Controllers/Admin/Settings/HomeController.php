@@ -89,9 +89,16 @@ class HomeController extends AdminBaseController
                 ? (is_array($validated['native_navigation'] ?? null) ? $validated['native_navigation'] : [])
                 : null,
             $homeImageUrls,
+            array_key_exists('home_show_member_card', $validated) ? $request->boolean('home_show_member_card') : null,
+            $validated['native_chrome_colors'] ?? null,
         );
 
-        return redirect()->route('admin.settings.home', $this->buildAdminRouteParams())
+        $url = route('admin.settings.home', $this->buildAdminRouteParams());
+        if (isset($validated['design_tab'])) {
+            $url .= '#design-'.$validated['design_tab'];
+        }
+
+        return redirect()->to($url)
             ->with('success', 'ホーム設定を更新しました');
     }
 }

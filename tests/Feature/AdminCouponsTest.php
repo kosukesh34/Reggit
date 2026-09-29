@@ -17,6 +17,7 @@ use App\Models\MemberCoupon;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Smaregi\SmaregiCouponImportSyncService;
 use App\UseCases\Admin\Coupon\AdminCouponFullSyncWithSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponPushToSmaregiUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponSyncFromSmaregiUseCase;
@@ -189,6 +190,22 @@ class AdminCouponsTest extends TestCase
             ->post(route('admin.coupons.push-smaregi', ['project_key' => $project->project_key]))
             ->assertRedirect(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]))
             ->assertSessionHas('success', '管理画面のクーポンをスマレジに反映しました（登録: 3、失敗: 0）');
+    }
+
+    public function test_smaregi_sync_一覧から管理画面の全クーポンをスマレジへ同期できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $this->mock(SmaregiCouponImportSyncService::class)
+            ->shouldReceive('syncToSmaregi')->once()->with($project->id)
+            ->andReturn(['created' => 1, 'updated' => 2, 'failed' => 0, 'errors' => []]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.coupons', ['project_key' => $project->project_key]))
+            ->assertSee(route('admin.coupons.sync-to-smaregi', ['project_key' => $project->project_key]));
+        $this->post(route('admin.coupons.sync-to-smaregi', ['project_key' => $project->project_key]))
+            ->assertRedirect(route('admin.coupons', ['project_key' => $project->project_key]))
+            ->assertSessionHas('success', 'スマレジへクーポンを同期しました（新規: 1、更新: 2、失敗: 0）');
     }
 
     public function test_smaregi_sync_専用controllerから双方向同期を実行できること(): void

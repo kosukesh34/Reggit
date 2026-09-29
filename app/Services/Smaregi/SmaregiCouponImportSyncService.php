@@ -136,6 +136,46 @@ class SmaregiCouponImportSyncService
     }
 
     /**
+     * DB → スマレジ: 未連携は登録し、連携済みは更新する。
+     *
+     * @return array{created: int, updated: int, failed: int, errors: list<string>}
+     */
+    public function syncToSmaregi(int $projectId): array
+    {
+        if (! $this->smaregiCouponSync->hasSmaregiContract($projectId)) {
+            throw new \RuntimeException('スマレジの契約IDが設定されていません。設定画面で契約を紐付けてください。');
+        }
+
+        $result = ['created' => 0, 'updated' => 0, 'failed' => 0, 'errors' => []];
+        Coupon::where('project_id', $projectId)->orderBy('id')->chunkById(100, function ($coupons) use (&$result, $projectId): void {
+            foreach ($coupons as $coupon) {
+                try {
+                    $smaregiId = trim((string) $coupon->smaregi_coupon_id);
+                    $ok = $smaregiId === ''
+                        ? $this->smaregiCouponSync->sync($coupon)
+                        : $this->smaregiCouponSync->updateOnSmaregi($projectId, $smaregiId, $coupon->getAttributes());
+                    if ($ok) {
+                        $result[$smaregiId === '' ? 'created' : 'updated']++;
+                    } else {
+                        $result['failed']++;
+                        $result['errors'][] = sprintf('%s (%s): スマレジへの反映に失敗しました', $coupon->name ?? $coupon->code, $coupon->code);
+                    }
+                } catch (\Throwable $e) {
+                    $result['failed']++;
+                    $result['errors'][] = sprintf('%s (%s): %s', $coupon->name ?? $coupon->code, $coupon->code, $e->getMessage());
+                    Log::warning('[Smaregi] coupon sync to POS failed', [
+                        'project_id' => $projectId,
+                        'coupon_id' => $coupon->id,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+            }
+        });
+
+        return $result;
+    }
+
+    /**
      * 双方向同期: スマレジ取り込み + 未連携の POS 登録。
      *
      * @return array{created: int, updated: int, pushed: int, failed: int, errors: list<string>}

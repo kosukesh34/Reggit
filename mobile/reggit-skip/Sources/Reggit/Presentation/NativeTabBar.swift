@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NativeTabBar: View {
     let items: [AppTabItem]
+    var colors: [String: String] = [:]
     @Binding var selectedTab: String
     @Environment(\.brandAccent) var accent
 
@@ -17,14 +18,17 @@ struct NativeTabBar: View {
                             .minimumScaleFactor(0.6)
                     }
                     .frame(maxWidth: .infinity, minHeight: 54)
-                    .foregroundStyle(selectedTab == item.key ? accent : AppDesign.inkSecondary)
+                    .foregroundStyle((colors[selectedTab == item.key ? "footer_active_icon" : "footer_icon"] ?? "").toNativeColor(fallback: selectedTab == item.key ? accent : AppDesign.inkSecondary))
+                    .background(selectedTab == item.key ? (colors["footer_active_background"] ?? "").toNativeColor(fallback: .clear) : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(Text(item.label))
             }
         }
-        .padding(.bottom, 2)
-        .background(AppDesign.surface.ignoresSafeArea(edges: .bottom))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background((colors["footer_background"] ?? "").toNativeColor(fallback: AppDesign.surface).ignoresSafeArea(edges: .bottom))
         .overlay(alignment: .top) {
             Rectangle().fill(AppDesign.hairline).frame(height: 0.5)
         }
@@ -35,6 +39,9 @@ struct NativeTabBar: View {
 enum TabIconResolver {
     static func systemName(for tab: AppTabItem) -> String {
         let icon = tab.icon.trimmingCharacters(in: .whitespacesAndNewlines)
+        if tab.key != "home" && ["fa-home", "fa-house"].contains(icon) {
+            return fallback(for: tab.key)
+        }
         if icon.hasPrefix("fa-") {
             return icon
         }
@@ -48,15 +55,17 @@ enum TabIconResolver {
     private static func fallback(for key: String) -> String {
         switch key {
         case "home": return "house.fill"
-        case "member": return "person.crop.circle.fill"
+        case "member": return "fa-id-card"
+        case "profile", "profileEdit": return "fa-user-pen"
         case "products": return "bag.fill"
         case "orders": return "list.clipboard.fill"
         case "coupons": return "ticket.fill"
         case "stamps": return "star.circle.fill"
-        case "designlab": return "dice.fill"
+        case "designlab", "lottery": return "dice.fill"
         case "queue": return "number.circle.fill"
         case "reservations": return "calendar"
         case "gallery": return "photo.on.rectangle"
+        case "announcements": return "fa-bullhorn"
         case "storeSearch": return "location.fill"
         case "terms": return "doc.text.fill"
         case "privacy": return "hand.raised.fill"

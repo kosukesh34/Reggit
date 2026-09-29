@@ -40,6 +40,30 @@ struct FontAwesomeIcon: View {
             .replacingOccurrences(of: "fa-", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let glyphs: [String: String] = [
+            "home": "\u{f015}",
+            "user-pen": "\u{f4ff}",
+            "image": "\u{f03e}",
+            "location.fill": "\u{f3c5}",
+            "location-dot": "\u{f3c5}",
+            "hashtag": "\u{f292}",
+            "file": "\u{f15b}",
+            "globe": "\u{f0ac}",
+            "building.2": "\u{f1ad}",
+            "checkmark.seal.fill": "\u{f0a3}",
+            "gift": "\u{f06b}",
+            "doc.on.doc": "\u{f0c5}",
+            "calendar.badge.clock": "\u{f133}",
+            "infinity": "\u{f534}",
+            "lock": "\u{f023}",
+            "exclamationmark.triangle": "\u{f071}",
+            "exclamationmark.triangle.fill": "\u{f071}",
+            "exclamationmark.circle.fill": "\u{f06a}",
+            "wifi.slash": "\u{f6ac}",
+            "square": "\u{f0c8}",
+            "square.checkmark": "\u{f14a}",
+            "square.empty": "\u{f0c8}",
+            "chevron.down": "\u{f078}",
+            "pencil": "\u{f303}",
             "house": "\u{f015}",
             "house.fill": "\u{f015}",
             "utensils": "\u{f2e7}",
@@ -119,5 +143,22 @@ struct FontAwesomeIcon: View {
             "circle.circle.fill": "\u{f192}",
         ]
         return glyphs[key] ?? glyphs[systemName] ?? "\u{f111}"
+    }
+}
+
+struct FontAwesomeLabel: View {
+    let title: String
+    let systemImage: String
+
+    init(_ title: String, systemImage: String) {
+        self.title = title
+        self.systemImage = systemImage
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            FontAwesomeIcon(systemName: systemImage, size: 16).accessibilityHidden(true)
+            Text(title)
+        }
     }
 }
