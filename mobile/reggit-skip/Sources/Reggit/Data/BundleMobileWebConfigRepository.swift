@@ -93,7 +93,7 @@ struct BundleMobileWebConfigRepository: MobileWebConfigRepository {
     }
 
     private static let fallbackBaseUrlIOS = "https://reggit.jp"
-    private static let fallbackProjectKey = "sb_skp835t6"
+    private static let fallbackProjectKey = "sb_skt733n4"
 
     private func defaultBaseUrl() -> String {
         Self.fallbackBaseUrlIOS
