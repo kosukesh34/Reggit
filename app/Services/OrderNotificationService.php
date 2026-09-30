@@ -50,6 +50,18 @@ class OrderNotificationService
         );
     }
 
+    public function notifyCompleted(int $orderId, int $projectId): void
+    {
+        $this->notifyMobileOrder(
+            $orderId,
+            $projectId,
+            false,
+            'ご注文の商品をお渡ししました',
+            'order_completed',
+            static fn (string $refNumber): string => 'ご利用ありがとうございました。',
+        );
+    }
+
     /**
      * @param  callable(string): string  $bodyBuilder
      */
@@ -72,19 +84,13 @@ class OrderNotificationService
         if ($order->order_type !== OrderType::MOBILE) {
             return;
         }
-        if ($isEnabled === false) {
-            LogHelper::info('[Order] notify skipped (disabled)', [
-                'order_id' => $orderId,
-                'project_id' => $projectId,
-                'title' => $title,
-            ]);
-
-            return;
-        }
-
         $refNumber = $order->formattedOrderNumber();
         $body = $bodyBuilder($refNumber);
         $this->sendNativePush($order, $projectId, $title, $body, $pushType);
+
+        if ($isEnabled === false) {
+            return;
+        }
 
         $projectKey = Project::query()->where('id', $projectId)->value('project_key');
         $projectKey = is_string($projectKey) ? trim($projectKey) : '';
@@ -125,12 +131,15 @@ class OrderNotificationService
             ]
         );
 
-        if (($result['sent'] ?? 0) === 0 && ($result['target_tokens'] ?? 0) === 0) {
-            LogHelper::info('[Order] native push skipped (no device tokens)', [
-                'order_id' => $order->id,
-                'project_id' => $projectId,
-            ]);
-        }
+        LogHelper::info('[Order] native push result', [
+            'order_id' => $order->id,
+            'project_id' => $projectId,
+            'type' => $pushType,
+            'target_tokens' => (int) ($result['target_tokens'] ?? 0),
+            'sent' => (int) ($result['sent'] ?? 0),
+            'failed' => (int) ($result['failed'] ?? 0),
+            'skipped' => (int) ($result['skipped'] ?? 0),
+        ]);
     }
 
     private function sendLinePush(
