@@ -147,6 +147,10 @@ final class ProductsViewModel {
     func fetchOrder(id: Int) async throws -> OrderSnapshot {
         try await apiClient.fetchOrder(id: id)
     }
+
+    func confirmPaymentCheckout(id: Int) async throws -> OrderSnapshot {
+        try await apiClient.confirmPaymentCheckout(orderId: id)
+    }
 }
 
 struct ProductsView: View {
@@ -160,19 +164,22 @@ struct ProductsView: View {
     let paymentReturnOrderID: Int?
     let paymentReturnSucceeded: Bool
     let paymentReturnRevision: Int
+    let onPaymentConfirmed: () async -> Void
 
     init(
         apiClient: any ReggitAPIServing,
         displayLayout: String = "list_with_image",
         paymentReturnOrderID: Int? = nil,
         paymentReturnSucceeded: Bool = false,
-        paymentReturnRevision: Int = 0
+        paymentReturnRevision: Int = 0,
+        onPaymentConfirmed: @escaping () async -> Void = {}
     ) {
         _viewModel = State(initialValue: ProductsViewModel(apiClient: apiClient))
         self.displayLayout = ProductDisplayLayout.parse(displayLayout)
         self.paymentReturnOrderID = paymentReturnOrderID
         self.paymentReturnSucceeded = paymentReturnSucceeded
         self.paymentReturnRevision = paymentReturnRevision
+        self.onPaymentConfirmed = onPaymentConfirmed
     }
 
     var body: some View {
@@ -305,11 +312,20 @@ struct ProductsView: View {
             // status screen visible and retry instead of showing an unpaid result.
             for attempt in 0..<12 {
                 if Task.isCancelled { return }
+                if paymentReturnSucceeded,
+                   let confirmed = try? await viewModel.confirmPaymentCheckout(id: orderID) {
+                    viewModel.activeOrder = confirmed
+                    viewModel.checkoutURL = nil
+                    viewModel.isVerifyingPayment = false
+                    await onPaymentConfirmed()
+                    return
+                }
                 if let order = try? await viewModel.fetchOrder(id: orderID) {
                     viewModel.activeOrder = order
                     if !order.isAwaitingCardPayment {
                         viewModel.checkoutURL = nil
                         viewModel.isVerifyingPayment = false
+                        await onPaymentConfirmed()
                         return
                     }
                 } else {

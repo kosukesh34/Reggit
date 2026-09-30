@@ -57,6 +57,7 @@ protocol ReggitAPIServing: Sendable {
     func fetchProducts() async throws -> [ProductItem]
     func createOrder(items: [OrderLineRequest], paymentMethod: String, notes: String?) async throws -> OrderSnapshot
     func createPaymentCheckout(orderId: Int) async throws -> PaymentCheckoutSession
+    func confirmPaymentCheckout(orderId: Int) async throws -> OrderSnapshot
     func cancelUnpaidOrder(id: Int) async throws
     func fetchOrders() async throws -> [OrderSnapshot]
     func fetchOrder(id: Int) async throws -> OrderSnapshot

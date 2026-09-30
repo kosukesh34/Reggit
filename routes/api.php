@@ -57,6 +57,7 @@ use App\Http\Controllers\Member\WalletPassUrlController;
 use App\Http\Controllers\Onboarding\OnboardingProjectStoreController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Payment\PaymentConfirmController;
+use App\Http\Controllers\Payment\PaymentConfirmCheckoutController;
 use App\Http\Controllers\Payment\PaymentCreateCheckoutController;
 use App\Http\Controllers\Payment\PaymentCreateIntentController;
 use App\Http\Controllers\Payment\PaymentWebhookController;
@@ -303,6 +304,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/payment/create-intent', [PaymentCreateIntentController::class, '__invoke']);
     Route::post('/payment/checkout', PaymentCreateCheckoutController::class);
     Route::post('/payment/confirm', [PaymentConfirmController::class, '__invoke']);
+    Route::post('/payment/checkout/confirm', PaymentConfirmCheckoutController::class);
 
     Route::get('/reservations', [ReservationIndexController::class, '__invoke']);
     Route::get('/reservations/available-dates', [ReservationAvailableDatesController::class, '__invoke']);
