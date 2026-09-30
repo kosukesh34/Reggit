@@ -4,15 +4,14 @@
 @section('page-title', 'ヘルプ記事')
 
 @section('content')
-<div class="page-header">
-    <h1 class="page-header-title">ヘルプ記事</h1>
-    <a href="{{ route('system-admin.help-articles.create') }}" class="btn btn-primary">追加</a>
+<div class="publishing-header">
+    <p class="form-text">店舗管理者向けの操作ガイドやよくある質問を作成します。<br>公開した記事は各店舗のヘルプに表示されます。</p>
+    <a href="{{ route('system-admin.help-articles.create') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> ヘルプ記事を書く</a>
 </div>
-<p class="form-text">Markdownで書いた記事は、各店舗のヘルプ一覧に出ます。使い方の固定記事と同じスラッグは使えません。</p>
 <div class="card">
     <div class="card-body">
         @if($articles->isEmpty())
-        <p>追加したヘルプはまだありません。</p>
+        <div class="publishing-empty"><i class="fas fa-book-open" aria-hidden="true"></i><h2>最初のヘルプ記事を書きましょう</h2><p>操作の手順やよくある質問を、店舗管理者に共有できます。</p><a class="btn btn-primary" href="{{ route('system-admin.help-articles.create') }}">ヘルプ記事を書く</a></div>
         @else
         <table class="table">
             <thead>
@@ -21,9 +20,9 @@
             <tbody>
                 @foreach($articles as $article)
                 <tr>
-                    <td>{{ $article->title }}</td>
+                    <td><strong>{{ $article->title }}</strong><p class="form-text">{{ $article->summary }}</p></td>
                     <td>{{ $article->category === 'faq' ? 'よくある質問' : '使い方' }}</td>
-                    <td>{{ $article->is_published ? '公開' : '非公開' }}</td>
+                    <td><span class="publishing-badge {{ $article->is_published ? 'is-live' : '' }}">{{ $article->is_published ? '公開中' : '下書き' }}</span></td>
                     <td><a href="{{ route('system-admin.help-articles.edit', ['id' => $article->id]) }}">編集</a></td>
                 </tr>
                 @endforeach
@@ -33,3 +32,7 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/components/14-publishing.css') }}">
+@endpush
