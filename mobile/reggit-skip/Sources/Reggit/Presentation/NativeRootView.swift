@@ -123,7 +123,7 @@ struct NativeRootView: View {
         }
         .navigationDestination(isPresented: $viewModel.lotteryModalPresented) {
             if let client = viewModel.apiClient {
-                LotteryView(apiClient: client, gachaOnly: true)
+                LotteryView(apiClient: client)
             }
         }
         .navigationDestination(isPresented: Binding(
@@ -397,7 +397,8 @@ struct NativeRootView: View {
                 displayLayout: viewModel.productDisplayLayout,
                 paymentReturnOrderID: viewModel.paymentReturnOrderID,
                 paymentReturnSucceeded: viewModel.paymentReturnSucceeded,
-                paymentReturnRevision: viewModel.paymentReturnRevision
+                paymentReturnRevision: viewModel.paymentReturnRevision,
+                onPaymentConfirmed: { await viewModel.paymentConfirmed() }
             )
         case "orders":
             OrdersView(apiClient: client, reloadRevision: viewModel.ordersRevision)

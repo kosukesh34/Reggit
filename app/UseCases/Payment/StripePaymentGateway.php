@@ -79,6 +79,16 @@ class StripePaymentGateway implements PaymentGateway
         ];
     }
 
+    public function retrieveCheckoutSession(string $sessionId): array
+    {
+        $session = CheckoutSession::retrieve($sessionId);
+
+        return [
+            'payment_status' => (string) $session->payment_status,
+            'payment_intent_id' => (string) $session->payment_intent,
+        ];
+    }
+
     public function constructWebhookEvent(string $payload, string $sigHeader, string $secret): array
     {
         $event = Webhook::constructEvent($payload, $sigHeader, $secret);
