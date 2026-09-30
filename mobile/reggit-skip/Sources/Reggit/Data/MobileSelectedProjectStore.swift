@@ -1,14 +1,22 @@
 import Foundation
 
 enum MobileSelectedProjectStore {
-    private static let projectKeyDefaultsKey = "reggit.selected_project_key"
-    private static let selectedFlagKey = "reggit.project_selection_completed"
+    private static var projectKeyDefaultsKey: String { projectKeyDefaultsKey(for: .current) }
+
+    private static func projectKeyDefaultsKey(for environment: MobileConnectionEnvironment) -> String {
+        "reggit.selected_project_key." + environment.storageKey
+    }
+    private static var selectedFlagKey: String { "reggit.project_selection_completed." + MobileConnectionEnvironment.current.storageKey }
+
+    static func selectedProjectKey(for environment: MobileConnectionEnvironment) -> String? {
+        let value = UserDefaults.standard.string(forKey: projectKeyDefaultsKey(for: environment))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return (value?.isEmpty == false) ? value : nil
+    }
 
     static var selectedProjectKey: String? {
         get {
-            let value = UserDefaults.standard.string(forKey: projectKeyDefaultsKey)?
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            return (value?.isEmpty == false) ? value : nil
+            selectedProjectKey(for: .current)
         }
         set {
             if let newValue, !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

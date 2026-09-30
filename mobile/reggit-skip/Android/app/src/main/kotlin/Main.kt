@@ -61,6 +61,7 @@ open class AndroidAppMain: Application {
         super.onCreate()
         logger.info("starting app")
         ProcessInfo.launch(applicationContext)
+        AppDelegate.shared.onConfigureEnvironment(BuildConfig.DEBUG)
         ensureNotificationChannel(applicationContext)
         initFirebaseMessaging()
         AppDelegate.shared.onInit()
@@ -271,29 +272,9 @@ internal fun fetchCancelledAnnouncementItems(context: Context): List<CancelledAn
     }
 }
 
-private fun resolveCancelledIdsBaseUrl(context: Context): String? {
-    // Debug は iOS と同様に開発サーバ（ngrok）へ向ける。Skip.env の本番 URL だと取消しIDが取れない。
-    if (BuildConfig.DEBUG) {
-        return "https://unadministrable-idiocratically-annalee.ngrok-free.dev"
-    }
-    val meta = context.packageManager
-        .getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
-        .metaData
-    return listOf("LiffBaseUrlAndroid", "LIFF_BASE_URL_ANDROID", "LiffBaseUrl", "LIFF_BASE_URL")
-        .mapNotNull { key -> meta?.getString(key)?.trim()?.takeIf { it.isNotEmpty() && it != "undefined" && it != "null" } }
-        .firstOrNull()
-        ?.trimEnd('/')
-}
+private fun resolveCancelledIdsBaseUrl(context: Context): String? = AppDelegate.shared.connectionBaseURL()
 
-private fun resolveCancelledIdsProjectKey(context: Context): String {
-    val meta = context.packageManager
-        .getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
-        .metaData
-    return listOf("LiffProjectKeyAndroid", "LIFF_PROJECT_KEY_ANDROID", "LiffProjectKey", "LIFF_PROJECT_KEY")
-        .mapNotNull { key -> meta?.getString(key)?.trim()?.takeIf { it.isNotEmpty() && it != "undefined" && it != "null" } }
-        .firstOrNull()
-        ?: ""
-}
+private fun resolveCancelledIdsProjectKey(context: Context): String = AppDelegate.shared.connectionProjectKey()
 
 private fun parseCancelledAnnouncementItems(body: String): List<CancelledAnnouncementItem> {
     val json = JSONObject(body)
