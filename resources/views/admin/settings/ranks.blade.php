@@ -1,86 +1,22 @@
 @extends('admin.layout')
 
-@section('title', '会員証・ランク設定')
-@section('page-title', '会員証・ランク設定')
+@section('title', 'ランク・ポイント・スタンプ')
+@section('page-title', 'ランク・ポイント・スタンプ')
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.settings.index') }}">設定</a>
     <span class="breadcrumb-sep">/</span>
-    <span>会員証・ランク</span>
+    <span>ランク・ポイント・スタンプ</span>
 </nav>
 
 <form action="{{ admin_route('admin.settings.ranks.update') }}" method="POST" id="ranksSettingsForm">
     @csrf
 
-    {{-- タブナビゲーション --}}
-    <div class="ranks-settings-tabs" role="tablist" aria-label="設定セクション">
-        <button type="button" class="ranks-settings-tab ranks-settings-tab--active" role="tab" aria-selected="true" aria-controls="panel-basic" id="tab-basic">基本設定</button>
-        <button type="button" class="ranks-settings-tab" role="tab" aria-selected="false" aria-controls="panel-card" id="tab-card">会員証表示</button>
-        <button type="button" class="ranks-settings-tab" role="tab" aria-selected="false" aria-controls="panel-ranks" id="tab-ranks">ランク一覧</button>
-    </div>
-
+    @include('admin.settings._section-tabs', ['tabsLabel' => 'ランク・ポイント・スタンプ', 'sectionTabs' => ['loyalty-ranks' => 'ランク', 'loyalty-points' => 'ポイント', 'loyalty-stamps' => 'スタンプ']])
     <div class="ranks-settings-panels">
-        {{-- 基本設定 --}}
-        <section class="ranks-settings-panel ranks-settings-panel--active" id="panel-basic" role="tabpanel" aria-labelledby="tab-basic">
-            <div class="card card-mb-24">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-cog"></i> 基本設定</h3>
-                </div>
-                <div class="card-body">
-
-                    <div class="ranks-settings-subsection">
-                        <h4 class="ranks-settings-subtitle"><i class="fas fa-toggle-on"></i> 機能の利用</h4>
-                        <p class="form-text text-muted">オフにした機能は顧客画面に出さず、スマレジWebhookでも付与しません。</p>
-                        <div class="ranks-settings-checkboxes">
-                            <label class="checkbox-label checkbox-block">
-                                <input type="hidden" name="use_points" value="0">
-                                <input type="checkbox" name="use_points" id="use_points" value="1" {{ old('use_points', $view->usePoints ?? true) ? 'checked' : '' }}>
-                                <span>ポイント機能を利用する</span>
-                            </label>
-                            <label class="checkbox-label checkbox-block">
-                                <input type="hidden" name="use_stamps" value="0">
-                                <input type="checkbox" name="use_stamps" id="use_stamps" value="1" {{ old('use_stamps', $view->useStamps ?? true) ? 'checked' : '' }}>
-                                <span>スタンプ機能を利用する</span>
-                            </label>
-                            <label class="checkbox-label checkbox-block" id="use_transaction_stamps_wrap">
-                                <input type="hidden" name="use_transaction_stamps" value="0">
-                                <input type="checkbox" name="use_transaction_stamps" id="use_transaction_stamps" value="1" {{ old('use_transaction_stamps', $view->useTransactionStamps ?? true) ? 'checked' : '' }}>
-                                <span>取引連動スタンプを利用する</span>
-                            </label>
-                        </div>
-                        <p class="form-text text-muted">取引連動スタンプは、スマレジPOSの会計時にランク別レートで、会員が現在持っているスタンプラリーへ付与します。スタンプ機能がオフのときは使えません。</p>
-                    </div>
-
-                    <div class="ranks-settings-subsection">
-                        <h4 class="ranks-settings-subtitle"><i class="fas fa-id-card"></i> 会員コード</h4>
-                        <p class="form-text text-muted">新規会員登録時に発行する会員番号の生成方法。スマレジ連携時は20文字以内で送信されます。</p>
-                        <div class="ranks-settings-fields">
-                            <div class="form-group">
-                                <label for="member_code_type" class="form-label">生成方式</label>
-                                <select name="member_code_type" id="member_code_type" class="form-control">
-                                    <option value="random" {{ old('member_code_type', $view->memberCodeType ?? 'random') === 'random' ? 'selected' : '' }}>ランダム</option>
-                                    <option value="sequential" {{ old('member_code_type', $view->memberCodeType ?? '') === 'sequential' ? 'selected' : '' }}>連番</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="member_code_format" class="form-label">形式</label>
-                                <select name="member_code_format" id="member_code_format" class="form-control">
-                                    <option value="numeric" {{ old('member_code_format', $view->memberCodeFormat ?? 'numeric') === 'numeric' ? 'selected' : '' }}>数字のみ</option>
-                                    <option value="alphanumeric" {{ old('member_code_format', $view->memberCodeFormat ?? '') === 'alphanumeric' ? 'selected' : '' }}>英数字混在</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="member_code_length" class="form-label">桁数（プレフィックス除く）</label>
-                                <input type="number" name="member_code_length" id="member_code_length" class="form-control" value="{{ old('member_code_length', $view->memberCodeLength ?? 10) }}" min="1" max="20">
-                            </div>
-                            <div class="form-group">
-                                <label for="member_code_prefix" class="form-label">プレフィックス（任意）</label>
-                                <input type="text" name="member_code_prefix" id="member_code_prefix" class="form-control" value="{{ old('member_code_prefix', $view->memberCodePrefix ?? '') }}" maxlength="10" pattern="[A-Za-z0-9]*" placeholder="例: M">
-                            </div>
-                        </div>
-                    </div>
-
+        <section id="loyalty-ranks">
+            <div class="card card-mb-24"><div class="card-header"><h3 class="card-title">ランクの判定条件</h3></div><div class="card-body">
                     <div class="ranks-settings-subsection">
                         <h4 class="ranks-settings-subtitle"><i class="fas fa-layer-group"></i> ランク判定基準</h4>
                         <div class="ranks-settings-fields">
@@ -119,124 +55,7 @@
                         </div>
                     </div>
 
-                    <div class="ranks-settings-subsection" id="points_settings_section">
-                        <h4 class="ranks-settings-subtitle"><i class="fas fa-coins"></i> ポイント</h4>
-                        <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}で注文完了時に付与するポイントを設定します。</p>
-                        <div class="ranks-settings-fields">
-                            <div class="form-group">
-                                <label for="points_per_order" class="form-label">注文ごとの固定ポイント（pt）</label>
-                                <input type="number" name="points_per_order" id="points_per_order" class="form-control" value="{{ old('points_per_order', $view->pointsPerOrder ?? 0) }}" min="0" max="99999" placeholder="0で無効">
-                                <p class="form-text text-muted">例: 100 で毎回の注文に100pt付与。0の場合は付与しません。</p>
-                            </div>
-                            <div class="form-group">
-                                <label for="point_earn_rate" class="form-label">デフォルト付与レート（円/1pt）</label>
-                                <input type="number" name="point_earn_rate" id="point_earn_rate" class="form-control" value="{{ old('point_earn_rate', $view->pointEarnRate ?? 100) }}" min="1" max="99999" required>
-                                <p class="form-text text-muted">例: 100 で100円ごとに1pt付与。ランク別レートが未設定のときのデフォルトです。保存時にスマレジ会員ランクへも同期します。</p>
-                            </div>
-                            <div class="form-group">
-                                <label for="points_valid_days" class="form-label">有効期限（日）</label>
-                                <input type="number" name="points_valid_days" id="points_valid_days" class="form-control" value="{{ old('points_valid_days', $view->pointsValidDays ?? 365) }}" min="1" max="3650" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="ranks-settings-subsection" id="stamps_settings_section">
-                        <h4 class="ranks-settings-subtitle"><i class="fas fa-stamp"></i> スタンプ（注文・取引連動）</h4>
-                        <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}の注文完了時、および取引連動スタンプON時のスマレジ会計で、会員が現在持っているスタンプラリーに付与します。未開始の場合は表示中のカードから付与を開始します。ランク別レートが未入力のときはこのデフォルトを使います。</p>
-                        <div class="ranks-settings-fields">
-                            <div class="form-group">
-                                <label for="stamp_earn_per_amount" class="form-label">付与レート（円/1スタンプ）</label>
-                                <input type="number" name="stamp_earn_per_amount" id="stamp_earn_per_amount" class="form-control" value="{{ old('stamp_earn_per_amount', $view->stampEarnPerAmount ?? 0) }}" min="0" max="10000000" placeholder="0で無効">
-                                <p class="form-text text-muted">例: 1000 で1000円ごとに1スタンプ付与。0の場合は付与しません。スタンプカードが無い場合は <a href="{{ admin_route('admin.stamps.create') }}">スタンプ</a> から作成してください。</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        {{-- 会員証表示 --}}
-        <section class="ranks-settings-panel" id="panel-card" role="tabpanel" aria-labelledby="tab-card" hidden>
-            <div class="card card-mb-24">
-                <div class="card-header">
-                    <h3 class="card-title"><i class="fas fa-eye"></i> 会員証の表示</h3>
-                </div>
-                <div class="card-body">
-
-                    <div class="ranks-settings-subsection">
-                        <h4 class="ranks-settings-subtitle">表示オプション</h4>
-                        <div class="ranks-settings-checkboxes">
-                            <label class="form-check" id="show_points_display_wrap">
-                                <input type="hidden" name="show_points_display" value="0">
-                                <input type="checkbox" name="show_points_display" value="1" {{ old('show_points_display', $view->showPointsDisplay ?? true) ? 'checked' : '' }}>
-                                ポイント数を表示する
-                            </label>
-                            <label class="form-check">
-                                <input type="hidden" name="show_rank_progress" value="0">
-                                <input type="checkbox" name="show_rank_progress" value="1" {{ old('show_rank_progress', $view->showRankProgress ?? true) ? 'checked' : '' }}>
-                                ランクアップまでの条件を表示する
-                            </label>
-                            <label class="form-check">
-                                <input type="hidden" name="show_member_card_for_guest" value="0">
-                                <input type="checkbox" name="show_member_card_for_guest" value="1" {{ old('show_member_card_for_guest', $view->showMemberCardForGuest ?? true) ? 'checked' : '' }}>
-                                ゲストにも会員証エリアを表示する
-                            </label>
-                        </div>
-                        <p class="form-text text-muted">オフにすると会員未登録時は「会員登録すると会員証が表示されます」などのメッセージのみ表示します。</p>
-                    </div>
-
-                    <div class="ranks-settings-subsection">
-                        <h4 class="ranks-settings-subtitle">会員証画面の情報</h4>
-                        <p class="form-text text-muted">氏名・電話番号などのユーザー情報は表示せず、会員証の下に表示する情報を選択できます。</p>
-                        <div class="ranks-settings-checkboxes">
-                            @foreach([
-                                'member_show_rank_progress' => ['次のランクまでの進捗', $view->memberShowRankProgress ?? true],
-                                'member_show_point_history' => ['ポイント付与・利用履歴', $view->memberShowPointHistory ?? true],
-                                'member_show_coupon_activity' => ['最近獲得したクーポン', $view->memberShowCouponActivity ?? true],
-                            ] as $field => [$label, $enabled])
-                                <label class="form-check">
-                                    <input type="hidden" name="{{ $field }}" value="0">
-                                    <input type="checkbox" name="{{ $field }}" value="1" {{ old($field, $enabled) ? 'checked' : '' }}>
-                                    {{ $label }}
-                                </label>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <div class="ranks-settings-subsection">
-                        <h4 class="ranks-settings-subtitle">デザイン・表示形式</h4>
-                        <div class="form-group">
-                            <label for="member_card_design" class="form-label">会員証デザイン</label>
-                            <select name="member_card_design" id="member_card_design" class="form-control">
-                                @foreach(['default' => 'スタンダード', 'compact' => 'シンプル', 'ticket' => 'チケット', 'minimal_line' => 'ミニマル', 'split_banner' => 'スプリット', 'logo_header' => 'レジ提示', 'logo_top' => 'ポイント', 'wallet' => 'ウォレット', 'emblem' => 'デジタルパス', 'logo_center' => 'ロゴ中央'] as $designKey => $designLabel)
-                                    <option value="{{ $designKey }}" {{ old('member_card_design', $view->memberCardDesign ?? 'default') === $designKey ? 'selected' : '' }}>{{ $designLabel }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="ranks-settings-fields ranks-settings-fields--wide">
-                            <div class="form-group">
-                                <label for="member_card_display_type" class="form-label">表示形式</label>
-                                <select name="member_card_display_type" id="member_card_display_type" class="form-control">
-                                    <option value="card" {{ old('member_card_display_type', $view->memberCardDisplayType ?? 'card') === 'card' ? 'selected' : '' }}>カード型（裏表・タップで裏返し）</option>
-                                    <option value="sheet" {{ old('member_card_display_type', $view->memberCardDisplayType ?? '') === 'sheet' ? 'selected' : '' }}>シート型（1面）</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="member_card_code_type" class="form-label">会員番号の表示</label>
-                                <select name="member_card_code_type" id="member_card_code_type" class="form-control">
-                                    <option value="barcode" {{ old('member_card_code_type', $view->memberCardCodeType ?? 'barcode') === 'barcode' ? 'selected' : '' }}>バーコード</option>
-                                    <option value="qrcode" {{ old('member_card_code_type', $view->memberCardCodeType ?? '') === 'qrcode' ? 'selected' : '' }}>QRコード</option>
-                                </select>
-                            </div>
-                        </div>
-                        <p class="form-text text-muted">ロゴ画像は <a href="{{ admin_route('admin.settings.features') }}">機能設定</a> のヘッダー画像です。</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        {{-- ランク一覧 --}}
-        <section class="ranks-settings-panel" id="panel-ranks" role="tabpanel" aria-labelledby="tab-ranks" hidden>
+            </div></div>
             <div class="card card-mb-24">
                 @php
                     $defaultPointEarnRate = (int) old('point_earn_rate', $view->pointEarnRate ?? 100);
@@ -297,7 +116,42 @@
                 </div>
             </div>
         </section>
+        <section id="loyalty-points"><div class="card"><div class="card-header"><h3 class="card-title">ポイントの付与・有効期限</h3></div><div class="card-body">
+                    <div class="ranks-settings-subsection" id="points_settings_section">
+                        <h4 class="ranks-settings-subtitle"><i class="fas fa-coins"></i> ポイント</h4>
+                        <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}で注文完了時に付与するポイントを設定します。</p>
+                        <div class="ranks-settings-fields">
+                            <div class="form-group">
+                                <label for="points_per_order" class="form-label">注文ごとの固定ポイント（pt）</label>
+                                <input type="number" name="points_per_order" id="points_per_order" class="form-control" value="{{ old('points_per_order', $view->pointsPerOrder ?? 0) }}" min="0" max="99999" placeholder="0で無効">
+                                <p class="form-text text-muted">例: 100 で毎回の注文に100pt付与。0の場合は付与しません。</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="point_earn_rate" class="form-label">デフォルト付与レート（円/1pt）</label>
+                                <input type="number" name="point_earn_rate" id="point_earn_rate" class="form-control" value="{{ old('point_earn_rate', $view->pointEarnRate ?? 100) }}" min="1" max="99999" required>
+                                <p class="form-text text-muted">例: 100 で100円ごとに1pt付与。ランク別レートが未設定のときのデフォルトです。保存時にスマレジ会員ランクへも同期します。</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="points_valid_days" class="form-label">有効期限（日）</label>
+                                <input type="number" name="points_valid_days" id="points_valid_days" class="form-control" value="{{ old('points_valid_days', $view->pointsValidDays ?? 365) }}" min="1" max="3650" required>
+                            </div>
+                        </div>
+                    </div>
 
+        </div></div></section>
+        <section id="loyalty-stamps"><div class="card"><div class="card-header"><h3 class="card-title">スタンプの付与</h3></div><div class="card-body">
+                    <div class="ranks-settings-subsection" id="stamps_settings_section">
+                        <h4 class="ranks-settings-subtitle"><i class="fas fa-stamp"></i> スタンプ（注文・取引連動）</h4>
+                        <p class="form-text text-muted">{{ config('native_app.order_type_mobile_label', 'Reggit') }}の注文完了時、および取引連動スタンプON時のスマレジ会計で、会員が現在持っているスタンプラリーに付与します。未開始の場合は表示中のカードから付与を開始します。ランク別レートが未入力のときはこのデフォルトを使います。</p>
+                        <div class="ranks-settings-fields">
+                            <div class="form-group">
+                                <label for="stamp_earn_per_amount" class="form-label">付与レート（円/1スタンプ）</label>
+                                <input type="number" name="stamp_earn_per_amount" id="stamp_earn_per_amount" class="form-control" value="{{ old('stamp_earn_per_amount', $view->stampEarnPerAmount ?? 0) }}" min="0" max="10000000" placeholder="0で無効">
+                                <p class="form-text text-muted">例: 1000 で1000円ごとに1スタンプ付与。0の場合は付与しません。スタンプカードが無い場合は <a href="{{ admin_route('admin.stamps.create') }}">スタンプ</a> から作成してください。</p>
+                            </div>
+                        </div>
+                    </div>
+        </div></div></section>
     </div>
 
     <div class="form-actions form-actions-ranks">
@@ -324,79 +178,6 @@
 </template>
 
 <script>
-(function() {
-    var tabButtons = document.querySelectorAll('.ranks-settings-tab');
-    var panels = document.querySelectorAll('.ranks-settings-panel');
-    function switchTab(activeId) {
-        tabButtons.forEach(function(btn) {
-            var isActive = btn.id === 'tab-' + activeId;
-            btn.classList.toggle('ranks-settings-tab--active', isActive);
-            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-        });
-        panels.forEach(function(panel) {
-            var match = panel.id === 'panel-' + activeId;
-            panel.classList.toggle('ranks-settings-panel--active', match);
-            panel.hidden = !match;
-        });
-    }
-    tabButtons.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var id = this.id.replace('tab-', '');
-            switchTab(id);
-        });
-    });
-})();
-
-(function() {
-    var useStamps = document.getElementById('use_stamps');
-    var useTx = document.getElementById('use_transaction_stamps');
-    var useTxWrap = document.getElementById('use_transaction_stamps_wrap');
-    var usePoints = document.getElementById('use_points');
-    var pointsSection = document.getElementById('points_settings_section');
-    var stampsSection = document.getElementById('stamps_settings_section');
-    var periodFields = document.getElementById('rank_period_fields');
-    var showPointsWrap = document.getElementById('show_points_display_wrap');
-
-    function isPeriod() {
-        var checked = document.querySelector('input[name="rank_aggregation_type"]:checked');
-        return checked !== null && checked.value === 'period';
-    }
-
-    function syncLoyaltyUi() {
-        var stampsOn = useStamps !== null && useStamps.checked;
-        var pointsOn = usePoints !== null && usePoints.checked;
-        if (useTxWrap !== null) {
-            useTxWrap.classList.toggle('is-hidden', !stampsOn);
-        }
-        if (useTx !== null && !stampsOn) {
-            useTx.checked = false;
-        }
-        if (pointsSection !== null) {
-            pointsSection.classList.toggle('is-hidden', !pointsOn);
-        }
-        if (showPointsWrap !== null) {
-            showPointsWrap.classList.toggle('is-hidden', !pointsOn);
-        }
-        if (stampsSection !== null) {
-            stampsSection.classList.toggle('is-hidden', !stampsOn);
-        }
-        if (periodFields !== null) {
-            periodFields.classList.toggle('is-hidden', !isPeriod());
-        }
-    }
-
-    if (useStamps !== null) {
-        useStamps.addEventListener('change', syncLoyaltyUi);
-    }
-    if (usePoints !== null) {
-        usePoints.addEventListener('change', syncLoyaltyUi);
-    }
-    document.querySelectorAll('input[name="rank_aggregation_type"]').forEach(function(radio) {
-        radio.addEventListener('change', syncLoyaltyUi);
-    });
-    syncLoyaltyUi();
-})();
-
 document.getElementById('addRankRow')?.addEventListener('click', function() {
     var tableBody = document.querySelector('#rankSettingsTable tbody');
     var template = document.getElementById('rankRowTemplate');
@@ -463,4 +244,15 @@ document.getElementById('addRankRow')?.addEventListener('click', function() {
     }
 })();
 </script>
+@push('scripts')
+<script>
+(function () {
+    const inputs = document.querySelectorAll('[name="rank_aggregation_type"]');
+    const panel = document.getElementById('rank_period_fields');
+    const update = () => { panel.hidden = document.querySelector('[name="rank_aggregation_type"]:checked')?.value !== 'period'; };
+    inputs.forEach(input => input.addEventListener('change', update));
+    update();
+})();
+</script>
+@endpush
 @endsection

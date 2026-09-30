@@ -1,17 +1,17 @@
 @extends('admin.layout')
 
-@section('title', 'LIFF設定')
-@section('page-title', 'LIFF設定')
+@section('title', 'LINE接続・通知API')
+@section('page-title', 'LINE接続・通知API')
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
+    <a href="{{ admin_route('admin.settings.index') }}">店舗設定</a>
     <span class="breadcrumb-sep">/</span>
-    <span>LIFF設定</span>
+    <span>LINE接続・通知API</span>
 </nav>
 
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fab fa-line"></i> LIFF設定</h1>
+    <h1 class="page-header-title"><i class="fab fa-line"></i> LINE接続・通知API</h1>
 </div>
 
 

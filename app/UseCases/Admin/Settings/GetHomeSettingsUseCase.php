@@ -31,16 +31,19 @@ class GetHomeSettingsUseCase
                 'enabled' => $this->normalizeEnabled($saved['enabled'] ?? null),
             ];
         });
-        $linkTabs = collect(is_array($raw) ? $raw : [])->filter(
-            fn ($item) => is_array($item) && in_array($item['tab'] ?? '', LiffDesignerSanitizer::LINK_MENU_TABS, true)
-        )->map(fn ($item) => [
-            'tab' => (string) $item['tab'],
-            'label' => (string) ($item['label'] ?? 'リンク'),
-            'icon' => (string) ($item['icon'] ?? 'fa-globe'),
-            'order' => (int) ($item['order'] ?? 999),
-            'enabled' => $this->normalizeEnabled($item['enabled'] ?? null),
-            'url' => (string) ($item['url'] ?? ''),
-        ]);
+        $linkTabs = collect(LiffDesignerSanitizer::LINK_MENU_TABS)->map(function ($tab, $index) use ($byTab) {
+            $item = $byTab->get($tab, []);
+
+            return [
+                'tab' => $tab,
+                'label' => (string) ($item['label'] ?? 'Webページ'.($index + 1)),
+                'icon' => (string) ($item['icon'] ?? 'fa-globe'),
+                'order' => (int) ($item['order'] ?? 999 + $index),
+                'enabled' => isset($item['url']) && $this->normalizeEnabled($item['enabled'] ?? null),
+                'url' => (string) ($item['url'] ?? ''),
+                'open' => ($item['open'] ?? 'embed') === 'external' ? 'external' : 'embed',
+            ];
+        });
         $tabs = $tabs->concat($linkTabs)->sortBy('order')->values()->all();
 
         $availableIcons = collect($defaults)->pluck('icon')->merge(collect($tabs)->pluck('icon'))->push('fa-globe')->unique()->values()->all();

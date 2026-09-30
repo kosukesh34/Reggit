@@ -31,6 +31,20 @@ class AdminSettingsMenuTest extends TestCase
         ]);
     }
 
+    public function test_settings_hub_groups_settings_and_includes_line_connection(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project->id);
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.settings.index', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('role="tablist"', false)
+            ->assertSee('店舗運用')
+            ->assertSee('画面・デザイン')
+            ->assertSee('連携・管理')
+            ->assertSee(route('admin.settings.liff-connection', ['project_key' => $project->project_key]), false);
+    }
+
     /** メニュー設定URLはホーム設定へリダイレクトする（統合済み） */
     public function test_menu_settings_メニュー設定にアクセスするとホーム設定にリダイレクトすること(): void
     {

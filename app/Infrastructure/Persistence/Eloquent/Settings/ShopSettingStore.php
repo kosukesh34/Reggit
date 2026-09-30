@@ -320,8 +320,8 @@ class ShopSettingStore
                 if (! isset($item['url']) || preg_match('/^https:\/\//i', (string) $item['url']) !== 1) {
                     continue;
                 }
-                // リンクタブはアプリ内埋め込みを優先（旧デフォルト external も上書き）
-                $item['open'] = 'embed';
+                // 保存されたブラウザの選択を維持する。
+                $item['open'] = ($item['open'] ?? 'embed') === 'external' ? 'external' : 'embed';
                 $merged[] = $item;
             }
         }

@@ -1,11 +1,11 @@
 @extends('admin.layout')
-@section('title', '順番待ち設定')
-@section('page-title', '順番待ち設定')
+@section('title', '順番待ち')
+@section('page-title', '順番待ち')
 
 @section('content')
-<nav class="breadcrumb"><a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a><span class="breadcrumb-sep">/</span><a href="{{ admin_route('admin.queue') }}">順番待ち</a><span class="breadcrumb-sep">/</span><span>順番待ち設定</span></nav>
+<nav class="breadcrumb"><a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a><span class="breadcrumb-sep">/</span><a href="{{ admin_route('admin.queue') }}">順番待ち</a><span class="breadcrumb-sep">/</span><span>順番待ち</span></nav>
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-list-ol"></i> 順番待ち設定</h1>
+    <h1 class="page-header-title"><i class="fas fa-list-ol"></i> 順番待ち</h1>
 </div>
 @if($errors->any())
     <div class="alert alert-danger">

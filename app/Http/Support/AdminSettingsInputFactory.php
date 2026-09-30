@@ -2,21 +2,23 @@
 
 namespace App\Http\Support;
 
+use App\Http\Requests\Admin\SettingsProfileRequest;
 use App\UseCases\Admin\Settings\Data\UpdateProfileSettingsInput;
 use App\UseCases\Admin\Settings\Data\UpdateWalletSettingsInput;
 use Illuminate\Http\Request;
 
 class AdminSettingsInputFactory
 {
-    public function profileSettings(int $projectId, Request $request): UpdateProfileSettingsInput
+    public function profileSettings(int $projectId, SettingsProfileRequest $request): UpdateProfileSettingsInput
     {
-        $rawCustomFields = $request->input('custom_fields');
+        $validated = $request->validated();
+        $rawCustomFields = $validated['custom_fields'] ?? null;
 
         return new UpdateProfileSettingsInput(
             projectId: $projectId,
-            rawSmaregiFields: (array) $request->input('smaregi_fields', []),
+            rawSmaregiFields: $validated['smaregi_fields'] ?? [],
             rawCustomFields: is_array($rawCustomFields) ? $rawCustomFields : null,
-            memberRegistrationMode: (string) $request->input('member_registration_mode', ''),
+            memberRegistrationMode: $validated['member_registration_mode'],
         );
     }
 

@@ -13,7 +13,7 @@ class AdminRankSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_ランク設定画面に機能トグルと期間設定があること(): void
+    public function test_ランク設定画面に期間設定があり機能トグルがないこと(): void
     {
         $project = Project::factory()->create();
         $admin = AdminUser::factory()->create([
@@ -24,9 +24,9 @@ class AdminRankSettingsTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.ranks', ['project_key' => $project->project_key]))
             ->assertOk()
-            ->assertSee('ポイント機能を利用する', false)
-            ->assertSee('スタンプ機能を利用する', false)
-            ->assertSee('取引連動スタンプを利用する', false)
+            ->assertDontSee('name="use_points"', false)
+            ->assertDontSee('name="use_stamps"', false)
+            ->assertDontSee('name="use_transaction_stamps"', false)
             ->assertSee('name="rank_aggregation_type"', false)
             ->assertSee('集計期間（日）', false)
             ->assertSee('name="ranks[0][stamp_earn_per_amount]"', false)
@@ -34,7 +34,7 @@ class AdminRankSettingsTest extends TestCase
             ->assertDontSee('付与先スタンプカード', false);
     }
 
-    public function test_ランク設定画面で会員証デザインを選べること(): void
+    public function test_会員証デザイン画面でデザインを選べること(): void
     {
         $project = Project::factory()->create();
         $admin = AdminUser::factory()->create([
@@ -43,7 +43,7 @@ class AdminRankSettingsTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->get(route('admin.settings.ranks', ['project_key' => $project->project_key]))
+            ->get(route('admin.settings.member-card', ['project_key' => $project->project_key]))
             ->assertOk()
             ->assertSee('name="member_card_design"', false)
             ->assertSee('value="compact"', false)
@@ -59,14 +59,14 @@ class AdminRankSettingsTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->get(route('admin.settings.ranks', ['project_key' => $project->project_key]))
+            ->get(route('admin.settings.member-card', ['project_key' => $project->project_key]))
             ->assertOk()
             ->assertSee('name="member_show_rank_progress"', false)
             ->assertSee('name="member_show_point_history"', false)
             ->assertSee('name="member_show_coupon_activity"', false);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.member-card.update', ['project_key' => $project->project_key]), [
                 'rank_basis' => 'points',
                 'rank_aggregation_type' => RankAggregationType::TOTAL,
                 'rank_period_days' => 365,
@@ -93,7 +93,7 @@ class AdminRankSettingsTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.member-card.update', ['project_key' => $project->project_key]), [
                 'rank_basis' => 'points',
                 'rank_aggregation_type' => RankAggregationType::TOTAL,
                 'rank_period_days' => 365,
@@ -138,7 +138,7 @@ class AdminRankSettingsTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.member-card.update', ['project_key' => $project->project_key]), [
                 'rank_basis' => 'points',
                 'rank_aggregation_type' => RankAggregationType::TOTAL,
                 'rank_period_days' => 365,
@@ -165,7 +165,7 @@ class AdminRankSettingsTest extends TestCase
         $this->assertSame('ticket', $tabSettings['_global']['app_customization']['membership']['template'] ?? null);
     }
 
-    public function test_ランク設定に機能トグルと期間を保存できること(): void
+    public function test_ランク設定に期間と付与率を保存できること(): void
     {
         $project = Project::factory()->create();
         $admin = AdminUser::factory()->create([
@@ -229,12 +229,12 @@ class AdminRankSettingsTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.ranks.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
                 'rank_basis' => 'points',
                 'rank_aggregation_type' => RankAggregationType::TOTAL,
                 'rank_period_days' => 365,
                 'use_points' => '1',
-                'use_stamps' => '0',
+                'features' => [],
                 'use_transaction_stamps' => '1',
                 'point_earn_rate' => 100,
                 'points_valid_days' => 365,

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\UseCases\Admin\Settings\Data\UpdateHomeSettingsInput;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SettingsHomeRequest extends FormRequest
@@ -21,6 +22,8 @@ class SettingsHomeRequest extends FormRequest
             'tabs' => 'nullable|array',
             'tabs.*.tab' => 'nullable|string|max:64',
             'tabs.*.label' => 'nullable|string|max:255',
+            'tabs.*.open' => 'nullable|in:embed,external',
+            'tabs.*.url' => 'nullable|url:https|max:1000',
             'tabs.*.icon' => 'nullable|string|max:64',
             'tabs.*.order' => 'nullable|integer|min:0',
             'tabs.*.enabled' => 'nullable|boolean',
@@ -45,5 +48,28 @@ class SettingsHomeRequest extends FormRequest
             'native_navigation.hamburger' => 'nullable|array',
             'native_navigation.hamburger.*' => 'string|max:64',
         ];
+    }
+
+    public function toInput(int $projectId): UpdateHomeSettingsInput
+    {
+        $v = $this->validated();
+
+        return new UpdateHomeSettingsInput(
+            projectId: $projectId,
+            tabs: $v['tabs'] ?? [],
+            menuLayout: $v['home_menu_layout'],
+            productLayout: $v['product_display_layout'],
+            navigation: ($v['native_navigation_present'] ?? false) ? ($v['native_navigation'] ?? []) : null,
+            showMemberCard: array_key_exists('home_show_member_card', $v) ? (bool) $v['home_show_member_card'] : null,
+            headerImage: $this->file('navigation_header_image'),
+            clearHeaderImage: (bool) ($v['navigation_header_image_clear'] ?? false),
+            homeImage: $this->file('home_image'),
+            clearHomeImage: (bool) ($v['home_image_clear'] ?? false),
+            homeImages: $this->file('home_images', []),
+            removedHomeImages: array_map('intval', $v['home_image_remove'] ?? []),
+            homeImagesPresent: (bool) ($v['home_images_present'] ?? false),
+            headerBackground: $v['navigation_header_background_color'] ?? null,
+            nativeColors: $v['native_chrome_colors'] ?? null,
+        );
     }
 }

@@ -2,20 +2,23 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Services\SettingsService;
+use App\Domain\Settings\Repositories\HomeSettingsRepository;
+use App\UseCases\Admin\Settings\Data\UpdateAppColorsInput;
 
 class UpdateAdvancedSettingsUseCase
 {
-    private SettingsService $settingsService;
+    public function __construct(private HomeSettingsRepository $settings) {}
 
-    public function __construct(SettingsService $settingsService)
+    public function handle(UpdateAppColorsInput $input): void
     {
-        $this->settingsService = $settingsService;
-    }
-
-    /** @param array<string, mixed> $validated */
-    public function handle(int $projectId, array $validated): void
-    {
-        $this->settingsService->updateLineThemeSettings($validated, $projectId);
+        foreach (['line_success_color' => $input->successColor, 'line_danger_color' => $input->dangerColor, 'navigation_header_background_color' => $input->headerBackground] as $key => $value) {
+            if ($value !== null && $value !== '') {
+                $this->settings->setValue($key, $key === 'navigation_header_background_color' ? strtoupper($value) : $value, 'string', $input->projectId);
+            }
+        }
+        if ($input->nativeColors !== null) {
+            $existing = $this->settings->getValue('native_chrome_colors', [], $input->projectId);
+            $this->settings->setValue('native_chrome_colors', array_replace(is_array($existing) ? $existing : [], array_map('strtoupper', $input->nativeColors)), 'json', $input->projectId);
+        }
     }
 }

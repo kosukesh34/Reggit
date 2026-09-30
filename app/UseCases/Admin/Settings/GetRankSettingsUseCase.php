@@ -12,37 +12,22 @@ class GetRankSettingsUseCase
         private RankSettings $shopSettingRepository,
     ) {}
 
-    public function handle(int $projectId): RankSettingsView
+    public function handle(int $projectId, bool $ensureStampCard = true): RankSettingsView
     {
-        $this->ensureDefaultStampCardExists($projectId);
+        if ($ensureStampCard) {
+            $this->ensureDefaultStampCardExists($projectId);
+        }
 
         return new RankSettingsView(
             $this->shopSettingRepository->getMemberRankSettings($projectId),
             $this->shopSettingRepository->getRankBasis($projectId),
             $this->shopSettingRepository->getPointEarnRate($projectId),
             $this->shopSettingRepository->getPointsValidDays($projectId),
-            $this->shopSettingRepository->getMemberCodeType($projectId),
-            $this->shopSettingRepository->getMemberCodeFormat($projectId),
-            $this->shopSettingRepository->getMemberCodeLength($projectId),
-            $this->shopSettingRepository->getMemberCodePrefix($projectId),
-            $this->shopSettingRepository->getShowPointsDisplay($projectId),
-            $this->shopSettingRepository->getShowRankProgress($projectId),
-            $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
-            $this->shopSettingRepository->getMemberCardDesign($projectId),
-            $this->shopSettingRepository->getFrontendLogoUrl($projectId),
-            $this->shopSettingRepository->getMemberCardDisplayType($projectId),
-            $this->shopSettingRepository->getMemberCardCodeType($projectId),
             $this->shopSettingRepository->getPointsPerOrder($projectId),
             $this->shopSettingRepository->getStampEarnPerAmount($projectId),
-            $this->shopSettingRepository->getUseStamps($projectId),
-            $this->shopSettingRepository->getUseTransactionStamps($projectId),
-            $this->shopSettingRepository->getUsePoints($projectId),
             $this->shopSettingRepository->getRankAggregationType($projectId),
             $this->shopSettingRepository->getRankPeriodDays($projectId),
             $this->shopSettingRepository->getIsRankDownEnabled($projectId),
-            (bool) $this->shopSettingRepository->getValue('member_show_rank_progress', true, $projectId),
-            (bool) $this->shopSettingRepository->getValue('member_show_point_history', true, $projectId),
-            (bool) $this->shopSettingRepository->getValue('member_show_coupon_activity', true, $projectId),
         );
     }
 

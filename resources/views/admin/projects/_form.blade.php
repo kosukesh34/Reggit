@@ -112,7 +112,7 @@
 </div>
 @endif
 
-@if(! $view->isOnboarding)
+@if(! $view->isOnboarding && ! $view->project)
 <div class="card mt-3">
     <div class="card-header">
         <h3 class="card-title"><i class="fab fa-line"></i> LINE連携（必須）</h3>

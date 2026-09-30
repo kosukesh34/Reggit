@@ -98,7 +98,7 @@ class LiffSettingsService
             ->filter(fn ($item) => in_array($item['tab'] ?? '', LiffDesignerSanitizer::LINK_MENU_TABS, true)
                 && isset($item['url']))
             ->map(function (array $item) {
-                $item['open'] = 'embed';
+                $item['open'] = ($item['open'] ?? 'embed') === 'external' ? 'external' : 'embed';
 
                 return $item;
             });

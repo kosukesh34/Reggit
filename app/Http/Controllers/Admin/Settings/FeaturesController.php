@@ -6,38 +6,23 @@ use App\Http\Controllers\Admin\AdminBaseController;
 use App\Http\Requests\Admin\UpdateFeatureSettingsRequest;
 use App\UseCases\Admin\Settings\GetFeatureSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateFeatureSettingsUseCase;
-use Illuminate\Http\UploadedFile;
 
 class FeaturesController extends AdminBaseController
 {
-    public function __construct(
-        private GetFeatureSettingsUseCase $getFeatureSettingsUseCase,
-        private UpdateFeatureSettingsUseCase $updateFeatureSettingsUseCase
-    ) {}
-
-    public function index()
+    public function index(GetFeatureSettingsUseCase $getSettings)
     {
-        $projectId = $this->resolveAdminProjectId();
-        $view = $this->getFeatureSettingsUseCase->handle($projectId);
-
-        return view('admin.settings.features', ['view' => $view]);
+        return view('admin.settings.features', [
+            'view' => $getSettings->handle($this->resolveAdminProjectId()),
+            'featureSection' => 'features',
+            'featureRoute' => 'admin.settings.features',
+        ]);
     }
 
-    public function update(UpdateFeatureSettingsRequest $request)
+    public function update(UpdateFeatureSettingsRequest $request, UpdateFeatureSettingsUseCase $updateSettings)
     {
-        $projectId = $this->resolveAdminProjectId();
-        $frontendLogo = $request->file('frontend_logo');
-        $stampDefaultImage = $request->file('stamp_default_image');
-        $this->updateFeatureSettingsUseCase->handle(
-            $projectId,
-            $request->all(),
-            $frontendLogo instanceof UploadedFile ? $frontendLogo : null,
-            $request->input('frontend_logo_clear') === '1',
-            $stampDefaultImage instanceof UploadedFile ? $stampDefaultImage : null,
-            $request->input('stamp_default_image_clear') === '1',
-        );
+        $updateSettings->handle($request->toInput($this->resolveAdminProjectId()));
 
         return redirect()->route('admin.settings.features', $this->buildAdminRouteParams())
-            ->with('success', '機能・カスタマイズ設定を更新しました');
+            ->with('success', '利用機能を更新しました');
     }
 }

@@ -21,6 +21,8 @@ use App\Domain\Settings\Repositories\LiffDesignerSettings;
 use App\Domain\Settings\Repositories\LineAdminSettings;
 use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
+use App\Domain\Settings\Repositories\MemberCardSettings;
+use App\Domain\Settings\Repositories\MemberCodeSettings;
 use App\Domain\Settings\Repositories\MemberSettings;
 use App\Domain\Settings\Repositories\OperationalSettings;
 use App\Domain\Settings\Repositories\OrderNotificationSettings;
@@ -31,6 +33,7 @@ use App\Domain\Settings\Repositories\QueueAdminSettings;
 use App\Domain\Settings\Repositories\QueueSettings;
 use App\Domain\Settings\Repositories\RankSettings;
 use App\Domain\Settings\Repositories\ReservationSettings;
+use App\Domain\Settings\Repositories\SettingValueReader;
 use App\Domain\Settings\Repositories\SettingValueWriter;
 use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Domain\Settings\Repositories\StampSettings;
@@ -129,6 +132,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(LiffDesignerSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(LineAdminSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(LineConnectionSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(MemberCodeSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(MemberCardSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(MemberCardPreviewSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(MemberSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(OperationalSettings::class, EloquentShopSettingRepository::class);
@@ -140,6 +145,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(QueueSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(RankSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(ReservationSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(SettingValueReader::class, EloquentShopSettingRepository::class);
         $this->app->bind(SettingValueWriter::class, EloquentShopSettingRepository::class);
         $this->app->bind(SmaregiSettings::class, EloquentShopSettingRepository::class);
         $this->app->singleton(DomainEventDispatcher::class, function ($app) {

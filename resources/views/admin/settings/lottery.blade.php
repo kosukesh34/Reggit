@@ -1,6 +1,6 @@
 @extends('admin.layout')
-@section('title', '購入特典ゲーム設定')
-@section('page-title', '購入特典ゲーム設定')
+@section('title', '購入特典ゲーム')
+@section('page-title', '購入特典ゲーム')
 
 @section('content')
 <nav class="breadcrumb">
@@ -8,10 +8,10 @@
     <span class="breadcrumb-sep">/</span>
     <a href="{{ admin_route('admin.coupons') }}">クーポン</a>
     <span class="breadcrumb-sep">/</span>
-    <span>購入特典ゲーム設定</span>
+    <span>購入特典ゲーム</span>
 </nav>
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-dice"></i> 購入特典ゲーム設定</h1>
+    <h1 class="page-header-title"><i class="fas fa-dice"></i> 購入特典ゲーム</h1>
 </div>
 @if($errors->any())
     <div class="alert alert-danger">
