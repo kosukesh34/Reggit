@@ -47,8 +47,9 @@ final class NativeRootViewModel: PushNotificationHandling {
     var paymentReturnOrderID: Int?
     var paymentReturnSucceeded = false
     var paymentReturnRevision = 0
-    var registrationName = ""
-    var registrationPhone = ""
+    var registrationPayload: [String: String] = [:]
+    var registrationListPayload: [String: [String]] = [:]
+    var registrationFieldErrors: [String: String] = [:]
     var registrationError: String?
     var isRegistering = false
     var showRegistrationPopup = false
@@ -107,6 +108,9 @@ final class NativeRootViewModel: PushNotificationHandling {
             let previousProjectKey = currentProjectKey
             currentProjectKey = configRepository.resolveConfig().projectKey
             if previousProjectKey != currentProjectKey {
+                registrationPayload = [:]
+                registrationListPayload = [:]
+                registrationFieldErrors = [:]
                 pendingLotteryCount = 0
                 lastStampsTotal = nil
             }
@@ -175,19 +179,27 @@ final class NativeRootViewModel: PushNotificationHandling {
         }
     }
 
-    func submitRegistration() async {
-        guard let apiClient else { return }
-        let name = registrationName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let phone = registrationPhone.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, !phone.isEmpty else {
-            registrationError = "氏名と電話番号を入力してください"
+    func submitRegistration(values: [String: String], listValues: [String: [String]]) async {
+        guard !isRegistering, let apiClient else { return }
+        registrationPayload = values
+        registrationListPayload = listValues
+        registrationFieldErrors = [:]
+        for field in membership?.editableProfileFields ?? [] {
+            if let message = field.validationMessage(value: values[field.key] ?? "", selections: listValues[field.key] ?? []) {
+                registrationFieldErrors[field.key] = message
+            }
+        }
+        if !registrationFieldErrors.isEmpty {
+            registrationError = registrationFieldErrors.values.sorted().joined(separator: "\n")
             return
         }
+        let name = (values["name"] ?? "").trimmed
+        let phone = (values["phone"] ?? "").trimmed
         isRegistering = true
         registrationError = nil
         defer { isRegistering = false }
         do {
-            var member = try await apiClient.registerMember(name: name, phone: phone)
+            var member = try await apiClient.registerMember(name: name, phone: phone, profilePayload: values, profileListPayload: listValues)
             if member.isMember, member.memberNumber.isEmpty,
                let card = try? await apiClient.fetchPointCard() {
                 member = member.withCard(card)
@@ -200,7 +212,12 @@ final class NativeRootViewModel: PushNotificationHandling {
                 selectedTab = "member"
             }
         } catch {
-            registrationError = error.localizedDescription
+            if case ReggitAPIError.validation(let errors) = error {
+                registrationFieldErrors = errors
+                registrationError = errors.values.sorted().joined(separator: "\n")
+            } else {
+                registrationError = error.localizedDescription
+            }
         }
     }
 

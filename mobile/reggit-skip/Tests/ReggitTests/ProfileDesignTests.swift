@@ -40,6 +40,39 @@ final class ProfileDesignTests: XCTestCase {
         XCTAssertEqual(member.profileValue(for: member.editableProfileFields[1]), "09000000000")
     }
 
+    func testDesignatedStoreOptionsUseIDsAndDisplayStoreNames() throws {
+        let member = try MemberProfileSnapshot.parse(Data("""
+        {"is_member":true,"profile":{"customer_store_id":12},"profile_field_settings":[
+          {"key":"customer_store_id","label":"対象店舗","input_type":"selectbox","required":true,
+           "options":[{"value":"12","label":"渋谷店"},{"value":"25","label":"新宿店"}]}]}
+        """.utf8))
+        let field = try XCTUnwrap(member.editableProfileFields.first)
+        XCTAssertEqual(field.choices, ["12", "25"])
+        XCTAssertEqual(field.displayValue("25"), "新宿店")
+        XCTAssertEqual(member.profileValue(for: field), "渋谷店")
+        XCTAssertNil(field.validationMessage(value: "12", selections: []))
+        XCTAssertNotNil(field.validationMessage(value: "99", selections: []))
+        XCTAssertNotNil(field.validationMessage(value: "", selections: []))
+        XCTAssertEqual(member.withWalletPoints(100).editableProfileFields.first?.options, field.options)
+    }
+
+    func testRegistrationUsesConfiguredFieldsAndAllowsOptionalPhone() throws {
+        let member = try MemberProfileSnapshot.parse(Data("""
+        {"is_member":false,"member_registration_mode":"force","profile_field_settings":[
+          {"key":"email","label":"メール","input_type":"email","required":true},
+          {"key":"phone","label":"電話番号","input_type":"tel","required":false},
+          {"key":"customer_store_id","label":"対象店舗","input_type":"selectbox","required":true,
+           "options":[{"value":12,"label":"渋谷店"}]},
+          {"key":"interests","label":"興味","input_type":"checkbox","required":true,"values":["小売"]}]}
+        """.utf8))
+        XCTAssertEqual(member.editableProfileFields.map(\.key), ["email", "phone", "customer_store_id", "interests"])
+        XCTAssertFalse(member.registrationMode.canSkipRegistration)
+        let values = ["email": "new@example.com", "phone": "", "customer_store_id": "12"]
+        for field in member.editableProfileFields {
+            XCTAssertNil(field.validationMessage(value: values[field.key] ?? "", selections: field.key == "interests" ? ["小売"] : []))
+        }
+    }
+
     func testBuiltInChoicesHaveHumanReadableLabels() throws {
         let sex = try XCTUnwrap(ProfileFieldDefinition.parse(["key": "sex", "input_type": "radio"]))
         XCTAssertEqual(sex.choices, ["0", "1", "2"])
