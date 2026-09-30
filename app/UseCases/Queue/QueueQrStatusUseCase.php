@@ -227,6 +227,7 @@ class QueueQrStatusUseCase
                 sprintf('受付番号 %s の待ち状況を通知で受け取れます。', $queueNo),
                 [
                     'type' => 'queue_linked',
+                    'tab' => 'queue',
                     'queue_number' => $queueNo,
                     'project_id' => (string) $entry->project_id,
                     'queue_entry_id' => (string) $entry->id,

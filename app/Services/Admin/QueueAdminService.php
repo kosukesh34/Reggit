@@ -243,11 +243,13 @@ class QueueAdminService
                 'line_user_id' => $lineUserId,
             ]);
         } catch (\Exception $e) {
-            $callLog->update([
-                'push_status' => 'failed',
-                'error_message' => mb_substr($e->getMessage(), 0, 255),
-                'line_user_id' => $lineUserId,
-            ]);
+            if (! $nativeSent) {
+                $callLog->update([
+                    'push_status' => 'failed',
+                    'error_message' => mb_substr($e->getMessage(), 0, 255),
+                    'line_user_id' => $lineUserId,
+                ]);
+            }
             LogHelper::error('[Queue] line push failed', [
                 'queue_id' => $entry->id,
                 'line_user_id' => $lineUserId,

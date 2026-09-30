@@ -191,6 +191,7 @@ class PushNotificationService
         $body = sprintf('順番が近づきました。受付番号: %s', $queueNumber);
         $data = [
             'type' => 'queue_called',
+            'tab' => 'queue',
             'queue_number' => (string) $queueNumber,
             'project_id' => (string) $projectId,
         ];
@@ -305,6 +306,8 @@ class PushNotificationService
                 'announcement_id' => (string) $announcement->id,
                 'project_id' => (string) $announcement->project_id,
                 'delivery_type' => (string) $announcement->delivery_type,
+                'type' => 'announcement',
+                'tab' => 'announcements',
             ],
             $this->buildAnnouncementCollapseId((int) $announcement->id),
             false,

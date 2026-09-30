@@ -52,7 +52,7 @@ class OrderNotificationServiceTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
         $push = Mockery::mock(PushNotificationService::class);
-        $push->shouldReceive('sendToUser')->never();
+        $push->shouldReceive('sendToUser')->once()->andReturn(['target_tokens' => 0, 'sent' => 0]);
 
         $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
@@ -152,7 +152,10 @@ class OrderNotificationServiceTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->never();
         $push = Mockery::mock(PushNotificationService::class);
-        $push->shouldReceive('sendToUser')->never();
+        $push->shouldReceive('sendToUser')->once()->with(
+            (int) $project->id, (int) $user->id, Mockery::type('string'), Mockery::type('string'),
+            Mockery::on(fn (array $data): bool => $data['type'] === 'order_ready' && $data['tab'] === 'orders')
+        )->andReturn(['target_tokens' => 1, 'sent' => 1]);
 
         $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
         $service->notifyReady((int) $order->id, (int) $project->id);

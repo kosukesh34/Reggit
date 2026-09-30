@@ -194,7 +194,7 @@ class FcmHttpV1Client
         $invalid = in_array($errorCode, self::INVALID_ERROR_CODES, true)
             || in_array($errorStatus, ['NOT_FOUND', 'INVALID_ARGUMENT'], true);
 
-        LogHelper::warning('[Push] FCM v1 send rejected', [
+        LogHelper::error('[Push] FCM v1 send rejected', [
             'http_status' => $status,
             'error_status' => $errorStatus !== '' ? $errorStatus : null,
             'error_code' => $errorCode !== '' ? $errorCode : null,
