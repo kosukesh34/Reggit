@@ -119,11 +119,20 @@ struct NativeRootView: View {
                 onClose: { showAppInfo = false }
             )
         }
-        .navigationDestination(isPresented: $viewModel.lotteryModalPresented) {
-            if let client = viewModel.apiClient {
-                LotteryView(apiClient: client)
+        .sheet(isPresented: $viewModel.lotteryModalPresented, onDismiss: {
+            viewModel.finishLotteryPresentation()
+        }) {
+            Group {
+                if let game = viewModel.lotteryPreviewGame {
+                    LotteryRewardSheet(previewGame: game) { viewModel.lotteryModalPresented = false }
+                } else if let client = viewModel.apiClient {
+                    LotteryRewardSheet(apiClient: client) { viewModel.lotteryModalPresented = false }
+                }
             }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
+
         .navigationDestination(isPresented: Binding(
             get: { expandedHomeImageIndex != nil },
             set: { if $0 == false { expandedHomeImageIndex = nil } }
@@ -138,6 +147,10 @@ struct NativeRootView: View {
     }
 
     private func selectMenu(_ key: String) {
+        if viewModel.openLotteryPreview(menuKey: key) {
+            showHamburgerMenu = false
+            return
+        }
         guard key != viewModel.selectedTab else { showHamburgerMenu = false; return }
         menuHistory.append(viewModel.selectedTab)
         headerNavigation.backAction = nil
