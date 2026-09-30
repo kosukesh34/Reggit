@@ -43,6 +43,21 @@ final class MemberWalletRealtimeTests: XCTestCase {
     }
 
     @MainActor
+    func testTemporaryMenuOpensEachPreviewWithoutLeavingOrderScreen() {
+        let model = NativeRootViewModel()
+        model.selectedTab = "products"
+        for item in NativeRootViewModel.lotteryPreviewMenu {
+            XCTAssertTrue(model.openLotteryPreview(menuKey: item.key))
+            XCTAssertNotNil(model.lotteryPreviewGame)
+            XCTAssertTrue(model.lotteryModalPresented)
+            XCTAssertEqual(model.selectedTab, "products")
+            model.finishLotteryPresentation()
+            XCTAssertNil(model.lotteryPreviewGame)
+        }
+        XCTAssertFalse(model.openLotteryPreview(menuKey: "orders"))
+    }
+
+    @MainActor
     func testQueueAndCouponNotificationsInvalidateTheirScreens() {
         let model = NativeRootViewModel()
         SecondaryScreenCache.queue = nil
