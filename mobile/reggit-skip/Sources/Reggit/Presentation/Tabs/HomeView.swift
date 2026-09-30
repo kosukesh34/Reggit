@@ -196,11 +196,13 @@ struct HomeView: View {
         .animation(.easeInOut(duration: 0.45), value: heroDragOffset)
         .frame(width: width, height: width, alignment: .leading)
         .clipped()
+        #if !os(Android)
         .contentShape(Rectangle())
         .highPriorityGesture(heroDragGesture)
         .accessibilityAddTraits(.isButton)
         .accessibilityLabel("画像を全画面で表示")
         .accessibilityAction { onExpandImage(visibleHeroIndex) }
+        #endif
     }
 
     private func advanceHero(_ step: Int) {
@@ -211,22 +213,30 @@ struct HomeView: View {
         guard edge == 0 || edge == count + 1 else { return }
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 460_000_000)
+            #if !os(Android)
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {
                 loopIndex = edge == 0 ? count : 1
             }
+            #else
+            loopIndex = edge == 0 ? count : 1
+            #endif
         }
     }
 
     private var heroDragGesture: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
+                #if !os(Android)
                 var transaction = Transaction()
                 transaction.disablesAnimations = true
                 withTransaction(transaction) {
                     heroDragOffset = value.translation.width
                 }
+                #else
+                heroDragOffset = value.translation.width
+                #endif
             }
             .onEnded { value in
                 let travel = value.translation.width
@@ -265,8 +275,10 @@ struct HomeView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Capsule().fill(Color.black.opacity(0.45)))
+        #if !os(Android)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("ホーム画像")
+        #endif
     }
 
     @ViewBuilder

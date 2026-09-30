@@ -25,7 +25,9 @@ struct MemberCodeSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                 Text(member.memberNumber)
                     .font(.system(size: 18, weight: .bold, design: .monospaced))
+                    #if !os(Android)
                     .textSelection(.enabled)
+                    #endif
                 Text("スタッフにこちらのコードをご提示ください")
                     .font(.subheadline)
                     .foregroundStyle(AppDesign.inkSecondary)

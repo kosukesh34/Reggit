@@ -1,5 +1,7 @@
 import SwiftUI
+#if !os(Android)
 import UIKit
+#endif
 
 @MainActor
 @Observable
@@ -258,8 +260,11 @@ struct AccountActionsView: View {
                 Text(value)
                     .font(.title3.weight(.bold))
                     .foregroundStyle(AppDesign.ink)
+                    #if !os(Android)
                     .textSelection(.enabled)
+                    #endif
                     .frame(maxWidth: .infinity, alignment: .leading)
+                #if !os(Android)
                 Button {
                     UIPasteboard.general.string = value
                     model.message = "\(title)をコピーしました"
@@ -269,6 +274,7 @@ struct AccountActionsView: View {
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.bordered)
+                #endif
             }
             .padding(14)
             .background(AppDesign.surface)
