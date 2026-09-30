@@ -42,6 +42,7 @@
             </div>
             <button type="submit" class="btn btn-primary btn-block">ログイン</button>
         </form>
+        <p><a href="{{ route('admin.password.request') }}">パスワードを忘れた場合</a></p>
         <p class="admin-login-switch">
             <a href="{{ route('admin.login') }}"><i class="fas fa-store"></i> 店舗管理ログイン（プロジェクト選択）</a>
         </p>

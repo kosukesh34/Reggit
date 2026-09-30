@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\AdminPasswordReset;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,7 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class AdminUser extends Authenticatable
 {
-    use HasApiTokens, HasFactory;
+    use HasApiTokens, HasFactory, \Illuminate\Notifications\Notifiable;
 
     public const ROLE_SYSTEM_ADMIN = 'system_admin';
 
@@ -122,6 +123,11 @@ class AdminUser extends Authenticatable
                 }
             }
         });
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new AdminPasswordReset($token));
     }
 
     // ── リレーション ──
