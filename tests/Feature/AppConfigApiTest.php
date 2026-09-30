@@ -158,6 +158,51 @@ class AppConfigApiTest extends TestCase
             ->assertJsonPath('member_screen.show_point_history', false);
     }
 
+    public function test_web_page_open_mode_is_returned_for_all_native_placements(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'is_active' => true]
+        );
+        ShopSettingStore::setFrontendMenuItems([
+            ['tab' => 'link_1', 'label' => '外部サイト', 'url' => 'https://example.com', 'open' => 'external', 'enabled' => true, 'order' => 0],
+            ['tab' => 'link_2', 'label' => '内部サイト', 'url' => 'https://example.com/internal', 'open' => 'embed', 'enabled' => true, 'order' => 1],
+        ], $project->id);
+        ShopSettingStore::setValue('native_navigation_items', [
+            'header' => ['link_1'],
+            'footer' => ['link_1', 'link_2'],
+            'hamburger' => ['link_1', 'link_2'],
+        ], 'json', $project->id);
+
+        $response = $this->getJson('/api/v1/app-config?project_key=default')->assertOk();
+        $this->assertSame('external', collect($response->json('tabs'))->firstWhere('key', 'link_1')['open']);
+        $this->assertSame('embed', collect($response->json('tabs'))->firstWhere('key', 'link_2')['open']);
+        foreach (['header', 'footer', 'hamburger'] as $placement) {
+            $response->assertJsonPath("navigation.{$placement}.0.open", 'external')
+                ->assertJsonPath("navigation.{$placement}.0.url", 'https://example.com');
+        }
+        $response->assertJsonPath('navigation.footer.1.open', 'embed');
+    }
+
+    public function test_web_page_hidden_from_home_can_still_be_used_in_all_navigation_placements(): void
+    {
+        $project = Project::firstOrCreate(['project_key' => 'default'], ['name' => 'テスト店舗', 'is_active' => true]);
+        ShopSettingStore::setFrontendMenuItems([
+            ['tab' => 'link_1', 'label' => '公式サイト', 'url' => 'https://example.com', 'open' => 'external', 'enabled' => false, 'order' => 0],
+        ], $project->id);
+        ShopSettingStore::setValue('native_navigation_items', [
+            'header' => ['link_1'], 'footer' => ['link_1'], 'hamburger' => ['link_1'],
+        ], 'json', $project->id);
+
+        $response = $this->getJson('/api/v1/app-config?project_key=default')->assertOk();
+        $this->assertNull(collect($response->json('tabs'))->firstWhere('key', 'link_1'));
+        foreach (['header', 'footer', 'hamburger'] as $placement) {
+            $response->assertJsonPath("navigation.{$placement}.0.key", 'link_1')
+                ->assertJsonPath("navigation.{$placement}.0.open", 'external')
+                ->assertJsonPath("navigation.{$placement}.0.url", 'https://example.com');
+        }
+    }
+
     public function test_app_config_フッターの明示設定はホームメニュー非表示でも反映されること(): void
     {
         $project = Project::firstOrCreate(

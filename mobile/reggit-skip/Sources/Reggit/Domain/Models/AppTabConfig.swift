@@ -7,14 +7,16 @@ struct AppTabItem: Identifiable, Equatable {
     let icon: String
     let sfSymbol: String
     let url: String?
+    let openMode: String
 
-    init(id: String, key: String, label: String, icon: String, sfSymbol: String, url: String? = nil) {
+    init(id: String, key: String, label: String, icon: String, sfSymbol: String, url: String? = nil, openMode: String = "embed") {
         self.id = id
         self.key = key
         self.label = label
         self.icon = icon
         self.sfSymbol = sfSymbol
         self.url = url
+        self.openMode = openMode
     }
 
     static let fallbackTabs: [AppTabItem] = [
