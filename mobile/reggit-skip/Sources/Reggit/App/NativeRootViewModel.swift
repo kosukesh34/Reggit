@@ -38,11 +38,15 @@ final class NativeRootViewModel: PushNotificationHandling {
     var memberShowPointHistory = true
     var memberShowCouponActivity = true
     var pendingQueueToken: String?
+    private var pendingNotificationTab: String?
+    private var pendingNotificationType: String?
     var membership: MemberProfileSnapshot?
     /// プロフィール更新などで会員タブを再読込させるための世代カウンタ
     var membershipRevision = 0
     var queueRevision = 0
     var ordersRevision = 0
+    var productsRevision = 0
+    var screenRevisions: [String: Int] = [:]
     var lotteryRevision = 0
     var paymentReturnOrderID: Int?
     var paymentReturnSucceeded = false
@@ -60,7 +64,6 @@ final class NativeRootViewModel: PushNotificationHandling {
     private let configRepository: any MobileWebConfigRepository
     private let walletRealtime = MemberWalletRealtime()
     private var walletRefreshTask: Task<Void, Never>?
-    private var queueRefreshTask: Task<Void, Never>?
     private var hasStarted = false
 
     init(
@@ -91,7 +94,6 @@ final class NativeRootViewModel: PushNotificationHandling {
         pushObserver.stopObserving()
         walletRealtime.stop()
         walletRefreshTask?.cancel()
-        queueRefreshTask?.cancel()
     }
 
     func retry() {
@@ -168,6 +170,12 @@ final class NativeRootViewModel: PushNotificationHandling {
             }
 
             connectRealtimeIfPossible()
+            if phase == .ready, let tab = pendingNotificationTab {
+                let type = pendingNotificationType
+                pendingNotificationTab = nil
+                pendingNotificationType = nil
+                handleNotificationDeepLink(tab: tab, notificationType: type)
+            }
 
             if let token = pendingQueueToken, phase == .ready {
                 pendingQueueToken = nil
@@ -258,6 +266,7 @@ final class NativeRootViewModel: PushNotificationHandling {
             if stampsChanged {
                 SecondaryScreenCache.stamps = nil
                 self.lastStampsTotal = stampsTotal
+                self.screenRevisions["stamps", default: 0] &+= 1
             }
             if lotteryChanged {
                 SecondaryScreenCache.lottery = nil
@@ -275,32 +284,27 @@ final class NativeRootViewModel: PushNotificationHandling {
             self.pendingLotteryCount = count
         }, onProjectUpdated: { [weak self] topic in
             guard let self else { return }
-            SecondaryScreenCache.invalidate(topic: topic)
-            if topic == "orders", self.selectedTab == "orders" {
-                self.queueRefreshTask?.cancel()
-                self.queueRefreshTask = Task {
-                    try? await Task.sleep(nanoseconds: 350_000_000)
-                    if !Task.isCancelled { self.ordersRevision &+= 1 }
-                }
-            }
-            if topic == "orders", self.selectedTab == "lottery" {
-                self.lotteryRevision &+= 1
-            }
-            if topic == "orders", self.selectedTab == "products" {
-                SecondaryScreenCache.orders = nil
-                SecondaryScreenCache.lottery = nil
-                self.lotteryRevision &+= 1
-            }
-            if topic == "queue", self.selectedTab == "queue" {
-                self.queueRefreshTask?.cancel()
-                self.queueRefreshTask = Task {
-                    try? await Task.sleep(nanoseconds: 350_000_000)
-                    if !Task.isCancelled, SecondaryScreenCache.queue == nil {
-                        self.queueRevision &+= 1
-                    }
-                }
-            }
+            self.handleProjectUpdate(topic: topic)
         })
+    }
+
+    func handleProjectUpdate(topic: String) {
+        SecondaryScreenCache.invalidate(topic: topic)
+        if topic == "orders" || topic == "all" {
+            ordersRevision &+= 1
+            productsRevision &+= 1
+            lotteryRevision &+= 1
+        }
+        if topic == "products" { productsRevision &+= 1 }
+        if topic == "queue" || topic == "all" { queueRevision &+= 1 }
+        if ["points", "coupons", "stamps", "all"].contains(topic) {
+            SecondaryScreenCache.memberProfileNeedsRefresh = true
+            membershipRevision &+= 1
+        }
+        let affected = topic == "all"
+            ? ["coupons", "stamps", "reservations", "gallery", "announcements"]
+            : [topic]
+        for key in affected { screenRevisions[key, default: 0] &+= 1 }
     }
 
     func skipRegistration() {
@@ -326,6 +330,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     }
 
     func handlePaymentReturn(orderID: Int, succeeded: Bool) {
+        handleProjectUpdate(topic: "orders")
         paymentReturnOrderID = orderID
         paymentReturnSucceeded = succeeded
         paymentReturnRevision &+= 1
@@ -354,17 +359,34 @@ final class NativeRootViewModel: PushNotificationHandling {
     // MARK: - PushNotificationHandling
 
     func handleNotificationDeepLink(tab: String, notificationType: String?) {
+        refreshForNotification(notificationType)
+        guard phase == .ready else {
+            pendingNotificationTab = tab
+            pendingNotificationType = notificationType
+            return
+        }
         let mapped = Self.mapTabKey(tab)
         if tabs.contains(where: { $0.key == mapped }) {
             selectedTab = mapped
         } else if notificationType == "coupon_issued" {
             selectedTab = "coupons"
+        } else if notificationType == "queue_called" || notificationType == "queue_linked" {
+            selectedTab = "queue"
         }
     }
 
     func handleForegroundNotification(notificationType: String?) {
-        if notificationType == "coupon_issued" {
-            selectedTab = "coupons"
+        refreshForNotification(notificationType)
+        if notificationType == "coupon_issued" { selectedTab = "coupons" }
+    }
+
+    private func refreshForNotification(_ type: String?) {
+        switch type {
+        case "order_confirmed", "order_ready", "order_completed": handleProjectUpdate(topic: "orders")
+        case "queue_called", "queue_linked": handleProjectUpdate(topic: "queue")
+        case "coupon_issued": handleProjectUpdate(topic: "coupons")
+        case "announcement": handleProjectUpdate(topic: "announcements")
+        default: break
         }
     }
 

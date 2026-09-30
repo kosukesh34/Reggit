@@ -100,6 +100,19 @@ cd mobile/reggit-skip/Android
 ./gradlew :app:assembleDebug
 ```
 
+Release ビルドで Android も更新する場合は、`Reggit.xcconfig` の `SKIP_ACTION = none` をコマンド引数で上書きしてください。`skip app launch --android` だけでは設定により Android のビルドが省略され、古い APK が残ることがあります。
+
+```bash
+cd mobile/reggit-skip
+xcodebuild -workspace Project.xcworkspace -scheme "Reggit App" -configuration Release -destination "platform=iOS Simulator,name=iPhone 16e" SKIP_ACTION=build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
+adb install -r .build/Android/app/outputs/apk/release/app-release.apk
+adb shell monkey -p com.reggit.default -c android.intent.category.LAUNCHER 1
+```
+
+Release の最適化で Activity 名が変わる場合があるため、起動は固定 Activity 名の `launchRelease` ではなくランチャー Intent を使います。
+
+iOS のプッシュ受信を検証する場合は `CODE_SIGNING_ALLOWED=NO` を使わず、Xcode にシミュレーター用の APNs entitlement を生成させてください。FCM の送信受付成功と端末での受信成功は別に確認します。
+
 ## プッシュ（FCM）
 
 - **iOS**: `GoogleService-Info.plist` + Firebase Messaging。APNs `.p8` は Firebase Console に登録。
