@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Events;
 
+use App\Domain\Order\Events\OrderCompleted;
 use App\Domain\Order\Events\OrderReady;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventListener;
 use App\Services\OrderNotificationService;
@@ -15,12 +16,16 @@ class NotifyOnOrderReadyListener implements DomainEventListener
 
     public function handle(object $event): void
     {
-        if ($event instanceof OrderReady === false) {
+        if (! $event instanceof OrderReady && ! $event instanceof OrderCompleted) {
             return;
         }
 
         try {
-            $this->orderNotificationService->notifyReady($event->orderId, $event->projectId);
+            if ($event instanceof OrderCompleted) {
+                $this->orderNotificationService->notifyCompleted($event->orderId, $event->projectId);
+            } else {
+                $this->orderNotificationService->notifyReady($event->orderId, $event->projectId);
+            }
         } catch (\Throwable $e) {
             LogHelper::error('[Order] notifyReady failed', [
                 'order_id' => $event->orderId,

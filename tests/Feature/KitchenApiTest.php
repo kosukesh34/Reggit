@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -12,6 +13,8 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\StoreAppCredential;
 use App\Models\User;
+use App\Services\Line\LineService;
+use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -114,6 +117,33 @@ class KitchenApiTest extends TestCase
         $this->authenticate($project);
         $this->getJson('/api/kitchen/missing-project/orders')
             ->assertStatus(404);
+    }
+
+    public function test_ready_mobile_order_notifies_customer_via_line_and_push_only_once(): void
+    {
+        $project = $this->createProject();
+        $this->authenticate($project);
+        ShopSettingStore::setOrderReadyLineNotifyEnabled(true, (int) $project->id);
+        ShopSettingStore::setLineChannelAccessToken('test-token', (int) $project->id);
+        $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat('a', 32)]);
+        $order = Order::create([
+            'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 800,
+            'status' => OrderStatus::PREPARING, 'payment_method' => PaymentMethod::STRIPE,
+            'order_type' => OrderType::MOBILE, 'order_number' => '2026072513',
+        ]);
+        $push = \Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->once()->with(
+            (int) $project->id, (int) $user->id, '受け取りの準備ができました', \Mockery::type('string'),
+            \Mockery::on(fn (array $data): bool => $data['type'] === 'order_ready' && $data['tab'] === 'orders'),
+        )->andReturn(['target_tokens' => 1, 'sent' => 1]);
+        $line = \Mockery::mock(LineService::class);
+        $line->shouldReceive('pushMessage')->once()->with($user->line_user_id, \Mockery::type('array'), 'test-token');
+        $this->app->instance(PushNotificationService::class, $push);
+        $this->app->instance(LineService::class, $line);
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $this->postJson('/api/kitchen/'.$project->project_key.'/orders/'.$order->id.'/status', ['status' => OrderStatus::READY])->assertOk();
+        }
+        $this->assertSame(OrderStatus::READY, $order->fresh()->status);
     }
 
     public function test_kitchen_ステータスを更新できること(): void

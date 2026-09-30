@@ -72,6 +72,7 @@ class PushNotificationServiceTest extends TestCase
 
         $this->assertSame('reggit:queue:'.$project->id.':'.$user->id, $payload['android']['collapse_key'] ?? null);
         $this->assertSame('queue_called', $payload['data']['type']);
+        $this->assertSame('queue', $payload['data']['tab']);
     }
 
     public function test_send_to_user_includes_collapse_id_for_coupon_issued(): void

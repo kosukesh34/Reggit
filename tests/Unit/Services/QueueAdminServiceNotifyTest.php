@@ -15,6 +15,7 @@ use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class QueueAdminServiceNotifyTest extends TestCase
@@ -38,7 +39,13 @@ class QueueAdminServiceNotifyTest extends TestCase
         );
     }
 
-    public function test_notify_called_sends_native_push_and_line_with_project_token(): void
+    public static function lineOutcomes(): array
+    {
+        return ['LINE succeeds' => [false], 'LINE fails but FCM succeeds' => [true]];
+    }
+
+    #[DataProvider('lineOutcomes')]
+    public function test_notify_called_sends_native_push_and_line_with_project_token(bool $lineFails): void
     {
         $project = $this->createProject();
         ShopSettingStore::setLineChannelAccessToken('project-queue-token', (int) $project->id);
@@ -72,14 +79,18 @@ class QueueAdminServiceNotifyTest extends TestCase
             ->andReturn(['target_tokens' => 1, 'sent' => 1, 'failed' => 0, 'skipped' => 0]);
 
         $lineMock = Mockery::mock(LineService::class);
-        $lineMock->shouldReceive('pushMessage')
+        $lineExpectation = $lineMock->shouldReceive('pushMessage')
             ->once()
             ->with(
                 $lineUserId,
                 Mockery::on(fn ($message) => is_array($message) && ($message['type'] ?? '') === 'flex'),
                 'project-queue-token'
-            )
-            ->andReturn([]);
+            );
+        if ($lineFails) {
+            $lineExpectation->andThrow(new \RuntimeException('LINE unavailable'));
+        } else {
+            $lineExpectation->andReturn([]);
+        }
 
         $service = new QueueAdminService(
             $lineMock,

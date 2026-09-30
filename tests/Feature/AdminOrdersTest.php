@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\OrderType;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Admin\OrderAdminService;
+use App\Services\Kitchen\KitchenPushService;
+use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -27,6 +32,54 @@ class AdminOrdersTest extends TestCase
             'role' => AdminUser::ROLE_ADMIN,
             'project_id' => $project->id,
         ]);
+    }
+
+    public function test_completing_mobile_order_sends_push_once_even_when_line_is_disabled(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        ShopSettingStore::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'order_type' => OrderType::MOBILE,
+            'total_amount' => 1000,
+            'status' => 'confirmed',
+            'payment_method' => 'stripe',
+        ]);
+        $push = \Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->once()->with(
+            (int) $project->id, (int) $user->id, \Mockery::type('string'), \Mockery::type('string'),
+            \Mockery::on(fn (array $data): bool => $data['type'] === 'order_completed' && $data['order_id'] === (string) $order->id),
+        )->andReturn(['target_tokens' => 1, 'sent' => 1]);
+        $this->app->instance(PushNotificationService::class, $push);
+        $service = app(OrderAdminService::class);
+        $service->complete((int) $order->id);
+        $service->complete((int) $order->id);
+        $this->assertSame('completed', $order->fresh()->status);
+    }
+
+    public function test_confirming_mobile_order_notifies_customer_once(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $order = Order::create([
+            'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 1000,
+            'order_type' => OrderType::MOBILE, 'status' => 'pending', 'payment_method' => 'stripe',
+        ]);
+        $push = \Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->once()->with(
+            (int) $project->id, (int) $user->id, \Mockery::type('string'), \Mockery::type('string'),
+            \Mockery::on(fn (array $data): bool => $data['type'] === 'order_confirmed' && $data['tab'] === 'orders'),
+        )->andReturn(['target_tokens' => 1, 'sent' => 1]);
+        $kitchen = \Mockery::mock(KitchenPushService::class);
+        $kitchen->shouldReceive('notifyNewOrder')->once()->with((int) $order->id, (int) $project->id);
+        $this->app->instance(PushNotificationService::class, $push);
+        $this->app->instance(KitchenPushService::class, $kitchen);
+        $service = app(OrderAdminService::class);
+        $service->updateStatus((int) $order->id, 'confirmed');
+        $service->updateStatus((int) $order->id, 'confirmed');
+        $this->assertSame('confirmed', $order->fresh()->status);
     }
 
     public function test_orders_注文一覧にアクセスできること(): void
