@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementContro
 use App\Http\Controllers\Admin\AnnouncementDeliveryController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\Auth\AdminLoginController;
+use App\Http\Controllers\Admin\Auth\AdminPasswordController;
 use App\Http\Controllers\Admin\Auth\LogoutController;
 use App\Http\Controllers\Admin\Auth\SystemAdminLoginController;
 use App\Http\Controllers\Admin\CouponBulkIssueController;
@@ -160,6 +161,13 @@ Route::get('/queue/open/{project_key}/{token}', QueueOpenController::class)
 Route::get('/onboarding', OnboardingPageController::class)->name('onboarding.create');
 
 // ========== 管理画面ログイン（認証不要・スロットリング適用） ==========
+Route::get('/admin/forgot-password', [AdminPasswordController::class, 'forgot'])->name('admin.password.request');
+Route::post('/admin/forgot-password', [AdminPasswordController::class, 'send'])->middleware('throttle:5,1')->name('admin.password.email');
+Route::get('/admin/reset-password/{token}', [AdminPasswordController::class, 'reset'])->name('admin.password.reset');
+Route::post('/admin/reset-password', [AdminPasswordController::class, 'update'])->middleware('throttle:5,1')->name('admin.password.update');
+Route::get('/admin/change-password', [AdminPasswordController::class, 'edit'])->middleware('auth:admin')->name('admin.password.edit');
+Route::put('/admin/change-password', [AdminPasswordController::class, 'change'])->middleware(['auth:admin', 'throttle:5,1'])->name('admin.password.change');
+
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
 Route::get('/admin/login/form', [AdminLoginController::class, 'showLoginForm'])->name('admin.login.form');
 Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.submit')->middleware('throttle:admin-login');

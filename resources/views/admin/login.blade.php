@@ -25,6 +25,8 @@
             </div>
         @endif
 
+        @if(session('status'))<div class="alert alert-success">{{ session('status') }}</div>@endif
+        <p><a href="{{ route('admin.password.request') }}">パスワードを忘れた場合</a></p>
         <form method="POST" action="{{ $submitRoute }}" class="admin-login-form">
             @csrf
             <div class="form-group">
