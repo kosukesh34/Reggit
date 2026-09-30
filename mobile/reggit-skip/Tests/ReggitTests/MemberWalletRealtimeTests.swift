@@ -20,7 +20,39 @@ final class MemberWalletRealtimeTests: XCTestCase {
             MemberWalletRealtime.parse(#"{"event":"data.updated","data":{"topic":"queue"}}"#),
             .projectUpdated("queue")
         )
+        XCTAssertEqual(
+            MemberWalletRealtime.parse(#"{"event":"pusher_internal:subscription_succeeded","channel":"project.default.data","data":"{}"}"#),
+            .subscribed("project.default.data")
+        )
         XCTAssertNil(MemberWalletRealtime.parse(#"{"event":"project.updated","data":"{}"}"#))
+    }
+
+    @MainActor
+    func testOrderEventsRefreshCheckoutAndHistoryRegardlessOfSelectedTab() {
+        let model = NativeRootViewModel()
+        model.selectedTab = "home"
+        SecondaryScreenCache.orders = []
+        model.handleProjectUpdate(topic: "orders")
+        XCTAssertEqual(model.productsRevision, 1)
+        XCTAssertEqual(model.ordersRevision, 1)
+        XCTAssertEqual(model.lotteryRevision, 1)
+        XCTAssertNil(SecondaryScreenCache.orders)
+        model.handleForegroundNotification(notificationType: "order_completed")
+        XCTAssertEqual(model.ordersRevision, 2)
+        SecondaryScreenCache.reset()
+    }
+
+    @MainActor
+    func testQueueAndCouponNotificationsInvalidateTheirScreens() {
+        let model = NativeRootViewModel()
+        SecondaryScreenCache.queue = nil
+        SecondaryScreenCache.coupons = []
+        model.handleForegroundNotification(notificationType: "queue_called")
+        XCTAssertEqual(model.queueRevision, 1)
+        model.handleForegroundNotification(notificationType: "coupon_issued")
+        XCTAssertNil(SecondaryScreenCache.coupons)
+        XCTAssertEqual(model.screenRevisions["coupons"], 1)
+        SecondaryScreenCache.reset()
     }
 
     @MainActor
@@ -32,8 +64,8 @@ final class MemberWalletRealtimeTests: XCTestCase {
         SecondaryScreenCache.invalidate(topic: "points")
         SecondaryScreenCache.invalidate(topic: "products")
         XCTAssertNil(SecondaryScreenCache.orders)
-        XCTAssertNotNil(SecondaryScreenCache.pointHistory)
-        XCTAssertNotNil(SecondaryScreenCache.products)
+        XCTAssertNil(SecondaryScreenCache.pointHistory)
+        XCTAssertNil(SecondaryScreenCache.products)
         SecondaryScreenCache.reset()
     }
 }

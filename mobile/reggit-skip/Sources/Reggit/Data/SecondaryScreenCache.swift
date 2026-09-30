@@ -26,19 +26,23 @@ enum SecondaryScreenCache {
     }
 
     static func invalidate(topic: String) {
+        if topic == "all" {
+            let paymentRevision = handledPaymentReturnRevision
+            reset()
+            handledPaymentReturnRevision = paymentRevision
+            memberProfileNeedsRefresh = true
+            return
+        }
         switch topic {
         case "queue": queue = nil
-        case "orders": orders = nil
-        case "coupons": coupons = nil; recentMemberCoupons = nil
+        case "orders": orders = nil; lottery = nil
+        case "coupons": coupons = nil; deviceOnceCoupons = nil; recentMemberCoupons = nil
         case "points": pointHistory = nil
         case "stamps": stamps = nil
-        case "all":
-            queue = nil
-            orders = nil
-            coupons = nil
-            recentMemberCoupons = nil
-            pointHistory = nil
-            stamps = nil
+        case "products": products = nil
+        case "reservations": reservations = nil; reservationCourses = nil
+        case "gallery": galleries.removeAll()
+        case "announcements": announcements = nil
         default: break
         }
     }

@@ -20,6 +20,7 @@
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config"
         >
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="reggit_default" />
         <!-- LIFF/WebView のベースURL（Skip.env の LIFF_BASE_URL）。Bundle.main.infoDictionary で参照される -->
         <meta-data android:name="LiffBaseUrl" android:value="${LIFF_BASE_URL}" />
         <meta-data android:name="LIFF_BASE_URL" android:value="${LIFF_BASE_URL}" />

@@ -61,6 +61,7 @@ open class AndroidAppMain: Application {
         super.onCreate()
         logger.info("starting app")
         ProcessInfo.launch(applicationContext)
+        ensureNotificationChannel(applicationContext)
         initFirebaseMessaging()
         AppDelegate.shared.onInit()
     }
@@ -128,10 +129,54 @@ class ReggitFirebaseMessagingService : FirebaseMessagingService() {
             cancelDeliveredAnnouncementNotifications(applicationContext, announcementId, originalTitle)
             return
         }
-        if (type == "coupon_issued") {
-            AppDelegate.shared.onNotificationForeground(notificationType = type)
+        if (type.isNotEmpty()) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                AppDelegate.shared.onNotificationForeground(notificationType = type)
+            }
+        }
+        if (title.isNotBlank() || body.isNotBlank()) {
+            showFcmNotification(applicationContext, message, title, body)
         }
     }
+}
+
+private fun notificationTab(type: String): String? = when (type) {
+    "queue_called", "queue_linked" -> "queue"
+    "order_confirmed", "order_ready", "order_completed" -> "orders"
+    "coupon_issued" -> "coupons"
+    "announcement" -> "announcements"
+    else -> null
+}
+
+private fun ensureNotificationChannel(context: Context) {
+    if (Build.VERSION.SDK_INT >= 26) {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        manager.createNotificationChannel(android.app.NotificationChannel(
+            "reggit_default", "店舗からのお知らせ", NotificationManager.IMPORTANCE_HIGH
+        ))
+    }
+}
+
+private fun showFcmNotification(context: Context, message: RemoteMessage, title: String, body: String) {
+    if (Build.VERSION.SDK_INT >= 33 && ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+    ensureNotificationChannel(context)
+    val key = message.collapseKey ?: message.messageId ?: message.data.toString()
+    val id = key.hashCode()
+    val intent = android.content.Intent(context, MainActivity::class.java).apply {
+        flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+        message.data.forEach { (key, value) -> putExtra(key, value) }
+    }
+    val pendingIntent = android.app.PendingIntent.getActivity(context, id, intent,
+        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE)
+    val notification = android.app.Notification.Builder(context, "reggit_default")
+        .setSmallIcon(android.R.drawable.ic_dialog_info)
+        .setContentTitle(title.ifBlank { "店舗からのお知らせ" })
+        .setContentText(body)
+        .setStyle(android.app.Notification.BigTextStyle().bigText(body))
+        .setContentIntent(pendingIntent)
+        .setAutoCancel(true)
+        .build()
+    context.getSystemService(NotificationManager::class.java)?.notify(id, notification)
 }
 
 internal fun announcementCollapseId(announcementId: String): String? {
@@ -368,6 +413,24 @@ open class MainActivity: AppCompatActivity {
         AppDelegate.shared.onLaunch()
 
         requestNotificationPermissionIfNeeded()
+        deliverNotificationIntent(intent)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        deliverNotificationIntent(intent)
+    }
+
+    private fun deliverNotificationIntent(intent: android.content.Intent?) {
+        val type = intent?.getStringExtra("type").orEmpty()
+        val tab = intent?.getStringExtra("tab") ?: notificationTab(type) ?: return
+        if (tab.isBlank()) return
+        intent?.removeExtra("tab")
+        intent?.removeExtra("type")
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            AppDelegate.shared.onNotificationOpened(tab, notificationType = type)
+        }, 500)
     }
 
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 9000
