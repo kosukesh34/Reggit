@@ -164,6 +164,7 @@ struct ProductsView: View {
     let paymentReturnOrderID: Int?
     let paymentReturnSucceeded: Bool
     let paymentReturnRevision: Int
+    let refreshRevision: Int
     let onPaymentConfirmed: () async -> Void
 
     init(
@@ -172,6 +173,7 @@ struct ProductsView: View {
         paymentReturnOrderID: Int? = nil,
         paymentReturnSucceeded: Bool = false,
         paymentReturnRevision: Int = 0,
+        refreshRevision: Int = 0,
         onPaymentConfirmed: @escaping () async -> Void = {}
     ) {
         _viewModel = State(initialValue: ProductsViewModel(apiClient: apiClient))
@@ -179,6 +181,7 @@ struct ProductsView: View {
         self.paymentReturnOrderID = paymentReturnOrderID
         self.paymentReturnSucceeded = paymentReturnSucceeded
         self.paymentReturnRevision = paymentReturnRevision
+        self.refreshRevision = refreshRevision
         self.onPaymentConfirmed = onPaymentConfirmed
     }
 
@@ -300,7 +303,16 @@ struct ProductsView: View {
                 }
             }
         }
-        .task { await viewModel.load() }
+        .task(id: refreshRevision) {
+            await viewModel.load()
+            let wasAwaitingPayment = viewModel.activeOrder?.isAwaitingCardPayment == true
+            await viewModel.refreshActiveOrder()
+            if wasAwaitingPayment, let order = viewModel.activeOrder, !order.isAwaitingCardPayment {
+                viewModel.checkoutURL = nil
+                viewModel.isVerifyingPayment = false
+                await onPaymentConfirmed()
+            }
+        }
         .task(id: paymentReturnRevision) {
             guard paymentReturnRevision > SecondaryScreenCache.handledPaymentReturnRevision,
                   let orderID = paymentReturnOrderID else { return }

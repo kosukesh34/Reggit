@@ -61,6 +61,8 @@ final class MemberWalletRealtime {
                             ] as [String: Any]
                             let data = try JSONSerialization.data(withJSONObject: memberSubscribe)
                             try await connection.send(.string(String(decoding: data, as: UTF8.self)))
+                        case .subscribed(let channel):
+                            if channel == "project.\(projectKey).data" { onProjectUpdated("all") }
                         case .walletUpdated(let points, let stampsTotal, let count):
                             onWalletUpdated(points, stampsTotal, count)
                         case .projectUpdated(let topic):
@@ -93,6 +95,7 @@ final class MemberWalletRealtime {
 
     enum Event: Equatable {
         case connected(String)
+        case subscribed(String)
         case walletUpdated(points: Int?, stampsTotal: Int?, pendingCount: Int)
         case projectUpdated(String)
         case ping
@@ -103,6 +106,9 @@ final class MemberWalletRealtime {
               let envelope = try? JSONSerialization.jsonObject(with: bytes) as? [String: Any],
               let name = envelope["event"] as? String else { return nil }
         if name == "pusher:ping" { return .ping }
+        if name == "pusher_internal:subscription_succeeded", let channel = envelope["channel"] as? String {
+            return .subscribed(channel)
+        }
         let payload: [String: Any]
         if let object = envelope["data"] as? [String: Any] {
             payload = object

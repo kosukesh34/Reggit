@@ -292,6 +292,16 @@ extension AppMainDelegate: MessagingDelegate {
 }
 #endif
 
+private func notificationTab(for type: String?) -> String? {
+    switch type {
+    case "queue_called", "queue_linked": return "queue"
+    case "order_confirmed", "order_ready", "order_completed": return "orders"
+    case "coupon_issued": return "coupons"
+    case "announcement": return "announcements"
+    default: return nil
+    }
+}
+
 #if canImport(UIKit) && canImport(UserNotifications)
 extension AppMainDelegate: UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(
@@ -314,7 +324,7 @@ extension AppMainDelegate: UNUserNotificationCenterDelegate {
             completionHandler([])
             return
         }
-        if type == "coupon_issued" {
+        if !type.isEmpty {
             Task { @MainActor in
                 AppDelegate.shared.onNotificationForeground(type)
             }
@@ -329,6 +339,7 @@ extension AppMainDelegate: UNUserNotificationCenterDelegate {
     ) {
         let userInfo = response.notification.request.content.userInfo
         let tab = AnnouncementPushCancel.additionalDataStringPublic(from: userInfo, key: "tab")
+            ?? notificationTab(for: AnnouncementPushCancel.additionalDataStringPublic(from: userInfo, key: "type"))
         let type = AnnouncementPushCancel.additionalDataStringPublic(from: userInfo, key: "type") ?? ""
         if let tab, !tab.isEmpty {
             Task { @MainActor in

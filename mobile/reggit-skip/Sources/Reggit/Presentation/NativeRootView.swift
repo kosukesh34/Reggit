@@ -396,14 +396,17 @@ struct NativeRootView: View {
                 paymentReturnOrderID: viewModel.paymentReturnOrderID,
                 paymentReturnSucceeded: viewModel.paymentReturnSucceeded,
                 paymentReturnRevision: viewModel.paymentReturnRevision,
+                refreshRevision: viewModel.productsRevision,
                 onPaymentConfirmed: { await viewModel.paymentConfirmed() }
             )
         case "orders":
             OrdersView(apiClient: client, reloadRevision: viewModel.ordersRevision)
         case "coupons":
             CouponsView(apiClient: client)
+                .id(viewModel.screenRevisions["coupons", default: 0])
         case "stamps":
             StampsView(apiClient: client)
+                .id(viewModel.screenRevisions["stamps", default: 0])
         case "queue":
             QueueView(
                 apiClient: client,
@@ -413,10 +416,13 @@ struct NativeRootView: View {
             )
         case "reservations":
             ReservationsView(apiClient: client)
+                .id(viewModel.screenRevisions["reservations", default: 0])
         case "gallery":
             GalleryView(apiClient: client)
+                .id(viewModel.screenRevisions["gallery", default: 0])
         case "announcements":
             AnnouncementsView(apiClient: client)
+                .id(viewModel.screenRevisions["announcements", default: 0])
         case "lottery":
             LotteryView(apiClient: client, refreshRevision: viewModel.lotteryRevision)
         case "storeSearch":
