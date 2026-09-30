@@ -7,6 +7,18 @@ import SkipFuse
     private init() {
     }
 
+    /* SKIP @bridge */public func onConfigureEnvironment(_ isDevelopment: Bool) {
+        UserDefaults.standard.set(isDevelopment, forKey: MobileConnectionEnvironment.buildEnvironmentKey)
+    }
+
+    /* SKIP @bridge */public func connectionBaseURL() -> String {
+        BundleMobileWebConfigRepository().resolveConfig().baseUrl
+    }
+
+    /* SKIP @bridge */public func connectionProjectKey() -> String {
+        BundleMobileWebConfigRepository().resolveConfig().projectKey
+    }
+
     /* SKIP @bridge */public func onInit() {
         logger.debug("onInit")
     }
