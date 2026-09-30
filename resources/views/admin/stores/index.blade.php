@@ -6,23 +6,6 @@
     <div class="card-header"><h3>Reggitで利用する店舗</h3></div>
     <div class="card-body">
         @if($canManageStores)
-            <h4>店舗を追加</h4>
-            <form method="POST" action="{{ admin_route('admin.stores.store') }}">
-                @csrf
-                <label>店舗名 <input name="name" required value="{{ old('name') }}"></label>
-                <label>店舗キー <input name="store_key" required value="{{ old('store_key') }}"></label>
-                <button class="btn btn-primary">追加</button>
-            </form>
-            @foreach($stores as $store)
-                <form method="POST" action="{{ admin_route('admin.stores.admins', ['store' => $store->id]) }}">
-                    @csrf @method('PUT')
-                    <h4>{{ $store->name }} の担当管理者</h4>
-                    @foreach($storeAdmins as $admin)
-                        <label><input type="checkbox" name="admin_ids[]" value="{{ $admin->id }}" @checked($store->admins->contains('id', $admin->id))>{{ $admin->name }}</label>
-                    @endforeach
-                    <button class="btn btn-primary">担当管理者を保存</button>
-                </form>
-            @endforeach
             <form method="POST" action="{{ admin_route('admin.stores.active') }}">
                 @csrf @method('PUT')
                 @foreach($availableSmaregiStores as $store)

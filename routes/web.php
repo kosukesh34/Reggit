@@ -186,8 +186,6 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
     Route::prefix('{project_key}')->group(function () {
         Route::get('/stores', [StoreController::class, 'index'])->name('admin.stores.index');
-        Route::post('/stores', [StoreController::class, 'store'])->name('admin.stores.store')->middleware('admin.permission:settings.manage');
-        Route::put('/stores/{store}/admins', [StoreController::class, 'updateAdmins'])->name('admin.stores.admins')->middleware('admin.permission:settings.manage');
         Route::put('/stores/active', [StoreController::class, 'updateActiveStores'])->name('admin.stores.active')->middleware('admin.permission:settings.manage');
         Route::post('/stores/select', [StoreController::class, 'select'])->name('admin.stores.select');
         Route::get('/', AdminProjectHomeController::class)

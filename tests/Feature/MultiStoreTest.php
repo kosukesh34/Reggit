@@ -62,32 +62,49 @@ class MultiStoreTest extends TestCase
         return $member;
     }
 
-    public function test_project_gets_initial_store_and_headquarters_can_add_branches(): void
+    public function test_headquarters_store_page_only_shows_store_selection(): void
     {
         $this->assertSame('main', $this->a->store_key);
+        $this->b->update(['smaregi_store_id' => '20', 'settings' => ['smaregi_available' => true]]);
         $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin')
-            ->post('/admin/brand/stores', ['name' => '支店C', 'store_key' => 'branch-c'])->assertRedirect();
-        $this->assertDatabaseHas('stores', ['project_id' => $this->project->id, 'store_key' => 'branch-c']);
-        $this->get('/admin/brand/stores')->assertOk()->assertSee('店舗を追加')->assertSee('担当管理者');
+            ->get('/admin/brand/stores')->assertOk()
+            ->assertSee('name="store_ids[]"', false)
+            ->assertSee('支店B')
+            ->assertSee('利用店舗を保存')
+            ->assertDontSee('店舗を追加')
+            ->assertDontSee('担当管理者');
     }
 
-    public function test_branch_cannot_add_stores_or_select_unassigned_store(): void
+    public function test_store_selection_requires_at_least_one_store(): void
+    {
+        $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin')
+            ->from('/admin/brand/stores')->put('/admin/brand/stores/active', [])
+            ->assertRedirect('/admin/brand/stores')
+            ->assertSessionHasErrors(['store_ids' => '利用する店舗を1件以上選択してください。']);
+        $this->get('/admin/brand/stores')->assertOk()->assertSee('利用する店舗を1件以上選択してください。');
+        $this->assertTrue($this->a->fresh()->is_active);
+    }
+
+    public function test_store_selection_cannot_exceed_project_limit(): void
+    {
+        $this->project->update(['max_active_stores' => 1]);
+        foreach ([$this->a, $this->b] as $store) {
+            $store->update(['smaregi_store_id' => (string) $store->id, 'settings' => ['smaregi_available' => true]]);
+        }
+        $activeBefore = [$this->a->fresh()->is_active, $this->b->fresh()->is_active];
+        $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin')
+            ->from('/admin/brand/stores')->put('/admin/brand/stores/active', ['store_ids' => [$this->a->id, $this->b->id]])
+            ->assertRedirect('/admin/brand/stores')
+            ->assertSessionHasErrors(['store_ids' => '利用できる店舗は最大1件です。選択する店舗数を減らしてください。']);
+        $this->assertSame($activeBefore, [$this->a->fresh()->is_active, $this->b->fresh()->is_active]);
+        $this->get('/admin/brand/stores')->assertOk()->assertSee('利用できる店舗は最大1件です。選択する店舗数を減らしてください。');
+    }
+
+    public function test_branch_cannot_select_unassigned_store(): void
     {
         $this->actingAs($this->admin(), 'admin')
-            ->post('/admin/brand/stores', ['name' => '支店C', 'store_key' => 'branch-c'])->assertForbidden();
-        $this->post('/admin/brand/stores/select', ['store_id' => $this->b->id])->assertForbidden();
+            ->post('/admin/brand/stores/select', ['store_id' => $this->b->id])->assertForbidden();
         $this->post('/admin/brand/stores/select', ['store_id' => 'all'])->assertForbidden();
-    }
-
-    public function test_headquarters_can_assign_only_project_admins_to_store(): void
-    {
-        $branchAdmin = $this->admin();
-        $hq = $this->admin(AdminUser::ROLE_PROJECT_ADMIN);
-        $this->actingAs($hq, 'admin')->put('/admin/brand/stores/'.$this->b->id.'/admins', ['admin_ids' => [$branchAdmin->id]])->assertRedirect();
-        $this->assertDatabaseHas('admin_user_stores', ['admin_user_id' => $branchAdmin->id, 'store_id' => $this->b->id]);
-        $other = Project::create(['project_key' => 'other', 'name' => 'Other', 'is_active' => true]);
-        $outsider = AdminUser::factory()->create(['project_id' => $other->id, 'role' => AdminUser::ROLE_ADMIN]);
-        $this->put('/admin/brand/stores/'.$this->b->id.'/admins', ['admin_ids' => [$outsider->id]])->assertUnprocessable();
     }
 
     public function test_branch_member_scope_excludes_other_store_but_keeps_shared_member(): void
