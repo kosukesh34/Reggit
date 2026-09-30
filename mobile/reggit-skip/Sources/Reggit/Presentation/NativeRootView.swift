@@ -54,15 +54,13 @@ struct NativeRootView: View {
                         canSkip: viewModel.membership?.registrationMode.canSkipRegistration ?? true,
                         isRegistering: viewModel.isRegistering,
                         errorMessage: viewModel.registrationError,
-                        name: Binding(
-                            get: { viewModel.registrationName },
-                            set: { viewModel.registrationName = $0 }
-                        ),
-                        phone: Binding(
-                            get: { viewModel.registrationPhone },
-                            set: { viewModel.registrationPhone = $0 }
-                        ),
-                        onSubmit: { Task { await viewModel.submitRegistration() } },
+                        fields: viewModel.membership?.editableProfileFields ?? [],
+                        initialValues: viewModel.registrationPayload.isEmpty ? (viewModel.membership?.profilePayload ?? [:]) : viewModel.registrationPayload,
+                        initialListValues: viewModel.registrationListPayload,
+                        serverFieldErrors: viewModel.registrationFieldErrors,
+                        onSubmit: { values, listValues in
+                            Task { await viewModel.submitRegistration(values: values, listValues: listValues) }
+                        },
                         onSkip: { viewModel.skipRegistration() }
                     )
                 case .ready:
@@ -74,7 +72,7 @@ struct NativeRootView: View {
             .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
             .preferredColorScheme(.light)
             .environment(\.apiBaseURL, viewModel.apiClient?.baseURL ?? "")
-            .toolbar(.hidden, for: .navigationBar)
+            .toolbar(viewModel.phase == .needsRegistration ? .visible : .hidden, for: .navigationBar)
         }
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
@@ -431,7 +429,7 @@ struct NativeRootView: View {
                 projectName: viewModel.projectName,
                 initialMember: viewModel.membership,
                 membershipRevision: viewModel.membershipRevision,
-                opensProfileEditor: tab.key == "profileEdit" || tab.key == "profile",
+                opensProfileEditor: tab.key == "profileEdit",
                 showRankProgress: viewModel.memberShowRankProgress,
                 showPointHistory: viewModel.memberShowPointHistory,
                 showCouponActivity: viewModel.memberShowCouponActivity,

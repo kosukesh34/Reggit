@@ -140,10 +140,18 @@ struct ReggitAPIClient: ReggitAPIServing {
     }
 
     func registerMember(name: String, phone: String) async throws -> MemberProfileSnapshot {
+        try await registerMember(name: name, phone: phone, profilePayload: [:], profileListPayload: [:])
+    }
+
+    func registerMember(name: String, phone: String, profilePayload: [String: String], profileListPayload: [String: [String]]) async throws -> MemberProfileSnapshot {
+        var body: [String: Any] = profilePayload
+        for (key, values) in profileListPayload { body[key] = values }
+        body["name"] = name
+        body["phone"] = phone
         let data = try await requestData(
             path: "/api/members/register",
             method: "POST",
-            body: ["name": name, "phone": phone]
+            body: body
         )
         return try MemberProfileSnapshot.parse(data)
     }
