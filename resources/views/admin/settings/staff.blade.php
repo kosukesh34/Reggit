@@ -4,6 +4,7 @@
 @section('page-title', 'スタッフ・権限')
 
 @section('content')
+<p class="form-text text-muted">操作権限・権限種別・パスワードはアカウント共通です。複数プロジェクトに所属するアカウントの編集には、すべての所属プロジェクトの管理権限が必要です。支店の割り当てはこのプロジェクト内で変更されます。</p>
 <div class="card card-mb-24">
     <div class="card-header"><h2 class="card-title">スタッフを追加</h2></div>
     <div class="card-body">
@@ -16,6 +17,7 @@
                 <div class="form-group"><label class="form-label" for="staff-password">パスワード</label><input class="form-control" type="password" id="staff-password" name="password" minlength="8" required autocomplete="new-password"></div>
                 <div class="form-group"><label class="form-label" for="staff-password-confirmation">パスワード確認</label><input class="form-control" type="password" id="staff-password-confirmation" name="password_confirmation" minlength="8" required autocomplete="new-password"></div>
             </div>
+            @include('admin.settings._staff-access', ['member' => null])
             <h3 class="settings-staff-permissions-title">許可する操作</h3>
             <div class="settings-staff-permissions">
                 @foreach($permissionGroups as $group => $keys)
@@ -46,6 +48,7 @@
                         <div class="form-group"><label class="form-label" for="staff-password-{{ $member->id }}">新しいパスワード（変更時のみ）</label><input class="form-control" type="password" id="staff-password-{{ $member->id }}" name="password" minlength="8" autocomplete="new-password"></div>
                         <div class="form-group"><label class="form-label" for="staff-password-confirmation-{{ $member->id }}">新しいパスワード確認</label><input class="form-control" type="password" id="staff-password-confirmation-{{ $member->id }}" name="password_confirmation" minlength="8" autocomplete="new-password"></div>
                     </div>
+                    @include('admin.settings._staff-access', ['member' => $member])
                     <h3 class="settings-staff-permissions-title">許可する操作</h3>
                     <div class="settings-staff-permissions">
                         @foreach($permissionGroups as $group => $keys)

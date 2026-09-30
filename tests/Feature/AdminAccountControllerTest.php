@@ -48,7 +48,7 @@ class AdminAccountControllerTest extends TestCase
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
             'name' => 'Admin User',
-            'role' => AdminUser::ROLE_ADMIN,
+            'role' => AdminUser::ROLE_PROJECT_ADMIN,
             'project_ids' => [$project->id],
         ]);
 
@@ -56,26 +56,15 @@ class AdminAccountControllerTest extends TestCase
         $this->assertDatabaseHas('admin_users', ['login_id' => 'test_admin']);
     }
 
-    public function test_store_システム管理者作成時は全プロジェクトが割り当てられること(): void
+    public function test_system_admin_creation_is_rejected(): void
     {
         $this->loginSystemAdmin();
-        $projectA = Project::factory()->create(['is_active' => true]);
-        $projectB = Project::factory()->create(['is_active' => true]);
-
-        $response = $this->post('/system-admin/accounts', [
-            'login_id' => 'sys_all_projects',
-            'email' => 'sys_all_projects@example.com',
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
-            'name' => 'System All',
-            'role' => AdminUser::ROLE_SYSTEM_ADMIN,
-        ]);
-
-        $response->assertRedirect('/system-admin/accounts');
-        $created = AdminUser::where('login_id', 'sys_all_projects')->firstOrFail();
-        $this->assertSame(AdminUser::ROLE_SYSTEM_ADMIN, $created->role);
-        $this->assertTrue($created->projects()->where('projects.id', $projectA->id)->exists());
-        $this->assertTrue($created->projects()->where('projects.id', $projectB->id)->exists());
+        $this->post('/system-admin/accounts', [
+            'login_id' => 'sys_all_projects', 'email' => 'sys@example.test',
+            'password' => 'Password123!', 'password_confirmation' => 'Password123!',
+            'name' => 'System', 'role' => AdminUser::ROLE_SYSTEM_ADMIN,
+        ])->assertSessionHasErrors('role');
+        $this->assertDatabaseMissing('admin_users', ['login_id' => 'sys_all_projects']);
     }
 
     public function test_update_アカウントが更新されること(): void
@@ -85,7 +74,7 @@ class AdminAccountControllerTest extends TestCase
         $target = AdminUser::factory()->create([
             'login_id' => 'target_admin',
             'email' => 'target@example.com',
-            'role' => AdminUser::ROLE_ADMIN,
+            'role' => AdminUser::ROLE_PROJECT_ADMIN,
             'project_id' => $project->id,
         ]);
 
@@ -93,7 +82,7 @@ class AdminAccountControllerTest extends TestCase
             'login_id' => $target->login_id,
             'email' => $target->email,
             'name' => 'Updated',
-            'role' => AdminUser::ROLE_ADMIN,
+            'role' => AdminUser::ROLE_PROJECT_ADMIN,
             'project_ids' => [$project->id],
         ]);
 
@@ -104,7 +93,7 @@ class AdminAccountControllerTest extends TestCase
     public function test_destroy_アカウントが削除されること(): void
     {
         $this->loginSystemAdmin();
-        $target = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN]);
+        $target = AdminUser::factory()->create(['role' => AdminUser::ROLE_PROJECT_ADMIN]);
 
         $response = $this->delete('/system-admin/accounts/'.$target->id);
 
@@ -112,29 +101,16 @@ class AdminAccountControllerTest extends TestCase
         $this->assertDatabaseMissing('admin_users', ['id' => $target->id]);
     }
 
-    public function test_update_システム管理者更新時は全プロジェクトが割り当てられること(): void
+    public function test_system_accounts_only_show_project_administrators(): void
     {
         $this->loginSystemAdmin();
-        $projectA = Project::factory()->create(['is_active' => true]);
-        $projectB = Project::factory()->create(['is_active' => true]);
-        $target = AdminUser::factory()->create([
-            'login_id' => 'target_sys',
-            'email' => 'target_sys@example.com',
-            'role' => AdminUser::ROLE_ADMIN,
-            'project_id' => $projectA->id,
-        ]);
-
-        $response = $this->put('/system-admin/accounts/'.$target->id, [
-            'login_id' => $target->login_id,
-            'email' => $target->email,
-            'name' => 'System Updated',
-            'role' => AdminUser::ROLE_SYSTEM_ADMIN,
-        ]);
-
-        $response->assertRedirect('/system-admin/accounts');
-        $target->refresh();
-        $this->assertSame(AdminUser::ROLE_SYSTEM_ADMIN, $target->role);
-        $this->assertTrue($target->projects()->where('projects.id', $projectA->id)->exists());
-        $this->assertTrue($target->projects()->where('projects.id', $projectB->id)->exists());
+        $owner = AdminUser::factory()->create(['role' => AdminUser::ROLE_PROJECT_ADMIN]);
+        $staff = AdminUser::factory()->create(['role' => AdminUser::ROLE_STAFF]);
+        $manager = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN]);
+        $this->get('/system-admin/accounts')->assertOk()->assertSee($owner->login_id)
+            ->assertDontSee($staff->login_id)->assertDontSee($manager->login_id);
+        $this->get('/system-admin/accounts/'.$staff->id.'/edit')->assertNotFound();
+        $this->put('/system-admin/accounts/'.$manager->id, [])->assertForbidden();
+        $this->delete('/system-admin/accounts/'.$manager->id)->assertNotFound();
     }
 }
