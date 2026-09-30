@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\Store;
 use App\Services\Smaregi\SmaregiApiService;
@@ -10,7 +9,6 @@ use App\Util\StoreContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class StoreController extends AdminBaseController
 {
@@ -32,59 +30,27 @@ class StoreController extends AdminBaseController
         return view('admin.stores.index', [
             'stores' => $storeList,
             'availableSmaregiStores' => $availableSmaregiStores,
-            'storeAdmins' => $this->isHeadquarters($request)
-                ? AdminUser::where('project_id', $projectId)->orderBy('id')->get(['id', 'name'])
-                : collect(),
         ]);
-    }
-
-    public function store(Request $request)
-    {
-        abort_unless($this->isHeadquarters($request), 403);
-        $projectId = $this->resolveAdminProjectId();
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'store_key' => ['required', 'string', 'max:80', 'alpha_dash', Rule::unique('stores')->where('project_id', $projectId)],
-        ]);
-
-        Store::create([...$data, 'project_id' => $projectId, 'is_active' => false]);
-
-        return back()->with('success', '店舗を追加しました。');
-    }
-
-    public function updateAdmins(Request $request, string $project_key, int $store)
-    {
-        abort_unless($this->isHeadquarters($request), 403);
-        $projectId = $this->resolveAdminProjectId();
-        $target = Store::where('project_id', $projectId)->findOrFail($store);
-        $request->merge(['admin_ids' => $request->input('admin_ids', [])]);
-        $data = $request->validate([
-            'admin_ids' => ['present', 'array'],
-            'admin_ids.*' => ['integer', 'distinct'],
-        ]);
-        abort_unless(
-            AdminUser::where('project_id', $projectId)->whereIn('id', $data['admin_ids'])->count() === count($data['admin_ids']),
-            422,
-            'このプロジェクトの管理者だけを選択してください。',
-        );
-        $target->admins()->sync(collect($data['admin_ids'])->mapWithKeys(fn ($id) => [$id => ['project_id' => $projectId]])->all());
-
-        return back()->with('success', '担当管理者を更新しました。');
     }
 
     public function updateActiveStores(Request $request)
     {
         abort_unless($this->isHeadquarters($request), 403);
         $projectId = $this->resolveAdminProjectId();
-        $data = $request->validate(['store_ids' => ['required', 'array', 'min:1'], 'store_ids.*' => ['integer', 'distinct']]);
+        $limit = (int) (Project::whereKey($projectId)->value('max_active_stores') ?? 1);
+        $request->merge(['store_ids' => $request->input('store_ids', [])]);
+        $data = $request->validate([
+            'store_ids' => ['required', 'array', 'min:1', 'max:'.$limit],
+            'store_ids.*' => ['integer', 'distinct'],
+        ], [
+            'store_ids.required' => '利用する店舗を1件以上選択してください。',
+            'store_ids.min' => '利用する店舗を1件以上選択してください。',
+            'store_ids.max' => "利用できる店舗は最大{$limit}件です。選択する店舗数を減らしてください。",
+        ]);
         $stores = Store::where('project_id', $projectId)->whereNotNull('smaregi_store_id')->get()
             ->filter(fn (Store $store) => ($store->settings['smaregi_available'] ?? false) === true);
         $ids = array_map('intval', $data['store_ids']);
         abort_unless(count(array_diff($ids, $stores->pluck('id')->all())) === 0, 422, 'スマレジと同期した店舗を選択してください。');
-        $limit = Project::whereKey($projectId)->value('max_active_stores') ?? 1;
-        if (count($ids) > (int) $limit) {
-            return back()->withErrors(['store_ids' => "利用できる店舗は最大{$limit}件です。"])->withInput();
-        }
         DB::transaction(function () use ($projectId, $ids) {
             Store::where('project_id', $projectId)->whereNotIn('id', $ids)->update(['is_active' => false]);
             Store::where('project_id', $projectId)->whereIn('id', $ids)->update(['is_active' => true]);
