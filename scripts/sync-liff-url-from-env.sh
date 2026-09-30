@@ -1,39 +1,30 @@
 #!/usr/bin/env bash
-# .env の APP_URL を mobile/reggit-skip/Skip.env の LIFF_BASE_URL に同期する。
-# プロジェクトルートで実行: ./scripts/sync-liff-url-from-env.sh
-
-set -e
+# .env の APP_URL をモバイルの共通開発接続先に同期する（本番設定は変更しない）。
+set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-ENV_FILE="$ROOT_DIR/.env"
-SKIP_ENV="$ROOT_DIR/mobile/reggit-skip/Skip.env"
 
-if [ ! -f "$ENV_FILE" ]; then
-  echo "Error: .env not found at $ENV_FILE"
-  exit 1
-fi
-if [ ! -f "$SKIP_ENV" ]; then
-  echo "Error: Skip.env not found at $SKIP_ENV"
-  exit 1
-fi
+python3 - "$ROOT_DIR" <<'PY'
+import json
+from pathlib import Path
+import re
+import sys
+from urllib.parse import urlparse
 
-# APP_URL を取得（引用符は除去）
-APP_URL=$(grep -E '^APP_URL=' "$ENV_FILE" | cut -d= -f2- | sed -e 's/^["'\'']//' -e 's/["'\'']$//' | tr -d '\r')
-if [ -z "$APP_URL" ]; then
-  echo "Error: APP_URL not found in .env"
-  exit 1
-fi
-
-# Skip.env の LIFF_BASE_URL 行を更新（存在しなければ追加）
-if grep -q '^LIFF_BASE_URL' "$SKIP_ENV"; then
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|^LIFF_BASE_URL = .*|LIFF_BASE_URL = $APP_URL|" "$SKIP_ENV"
-  else
-    sed -i "s|^LIFF_BASE_URL = .*|LIFF_BASE_URL = $APP_URL|" "$SKIP_ENV"
-  fi
-else
-  echo "" >> "$SKIP_ENV"
-  echo "LIFF_BASE_URL = $APP_URL" >> "$SKIP_ENV"
-fi
-
-echo "Synced LIFF_BASE_URL = $APP_URL from .env to Skip.env"
+root = Path(sys.argv[1])
+env = root / '.env'
+config = root / 'mobile/reggit-skip/Sources/Reggit/Domain/Models/MobileConnectionEnvironment.swift'
+if not env.is_file() or not config.is_file():
+    sys.exit('Error: .env or mobile connection configuration not found')
+url = next((line.split('=', 1)[1].strip().strip('"\'') for line in env.read_text().splitlines() if line.startswith('APP_URL=')), '')
+parsed = urlparse(url)
+if parsed.scheme not in ('http', 'https') or not parsed.netloc:
+    sys.exit('Error: APP_URL must be an HTTP(S) URL')
+source = config.read_text()
+pattern = r'(case \.development: return )"[^"\n]*"'
+updated, count = re.subn(pattern, lambda match: match[1] + json.dumps(url.rstrip('/')), source, count=1)
+if count != 1:
+    sys.exit('Error: development baseURL setting not found')
+config.write_text(updated)
+print('Synced development baseURL from .env; production configuration is unchanged')
+PY

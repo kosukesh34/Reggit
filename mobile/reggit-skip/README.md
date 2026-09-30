@@ -18,70 +18,21 @@
 - タブ構成は `GET /api/v1/app-config`（失敗時はデフォルト5タブ）
 - **FCM**: プッシュは Firebase Cloud Messaging。registration token をデバイス登録で送る
 
-## URL設定
+## 接続設定
 
-API のベースURLは **プロジェクトルートの `.env` の `APP_URL`** に合わせてください。
+接続先・プロジェクトキー・初期タブは `Sources/Reggit/Domain/Models/MobileConnectionEnvironment.swift` の1箇所で管理します。
 
-- **Laravel（Web）**: `config('app.url')` で `APP_URL` を参照しています。
-- **モバイルアプリ**: ビルド時に `Skip.env` の `LIFF_BASE_URL` が使われます（API base として利用）。`APP_URL` と揃えてください。
+- **Debug**: 開発環境（設定した ngrok URL と開発用プロジェクトキー）
+- **Release**: 本番環境
+- iOS はビルド構成、Android は `BuildConfig.DEBUG` に従って自動的に切り替わります。
+- `Info.plist` / `Skip.env` / Gradle に URL やプロジェクトキーを転記する必要はありません。Android の通知取消しAPIも同じ共通設定を使用します。
+- 店舗選択の保存値は開発・本番で分離されます。
 
-### 開発/本番をコード1箇所で切り替える（推奨）
+開発 URL を変更するときは、このファイルの `.development` の `baseURL` を変更するか、Laravel の `.env` の `APP_URL` を更新して `./scripts/sync-liff-url-from-env.sh` を実行し、再ビルドしてください。本番設定には影響しません。開発の `projectKey` も同じファイルで指定します。
 
-**Skip.env を触らずに**開発（ngrok）と本番（reggit.jp）を切り替えたい場合は、次の1ファイルだけ編集します。
+本番に接続するには Xcode の **Edit Scheme → Run → Build Configuration** を **Release** にするか、Android で `./gradlew :app:assembleRelease` を実行します。開発に戻すときは **Debug** に切り替えます。
 
-- **ファイル**: `Sources/Reggit/Data/BundleMobileWebConfigRepository.swift`
-- **切り替え方法**:
-  - **Debug ビルド** → 自動的に開発用（ngrok）に接続（`#if DEBUG` と `useDevelopmentServer`）
-  - **Release ビルド** → Skip.env / Info.plist の URL（本番）に接続
-  - ngrok の URL を変えたときは同じファイルの `developmentBaseUrl` を書き換える
-
-ngrok のURLを変更したときは、次のいずれかを実行してください。
-
-1. **推奨**: プロジェクトルートで同期スクリプトを実行し、その後モバイルをビルドする。
-   ```bash
-   ./scripts/sync-liff-url-from-env.sh
-   ```
-2. 手動で `mobile/reggit-skip/Skip.env` の `LIFF_BASE_URL` を `.env` の `APP_URL` と同じ値に編集する。
-
-### 本番（Xserver）向けに接続して起動する
-
-1. **接続先を本番にしておく**
-   `Skip.env` の `LIFF_BASE_URL` / `LIFF_BASE_URL_IOS` を **`https://reggit.jp`** に設定する。
-
-2. **パッケージ解決**
-   ```bash
-   cd mobile/reggit-skip
-   swift package resolve
-   ```
-
-3. **Xcode で開く**
-   ```bash
-   open Project.xcworkspace
-   ```
-
-4. **iPad / 実機を選んでビルド・起動**
-   - メニュー **Product** → **Destination** で接続した iPad または実機を選択。
-   - **Run (⌘R)** でビルドし、実機にインストールして起動する。
-
-5. **動作確認**
-   - アプリ起動後、ネイティブタブ（会員・注文など）が表示される。
-   - 会員証・商品一覧などが API 経由で取れていれば本番接続は成功。
-
-ローカル（ngrok）に戻すときは、`Skip.env` の `LIFF_BASE_URL` を `.env` の `APP_URL`（ngrok の URL）に戻し、再度ビルドする。
-
-## プロジェクト/画面固定の設定
-
-`Skip.env` で、表示するプロジェクトと初期タブを指定できます。
-
-- 共通設定:
-  - `LIFF_PROJECT_KEY`（例: `default`）
-  - `LIFF_FIXED_TAB`（例: `home`）— 起動時の初期タブ
-- OS別設定（必要な場合のみ）:
-  - `LIFF_PROJECT_KEY_IOS` / `LIFF_PROJECT_KEY_ANDROID`
-  - `LIFF_FIXED_TAB_IOS` / `LIFF_FIXED_TAB_ANDROID`
-
-許可タブキー: `home`, `products`, `orders`, `stamps`, `coupons`, `queue`, `member`, `reservations`, `gallery`
-（ネイティブ UI で実装済み: `member`, `products`, `coupons`, `stamps`, `queue`）
+初期タブは同じファイルの `fixedTab` で指定します。許可タブキー: `home`, `products`, `orders`, `stamps`, `coupons`, `queue`, `member`, `reservations`, `gallery`。
 
 ## 認証
 
@@ -121,4 +72,4 @@ iOS のプッシュ受信を検証する場合は `CODE_SIGNING_ALLOWED=NO` を�
 ## トラブルシュート
 
 - **ログ確認**: iOS は Xcode コンソール、Android は `adb logcat`。
-- **URL 設定**: `Skip.env` の `LIFF_BASE_URL` がプロジェクトの `.env` の `APP_URL` と一致しているか確認。
+- **URL 設定**: `MobileConnectionEnvironment.swift` の開発 `baseURL` が `.env` の `APP_URL` と一致しているか確認。

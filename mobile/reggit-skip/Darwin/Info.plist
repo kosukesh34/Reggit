@@ -2,20 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>LiffBaseUrl</key>
-	<string>https://reggit.jp</string>
-	<key>LiffBaseUrlIos</key>
-	<string>https://reggit.jp</string>
-	<key>LIFF_BASE_URL</key>
-	<string>https://reggit.jp</string>
-	<key>LiffProjectKey</key>
-	<string>sb_skt733n4</string>
-	<key>LIFF_PROJECT_KEY</key>
-	<string>sb_skt733n4</string>
-	<key>LiffFixedTab</key>
-	<string>products</string>
-	<key>LIFF_FIXED_TAB</key>
-	<string>products</string>
 	<key>NSCameraUsageDescription</key>
 	<string>会員引き継ぎのQRコードを読み取るためにカメラを使います。</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
