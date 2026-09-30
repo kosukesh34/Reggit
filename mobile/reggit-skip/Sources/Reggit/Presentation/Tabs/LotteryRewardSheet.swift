@@ -1,7 +1,7 @@
 import SkipFuse
 import SwiftUI
 
-/// Purchase rewards stay above the order screen and play without extra taps.
+/// Purchase rewards stay above the order screen and wait for user interaction.
 struct LotteryRewardSheet: View {
     @State var viewModel: LotteryViewModel
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -30,7 +30,7 @@ struct LotteryRewardSheet: View {
                 ScrollView {
                     VStack(spacing: 14) {
                         header
-                        if let result = viewModel.revealedResult {
+                        if let result = viewModel.revealedResult ?? viewModel.scratchResult {
                             resultContent(result)
                         } else if let error = viewModel.errorMessage, viewModel.state == nil {
                             failureContent(error)
@@ -45,13 +45,22 @@ struct LotteryRewardSheet: View {
                                 .frame(height: 250)
                                 .scaleEffect(stageHeight / 250)
                                 .frame(height: stageHeight)
-                            HStack(spacing: 8) {
-                                ProgressView().tint(ink).scaleEffect(0.8)
-                                Text(viewModel.selectedGame == .scratch ? "スクラッチを開いています…" : "抽選中です。お楽しみに…")
+                            if viewModel.isPlaying || viewModel.isScratchResolving {
+                                HStack(spacing: 8) {
+                                    ProgressView().tint(ink).scaleEffect(0.8)
+                                    Text("抽選中です。お楽しみに…")
+                                        .font(.system(size: 13, weight: .medium))
+                                }
+                                .foregroundStyle(ink.opacity(0.7))
+                            } else if viewModel.selectedGame != .scratch {
+                                action(viewModel.selectedGame == .gacha ? "ガチャを回す" : "ルーレットを回す") {
+                                    Task { await viewModel.playSelectedGame(reduceMotion: reduceMotion) }
+                                }
+                            } else {
+                                Text("銀面を半分ほどこすって結果を確認")
                                     .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(ink.opacity(0.7))
                             }
-                            .foregroundStyle(ink.opacity(0.7))
-                            .accessibilityLabel("抽選中です。結果は自動で表示されます")
                         } else {
                             Text("現在利用できる購入特典はありません")
                                 .font(.subheadline)
@@ -70,8 +79,6 @@ struct LotteryRewardSheet: View {
         .interactiveDismissDisabled(viewModel.isLoading || viewModel.isPlaying || viewModel.isScratchResolving)
         .task {
             await viewModel.load(force: true)
-            guard !Task.isCancelled, viewModel.errorMessage == nil else { return }
-            await viewModel.playNextAutomatically(reduceMotion: reduceMotion)
         }
     }
 
@@ -84,7 +91,7 @@ struct LotteryRewardSheet: View {
                 }
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(ink.opacity(0.65))
-                Text(viewModel.revealedResult == nil ? "\(isPreview ? "テスト" : "購入特典") · \(viewModel.selectedGame.title)" : "抽選結果")
+                Text(viewModel.revealedResult == nil && viewModel.scratchResult == nil ? "\(isPreview ? "テスト" : "購入特典") · \(viewModel.selectedGame.title)" : "抽選結果")
                     .font(.system(size: 23, weight: .bold, design: .rounded))
                     .foregroundStyle(ink)
             }
@@ -124,14 +131,17 @@ struct LotteryRewardSheet: View {
                 progress: viewModel.scratchProgress,
                 scratchedCells: viewModel.scratchedCells,
                 result: viewModel.scratchResult,
-                enabled: true,
+                enabled: viewModel.canScratchCurrentTicket,
                 isResolving: viewModel.isScratchResolving,
-                onScratch: { _, _, _, _ in },
+                onScratch: { x, y, width, height in
+                    if viewModel.scratch(atX: x, y: y, width: width, height: height) {
+                        Task { await viewModel.resolveScratch() }
+                    }
+                },
                 showsInstructions: false
             )
             .scaleEffect(0.72)
             .frame(height: 220)
-            .allowsHitTesting(false)
         }
     }
 
@@ -169,8 +179,7 @@ struct LotteryRewardSheet: View {
                 if viewModel.nextEntitlement == nil {
                     onClose()
                 } else {
-                    viewModel.revealedResult = nil
-                    Task { await viewModel.playNextAutomatically(reduceMotion: reduceMotion) }
+                    viewModel.prepareNextGame()
                 }
             }
         }
@@ -186,7 +195,6 @@ struct LotteryRewardSheet: View {
                 viewModel.alertMessage = nil
                 Task {
                     await viewModel.load(force: true)
-                    await viewModel.playNextAutomatically(reduceMotion: reduceMotion)
                 }
             }
         }

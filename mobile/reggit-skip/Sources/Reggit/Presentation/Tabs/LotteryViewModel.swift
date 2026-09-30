@@ -84,48 +84,18 @@ final class LotteryViewModel {
         }
     }
 
-    /// The server determines the result; this only advances the presentation.
-    func playNextAutomatically(reduceMotion: Bool) async {
-        guard !isPlaying, !isScratchResolving, revealedResult == nil,
-              let entitlement = nextEntitlement,
-              let game = LotteryGameKind(rawValue: entitlement.rewardType) else { return }
-        selectedGame = game
-        switch game {
-        case .gacha: await playGacha(reduceMotion: reduceMotion)
-        case .roulette: await playRoulette(reduceMotion: reduceMotion)
-        case .scratch: await playScratchAutomatically(reduceMotion: reduceMotion)
-        }
+    func prepareNextGame() {
+        revealedResult = nil
+        resetScratch()
+        selectPendingGame()
     }
 
-    func playScratchAutomatically(reduceMotion: Bool) async {
-        guard !isPlaying, !isScratchResolving,
-              let entitlement = pendingEntitlement(for: "scratch") else { return }
-        isPlaying = true
-        isScratchResolving = true
-        resetScratch()
-        scratchRequested = true
-        defer { isPlaying = false; isScratchResolving = false }
-        do {
-            let result = try await service.play(entitlementId: entitlement.id)
-            playedEntitlementIDs.insert(entitlement.id)
-            scratchResult = result
-            let steps = reduceMotion ? 1 : ScratchRevealEngine.columns
-            for step in 1...steps {
-                let count = ScratchRevealEngine.cellCount * step / steps
-                withAnimation(.easeOut(duration: reduceMotion ? 0.1 : 0.12)) {
-                    scratchedCells = (0..<ScratchRevealEngine.cellCount).filter {
-                        $0 % ScratchRevealEngine.columns < ScratchRevealEngine.columns * step / steps
-                    }
-                    scratchProgress = Double(count) / Double(ScratchRevealEngine.cellCount)
-                }
-                try? await Task.sleep(nanoseconds: reduceMotion ? 100_000_000 : 110_000_000)
-            }
-            try? await Task.sleep(nanoseconds: reduceMotion ? 100_000_000 : 350_000_000)
-            await present(result)
-            await refreshState()
-        } catch {
-            scratchRequested = false
-            showAlert(title: "抽選結果を確認できませんでした", message: error.localizedDescription)
+    func playSelectedGame(reduceMotion: Bool) async {
+        guard !isPlaying, !isScratchResolving, revealedResult == nil else { return }
+        switch selectedGame {
+        case .gacha: await playGacha(reduceMotion: reduceMotion)
+        case .roulette: await playRoulette(reduceMotion: reduceMotion)
+        case .scratch: break
         }
     }
 
@@ -200,7 +170,7 @@ final class LotteryViewModel {
         await refreshState()
     }
 
-    /// Returns true only on the first contact, when the result should be requested.
+    /// Requests the result once half of the ticket has been scratched.
     func scratch(atX x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) -> Bool {
         guard canScratchCurrentTicket else {
             showAlert(title: "プレイできません", message: "現在利用できるスクラッチの権利がありません。")
@@ -214,13 +184,13 @@ final class LotteryViewModel {
             current: scratchedCells
         )
         scratchProgress = scratchEngine.progress(for: scratchedCells)
-        guard !scratchRequested, scratchResult == nil else { return false }
+        guard scratchProgress >= 0.5, !scratchRequested, scratchResult == nil else { return false }
         scratchRequested = true
         return true
     }
 
     func resolveScratch() async {
-        guard !isScratchResolving,
+        guard scratchProgress >= 0.5, !isScratchResolving,
               let entitlement = pendingEntitlement(for: "scratch") else { return }
         isScratchResolving = true
         defer { isScratchResolving = false }

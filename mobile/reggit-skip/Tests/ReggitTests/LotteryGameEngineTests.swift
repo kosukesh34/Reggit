@@ -42,7 +42,7 @@ final class LotteryGameEngineTests: XCTestCase {
     }
 
     @MainActor
-    func testCachedScratchOnlyPurchaseSelectsScratchAndAutomaticallyRevealsResult() async {
+    func testCachedScratchOnlyPurchaseWaitsUntilHalfIsScratched() async {
         let state = purchaseState(gacha: false, scratch: true, roulette: false)
         SecondaryScreenCache.lottery = state
         defer { SecondaryScreenCache.reset() }
@@ -50,27 +50,30 @@ final class LotteryGameEngineTests: XCTestCase {
         let model = LotteryViewModel(service: LotteryGameServiceStub(state: state, result: result))
         await model.load()
         XCTAssertEqual(model.selectedGame, .scratch)
-        await model.playNextAutomatically(reduceMotion: true)
-        XCTAssertEqual(model.scratchProgress, 1)
-        XCTAssertEqual(model.scratchedCells.count, ScratchRevealEngine.cellCount)
-        XCTAssertEqual(model.revealedResult, result)
+        XCTAssertEqual(model.scratchProgress, 0)
+        XCTAssertNil(model.scratchResult)
+        XCTAssertFalse(model.scratch(atX: 132, y: 79, width: 264, height: 158))
+        await model.resolveScratch()
+        XCTAssertNil(model.scratchResult)
+        scratchUntilThreshold(model)
+        await model.resolveScratch()
+        XCTAssertEqual(model.scratchResult, result)
         XCTAssertNil(model.nextEntitlement)
-        XCTAssertFalse(model.isPlaying)
-        // Even a stale state response cannot consume the same ticket again.
-        model.revealedResult = nil
-        await model.playNextAutomatically(reduceMotion: true)
-        XCTAssertNil(model.revealedResult)
+        XCTAssertFalse(model.scratch(atX: 132, y: 79, width: 264, height: 158))
+
     }
 
     @MainActor
-    func testRouletteOnlyPurchaseAutomaticallyPlaysConfiguredGame() async {
+    func testRouletteOnlyPurchaseWaitsForPlayAction() async {
         SecondaryScreenCache.reset()
         let state = purchaseState(gacha: false, scratch: false, roulette: true)
         let result = LotteryPlayResult(entitlementId: 3, rewardType: "roulette", isWin: false, coupon: nil)
         let model = LotteryViewModel(service: LotteryGameServiceStub(state: state, result: result))
         await model.load()
         XCTAssertEqual(model.selectedGame, .roulette)
-        await model.playNextAutomatically(reduceMotion: true)
+        XCTAssertNil(model.revealedResult)
+        XCTAssertEqual(model.rouletteRotation, 0)
+        await model.playSelectedGame(reduceMotion: true)
         XCTAssertEqual(model.revealedResult, result)
         XCTAssertNil(model.nextEntitlement)
         SecondaryScreenCache.reset()
@@ -91,12 +94,34 @@ final class LotteryGameEngineTests: XCTestCase {
             let model = LotteryViewModel(service: LotteryPreviewService(game: game), usesCache: false)
             await model.load()
             XCTAssertEqual(model.selectedGame, game)
-            await model.playNextAutomatically(reduceMotion: true)
-            XCTAssertEqual(model.revealedResult?.rewardType, game.rawValue)
-            XCTAssertEqual(model.revealedResult?.entitlementId, -1)
+            XCTAssertNil(model.revealedResult)
+            if game == .scratch {
+                scratchUntilThreshold(model)
+                await model.resolveScratch()
+            } else {
+                await model.playSelectedGame(reduceMotion: true)
+            }
+            let result = model.revealedResult ?? model.scratchResult
+            XCTAssertEqual(result?.rewardType, game.rawValue)
+            XCTAssertEqual(result?.entitlementId, -1)
             XCTAssertNil(model.nextEntitlement)
             XCTAssertEqual(SecondaryScreenCache.lottery, cached)
         }
+    }
+
+    @MainActor
+    private func scratchUntilThreshold(_ model: LotteryViewModel) {
+        for row in 0..<ScratchRevealEngine.rows {
+            for column in 0..<ScratchRevealEngine.columns {
+                let shouldResolve = model.scratch(atX: Double(column) * 22 + 11, y: Double(row) * 19.75 + 9, width: 264, height: 158)
+                if shouldResolve {
+                    XCTAssertGreaterThanOrEqual(model.scratchProgress, 0.5)
+                    return
+                }
+                XCTAssertLessThan(model.scratchProgress, 0.5)
+            }
+        }
+        XCTFail("Half of the scratched surface must trigger the result")
     }
 
     private func purchaseState(gacha: Bool, scratch: Bool, roulette: Bool) -> LotteryStateSnapshot {
@@ -136,7 +161,8 @@ final class LotteryGameEngineTests: XCTestCase {
         let viewModel = LotteryViewModel(service: LotteryGameServiceStub(state: state, result: result))
         await viewModel.load()
 
-        XCTAssertTrue(viewModel.scratch(atX: 132, y: 79, width: 264, height: 158))
+        XCTAssertFalse(viewModel.scratch(atX: 132, y: 79, width: 264, height: 158))
+        scratchUntilThreshold(viewModel)
         await viewModel.resolveScratch()
 
         XCTAssertEqual(viewModel.scratchResult, result)
