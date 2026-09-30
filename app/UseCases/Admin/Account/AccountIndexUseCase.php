@@ -13,7 +13,7 @@ class AccountIndexUseCase
         $query = AdminUser::with('project', 'projects');
 
         if ($me->isSystemAdmin()) {
-            // no filter
+            $query->where('role', AdminUser::ROLE_PROJECT_ADMIN);
         } elseif ($me->isProjectAdmin()) {
             $projectIds = $me->getAllowedProjectIds();
             $query->whereIn('project_id', $projectIds)

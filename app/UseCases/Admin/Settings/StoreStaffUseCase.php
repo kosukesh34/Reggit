@@ -16,12 +16,13 @@ class StoreStaffUseCase
                 'login_id' => $data['login_id'],
                 'email' => $data['email'],
                 'password' => $data['password'],
-                'role' => AdminUser::ROLE_STAFF,
+                'role' => $data['role'] ?? AdminUser::ROLE_STAFF,
                 'project_id' => $projectId,
                 'created_by_id' => $creatorId,
             ]);
             $staff->projects()->sync([$projectId]);
-            $staff->syncPermissions($data['permissions'] ?? []);
+            $staff->stores()->sync(collect($data['store_ids'] ?? [])->mapWithKeys(fn ($id) => [$id => ['project_id' => $projectId]])->all());
+            $staff->syncPermissions($staff->isStaff() ? ($data['permissions'] ?? []) : []);
 
             return $staff;
         });

@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
-@section('title', '管理者アカウント作成')
-@section('page-title', '管理者アカウント作成')
+@section('title', 'プロジェクト管理者アカウント作成')
+@section('page-title', 'プロジェクト管理者アカウント作成')
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
@@ -12,7 +12,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-user-plus"></i> 新規管理者アカウント</h3>
+        <h3 class="card-title"><i class="fas fa-user-plus"></i> 新規プロジェクト管理者アカウント</h3>
     </div>
     <div class="card-body">
         <form action="{{ route("{$view->routePrefix}.accounts.store", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" method="POST">
@@ -64,24 +64,6 @@
                 </div>
                 @error('project_ids')<span class="invalid-feedback">{{ $message }}</span>@enderror
             </div>
-            <div class="form-group" id="permissions_group" style="display:none;">
-                <label class="form-label">スタッフ権限</label>
-                <p class="form-text text-muted">スタッフがアクセスできる機能を選択してください。</p>
-                @foreach($view->permissionGroups as $groupName => $groupPerms)
-                    <div class="permission-group" style="margin-bottom:12px;">
-                        <strong>{{ $groupName }}</strong>
-                        <div style="padding-left:16px; margin-top:4px;">
-                            @foreach($groupPerms as $perm)
-                                <label class="checkbox-label" style="display:block; margin-bottom:4px;">
-                                    <input type="checkbox" name="permissions[]" value="{{ $perm }}" {{ in_array($perm, old('permissions', []), true) ? 'checked' : '' }}>
-                                    <span>{{ $view->allPermissions[$perm] ?? $perm }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-                    </div>
-                @endforeach
-                @error('permissions')<span class="invalid-feedback">{{ $message }}</span>@enderror
-            </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">作成</button>
                 <a href="{{ route("{$view->routePrefix}.accounts.index", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" class="btn btn-secondary">キャンセル</a>
@@ -89,13 +71,5 @@
         </form>
     </div>
 </div>
-<script>
-document.getElementById('role').addEventListener('change', function() {
-    var projectGroup = document.getElementById('project_ids_group');
-    var permGroup = document.getElementById('permissions_group');
-    projectGroup.style.display = (this.value !== 'system_admin') ? 'block' : 'none';
-    permGroup.style.display = (this.value === 'staff') ? 'block' : 'none';
-});
-document.getElementById('role').dispatchEvent(new Event('change'));
-</script>
+
 @endsection

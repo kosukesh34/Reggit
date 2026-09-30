@@ -1,14 +1,12 @@
 @extends('admin.layout')
 
-@section('title', 'アカウント管理')
-@section('page-title', 'アカウント管理')
+@section('title', 'プロジェクト管理者')
+@section('page-title', 'プロジェクト管理者')
 
 @section('content')
-@if(request()->routeIs('system-admin.accounts.*'))
-@endif
 <div class="card">
     <div class="card-header card-header-with-action">
-        <h3 class="card-title"><i class="fas fa-user-cog"></i> 管理者アカウント一覧</h3>
+        <h3 class="card-title"><i class="fas fa-user-cog"></i> プロジェクト管理者一覧</h3>
         @if($view->me->isStaff() === false)
             <a href="{{ route("{$view->routePrefix}.accounts.create", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" class="btn btn-primary"><i class="fas fa-plus"></i> 新規作成</a>
         @endif
@@ -21,7 +19,7 @@
                 <th>メール</th>
                 <th>名前</th>
                 <th>権限</th>
-                <th>担当店舗</th>
+                <th>担当プロジェクト</th>
                 <th class="table-actions-cell">操作</th>
             </tr>
         </thead>

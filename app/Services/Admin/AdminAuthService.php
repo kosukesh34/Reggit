@@ -3,6 +3,7 @@
 namespace App\Services\Admin;
 
 use App\Models\AdminAuditLog;
+use App\Models\AdminUser;
 use App\Repositories\Contracts\AdminUserRepository;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Services\Admin\Data\AdminAuthAuditContext;
@@ -36,7 +37,7 @@ class AdminAuthService
         }
         $first = $this->projectRepository->findFirstActiveByIds($admin->getAllowedProjectIds());
         if ($first !== null) {
-            return new AdminRedirectResult('admin.dashboard', ['project_key' => $first->project_key]);
+            return $this->projectLoginRedirect($admin, $first->project_key);
         }
 
         Auth::guard('admin')->logout();
@@ -103,10 +104,20 @@ class AdminAuthService
         ]);
 
         if ($input->projectKey !== null && $input->projectKey !== '') {
-            return new AdminRedirectResult('admin.dashboard', ['project_key' => $input->projectKey]);
+            return $this->projectLoginRedirect($user, $input->projectKey);
         }
 
         return $this->getAdminDashboardRedirect();
+    }
+
+    private function projectLoginRedirect(AdminUser $admin, string $projectKey): AdminRedirectResult
+    {
+        if (! $admin->isStaff() || $admin->hasPermission('dashboard.view')) {
+            return new AdminRedirectResult('admin.dashboard', ['project_key' => $projectKey]);
+        }
+
+        // 支店選択画面はすべてのスタッフが利用可能。閲覧権限がない場合もログインを完了できる。
+        return new AdminRedirectResult('admin.stores.index', ['project_key' => $projectKey]);
     }
 
     public function loginSystemAdmin(SystemAdminLoginInput $input): AdminRedirectResult

@@ -11,12 +11,12 @@ class GetStaffListUseCase
     public function handle(int $projectId): Collection
     {
         return AdminUser::query()
-            ->where('role', AdminUser::ROLE_STAFF)
+            ->whereIn('role', [AdminUser::ROLE_STAFF, AdminUser::ROLE_ADMIN])
             ->where(function ($query) use ($projectId) {
                 $query->where('project_id', $projectId)
                     ->orWhereHas('projects', fn ($projects) => $projects->where('projects.id', $projectId));
             })
-            ->with('permissions')
+            ->with(['permissions', 'stores'])
             ->orderBy('name')
             ->get();
     }

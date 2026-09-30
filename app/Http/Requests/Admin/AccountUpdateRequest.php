@@ -19,7 +19,7 @@ class AccountUpdateRequest extends FormRequest
         }
         $target = AdminUser::find($this->route('id'));
 
-        return $target !== null && $admin->canEditUser($target);
+        return $target !== null && $target->isProjectAdmin() && $admin->canEditUser($target);
     }
 
     public function rules(): array
@@ -31,7 +31,7 @@ class AccountUpdateRequest extends FormRequest
             'email' => 'required|email|unique:admin_users,email,'.$id,
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'name' => 'required|string|max:255',
-            'role' => 'required|in:system_admin,project_admin,admin,staff',
+            'role' => 'required|in:project_admin',
             'project_ids' => 'nullable|array',
             'project_ids.*' => 'exists:projects,id',
             'permissions' => 'nullable|array',
