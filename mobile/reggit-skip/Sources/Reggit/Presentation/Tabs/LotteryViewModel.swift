@@ -14,7 +14,7 @@ final class LotteryViewModel {
     var revealedResult: LotteryPlayResult?
 
     var gachaRotation = 0.0
-    var gachaShakeOffset = 0.0
+    var gachaStir = 0.0
     var showsDroppedCapsule = false
     var opensDroppedCapsule = false
 
@@ -23,6 +23,7 @@ final class LotteryViewModel {
     var scratchResult: LotteryPlayResult?
     var scratchRequested = false
     var isScratchResolving = false
+    var isScratchRevealed = false
 
     var rouletteRotation = 0.0
     private var playedEntitlementIDs: Set<Int> = []
@@ -112,6 +113,10 @@ final class LotteryViewModel {
         return games.isEmpty ? LotteryGameKind.all : games
     }
 
+    var isScratchInProgress: Bool {
+        scratchRequested && !isScratchRevealed
+    }
+
     var canScratchCurrentTicket: Bool {
         hasEntitlement("scratch") || scratchRequested || scratchResult != nil
     }
@@ -143,25 +148,30 @@ final class LotteryViewModel {
         isPlaying = true
         showsDroppedCapsule = false
         opensDroppedCapsule = false
-        withAnimation(.easeInOut(duration: reduceMotion ? 0.15 : 1.1)) {
-            gachaRotation += reduceMotion ? 90 : 1080
+        async let played = service.play(entitlementId: entitlement.id)
+        if reduceMotion {
+            withAnimation(.easeInOut(duration: 0.15)) { gachaRotation += 90 }
+        } else {
+            for step in 1 ... 4 {
+                withAnimation(.easeIn(duration: 0.3)) { gachaRotation += 90 }
+                await pause(0.3)
+                withAnimation(.easeOut(duration: 0.08)) { gachaStir = Double(step) }
+                await pause(0.08)
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) { gachaStir = 0 }
+                await pause(0.18)
+            }
         }
         do {
-            let result = try await service.play(entitlementId: entitlement.id)
+            let result = try await played
             playedEntitlementIDs.insert(entitlement.id)
-            if !reduceMotion {
-                for index in 0 ..< 6 {
-                    try? await Task.sleep(nanoseconds: 85_000_000)
-                    withAnimation(.easeInOut(duration: 0.08)) {
-                        gachaShakeOffset = index % 2 == 0 ? -6 : 6
-                    }
-                }
+            withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.5, dampingFraction: 0.72)) {
+                showsDroppedCapsule = true
             }
-            withAnimation(.easeOut(duration: 0.12)) { gachaShakeOffset = 0 }
-            withAnimation(.easeOut(duration: reduceMotion ? 0.12 : 0.48)) { showsDroppedCapsule = true }
-            try? await Task.sleep(nanoseconds: reduceMotion ? 120_000_000 : 520_000_000)
-            withAnimation(.easeOut(duration: reduceMotion ? 0.12 : 0.28)) { opensDroppedCapsule = true }
-            try? await Task.sleep(nanoseconds: reduceMotion ? 120_000_000 : 420_000_000)
+            await pause(reduceMotion ? 0.12 : 1.0)
+            withAnimation(reduceMotion ? .easeOut(duration: 0.12) : .spring(response: 0.5, dampingFraction: 0.8)) {
+                opensDroppedCapsule = true
+            }
+            await pause(reduceMotion ? 0.12 : 1.1)
             await present(result)
         } catch {
             showAlert(title: "プレイできませんでした", message: error.localizedDescription)
@@ -170,7 +180,7 @@ final class LotteryViewModel {
         await refreshState()
     }
 
-    /// Requests the result once half of the ticket has been scratched.
+    /// Requests the result on the first stroke and reveals it once half of the ticket has been scratched.
     func scratch(atX x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) -> Bool {
         guard canScratchCurrentTicket else {
             showAlert(title: "プレイできません", message: "現在利用できるスクラッチの権利がありません。")
@@ -184,28 +194,36 @@ final class LotteryViewModel {
             current: scratchedCells
         )
         scratchProgress = scratchEngine.progress(for: scratchedCells)
-        guard scratchProgress >= 0.5, !scratchRequested, scratchResult == nil else { return false }
+        revealScratchIfReady()
+        guard !scratchRequested, scratchResult == nil else { return false }
         scratchRequested = true
         return true
     }
 
     func resolveScratch() async {
-        guard scratchProgress >= 0.5, !isScratchResolving,
+        guard scratchRequested, !isScratchResolving, scratchResult == nil,
               let entitlement = pendingEntitlement(for: "scratch") else { return }
         isScratchResolving = true
-        defer { isScratchResolving = false }
         do {
             let result = try await service.play(entitlementId: entitlement.id)
             playedEntitlementIDs.insert(entitlement.id)
-            withAnimation(.easeOut(duration: 0.2)) { scratchResult = result }
+            scratchResult = result
+            isScratchResolving = false
+            revealScratchIfReady()
             if result.isWin, result.coupon != nil {
                 try? await service.notifyWin(entitlementId: result.entitlementId)
             }
             await refreshState()
         } catch {
+            isScratchResolving = false
             scratchRequested = false
             showAlert(title: "プレイできませんでした", message: error.localizedDescription)
         }
+    }
+
+    private func revealScratchIfReady() {
+        guard !isScratchRevealed, scratchResult != nil, scratchProgress >= 0.5 else { return }
+        withAnimation(.easeOut(duration: 0.45)) { isScratchRevealed = true }
     }
 
     func resetScratch() {
@@ -213,6 +231,7 @@ final class LotteryViewModel {
         scratchedCells = []
         scratchResult = nil
         scratchRequested = false
+        isScratchRevealed = false
     }
 
     func playRoulette(reduceMotion: Bool) async {
@@ -234,10 +253,10 @@ final class LotteryViewModel {
                 currentRotation: rouletteRotation,
                 reduceMotion: reduceMotion
             )
-            withAnimation(.easeOut(duration: reduceMotion ? 0.2 : 2.4)) {
+            withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .timingCurve(0.2, 0.7, 0.1, 1, duration: 5.6)) {
                 rouletteRotation += plan.travel
             }
-            try? await Task.sleep(nanoseconds: reduceMotion ? 220_000_000 : 2_450_000_000)
+            await pause(reduceMotion ? 0.22 : 6.3)
             await present(result)
         } catch {
             showAlert(title: "プレイできませんでした", message: error.localizedDescription)
@@ -261,7 +280,11 @@ final class LotteryViewModel {
         if result.isWin, result.coupon != nil {
             try? await service.notifyWin(entitlementId: result.entitlementId)
         }
-        withAnimation(.easeOut(duration: 0.24)) { revealedResult = result }
+        withAnimation(.easeOut(duration: 0.35)) { revealedResult = result }
+    }
+
+    private func pause(_ seconds: Double) async {
+        try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
     }
 
     private func showAlert(title: String, message: String) {
