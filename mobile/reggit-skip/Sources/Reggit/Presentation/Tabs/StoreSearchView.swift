@@ -119,7 +119,9 @@ struct StoreSearchView: View {
             }
             .padding(.horizontal, 14)
             .frame(minHeight: 64)
+            #if !os(Android)
             .contentShape(Rectangle())
+            #endif
         }
         .buttonStyle(.plain)
         .disabled(isCurrent)
