@@ -31,6 +31,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     var homeMenuLayout = "grid_3x2"
     var productDisplayLayout = "list_with_image"
     var lotteryModalPresented = false
+    var lotteryPreviewGame: LotteryGameKind?
     var pendingLotteryCount = 0
     private var lastStampsTotal: Int?
     private var realtimeWebSocketURL: String?
@@ -129,9 +130,10 @@ final class NativeRootViewModel: PushNotificationHandling {
             if !config.hasNavigationConfiguration {
                 footerItems = Array(tabs.filter { $0.url == nil }.prefix(5))
             }
-            let menu = config.hasNavigationConfiguration
+            var menu = config.hasNavigationConfiguration
                 ? Self.items(config.hamburgerItems, availableIn: tabs)
                 : Self.testingMenu
+            menu = Self.uniqueItems(menu + Self.lotteryPreviewMenu)
             for item in menu where !tabs.contains(where: { $0.key == item.key }) {
                 tabs.append(item)
             }
@@ -274,11 +276,7 @@ final class NativeRootViewModel: PushNotificationHandling {
             }
             if count > self.pendingLotteryCount {
                 Task {
-                    guard let nativeClient else { return }
-                    guard let state = try? await nativeClient.fetchLotteryState(),
-                          state.gachaEnabled,
-                          state.pending(for: "gacha") != nil else { return }
-                    self.lotteryModalPresented = true
+                    await self.presentPurchaseLotteryIfAvailable()
                 }
             }
             self.pendingLotteryCount = count
@@ -343,17 +341,37 @@ final class NativeRootViewModel: PushNotificationHandling {
     }
 
     func paymentConfirmed() async {
-        guard let apiClient else { return }
+        guard apiClient != nil else { return }
         SecondaryScreenCache.orders = nil
         SecondaryScreenCache.lottery = nil
         ordersRevision &+= 1
         lotteryRevision &+= 1
-        if let state = try? await apiClient.fetchLotteryState() {
-            pendingLotteryCount = state.entitlements.count
-            if !state.entitlements.isEmpty {
-                lotteryModalPresented = true
-            }
+        await presentPurchaseLotteryIfAvailable()
+    }
+
+    private func presentPurchaseLotteryIfAvailable() async {
+        guard !lotteryModalPresented, let apiClient,
+              let state = try? await apiClient.fetchLotteryState() else { return }
+        SecondaryScreenCache.lottery = state
+        pendingLotteryCount = state.entitlements.count
+        if !state.playableEntitlements.isEmpty {
+            lotteryPreviewGame = nil
+            lotteryModalPresented = true
         }
+    }
+
+    func openLotteryPreview(menuKey: String) -> Bool {
+        let prefix = "testLottery_"
+        guard menuKey.hasPrefix(prefix),
+              let game = LotteryGameKind(rawValue: String(menuKey.dropFirst(prefix.count))) else { return false }
+        lotteryPreviewGame = game
+        lotteryModalPresented = true
+        return true
+    }
+
+    func finishLotteryPresentation() {
+        if lotteryPreviewGame == nil { handleProjectUpdate(topic: "coupons") }
+        lotteryPreviewGame = nil
     }
 
     // MARK: - PushNotificationHandling
@@ -421,6 +439,12 @@ final class NativeRootViewModel: PushNotificationHandling {
         AppTabItem(id: "lottery", key: "lottery", label: "抽選", icon: "fa-dice", sfSymbol: "dice.fill"),
         AppTabItem(id: "storeSearch", key: "storeSearch", label: "店舗を探す", icon: "fa-location-dot", sfSymbol: "location.fill"),
     ]
+
+    /// Temporary shortcuts, including projects with a configured hamburger menu.
+    static let lotteryPreviewMenu: [AppTabItem] = LotteryGameKind.all.map { game in
+        AppTabItem(id: "testLottery_" + game.rawValue, key: "testLottery_" + game.rawValue,
+                   label: game.title + "（テスト）", icon: "fa-dice", sfSymbol: game.icon)
+    }
 
     static let defaultTabs: [AppTabItem] = [
         AppTabItem(id: "home", key: "home", label: "ホーム", icon: "fa-home", sfSymbol: "house.fill"),

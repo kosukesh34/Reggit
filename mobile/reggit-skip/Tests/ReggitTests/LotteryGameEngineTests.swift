@@ -42,6 +42,77 @@ final class LotteryGameEngineTests: XCTestCase {
     }
 
     @MainActor
+    func testCachedScratchOnlyPurchaseSelectsScratchAndAutomaticallyRevealsResult() async {
+        let state = purchaseState(gacha: false, scratch: true, roulette: false)
+        SecondaryScreenCache.lottery = state
+        defer { SecondaryScreenCache.reset() }
+        let result = LotteryPlayResult(entitlementId: 2, rewardType: "scratch", isWin: false, coupon: nil)
+        let model = LotteryViewModel(service: LotteryGameServiceStub(state: state, result: result))
+        await model.load()
+        XCTAssertEqual(model.selectedGame, .scratch)
+        await model.playNextAutomatically(reduceMotion: true)
+        XCTAssertEqual(model.scratchProgress, 1)
+        XCTAssertEqual(model.scratchedCells.count, ScratchRevealEngine.cellCount)
+        XCTAssertEqual(model.revealedResult, result)
+        XCTAssertNil(model.nextEntitlement)
+        XCTAssertFalse(model.isPlaying)
+        // Even a stale state response cannot consume the same ticket again.
+        model.revealedResult = nil
+        await model.playNextAutomatically(reduceMotion: true)
+        XCTAssertNil(model.revealedResult)
+    }
+
+    @MainActor
+    func testRouletteOnlyPurchaseAutomaticallyPlaysConfiguredGame() async {
+        SecondaryScreenCache.reset()
+        let state = purchaseState(gacha: false, scratch: false, roulette: true)
+        let result = LotteryPlayResult(entitlementId: 3, rewardType: "roulette", isWin: false, coupon: nil)
+        let model = LotteryViewModel(service: LotteryGameServiceStub(state: state, result: result))
+        await model.load()
+        XCTAssertEqual(model.selectedGame, .roulette)
+        await model.playNextAutomatically(reduceMotion: true)
+        XCTAssertEqual(model.revealedResult, result)
+        XCTAssertNil(model.nextEntitlement)
+        SecondaryScreenCache.reset()
+    }
+
+    func testPurchaseOnlyOffersEnabledGamesWithTickets() {
+        XCTAssertEqual(purchaseState(gacha: false, scratch: true, roulette: false).playableEntitlements.map(\.rewardType), ["scratch"])
+        XCTAssertTrue(purchaseState(gacha: false, scratch: false, roulette: false).playableEntitlements.isEmpty)
+        XCTAssertEqual(purchaseState(gacha: true, scratch: true, roulette: true).playableEntitlements.count, 3)
+    }
+
+    @MainActor
+    func testMenuPreviewsPlayAllThreeGamesWithoutChangingPurchaseCache() async {
+        let cached = purchaseState(gacha: true, scratch: true, roulette: true)
+        SecondaryScreenCache.lottery = cached
+        defer { SecondaryScreenCache.reset() }
+        for game in LotteryGameKind.all {
+            let model = LotteryViewModel(service: LotteryPreviewService(game: game), usesCache: false)
+            await model.load()
+            XCTAssertEqual(model.selectedGame, game)
+            await model.playNextAutomatically(reduceMotion: true)
+            XCTAssertEqual(model.revealedResult?.rewardType, game.rawValue)
+            XCTAssertEqual(model.revealedResult?.entitlementId, -1)
+            XCTAssertNil(model.nextEntitlement)
+            XCTAssertEqual(SecondaryScreenCache.lottery, cached)
+        }
+    }
+
+    private func purchaseState(gacha: Bool, scratch: Bool, roulette: Bool) -> LotteryStateSnapshot {
+        LotteryStateSnapshot(
+            gachaEnabled: gacha, scratchEnabled: scratch, rouletteEnabled: roulette,
+            entitlements: [
+                LotteryEntitlement(id: 1, rewardType: "gacha", expiresAt: nil),
+                LotteryEntitlement(id: 2, rewardType: "scratch", expiresAt: nil),
+                LotteryEntitlement(id: 3, rewardType: "roulette", expiresAt: nil),
+            ],
+            gachaPrizeLabels: [], scratchPrizeLabels: [], roulettePrizeLabels: ["ハズレ"],
+            grantTrigger: "every_purchase", minimumPurchaseAmount: nil, entitlementExpiresHours: nil
+        )
+    }
+
+    @MainActor
     func testScratchRevealsServerResultInsideTicketWithoutModal() async {
         let entitlement = LotteryEntitlement(id: 7, rewardType: "scratch", expiresAt: nil)
         let state = LotteryStateSnapshot(

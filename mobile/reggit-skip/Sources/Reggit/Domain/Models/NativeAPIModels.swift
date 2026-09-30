@@ -913,6 +913,17 @@ struct LotteryStateSnapshot: Equatable {
     let minimumPurchaseAmount: Double?
     let entitlementExpiresHours: Int?
 
+    var playableEntitlements: [LotteryEntitlement] {
+        entitlements.filter {
+            switch $0.rewardType {
+            case "gacha": return gachaEnabled
+            case "scratch": return scratchEnabled
+            case "roulette": return rouletteEnabled
+            default: return false
+            }
+        }
+    }
+
     func pending(for rewardType: String) -> LotteryEntitlement? {
         entitlements.first { $0.rewardType == rewardType }
     }

@@ -767,6 +767,7 @@ struct ScratchTicketView: View {
     let enabled: Bool
     let isResolving: Bool
     let onScratch: (CGFloat, CGFloat, CGFloat, CGFloat) -> Void
+    var showsInstructions = true
 
     private let surfaceWidth: CGFloat = 264
     private let surfaceHeight: CGFloat = 158
@@ -849,11 +850,13 @@ struct ScratchTicketView: View {
                     .foregroundStyle(Color.white)
                 }
             }
+            if showsInstructions {
             Text(result == nil
                 ? (progress == 0 ? "一枚の銀面を指でこすってください" : "結果を確認しています…")
                 : (result?.isWin == true ? "あたり！景品内容を確認してください" : "今回はハズレです"))
                 .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(LotteryTheme.cream.opacity(0.72))
+            }
         }
         .frame(maxWidth: .infinity)
         .accessibilityLabel("一面スクラッチ")

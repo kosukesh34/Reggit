@@ -25,8 +25,10 @@ final class LotteryViewModel {
     var isScratchResolving = false
 
     var rouletteRotation = 0.0
+    private var playedEntitlementIDs: Set<Int> = []
 
     private let service: any LotteryGameProviding
+    private let usesCache: Bool
     private let scratchEngine: ScratchRevealEngine
     private let roulettePlanner: RouletteSpinPlanner
 
@@ -36,17 +38,20 @@ final class LotteryViewModel {
 
     init(
         service: any LotteryGameProviding,
+        usesCache: Bool = true,
         scratchEngine: ScratchRevealEngine = ScratchRevealEngine(),
         roulettePlanner: RouletteSpinPlanner = RouletteSpinPlanner()
     ) {
         self.service = service
+        self.usesCache = usesCache
         self.scratchEngine = scratchEngine
         self.roulettePlanner = roulettePlanner
     }
 
     func load(force: Bool = false) async {
-        if !force, let cached = SecondaryScreenCache.lottery {
+        if usesCache, !force, let cached = SecondaryScreenCache.lottery {
             state = cached
+            selectPendingGame()
             isLoading = false
             return
         }
@@ -56,19 +61,76 @@ final class LotteryViewModel {
         do {
             let latest = try await service.fetchState()
             state = latest
-            SecondaryScreenCache.lottery = latest
-            if let pendingGame = availableGames.first(where: { latest.pending(for: $0.rawValue) != nil }) {
-                selectedGame = pendingGame
-            } else if !availableGames.contains(selectedGame), let firstGame = availableGames.first {
-                selectedGame = firstGame
-            }
+            if usesCache { SecondaryScreenCache.lottery = latest }
+            selectPendingGame()
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
+    var nextEntitlement: LotteryEntitlement? {
+        state?.playableEntitlements.first { !playedEntitlementIDs.contains($0.id) }
+    }
+
+    private func pendingEntitlement(for type: String) -> LotteryEntitlement? {
+        state?.playableEntitlements.first { $0.rewardType == type && !playedEntitlementIDs.contains($0.id) }
+    }
+
+    private func selectPendingGame() {
+        if let pending = nextEntitlement, let game = LotteryGameKind(rawValue: pending.rewardType) {
+            selectedGame = game
+        } else if !availableGames.contains(selectedGame), let first = availableGames.first {
+            selectedGame = first
+        }
+    }
+
+    /// The server determines the result; this only advances the presentation.
+    func playNextAutomatically(reduceMotion: Bool) async {
+        guard !isPlaying, !isScratchResolving, revealedResult == nil,
+              let entitlement = nextEntitlement,
+              let game = LotteryGameKind(rawValue: entitlement.rewardType) else { return }
+        selectedGame = game
+        switch game {
+        case .gacha: await playGacha(reduceMotion: reduceMotion)
+        case .roulette: await playRoulette(reduceMotion: reduceMotion)
+        case .scratch: await playScratchAutomatically(reduceMotion: reduceMotion)
+        }
+    }
+
+    func playScratchAutomatically(reduceMotion: Bool) async {
+        guard !isPlaying, !isScratchResolving,
+              let entitlement = pendingEntitlement(for: "scratch") else { return }
+        isPlaying = true
+        isScratchResolving = true
+        resetScratch()
+        scratchRequested = true
+        defer { isPlaying = false; isScratchResolving = false }
+        do {
+            let result = try await service.play(entitlementId: entitlement.id)
+            playedEntitlementIDs.insert(entitlement.id)
+            scratchResult = result
+            let steps = reduceMotion ? 1 : ScratchRevealEngine.columns
+            for step in 1...steps {
+                let count = ScratchRevealEngine.cellCount * step / steps
+                withAnimation(.easeOut(duration: reduceMotion ? 0.1 : 0.12)) {
+                    scratchedCells = (0..<ScratchRevealEngine.cellCount).filter {
+                        $0 % ScratchRevealEngine.columns < ScratchRevealEngine.columns * step / steps
+                    }
+                    scratchProgress = Double(count) / Double(ScratchRevealEngine.cellCount)
+                }
+                try? await Task.sleep(nanoseconds: reduceMotion ? 100_000_000 : 110_000_000)
+            }
+            try? await Task.sleep(nanoseconds: reduceMotion ? 100_000_000 : 350_000_000)
+            await present(result)
+            await refreshState()
+        } catch {
+            scratchRequested = false
+            showAlert(title: "抽選結果を確認できませんでした", message: error.localizedDescription)
+        }
+    }
+
     func hasEntitlement(_ type: String) -> Bool {
-        state?.pending(for: type) != nil
+        pendingEntitlement(for: type) != nil
     }
 
     var availableGames: [LotteryGameKind] {
@@ -104,7 +166,7 @@ final class LotteryViewModel {
 
     func playGacha(reduceMotion: Bool) async {
         guard !isPlaying else { return }
-        guard let entitlement = state?.pending(for: "gacha") else {
+        guard let entitlement = pendingEntitlement(for: "gacha") else {
             showAlert(title: "プレイできません", message: "現在利用できるガチャの権利がありません。")
             return
         }
@@ -116,6 +178,7 @@ final class LotteryViewModel {
         }
         do {
             let result = try await service.play(entitlementId: entitlement.id)
+            playedEntitlementIDs.insert(entitlement.id)
             if !reduceMotion {
                 for index in 0 ..< 6 {
                     try? await Task.sleep(nanoseconds: 85_000_000)
@@ -158,11 +221,12 @@ final class LotteryViewModel {
 
     func resolveScratch() async {
         guard !isScratchResolving,
-              let entitlement = state?.pending(for: "scratch") else { return }
+              let entitlement = pendingEntitlement(for: "scratch") else { return }
         isScratchResolving = true
         defer { isScratchResolving = false }
         do {
             let result = try await service.play(entitlementId: entitlement.id)
+            playedEntitlementIDs.insert(entitlement.id)
             withAnimation(.easeOut(duration: 0.2)) { scratchResult = result }
             if result.isWin, result.coupon != nil {
                 try? await service.notifyWin(entitlementId: result.entitlementId)
@@ -183,13 +247,14 @@ final class LotteryViewModel {
 
     func playRoulette(reduceMotion: Bool) async {
         guard !isPlaying else { return }
-        guard let entitlement = state?.pending(for: "roulette") else {
+        guard let entitlement = pendingEntitlement(for: "roulette") else {
             showAlert(title: "プレイできません", message: "現在利用できるルーレットの権利がありません。")
             return
         }
         isPlaying = true
         do {
             let result = try await service.play(entitlementId: entitlement.id)
+            playedEntitlementIDs.insert(entitlement.id)
             let labels = rouletteLabels
             let resultLabel = result.coupon?.name ?? "ハズレ"
             let pickedIndex = labels.firstIndex(of: resultLabel) ?? 0
@@ -218,7 +283,7 @@ final class LotteryViewModel {
     private func refreshState() async {
         if let latest = try? await service.fetchState() {
             state = latest
-            SecondaryScreenCache.lottery = latest
+            if usesCache { SecondaryScreenCache.lottery = latest }
         }
     }
 
