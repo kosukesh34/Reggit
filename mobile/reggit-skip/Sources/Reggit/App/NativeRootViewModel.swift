@@ -18,6 +18,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     var headerItems: [AppTabItem] = []
     var footerItems: [AppTabItem] = []
     var hamburgerItems: [AppTabItem] = []
+    var announcementCount = 0
     var selectedTab: String = "home"
     var currentProjectKey = ""
     var projectName: String = "Reggit"
@@ -114,6 +115,8 @@ final class NativeRootViewModel: PushNotificationHandling {
                 registrationPayload = [:]
                 registrationListPayload = [:]
                 registrationFieldErrors = [:]
+                announcementCount = 0
+                SecondaryScreenCache.announcements = nil
                 pendingLotteryCount = 0
                 lastStampsTotal = nil
             }
@@ -171,6 +174,7 @@ final class NativeRootViewModel: PushNotificationHandling {
                 showRegistrationPopup = !member.isMember && member.registrationMode == .popup
             }
 
+            await refreshAnnouncements()
             connectRealtimeIfPossible()
             if phase == .ready, let tab = pendingNotificationTab {
                 let type = pendingNotificationType
@@ -288,6 +292,9 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     func handleProjectUpdate(topic: String) {
         SecondaryScreenCache.invalidate(topic: topic)
+        if topic == "announcements" || topic == "all" {
+            Task { await refreshAnnouncements() }
+        }
         if topic == "orders" || topic == "all" {
             ordersRevision &+= 1
             productsRevision &+= 1
@@ -303,6 +310,19 @@ final class NativeRootViewModel: PushNotificationHandling {
             ? ["coupons", "stamps", "reservations", "gallery", "announcements"]
             : [topic]
         for key in affected { screenRevisions[key, default: 0] &+= 1 }
+    }
+
+    func refreshAnnouncements() async {
+        guard let client = apiClient, tabs.contains(where: { $0.key == "announcements" }) else { return }
+        let projectKey = currentProjectKey
+        do {
+            let items = try await client.fetchPublishedAnnouncements()
+            guard currentProjectKey == projectKey else { return }
+            SecondaryScreenCache.announcements = items
+            announcementCount = items.count
+        } catch {
+            // Keep the last successful count; announcement errors belong to its screen.
+        }
     }
 
     func skipRegistration() {

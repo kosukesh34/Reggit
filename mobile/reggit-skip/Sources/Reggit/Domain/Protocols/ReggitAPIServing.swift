@@ -69,10 +69,17 @@ protocol ReggitAPIServing: Sendable {
     func cancelQueueEntry(id: Int) async throws
     func fetchQueueByToken(_ token: String) async throws -> QueueEntry
 
+    func fetchAnnouncementImage(id: Int) async throws -> Data
     func fetchPublishedAnnouncements() async throws -> [AnnouncementItem]
     func fetchGalleryContent(categoryId: Int?) async throws -> GallerySnapshot
     func fetchMemberReservations() async throws -> [ReservationItem]
     func fetchReservationCourses() async throws -> [ReservationCourseItem]
     func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?, courseId: Int?) async throws
     func cancelReservationBooking(id: Int) async throws
+}
+
+extension ReggitAPIServing {
+    func fetchAnnouncementImage(id: Int) async throws -> Data {
+        throw ReggitAPIError.invalidResponse
+    }
 }

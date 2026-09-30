@@ -3,6 +3,7 @@ import SwiftUI
 struct NativeTabBar: View {
     let items: [AppTabItem]
     var colors: [String: String] = [:]
+    var announcementCount = 0
     @Binding var selectedTab: String
     @Environment(\.brandAccent) var accent
 
@@ -12,6 +13,18 @@ struct NativeTabBar: View {
                 Button { selectedTab = item.key } label: {
                     VStack(spacing: 3) {
                         FontAwesomeIcon(systemName: TabIconResolver.systemName(for: item))
+                            .overlay(alignment: .topTrailing) {
+                                if item.key == "announcements" && announcementCount > 0 {
+                                    Text(String(announcementCount))
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(Color.white)
+                                        .padding(.horizontal, 5)
+                                        .frame(minWidth: 18, minHeight: 18)
+                                        .background(Color.red)
+                                        .clipShape(Capsule())
+                                        .offset(x: 12, y: -8)
+                                }
+                            }
                         Text(item.label)
                             .font(.system(size: 10, weight: .medium))
                             .lineLimit(1)
@@ -23,7 +36,7 @@ struct NativeTabBar: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(item.label))
+                .accessibilityLabel(Text(item.key == "announcements" && announcementCount > 0 ? "\(item.label)、\(announcementCount)件" : item.label))
             }
         }
         .padding(.horizontal, 8)
