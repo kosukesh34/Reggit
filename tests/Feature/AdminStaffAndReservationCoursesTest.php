@@ -41,7 +41,7 @@ class AdminStaffAndReservationCoursesTest extends TestCase
     {
         $project = Project::factory()->create();
         $otherProject = Project::factory()->create();
-        $manager = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
+        $manager = AdminUser::factory()->create(['role' => AdminUser::ROLE_PROJECT_ADMIN, 'project_id' => $project->id]);
         $staff = AdminUser::factory()->create(['role' => AdminUser::ROLE_STAFF, 'project_id' => $project->id]);
         $otherStaff = AdminUser::factory()->create(['role' => AdminUser::ROLE_STAFF, 'project_id' => $otherProject->id]);
 

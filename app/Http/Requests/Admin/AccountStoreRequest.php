@@ -30,7 +30,7 @@ class AccountStoreRequest extends FormRequest
             'email' => 'required|email|unique:admin_users,email',
             'password' => ['required', 'confirmed', Password::defaults()],
             'name' => 'required|string|max:255',
-            'role' => 'required|in:system_admin,project_admin,admin,staff',
+            'role' => 'required|in:project_admin',
             'project_ids' => 'nullable|array',
             'project_ids.*' => 'exists:projects,id',
             'permissions' => 'nullable|array',

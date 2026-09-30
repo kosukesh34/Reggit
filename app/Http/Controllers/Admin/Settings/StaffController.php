@@ -21,10 +21,12 @@ class StaffController extends AdminBaseController
     {
         $this->staffManagementAuthorizer->authorize($request);
         $projectId = $this->resolveAdminProjectId();
-        $staff = $this->getStaffListUseCase->handle($projectId);
+        $staff = $this->getStaffListUseCase->handle($projectId)->filter(fn ($member) => $this->staffManagementAuthorizer->canManageTarget($request, $member, $projectId));
 
         return view('admin.settings.staff', [
             'staff' => $staff,
+            'assignableStores' => $this->staffManagementAuthorizer->assignableStores($request, $projectId)->get(),
+            'canAssignManager' => $request->user('admin')->isProjectAdmin() || $request->user('admin')->isSystemAdmin(),
             'permissionGroups' => $this->staffPermissionCatalog->groups(),
             'permissionLabels' => $this->staffPermissionCatalog->labels(),
         ]);

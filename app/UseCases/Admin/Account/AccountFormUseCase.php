@@ -22,7 +22,7 @@ class AccountFormUseCase
         return new AccountFormView(
             null,
             $projects,
-            $me->getCreatableRoles(),
+            [AdminUser::ROLE_PROJECT_ADMIN],
             AdminUserPermission::ALL_PERMISSIONS,
             AdminUserPermission::PERMISSION_GROUPS,
             [],
@@ -34,7 +34,7 @@ class AccountFormUseCase
 
     public function getEditView(AdminUser $me, int $id, RouteContext $context): AccountFormView
     {
-        $adminUser = AdminUser::with('permissions')->findOrFail($id);
+        $adminUser = AdminUser::with('permissions')->where('role', AdminUser::ROLE_PROJECT_ADMIN)->findOrFail($id);
 
         if ($me->canEditUser($adminUser) === false) {
             abort(403, 'このアカウントを編集する権限がありません。');
@@ -45,7 +45,7 @@ class AccountFormUseCase
         return new AccountFormView(
             $adminUser,
             $projects,
-            $me->getCreatableRoles(),
+            [AdminUser::ROLE_PROJECT_ADMIN],
             AdminUserPermission::ALL_PERMISSIONS,
             AdminUserPermission::PERMISSION_GROUPS,
             $adminUser->permissions->pluck('permission')->all(),

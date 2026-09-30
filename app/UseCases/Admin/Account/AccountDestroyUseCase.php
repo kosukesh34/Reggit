@@ -9,7 +9,7 @@ class AccountDestroyUseCase
 {
     public function handle(AdminUser $me, int $id): AccountDestroyOutput
     {
-        $adminUser = AdminUser::findOrFail($id);
+        $adminUser = AdminUser::where('role', AdminUser::ROLE_PROJECT_ADMIN)->findOrFail($id);
 
         if ($adminUser->id === $me->id) {
             return new AccountDestroyOutput(false, '自分自身のアカウントは削除できません。');

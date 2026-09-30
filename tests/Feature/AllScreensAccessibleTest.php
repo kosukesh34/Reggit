@@ -275,7 +275,7 @@ class AllScreensAccessibleTest extends TestCase
         }
 
         $projectId = $this->project->id;
-        $accountId = $this->storeAdmin->id;
+        $accountId = AdminUser::factory()->create(['role' => AdminUser::ROLE_PROJECT_ADMIN, 'project_id' => $this->project->id])->id;
         $auditLog = AdminAuditLog::create([
             'admin_user_id' => $systemAdmin->id,
             'project_id' => null,
