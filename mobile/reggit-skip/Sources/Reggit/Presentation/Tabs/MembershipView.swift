@@ -668,6 +668,9 @@ struct ProfileEditView: View {
     let errorMessage: String?
     let serverFieldErrors: [String: String]
     let onSave: ([String: String], [String: [String]]) -> Void
+    var isRegistration = false
+    var introduction: String? = nil
+    var onSkip: (() -> Void)? = nil
 
     @State var values: [String: String] = [:]
     @State var listValues: [String: [String]] = [:]
@@ -690,7 +693,7 @@ struct ProfileEditView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                Text("連絡先や登録情報を変更できます。必須項目を入力して保存してください。")
+                Text(introduction ?? "連絡先や登録情報を変更できます。必須項目を入力して保存してください。")
                     .font(.subheadline)
                     .foregroundStyle(AppDesign.inkSecondary)
                 ForEach(groups, id: \.self) { title in
@@ -728,12 +731,15 @@ struct ProfileEditView: View {
                 }
             }
             .padding(16)
+            #if os(Android)
+            .padding(.bottom, onSkip == nil ? 90 : 130)
+            #endif
         }
         .foregroundStyle(AppDesign.ink)
         .scrollDismissesKeyboard(.interactively)
         .disabled(isSaving)
         .background(AppDesign.canvas.ignoresSafeArea())
-        .navigationTitle("プロフィール編集")
+        .navigationTitle(isRegistration ? "会員登録" : "プロフィール編集")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar(.visible, for: .navigationBar)
@@ -751,7 +757,7 @@ struct ProfileEditView: View {
                     HStack(spacing: 8) {
                         if isSaving { ProgressView().tint((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground)) }
                         else { FontAwesomeIcon(systemName: "checkmark") }
-                        Text(isSaving ? "保存中…" : "変更を保存").fontWeight(.semibold)
+                        Text(isSaving ? (isRegistration ? "登録中…" : "保存中…") : (isRegistration ? "登録してはじめる" : "変更を保存")).fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .foregroundStyle((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground))
@@ -760,6 +766,9 @@ struct ProfileEditView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isSaving || fields.isEmpty)
+                if let onSkip {
+                    Button("あとで登録する", action: onSkip).disabled(isSaving)
+                }
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
             .background(AppDesign.surface)
@@ -775,13 +784,16 @@ struct ProfileEditView: View {
                     attemptedSave = true
                     if isValid { onSave(values, listValues) }
                 } label: {
-                    Text(isSaving ? "保存中…" : "変更を保存").fontWeight(.semibold)
+                    Text(isSaving ? (isRegistration ? "登録中…" : "保存中…") : (isRegistration ? "登録してはじめる" : "変更を保存")).fontWeight(.semibold)
                         .frame(maxWidth: .infinity, minHeight: 50)
                         .foregroundStyle((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground))
                         .background((buttonColors["primary_button_background"] ?? "").toNativeColor(fallback: accent))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 .disabled(isSaving || fields.isEmpty)
+                if let onSkip {
+                    Button("あとで登録する", action: onSkip).disabled(isSaving)
+                }
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
             .background(AppDesign.surface)
@@ -832,7 +844,7 @@ struct ProfileEditView: View {
                 .buttonStyle(.plain)
                 .accessibilityValue((listValues[field.key] ?? []).contains(choice) ? "選択済み" : "未選択")
             }
-        } else if !field.choices.isEmpty {
+        } else if !field.choices.isEmpty || field.inputType == "selectbox" || field.inputType == "select" {
             Picker(field.label, selection: textBinding(field.key)) {
                 Text("選択してください").tag("")
                 ForEach(field.choices, id: \.self) { Text(field.displayValue($0)).tag($0) }

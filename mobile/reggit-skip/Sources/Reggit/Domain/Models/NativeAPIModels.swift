@@ -216,6 +216,11 @@ struct MemberProfileSnapshot: Equatable {
     }
 }
 
+struct ProfileFieldOption: Equatable {
+    let value: String
+    let label: String
+}
+
 struct ProfileFieldDefinition: Equatable, Identifiable {
     let key: String
     let label: String
@@ -223,10 +228,22 @@ struct ProfileFieldDefinition: Equatable, Identifiable {
     let inputType: String
     let values: [String]
     let description: String?
+    let options: [ProfileFieldOption]
+
+    init(key: String, label: String, required: Bool, inputType: String, values: [String], description: String?, options: [ProfileFieldOption] = []) {
+        self.key = key
+        self.label = label
+        self.required = required
+        self.inputType = inputType
+        self.values = values
+        self.description = description
+        self.options = options
+    }
 
     var id: String { key }
 
     var choices: [String] {
+        if !options.isEmpty { return options.map(\.value) }
         if !values.isEmpty { return values }
         switch key {
         case "sex": return ["0", "1", "2"]
@@ -237,6 +254,7 @@ struct ProfileFieldDefinition: Equatable, Identifiable {
     }
 
     func displayValue(_ value: String) -> String {
+        if let option = options.first(where: { $0.value == value }) { return option.label }
         switch key {
         case "sex": return ["0": "未設定", "1": "男性", "2": "女性"][value] ?? value
         case "mail_receive_flag": return ["1": "許可する", "0": "許可しない"][value] ?? value
@@ -270,7 +288,12 @@ struct ProfileFieldDefinition: Equatable, Identifiable {
             required: row["required"] as? Bool ?? false,
             inputType: (row["input_type"] as? String) ?? "text",
             values: (row["values"] as? [Any])?.compactMap { $0 as? String } ?? [],
-            description: (row["description"] as? String)?.trimmedNonEmpty
+            description: (row["description"] as? String)?.trimmedNonEmpty,
+            options: (row["options"] as? [[String: Any]] ?? []).compactMap { option in
+                let value = (option["value"] as? String) ?? (option["value"] as? Int).map { String($0) }
+                guard let value, !value.isEmpty else { return nil }
+                return ProfileFieldOption(value: value, label: (option["label"] as? String)?.trimmedNonEmpty ?? value)
+            }
         )
     }
 }

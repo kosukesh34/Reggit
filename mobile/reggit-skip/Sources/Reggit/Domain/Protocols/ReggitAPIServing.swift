@@ -41,6 +41,7 @@ protocol ReggitAPIServing: Sendable {
     func fetchExistingMemberLinkForm() async throws -> ExistingMemberLinkForm
     func submitExistingMemberLink(values: [String: String]) async throws -> ExistingMemberLinkResult
     func registerMember(name: String, phone: String) async throws -> MemberProfileSnapshot
+    func registerMember(name: String, phone: String, profilePayload: [String: String], profileListPayload: [String: [String]]) async throws -> MemberProfileSnapshot
     func updateMemberProfile(name: String, phone: String, profilePayload: [String: String], profileListPayload: [String: [String]]) async throws -> MemberProfileSnapshot
     func fetchPointCard() async throws -> PointCardSnapshot
     func fetchPointHistory() async throws -> [PointHistoryItem]
