@@ -6,6 +6,7 @@ use App\Domain\Settings\Repositories\AppConfigSettings;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Support\HomeImageUrls;
+use App\Support\LiffDesignerSanitizer;
 use App\Support\LiffThemePresets;
 use Illuminate\Support\Collection;
 
@@ -59,10 +60,10 @@ class AppConfigService
         $savedMenu = $repo->getValue('frontend_menu_items', null, $projectId);
         $savedMenuByTab = collect(is_array($savedMenu) ? $savedMenu : [])->keyBy('tab');
         $defaultMenu = collect($repo->defaultFrontendMenuItems());
-        $defaultKeys = $defaultMenu->pluck('tab');
         $nativeNavigationCandidates = $defaultMenu
             ->map(fn ($item) => array_merge($item, is_array($savedMenuByTab->get($item['tab'])) ? $savedMenuByTab->get($item['tab']) : []))
-            ->concat(collect($enabledTabs)->filter(fn ($item) => ! $defaultKeys->contains($item['tab'])))
+            ->concat(collect(LiffDesignerSanitizer::sanitizeMenuItems(is_array($savedMenu) ? $savedMenu : []))
+                ->filter(fn ($item) => in_array($item['tab'], LiffDesignerSanitizer::LINK_MENU_TABS, true)))
             ->filter(function ($item) use ($featureFlags, $tabFeatureMap) {
                 $tab = $item['tab'] ?? null;
                 if ($tab === 'designlab') {
@@ -112,6 +113,7 @@ class AppConfigService
                 'icon' => $item['icon'] ?? 'fa-circle',
                 'sf_symbol' => $this->sfSymbolForTab($item['tab']),
                 'url' => isset($item['url']) ? (string) $item['url'] : null,
+                'open' => ($item['open'] ?? 'embed') === 'external' ? 'external' : 'embed',
             ], $enabledTabs),
             'navigation' => [
                 'header' => $this->navigationItems($nativeNavigation['header'] ?? [], $nativeNavigationByKey, 1),
@@ -257,6 +259,7 @@ class AppConfigService
                     'icon' => ShopSettingStore::normalizeFrontendMenuIcon($key, (string) ($item['icon'] ?? 'fa-circle')),
                     'sf_symbol' => $this->sfSymbolForTab($key),
                     'url' => isset($item['url']) ? (string) $item['url'] : null,
+                    'open' => ($item['open'] ?? 'embed') === 'external' ? 'external' : 'embed',
                 ];
             })
             ->values();

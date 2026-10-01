@@ -44,6 +44,8 @@ export function LinkSitePage({ tab }: { tab: LinkTabType }) {
   const url = safeEmbedUrl(resolveLinkUrl(tab, storeTab?.url, customization.navigation.linkUrls?.[tab]));
   const title = storeTab?.label?.trim() || tabLabelMap[tab] || "Webページ";
 
+  const external = window.__FRONTEND_MENU__?.find((item) => item.tab === tab)?.open === "external";
+
   return (
     <div className="page feature-page">
       <div className="tab-section tab-section--link-embed" data-tab={tab}>
@@ -53,14 +55,16 @@ export function LinkSitePage({ tab }: { tab: LinkTabType }) {
           </button>
           <span className="link-tab-chrome__title">{title}</span>
         </div>
-        {url !== null ? (
+        {url !== null && external ? (
+          <a className="btn btn-primary" href={url} target="_blank" rel="noopener noreferrer">外部ブラウザで開く</a>
+        ) : url !== null ? (
           <iframe
             className="link-tab-frame"
             src={url}
             title={title}
             loading="lazy"
             referrerPolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-downloads"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox"
           />
         ) : (
           <p className="page-note">埋め込みできる https の URL が設定されていません。</p>
