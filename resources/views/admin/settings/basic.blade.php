@@ -1,7 +1,7 @@
 @extends('admin.layout')
 
-@section('title', '基本設定')
-@section('page-title', '基本設定')
+@section('title', '店舗運用設定')
+@section('page-title', '店舗運用設定')
 
 @section('content')
 @php
@@ -14,14 +14,20 @@
     <span class="breadcrumb-sep">/</span>
     <a href="{{ admin_route('admin.settings.index') }}">設定</a>
     <span class="breadcrumb-sep">/</span>
-    <span>基本設定</span>
+    <span>店舗運用設定</span>
 </nav>
 
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-sliders-h"></i> 基本設定</h1>
+    <h1 class="page-header-title"><i class="fas fa-sliders-h"></i> 店舗運用設定</h1>
 </div>
 
+@include('admin.settings._section-tabs', [
+    'tabsLabel' => '店舗運用設定の分類',
+    'sectionTabs' => array_filter(['basic-hours' => '営業時間', 'basic-orders' => '注文・通知', 'basic-devices' => auth('admin')->user()->isStaff() ? null : '店舗端末']),
+])
+
 @if(!auth('admin')->user()->isStaff())
+<section id="basic-devices">
 <div class="card">
     <div class="card-header">
         <h2 class="card-title"><i class="fas fa-tablet-alt"></i> 店舗端末の登録</h2>
@@ -37,11 +43,11 @@
         @endif
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem">
             @foreach(['kitchen' => 'Kitchen', 'waiting' => 'Waiting'] as $app => $label)
-                @php($credential = $storeAppCredentials->get($app))
+                @php($credential = $storeAppCredentials[$app] ?? null)
                 <div class="card" style="margin:0">
                     <div class="card-body">
                         <h3>{{ $label }}</h3>
-                        <p>{{ $credential?->claimed_at ? '登録済み: '.$credential->device_name : ($credential?->enrollment_token_hash ? '登録待ち' : '未登録') }}</p>
+                        <p>{{ $credential?->status ?? '未登録' }}</p>
                         <form action="{{ admin_route('admin.settings.store-app-credential.store') }}" method="POST" onsubmit="return confirm('現在の端末認証を失効し、新しい登録コードを発行します。よろしいですか？')">
                             @csrf
                             <input type="hidden" name="app" value="{{ $app }}">
@@ -53,24 +59,33 @@
         </div>
     </div>
 </div>
+</section>
 @endif
 
 
 <form action="{{ admin_route('admin.settings.basic.update') }}" method="POST" id="settingsBasicForm">
     @csrf
+    <section id="basic-hours">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title"><i class="fas fa-clock"></i> 店舗運用</h2>
+            <h2 class="card-title"><i class="fas fa-clock"></i> 営業時間</h2>
         </div>
         <div class="card-body">
             <div class="form-group">
                 <label class="form-label">開始時間</label>
-                <input type="time" name="business_hours_start" class="form-control" value="{{ $businessHours['start'] }}" required>
+                <input type="time" name="business_hours_start" class="form-control" value="{{ old('business_hours_start', $businessHours['start']) }}" required>
             </div>
             <div class="form-group">
                 <label class="form-label">終了時間</label>
-                <input type="time" name="business_hours_end" class="form-control" value="{{ $businessHours['end'] }}" required>
+                <input type="time" name="business_hours_end" class="form-control" value="{{ old('business_hours_end', $businessHours['end']) }}" required>
             </div>
+        </div>
+    </div>
+    </section>
+    <section id="basic-orders">
+    <div class="card">
+        <div class="card-header"><h2 class="card-title"><i class="fas fa-shopping-cart"></i> 注文・通知</h2></div>
+        <div class="card-body">
             <div class="form-group">
                 <label class="form-label">注文モード</label>
                 <select name="order_mode" class="form-control" required>
@@ -94,11 +109,26 @@
                 </label>
                 <small class="form-text">キッチン／管理画面で「受取可」に更新したとき、顧客の LINE に通知します。</small>
             </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-            </div>
         </div>
     </div>
+    </section>
+    <div class="form-actions" id="basic-save-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 店舗運用設定を保存</button></div>
 </form>
 
+@push('scripts')
+<script>
+(function () {
+    const bar = document.querySelector('[data-section-tabs]');
+    const actions = document.getElementById('basic-save-actions');
+    const update = () => { actions.hidden = document.getElementById('tab-basic-devices')?.getAttribute('aria-selected') === 'true'; };
+    bar.addEventListener('settings-tab-change', update);
+    update();
+})();
+</script>
+@endpush
+@if(session('store_app_enrollment'))
+@push('scripts')
+<script>document.getElementById('tab-basic-devices')?.click();</script>
+@endpush
+@endif
 @endsection

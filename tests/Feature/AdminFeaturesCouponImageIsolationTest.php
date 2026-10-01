@@ -59,6 +59,6 @@ class AdminFeaturesCouponImageIsolationTest extends TestCase
             ->get(route('admin.settings.features', ['project_key' => $project->project_key]))
             ->assertStatus(200)
             ->assertDontSee('name="coupon_default_image_url"', false)
-            ->assertSee('クーポン設定');
+            ->assertSee('利用機能');
     }
 }

@@ -1,11 +1,11 @@
 @extends('admin.layout')
-@section('title', '予約設定')
-@section('page-title', '予約設定')
+@section('title', '予約')
+@section('page-title', '予約')
 
 @section('content')
-<nav class="breadcrumb"><a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a><span class="breadcrumb-sep">/</span><a href="{{ admin_route('admin.reservations') }}">予約</a><span class="breadcrumb-sep">/</span><span>予約設定</span></nav>
+<nav class="breadcrumb"><a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a><span class="breadcrumb-sep">/</span><a href="{{ admin_route('admin.reservations') }}">予約</a><span class="breadcrumb-sep">/</span><span>予約</span></nav>
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約設定</h1>
+    <h1 class="page-header-title"><i class="fas fa-calendar-check"></i> 予約</h1>
 </div>
 @php
     $timeSlots = $settings['timeSlots'] ?? ['10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];

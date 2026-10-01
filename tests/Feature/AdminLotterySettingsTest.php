@@ -49,7 +49,7 @@ class AdminLotterySettingsTest extends TestCase
             ->get(route('admin.settings.lottery', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200)
-            ->assertSee('購入特典ゲーム設定')
+            ->assertSee('購入特典ゲーム')
             ->assertSee('プレイ権の付与条件')
             ->assertSee('対象となる最低購入金額')
             ->assertSee('実績サマリー')

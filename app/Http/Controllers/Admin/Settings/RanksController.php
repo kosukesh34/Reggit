@@ -27,7 +27,7 @@ class RanksController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
 
         try {
-            $this->updateRankSettingsUseCase->handle($projectId, $request->toPayload());
+            $this->updateRankSettingsUseCase->handle($request->toInput($projectId));
         } catch (\InvalidArgumentException $e) {
             return redirect()->back()->withInput()->withErrors(['ranks' => $e->getMessage()]);
         } catch (\RuntimeException $e) {
@@ -35,6 +35,6 @@ class RanksController extends AdminBaseController
         }
 
         return redirect()->route('admin.settings.ranks', $this->buildAdminRouteParams())
-            ->with('success', '会員証・ランク設定を更新しました');
+            ->with('success', 'ランク・ポイント・スタンプを更新しました');
     }
 }

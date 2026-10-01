@@ -52,11 +52,10 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         ], $project->id);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.coupons.update', ['project_key' => $project->project_key]), [
-                'feature_coupons_enabled' => '0',
-                'coupon_default_image_url' => null,
+            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
+                'features' => ['feature_home_enabled' => 1, 'feature_orders_enabled' => 1, 'feature_stamps_enabled' => 1, 'feature_members_enabled' => 1, 'feature_payments_enabled' => 1],
             ])
-            ->assertRedirect(route('admin.settings.coupons', ['project_key' => $project->project_key]));
+            ->assertRedirect(route('admin.settings.features', ['project_key' => $project->project_key]));
 
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_coupons_enabled', $project->id));
         $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_orders_enabled', $project->id));
@@ -72,7 +71,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         $admin = $this->createAdmin($project);
 
         $this->actingAs($admin, 'admin')
-            ->get(route('admin.settings.coupons', ['project_key' => $project->project_key]))
+            ->get(route('admin.settings.app-branding', ['project_key' => $project->project_key]))
             ->assertStatus(200)
             ->assertSee('name="coupon_default_image"', false)
             ->assertSee('ドラッグ＆ドロップ')
@@ -87,7 +86,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         $file = UploadedFile::fake()->image('coupon-default.png', 80, 80);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.coupons.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
                 'feature_coupons_enabled' => '1',
                 'coupon_default_image' => $file,
             ])
@@ -105,7 +104,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         ShopSettingStore::setValue('coupon_default_image_url', 'https://example.com/old-coupon.png', 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.coupons.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
                 'feature_coupons_enabled' => '1',
                 'coupon_default_image_clear' => '1',
             ])

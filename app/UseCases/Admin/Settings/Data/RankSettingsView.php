@@ -7,34 +7,17 @@ namespace App\UseCases\Admin\Settings\Data;
  *
  * @param  array<int, array{key: string, label: string, min_points: int, order: int, is_active: bool, card_color?: string|null, point_earn_rate?: int|null, stamp_earn_per_amount?: int|null}>  $rankSettings
  */
-class RankSettingsView
+final readonly class RankSettingsView
 {
     public function __construct(
         public array $rankSettings,
         public string $rankBasis,
         public int $pointEarnRate,
         public int $pointsValidDays,
-        public string $memberCodeType,
-        public string $memberCodeFormat,
-        public int $memberCodeLength,
-        public string $memberCodePrefix,
-        public bool $showPointsDisplay,
-        public bool $showRankProgress,
-        public bool $showMemberCardForGuest,
-        public string $memberCardDesign = 'default',
-        public ?string $memberCardLogoUrl = null,
-        public string $memberCardDisplayType = 'card',
-        public string $memberCardCodeType = 'barcode',
         public int $pointsPerOrder = 0,
         public int $stampEarnPerAmount = 0,
-        public bool $useStamps = true,
-        public bool $useTransactionStamps = true,
-        public bool $usePoints = true,
         public string $rankAggregationType = 'total',
         public int $rankPeriodDays = 365,
         public bool $isRankDownEnabled = false,
-        public bool $memberShowRankProgress = true,
-        public bool $memberShowPointHistory = true,
-        public bool $memberShowCouponActivity = true,
     ) {}
 }

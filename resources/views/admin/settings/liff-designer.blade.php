@@ -1,10 +1,11 @@
 @extends('admin.layout')
 
-@section('title', 'LIFFデザイン')
-@section('page-title', 'LIFFデザイン')
+@section('title', 'アプリデザイン')
+@section('page-title', 'アプリデザイン')
 @section('page-kind', 'liff-designer')
 
 @section('content')
+@include('admin.settings._app-design-navigation', ['activeDesign' => 'advanced'])
 <form action="{{ admin_route('admin.settings.liff-designer.update') }}" method="POST" id="liffDesignerForm" hidden>
     @csrf
     <input type="hidden" name="layouts_json" id="layoutsJson">

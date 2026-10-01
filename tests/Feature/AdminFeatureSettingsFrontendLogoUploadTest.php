@@ -31,7 +31,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         ]);
     }
 
-    public function test_機能設定でヘッダーロゴをアップロードできること(): void
+    public function test_アプリデザインでヘッダーロゴをアップロードできること(): void
     {
         Storage::fake('public');
         $project = $this->createProject();
@@ -39,7 +39,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         $file = UploadedFile::fake()->image('logo.png', 64, 64);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
                 'features' => [
                     'feature_orders_enabled' => '1',
                     'feature_members_enabled' => '1',
@@ -57,14 +57,14 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         );
     }
 
-    public function test_機能設定でヘッダーロゴをクリアできること(): void
+    public function test_アプリデザインでヘッダーロゴをクリアできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
         ShopSettingStore::setValue('frontend_logo_url', 'https://example.com/old-logo.png', 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
                 'features' => [
                     'feature_orders_enabled' => '1',
                 ],
@@ -76,7 +76,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         $this->assertSame('', (string) (ShopSettingStore::getFrontendLogoUrl($project->id) ?? ''));
     }
 
-    public function test_機能設定でロゴ未指定なら既存値を維持すること(): void
+    public function test_アプリデザインでロゴ未指定なら既存値を維持すること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
@@ -84,7 +84,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         ShopSettingStore::setValue('frontend_logo_url', $existing, 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
                 'features' => [
                     'feature_orders_enabled' => '1',
                 ],
@@ -95,13 +95,13 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         $this->assertSame($existing, ShopSettingStore::getFrontendLogoUrl($project->id));
     }
 
-    public function test_機能設定画面にロゴのドロップゾーンがあること(): void
+    public function test_アプリデザイン画面にロゴのドロップゾーンがあること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
         $this->actingAs($admin, 'admin')
-            ->get(route('admin.settings.features', ['project_key' => $project->project_key]))
+            ->get(route('admin.settings.app-branding', ['project_key' => $project->project_key]))
             ->assertStatus(200)
             ->assertSee('name="frontend_logo"', false)
             ->assertSee('name="stamp_default_image"', false)
@@ -111,7 +111,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ->assertDontSee('placeholder="https://example.com/logo.png"', false);
     }
 
-    public function test_機能設定でスタンプデフォルト画像をアップロードできること(): void
+    public function test_アプリデザインでスタンプデフォルト画像をアップロードできること(): void
     {
         Storage::fake('public');
         $project = $this->createProject();
@@ -119,7 +119,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         $file = UploadedFile::fake()->image('stamp-default.png', 64, 64);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
                 'features' => [
                     'feature_orders_enabled' => '1',
                     'feature_members_enabled' => '1',
@@ -137,14 +137,14 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         );
     }
 
-    public function test_機能設定でスタンプデフォルト画像をクリアできること(): void
+    public function test_アプリデザインでスタンプデフォルト画像をクリアできること(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
         ShopSettingStore::setValue('stamp_default_image_url', 'https://example.com/old-stamp.png', 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
-            ->post(route('admin.settings.features.update', ['project_key' => $project->project_key]), [
+            ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
                 'features' => [
                     'feature_orders_enabled' => '1',
                 ],

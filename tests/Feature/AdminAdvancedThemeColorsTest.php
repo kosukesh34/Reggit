@@ -42,7 +42,7 @@ class AdminAdvancedThemeColorsTest extends TestCase
             ->assertStatus(200)
             ->assertDontSee('name="line_primary_color"', false)
             ->assertDontSee('name="line_primary_dark"', false)
-            ->assertSee('LIFFデザイン');
+            ->assertSee('LINEの状態表示');
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.advanced.update', ['project_key' => $project->project_key]), [

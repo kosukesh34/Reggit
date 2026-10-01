@@ -1,16 +1,10 @@
 @extends('admin.layout')
-@section('title', 'Wallet 画像設定')
-@section('page-title', 'Wallet 画像設定')
+@section('title', 'アプリデザイン')
+@section('page-title', 'アプリデザイン')
 
 @section('content')
-<nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ admin_route('admin.settings.index') }}">設定</a>
-    <span class="breadcrumb-sep">/</span>
-    <span>Wallet 画像</span>
-</nav>
-<div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-wallet"></i> Wallet 画像設定</h1>
-</div>
+@include('admin.settings._app-design-navigation', ['activeDesign' => 'wallet'])
+
 @if($errors->any())<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> 入力内容を確認してください。</div>@endif
 
 <form action="{{ admin_route('admin.settings.wallet.update') }}" method="POST" enctype="multipart/form-data">

@@ -23,14 +23,14 @@ class LiffDesignerSanitizerMenuLinkTest extends TestCase
         $this->assertSame('embed', $result[2]['open']);
     }
 
-    public function test_sanitize_menu_items_external指定でもembedに正規化すること(): void
+    public function test_sanitize_menu_items_external指定を維持すること(): void
     {
         $result = LiffDesignerSanitizer::sanitizeMenuItems([
             ['tab' => 'link_1', 'label' => '公式', 'icon' => 'fa-globe', 'url' => 'https://example.com', 'open' => 'external', 'enabled' => true],
         ]);
 
         $this->assertCount(1, $result);
-        $this->assertSame('embed', $result[0]['open']);
+        $this->assertSame('external', $result[0]['open']);
     }
 
     public function test_sanitize_menu_items_httpsでない_ur_lの外部ページタブは除外されること(): void

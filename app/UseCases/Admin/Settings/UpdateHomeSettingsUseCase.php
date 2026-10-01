@@ -4,28 +4,28 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
 use App\Support\LiffDesignerSanitizer;
+use App\UseCases\Admin\Settings\Data\UpdateHomeImagesInput;
+use App\UseCases\Admin\Settings\Data\UpdateHomeSettingsInput;
 use App\Util\StrHelper;
 
 class UpdateHomeSettingsUseCase
 {
     public function __construct(
         private HomeSettingsRepository $shopSettingRepository,
+        private UpdateHomeImagesUseCase $images,
     ) {}
 
-    /** @param array<int, array{tab?: string, label?: string, icon?: string, order?: int, enabled?: bool}> $rawTabs */
-    public function handle(
-        int $projectId,
-        array $rawTabs,
-        ?string $navigationHeaderImageUrl = null,
-        string $navigationHeaderBackgroundColor = '#FFFFFF',
-        ?string $homeImageUrl = null,
-        string $homeMenuLayout = 'grid_3x2',
-        string $productDisplayLayout = 'list_with_image',
-        ?array $nativeNavigation = null,
-        ?array $homeImageUrls = null,
-        ?bool $homeShowMemberCard = null,
-        ?array $nativeChromeColors = null,
-    ): void {
+    public function handle(UpdateHomeSettingsInput $input): void
+    {
+        $projectId = $input->projectId;
+        $rawTabs = $input->tabs;
+        $nativeNavigation = $input->navigation;
+        $homeShowMemberCard = $input->showMemberCard;
+        $homeMenuLayout = $input->menuLayout;
+        $productDisplayLayout = $input->productLayout;
+        $nativeChromeColors = $input->nativeColors;
+        $navigationHeaderBackgroundColor = $input->headerBackground;
+        $this->images->handle(new UpdateHomeImagesInput($projectId, $input->headerImage, $input->clearHeaderImage, $input->homeImage, $input->clearHomeImage, $input->homeImages, $input->removedHomeImages, $input->homeImagesPresent));
         if ($nativeChromeColors !== null) {
             $this->shopSettingRepository->setValue('native_chrome_colors', array_map('strtoupper', array_intersect_key($nativeChromeColors, array_flip(['header_icon', 'footer_background', 'footer_icon', 'footer_active_icon', 'footer_active_background', 'primary_button_background', 'primary_button_text', 'secondary_button_background', 'secondary_button_text']))), 'json', $projectId);
         }
@@ -43,6 +43,19 @@ class UpdateHomeSettingsUseCase
             }
             $default = $isLink ? $existingLinks->get($tab, []) : $defaults->get($tab);
             if ($isLink && ! is_array($default)) {
+                continue;
+            }
+            if ($isLink && array_key_exists('url', $row)) {
+                $url = trim((string) ($row['url'] ?? ''));
+                if ($url === '') {
+                    $existingLinks->forget($tab);
+
+                    continue;
+                }
+                $default['url'] = $url;
+                $default['open'] = $row['open'] ?? $default['open'] ?? 'embed';
+            }
+            if ($isLink && empty($default['url'])) {
                 continue;
             }
             $items[] = array_merge($default, [
@@ -67,16 +80,8 @@ class UpdateHomeSettingsUseCase
 
         usort($items, fn ($a, $b) => $a['order'] <=> $b['order']);
         $this->shopSettingRepository->setFrontendMenuItems($items, $projectId);
-        if ($navigationHeaderImageUrl !== null) {
-            $this->shopSettingRepository->setValue('navigation_header_image_url', $navigationHeaderImageUrl, 'string', $projectId);
-        }
-        $this->shopSettingRepository->setValue('navigation_header_background_color', strtoupper($navigationHeaderBackgroundColor), 'string', $projectId);
-        if ($homeImageUrls !== null) {
-            $this->shopSettingRepository->setValue('home_image_urls', $homeImageUrls, 'json', $projectId);
-            $this->shopSettingRepository->setValue('home_image_url', $homeImageUrls[0] ?? '', 'string', $projectId);
-        } elseif ($homeImageUrl !== null) {
-            $this->shopSettingRepository->setValue('home_image_urls', $homeImageUrl !== '' ? [$homeImageUrl] : [], 'json', $projectId);
-            $this->shopSettingRepository->setValue('home_image_url', $homeImageUrl, 'string', $projectId);
+        if ($navigationHeaderBackgroundColor !== null) {
+            $this->shopSettingRepository->setValue('navigation_header_background_color', strtoupper($navigationHeaderBackgroundColor), 'string', $projectId);
         }
         $this->shopSettingRepository->setValue('home_menu_layout', $homeMenuLayout, 'string', $projectId);
         $this->shopSettingRepository->setValue('product_display_layout', $productDisplayLayout, 'string', $projectId);
@@ -98,7 +103,7 @@ class UpdateHomeSettingsUseCase
     }
 
     /**
-     * LIFFデザイナーで追加した外部リンクタブはホーム設定では扱わないため、保存時に維持する。
+     * 送信されなかったWebページ設定は保存時に維持する。
      *
      * @return list<array<string, mixed>>
      */

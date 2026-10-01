@@ -1,13 +1,13 @@
 @extends('admin.layout')
 
-@section('title', 'プロジェクト入力ホーム（編集）')
-@section('page-title', 'プロジェクト入力ホーム（編集）')
+@section('title', '契約・連携設定')
+@section('page-title', '契約・連携設定')
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ route('system-admin.projects.index') }}">プロジェクト管理</a>
     <span class="breadcrumb-sep">/</span>
-    <span>入力ホーム（編集）</span>
+    <span>契約・連携設定</span>
 </nav>
 
 <form action="{{ route('system-admin.projects.update', $view->project->id) }}" method="POST" enctype="multipart/form-data">

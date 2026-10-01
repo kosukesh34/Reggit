@@ -51,7 +51,7 @@
                                 <a href="{{ route('admin.dashboard', ['project_key' => $project->project_key]) }}" class="btn btn-action btn-edit"><i class="fas fa-th-large"></i> ダッシュボード</a>
                                 <a href="{{ route('liff.project', ['project_key' => $project->project_key]) }}" class="btn btn-action btn-outline" target="_blank" rel="noopener noreferrer"><i class="fas fa-external-link-alt"></i> フロント</a>
                             @endif
-                            <a href="{{ route('system-admin.projects.edit', $project->id) }}" class="btn btn-action btn-outline"><i class="fas fa-sliders-h"></i> 入力ホーム</a>
+                            <a href="{{ route('system-admin.projects.edit', $project->id) }}" class="btn btn-action btn-outline"><i class="fas fa-sliders-h"></i> 契約・連携設定</a>
                         </div>
                     </td>
                 </tr>

@@ -2,20 +2,19 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Services\SettingsService;
+use App\Domain\Settings\Repositories\OperationalSettings;
+use App\UseCases\Admin\Settings\Data\UpdateBasicSettingsInput;
 
 class UpdateBasicSettingsUseCase
 {
-    private SettingsService $settingsService;
+    public function __construct(private OperationalSettings $settings) {}
 
-    public function __construct(SettingsService $settingsService)
+    public function handle(UpdateBasicSettingsInput $input): void
     {
-        $this->settingsService = $settingsService;
-    }
-
-    /** @param array<string, mixed> $validated */
-    public function handle(int $projectId, array $validated): void
-    {
-        $this->settingsService->updateReservationSettings($validated, $projectId);
+        $this->settings->setValue('business_hours_start', $input->hoursStart, 'time', $input->projectId);
+        $this->settings->setValue('business_hours_end', $input->hoursEnd, 'time', $input->projectId);
+        $this->settings->setOrderMode($input->orderMode, $input->projectId);
+        $this->settings->setOrderLineNotifyEnabled($input->notifyOrder, $input->projectId);
+        $this->settings->setOrderReadyLineNotifyEnabled($input->notifyReady, $input->projectId);
     }
 }
