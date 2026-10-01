@@ -1,857 +1,1284 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "": {},
-    "%@": {},
-    "%@ · %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@ · %2$@"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
           }
         }
       }
     },
-    "%@、現在利用中": {},
-    "%@%@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@%2$@"
+    "%@、現在利用中" : {
+
+    },
+    "%@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$@"
           }
         }
       }
     },
-    "%@%lld pt": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "%1$@%2$lld pt"
+    "%@%lld pt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$lld pt"
           }
         }
       }
     },
-    "%@に切り替える": {},
-    "%@の数量を増やす": {},
-    "%@の数量を減らす": {},
-    "%@の詳細": {},
-    "%@を追加": {},
-    "%lld": {},
-    "%lld Items": {
-      "comment": "Header title for a list that contains the number of items",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld elementos"
+    "%@に切り替える" : {
+
+    },
+    "%@の数量を増やす" : {
+
+    },
+    "%@の数量を減らす" : {
+
+    },
+    "%@の詳細" : {
+
+    },
+    "%@を追加" : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld Items" : {
+      "comment" : "Header title for a list that contains the number of items",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld elementos"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld éléments"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld éléments"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "アイテム数 %lld"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アイテム数 %lld"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 个条目"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 个条目"
           }
         }
       }
     },
-    "%lld%%": {},
-    "%lldパーセント削りました": {},
-    "%lld件の写真": {},
-    "%lld名": {},
-    "%lld枚目の画像": {},
-    "%lld点": {},
-    "×%lld": {},
-    "1回": {},
-    "1端末1回限り": {},
-    "8つの景品が並ぶラッキールーレット": {},
-    "Add": {
-      "comment": "Button in items list that will cause a new item to be added",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Añadir"
+    "%lld%%" : {
+
+    },
+    "%lldパーセント削りました" : {
+
+    },
+    "%lld件の写真" : {
+
+    },
+    "%lld名" : {
+
+    },
+    "%lld枚目の画像" : {
+
+    },
+    "%lld点" : {
+
+    },
+    "×%lld" : {
+
+    },
+    "1回" : {
+
+    },
+    "1端末1回限り" : {
+
+    },
+    "8つの景品が並ぶラッキールーレット" : {
+
+    },
+    "Add" : {
+      "comment" : "Button in items list that will cause a new item to be added",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ajouter"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "追加"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "追加"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加"
           }
         }
       }
     },
-    "Appearance": {
-      "comment": "Settings select label for the interface style of the controls (light, dark, or default)",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apariencia"
+    "Appearance" : {
+      "comment" : "Settings select label for the interface style of the controls (light, dark, or default)",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apariencia"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apparence"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparence"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "外観"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外観"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "外观"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外观"
           }
         }
       }
     },
-    "Cancel": {
-      "comment": "Button title indicating that the operation should be cancelled",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cancelar"
+    "Cancel" : {
+      "comment" : "Button title indicating that the operation should be cancelled",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelar"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Annuler"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "キャンセル"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取消"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
           }
         }
       }
     },
-    "Dark": {
-      "comment": "Menu item indicating that the appearance should be in dark mode",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Oscuro"
+    "Dark" : {
+      "comment" : "Menu item indicating that the appearance should be in dark mode",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oscuro"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sombre"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sombre"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ダーク"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダーク"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "深色"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深色"
           }
         }
       }
     },
-    "Date": {
-      "comment": "Item editor form label for the Date field",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fecha"
+    "Date" : {
+      "comment" : "Item editor form label for the Date field",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fecha"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Date"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "日付"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日付"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "日期"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日期"
           }
         }
       }
     },
-    "Favorite": {
-      "comment": "Item editor title label for marking the item as a favorite",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Favorito"
+    "Favorite" : {
+      "comment" : "Item editor title label for marking the item as a favorite",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorito"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Favori"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favori"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "お気に入り"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "お気に入り"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "收藏"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收藏"
           }
         }
       }
     },
-    "FEATURED": {},
-    "Hello [%@](https://skip.dev)!": {
-      "comment": "Welcome tab contents",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¡Hola [%@](https://skip.dev)!"
+    "FEATURED" : {
+
+    },
+    "Hello [%@](https://skip.dev)!" : {
+      "comment" : "Welcome tab contents",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Hola [%@](https://skip.dev)!"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bonjour [%@](https://skip.dev)!"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bonjour [%@](https://skip.dev)!"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "こんにちは [%@](https://skip.dev)"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "こんにちは [%@](https://skip.dev)"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你好 [%@](https://skip.dev)"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你好 [%@](https://skip.dev)"
           }
         }
       }
     },
-    "Home": {
-      "comment": "Tab bar item title for the Home tab",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inicio"
+    "Home" : {
+      "comment" : "Tab bar item title for the Home tab",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicio"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Accueil"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accueil"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ホーム"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホーム"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首页"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "首页"
           }
         }
       }
     },
-    "IDとコードを発行": {},
-    "Light": {
-      "comment": "Menu item indicating that the appearance should be in light mode",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Claro"
+    "IDとコードを発行" : {
+
+    },
+    "Light" : {
+      "comment" : "Menu item indicating that the appearance should be in light mode",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claro"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Clair"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clair"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "明るい"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "明るい"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "浅色"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浅色"
           }
         }
       }
     },
-    "Name": {
-      "comment": "Placeholder title for the Name field in a form",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nombre"
+    "Name" : {
+      "comment" : "Placeholder title for the Name field in a form",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nombre"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nom"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nom"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "名前"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "姓名"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "姓名"
           }
         }
       }
     },
-    "Notes": {
-      "comment": "Item editor form label for the Notes field",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notas"
+    "NEW" : {
+
+    },
+    "Notes" : {
+      "comment" : "Item editor form label for the Notes field",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notas"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Notes"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notes"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ノート"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノート"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "笔记"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔记"
           }
         }
       }
     },
-    "OK": {},
-    "Powered by [Skip](https://skip.dev)": {
-      "comment": "Link markdown text for the Powered by… label",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impulsado por [Skip](https://skip.dev)"
+    "OK" : {
+
+    },
+    "Powered by [Skip](https://skip.dev)" : {
+      "comment" : "Link markdown text for the Powered by… label",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impulsado por [Skip](https://skip.dev)"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fonctionnalités offertes par [Skip](https://skip.dev)"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fonctionnalités offertes par [Skip](https://skip.dev)"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "[Skip](https://skip.dev) を使って動かしています"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[Skip](https://skip.dev) を使って動かしています"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "由[Skip](https://skip.dev)提供支持"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "由[Skip](https://skip.dev)提供支持"
           }
         }
       }
     },
-    "pt": {},
-    "QRを表示": {},
-    "QRを読み取る": {},
-    "QRを隠す": {},
-    "Reggit": {},
-    "Save": {
-      "comment": "Button title indicating that the current contents should be saved",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guardar"
+    "pt" : {
+
+    },
+    "QRを表示" : {
+
+    },
+    "QRを読み取る" : {
+
+    },
+    "QRを隠す" : {
+
+    },
+    "Reggit" : {
+
+    },
+    "Save" : {
+      "comment" : "Button title indicating that the current contents should be saved",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enregistrer"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrer"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存"
           }
         }
       }
     },
-    "Settings": {
-      "comment": "Tab bar item title for the Settings tab",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Configuración"
+    "Settings" : {
+      "comment" : "Tab bar item title for the Settings tab",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paramètres"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paramètres"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "設定"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设置"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置"
           }
         }
       }
     },
-    "STORE JOURNAL": {},
-    "System": {
-      "comment": "Menu item indicating that the appearance should be in the default system mode",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sistema"
+    "STORE JOURNAL" : {
+
+    },
+    "System" : {
+      "comment" : "Menu item indicating that the appearance should be in the default system mode",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Système"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Système"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "システム"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システム"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "系统"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系统"
           }
         }
       }
     },
-    "Title": {
-      "comment": "Label for the item editor form indicating the title of the item",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Título"
+    "Title" : {
+      "comment" : "Label for the item editor form indicating the title of the item",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Título"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Titre"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titre"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "タイトル"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タイトル"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "标题"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "标题"
           }
         }
       }
     },
-    "Version %@ (%@)": {
-      "comment": "Settings label showing the current version of the app",
-      "extractionState": "stale",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "Version %1$@ (%2$@)"
+    "Version %@ (%@)" : {
+      "comment" : "Settings label showing the current version of the app",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Version %1$@ (%2$@)"
           }
         },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Versión %1$@ (%2$@)"
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión %1$@ (%2$@)"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Version %1$@ (%2$@)"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %1$@ (%2$@)"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "バージョン %1$@ (%2$@)"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "バージョン %1$@ (%2$@)"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "版本 %1$@ (%2$@)"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "版本 %1$@ (%2$@)"
           }
         }
       }
     },
-    "Wallet": {},
-    "Welcome": {
-      "comment": "Tab bar item title for the Welcome tab",
-      "extractionState": "stale",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bienvenido"
+    "Wallet" : {
+
+    },
+    "Welcome" : {
+      "comment" : "Tab bar item title for the Welcome tab",
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bienvenido"
           }
         },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bienvenue"
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bienvenue"
           }
         },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ようこそ"
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ようこそ"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "欢迎"
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "欢迎"
           }
         }
       }
     },
-    "あたり": {},
-    "あたり！": {},
-    "あたり！景品内容を確認してください": {},
-    "あと %lldポイントで%@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "あと %1$lldポイントで%2$@"
+    "あたり" : {
+
+    },
+    "あたり！" : {
+
+    },
+    "あたり！景品内容を確認してください" : {
+
+    },
+    "あと %lldポイントで%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "あと %1$lldポイントで%2$@"
           }
         }
       }
     },
-    "あとで": {},
-    "あとで登録する": {},
-    "アプリ情報": {},
-    "いま %lld 組が待っています": {},
-    "エラー": {},
-    "おめでとうございます": {},
-    "おめでとうございます！": {},
-    "お名前": {},
-    "お好きな抽選を選んでください": {},
-    "お店の風景とおすすめ": {},
-    "お支払い方法": {},
-    "お知らせ": {},
-    "ガチャ": {},
-    "ガチャを回す": {},
-    "カプセルが入った透明ケースと赤い本体、銀色のハンドルのガチャ": {},
-    "キャンセル": {},
-    "キャンセルする": {},
-    "クーポン": {},
-    "クーポンを使いますか？": {},
-    "クーポンを使用しました": {},
-    "クーポンを受け取る": {},
-    "クーポン一覧に追加しました": {},
-    "コース": {},
-    "ゴールドスクラッチ": {},
-    "こちらの番号でお呼びします": {},
-    "このアプリの通知がオフになっています。設定から通知を有効にできます。": {},
-    "このバーコードをスタッフに提示してください": {},
-    "この予約をキャンセルしますか？": {},
-    "この店舗では既存会員連携を使っていません": {},
-    "この店舗を利用する": {},
-    "この注文はキャンセルされました": {},
-    "この端末で獲得できるクーポン": {},
-    "この端末へ引き継ぐ": {},
-    "コピー": {},
-    "これまでのクーポン": {},
-    "ご予約": {},
-    "ご利用人数を選んで受付できます": {},
-    "ご来店の受付": {},
-    "ご購入ありがとうございます": {},
-    "ざんねん": {},
-    "スクラッチ": {},
-    "スクラッチを開いています…": {},
-    "スクラッチ券がありません": {},
-    "スタッフにこちらのコードをご提示ください": {},
-    "スタンプ": {},
-    "スタンプが貯まりました": {},
-    "スタンプの達成状況": {},
-    "タップして拡大": {},
-    "テストのためクーポンは発行されません": {},
-    "テスト表示 · 抽選券は消費しません": {},
-    "はずれ": {},
-    "プロフィール": {},
-    "プロフィール編集": {},
-    "ホーム画像": {},
-    "ポイントの付与・利用履歴はまだありません": {},
-    "ポイント履歴": {},
-    "ポイント期限": {},
-    "またのご利用をお待ちしています": {},
-    "メニュー": {},
-    "メニューを閉じる": {},
-    "メニューを開く": {},
-    "メモ": {},
-    "ルーレット": {},
-    "一枚の銀面を指でこすってください": {},
-    "一面スクラッチ": {},
-    "予約をキャンセル": {},
-    "予約日時": {},
-    "予約番号 %@": {},
-    "人数": {},
-    "人数を増やす": {},
-    "人数を減らす": {},
-    "今回はざんねん": {},
-    "今回ははずれでした": {},
-    "今回はハズレです": {},
-    "会員ID": {},
-    "会員コード": {},
-    "会員コードを拡大": {},
-    "会員コードを拡大して表示": {},
-    "会員登録": {},
-    "会員登録する": {},
-    "会員登録後に、この端末の会員IDを発行できます。": {},
-    "会員証": {},
-    "会員証をWalletに保存して、すぐに提示。": {},
-    "会員証を提示": {},
-    "会員証を準備しています": {},
-    "使う": {},
-    "使用する": {},
-    "保存中…": {},
-    "入力内容をご確認ください": {},
-    "全 %lld 個のうち %lld 個獲得": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "全 %1$lld 個のうち %2$lld 個獲得"
+    "あとで" : {
+
+    },
+    "あとで登録する" : {
+
+    },
+    "アプリ情報" : {
+
+    },
+    "いま %lld 組が待っています" : {
+
+    },
+    "エラー" : {
+
+    },
+    "おめでとうございます" : {
+
+    },
+    "おめでとうございます！" : {
+
+    },
+    "お名前" : {
+
+    },
+    "お好きな抽選を選んでください" : {
+
+    },
+    "お店の風景とおすすめ" : {
+
+    },
+    "お支払い方法" : {
+
+    },
+    "お知らせ" : {
+
+    },
+    "ガチャ" : {
+
+    },
+    "ガチャを回す" : {
+
+    },
+    "カプセルが入った透明ケースと赤い本体、銀色のハンドルのガチャ" : {
+
+    },
+    "キャンセル" : {
+
+    },
+    "キャンセルする" : {
+
+    },
+    "クーポン" : {
+
+    },
+    "クーポンを使いますか？" : {
+
+    },
+    "クーポンを使用しました" : {
+
+    },
+    "クーポンを受け取る" : {
+
+    },
+    "クーポン一覧に追加しました" : {
+
+    },
+    "コース" : {
+
+    },
+    "ゴールドスクラッチ" : {
+
+    },
+    "こちらの番号でお呼びします" : {
+
+    },
+    "このアプリの通知がオフになっています。設定から通知を有効にできます。" : {
+
+    },
+    "このバーコードをスタッフに提示してください" : {
+
+    },
+    "この予約をキャンセルしますか？" : {
+
+    },
+    "この店舗では既存会員連携を使っていません" : {
+
+    },
+    "この店舗を利用する" : {
+
+    },
+    "この注文はキャンセルされました" : {
+
+    },
+    "この端末で獲得できるクーポン" : {
+
+    },
+    "この端末へ引き継ぐ" : {
+
+    },
+    "コピー" : {
+
+    },
+    "これまでのクーポン" : {
+
+    },
+    "ご予約" : {
+
+    },
+    "ご利用人数を選んで受付できます" : {
+
+    },
+    "ご来店の受付" : {
+
+    },
+    "ご購入ありがとうございます" : {
+
+    },
+    "ざんねん" : {
+
+    },
+    "スクラッチ" : {
+
+    },
+    "スクラッチ券がありません" : {
+
+    },
+    "スタッフにこちらのコードをご提示ください" : {
+
+    },
+    "スタンプ" : {
+
+    },
+    "スタンプが貯まりました" : {
+
+    },
+    "スタンプの達成状況" : {
+
+    },
+    "タップして拡大" : {
+
+    },
+    "テストのためクーポンは発行されません" : {
+
+    },
+    "テスト表示 · 抽選券は消費しません" : {
+
+    },
+    "はずれ" : {
+
+    },
+    "プロフィール" : {
+
+    },
+    "プロフィール編集" : {
+
+    },
+    "ホーム画像" : {
+
+    },
+    "ポイントの付与・利用履歴はまだありません" : {
+
+    },
+    "ポイント履歴" : {
+
+    },
+    "ポイント期限" : {
+
+    },
+    "またのご利用をお待ちしています" : {
+
+    },
+    "メニュー" : {
+
+    },
+    "メニューを閉じる" : {
+
+    },
+    "メニューを開く" : {
+
+    },
+    "メモ" : {
+
+    },
+    "ルーレット" : {
+
+    },
+    "一枚の銀面を指でこすってください" : {
+
+    },
+    "一面スクラッチ" : {
+
+    },
+    "予約をキャンセル" : {
+
+    },
+    "予約日時" : {
+
+    },
+    "予約番号 %@" : {
+
+    },
+    "人数" : {
+
+    },
+    "人数を増やす" : {
+
+    },
+    "人数を減らす" : {
+
+    },
+    "今回はざんねん" : {
+
+    },
+    "今回ははずれでした" : {
+
+    },
+    "今回はハズレです" : {
+
+    },
+    "会員ID" : {
+
+    },
+    "会員コード" : {
+
+    },
+    "会員コードを拡大" : {
+
+    },
+    "会員コードを拡大して表示" : {
+
+    },
+    "会員登録" : {
+
+    },
+    "会員登録する" : {
+
+    },
+    "会員登録後に、この端末の会員IDを発行できます。" : {
+
+    },
+    "会員証" : {
+
+    },
+    "会員証をWalletに保存して、すぐに提示。" : {
+
+    },
+    "会員証を提示" : {
+
+    },
+    "会員証を準備しています" : {
+
+    },
+    "使う" : {
+
+    },
+    "使用する" : {
+
+    },
+    "保存中…" : {
+
+    },
+    "入力内容をご確認ください" : {
+
+    },
+    "全 %lld 個のうち %lld 個獲得" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "全 %1$lld 個のうち %2$lld 個獲得"
           }
         }
       }
     },
-    "内容": {},
-    "再利用できません": {},
-    "再読み込み": {},
-    "最近獲得したクーポン": {},
-    "利用する店舗を選んでください": {},
-    "利用日 %@": {},
-    "利用済み %lld件 · 期限切れ %lld件": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "利用済み %1$lld件 · 期限切れ %2$lld件"
+    "内容" : {
+
+    },
+    "再利用できません" : {
+
+    },
+    "再読み込み" : {
+
+    },
+    "最近獲得したクーポン" : {
+
+    },
+    "利用する店舗を選んでください" : {
+
+    },
+    "利用日 %@" : {
+
+    },
+    "利用済み %lld件 · 期限切れ %lld件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "利用済み %1$lld件 · 期限切れ %2$lld件"
           }
         }
       }
     },
-    "利用終了 %@": {},
-    "利用開始 %@": {},
-    "利用開始前": {},
-    "削り進み": {},
-    "受付をキャンセル": {},
-    "受取番号": {},
-    "合計": {},
-    "商品・サービスを検索": {},
-    "商品受け取り時に店頭でお支払いください": {},
-    "回して挑戦": {},
-    "変更を保存": {},
-    "店舗を探す": {},
-    "店舗を選択": {},
-    "店舗名で検索": {},
-    "引き継ぎ": {},
-    "引き継ぎコード": {},
-    "待ち状況は自動で更新されます。表示される時間は目安です。": {},
-    "必須": {},
-    "戻る": {},
-    "投入口": {},
-    "抽選中": {},
-    "抽選中です。お楽しみに…": {},
-    "抽選中です。結果は自動で表示されます": {},
-    "抽選結果": {},
-    "抽選結果に応じて、店舗で利用できるクーポンが付与されます": {},
-    "指定なし": {},
-    "挑戦": {},
-    "接続できません": {},
-    "整理券をキャンセルしますか？": {},
-    "新しい端末で読み取るか、会員IDとコードを入力します。コードは30分で一度だけ使えます。": {},
-    "新しく予約する": {},
-    "既存会員連携": {},
-    "日時": {},
-    "景品の例": {},
-    "有効期限 %@": {},
-    "期間中いつでも利用できます": {},
-    "未選択": {},
-    "検索をクリア": {},
-    "次のランクまで": {},
-    "決済完了後に受取番号が発行されます": {},
-    "決済状況": {},
-    "注文": {},
-    "注文を確認": {},
-    "注文内容": {},
-    "注文後にカード決済画面を開きます": {},
-    "渡す側の会員IDと引き継ぎコードを入力してください。": {},
-    "獲得": {},
-    "獲得したクーポンはまだありません": {},
-    "現在": {},
-    "現在利用できる購入特典はありません": {},
-    "現在利用中の店舗": {},
-    "画像を全画面で表示": {},
-    "登録してはじめる": {},
-    "登録する": {},
-    "登録中…": {},
-    "登録情報を確認・編集": {},
-    "確認中": {},
-    "結果": {},
-    "結果を確認しています…": {},
-    "表示終了まで %@": {},
-    "要望など（任意）": {},
-    "設定を開く": {},
-    "読み込み中": {},
-    "購入特典を楽しむ": {},
-    "購入特典を確認しています": {},
-    "購入特典を確認できませんでした": {},
-    "追加": {},
-    "退会": {},
-    "退会する": {},
-    "退会すると会員情報・ポイント・スタンプは復元できません。": {},
-    "透明ケースにカプセルが入った白いガシャポンマシン": {},
-    "通知がオフです": {},
-    "連携する": {},
-    "連絡先や登録情報を変更できます。必須項目を入力して保存してください。": {},
-    "進捗": {},
-    "選択してください": {},
-    "選択済み": {},
-    "銀面をこすって結果を確認": {},
-    "閉じて注文に戻る": {},
-    "閉じる": {},
-    "電話番号": {},
-    "順番待ち整理券": {},
-    "新規ウィンドウ": {},
-    "進む": {},
-    "NEW": {},
-    "固定": {},
-    "固定されたお知らせ": {},
-    "画像を読み込めませんでした": {}
+    "利用終了 %@" : {
+
+    },
+    "利用開始 %@" : {
+
+    },
+    "利用開始前" : {
+
+    },
+    "削り進み" : {
+
+    },
+    "受付をキャンセル" : {
+
+    },
+    "受取番号" : {
+
+    },
+    "合計" : {
+
+    },
+    "商品・サービスを検索" : {
+
+    },
+    "商品受け取り時に店頭でお支払いください" : {
+
+    },
+    "回して挑戦" : {
+
+    },
+    "固定" : {
+
+    },
+    "固定されたお知らせ" : {
+
+    },
+    "変更を保存" : {
+
+    },
+    "店舗を探す" : {
+
+    },
+    "店舗を選択" : {
+
+    },
+    "店舗名で検索" : {
+
+    },
+    "引き継ぎ" : {
+
+    },
+    "引き継ぎコード" : {
+
+    },
+    "待ち状況は自動で更新されます。表示される時間は目安です。" : {
+
+    },
+    "必須" : {
+
+    },
+    "戻る" : {
+
+    },
+    "投入口" : {
+
+    },
+    "抽選中" : {
+
+    },
+    "抽選中です。お楽しみに…" : {
+
+    },
+    "抽選結果" : {
+
+    },
+    "抽選結果に応じて、店舗で利用できるクーポンが付与されます" : {
+
+    },
+    "指定なし" : {
+
+    },
+    "挑戦" : {
+
+    },
+    "接続できません" : {
+
+    },
+    "整理券をキャンセルしますか？" : {
+
+    },
+    "新しい端末で読み取るか、会員IDとコードを入力します。コードは30分で一度だけ使えます。" : {
+
+    },
+    "新しく予約する" : {
+
+    },
+    "新規ウィンドウ" : {
+
+    },
+    "既存会員連携" : {
+
+    },
+    "日時" : {
+
+    },
+    "景品の例" : {
+
+    },
+    "有効期限 %@" : {
+
+    },
+    "期間中いつでも利用できます" : {
+
+    },
+    "未選択" : {
+
+    },
+    "検索をクリア" : {
+
+    },
+    "次のランクまで" : {
+
+    },
+    "決済完了後に受取番号が発行されます" : {
+
+    },
+    "決済状況" : {
+
+    },
+    "注文" : {
+
+    },
+    "注文を確認" : {
+
+    },
+    "注文内容" : {
+
+    },
+    "注文後にカード決済画面を開きます" : {
+
+    },
+    "渡す側の会員IDと引き継ぎコードを入力してください。" : {
+
+    },
+    "獲得" : {
+
+    },
+    "獲得したクーポンはまだありません" : {
+
+    },
+    "現在" : {
+
+    },
+    "現在利用できる購入特典はありません" : {
+
+    },
+    "現在利用中の店舗" : {
+
+    },
+    "画像を全画面で表示" : {
+
+    },
+    "画像を読み込めませんでした" : {
+
+    },
+    "登録してはじめる" : {
+
+    },
+    "登録する" : {
+
+    },
+    "登録中…" : {
+
+    },
+    "登録情報を確認・編集" : {
+
+    },
+    "確認中" : {
+
+    },
+    "結果" : {
+
+    },
+    "結果を確認しています…" : {
+
+    },
+    "表示終了まで %@" : {
+
+    },
+    "要望など（任意）" : {
+
+    },
+    "設定を開く" : {
+
+    },
+    "読み込み中" : {
+
+    },
+    "購入特典を楽しむ" : {
+
+    },
+    "購入特典を確認しています" : {
+
+    },
+    "購入特典を確認できませんでした" : {
+
+    },
+    "追加" : {
+
+    },
+    "退会" : {
+
+    },
+    "退会する" : {
+
+    },
+    "退会すると会員情報・ポイント・スタンプは復元できません。" : {
+
+    },
+    "透明ケースにカプセルが入った白いガシャポンマシン" : {
+
+    },
+    "通知がオフです" : {
+
+    },
+    "連携する" : {
+
+    },
+    "連絡先や登録情報を変更できます。必須項目を入力して保存してください。" : {
+
+    },
+    "進む" : {
+
+    },
+    "進捗" : {
+
+    },
+    "選択してください" : {
+
+    },
+    "選択済み" : {
+
+    },
+    "銀面をこすって結果を確認" : {
+
+    },
+    "銀面を半分ほどこすって結果を確認" : {
+
+    },
+    "閉じて注文に戻る" : {
+
+    },
+    "閉じる" : {
+
+    },
+    "電話番号" : {
+
+    },
+    "順番待ち整理券" : {
+
+    }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }
