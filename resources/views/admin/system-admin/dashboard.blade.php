@@ -4,9 +4,7 @@
 @section('page-title', 'システム管理')
 
 @section('content')
-<div class="system-admin-welcome">
-    <p class="system-admin-welcome-text">プロジェクト・アカウント・監査ログを一元管理できます。</p>
-</div>
+<div class="settings-overview"><span class="settings-eyebrow">SYSTEM ADMINISTRATION</span><h1>システム管理</h1><p>契約・アカウントと、全店舗に共通する案内を管理します。</p></div>
 
 <div class="stats-grid stats-grid--system">
     <a href="{{ route('system-admin.projects.index') }}" class="stat-card stat-card--link stat-card-primary">
@@ -35,19 +33,30 @@
     </a>
 </div>
 
-<div class="card system-admin-card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-bolt"></i> クイックアクション</h3>
-    </div>
-    <div class="card-body">
-        <div class="quick-actions-grid">
-            <a href="{{ route('system-admin.projects.input-home') }}" class="btn btn-primary btn-lg">
-                <i class="fas fa-plus"></i> プロジェクト入力ホーム
-            </a>
-            <a href="{{ route('system-admin.accounts.create') }}" class="btn btn-info btn-lg">
-                <i class="fas fa-user-plus"></i> 新規アカウント
-            </a>
+<div class="settings-hub">
+    <section class="settings-hub-section">
+        <h2 class="settings-hub-heading">契約・アカウント</h2>
+        <div class="settings-hub-grid">
+            @foreach([
+                ['system-admin.projects.index', 'fas fa-building', 'プロジェクト・契約', 'プラン、利用店舗数、利用状態、スマレジ接続'],
+                ['system-admin.accounts.index', 'fas fa-user-shield', '管理者アカウント', '管理者の追加、所属プロジェクト、権限'],
+                ['system-admin.projects.input-home', 'fas fa-plus', '新規プロジェクト', '店舗の導入に必要な初期設定'],
+            ] as [$route, $icon, $label, $hint])
+                <a href="{{ route($route) }}" class="settings-hub-card"><span class="settings-hub-icon" aria-hidden="true"><i class="{{ $icon }}"></i></span><span class="settings-hub-copy"><strong>{{ $label }}</strong><span>{{ $hint }}</span></span><i class="fas fa-chevron-right settings-hub-arrow" aria-hidden="true"></i></a>
+            @endforeach
         </div>
-    </div>
+    </section>
+    <section class="settings-hub-section">
+        <h2 class="settings-hub-heading">全店舗への案内・監査</h2>
+        <div class="settings-hub-grid">
+            @foreach([
+                ['system-admin.notices.index', 'fas fa-bullhorn', '店舗向けのお知らせ', 'システムの更新や運用に関する案内'],
+                ['system-admin.help-articles.index', 'fas fa-circle-question', 'ヘルプ記事', '店舗管理者向けの操作ガイド'],
+                ['system-admin.audit-logs.index', 'fas fa-clipboard-list', '操作履歴', '管理者の操作と変更履歴を確認'],
+            ] as [$route, $icon, $label, $hint])
+                <a href="{{ route($route) }}" class="settings-hub-card"><span class="settings-hub-icon" aria-hidden="true"><i class="{{ $icon }}"></i></span><span class="settings-hub-copy"><strong>{{ $label }}</strong><span>{{ $hint }}</span></span><i class="fas fa-chevron-right settings-hub-arrow" aria-hidden="true"></i></a>
+            @endforeach
+        </div>
+    </section>
 </div>
 @endsection

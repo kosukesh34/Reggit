@@ -26,6 +26,13 @@ class SystemAdminDashboardTest extends TestCase
         $response->assertDontSee('店舗アプリUI学習', false);
     }
 
+    public function test_system_admin_root_redirects_to_dashboard(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
+        $this->actingAs($admin, 'admin')->get('/system-admin')
+            ->assertRedirect(route('system-admin.dashboard'));
+    }
+
     public function test_dashboard_廃止した画面は404になること(): void
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
