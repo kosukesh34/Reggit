@@ -1,7 +1,12 @@
-<div class="form-group"><label>タイトル<input name="title" class="form-control" value="{{ old('title', $notice?->title) }}" maxlength="255" required></label></div>
+@php
+    $noticeFormId = $notice ? (string) $notice->id : 'new';
+    $restoreNoticeInput = old('_notice_id') === $noticeFormId;
+    $noticeValue = fn ($key, $fallback = null) => $restoreNoticeInput ? old($key, $fallback) : $fallback;
+@endphp
+<div class="form-group"><label class="form-label">タイトル<input name="title" class="form-control" value="{{ $noticeValue('title', $notice?->title) }}" maxlength="255" required></label></div>
 <div class="form-group notice-editor">
-    <label>本文（Markdown）<textarea name="body" class="form-control" rows="8" required>{{ old('body', $notice?->body) }}</textarea></label>
-    <div class="mt-3">
+    <label class="form-label">本文（Markdown）<textarea name="body" class="form-control" rows="10" maxlength="20000" required>{{ $noticeValue('body', $notice?->body) }}</textarea></label>
+    <div class="publishing-toolbar">
         <label>文字色 <input type="color" value="#b91c1c" aria-label="お知らせの文字色"></label>
         <button type="button" class="btn btn-secondary" onclick="const editor = this.closest('.notice-editor'); const area = editor.querySelector('textarea'); const color = editor.querySelector('input[type=color]').value; const start = area.selectionStart; const end = area.selectionEnd; const text = area.value.slice(start, end) || '色を付ける文字'; area.setRangeText('[color=' + color + ']' + text + '[/color]', start, end, 'select'); area.focus(); area.dispatchEvent(new Event('input', {bubbles: true}));">選択した文字に色を付ける</button>
     </div>
@@ -23,9 +28,12 @@
         <details class="mt-3"><summary>保存済みの本文プレビュー</summary><div class="notice-markdown">{!! app(\App\Support\NoticeMarkdown::class)->toHtml($notice->body) !!}</div></details>
     @endif
 </div>
-<div class="form-group"><label>公開開始（空欄で即時）<input type="datetime-local" name="starts_at" class="form-control" value="{{ $notice?->starts_at?->format('Y-m-d\TH:i') }}"></label></div>
-<div class="form-group"><label>公開終了（空欄で無期限）<input type="datetime-local" name="ends_at" class="form-control" value="{{ $notice?->ends_at?->format('Y-m-d\TH:i') }}"></label></div>
+<div class="publishing-settings"><div class="form-group"><label class="form-label">公開開始（空欄で即時）<input type="datetime-local" name="starts_at" class="form-control" value="{{ $noticeValue('starts_at', $notice?->starts_at?->format('Y-m-d\TH:i')) }}"></label></div>
+<div class="form-group"><label class="form-label">公開終了（空欄で無期限）<input type="datetime-local" name="ends_at" class="form-control" value="{{ $noticeValue('ends_at', $notice?->ends_at?->format('Y-m-d\TH:i')) }}"></label></div>
+</div>
+<div class="publishing-publication">
 <input type="hidden" name="is_published" value="0">
-<label><input type="checkbox" name="is_published" value="1" @checked(old('is_published', $notice?->is_published ?? true))> 公開する</label>
+<label><input type="checkbox" name="is_published" value="1" @checked($noticeValue('is_published', $notice?->is_published ?? false))> 公開する</label>
 
 <p class="form-text text-muted">「公開する」が未選択の場合は下書きとして保存され、店舗のダッシュボードには表示されません。</p>
+</div>

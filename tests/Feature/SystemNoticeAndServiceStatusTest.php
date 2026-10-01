@@ -13,6 +13,25 @@ class SystemNoticeAndServiceStatusTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_validation_restores_only_the_notice_being_edited(): void
+    {
+        $system = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
+        $notice = SystemNotice::create(['title' => '元のタイトル', 'body' => '保存済み本文', 'is_published' => true]);
+        $other = SystemNotice::create(['title' => '別のお知らせ', 'body' => '別の本文', 'is_published' => false]);
+        $this->actingAs($system, 'admin')->from(route('system-admin.notices.index'))
+            ->put(route('system-admin.notices.update', $notice->id), [
+                '_notice_id' => (string) $notice->id,
+                'title' => '編集中のタイトル', 'body' => '', 'is_published' => '0',
+                'starts_at' => '2026-10-01T12:00',
+            ])->assertSessionHasErrors('body');
+        $response = $this->get(route('system-admin.notices.index'))->assertOk()
+            ->assertSee('value="2026-10-01T12:00"', false)
+            ->assertSee('value="別のお知らせ"', false);
+        $this->assertSame(1, substr_count($response->getContent(), 'value="編集中のタイトル"'));
+        $this->assertDatabaseHas('system_notices', ['id' => $notice->id, 'title' => '元のタイトル', 'is_published' => true]);
+        $this->assertDatabaseHas('system_notices', ['id' => $other->id, 'body' => '別の本文']);
+    }
+
     public function test_only_current_published_notices_are_shown(): void
     {
         foreach ([['title' => '公開お知らせ', 'is_published' => true], ['title' => '下書きお知らせ', 'is_published' => false], ['title' => '未来のお知らせ', 'is_published' => true, 'starts_at' => now()->addDay()], ['title' => '終了したお知らせ', 'is_published' => true, 'ends_at' => now()->subDay()]] as $data) {
@@ -76,7 +95,7 @@ class SystemNoticeAndServiceStatusTest extends TestCase
         $project = Project::factory()->create();
         $system = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
         $this->actingAs($system, 'admin')->post(route('system-admin.notices.store'), ['title' => '保存から公開', 'body' => '**更新内容**', 'is_published' => '1'])->assertRedirect();
-        $this->get(route('system-admin.notices.index'))->assertOk()->assertSee('公開中（店舗ダッシュボードに表示）')->assertSee('編集中の内容をプレビュー');
+        $this->get(route('system-admin.notices.index'))->assertOk()->assertSee('公開中')->assertSee('公開期間：')->assertSee('編集中の内容をプレビュー');
         $store = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
         $store->projects()->sync([$project->id]);
         $this->actingAs($store, 'admin')->get(route('admin.dashboard', ['project_key' => $project->project_key]))->assertOk()->assertSee('保存から公開')->assertDontSee('<strong>更新内容</strong>', false);

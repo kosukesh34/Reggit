@@ -369,6 +369,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 
 // ========== システム管理画面（システム管理者のみ） ==========
 Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 'admin.audit'])->group(function () {
+    Route::get('/', fn () => redirect()->route('system-admin.dashboard'));
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('system-admin.logout');
 
     Route::get('/dashboard', [SystemAdminDashboardController::class, 'dashboard'])->name('system-admin.dashboard');
@@ -395,6 +396,7 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
     Route::put('/notices/{id}', [SystemNoticeController::class, 'update'])->name('system-admin.notices.update');
     Route::delete('/notices/{id}', [SystemNoticeController::class, 'destroy'])->name('system-admin.notices.destroy');
     Route::get('/help-articles', [SystemHelpArticleController::class, 'index'])->name('system-admin.help-articles.index');
+    Route::post('/help-articles/preview', [SystemHelpArticleController::class, 'preview'])->name('system-admin.help-articles.preview');
     Route::get('/help-articles/create', [SystemHelpArticleController::class, 'create'])->name('system-admin.help-articles.create');
     Route::post('/help-articles', [SystemHelpArticleController::class, 'store'])->name('system-admin.help-articles.store');
     Route::get('/help-articles/{id}/edit', [SystemHelpArticleController::class, 'edit'])->name('system-admin.help-articles.edit');

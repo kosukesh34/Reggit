@@ -5,12 +5,28 @@ namespace Tests\Feature;
 use App\Models\AdminUser;
 use App\Models\HelpArticle;
 use App\Models\Project;
+use App\Support\HelpMarkdown;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SystemHelpArticleTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_preview_uses_store_help_renderer_without_saving(): void
+    {
+        $system = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
+        $body = "## 見出し\n**太字**\n<script>alert(1)</script>";
+        $this->actingAs($system, 'admin')
+            ->postJson(route('system-admin.help-articles.preview'), ['body' => $body])
+            ->assertOk()
+            ->assertJson(['html' => app(HelpMarkdown::class)->toHtml($body)]);
+        $this->assertDatabaseCount('help_articles', 0);
+        $this->get(route('system-admin.help-articles.index'))->assertOk()->assertSee('ヘルプ記事を書く')->assertDontSee('パスワード変更');
+        $this->get(route('system-admin.help-articles.create'))->assertOk()->assertSee('プレビュー');
+        $store = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN]);
+        $this->actingAs($store, 'admin')->postJson(route('system-admin.help-articles.preview'), ['body' => $body])->assertForbidden();
+    }
 
     public function test_統合管理で追加した質問が店舗ヘルプに出ること(): void
     {

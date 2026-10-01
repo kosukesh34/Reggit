@@ -122,7 +122,9 @@
                         {{ Str::limit(auth('admin')->user()->name, 12) }}
                         <span class="content-header-role">{{ \App\Models\AdminUser::getRoleLabelShort(auth('admin')->user()->role) }}</span>
                     </span>
+                    @unless($isSystemAdminScreen)
                     <a href="{{ route('admin.password.edit') }}" class="btn btn-sm btn-outline-secondary" title="パスワード変更"><i class="fas fa-key"></i> <span class="hide-mobile">パスワード変更</span></a>
+                    @endunless
                     <form action="{{ request()->routeIs('system-admin.*') ? route('system-admin.logout') : route('admin.logout') }}" method="POST" class="content-header-logout-form" onsubmit="return confirm('ログアウトしますか？');">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-outline-secondary no-loading">
