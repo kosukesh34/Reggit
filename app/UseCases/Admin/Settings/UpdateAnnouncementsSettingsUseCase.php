@@ -2,21 +2,16 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\FeatureSettings;
+use App\Domain\Settings\Repositories\SettingValueWriter;
+use App\UseCases\Admin\Settings\Data\UpdateAnnouncementsInput;
 
 class UpdateAnnouncementsSettingsUseCase
 {
-    public function __construct(
-        private FeatureSettings $shopSettingRepository,
-    ) {}
+    public function __construct(private SettingValueWriter $settings) {}
 
-    /** @param array<string, mixed> $validated */
-    public function handle(int $projectId, array $validated): void
+    public function handle(UpdateAnnouncementsInput $input): void
     {
-        $flags = $this->shopSettingRepository->getFeatureFlags($projectId);
-        $flags['feature_announcements_enabled'] = (bool) ($validated['feature_announcements_enabled'] ?? false);
-        $this->shopSettingRepository->setFeatureFlags($flags, $projectId);
-        $this->shopSettingRepository->setValue('announcement_default_pinned', isset($validated['announcement_default_pinned']) ? '1' : '0', 'boolean', $projectId);
-        $this->shopSettingRepository->setValue('announcement_default_expiry_days', (int) ($validated['announcement_default_expiry_days'] ?? 0), 'integer', $projectId);
+        $this->settings->setValue('announcement_default_pinned', $input->defaultPinned ? '1' : '0', 'boolean', $input->projectId);
+        $this->settings->setValue('announcement_default_expiry_days', $input->defaultExpiryDays, 'integer', $input->projectId);
     }
 }

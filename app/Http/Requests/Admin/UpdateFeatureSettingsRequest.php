@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Domain\Settings\ShopSettingKeys;
+use App\UseCases\Admin\Settings\Data\UpdateFeatureSettingsInput;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateFeatureSettingsRequest extends FormRequest
@@ -11,21 +13,25 @@ class UpdateFeatureSettingsRequest extends FormRequest
         return true;
     }
 
-    /**
-     * @return array<string, string|array<int, string>>
-     */
     public function rules(): array
     {
         return [
-            'frontend_logo' => 'nullable|image|max:2048',
-            'frontend_logo_clear' => 'nullable|in:0,1',
-            'frontend_header_text' => 'nullable|string|max:255',
-            'stamp_default_image' => 'nullable|image|max:2048',
-            'stamp_default_image_clear' => 'nullable|in:0,1',
-            'admin_sidebar_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'admin_header_color' => 'nullable|string|max:32',
-            'admin_primary_color' => 'nullable|string|max:32',
             'features' => 'nullable|array',
+            'features.*' => 'boolean',
+            'use_points' => 'nullable|boolean',
+            'use_transaction_stamps' => 'nullable|boolean',
         ];
+    }
+
+    public function toInput(int $projectId): UpdateFeatureSettingsInput
+    {
+        $v = $this->validated();
+
+        return new UpdateFeatureSettingsInput(
+            projectId: $projectId,
+            usePoints: array_key_exists('use_points', $v) ? (bool) $v['use_points'] : null,
+            useTransactionStamps: array_key_exists('use_transaction_stamps', $v) ? (bool) $v['use_transaction_stamps'] : null,
+            features: array_map(fn ($value) => (bool) $value, array_intersect_key($v['features'] ?? [], ShopSettingKeys::FEATURE_FLAG_LABELS)),
+        );
     }
 }

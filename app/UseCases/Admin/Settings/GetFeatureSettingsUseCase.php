@@ -16,12 +16,8 @@ class GetFeatureSettingsUseCase
         return new FeatureSettingsView(
             $this->shopSettingRepository->getFeatureFlags($projectId),
             $this->shopSettingRepository->getFeatureFlagLabels(),
-            $this->shopSettingRepository->getAdminSidebarColor($projectId),
-            $this->shopSettingRepository->getAdminHeaderColor($projectId),
-            $this->shopSettingRepository->getAdminPrimaryColor($projectId),
-            $this->shopSettingRepository->getStampDefaultImageUrl($projectId),
-            $this->shopSettingRepository->getFrontendLogoUrl($projectId),
-            $this->shopSettingRepository->getFrontendHeaderText($projectId)
+            (bool) $this->shopSettingRepository->getValue('use_points', true, $projectId),
+            (bool) $this->shopSettingRepository->getValue('use_transaction_stamps', true, $projectId),
         );
     }
 }

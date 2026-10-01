@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Admin\AdminBaseController;
+use App\Http\Requests\Admin\SettingsAnnouncementsRequest;
 use App\UseCases\Admin\Settings\GetAnnouncementsSettingsUseCase;
 use App\UseCases\Admin\Settings\UpdateAnnouncementsSettingsUseCase;
-use Illuminate\Http\Request;
 
 class AnnouncementsController extends AdminBaseController
 {
@@ -29,15 +29,10 @@ class AnnouncementsController extends AdminBaseController
         return view('admin.settings.announcements', ['view' => $view]);
     }
 
-    public function update(Request $request)
+    public function update(SettingsAnnouncementsRequest $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $validated = $request->validate([
-            'feature_announcements_enabled' => 'nullable|boolean',
-            'announcement_default_pinned' => 'nullable|boolean',
-            'announcement_default_expiry_days' => 'nullable|integer|min:0|max:365',
-        ]);
-        $this->updateAnnouncementsSettingsUseCase->handle($projectId, $validated);
+        $this->updateAnnouncementsSettingsUseCase->handle($request->toInput($projectId));
 
         return redirect()->route('admin.settings.announcements', $this->buildAdminRouteParams())
             ->with('success', 'お知らせの設定を更新しました');

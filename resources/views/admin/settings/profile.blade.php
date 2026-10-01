@@ -1,6 +1,6 @@
 @extends('admin.layout')
-@section('title', 'プロフィール設定')
-@section('page-title', 'プロフィール設定')
+@section('title', '会員登録・プロフィール')
+@section('page-title', '会員登録・プロフィール')
 
 @section('content')
 <nav class="breadcrumb">
@@ -8,12 +8,14 @@
     <span class="breadcrumb-sep">/</span>
     <a href="{{ admin_route('admin.settings.index') }}">設定</a>
     <span class="breadcrumb-sep">/</span>
-    <span>プロフィール設定</span>
+    <span>会員登録・プロフィール</span>
 </nav>
 <div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-user-cog"></i> プロフィール設定</h1>
+    <h1 class="page-header-title"><i class="fas fa-user-cog"></i> 会員登録・プロフィール</h1>
 </div>
 
+@include('admin.settings._section-tabs', ['tabsLabel' => '会員登録・プロフィール', 'sectionTabs' => ['profile-fields' => '登録・プロフィール項目', 'profile-code' => '会員番号']])
+<section id="profile-fields">
 <form action="{{ admin_route('admin.settings.profile.update') }}" method="POST">
     @csrf
     @php
@@ -499,6 +501,46 @@
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
     </div>
 </form>
+</section>
+<section id="profile-code"><form action="{{ admin_route('admin.settings.member-code.update') }}" method="POST">
+    @csrf
+    <div class="card"><div class="card-header"><h2 class="card-title">会員番号の発行ルール</h2></div><div class="card-body">
+                    <div class="ranks-settings-subsection">
+                        <h4 class="ranks-settings-subtitle"><i class="fas fa-id-card"></i> 会員番号</h4>
+                        <p class="form-text text-muted">新規会員登録時に発行する会員番号の生成方法。スマレジ連携時は20文字以内で送信されます。</p>
+                        <div class="ranks-settings-fields">
+                            <div class="form-group">
+                                <label for="member_code_type" class="form-label">生成方式</label>
+                                <select name="member_code_type" id="member_code_type" class="form-control">
+                                    <option value="random" {{ old('member_code_type', $memberCode->type ?? 'random') === 'random' ? 'selected' : '' }}>ランダム</option>
+                                    <option value="sequential" {{ old('member_code_type', $memberCode->type ?? '') === 'sequential' ? 'selected' : '' }}>連番</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="member_code_format" class="form-label">形式</label>
+                                <select name="member_code_format" id="member_code_format" class="form-control">
+                                    <option value="numeric" {{ old('member_code_format', $memberCode->format ?? 'numeric') === 'numeric' ? 'selected' : '' }}>数字のみ</option>
+                                    <option value="alphanumeric" {{ old('member_code_format', $memberCode->format ?? '') === 'alphanumeric' ? 'selected' : '' }}>英数字混在</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="member_code_length" class="form-label">桁数（プレフィックス除く）</label>
+                                <input type="number" name="member_code_length" id="member_code_length" class="form-control" value="{{ old('member_code_length', $memberCode->length ?? 10) }}" min="1" max="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="member_code_prefix" class="form-label">プレフィックス（任意）</label>
+                                <input type="text" name="member_code_prefix" id="member_code_prefix" class="form-control" value="{{ old('member_code_prefix', $memberCode->prefix ?? '') }}" maxlength="10" pattern="[A-Za-z0-9]*" placeholder="例: M">
+                            </div>
+                        </div>
+                    </div>
+
+    </div></div>
+    @foreach(['member_code_type', 'member_code_format', 'member_code_length', 'member_code_prefix'] as $field)
+        @error($field)<p class="text-danger" data-setting-error>{{ $message }}</p>@enderror
+    @endforeach
+    <div class="form-actions"><button class="btn btn-primary" type="submit">会員番号の発行ルールを保存</button></div>
+</form></section>
+
 
 @php
     $needsValuesTypes = [

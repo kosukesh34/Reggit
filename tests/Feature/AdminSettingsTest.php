@@ -158,7 +158,9 @@ class AdminSettingsTest extends TestCase
             ->get(route('admin.settings.index', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
-        $response->assertSee('店舗の基本', false);
+        $response->assertSee('店舗運用設定', false)
+            ->assertSee('アプリデザイン', false)
+            ->assertSee('ランク・ポイント・スタンプ', false);
         $response->assertSee('予約', false);
         $response->assertSee('クーポン', false);
         $response->assertSee('settings-hub-card', false);

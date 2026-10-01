@@ -33,8 +33,6 @@ class ProjectMutationController extends Controller
             $id,
             $request->toProjectPayload(),
             $request->toProjectSettingsPayload(),
-            $request->file('frontend_logo'),
-            $request->input('frontend_logo_clear') === '1',
         );
 
         return $this->redirectToIndex()->with('success', 'プロジェクトを更新しました');

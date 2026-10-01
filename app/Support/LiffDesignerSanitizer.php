@@ -480,7 +480,7 @@ class LiffDesignerSanitizer
                     continue;
                 }
                 $item['url'] = $url;
-                $item['open'] = 'embed';
+                $item['open'] = ($row['open'] ?? 'embed') === 'external' ? 'external' : 'embed';
                 $item['label'] = $label !== '' ? $label : 'リンク';
                 $item['icon'] = $icon !== '' ? $icon : 'fa-globe';
             }

@@ -1,18 +1,13 @@
 @extends('admin.layout')
 
-@section('title', 'デザイン・ホーム')
-@section('page-title', 'デザイン・ホーム')
+@section('title', 'アプリデザイン')
+@section('page-title', 'アプリデザイン')
 
 @push('styles')
 <style>
 .home-settings { max-width: 920px; }
-.design-tabs { display:flex; gap:6px; overflow-x:auto; padding:6px; margin-bottom:20px; border:1px solid #e7e5e4; border-radius:14px; background:#f5f5f4; }
-.design-tabs button { flex:1; white-space:nowrap; border:0; border-radius:10px; padding:12px 16px; color:#57534e; background:transparent; font-weight:600; cursor:pointer; }
-.design-tabs button[aria-selected="true"] { color:#173f35; background:white; box-shadow:0 1px 4px #00000012; }
 [data-design-panel][hidden] { display:none; }
-.chrome-color-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
-.chrome-color-grid .form-group { margin:0; }
-@media(max-width:540px) { .chrome-color-grid { grid-template-columns:1fr; } }
+.web-page-editor[hidden], .home-sort-row[hidden] { display: none; }
 .home-settings .card { margin-bottom: 16px; }
 .home-settings .card-header { padding: 14px 18px; }
 .home-settings .card-body { padding: 18px; }
@@ -31,6 +26,7 @@
     border-radius: 10px;
     background: #fff;
 }
+.home-sort-row[hidden] { display: none; }
 .home-sort-row.is-off { background: #fafaf9; opacity: .72; }
 .home-sort-row.is-dragging { opacity: .45; }
 .home-sort-row--menu { grid-template-columns: 28px auto minmax(120px, 1.2fr) minmax(110px, .8fr); }
@@ -44,12 +40,6 @@
 .home-sort-handle:active { cursor: grabbing; }
 .home-sort-row .checkbox-label { margin: 0; white-space: nowrap; }
 .home-sort-row .home-sort-label { font-size: 14px; font-weight: 600; color: #292524; }
-.home-color-row { display: flex; align-items: center; gap: 10px; max-width: 280px; }
-.home-color-row .color-input { width: 42px; height: 38px; padding: 2px; }
-.home-image-list { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-.home-image-item { width: 112px; }
-.home-image-item img { display: block; width: 112px; height: 112px; object-fit: cover; border-radius: 8px; }
-.home-image-item label { display: flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 12px; }
 .home-legal-box {
     margin-top: 14px;
     padding: 12px 14px;
@@ -119,15 +109,9 @@
     }
 @endphp
 
-<nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ admin_route('admin.dashboard') }}">ダッシュボード</a>
-    <span class="breadcrumb-sep">/</span>
-    <span>デザイン・ホーム</span>
-</nav>
+@include('admin.settings._app-design-navigation', ['activeDesign' => 'layout'])
 
-<div class="page-header">
-    <h1 class="page-header-title"><i class="fas fa-palette"></i> デザイン・ホーム</h1>
-</div>
+
 
 
 <form action="{{ admin_route('admin.settings.home.update') }}" method="POST" enctype="multipart/form-data" id="home-settings-form" class="home-settings">
@@ -135,7 +119,7 @@
 <input type="hidden" name="design_tab" id="design-active-tab" value="home">
 <input type="hidden" name="native_navigation_present" value="1">
 <p class="section-help">編集する画面を選んでください。各タブの変更は最後に「設定を保存」でまとめて保存します。</p>
-<div class="design-tabs" role="tablist" aria-label="デザイン設定"><button type="button" role="tab" id="tab-home" aria-controls="panel-home" aria-selected="false" data-design-tab="home">ホーム</button><button type="button" role="tab" id="tab-header" aria-controls="panel-header" aria-selected="false" data-design-tab="header">ヘッダー</button><button type="button" role="tab" id="tab-footer" aria-controls="panel-footer" aria-selected="false" data-design-tab="footer">フッター</button><button type="button" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false" data-design-tab="menu">メニュー</button><button type="button" role="tab" id="tab-products" aria-controls="panel-products" aria-selected="false" data-design-tab="products">商品一覧</button><button type="button" role="tab" id="tab-buttons" aria-controls="panel-buttons" aria-selected="false" data-design-tab="buttons">ボタン</button></div><section role="tabpanel" id="panel-home" aria-labelledby="tab-home" data-design-panel="home">    <div class="card">
+<div class="settings-category-tabs" role="tablist" aria-label="デザイン設定"><button type="button" role="tab" id="tab-home" aria-controls="panel-home" aria-selected="false" data-design-tab="home">ホーム</button><button type="button" role="tab" id="tab-header" aria-controls="panel-header" aria-selected="false" data-design-tab="header">ヘッダー</button><button type="button" role="tab" id="tab-footer" aria-controls="panel-footer" aria-selected="false" data-design-tab="footer">フッター</button><button type="button" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false" data-design-tab="menu">メニュー</button><button type="button" role="tab" id="tab-products" aria-controls="panel-products" aria-selected="false" data-design-tab="products">商品一覧</button></div><section role="tabpanel" id="panel-home" aria-labelledby="tab-home" data-design-panel="home">    <div class="card">
         <div class="card-header"><h2 class="card-title">ホーム画面</h2></div>
         <div class="card-body">
             <input type="hidden" name="home_show_member_card" value="0">
@@ -143,24 +127,6 @@
             <p class="section-help">Skipアプリでホーム画像とメニューの間に会員コード（バーコード部分）を表示します。コードをタップすると提示用のシートが開きます。未登録のお客様には表示されません。</p>
         </div>
         <div class="card-body">
-            <div class="form-group">
-                <label class="form-label" for="home_images">ホーム画像</label>
-                <p class="section-help">最大10枚。複数枚は登録順にスライド表示されます。推奨 1200×1200px、JPEG・PNG・WebP、各8MB以下。</p>
-                <input type="hidden" name="home_images_present" value="1">
-                @if(!empty($homeImageUrls))
-                    <div class="home-image-list">
-                        @foreach($homeImageUrls as $index => $url)
-                            <div class="home-image-item">
-                                <img src="{{ $url }}" alt="ホーム画像 {{ $index + 1 }}">
-                                <label><input type="checkbox" name="home_image_remove[]" value="{{ $index }}" {{ in_array($index, array_map('intval', old('home_image_remove', [])), true) ? 'checked' : '' }}> 削除</label>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-                <input type="file" id="home_images" name="home_images[]" accept="image/png,image/jpeg,image/webp" multiple>
-                @error('home_images')<p class="text-danger">{{ $message }}</p>@enderror
-                @error('home_images.*')<p class="text-danger">{{ $message }}</p>@enderror
-            </div>
             <div class="form-group">
                 <label for="home_menu_layout" class="form-label">メニューのレイアウト</label>
                 <select id="home_menu_layout" name="home_menu_layout" class="form-control" style="max-width:360px" required>
@@ -174,7 +140,8 @@
                 <p class="section-help">表示にチェックし、ドラッグで順番を変えられます。Skipでは有効な項目をすべて表示します。</p>
                 <div class="home-sort-list home-settings-tbody">
                     @foreach($tabs as $index => $tab)
-                        <div class="home-sort-row home-sort-row--menu home-settings-row {{ $tab['enabled'] ? '' : 'is-off' }}" data-index="{{ $index }}" draggable="true">
+                        @php($isWebPage = in_array($tab['tab'], \App\Support\LiffDesignerSanitizer::LINK_MENU_TABS, true))
+                        <div class="home-sort-row home-sort-row--menu home-settings-row {{ $tab['enabled'] ? '' : 'is-off' }}" data-index="{{ $index }}" @if($isWebPage) data-home-web-page="{{ $tab['tab'] }}" @endif draggable="true">
                             <span class="home-sort-handle" title="ドラッグして並び替え"><i class="fas fa-grip-vertical"></i></span>
                             <label class="checkbox-label">
                                 <input type="hidden" name="tabs[{{ $index }}][tab]" value="{{ $tab['tab'] }}">
@@ -183,7 +150,11 @@
                                 <input type="checkbox" name="tabs[{{ $index }}][enabled]" value="1" {{ $tab['enabled'] ? 'checked' : '' }} class="home-settings-enabled-cb">
                                 <span>表示</span>
                             </label>
+                            @if($isWebPage)
+                                <span class="home-sort-label">{{ old("tabs.{$index}.label", $tab['label']) }}</span>
+                            @else
                             <input type="text" class="form-control" name="tabs[{{ $index }}][label]" value="{{ old("tabs.{$index}.label", $tab['label']) }}" placeholder="表示名">
+                            @endif
                             <select class="form-control home-sort-icon" name="tabs[{{ $index }}][icon]">
                                 @foreach($availableIcons ?? [] as $icon)
                                     <option value="{{ $icon }}" {{ ($tab['icon'] ?? '') === $icon ? 'selected' : '' }}>{{ $icon }}</option>
@@ -200,21 +171,7 @@
 <section role="tabpanel" id="panel-header" aria-labelledby="tab-header" data-design-panel="header">    <div class="card">
         <div class="card-header"><h2 class="card-title">ヘッダー</h2></div>
         <div class="card-body">
-            @include('admin.partials._frontend_logo_dropzone', [
-                'logoInputName' => 'navigation_header_image',
-                'logoClearName' => 'navigation_header_image_clear',
-                'logoFieldId' => 'navigation_header_image',
-                'logoCurrentUrl' => (string) old('navigation_header_image_url', $navigationHeaderImageUrl ?? ''),
-                'logoLabel' => '中央の画像',
-                'logoHelp' => '推奨 600×120px。未設定時は店舗名を表示します。',
-            ])
-            <div class="form-group">
-                <label for="navigation_header_background_color" class="form-label">背景色</label>
-                <div class="home-color-row">
-                    <input type="color" id="navigation_header_background_color_picker" value="{{ old('navigation_header_background_color', $navigationHeaderBackgroundColor ?? '#FFFFFF') }}" class="color-input">
-                    <input type="text" class="form-control" id="navigation_header_background_color" name="navigation_header_background_color" value="{{ old('navigation_header_background_color', $navigationHeaderBackgroundColor ?? '#FFFFFF') }}" pattern="^#[0-9A-Fa-f]{6}$" maxlength="7">
-                </div>
-            </div>
+
             <div class="form-group">
                 <label class="form-label">メニュー（最大1件）</label>
                 <p class="section-help">チェックした項目がヘッダーに出ます。ドラッグで順番を変えられます。</p>
@@ -233,7 +190,7 @@
                 </div>
             </div>
         </div>
-<div class="card-body"><h3 class="card-title" style="margin-bottom:16px">ボタンと背景の色</h3><div class="chrome-color-grid"><div class="form-group"><label for="chrome-header_icon" class="form-label">ヘッダーボタンの文字・アイコン</label><input id="chrome-header_icon" type="color" name="native_chrome_colors[header_icon]" value="{{ old('native_chrome_colors.header_icon', $nativeChromeColors['header_icon'] ?? '#292524') }}" style="width:64px;height:44px"></div></div></div>    </div>
+    </div>
 
 </section>
 <section role="tabpanel" id="panel-footer" aria-labelledby="tab-footer" data-design-panel="footer">    <div class="card">
@@ -254,10 +211,36 @@
                 @endforeach
             </div>
         </div>
-<div class="card-body"><h3 class="card-title" style="margin-bottom:16px">ボタンと背景の色</h3><div class="chrome-color-grid"><div class="form-group"><label for="chrome-footer_background" class="form-label">フッター全体の背景</label><input id="chrome-footer_background" type="color" name="native_chrome_colors[footer_background]" value="{{ old('native_chrome_colors.footer_background', $nativeChromeColors['footer_background'] ?? '#FFFFFF') }}" style="width:64px;height:44px"></div><div class="form-group"><label for="chrome-footer_icon" class="form-label">フッターボタンの文字・アイコン</label><input id="chrome-footer_icon" type="color" name="native_chrome_colors[footer_icon]" value="{{ old('native_chrome_colors.footer_icon', $nativeChromeColors['footer_icon'] ?? '#78716C') }}" style="width:64px;height:44px"></div><div class="form-group"><label for="chrome-footer_active_icon" class="form-label">フッター選択中の文字・アイコン</label><input id="chrome-footer_active_icon" type="color" name="native_chrome_colors[footer_active_icon]" value="{{ old('native_chrome_colors.footer_active_icon', $nativeChromeColors['footer_active_icon'] ?? '#173F35') }}" style="width:64px;height:44px"></div><div class="form-group"><label for="chrome-footer_active_background" class="form-label">フッター選択中の背景</label><input id="chrome-footer_active_background" type="color" name="native_chrome_colors[footer_active_background]" value="{{ old('native_chrome_colors.footer_active_background', $nativeChromeColors['footer_active_background'] ?? '#EAF2EE') }}" style="width:64px;height:44px"></div></div></div>    </div>
+    </div>
 
 </section>
-<section role="tabpanel" id="panel-menu" aria-labelledby="tab-menu" data-design-panel="menu">    <div class="card">
+<section role="tabpanel" id="panel-menu" aria-labelledby="tab-menu" data-design-panel="menu">
+    <div class="card">
+        <div class="card-header"><h2 class="card-title">Webページ</h2></div>
+        <div class="card-body">
+            <p class="section-help">＋ボタンでWebページを追加し、表示名・URL・開き方を設定してください。下のメニュー一覧で「表示」を選択できます。ホーム・ヘッダー・フッターにも、各タブの「表示」で個別に配置できます。削除ボタンでページを削除できます。最大3件まで追加できます。</p>
+            <p class="section-help">https のURLに対応しています。内部ブラウザはSkipアプリ内で表示し、外部ブラウザは端末の標準ブラウザで開きます。</p>
+            @foreach($tabs as $index => $tab)
+                @if(in_array($tab['tab'], \App\Support\LiffDesignerSanitizer::LINK_MENU_TABS, true))
+                    <div class="form-group home-legal-box web-page-editor" data-web-page="{{ $tab['tab'] }}" {{ old("tabs.{$index}.url", $tab['url'] ?? '') === '' ? 'hidden' : '' }}>
+                        <label class="form-label" for="webview-label-{{ $index }}">表示名</label>
+                        <input type="text" class="form-control" id="webview-label-{{ $index }}" name="tabs[{{ $index }}][label]" value="{{ old("tabs.{$index}.label", $tab['label']) }}" maxlength="255">
+                        <label class="form-label" for="webview-url-{{ $index }}">{{ $tab['label'] }} のURL</label>
+                        <input type="url" class="form-control" id="webview-url-{{ $index }}" name="tabs[{{ $index }}][url]" value="{{ old("tabs.{$index}.url", $tab['url'] ?? '') }}" placeholder="https://example.com" maxlength="1000">
+                        @error("tabs.{$index}.url")<div class="text-danger">{{ $message }}</div>@enderror
+                        <label class="form-label" for="webview-open-{{ $index }}">開き方</label>
+                        <select class="form-control" id="webview-open-{{ $index }}" name="tabs[{{ $index }}][open]">
+                            <option value="embed" {{ old("tabs.{$index}.open", $tab['open']) === 'embed' ? 'selected' : '' }}>内部ブラウザ（アプリ内で表示）</option>
+                            <option value="external" {{ old("tabs.{$index}.open", $tab['open']) === 'external' ? 'selected' : '' }}>外部ブラウザ</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary web-page-remove">削除</button>
+                    </div>
+                @endif
+            @endforeach
+            <button type="button" class="btn btn-secondary" id="web-page-add">＋ Webページを追加</button>
+        </div>
+    </div>
+    <div class="card">
         <div class="card-header"><h2 class="card-title">ハンバーガーメニュー</h2></div>
         <div class="card-body">
             <p class="section-help">☰ から開くメニューです。ドラッグで順番を変えられます。</p>
@@ -303,7 +286,7 @@
     </div>
 
 </section>
-<section role="tabpanel" id="panel-buttons" aria-labelledby="tab-buttons" data-design-panel="buttons"><div class="card"><div class="card-header"><h2 class="card-title">アプリ内のボタン</h2></div><div class="card-body"><p class="section-help">保存・予約・商品追加などの主要ボタンと、キャンセルなどの補助ボタンに反映します。メニューや会員ランクの色は変更しません。</p><div class="chrome-color-grid"><div class="form-group"><label class="form-label" for="chrome-primary_button_background">主要ボタンの背景</label><input id="chrome-primary_button_background" type="color" name="native_chrome_colors[primary_button_background]" value="{{ old('native_chrome_colors.primary_button_background', $nativeChromeColors['primary_button_background'] ?? '#173F35') }}" style="width:64px;height:44px"></div><div class="form-group"><label class="form-label" for="chrome-primary_button_text">主要ボタンの文字・アイコン</label><input id="chrome-primary_button_text" type="color" name="native_chrome_colors[primary_button_text]" value="{{ old('native_chrome_colors.primary_button_text', $nativeChromeColors['primary_button_text'] ?? '#FFFFFF') }}" style="width:64px;height:44px"></div><div class="form-group"><label class="form-label" for="chrome-secondary_button_background">補助ボタンの背景</label><input id="chrome-secondary_button_background" type="color" name="native_chrome_colors[secondary_button_background]" value="{{ old('native_chrome_colors.secondary_button_background', $nativeChromeColors['secondary_button_background'] ?? '#EDF1ED') }}" style="width:64px;height:44px"></div><div class="form-group"><label class="form-label" for="chrome-secondary_button_text">補助ボタンの文字・アイコン</label><input id="chrome-secondary_button_text" type="color" name="native_chrome_colors[secondary_button_text]" value="{{ old('native_chrome_colors.secondary_button_text', $nativeChromeColors['secondary_button_text'] ?? '#17211C') }}" style="width:64px;height:44px"></div></div></div></div></section>
+
     <div class="home-settings-actions form-actions">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 設定を保存</button>
     </div>
@@ -341,6 +324,46 @@
         var panel = event.target.closest('[data-design-panel]');
         if (panel) selectDesignTab(panel.dataset.designPanel, false);
     }, true);
+
+    var webPages = Array.from(document.querySelectorAll('[data-web-page]'));
+    var addWebPage = document.getElementById('web-page-add');
+    function syncWebPages() {
+        addWebPage.disabled = webPages.every(function(page) { return !page.hidden; });
+        webPages.forEach(function(page) {
+            page.querySelector('input[name$="[url]"]').required = !page.hidden;
+            var key = page.dataset.webPage;
+            var label = page.querySelector('input[name$="[label]"]').value;
+            var homeRow = document.querySelector('[data-home-web-page="' + key + '"]');
+            homeRow.hidden = page.hidden;
+            homeRow.querySelector('.home-sort-label').textContent = label;
+            if (page.hidden) homeRow.querySelector('.home-settings-enabled-cb').checked = false;
+            homeRow.classList.toggle('is-off', !homeRow.querySelector('.home-settings-enabled-cb').checked);
+            document.querySelectorAll('.home-sort-list[data-nav-placement] input[type="checkbox"]').forEach(function(input) {
+                if (input.value !== key) return;
+                var row = input.closest('.home-sort-row');
+                row.hidden = page.hidden;
+                row.querySelector('.home-sort-label').textContent = label;
+                if (page.hidden) input.checked = false;
+            });
+        });
+    }
+    addWebPage.addEventListener('click', function() {
+        var page = webPages.find(function(page) { return page.hidden; });
+        if (!page) return;
+        page.hidden = false;
+        document.querySelector('[data-home-web-page="' + page.dataset.webPage + '"] .home-settings-enabled-cb').checked = true;
+        syncWebPages();
+        page.querySelector('input[name$="[label]"]').focus();
+    });
+    webPages.forEach(function(page) {
+        page.addEventListener('input', syncWebPages);
+        page.querySelector('.web-page-remove').addEventListener('click', function() {
+            page.hidden = true;
+            page.querySelector('input[name$="[url]"]').value = '';
+            syncWebPages();
+        });
+    });
+    syncWebPages();
 
     function enableSortable(list, options) {
         if (!list) return;
@@ -413,14 +436,6 @@
         });
     });
 
-    var colorPicker = document.getElementById('navigation_header_background_color_picker');
-    var colorText = document.getElementById('navigation_header_background_color');
-    if (colorPicker && colorText) {
-        colorPicker.addEventListener('input', function() { colorText.value = colorPicker.value.toUpperCase(); });
-        colorText.addEventListener('input', function() {
-            if (/^#[0-9A-Fa-f]{6}$/.test(colorText.value)) colorPicker.value = colorText.value;
-        });
-    }
 })();
 </script>
 @endsection

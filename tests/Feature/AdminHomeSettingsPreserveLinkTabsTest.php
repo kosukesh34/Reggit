@@ -85,6 +85,47 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         $this->assertSame(['home', 'member', 'terms', 'privacy'], $navigation['hamburger']);
     }
 
+    public function test_webview_links_can_be_created_updated_and_removed(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $endpoint = route('admin.settings.home.update', ['project_key' => $project->project_key]);
+        $payload = [
+            'tabs' => [['tab' => 'link_1', 'label' => '公式サイト', 'enabled' => '1', 'url' => 'https://example.com']],
+            'home_menu_layout' => 'grid_3x2',
+            'product_display_layout' => 'list_with_image',
+            'native_navigation_present' => '1',
+            'native_navigation' => ['hamburger' => ['link_1']],
+        ];
+        $this->actingAs($admin, 'admin')->post($endpoint, $payload)->assertSessionHasNoErrors();
+        $link = collect(ShopSettingStore::getValue('frontend_menu_items', [], $project->id))->firstWhere('tab', 'link_1');
+        $this->assertSame('https://example.com', $link['url']);
+        $this->assertSame('embed', $link['open']);
+        $this->assertSame(['link_1'], ShopSettingStore::getValue('native_navigation_items', [], $project->id)['hamburger']);
+
+        $payload['tabs'][0]['url'] = 'https://example.com/new';
+        $payload['tabs'][0]['open'] = 'external';
+        $this->post($endpoint, $payload)->assertSessionHasNoErrors();
+        $view = app(GetHomeSettingsUseCase::class)->handle($project->id);
+        $this->assertSame('https://example.com/new', collect($view['tabs'])->firstWhere('tab', 'link_1')['url']);
+        $this->assertSame('external', collect($view['tabs'])->firstWhere('tab', 'link_1')['open']);
+        $this->assertSame('external', collect(ShopSettingStore::getFrontendMenuItems($project->id))->firstWhere('tab', 'link_1')['open']);
+
+        $payload['tabs'][0]['open'] = 'invalid';
+        $this->post($endpoint, $payload)->assertSessionHasErrors('tabs.0.open');
+        $payload['tabs'][0]['open'] = 'external';
+
+        $payload['tabs'][0]['url'] = 'javascript:alert(1)';
+        $this->post($endpoint, $payload)->assertSessionHasErrors('tabs.0.url');
+        $payload['tabs'][0]['url'] = 'http://example.com';
+        $this->post($endpoint, $payload)->assertSessionHasErrors('tabs.0.url');
+
+        $payload['tabs'][0]['url'] = '';
+        $this->post($endpoint, $payload)->assertSessionHasNoErrors();
+        $this->assertNull(collect(ShopSettingStore::getValue('frontend_menu_items', [], $project->id))->firstWhere('tab', 'link_1'));
+        $this->assertSame([], ShopSettingStore::getValue('native_navigation_items', [], $project->id)['hamburger']);
+    }
+
     public function test_home_settings_ナビゲーションバー画像をアップロードできること(): void
     {
         Storage::fake('public');

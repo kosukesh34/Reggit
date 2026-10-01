@@ -64,16 +64,41 @@ class AdminProjectControllerTest extends TestCase
         $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_FRONTEND_LOGO.'/'.$project->id, (string) $savedUrl);
     }
 
-    public function test_edit_画面にロゴのurl入力がなくアップロードがあること(): void
+    public function test_edit_店舗側で編集する項目を表示しないこと(): void
     {
         $this->loginSystemAdmin();
         $project = Project::factory()->create();
 
         $this->get('/system-admin/projects/'.$project->id.'/edit')
             ->assertStatus(200)
-            ->assertSee('name="frontend_logo"', false)
+            ->assertDontSee('name="frontend_logo"', false)
+            ->assertDontSee('name="frontend_header_text"', false)
+            ->assertDontSee('name="line_liff_id"', false)
+            ->assertDontSee('name="line_liff_url"', false)
             ->assertDontSee('name="frontend_logo_url"', false)
             ->assertDontSee('ロゴ画像URL', false);
+    }
+
+    public function test_update_preserves_store_settings_when_only_contract_fields_are_submitted(): void
+    {
+        $this->loginSystemAdmin();
+        $project = Project::factory()->create();
+        ShopSettingStore::setLineLiffId('existing-liff', $project->id);
+        ShopSettingStore::setLineLiffUrl('https://liff.line.me/existing', $project->id);
+        ShopSettingStore::setValue('frontend_header_text', '店舗名', 'string', $project->id);
+        ShopSettingStore::setValue('frontend_logo_url', '/existing.png', 'string', $project->id);
+
+        $this->put('/system-admin/projects/'.$project->id, [
+            'project_key' => $project->project_key,
+            'name' => 'Updated',
+            'plan' => 'premium',
+            'is_active' => true,
+        ])->assertRedirect(route('system-admin.projects.index'));
+
+        $this->assertSame('existing-liff', ShopSettingStore::getLineLiffId($project->id));
+        $this->assertSame('https://liff.line.me/existing', ShopSettingStore::getLineLiffUrl($project->id));
+        $this->assertSame('店舗名', ShopSettingStore::getFrontendHeaderText($project->id));
+        $this->assertSame('/existing.png', ShopSettingStore::getFrontendLogoUrl($project->id));
     }
 
     public function test_index_プロジェクト一覧が表示されること(): void
