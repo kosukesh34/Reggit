@@ -57,8 +57,8 @@ struct ReggitLotteryGameService: LotteryGameProviding {
 }
 
 struct ScratchRevealEngine {
-    static let columns = 12
-    static let rows = 8
+    static let columns = 18
+    static let rows = 12
     static let cellCount = columns * rows
 
     func scratchedIndices(

@@ -99,7 +99,7 @@ struct LotteryView: View {
         VStack(spacing: 4) {
             GachaMachineView(
                 rotation: viewModel.gachaRotation,
-                shakeOffset: viewModel.gachaShakeOffset,
+                stir: viewModel.gachaStir,
                 showsDroppedCapsule: viewModel.showsDroppedCapsule,
                 opensDroppedCapsule: viewModel.opensDroppedCapsule
             )
@@ -209,7 +209,7 @@ struct LotteryView: View {
             ) {
                 GachaMachineView(
                     rotation: viewModel.gachaRotation,
-                    shakeOffset: viewModel.gachaShakeOffset,
+                    stir: viewModel.gachaStir,
                     showsDroppedCapsule: viewModel.showsDroppedCapsule,
                     opensDroppedCapsule: viewModel.opensDroppedCapsule
                 )
@@ -231,7 +231,7 @@ struct LotteryView: View {
                 title: "ゴールドスクラッチ",
                 subtitle: "銀色の面を指でこすって、結果を確認しよう。",
                 available: viewModel.canScratchCurrentTicket,
-                status: viewModel.scratchResult?.isWin == true ? "あたり" : (viewModel.scratchResult == nil ? (viewModel.hasEntitlement("scratch") ? "プレイ可" : "権利なし") : "はずれ")
+                status: viewModel.isScratchRevealed ? (viewModel.scratchResult?.isWin == true ? "あたり" : "はずれ") : (viewModel.canScratchCurrentTicket ? "プレイ可" : "権利なし")
             ) {
                 ScratchTicketView(
                     progress: viewModel.scratchProgress,
@@ -239,6 +239,7 @@ struct LotteryView: View {
                     result: viewModel.scratchResult,
                     enabled: viewModel.canScratchCurrentTicket,
                     isResolving: viewModel.isScratchResolving,
+                    isRevealed: viewModel.isScratchRevealed,
                     onScratch: { x, y, width, height in
                         if viewModel.scratch(atX: x, y: y, width: width, height: height) {
                             Task { await viewModel.resolveScratch() }
@@ -248,7 +249,7 @@ struct LotteryView: View {
                 .scaleEffect(0.84)
                 .frame(height: 270)
                 scratchProgress
-                if viewModel.scratchResult != nil, viewModel.hasEntitlement("scratch") {
+                if viewModel.isScratchRevealed, viewModel.hasEntitlement("scratch") {
                     LotteryActionButton(title: "次のスクラッチを開く", subtitle: "もう一度挑戦") {
                         viewModel.resetScratch()
                     }
@@ -452,7 +453,7 @@ struct LotteryPressStyle: ButtonStyle {
 
 struct GachaMachineView: View {
     let rotation: Double
-    let shakeOffset: Double
+    let stir: Double
     let showsDroppedCapsule: Bool
     let opensDroppedCapsule: Bool
 
@@ -496,6 +497,7 @@ struct GachaMachineView: View {
                                 CapsuleBall(color: capsuleColors[index % capsuleColors.count])
                                     .frame(width: capsuleSize(index), height: capsuleSize(index))
                                     .rotationEffect(.degrees(capsuleAngle(index) + rotation * 0.018))
+                                    .gachaStirred(stir, index: index)
                                     .offset(x: capsuleX(index), y: capsuleY(index))
                             }
                         }
@@ -624,7 +626,7 @@ struct GachaMachineView: View {
                 .shadow(color: Color.black.opacity(0.24), radius: 4, x: 0, y: 4)
                 .offset(y: -2)
             }
-            .offset(x: CGFloat(shakeOffset), y: -4)
+            .offset(y: -4)
 
             if opensDroppedCapsule {
                 ZStack {
@@ -634,6 +636,7 @@ struct GachaMachineView: View {
                         .foregroundStyle(LotteryTheme.goldLight)
                 }
                 .offset(x: 76, y: -85)
+                .transition(.scale(scale: 0.3).combined(with: .opacity))
             }
         }
         .frame(maxWidth: .infinity)
@@ -700,6 +703,16 @@ struct GachaDomeReflection: View {
     }
 }
 
+extension View {
+    /// `stir` is the crank click number (0 = at rest); every capsule moves on each click by a slightly different amount.
+    func gachaStirred(_ stir: Double, index: Int) -> some View {
+        let step = Int(stir.rounded())
+        let lift = step > 0 ? CGFloat(1 + (index + step) % 3) * 1.2 : 0
+        return rotationEffect(.degrees(step > 0 ? Double((index * 3 + step) % 5 - 2) * 3 : 0))
+            .offset(x: step > 0 ? CGFloat((index + step) % 3 - 1) * 1.5 : 0, y: -lift)
+    }
+}
+
 struct CapsuleBall: View {
     let color: Color
 
@@ -740,23 +753,78 @@ struct CapsuleBall: View {
 
 struct OpenedCapsuleView: View {
     let isOpen: Bool
+    var color = Color(red: 0.84, green: 0.30, blue: 0.26)
+
+    private let diameter: CGFloat = 60
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(LinearGradient(colors: [LotteryTheme.goldLight, LotteryTheme.gold], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 62, height: 32)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.black.opacity(0.34), lineWidth: 1.5))
-                .offset(y: isOpen ? -8 : -15)
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(LinearGradient(colors: [LotteryTheme.cream, Color(white: 0.80)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .frame(width: 62, height: 32)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.black.opacity(0.34), lineWidth: 1.5))
-                .offset(y: isOpen ? 34 : 15)
-            Capsule().fill(Color.white.opacity(0.88)).frame(width: 62, height: 5).offset(y: isOpen ? 13 : 0)
+            Ellipse()
+                .fill(Color.black.opacity(0.32))
+                .frame(width: diameter * 0.8, height: diameter * 0.14)
+                .offset(y: diameter * 0.5)
+                .blur(radius: 2)
+            coloredHalf
+            Capsule()
+                .fill(LinearGradient(colors: [Color.white.opacity(0.9), color.opacity(0.6)], startPoint: .top, endPoint: .bottom))
+                .frame(width: diameter + 2, height: 5)
+                .offset(y: 1)
+            prizeTicket
+            clearHalf
         }
         .frame(width: 76, height: 84)
-        .shadow(color: Color.black.opacity(0.32), radius: 4, x: 0, y: 3)
+    }
+
+    private var coloredHalf: some View {
+        ZStack {
+            Circle().fill(color)
+            Circle().fill(LinearGradient(colors: [Color.white.opacity(0.2), Color.clear, Color.black.opacity(0.38)], startPoint: .top, endPoint: .bottom))
+            Ellipse()
+                .fill(Color.white.opacity(0.32))
+                .frame(width: diameter * 0.3, height: diameter * 0.1)
+                .offset(x: -diameter * 0.18, y: diameter * 0.3)
+                .blur(radius: 1)
+            Circle().stroke(Color.black.opacity(0.28), lineWidth: 1)
+        }
+        .frame(width: diameter, height: diameter)
+        .frame(width: diameter, height: diameter / 2, alignment: .bottom)
+        .clipped()
+        .offset(y: diameter / 4)
+    }
+
+    private var clearHalf: some View {
+        ZStack(alignment: .bottom) {
+            ZStack {
+                Circle().fill(RadialGradient(
+                    colors: [Color.white.opacity(0.55), Color(red: 0.84, green: 0.92, blue: 0.96).opacity(0.3), Color.white.opacity(0.14)],
+                    center: UnitPoint(x: 0.35, y: 0.25),
+                    startRadius: 1,
+                    endRadius: diameter * 0.6
+                ))
+                Ellipse()
+                    .fill(Color.white.opacity(0.85))
+                    .frame(width: diameter * 0.26, height: diameter * 0.12)
+                    .rotationEffect(.degrees(-30))
+                    .offset(x: -diameter * 0.2, y: -diameter * 0.28)
+                Circle().stroke(Color.white.opacity(0.85), lineWidth: 1.5)
+            }
+            .frame(width: diameter, height: diameter)
+            .frame(width: diameter, height: diameter / 2, alignment: .top)
+            .clipped()
+            Capsule().fill(Color.white.opacity(0.7)).frame(width: diameter, height: 3)
+        }
+        .rotationEffect(.degrees(isOpen ? -34 : 0), anchor: .bottomLeading)
+        .offset(x: isOpen ? -4 : 0, y: isOpen ? -diameter / 4 - 10 : -diameter / 4)
+    }
+
+    private var prizeTicket: some View {
+        RoundedRectangle(cornerRadius: 3, style: .continuous)
+            .fill(LinearGradient(colors: [LotteryTheme.cream, LotteryTheme.goldLight], startPoint: .top, endPoint: .bottom))
+            .frame(width: 30, height: 18)
+            .overlay(Rectangle().fill(LotteryTheme.gold).frame(height: 3))
+            .rotationEffect(.degrees(-8))
+            .shadow(color: LotteryTheme.goldLight.opacity(isOpen ? 0.9 : 0), radius: 8)
+            .offset(y: isOpen ? -20 : -10)
     }
 }
 
@@ -766,8 +834,11 @@ struct ScratchTicketView: View {
     let result: LotteryPlayResult?
     let enabled: Bool
     let isResolving: Bool
+    let isRevealed: Bool
     let onScratch: (CGFloat, CGFloat, CGFloat, CGFloat) -> Void
     var showsInstructions = true
+
+    private var isWinRevealed: Bool { isRevealed && result?.isWin == true }
 
     private let surfaceWidth: CGFloat = 264
     private let surfaceHeight: CGFloat = 158
@@ -811,6 +882,7 @@ struct ScratchTicketView: View {
                         ScratchResultFace(result: result, isResolving: isResolving)
                         ScratchFoilSurface()
                             .mask(ScratchFoilMask(scratchedCells: scratchedCells))
+                            .opacity(isRevealed ? 0 : 1)
                         if progress < 0.18 {
                             VStack(spacing: 4) {
                                 FontAwesomeIcon(systemName: "hand.draw.fill")
@@ -826,9 +898,10 @@ struct ScratchTicketView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.white.opacity(0.82), lineWidth: 3)
+                            .stroke(isWinRevealed ? LotteryTheme.goldLight : Color.white.opacity(0.82), lineWidth: isWinRevealed ? 4 : 3)
                     }
-                    .shadow(color: Color.black.opacity(0.24), radius: 9, x: 0, y: 7)
+                    .shadow(color: isWinRevealed ? LotteryTheme.goldLight.opacity(0.9) : Color.black.opacity(0.24), radius: isWinRevealed ? 16 : 9, x: 0, y: isWinRevealed ? 0 : 7)
+                    .scaleEffect(isWinRevealed ? 1.04 : 1)
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { value in
@@ -849,9 +922,14 @@ struct ScratchTicketView: View {
                     }
                     .foregroundStyle(Color.white)
                 }
+
+                if isWinRevealed {
+                    LotteryConfettiView()
+                        .frame(width: 304, height: 286)
+                }
             }
             if showsInstructions {
-            Text(result == nil
+            Text(!isRevealed
                 ? (progress == 0 ? "一枚の銀面を指でこすってください" : "結果を確認しています…")
                 : (result?.isWin == true ? "あたり！景品内容を確認してください" : "今回はハズレです"))
                 .font(.system(size: 12, weight: .bold))
@@ -923,6 +1001,21 @@ struct ScratchFoilSurface: View {
                 }
                 .padding(.horizontal, 8)
             }
+            .overlay {
+                VStack(spacing: 18) {
+                    ForEach(0 ..< 5, id: \.self) { row in
+                        HStack(spacing: 26) {
+                            ForEach(0 ..< 7, id: \.self) { column in
+                                FontAwesomeIcon(systemName: "star.fill", size: 9)
+                                    .foregroundStyle(Color.white.opacity((row + column) % 2 == 0 ? 0.42 : 0.2))
+                            }
+                        }
+                        .offset(x: row % 2 == 0 ? -13 : 13)
+                    }
+                }
+                .rotationEffect(.degrees(-12))
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -951,6 +1044,7 @@ struct ScratchFoilMask: Shape {
 struct RouletteWheelView: View {
     let labels: [String]
     let rotation: Double
+    @State var lightsOn = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1015,11 +1109,14 @@ struct RouletteWheelView: View {
                         .frame(width: 244, height: 244)
 
                     ForEach(0 ..< 18, id: \.self) { index in
+                        let isLit = (index % 2 == 0) == lightsOn
                         Circle()
                             .fill(index % 3 == 0 ? Color.white : LotteryTheme.goldLight)
                             .frame(width: 9, height: 9)
                             .overlay(Circle().stroke(Color(red: 0.46, green: 0.26, blue: 0.03), lineWidth: 1))
-                            .shadow(color: LotteryTheme.goldLight.opacity(0.9), radius: index % 2 == 0 ? 5 : 2)
+                            .shadow(color: LotteryTheme.goldLight.opacity(isLit ? 0.95 : 0.2), radius: isLit ? 6 : 1)
+                            .opacity(isLit ? 1 : 0.45)
+                            .animation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true), value: lightsOn)
                             .offset(y: -137)
                             .rotationEffect(.degrees(Double(index) * 20))
                     }
@@ -1075,6 +1172,7 @@ struct RouletteWheelView: View {
             Capsule().fill(Color.black.opacity(0.34)).frame(width: 190, height: 12).blur(radius: 4).offset(y: -3)
         }
         .frame(maxWidth: .infinity)
+        .onAppear { lightsOn = true }
         .accessibilityLabel("8つの景品が並ぶラッキールーレット")
     }
 
@@ -1145,27 +1243,19 @@ struct TrapezoidStand: Shape {
 struct RewardRevealOverlay: View {
     let result: LotteryPlayResult
     let onClose: () -> Void
+    @State var appeared = false
 
     var body: some View {
         ZStack {
             Color.black.opacity(0.88).ignoresSafeArea()
-            ForEach(0 ..< 14, id: \.self) { index in
-                Capsule()
-                    .fill(result.isWin ? LotteryTheme.gold.opacity(0.16) : Color.white.opacity(0.05))
-                    .frame(width: 8, height: 240)
-                    .offset(y: -170)
-                    .rotationEffect(.degrees(Double(index) * 25.7))
+            if result.isWin {
+                LotteryConfettiView().ignoresSafeArea()
             }
             VStack(spacing: 18) {
                 Text(result.isWin ? "あたり！" : "ざんねん")
                     .font(.system(size: 12, weight: .black)).tracking(3)
                     .foregroundStyle(result.isWin ? LotteryTheme.goldLight : Color.white.opacity(0.64))
-                ZStack {
-                    Circle().fill(result.isWin ? LotteryTheme.gold.opacity(0.18) : Color.white.opacity(0.08)).frame(width: 174, height: 174)
-                    Circle().stroke(result.isWin ? LotteryTheme.gold : Color.white.opacity(0.24), lineWidth: 2).frame(width: 146, height: 146)
-                    FontAwesomeIcon(systemName: result.isWin ? "gift.fill" : "sparkles")
-                        .foregroundStyle(result.isWin ? LotteryTheme.goldLight : Color.white.opacity(0.62))
-                }
+                LotteryPrizeBurst(isWin: result.isWin)
                 VStack(spacing: 7) {
                     Text(result.isWin ? "おめでとうございます" : "今回はざんねん")
                         .font(.system(size: 24, weight: .black, design: .rounded))
@@ -1177,6 +1267,9 @@ struct RewardRevealOverlay: View {
                     }
                 }
                 .foregroundStyle(LotteryTheme.cream)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 18)
+                .animation(.easeOut(duration: 0.5).delay(0.5), value: appeared)
                 Button(action: onClose) {
                     Text(result.isWin ? "クーポンを受け取る" : "閉じる")
                         .font(.system(size: 16, weight: .black, design: .rounded))
@@ -1191,10 +1284,79 @@ struct RewardRevealOverlay: View {
                 #else
                 .buttonStyle(LotteryPressStyle())
                 #endif
+                .opacity(appeared ? 1 : 0)
+                .animation(.easeOut(duration: 0.4).delay(0.9), value: appeared)
             }
             .padding(24)
             .frame(maxWidth: 360)
         }
+        .onAppear { appeared = true }
+    }
+}
+
+struct LotteryPrizeBurst: View {
+    let isWin: Bool
+    var size: CGFloat = 174
+    @State var appeared = false
+
+    var body: some View {
+        ZStack {
+            ZStack {
+                ForEach(0 ..< 12, id: \.self) { index in
+                    Capsule()
+                        .fill(isWin ? LotteryTheme.goldLight.opacity(0.24) : LotteryTheme.steel.opacity(0.08))
+                        .frame(width: size * 0.05, height: size * 0.55)
+                        .offset(y: -size * 0.62)
+                        .rotationEffect(.degrees(Double(index) * 30))
+                }
+            }
+            .rotationEffect(.degrees(appeared && isWin ? 360 : 0))
+            .animation(.linear(duration: 16).repeatForever(autoreverses: false), value: appeared)
+            Circle()
+                .fill(isWin ? LotteryTheme.gold.opacity(0.2) : LotteryTheme.steel.opacity(0.12))
+                .frame(width: size, height: size)
+            Circle()
+                .stroke(isWin ? LotteryTheme.gold : LotteryTheme.steel.opacity(0.4), lineWidth: 2)
+                .frame(width: size * 0.84, height: size * 0.84)
+            FontAwesomeIcon(systemName: isWin ? "gift.fill" : "sparkles", size: size * 0.3)
+                .foregroundStyle(isWin ? LotteryTheme.gold : LotteryTheme.steel)
+        }
+        .scaleEffect(appeared ? 1 : 0.3)
+        .opacity(appeared ? 1 : 0)
+        .animation(.spring(response: 0.6, dampingFraction: 0.5), value: appeared)
+        .onAppear { appeared = true }
+    }
+}
+
+struct LotteryConfettiView: View {
+    @State var isFalling = false
+
+    private let colors: [Color] = [
+        LotteryTheme.goldLight, LotteryTheme.gold, Color.white,
+        Color(red: 0.86, green: 0.36, blue: 0.32), Color(red: 0.30, green: 0.62, blue: 0.78),
+    ]
+
+    var body: some View {
+        GeometryReader { proxy in
+            ForEach(0 ..< 28, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(colors[index % colors.count])
+                    .frame(width: index % 3 == 0 ? 6 : 9, height: index % 3 == 0 ? 11 : 5)
+                    .rotationEffect(.degrees(Double(index * 47) + (isFalling ? 540 : 0)))
+                    .position(
+                        x: proxy.size.width * CGFloat((index * 37) % 100) / 100,
+                        y: isFalling ? proxy.size.height + 20 : -20 - CGFloat((index * 53) % 160)
+                    )
+                    .animation(
+                        .linear(duration: 2.6 + Double(index % 5) * 0.35)
+                            .delay(Double(index % 7) * 0.12)
+                            .repeatForever(autoreverses: false),
+                        value: isFalling
+                    )
+            }
+        }
+        .allowsHitTesting(false)
+        .onAppear { isFalling = true }
     }
 }
 

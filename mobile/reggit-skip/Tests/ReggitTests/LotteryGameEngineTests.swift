@@ -52,15 +52,18 @@ final class LotteryGameEngineTests: XCTestCase {
         XCTAssertEqual(model.selectedGame, .scratch)
         XCTAssertEqual(model.scratchProgress, 0)
         XCTAssertNil(model.scratchResult)
-        XCTAssertFalse(model.scratch(atX: 132, y: 79, width: 264, height: 158))
         await model.resolveScratch()
         XCTAssertNil(model.scratchResult)
-        scratchUntilThreshold(model)
+        XCTAssertTrue(model.scratch(atX: 132, y: 79, width: 264, height: 158))
         await model.resolveScratch()
         XCTAssertEqual(model.scratchResult, result)
+        XCTAssertFalse(model.isScratchRevealed)
         XCTAssertNil(model.nextEntitlement)
+        XCTAssertTrue(model.isScratchInProgress)
+        scratchUntilThreshold(model)
+        XCTAssertTrue(model.isScratchRevealed)
+        XCTAssertFalse(model.isScratchInProgress)
         XCTAssertFalse(model.scratch(atX: 132, y: 79, width: 264, height: 158))
-
     }
 
     @MainActor
@@ -113,12 +116,8 @@ final class LotteryGameEngineTests: XCTestCase {
     private func scratchUntilThreshold(_ model: LotteryViewModel) {
         for row in 0..<ScratchRevealEngine.rows {
             for column in 0..<ScratchRevealEngine.columns {
-                let shouldResolve = model.scratch(atX: Double(column) * 22 + 11, y: Double(row) * 19.75 + 9, width: 264, height: 158)
-                if shouldResolve {
-                    XCTAssertGreaterThanOrEqual(model.scratchProgress, 0.5)
-                    return
-                }
-                XCTAssertLessThan(model.scratchProgress, 0.5)
+                _ = model.scratch(atX: Double(column) * 22 + 11, y: Double(row) * 19.75 + 9, width: 264, height: 158)
+                if model.scratchProgress >= 0.5 { return }
             }
         }
         XCTFail("Half of the scratched surface must trigger the result")
@@ -161,15 +160,19 @@ final class LotteryGameEngineTests: XCTestCase {
         let viewModel = LotteryViewModel(service: LotteryGameServiceStub(state: state, result: result))
         await viewModel.load()
 
-        XCTAssertFalse(viewModel.scratch(atX: 132, y: 79, width: 264, height: 158))
+        XCTAssertTrue(viewModel.scratch(atX: 132, y: 79, width: 264, height: 158))
         scratchUntilThreshold(viewModel)
+        XCTAssertFalse(viewModel.isScratchRevealed)
         await viewModel.resolveScratch()
 
         XCTAssertEqual(viewModel.scratchResult, result)
+        XCTAssertTrue(viewModel.isScratchRevealed)
         XCTAssertNil(viewModel.revealedResult)
         let countBefore = viewModel.scratchedCells.count
         XCTAssertFalse(viewModel.scratch(atX: 220, y: 120, width: 264, height: 158))
         XCTAssertGreaterThan(viewModel.scratchedCells.count, countBefore)
+        viewModel.resetScratch()
+        XCTAssertFalse(viewModel.isScratchRevealed)
     }
 }
 
