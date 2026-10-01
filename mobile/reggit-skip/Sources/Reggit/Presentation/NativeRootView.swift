@@ -2,6 +2,7 @@ import SkipFuse
 import SwiftUI
 
 struct NativeRootView: View {
+    @Environment(\.openURL) var openURL
     @State var viewModel: NativeRootViewModel
     @State var showHamburgerMenu = false
     @State var accountMode: String?
@@ -146,7 +147,19 @@ struct NativeRootView: View {
         }
     }
 
+    private func openExternalPage(_ key: String) -> Bool {
+        if let tab = viewModel.tabs.first(where: { $0.key == key }),
+           tab.openMode == "external", let rawURL = tab.url,
+           let url = MediaURL.resolve(rawURL, baseURL: viewModel.apiClient?.baseURL ?? "") {
+            openURL(url)
+            showHamburgerMenu = false
+            return true
+        }
+        return false
+    }
+
     private func selectMenu(_ key: String) {
+        if openExternalPage(key) { return }
         if viewModel.openLotteryPreview(menuKey: key) {
             showHamburgerMenu = false
             return
@@ -253,7 +266,12 @@ struct NativeRootView: View {
                             colors: viewModel.nativeChromeColors,
                             selectedTab: Binding(
                                 get: { viewModel.selectedTab },
-                                set: { menuHistory = []; headerNavigation.backAction = nil; viewModel.selectedTab = $0 }
+                                set: {
+                                    if openExternalPage($0) { return }
+                                    menuHistory = []
+                                    headerNavigation.backAction = nil
+                                    viewModel.selectedTab = $0
+                                }
                             )
                         )
                     }

@@ -89,7 +89,8 @@ struct AppConfigClient {
                 label: row["label"] as? String ?? key,
                 icon: row["icon"] as? String ?? "fa-circle",
                 sfSymbol: row["sf_symbol"] as? String ?? "circle.fill",
-                url: (row["url"] as? String)?.trimmedNonEmpty
+                url: (row["url"] as? String)?.trimmedNonEmpty,
+                openMode: row["open"] as? String ?? "embed"
             )
         }
     }

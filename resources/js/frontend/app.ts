@@ -734,6 +734,18 @@ class ReggitApp {
     }
 
     setupTabEventListeners() {
+        document.body?.addEventListener('click', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            const anchor = target?.closest('a');
+            if (!anchor) return;
+            const href = anchor.getAttribute('href') || '';
+            const key = href.match(/(?:#?\/|#)(link_[0-9]+)(?:$|[?])/ )?.[1];
+            const item = window.__FRONTEND_MENU__?.find((row) => row.tab === key);
+            if (item?.open !== 'external' || !item.url) return;
+            event.preventDefault();
+            event.stopPropagation();
+            this.openExternalUrl(item.url);
+        }, true);
         // イベント委譲でタブボタンにバインド（注文後などでDOMが更新されても切り替え可能にする）
         const delegateRoot = document.body;
         if (!delegateRoot) return;
@@ -742,7 +754,7 @@ class ReggitApp {
             const btn = target ? target.closest('.main-tab-btn') as HTMLElement | null : null;
             if (!btn || !btn.dataset.tab) return;
             e.preventDefault();
-            // 外部ページタブは常にアプリ内（iframe）で表示する
+            // Webページは保存された開き方に従う
             this.switchTab(btn.dataset.tab);
         });
     }
@@ -1414,8 +1426,8 @@ class ReggitApp {
         iframe.src = initialUrl;
         iframe.setAttribute('loading', 'lazy');
         iframe.setAttribute('referrerpolicy', 'no-referrer');
-        // allow-popups を付けない: target=_blank / window.open を抑止しアプリ内で完結させる
-        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-downloads');
+        // 子ウィンドウでのフォーム・認証などを許可する
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-popups-to-escape-sandbox');
         iframe.setAttribute('title', '埋め込みWebページ');
 
         const leaveLinkTab = () => {
@@ -1459,6 +1471,12 @@ class ReggitApp {
     }
 
     switchTab(tab) {
+        const link = window.__FRONTEND_MENU__?.find((item) => item.tab === tab);
+        if (link?.open === 'external' && link.url) {
+            this.openExternalUrl(link.url);
+            this.closeSideMenu();
+            return Promise.resolve();
+        }
         if (typeof window.__mobileOrderLog === 'function') window.__mobileOrderLog('switchTab', { tab });
         if (this.memberManager && typeof this.memberManager.isForcedRegistrationActive === 'function'
             && this.memberManager.isForcedRegistrationActive()
