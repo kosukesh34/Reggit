@@ -323,6 +323,10 @@ struct ReggitAPIClient: ReggitAPIServing {
 
     // MARK: - Home / Gallery / Reservations
 
+    func fetchAnnouncementImage(id: Int) async throws -> Data {
+        try await requestData(path: "/api/v1/announcements/\(id)/image", method: "GET")
+    }
+
     func fetchPublishedAnnouncements() async throws -> [AnnouncementItem] {
         let data = try await requestData(path: "/api/announcements", method: "GET")
         return try AnnouncementListResponse.parse(data).announcements
