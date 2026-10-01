@@ -264,6 +264,7 @@ struct NativeRootView: View {
                         NativeTabBar(
                             items: viewModel.footerItems,
                             colors: viewModel.nativeChromeColors,
+                            announcementCount: viewModel.announcementCount,
                             selectedTab: Binding(
                                 get: { viewModel.selectedTab },
                                 set: {
@@ -452,7 +453,7 @@ struct NativeRootView: View {
             GalleryView(apiClient: client)
                 .id(viewModel.screenRevisions["gallery", default: 0])
         case "announcements":
-            AnnouncementsView(apiClient: client)
+            AnnouncementsView(apiClient: client, onLoaded: { viewModel.announcementCount = $0.count })
                 .id(viewModel.screenRevisions["announcements", default: 0])
         case "lottery":
             LotteryView(apiClient: client, refreshRevision: viewModel.lotteryRevision)

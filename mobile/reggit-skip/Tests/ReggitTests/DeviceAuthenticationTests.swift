@@ -19,6 +19,26 @@ private final class DeviceAuthenticationProtocol: URLProtocol, @unchecked Sendab
 }
 
 final class DeviceAuthenticationTests: XCTestCase {
+    func testPrivateAnnouncementImageUsesDeviceCredential() async throws {
+        let device = UUID().uuidString
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [DeviceAuthenticationProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let client = ReggitAPIClient(baseURL: "https://auth.example", projectKey: "store-a", deviceIdentifier: device, session: session)
+        let credentialKey = "device-token:https://auth.example:store-a:\(device)"
+        defer { UserDefaults.standard.removeObject(forKey: credentialKey) }
+
+        do {
+            _ = try await client.fetchAnnouncementImage(id: 42)
+            XCTFail("Private images must require authentication")
+        } catch ReggitAPIError.httpStatus(let status, _) {
+            XCTAssertEqual(status, 401)
+        }
+        try await client.registerDevice(platform: "ios", pushToken: nil, osVersion: nil, appVersion: nil)
+        let data = try await client.fetchAnnouncementImage(id: 42)
+        XCTAssertFalse(data.isEmpty)
+    }
+
     func testRegistrationCredentialSurvivesClientRecreationAndIsProjectScoped() async throws {
         let device = UUID().uuidString
         let configuration = URLSessionConfiguration.ephemeral
