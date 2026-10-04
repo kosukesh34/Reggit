@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\MemberCouponSource;
 use App\Enums\ScheduledDeliveryType;
+use App\Jobs\SendAnnouncementNotificationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Announcement;
 use App\Models\Member;
@@ -131,7 +132,7 @@ class ScheduledDeliverySendService
             return false;
         }
         if ($announcement !== null) {
-            $this->announcementNotificationService->send($announcement);
+            (new SendAnnouncementNotificationJob((int) $announcement->id))->handle($this->announcementNotificationService);
         }
 
         LogHelper::info('[ScheduledDelivery] sent', [
@@ -175,6 +176,9 @@ class ScheduledDeliverySendService
             'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
             'published_at' => now(),
             'sent_at' => now(),
+            'send_notification' => $delivery->shouldSendNotification(),
+            'notification_pending' => $delivery->shouldSendNotification(),
+            'notification_retry_at' => $delivery->shouldSendNotification() ? now() : null,
             'target_member_ids' => [$member->id],
             'delivery_coupon_id' => $delivery->coupon_id,
         ]);

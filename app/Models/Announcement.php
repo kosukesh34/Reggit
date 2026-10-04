@@ -87,7 +87,7 @@ class Announcement extends Model
         return $value;
     }
 
-    protected $hidden = ['private_image_path'];
+    protected $hidden = ['private_image_path', 'notification_pending', 'notification_retry_at'];
 
     protected $fillable = [
         'project_id',
@@ -110,6 +110,8 @@ class Announcement extends Model
         'delivery_coupon_ids',
         'delivery_status',
         'push_notification_ids',
+        'notification_pending',
+        'notification_retry_at',
     ];
 
     public function project(): BelongsTo
@@ -135,6 +137,8 @@ class Announcement extends Model
         'send_notification' => 'boolean',
         'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
+        'notification_pending' => 'boolean',
+        'notification_retry_at' => 'datetime',
         'target_member_ids' => 'array',
         'store_ids' => 'array',
         'segment_criteria' => 'array',

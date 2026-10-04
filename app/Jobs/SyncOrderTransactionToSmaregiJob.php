@@ -72,7 +72,7 @@ class SyncOrderTransactionToSmaregiJob implements ShouldBeUnique, ShouldQueue
                 'order_id' => $this->orderId,
                 'project_id' => $this->projectId,
                 'user_id' => $this->userId,
-                'attempt' => $this->attempt,
+                'attempt' => $this->job?->attempts() ?? $this->attempt,
                 'finalize' => $this->finalize,
             ]);
         } catch (\Throwable $e) {
@@ -80,7 +80,7 @@ class SyncOrderTransactionToSmaregiJob implements ShouldBeUnique, ShouldQueue
                 'order_id' => $this->orderId,
                 'project_id' => $this->projectId,
                 'error' => $e->getMessage(),
-                'attempt' => $this->attempt,
+                'attempt' => $this->job?->attempts() ?? $this->attempt,
                 'finalize' => $this->finalize,
             ]);
             if (config('queue.default') === 'sync') {
@@ -93,17 +93,6 @@ class SyncOrderTransactionToSmaregiJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        if ($this->attempt >= $this->tries) {
-            return;
-        }
-
-        $delaySeconds = $this->backoff[$this->attempt - 1] ?? 900;
-        self::dispatch(
-            $this->orderId,
-            $this->projectId,
-            $this->userId,
-            $this->attempt + 1,
-            $this->finalize,
-        )->delay(now()->addSeconds($delaySeconds));
+        throw new \RuntimeException('Smaregi synchronization is incomplete.');
     }
 }
