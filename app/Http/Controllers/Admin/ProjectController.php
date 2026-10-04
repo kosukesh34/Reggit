@@ -40,7 +40,9 @@ class ProjectController extends Controller
     {
         $project = $this->editUseCase->handle($id);
 
-        return view('admin.projects.edit', ['view' => new ProjectFormView(
+        $appLinks = app(\App\Repositories\Eloquent\ProjectAppLinkRepository::class)->find((int) $project->id);
+
+        return view('admin.projects.edit', ['appLinks' => $appLinks, 'view' => new ProjectFormView(
             $project,
             [
                 'line_liff_id' => $this->shopSettingRepository->getLineLiffId((int) $project->id),

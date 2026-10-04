@@ -1,5 +1,6 @@
 import { Component, lazy, Suspense, type ErrorInfo, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { PointQrClaim } from "../components/membership/PointQrClaim";
 import { LoginPromptPopup } from "../components/membership/LoginPromptPopup";
 import { AppShell } from "../components/layout/AppShell";
 import { useMembershipGate } from "../../frontend/hooks/useMembershipGate";
@@ -162,6 +163,7 @@ export function AppRouter() {
   const [gateSettled, setGateSettled] = useState(false);
   return (
     <AppShell gateSettled={gateSettled}>
+      <PointQrClaim />
       <MembershipGate onSettled={() => setGateSettled(true)} />
       <LoginPromptPopup />
       <ScreenRoutes />

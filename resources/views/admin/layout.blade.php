@@ -241,6 +241,11 @@
                         <span>会員</span>
                     </a>
                     @endif
+                    @if($adminUser === null || $adminUser->hasAnyPermission(['members.view', 'members.manage', 'stamps.manage']))
+                    <a href="{{ admin_route('admin.qr-codes') }}" class="nav-item {{ request()->routeIs('admin.qr-codes') ? 'active' : '' }}">
+                        <i class="fas fa-qrcode"></i><span>QRコード発行</span>
+                    </a>
+                    @endif
                     @if($adminUser === null || $adminUser->hasPermission('stamps.view') || $adminUser->hasPermission('coupons.view') || $adminUser->hasPermission('announcements.view'))
                     <div class="nav-group">
                         <div class="nav-group-label">販促</div>
