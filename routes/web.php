@@ -37,10 +37,13 @@ use App\Http\Controllers\Admin\MemberMutationController;
 use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
 use App\Http\Controllers\Admin\MemberTransferController as AdminMemberTransferController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\PointGrantQrController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ProductMutationController;
+use App\Http\Controllers\Admin\ProjectAppLinkController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\ProjectMutationController;
+use App\Http\Controllers\Admin\QrController;
 use App\Http\Controllers\Admin\QueueController as AdminQueueController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
 use App\Http\Controllers\Admin\ReservationStatusController;
@@ -71,6 +74,7 @@ use App\Http\Controllers\Admin\Settings\StoreAppCredentialController;
 use App\Http\Controllers\Admin\Settings\WalletController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\StampGrantQrController;
+use App\Http\Controllers\Admin\StampQrController;
 use App\Http\Controllers\Admin\StoreController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\Admin\SystemHelpArticleController;
@@ -88,6 +92,7 @@ use App\Http\Controllers\LiffController;
 use App\Http\Controllers\LiffLegacyRedirectController;
 use App\Http\Controllers\Onboarding\OnboardingPageController;
 use App\Http\Controllers\Payment\PaymentReturnController;
+use App\Http\Controllers\PointGrantOpenController;
 use App\Http\Controllers\Queue\QueueOpenController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
@@ -156,7 +161,7 @@ Route::get('/g/{token}', StampGrantOpenController::class)
     ->middleware('throttle:60,1')
     ->name('stamp.grant.open');
 
-Route::get('/points/claim/{project_key}/{token}', \App\Http\Controllers\PointGrantOpenController::class)->where('token', '[0-9a-f]{48}')->middleware(['bind.project', 'throttle:60,1'])->name('points.grant.open');
+Route::get('/points/claim/{project_key}/{token}', PointGrantOpenController::class)->where('token', '[0-9a-f]{48}')->middleware(['bind.project', 'throttle:60,1'])->name('points.grant.open');
 
 // 順番待ち QR 起動（LINE / ネイティブ選択）
 Route::get('/queue/open/{project_key}/{token}', QueueOpenController::class)
@@ -191,9 +196,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('admin.logout')->withoutMiddleware('bind.admin.project');
 
     Route::prefix('{project_key}')->group(function () {
-        Route::post('/qr-codes/stamps', [\App\Http\Controllers\Admin\StampQrController::class, 'store'])->name('admin.qr-codes.stamps.store')->middleware('admin.permission:stamps.manage');
-        Route::post('/qr-codes/points', [\App\Http\Controllers\Admin\PointGrantQrController::class, 'store'])->name('admin.qr-codes.points.store')->middleware('admin.permission:members.manage');
-        Route::get('/qr-codes', \App\Http\Controllers\Admin\QrController::class)->name('admin.qr-codes')->middleware('admin.permission:members.view,members.manage,stamps.manage');
+        Route::post('/qr-codes/stamps', [StampQrController::class, 'store'])->name('admin.qr-codes.stamps.store')->middleware('admin.permission:stamps.manage');
+        Route::post('/qr-codes/points', [PointGrantQrController::class, 'store'])->name('admin.qr-codes.points.store')->middleware('admin.permission:members.manage');
+        Route::get('/qr-codes', QrController::class)->name('admin.qr-codes')->middleware('admin.permission:members.view,members.manage,stamps.manage');
         Route::get('/stores', [StoreController::class, 'index'])->name('admin.stores.index');
         Route::put('/stores/active', [StoreController::class, 'updateActiveStores'])->name('admin.stores.active')->middleware('admin.permission:settings.manage');
         Route::post('/stores/select', [StoreController::class, 'select'])->name('admin.stores.select');
@@ -383,7 +388,7 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
     Route::get('/projects/create', fn () => redirect()->route('onboarding.create'))->name('system-admin.projects.create');
     Route::post('/projects', [ProjectMutationController::class, 'store'])->name('system-admin.projects.store');
     Route::get('/projects/{id}/edit', [AdminProjectController::class, 'edit'])->name('system-admin.projects.edit');
-    Route::put('/projects/{id}/app-links', [\App\Http\Controllers\Admin\ProjectAppLinkController::class, 'update'])->name('system-admin.projects.app-links.update');
+    Route::put('/projects/{id}/app-links', [ProjectAppLinkController::class, 'update'])->name('system-admin.projects.app-links.update');
     Route::put('/projects/{id}', [ProjectMutationController::class, 'update'])->name('system-admin.projects.update');
 
     Route::get('/accounts', [AccountIndexController::class, '__invoke'])->name('system-admin.accounts.index');
