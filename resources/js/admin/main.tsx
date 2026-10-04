@@ -17,6 +17,7 @@ import './scheduledDelivery';
 import './memberDetailHistory';
 import './memberLineQr';
 import './stampGrantQr';
+import './issuedQr';
 import './queueRealtime';
 
 type DesignerDomConfig = {

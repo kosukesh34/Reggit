@@ -22,6 +22,12 @@ class LiffTabUrlBuilder
     /**
      * @param  array<string, string>  $extra
      */
+    public static function buildFromBaseUrl(string $baseUrl, string $projectKey, string $tab, array $extra = []): string
+    {
+        return self::appendTabParams($baseUrl, ProjectKey::require($projectKey), $tab, $extra);
+    }
+
+    /** @param array<string, string> $extra */
     private static function appendTabParams(string $baseUrl, string $projectKey, string $tab, array $extra = []): string
     {
         $state = array_merge(['project_key' => $projectKey, 'tab' => $tab], $extra);

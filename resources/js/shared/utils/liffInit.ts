@@ -1,3 +1,4 @@
+import { pointQrTokenFromUrl } from '../../frontend/member/pointQrToken';
 import { AppConstants } from '../constants';
 import {
     extractQueueTokenFromEncodedParam,
@@ -219,7 +220,7 @@ function bootstrapLiffInit(): void {
         }
         try {
             const current = new URL(window.location.href);
-            const keepParams = ['queue_id', 'queue_token', 'project_key', 'g'];
+            const keepParams = ['queue_id', 'queue_token', 'project_key', 'g', 'point_code'];
             const kept = new URLSearchParams();
             keepParams.forEach((key) => {
                 const value = current.searchParams.get(key);
@@ -227,6 +228,8 @@ function bootstrapLiffInit(): void {
                     kept.set(key, value);
                 }
             });
+            const pointCode = pointQrTokenFromUrl(current.href);
+            if (pointCode) kept.set('point_code', pointCode);
             const hashQueue = extractQueueTokenFromString(current.hash || '');
             if (hashQueue && !kept.get('queue_token') && !kept.get('queue_id')) {
                 kept.set('queue_token', hashQueue);
