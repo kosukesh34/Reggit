@@ -156,6 +156,8 @@ Route::get('/g/{token}', StampGrantOpenController::class)
     ->middleware('throttle:60,1')
     ->name('stamp.grant.open');
 
+Route::get('/points/claim/{project_key}/{token}', \App\Http\Controllers\PointGrantOpenController::class)->where('token', '[0-9a-f]{48}')->middleware(['bind.project', 'throttle:60,1'])->name('points.grant.open');
+
 // 順番待ち QR 起動（LINE / ネイティブ選択）
 Route::get('/queue/open/{project_key}/{token}', QueueOpenController::class)
     ->middleware('bind.project')
@@ -189,6 +191,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('admin.logout')->withoutMiddleware('bind.admin.project');
 
     Route::prefix('{project_key}')->group(function () {
+        Route::post('/qr-codes/stamps', [\App\Http\Controllers\Admin\StampQrController::class, 'store'])->name('admin.qr-codes.stamps.store')->middleware('admin.permission:stamps.manage');
+        Route::post('/qr-codes/points', [\App\Http\Controllers\Admin\PointGrantQrController::class, 'store'])->name('admin.qr-codes.points.store')->middleware('admin.permission:members.manage');
+        Route::get('/qr-codes', \App\Http\Controllers\Admin\QrController::class)->name('admin.qr-codes')->middleware('admin.permission:members.view,members.manage,stamps.manage');
         Route::get('/stores', [StoreController::class, 'index'])->name('admin.stores.index');
         Route::put('/stores/active', [StoreController::class, 'updateActiveStores'])->name('admin.stores.active')->middleware('admin.permission:settings.manage');
         Route::post('/stores/select', [StoreController::class, 'select'])->name('admin.stores.select');
@@ -378,6 +383,7 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
     Route::get('/projects/create', fn () => redirect()->route('onboarding.create'))->name('system-admin.projects.create');
     Route::post('/projects', [ProjectMutationController::class, 'store'])->name('system-admin.projects.store');
     Route::get('/projects/{id}/edit', [AdminProjectController::class, 'edit'])->name('system-admin.projects.edit');
+    Route::put('/projects/{id}/app-links', [\App\Http\Controllers\Admin\ProjectAppLinkController::class, 'update'])->name('system-admin.projects.app-links.update');
     Route::put('/projects/{id}', [ProjectMutationController::class, 'update'])->name('system-admin.projects.update');
 
     Route::get('/accounts', [AccountIndexController::class, '__invoke'])->name('system-admin.accounts.index');

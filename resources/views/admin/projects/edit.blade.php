@@ -19,4 +19,20 @@
         <a href="{{ route('system-admin.projects.index') }}" class="btn btn-secondary">キャンセル</a>
     </div>
 </form>
+<form class="card mt-3" action="{{ route('system-admin.projects.app-links.update', $view->project->id) }}" method="POST">
+    @csrf
+    @method('PUT')
+    <div class="card-header"><h2 class="card-title">ネイティブアプリのダウンロードURL</h2></div>
+    <div class="card-body">
+        <p class="text-muted">店舗の「QRコード発行」画面に表示するURLです。空欄にすると、そのQRは非表示になります。</p>
+        @foreach(['download_url' => '共通ダウンロード案内URL'] as $field => $label)
+        <div class="form-group">
+            <label class="form-label" for="{{ $field }}">{{ $label }}</label>
+            <input class="form-control" type="url" id="{{ $field }}" name="{{ $field }}" value="{{ old($field, $appLinks?->{$field}) }}" maxlength="2048" placeholder="https://">
+            @error($field)<span class="text-danger">{{ $message }}</span>@enderror
+        </div>
+        @endforeach
+        <button class="btn btn-primary" type="submit">ダウンロードURLを保存</button>
+    </div>
+</form>
 @endsection
