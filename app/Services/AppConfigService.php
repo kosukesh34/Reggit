@@ -207,6 +207,15 @@ class AppConfigService
 
         $key = trim((string) config('broadcasting.connections.reverb.key', ''));
         $clientHost = trim((string) config('broadcasting.client_ws_host', ''));
+        // The tunnel script publishes its current public host here. LIFF uses
+        // this same fallback; native clients must not connect to Xserver's
+        // application origin, which does not proxy WebSocket upgrades.
+        if ($clientHost === '') {
+            $hostFile = storage_path('app/reverb-ws-host');
+            if (is_file($hostFile)) {
+                $clientHost = trim((string) file_get_contents($hostFile));
+            }
+        }
         $appUrl = (string) config('app.url', '');
         $host = $clientHost !== '' ? $clientHost : (string) parse_url($appUrl, PHP_URL_HOST);
         if ($key === '' || $host === '') {
