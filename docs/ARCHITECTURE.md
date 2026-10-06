@@ -1,493 +1,78 @@
-# Reggit 全体アーキテクチャ
+# アーキテクチャ
 
-他の開発者が「このアプリが何で、どう設計されているか」を一通り把握するための設計図です。
+## 全体構成
 
-**読み方（全体 → 細部）**
-
-1. **大枠・レーン・CRUD** → 先に [PROCESS_FLOWS.md](./PROCESS_FLOWS.md)（L0→L3）
-2. **層・依存・テナント・イベント** → この文書（以下）
-3. **UseCase 規約** → [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md)
-4. **Domain 境界** → [DDD.md](./DDD.md)
-5. **機能仕様の文言** → [FEATURES_SPEC.md](./FEATURES_SPEC.md)
-
----
-
-## 1. プロダクト概要
-
-**Reggit** は LINE（LIFF）を起点にした、店舗向けのマルチテナント SaaS です。
-
-| 利用者 | 主な画面 / API |
-|--------|----------------|
-| 顧客 | LIFF / ネイティブ WebView（注文・会員証・予約・順番待ち・スタンプ・クーポン） |
-| 店舗管理者 | `/admin/{project_key}/…`（注文・会員・設定・LIFF デザイナー） |
-| システム管理者 | `/system-admin/…`（プロジェクト・アカウント・API トークン） |
-| 店舗デバイス | Kitchen API / 順番待ち iPad |
-| 外部システム | スマレジ Webhook・IdP、Stripe Webhook、LINE Webhook |
-
-技術スタックの要約: PHP 8.4 / Laravel 12 / MySQL 8 / Vite + React 18（LIFF・Admin 一部）。
-
----
-
-## 2. システム全体図
-
-```mermaid
-flowchart TB
-  subgraph actors [アクター]
-    Customer[顧客 LINE / ネイティブ]
-    StoreAdmin[店舗管理者]
-    SysAdmin[システム管理者]
-    KitchenDev[キッチン / iPad]
-  end
-
-  subgraph edge [入口]
-    LIFF["/liff/{project_key}"]
-    AdminUI["/admin/{project_key}"]
-    SysUI["/system-admin"]
-    ApiCust["/api/* bind.project"]
-    ApiV1["/api/v1/{project_key}"]
-    KitchenAPI["/api/kitchen/{project_key}"]
-    Hooks["Webhook / IdP"]
-  end
-
-  subgraph app [Reggit Laravel]
-    MW[Middleware\n認証 / project_key 束縛]
-    Ctrl[Controllers]
-    UC[UseCases]
-    Dom[Domain]
-    Infra[Infrastructure]
-    Svc[Services]
-    Jobs[Jobs / Listeners]
-    DB[(MySQL)]
-  end
-
-  subgraph ext [外部]
-    Smaregi[スマレジ]
-    Stripe[Stripe]
-    LINE[LINE]
-    Wallet[Apple / Google Wallet]
-    JP[日本郵便]
-    Push[FCM]
-  end
-
-  Customer --> LIFF
-  Customer --> ApiCust
-  StoreAdmin --> AdminUI
-  SysAdmin --> SysUI
-  KitchenDev --> KitchenAPI
-  Smaregi --> Hooks
-  Stripe --> Hooks
-  LINE --> Hooks
-
-  LIFF --> MW
-  AdminUI --> MW
-  SysUI --> MW
-  ApiCust --> MW
-  ApiV1 --> MW
-  KitchenAPI --> MW
-  Hooks --> MW
-
-  MW --> Ctrl --> UC
-  UC --> Dom
-  UC --> Svc
-  UC --> Infra
-  Dom --> Infra
-  Svc --> Jobs
-  Infra --> DB
-  Jobs --> Smaregi
-  Jobs --> LINE
-  Jobs --> Push
-  Svc --> Stripe
-  Svc --> Wallet
-  Svc --> JP
-  Svc --> Smaregi
-```
-
----
-
-## 3. リクエストの標準パイプライン
-
-すべての機能は、原則この一本道です。
+Laravel が LIFF、顧客 API、管理画面、店舗端末 API、外部 Webhook を提供します。顧客のネイティブアプリは Skip / SwiftUI、店舗端末は SwiftUI の iPad アプリです。
 
 ```mermaid
 flowchart LR
-  R[HTTP Request] --> MW[Middleware]
-  MW --> AC[AdminContext に Project セット]
-  AC --> C[Controller]
-  C --> IN[Input / FormRequest]
-  IN --> UC[UseCase::handle]
-  UC --> DOM[Domain Policy / Aggregate]
-  UC --> REPO[Repository IF]
-  UC --> SVC[Service]
-  REPO --> ELO[Eloquent + ProjectScope]
-  SVC --> EXT[外部 API]
-  UC --> EVT[Domain Event]
-  EVT --> LIS[Listener / Job]
-  UC --> OUT[Output / View / JSON]
-  OUT --> RES[HTTP Response]
+    Client[LIFF / Native / Admin / 店舗端末] --> HTTP[Route / Middleware / Controller]
+    HTTP --> UC[UseCase]
+    UC --> Domain[Domain / Repository contract]
+    UC --> Service[Service / 外部連携]
+    Infra[Infrastructure / Eloquent adapter] --> Domain
+    UC --> Infra
+    Infra --> DB[(MySQL)]
+    Service --> External[LINE / スマレジ / Stripe / Wallet]
 ```
 
-### 層の責務（必守）
-
-| 層 | 置いてよいもの | 置いてはいけないもの |
-|----|----------------|----------------------|
-| Controller | 受付・バリデーション・Input 組み立て・レスポンス | 業務判断・外部 API 直叩き |
-| UseCase | 「何をするか」1 本のオーケストレーション | `Request` 依存、UseCase→UseCase 呼び出し |
-| Domain | ルール・Policy・Repository IF・Event | Eloquent / HTTP |
-| Infrastructure | Eloquent 実装・Event Listener | 画面ロジック |
-| Service | 外部連携・再利用技術処理 | Controller から直呼び（原則 UseCase 経由） |
-
-参照実装の優先順位: **system-admin / Admin 配下** → 顧客 API。
-
----
-
-## 4. 入口（ルーティングの地図）
-
-```mermaid
-flowchart TB
-  subgraph web [routes/web.php]
-    W1["/liff + bind.project"]
-    W2["/admin + auth:admin + bind.admin.project"]
-    W3["/system-admin + system.admin"]
-    W4["/smaregi/webhook, /smaregi/idp"]
-    W5["/wallet-add, /google-wallet/save/{token}"]
-    W6["/onboarding, /health, /queue/open/..."]
-  end
-
-  subgraph api [routes/api.php → /api]
-    A1["顧客 JSON: web + bind.project\nproducts/orders/members/queue/..."]
-    A2["/api/v1 + AuthenticateApiToken"]
-    A3["/api/v1/{project_key} + token"]
-    A4["/api/kitchen/{project_key}"]
-    A5["/api/line/webhook"]
-    A6["/api/smaregi/*, /api/payment/webhook"]
-    A7["/api/apple-wallet/v1/..."]
-  end
-```
-
-| 入口 | 認証の考え方 | テナント解決 |
-|------|--------------|--------------|
-| LIFF / 顧客 API | 本番は LINE ID トークン検証。ネイティブ端末は発行済み端末トークン（Laravel の user guard ではない） | `bind.project` |
-| 店舗 Admin | `auth:admin` セッション + `admin.permission` + `admin.plan` | `bind.admin.project` |
-| システム Admin | `auth:admin` + `system.admin` | 横断（プロジェクト CRUD） |
-| API v1 | Bearer / `X-Api-Token` | トークンの project または URL `{project_key}` |
-| Kitchen / Waiting店舗端末 | Sanctum Bearer + 端末固有鍵。アプリ種別・project能力を検証 | ルート `project_key` |
-| Webhook | 署名検証ミドルウェア等 | ペイロード / 契約 ID から解決 |
-
-登録元: `app/Providers/RouteServiceProvider.php`。
-
-店舗端末の登録、1端末制約、失効、スワイプ操作の詳細は [`STORE_APP_SPEC.md`](STORE_APP_SPEC.md) を参照。
-
----
-
-## 5. マルチテナント設計
-
-**店舗 = `projects` 1 行。URL / ヘッダの `project_key` で必ず束縛する。**
-
-```mermaid
-sequenceDiagram
-  participant Req as Request
-  participant MW as BindProject / BindAdminProject
-  participant Ctx as AdminContext
-  participant UC as UseCase
-  participant M as Eloquent Model
-  participant Scope as ProjectScope
-
-  Req->>MW: project_key
-  MW->>Ctx: setCurrentProject(Project)
-  Req->>UC: Controller 経由
-  UC->>M: query / save
-  M->>Scope: global scope
-  Scope->>Ctx: getCurrentProjectId()
-  Scope-->>M: WHERE project_id = ?
-```
-
-| 部品 | パス | 役割 |
-|------|------|------|
-| `bind.project` | `app/Http/Middleware/BindProjectFromRequest.php` | 顧客・LIFF・公開系 |
-| `bind.admin.project` | `app/Http/Middleware/BindAdminProject.php` | Admin + 権限チェック |
-| `AdminContext` | `app/Util/AdminContext.php` | リクエスト内の現在店舗 |
-| `ProjectScope` | `app/Models/Scopes/ProjectScope.php` | 他店データ遮断。HTTP リクエスト中に店舗コンテキストがない場合は結果を返さない |
-| `BelongsToProject` | `app/Models/Concerns/BelongsToProject.php` | Model に scope + 作成時 project_id |
-
-**デグレ観点:** HTTP リクエスト中に店舗コンテキストがないクエリは空になる。CLI の横断処理は現状の互換性を維持する。店舗をまたぐ管理処理・同期処理では `withoutGlobalScope(ProjectScope::class)` と明示的な `project_id` 条件を併用し、権限と対象店舗の条件をレビューする。
-
-`BindProjectFromRequest` / API トークン認証 / `CheckApiProject` は暗黙のモデル結合より前に実行する。公開スタンプQRはトークンから店舗を特定する初回検索のみスコープを外し、その後の処理は特定した店舗のコンテキスト内で行う。
-
----
-
-## 6. 認証・認可の整理
-
-```mermaid
-flowchart TB
-  subgraph adminAuth [管理画面]
-    Login[Admin ログイン] --> Session[admin guard セッション]
-    Session --> Perm[admin.permission]
-    Session --> Plan[admin.plan PlanFeatures]
-  end
-
-  subgraph custAuth [顧客]
-    LIFFInit[LIFF init] --> IdToken[X-Line-Id-Token]
-    IdToken --> Verify[LINE verify ID token]
-    Verify --> UserSvc[UserService で User/Member 解決]
-  end
-
-  subgraph apiAuth [外部 API]
-    Token[API Token] --> Hash[token_hash 照合]
-    Hash --> Ctx[AdminContext]
-  end
-```
-
-プラン機能ゲート（累積）: `app/Support/PlanFeatures.php`
-
-- `normal` ⊂ `distribution` ⊂ `premium`
-- 例: 抽選・Wallet・高度分析・LIFF デザイナー高度は premium 系
-
----
-
-## 7. バックエンドのディレクトリと依存の向き
-
-```mermaid
-flowchart TB
-  Http["app/Http\nControllers / Middleware / Requests"]
-  UC["app/UseCases\nAdmin / Member / Order / ..."]
-  Domain["app/Domain\nMember Order Coupon Reservation Queue Settings Shared"]
-  Infra["app/Infrastructure\nPersistence/Eloquent\nEvents"]
-  Services["app/Services\nSmaregi Line Wallet ..."]
-  Models["app/Models\n+ Models/Settings"]
-  Jobs["app/Jobs"]
-
-  Http --> UC
-  UC --> Domain
-  UC --> Services
-  UC --> Infra
-  Infra --> Domain
-  Infra --> Models
-  Services --> Models
-  Services --> Jobs
-  Domain -.->|IF のみ依存| Infra
-```
-
-### Bounded Context（Domain）
-
-| Context | 主な関心 |
-|---------|----------|
-| Member | ポイント台帳、ランク、`PointsEarned` |
-| Order | 作成・在庫・決済確定・スタンプ、同期イベント |
-| Coupon | 利用・発行・配信セグメント Policy |
-| Reservation | 予約・空き枠・ステータス |
-| Queue | 順番待ち・呼出・入店 |
-| Settings | 用途別の設定契約（`OrderSettings`、`QueueSettings`、`FeatureSettings` 等） |
-
----
-
-## 8. 設定（Settings）の設計
-
-旧 EAV / `ShopSetting` 静的ファサードは廃止済み。  
-**読み書きは必ず用途別の小さな設定契約経由。** 共通の Eloquent adapter は保存方式を隠蔽する。
-
-```mermaid
-flowchart LR
-  UC[UseCase / Service] --> IF[Capability Settings Contract]
-  IF --> Impl[EloquentShopSettingRepository]
-  Impl --> Store[ShopSettingStore]
-  Store --> T1[ProjectBusinessSetting]
-  Store --> T2[ProjectLineLiffSetting]
-  Store --> T3[ProjectFeatureFlags]
-  Store --> T4[ProjectMember* / Wallet / ...]
-```
-
-| ファイル | 役割 |
-|----------|------|
-| `app/Domain/Settings/Repositories/*Settings.php` | 用途別 IF |
-| `app/Domain/Settings/ShopSettingKeys.php` | 定数（ORDER_MODE 等） |
-| `app/Infrastructure/.../EloquentShopSettingRepository.php` | 実装 |
-| `app/Infrastructure/.../ShopSettingStore.php` | KEY → 正規化テーブル |
-| `app/Models/Settings/Project*Setting.php` | 1 project = 各テーブル 1 行 |
-
----
-
-## 9. ドメインイベントと非同期
-
-```mermaid
-flowchart LR
-  UC[UseCase] --> Disp[DomainEventDispatcher]
-  Disp --> Multi[MulticastDomainEventDispatcher]
-  Multi --> Log[LoggingDomainEventListener]
-  Multi --> N1[NotifyOnOrderConfirmed]
-  Multi --> N2[NotifyOnOrderReady]
-  Multi --> S1[SyncOrderPointsToSmaregi]
-  Multi --> S2[SyncOrderTransactionToSmaregi]
-  Multi --> S3[SyncPointsEarnedToSmaregi]
-  S1 --> Job[ShouldQueue Job]
-  S2 --> Job
-  Job --> Smaregi[スマレジ API]
-```
-
-代表イベント:
-
-| Event | 主な副作用 |
-|-------|------------|
-| `OrderConfirmed` / `OrderReady` | LINE 等通知 |
-| `OrderPointsSyncRequested` | 注文ポイントのスマレジ同期（冪等カラムあり） |
-| `OrderTransactionSyncRequested` | 取引のスマレジ同期 |
-| `PointsEarned` | ポイント変動のスマレジ同期 |
-
-本番の予約配信・同期は **キューワーカー前提**（`QUEUE_CONNECTION=sync` は開発向け）。
-
----
-
-## 10. フロントエンド設計
-
-```mermaid
-flowchart TB
-  Blade[Blade: line.blade / native.blade / admin layout]
-  Vite[Vite]
-  FE["resources/js/frontend/main.tsx"]
-  AD["resources/js/admin/main.tsx"]
-
-  Blade --> Vite
-  Vite --> FE
-  Vite --> AD
-
-  FE --> Roots["複数 root\nchrome / tabs / footer / bootstrap"]
-  Roots --> Store[frontendStore\napiClient / pageRouter / tab]
-  Roots --> Pages["features/*Page.tsx\nhome products orders member ..."]
-
-  AD --> Sidebar[AdminSidebar]
-  AD --> Designer[liff-designer/LiffDesignerApp]
-```
-
-| 領域 | パス | メモ |
-|------|------|------|
-| LIFF 入口 | `resources/js/frontend/main.tsx` | React タブページ |
-| 共有状態 | `resources/js/frontend/context/frontendStore.ts` | 複数 root 間でタブ共有 |
-| 機能ページ | `resources/js/frontend/features/*/ ` | タブ単位の UI |
-| API クライアント | `resources/js/shared/utils/apiClient.ts` | LINE User ID 付与 |
-| Admin デザイナー | `resources/js/admin/liff-designer/` | ブロック編集 UI |
-
-顧客の業務 API は `/api/...`（`bind.project`）を叩く。
-
----
-
-## 11. 代表ユースケースの流れ
-
-### 11.1 顧客が注文する
-
-```mermaid
-sequenceDiagram
-  participant UI as LIFF Products/Checkout
-  participant API as /api/orders
-  participant C as Order Controller
-  participant UC as OrderStoreUseCase
-  participant Dom as Order Domain
-  participant DB as MySQL
-  participant Pay as Stripe optional
-  participant Ev as Domain Events
-  participant Sm as Smaregi Jobs
-
-  UI->>API: POST 注文
-  API->>C: bind.project
-  C->>UC: OrderStoreInput
-  UC->>Dom: 検証・在庫・作成
-  Dom->>DB: orders / items
-  opt オンライン決済
-    UC->>Pay: PaymentIntent
-  end
-  UC->>Ev: OrderConfirmed 等
-  Ev->>Sm: ポイント / 取引同期 Job
-  UC-->>UI: 注文結果 JSON
-```
-
-### 11.2 店舗が設定を保存する
-
-```mermaid
-sequenceDiagram
-  participant A as 店舗管理者
-  participant AC as Admin Settings Controller
-  participant UC as Update*SettingsUseCase
-  participant Repo as 用途別 Settings Contract
-  participant DB as Project*Setting
-
-  A->>AC: POST /admin/{project_key}/settings/...
-  AC->>AC: auth + permission + plan
-  AC->>UC: payload
-  UC->>Repo: set*
-  Repo->>DB: upsert by project_id
-  UC-->>A: redirect / JSON
-```
-
-### 11.3 スマレジ連携（双方向のイメージ）
-
-```mermaid
-flowchart LR
-  subgraph out [Reggit → スマレジ]
-    OrderUC[注文 / ポイント UseCase] --> EvOut[Domain Event]
-    EvOut --> JobOut[Outbound Job]
-    JobOut --> APIOut[SmaregiApiService]
-  end
-
-  subgraph inb [スマレジ → Reggit]
-    WH[Webhook / IdP] --> CtrlIn[Smaregi Controller]
-    CtrlIn --> UCIn[Smaregi UseCase]
-    UCIn --> JobIn[Inbound Sync Job]
-    JobIn --> DB2[(会員 / 取引反映)]
-  end
-```
-
----
-
-## 12. データモデルの中心
-
-```mermaid
-erDiagram
-  PROJECT ||--o{ ADMIN_USER_PROJECT : grants
-  PROJECT ||--o{ MEMBER : has
-  PROJECT ||--o{ ORDER : has
-  PROJECT ||--o{ PRODUCT : has
-  PROJECT ||--|| PROJECT_BUSINESS_SETTING : settings
-  PROJECT ||--|| PROJECT_LINE_LIFF_SETTING : settings
-  PROJECT ||--|| PROJECT_FEATURE_FLAGS : settings
-  MEMBER ||--o{ ORDER : places
-  MEMBER ||--o{ POINT_TRANSACTION : ledger
-  MEMBER ||--o{ MEMBER_COUPON : holds
-  ORDER ||--o{ ORDER_ITEM : contains
-```
-
-マルチテナントの軸は常に **`projects.id` / `project_key`**。
-
----
-
-## 13. 設計判断の早見表
-
-| やりたいこと | 置く場所 |
-|--------------|----------|
-| 画面・API の入口 | `Http/Controllers` |
-| バリデーション | FormRequest / Controller（UseCase ではやらない） |
-| 業務の一連の流れ | `UseCases/...` |
-| 不変条件・権限ポリシー | `Domain/...` |
-| DB アクセス抽象 | `Domain/.../Repositories` + `Infrastructure/Persistence` |
-| スマレジ・LINE・Wallet | `Services/...`（UseCase から呼ぶ） |
-| 店舗設定の読み書き | 用途別の `*Settings` contract |
-| 非同期副作用 | Domain Event → Listener / Job |
-| LIFF UI | `resources/js/frontend/features` |
-| Admin LIFF デザイン | `resources/js/admin/liff-designer` |
-
----
-
-## 14. 関連ドキュメント
-
-| ドキュメント | 内容 |
-|--------------|------|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | 全体設計図 |
-| [PROCESS_FLOWS.md](./PROCESS_FLOWS.md) | **CRUD・機能別の処理フロー図** |
-| [CLEAN_ARCHITECTURE.md](./CLEAN_ARCHITECTURE.md) | UseCase / Input / 依存ルール |
-| [DDD.md](./DDD.md) | Bounded Context・イベント |
-| [FEATURES_SPEC.md](./FEATURES_SPEC.md) | 機能・画面仕様 |
-| [PERMISSIONS.md](./PERMISSIONS.md) | Admin 権限 |
-| [SMAREGI_SETUP.md](./SMAREGI_SETUP.md) | スマレジ接続 |
-| [SECURITY.md](./SECURITY.md) | セキュリティ |
-| [CODING_STANDARDS.md](../CODING_STANDARDS.md) | コーディング規約 |
-
----
-
-*最終更新: 2026-08-07*
+Domain は HTTP・Eloquent・Infrastructure に依存しません。既存の読み取り専用 UseCase / Service では Eloquent を直接使う箇所もあり、段階的に整理します。
+
+## 層と配置
+
+| 場所 | 責務 |
+|---|---|
+| `app/Http` | ルートの受付、認証・認可、入力検証、レスポンス |
+| `app/UseCases` | 1操作のオーケストレーション。入力は Input / プリミティブ、出力は View / Output / ドメイン型 |
+| `app/Domain/{Context}` | 集約・値・Policy・Repository 契約・イベント |
+| `app/Infrastructure/Persistence/Eloquent` | ドメイン Repository の永続化実装 |
+| `app/Services` | 再利用する処理、外部 API・ストレージ・決済などの技術的境界 |
+| `app/Repositories` | 利用者識別・テナント解決・集約以外の読みモデルの既存 Repository |
+| `app/Models` | Eloquent モデルと関連 |
+
+新しい業務集約の契約は `Domain/<Context>/Repositories`、実装は `Infrastructure/Persistence/Eloquent/<Context>` に置きます。単純な単一利用者の読み取りに Repository を増やす必要はありません。共有クエリ、集約永続化、差し替えが必要な境界で導入します。
+
+主要 Context は Member、Order、Coupon、Reservation、Queue、Settings、Shared です。Admin の薄い UseCase は HTTP と Service の境界として維持し、Controller から Service を直呼びする形へ統合しません。詳細な実装ルールは [コーディング規約](../CODING_STANDARDS.md) に従います。
+
+## テナントと店舗
+
+`Project` は契約・ブランド・LINE/LIFF・会員基盤、`Store` はその配下の実店舗です。テナント境界は `project_id`、実店舗の取引境界は `store_id` です。
+
+| 制御 | 実装 |
+|---|---|
+| 顧客のプロジェクト解決 | `BindProjectFromRequest` |
+| 管理者のプロジェクト解決と権限 | `BindAdminProject` |
+| API トークンと URL の整合 | `AuthenticateApiToken` / `CheckApiProject` |
+| プロジェクト検索・作成スコープ | `ProjectScope` / `BelongsToProject` |
+| 選択店舗・担当店舗の解決 | `StoreContext` |
+| 利用店舗の会員・取引への制限 | `StoreAccessScope` |
+| 常駐ワーカーのリクエスト間状態リセット | `ResetTenantContext` |
+
+HTTP 中にプロジェクトが未解決なら `ProjectScope` は検索結果を返しません。プロジェクト解決は暗黙のモデル結合より前に実行します。CLI の横断処理は別途対象を明示します。スコープを外す処理は認可と明示的な `project_id` / `store_id` 条件を確認します。
+
+会員証・ポイント残高・ランク・商品定義はプロジェクト共通です。注文・予約・順番待ち・来店・履歴は店舗に紐づき、会員の利用店舗は `member_stores` に記録します。店舗を選択するだけでは利用関係を作りません。DB では店舗とプロジェクトの複合外部キーなどで混在を防ぎます。
+
+既存プロジェクトには `main` 店舗を作る移行があります。別々のプロジェクトを自動統合しません。運用範囲と設定継承は [運用](OPERATIONS.md) を参照してください。
+
+## 設定
+
+設定の読み書きは `app/Domain/Settings/Repositories/*Settings.php` の用途別契約を使います。共通 Eloquent adapter と `ShopSettingStore` が `Project*Setting` モデルへの保存を隠蔽します。旧 EAV・`Models\ShopSetting`・巨大な `ShopSettingRepository` を再導入しません。
+
+営業時間・予約枠など店舗固有の値は `stores.settings` で上書きし、未設定ならプロジェクト設定を参照します。ブランド・LINE・会員基盤などの共通設定はプロジェクトに保持します。
+
+## 処理フローとイベント
+
+共通経路は「Middleware → Controller / FormRequest → Input → UseCase → Domain / Repository / Service → Output」です。機能フラグ・プラン・権限は入口で確認し、業務上の不変条件は Domain / Service 側で守ります。
+
+- 注文: 本人と店舗を確定し、商品・在庫を検証してトランザクション内で確保する。決済確定では所有者・注文ID・金額・状態を確認する。
+- ポイント・スタンプ・クーポン: 台帳と発行元を記録し、取引の再送・取消による重複や他取引への影響を防ぐ。
+- 外部同期: `PointsEarned`、`OrderConfirmed`、`OrderPointsSyncRequested` などを Listener / Job へ渡す。コミット後の外部障害で保存済み操作を失敗扱いにしない。
+- 配信: 作成者・店舗・対象会員を記録し、実行時も現在の権限と店舗の有効状態を確認する。
+
+`PostCommitDomainEventDispatcher` がコミット後イベントの失敗処理を集約します。配送・同期の完了とローカル保存の完了を区別します。
+
+## フロントエンドと検証
+
+LIFF は `resources/js/frontend`、管理画面は `resources/js/admin`、共通通信・型は `resources/js/shared` です。React feature と既存 Manager が共存しており、画面単位で移行します。React API 層を `window.app` に依存させません。
+
+集約・Policy は DB 不要の Unit、永続化と HTTP 境界は DB を使うテスト、画面は必要な E2E で確認します。依存の向きは `tests/Unit/Architecture/LayerDependencyTest.php`、店舗境界は `MultiStoreTest` などで検証します。

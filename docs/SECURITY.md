@@ -1,64 +1,43 @@
-# セキュリティ方針と実装
+# セキュリティ
 
-## 1. 認証・認可
+## 認証とデータ境界
 
-### 管理画面（admin guard）
-- **セッション認証**: `config/auth.php` の `admin` ガードで `AdminUser` を認証。
-- **ロール階層**: システム管理者 > プロジェクト管理者 > 店舗管理者 > スタッフ。上位ロールは下位の操作が可能。
-- **プロジェクトスコープ**: 店舗管理は必ず `project_key` 付きURL（`/admin/{project_key}/...`）でアクセス。`BindAdminProject` ミドルウェアでプロジェクトを解決し、他プロジェクトのデータは参照・更新不可。
-- **スタッフの権限**: スタッフのみ細かい権限（`admin_user_permissions`）で制御。それ以外のロールは全権限を持つ。
+| 入口 | 制御 |
+|---|---|
+| 管理画面 | `admin` guard のセッション、ロール、担当プロジェクト・店舗、スタッフ機能権限 |
+| LIFF 顧客 | 本番では LINE ID トークンを検証。`X-Line-User-Id` だけを認証に使わない |
+| 顧客端末 | `X-Device-Identifier` と発行済み `X-Device-Token` の両方を照合 |
+| API v1 | Bearer / `X-Api-Token`。プロジェクト・スコープ・有効期限・失効を検証 |
+| Kitchen / Waiting | Sanctum Bearer と端末固有鍵、店舗・アプリ能力、発行者の現在の権限 |
+| 外部 Webhook | LINE / Stripe の署名、スマレジの契約通知トークン / POS 受信秘密値 |
 
-### API
-- **Web API（LIFF等）**: `X-Line-Id-Token` を LINE の Verify ID token API で検証し、`sub` を利用者 ID とする。`X-Line-User-Id` だけでは本人確認しない。ネイティブは `X-Device-Identifier`。`project_key` はクエリまたはヘッダ。
-- **API v1（モバイルアプリ）**: `Authorization: Bearer <token>` または `X-Api-Token`。`AuthenticateApiToken` でトークン検証し、`project_id` でスコープ。トークンは平文を保存せず `token_hash`（SHA-256）のみ保存。
-- **Kitchen／Waiting店舗端末**: 管理画面で発行する一度きりの登録コードで端末を登録する。登録後はSanctum BearerとKeychain内の端末固有鍵を併用し、アプリ種別・プロジェクト・端末を毎回照合する。各店舗・各アプリ1台で、再発行時は旧端末を即時失効する。詳細は [`STORE_APP_SPEC.md`](STORE_APP_SPEC.md) を参照。
+`project_id` と `store_id` の境界、所有者、機能権限をそれぞれ確認します。トークンや公開店舗キーがあるだけで任意の会員データへアクセスできる設計にしません。構造は [アーキテクチャ](ARCHITECTURE.md)、店舗端末の登録と失効は [運用](OPERATIONS.md#kitchen--waiting-の端末登録) を参照します。
 
-### ログイン試行制限
-- 管理画面ログインは **5回/分** まで（`admin-login` レートリミット）。同一 `login_id` + IP でカウント。超過時は HTTP 429。
+管理ログインは試行制限を適用します。管理パスワードは hashed cast、API トークンは SHA-256、顧客端末の秘密値は暗号化・JSON 非公開として保存します。管理者 seed の固定パスワードへのフォールバック、本番のデモ seed、再 seed による既存パスワード・ロールの上書きは禁止します。
 
----
+## CSRF・入力・出力
 
-## 2. 入力検証・出力
+`web` グループの Cookie 認証 API とフォームは CSRF 検証を行います。Blade は `@csrf`、LIFF / ネイティブ WebView の `ApiClient` は同一オリジンへ `X-CSRF-TOKEN` を送ります。CSRF トークンを外部オリジンへ送信しません。
 
-- **FormRequest**: 全管理画面の登録・更新は FormRequest でバリデーション。`AccountStoreRequest` はパスワードに `Password::defaults()`（8文字以上等）を適用。
-- **Blade**: `{{ }}` で自動エスケープ。HTML を出したい場合は `{!! !!}` を避け、必要な場合のみ許可する。
-- **監査ログ**: `AdminAuditLogger` で POST/PUT/PATCH/DELETE を記録。`password`, `password_confirmation` は `***` にマスク。
+`api/*` 全体を検証対象から外しません。外部 Webhook は署名などの専用認証を前提に除外します。`web` を使用しない Bearer API は Cookie の本人状態へ依存させません。独自クライアントが Cookie 認証 API を使う場合も CSRF トークンが必要です。
 
----
+FormRequest / HTTP 境界で型・範囲を検証し、業務側で所有者・状態・整合性を確認します。Blade の `{{ }}`、React の通常描画、`textContent` を優先し、HTML を許可する場合は専用の検査を通します。
 
-## 3. CSRF・ヘッダー
+## 機密情報と本番
 
-- **CSRF**: `ValidateCsrfToken` を `web` ミドルウェアに含め、管理画面・API（web グループ）のフォームは `@csrf` を付与。
-- **API v1**: トークン認証のため CSRF 免除（API ミドルウェアグループ）。トークンは推測困難な乱数で発行。
+`.env`、鍵・証明書、サービスアカウント JSON、Bearer・端末トークン、署名付きURLを Git・文書・ログへ残しません。監査ログのマスキングは新しい秘密項目を追加した際も確認します。外部エラーの詳細や内部パスはクライアントへ返しません。
 
----
+本番は HTTPS、`APP_ENV=production`、`APP_DEBUG=false` を使用し、Secure Cookie、公開ルート、ファイル権限を確認します。API トークンは期限・用途を限定し、紛失・担当変更時は失効させます。環境設定は [デプロイ](DEPLOY.md) に集約しています。
 
-## 4. データベース・機密情報
+## 回帰確認
 
-- **パスワード**: `AdminUser` は `Hash::make()` でハッシュ保存。`casts` で `'password' => 'hashed'` を指定。
-- **API トークン**: 平文は発行時のみ表示。DB には `hash('sha256', $token)` のみ保存。
-- **環境変数**: `.env` に API キー・DB パスワード等を記載。本番では `.env` をサーバー外に置き、権限を制限。
+| 対象 | 主なテスト |
+|---|---|
+| 未認証アクセス・会員・端末・決済境界 | `SecurityTest` / `SecurityBoundaryTest` |
+| 管理者 seed | `AdminSeederSecurityTest` |
+| 実際の CSRF 検証 | `ApiCsrfSecurityTest` |
+| 複数店舗の閲覧・操作・配信 | `MultiStoreTest` |
+| 店舗端末の認証・発行・失効 | `StoreAppAuthenticationTest` / `AdminSettingsTest` |
+| 特典取消と再実行 | `StampMilestoneRewardTest` など |
 
----
-
-## 5. 権限一覧（スタッフ用）
-
-`App\Models\AdminUserPermission::ALL_PERMISSIONS` で定義。システム管理者は「アカウント管理」でスタッフの権限をチェックボックスで付与・解除可能。  
-詳細は `docs/PERMISSIONS.md` を参照。
-
----
-
-## 6. セキュリティチェック（開発・CI）
-
-- **依存関係の脆弱性**: `make audit`（Docker 内で `composer audit`）を定期的に実行する。問題があれば報告に従いアップデートする。
-- **認証・認可のテスト**: `make test-security` で未認証アクセスがログインへリダイレクトされることを検証する（`tests/Feature/SecurityTest.php`）。
-- **本番デプロイ前**: 上記に加え、`make test` で全テストが通ることを確認する。
-
----
-
-## 7. 推奨運用
-
-- 本番では `APP_DEBUG=false`、`APP_ENV=production` にすること。
-- 管理画面は HTTPS で提供すること（`AppServiceProvider` で `URL::forceScheme('https')` を本番で有効化済み）。
-- API トークンは定期的にローテーションすること。無効化は「APIトークン」画面で revoke/rotate 可能。
-- 定期的に `make audit` と `make test-security` を実行し、依存関係と認証まわりを確認すること。
+実行方法は [開発手順](DEVELOPMENT.md) を参照します。依存関係は `composer audit` / `npm audit` で確認します。過去のレビューで問題がなかったことを、現在の安全性や本番設定の証明として扱いません。
