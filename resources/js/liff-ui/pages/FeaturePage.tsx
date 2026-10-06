@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { SearchX } from "lucide-react";
 import type { ReactNode } from "react";
 import { Navigate, useParams, useSearchParams } from "react-router-dom";

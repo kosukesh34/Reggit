@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { baseStyleObject, marginBottomStyle, mergeStyles } from './blockStyles';

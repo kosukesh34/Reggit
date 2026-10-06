@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useMemo, useState } from 'react';
 import { getMemberManager, type MemberPayload } from './api';
 

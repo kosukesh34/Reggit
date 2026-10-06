@@ -1,0 +1,1 @@
+import{t as e}from"./react-vendor-DhHIVdYt.js";var t=e();function n({children:e,className:n=``,padding:r=`md`,...i}){return(0,t.jsx)(`section`,{...i,className:`card card--${r} ${n}`.trim(),children:e})}export{n as t};

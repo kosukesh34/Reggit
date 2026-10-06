@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { ArrowRight, CloudOff, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";

@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DomHelper } from '../../../shared/utils/domHelper';
 import { ToastManager } from '../../../shared/utils/toast';

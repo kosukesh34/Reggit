@@ -1,0 +1,1 @@
+import{t as e}from"./date-vendor-DVr6sjC1.js";function t(t,n,r=`—`){let i=t?.trim()??``;if(i===``||i===`—`)return r;let a=new Date(i);return Number.isNaN(a.getTime())?i:e(a,n)}export{t};

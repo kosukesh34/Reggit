@@ -110,6 +110,7 @@ class EloquentReservationRepository implements ReservationRepository
         }
 
         // Use a current locking read even when the caller already has a transaction snapshot.
+        // @phpstan-ignore-next-line larastan.noUnnecessaryCollectionCall (Fetch rows to acquire locks before counting.)
         return $query->lockForUpdate()->get(['id'])->count();
     }
 
