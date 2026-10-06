@@ -6,6 +6,7 @@ use App\Enums\ExistingMemberLinkField;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Models\ExistingMemberLinkSetting;
 use App\Services\UserService;
+use App\UseCases\Member\ConfirmExistingMemberLinkUseCase;
 use App\UseCases\Member\RequestExistingMemberLinkUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -18,6 +19,7 @@ class ExistingMemberLinkController extends BaseApiController
     public function __construct(
         private UserService $userService,
         private RequestExistingMemberLinkUseCase $requestUseCase,
+        private ConfirmExistingMemberLinkUseCase $confirmUseCase,
     ) {}
 
     public function show(): JsonResponse
@@ -73,5 +75,25 @@ class ExistingMemberLinkController extends BaseApiController
         }
 
         return $this->success(['linked' => $result['linked']], $result['message']);
+    }
+
+    public function confirm(Request $request): JsonResponse
+    {
+        $data = $request->validate(['token' => ['required', 'string', 'size:48', 'alpha_num:ascii']]);
+        $user = $this->userService->findUser($request);
+        if ($user === null) {
+            return $this->error('ユーザーを特定できません。ログインし直してください。', 401);
+        }
+        try {
+            $this->confirmUseCase->handle($data['token'], $user);
+        } catch (InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            LogHelper::error('[Member] existing link confirmation failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+            return $this->error('既存会員連携に失敗しました', 500);
+        }
+
+        return $this->success(['linked' => true], '既存会員を連携しました');
     }
 }
