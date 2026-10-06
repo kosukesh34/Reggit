@@ -1,53 +1,182 @@
-.sd-choice-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+.scheduled-delivery-admin .andel-card {
+    padding: 16px 18px;
 }
 
-.sd-choice {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    padding: 12px 14px;
-    border: 1px solid #e2e8f0;
+.scheduled-delivery-admin .andel-card-head {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+}
+
+.scheduled-delivery-admin .andel-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.scheduled-delivery-admin .andel-card-head h2 {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.scheduled-delivery-admin .sd-legend {
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.scheduled-delivery-admin .ad-timing-choice {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    min-height: 44px;
+    padding: 8px 12px;
     border-radius: 10px;
-    background: #fff;
-    cursor: pointer;
 }
 
-.sd-choice.is-selected {
-    border-color: var(--primary, #2563eb);
-    background: var(--primary-bg, #eff6ff);
+.scheduled-delivery-admin .ad-timing-choice:hover {
+    transform: none;
 }
 
-.sd-choice input {
-    margin: 0;
+.scheduled-delivery-admin .ad-timing-choice:not(:has(.ad-choice-icon)) {
+    grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.sd-type-list {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+.scheduled-delivery-admin .ad-timing-choice strong {
+    font-size: 14px;
+    font-weight: 600;
 }
 
-.sd-type-list li {
-    padding: 6px 0;
+.scheduled-delivery-admin .ad-choice-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 13px;
 }
 
-.sd-type-list label {
-    display: flex;
+.scheduled-delivery-admin .sd-type-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 420px);
+    gap: 8px;
+}
+
+.scheduled-delivery-admin .form-label {
+    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.scheduled-delivery-admin .form-control {
+    min-height: 36px;
+    font-size: 14px;
+}
+
+.scheduled-delivery-admin .sd-params .form-control,
+.scheduled-delivery-admin .sd-clock .form-control {
+    max-width: 240px;
+    min-height: 36px;
+}
+
+.scheduled-delivery-admin textarea.form-control {
+    min-height: 88px;
+}
+
+.scheduled-delivery-admin .ad-pin-option {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    min-height: 44px;
+    padding: 8px 12px;
+}
+
+.scheduled-delivery-admin .ad-pin-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.scheduled-delivery-admin .ad-pin-option strong {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.scheduled-delivery-admin .sd-params {
+    display: grid;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.scheduled-delivery-admin .sd-params:not(:has(.sd-param:not(.is-hidden))) {
+    display: none;
+}
+
+.scheduled-delivery-admin .ad-choice-check {
+    width: auto;
+    height: auto;
+    padding: 2px 0;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.scheduled-delivery-admin .sd-params:has(.sd-param:not(.is-hidden)) {
+    display: grid;
+    grid-template-columns: minmax(0, 240px);
+    gap: 12px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--ad-line, #e5e8ef);
+    border-radius: 10px;
+    background: var(--ad-soft, #f7f8fb);
+}
+
+.scheduled-delivery-admin .sd-clock {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 8px;
-    margin: 0;
-    cursor: pointer;
+    max-width: 280px;
 }
 
-.sd-clock {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    max-width: 220px;
+.scheduled-delivery-admin .sd-clock .form-control {
+    min-height: 40px;
+}
+
+.scheduled-delivery-admin .sd-coupon-required {
+    display: none;
+}
+
+.scheduled-delivery-admin.is-coupon-only .sd-coupon-optional {
+    display: none;
+}
+
+.scheduled-delivery-admin.is-coupon-only .sd-coupon-required {
+    display: inline-flex;
+}
+
+.scheduled-delivery-admin #notifyFields:not(.is-hidden) {
+    display: contents;
+}
+
+.scheduled-delivery-admin .ad-option-grid {
+    grid-template-columns: 1fr 1fr;
+}
+
+.scheduled-delivery-admin .ad-pin-option {
+    position: relative;
+}
+
+.scheduled-delivery-admin .ad-pin-option:has(input[type="checkbox"]:checked) {
+    border-color: var(--ad-primary, var(--primary));
+    background: var(--ad-primary-soft, var(--primary-bg));
+}
+
+.scheduled-delivery-admin #scheduleTypeReservation {
+    margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+    .scheduled-delivery-admin .ad-option-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .sd-param.is-hidden,
@@ -57,4 +186,13 @@
 #notifyFields.is-hidden,
 #pushClockFields.is-hidden {
     display: none;
+}
+
+.scheduled-delivery-admin .ad-form-footer .btn {
+    min-height: 44px;
+}
+
+body[data-page-kind="scheduled-delivery-form"] .ad-header-submit:focus-visible {
+    outline: 3px solid var(--primary, var(--ad-primary));
+    outline-offset: 2px;
 }

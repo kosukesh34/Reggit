@@ -12,7 +12,6 @@ import type { AppCustomization } from '../liff-ui/types/customization';
 import './admin';
 import './couponForm';
 import './announcementDelivery';
-import './couponBulkIssue';
 import './scheduledDelivery';
 import './memberDetailHistory';
 import './memberLineQr';

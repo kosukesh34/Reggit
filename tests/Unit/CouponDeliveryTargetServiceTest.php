@@ -52,6 +52,34 @@ class CouponDeliveryTargetServiceTest extends TestCase
         $this->assertArrayNotHasKey('segment_min_amount', $params);
     }
 
+    public function test_resolve_予約の属性絞り込みは保存した条件のまま再解決すること(): void
+    {
+        $project = $this->createProject();
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $january = Member::factory()->create(['project_id' => $project->id, 'birthday' => '1990-01-10']);
+        $july = Member::factory()->create(['project_id' => $project->id, 'birthday' => '1990-07-10']);
+        Member::factory()->create(['project_id' => $project->id, 'birthday' => '1990-03-10']);
+        $delivery = CouponDelivery::create([
+            'project_id' => $project->id,
+            'coupon_id' => $coupon->id,
+            'delivery_type' => CouponDeliveryType::SCHEDULED_SEGMENT_ATTRIBUTES,
+            'status' => CouponDeliveryStatus::SCHEDULED,
+            'scheduled_at' => now()->addDay(),
+            'segment_criteria' => ['birthday_months' => [1, 7]],
+        ]);
+        $service = app(CouponDeliveryTargetService::class);
+
+        $resolved = $service->resolve(
+            $project->id,
+            CouponDeliveryType::SCHEDULED_SEGMENT_ATTRIBUTES,
+            $service->buildResolveParamsFromDelivery($delivery),
+        );
+
+        $this->assertNull($resolved['error']);
+        $this->assertEqualsCanonicalizing([$january->id, $july->id], $resolved['member_ids']);
+        $this->assertSame(['birthday_months' => [1, 7]], $resolved['segment_criteria']);
+    }
+
     public function test_handle_絞り込み即時配布で対象0人の場合は例外になること(): void
     {
         $project = $this->createProject();

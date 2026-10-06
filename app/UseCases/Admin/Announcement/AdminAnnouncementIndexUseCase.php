@@ -3,8 +3,10 @@
 namespace App\UseCases\Admin\Announcement;
 
 use App\Models\Announcement;
+use App\Models\MemberAudienceGroup;
 use App\Services\Admin\AnnouncementAdminService;
 use App\UseCases\Admin\Announcement\Data\AdminAnnouncementIndexOutput;
+use App\Util\AdminContext;
 
 class AdminAnnouncementIndexUseCase
 {
@@ -41,6 +43,10 @@ class AdminAnnouncementIndexUseCase
             $this->announcementAdminService->getDeliveryTypeCounts($filters),
             self::DELIVERY_TYPE_LABELS,
             self::DELIVERY_STATUS_LABELS,
+            MemberAudienceGroup::query()
+                ->where('project_id', AdminContext::resolveProjectId(null))
+                ->orderBy('name')
+                ->get(),
         );
     }
 }

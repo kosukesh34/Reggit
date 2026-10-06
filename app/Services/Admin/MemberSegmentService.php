@@ -4,6 +4,8 @@ namespace App\Services\Admin;
 
 use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
 use App\Enums\RfmSegment;
+use App\Enums\SegmentCombineMode;
+use App\Models\MemberAudienceGroup;
 use App\Support\MemberChannel;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -35,7 +37,7 @@ class MemberSegmentService
         $criteria = [];
 
         $matchMode = $input['segment_match_mode'] ?? null;
-        if (in_array($matchMode, ['all', 'any'], true)) {
+        if (in_array($matchMode, SegmentCombineMode::keys(), true)) {
             $criteria['match_mode'] = $matchMode;
         }
 
@@ -71,6 +73,9 @@ class MemberSegmentService
         $tagIds = $this->normalizeIntList($input['segment_tag_ids'] ?? $input['tag_ids'] ?? []);
         if ($tagIds !== []) {
             $criteria['tag_ids'] = $tagIds;
+            if ($this->listMode($input, 'tags') === SegmentCombineMode::ALL) {
+                $criteria['tag_ids_mode'] = SegmentCombineMode::ALL;
+            }
         }
 
         $visitMin = $input['segment_visit_count_min'] ?? $input['visit_count_min'] ?? null;
@@ -165,10 +170,18 @@ class MemberSegmentService
                 ->all();
             if ($values !== []) {
                 $profileFilters[(string) $key] = $values;
+                if ($this->profileListMode($input, (string) $key) === SegmentCombineMode::ALL) {
+                    $criteria['profile_modes'][(string) $key] = SegmentCombineMode::ALL;
+                }
             }
         }
         if ($profileFilters !== []) {
             $criteria['profile'] = $profileFilters;
+        }
+
+        $groupIds = $this->normalizeIntList($input['segment_audience_group_ids'] ?? []);
+        if ($groupIds !== []) {
+            $criteria['audience_group_ids'] = $groupIds;
         }
 
         return array_diff_key($criteria, ['operators' => true, 'match_mode' => true]) === [] ? null : $criteria;
@@ -195,17 +208,21 @@ class MemberSegmentService
         }
 
         if (isset($criteria['birthday_months']) && is_array($criteria['birthday_months'])) {
-            $birthdayIds = collect($criteria['birthday_months'])
-                ->flatMap(fn ($month) => $this->targetRepository->findIdsByBirthdayMonth($projectId, (int) $month))
-                ->map(fn ($id) => (int) $id)
-                ->unique()
-                ->values()
+            $birthdaySets = collect($criteria['birthday_months'])
+                ->map(fn ($month) => $this->targetRepository->findIdsByBirthdayMonth($projectId, (int) $month))
                 ->all();
-            $add('birthday', $birthdayIds);
+            $add('birthday', $this->combineIdSets($birthdaySets, SegmentCombineMode::ANY));
         }
 
         if (isset($criteria['tag_ids']) && is_array($criteria['tag_ids'])) {
-            $add('tags', $this->targetRepository->findIdsByTagIds($projectId, $criteria['tag_ids']));
+            if (SegmentCombineMode::fromInput($criteria['tag_ids_mode'] ?? null) === SegmentCombineMode::ALL) {
+                $tagSets = collect($criteria['tag_ids'])
+                    ->map(fn ($tagId) => $this->targetRepository->findIdsByTagIds($projectId, [(int) $tagId]))
+                    ->all();
+                $add('tags', $this->combineIdSets($tagSets, SegmentCombineMode::ALL));
+            } else {
+                $add('tags', $this->targetRepository->findIdsByTagIds($projectId, $criteria['tag_ids']));
+            }
         }
 
         $hasVisitMin = array_key_exists('visit_count_min', $criteria);
@@ -277,17 +294,28 @@ class MemberSegmentService
             }
         }
 
+        $profileModes = is_array($criteria['profile_modes'] ?? null) ? $criteria['profile_modes'] : [];
         foreach ((array) ($criteria['profile'] ?? []) as $key => $values) {
             if (is_array($values)) {
-                $add('profile_'.$key, $this->targetRepository->findIdsByProfileField($projectId, (string) $key, $values));
+                $add('profile_'.$key, $this->targetRepository->findIdsByProfileField(
+                    $projectId,
+                    (string) $key,
+                    $values,
+                    SegmentCombineMode::fromInput($profileModes[$key] ?? null) === SegmentCombineMode::ALL,
+                ));
             }
+        }
+
+        if (isset($criteria['audience_group_ids']) && is_array($criteria['audience_group_ids'])) {
+            $groupIds = collect($this->memberIdsForAudienceGroups($projectId, $criteria['audience_group_ids']));
+            $add('groups', $groupIds->all());
         }
 
         if ($sets === []) {
             return collect();
         }
 
-        $displayOrder = ['channel', 'birthday', 'sex', 'rfm', 'tags', 'visits', 'rank', 'points', 'last_visit', 'product', 'stamp', 'sales'];
+        $displayOrder = ['groups', 'channel', 'birthday', 'sex', 'rfm', 'tags', 'visits', 'rank', 'points', 'last_visit', 'product', 'stamp', 'sales'];
         usort($sets, static function (array $left, array $right) use ($displayOrder): int {
             $leftPosition = array_search($left['key'], $displayOrder, true);
             $rightPosition = array_search($right['key'], $displayOrder, true);
@@ -302,8 +330,8 @@ class MemberSegmentService
         $operators = is_array($criteria['operators'] ?? null) ? $criteria['operators'] : [];
         foreach ($sets as $set) {
             $operator = match ($criteria['match_mode'] ?? null) {
-                'any' => 'or',
-                'all' => 'and',
+                SegmentCombineMode::ANY => 'or',
+                SegmentCombineMode::ALL => 'and',
                 default => $operators[$set['key']] ?? 'and',
             };
             $resolved = $operator === 'or'
@@ -320,6 +348,72 @@ class MemberSegmentService
     public function countMembers(int $projectId, array $criteria): int
     {
         return $this->getMemberIds($projectId, $criteria)->count();
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    private function listMode(array $input, string $key): string
+    {
+        $modes = $input['segment_value_mode'] ?? [];
+
+        return SegmentCombineMode::fromInput(is_array($modes) ? ($modes[$key] ?? null) : null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    private function profileListMode(array $input, string $key): string
+    {
+        $modes = $input['segment_value_mode'] ?? [];
+        $profileModes = is_array($modes) && is_array($modes['profile'] ?? null) ? $modes['profile'] : [];
+
+        return SegmentCombineMode::fromInput($profileModes[$key] ?? null);
+    }
+
+    /**
+     * @param  list<list<int>>  $sets
+     * @return list<int>
+     */
+    private function combineIdSets(array $sets, string $mode): array
+    {
+        if ($sets === []) {
+            return [];
+        }
+        $resolved = array_map('intval', array_shift($sets));
+        foreach ($sets as $set) {
+            $ids = array_map('intval', $set);
+            $resolved = $mode === SegmentCombineMode::ALL
+                ? array_values(array_intersect($resolved, $ids))
+                : array_values(array_unique(array_merge($resolved, $ids)));
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * @param  list<int|string>  $groupIds
+     * @return list<int>
+     */
+    private function memberIdsForAudienceGroups(int $projectId, array $groupIds): array
+    {
+        $ids = [];
+        $groups = MemberAudienceGroup::query()
+            ->where('project_id', $projectId)
+            ->whereIn('id', $groupIds)
+            ->get();
+        foreach ($groups as $group) {
+            $criteria = is_array($group->criteria) ? $group->criteria : [];
+            unset($criteria['audience_group_ids']);
+            if ($criteria === []) {
+                continue;
+            }
+            foreach ($this->getMemberIds($projectId, $criteria) as $memberId) {
+                $ids[] = (int) $memberId;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**

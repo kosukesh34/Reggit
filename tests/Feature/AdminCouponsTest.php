@@ -7,6 +7,7 @@ use App\Enums\CouponCombineDivision;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Enums\OrderStatus;
+use App\Enums\SegmentCombineMode;
 use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\AdminUser;
 use App\Models\Coupon;
@@ -94,6 +95,7 @@ class AdminCouponsTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
+        Coupon::factory()->create(['project_id' => $project->id, 'name' => '配布テストクーポン']);
 
         $response = $this->actingAs($admin, 'admin')
             ->get(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]));
@@ -103,10 +105,15 @@ class AdminCouponsTest extends TestCase
             ->assertSee('条件で絞る')
             ->assertSee('予約配信')
             ->assertSee('RFMセグメント')
-            ->assertSee('ランクアップ達成')
+            ->assertSee('このランクへ昇格したときに自動で配布する')
             ->assertSee('累計スタンプ以上')
-            ->assertSee('最終来店')
-            ->assertSee('入力内容')
+            ->assertSee('最終来店からちょうどN日後')
+            ->assertSee('id="segmentAddCondition"', false)
+            ->assertSee('CSVから追加')
+            ->assertSee('class="ad-coupon-choice"', false)
+            ->assertSee('name="coupon_id"', false)
+            ->assertDontSee('id="delivery_coupon_id"', false)
+            ->assertDontSee('id="segmentGroupSave"', false)
             ->assertSee('クーポン発行時に通知を送る')
             ->assertDontSee('配布するクーポンを選ぶ')
             ->assertDontSee('同じ会員に1枚ずつ付与します')
@@ -681,7 +688,7 @@ class AdminCouponsTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]))
             ->assertOk()
-            ->assertSee('期限切れです');
+            ->assertSee('期限切れ');
 
         $this->actingAs($admin, 'admin')
             ->from(route('admin.coupons.bulk-issue', ['project_key' => $project->project_key]))
@@ -756,6 +763,40 @@ class AdminCouponsTest extends TestCase
         $this->assertSame(['never'], $delivery->segment_criteria['rfm_segments'] ?? null);
         $this->assertSame([$neverMember->id], $delivery->issued_member_ids);
         $this->assertNotContains($activeMember->id, $delivery->issued_member_ids ?? []);
+    }
+
+    public function test_bulk_issue_条件で絞るとプロフィールと組み合わせ指定を保存して配布すること(): void
+    {
+        Queue::fake();
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $both = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'profile_extra' => ['foods' => ['カレー', '焼肉']],
+        ]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'profile_extra' => ['foods' => ['カレー']],
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.bulk-issue.store', ['project_key' => $project->project_key]), [
+                'coupon_id' => $coupon->id,
+                'audience_type' => 'segment',
+                'delivery_timing' => 'immediate',
+                'segment_profile' => ['foods' => ['カレー', '焼肉']],
+                'segment_value_mode' => ['profile' => ['foods' => SegmentCombineMode::ALL]],
+                'segment_match_mode' => SegmentCombineMode::ALL,
+            ])
+            ->assertRedirect();
+
+        $delivery = CouponDelivery::where('coupon_id', $coupon->id)->firstOrFail();
+        $this->assertSame(CouponDeliveryType::IMMEDIATE_SEGMENT_ATTRIBUTES, $delivery->delivery_type);
+        $this->assertSame(['foods' => SegmentCombineMode::ALL], $delivery->segment_criteria['profile_modes'] ?? null);
+        $this->assertSame([$both->id], $delivery->issued_member_ids);
     }
 
     public function test_bulk_issue_通知オフなら発行通知ジョブを積まないこと(): void

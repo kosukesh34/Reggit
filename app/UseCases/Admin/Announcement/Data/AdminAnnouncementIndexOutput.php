@@ -2,7 +2,9 @@
 
 namespace App\UseCases\Admin\Announcement\Data;
 
+use App\Models\MemberAudienceGroup;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class AdminAnnouncementIndexOutput
 {
@@ -16,6 +18,7 @@ class AdminAnnouncementIndexOutput
      * @param  array<string, int>  $deliveryTypeCounts
      * @param  array<string, string>  $deliveryTypeLabels
      * @param  array<string, string>  $deliveryStatusLabels
+     * @param  Collection<int, MemberAudienceGroup>  $audienceGroups
      */
     public function __construct(
         public LengthAwarePaginator $announcements,
@@ -23,5 +26,6 @@ class AdminAnnouncementIndexOutput
         public array $deliveryTypeCounts,
         public array $deliveryTypeLabels,
         public array $deliveryStatusLabels,
+        public Collection $audienceGroups,
     ) {}
 }
