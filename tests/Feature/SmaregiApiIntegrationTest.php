@@ -68,7 +68,7 @@ class SmaregiApiIntegrationTest extends TestCase
             $this->markTestSkipped(
                 '.env に SMAREGI_CLIENT_ID と SMAREGI_CLIENT_SECRET を設定してください。'
                 .' Docker の場合はコンテナに .env がマウントされているか、または docker-compose の environment で渡しているか確認してください。'
-                .' CI では Repository secrets に同名を設定すると実接続テストが実行されます。詳細: docs/SMAREGI_SETUP.md'
+                .' CI では Repository secrets に同名を設定すると実接続テストが実行されます。詳細: docs/INTEGRATIONS.md'
             );
         }
 
@@ -80,7 +80,7 @@ class SmaregiApiIntegrationTest extends TestCase
         if ($this->contractId === null || $this->contractId === '') {
             $this->markTestSkipped(
                 '契約IDがありません。.env に SMAREGI_CONTRACT_ID（または SMAREGI_TEST_CONTRACT_ID）を設定するか、テスト用DBのプロジェクト1にスマレジ契約を紐付けてください。'
-                .' CI では Repository secrets に設定すると実接続テストが実行されます。詳細: docs/SMAREGI_SETUP.md'
+                .' CI では Repository secrets に設定すると実接続テストが実行されます。詳細: docs/INTEGRATIONS.md'
             );
         }
     }
