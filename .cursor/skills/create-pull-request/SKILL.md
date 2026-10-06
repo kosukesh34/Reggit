@@ -5,7 +5,7 @@ description: Reggit で変更をコミットし GitHub Pull Request を作成す
 
 # Reggit: Pull Request 作成スキル
 
-GitHub（`gh`）向け。手順の詳細は [docs/GITHUB_PULL_REQUEST_WORKFLOW.md](../../docs/GITHUB_PULL_REQUEST_WORKFLOW.md) を参照。
+GitHub（`gh`）向け。手順の詳細は [docs/DEVELOPMENT.md](../../../docs/DEVELOPMENT.md) を参照。
 
 ## 1. 認証確認
 
@@ -46,7 +46,7 @@ git merge-base HEAD origin/main
 git diff <merge-base> HEAD --name-only
 ```
 
-[docs/MR_AND_CODE_REVIEW_PROCEDURE.md](../../docs/MR_AND_CODE_REVIEW_PROCEDURE.md) の順序で確認し、問題があれば **修正を促す**（PR 作成前に直す）。
+[docs/DEVELOPMENT.md](../../../docs/DEVELOPMENT.md) の順序で確認し、問題があれば **修正を促す**（PR 作成前に直す）。
 
 1. **アーキテクチャ**: Controller→UseCase→Service、UseCase 連鎖なし、ビジネス依存の `new` なし、system-admin 等と同パターンか
 2. **デグレ**: ソート/順序/既存処理の削除が意図的か（意図的なら PR 本文に記載を促す）
@@ -54,7 +54,7 @@ git diff <merge-base> HEAD --name-only
 4. PHP: `docker compose exec app php artisan test <path>` を実行できるなら実行
 5. フロント: LIFF / 管理画面の確認手順を PR 本文に書く
 
-PR 分割時は **各 PR ごと** に上記 1–3 を繰り返す（§1.6 MR 手順書）。
+PR 分割時は **各 PR ごと** に上記 1–3 を繰り返す。
 
 ## 5. ブランチ・コミット・push
 
@@ -72,13 +72,7 @@ git push -u origin HEAD
 
 ## 6. PR 作成
 
-種別に応じた body テンプレート:
-
-| 種別 | ファイル |
-|------|----------|
-| バグ | `docs/pull_request_templates/bugfix.md` |
-| 機能 | `docs/pull_request_templates/feature.md` |
-| 改善 | `docs/pull_request_templates/improvement.md` |
+本文は [.github/PULL_REQUEST_TEMPLATE.md](../../../.github/PULL_REQUEST_TEMPLATE.md) に沿って記入します。
 
 ```bash
 gh pr create --base main --title "<プレフィックス>: <タイトル>" --body "$(cat <<'EOF'
@@ -94,7 +88,7 @@ EOF
 
 - PR URL をユーザーに返す
 - CI（Checks）の確認を促す
-- レビュー観点は [docs/MR_AND_CODE_REVIEW_PROCEDURE.md](../../docs/MR_AND_CODE_REVIEW_PROCEDURE.md) へ誘導
+- レビュー観点は [docs/DEVELOPMENT.md](../../../docs/DEVELOPMENT.md) へ誘導
 
 ## Reggit で避けること
 
