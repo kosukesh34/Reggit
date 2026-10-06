@@ -129,7 +129,7 @@
 | APP_DEBUG | **要変更** | 必ず `false` |
 | APP_URL | **要変更** | `https://reggit.jp` |
 | APP_API_BASE | そのまま可 | `/api` |
-| DEMO_SEED | 要変更推奨 | 本番では `false` が無難。デモ用なら `true` のまま |
+| DEMO_SEED | **false 必須** | 本番ではデモ管理者の seed を拒否します |
 | DEMO_SYSTEM_LOGIN_ID 〜 DEMO_STORE_NAME | そのまま可 or 省略可 | デモ用アカウントを使う場合のみ本番 .env に追加 |
 | LOG_CHANNEL | そのまま可 | `stack` |
 | LOG_LEVEL | 要変更推奨 | 本番は `error` や `warning`。デバッグ時は `debug` |
@@ -140,7 +140,7 @@
 | DB_USERNAME | **要変更** | Xserver の MySQL ユーザー名 |
 | DB_PASSWORD | **要変更** | Xserver の MySQL パスワード |
 | ADMIN_EMAIL | そのまま可 | 未設定なら login_id に使われる |
-| ADMIN_PASSWORD | **要変更推奨** | 本番では強めのパスワードに |
+| ADMIN_PASSWORD | **初回 seed 前に設定必須** | 固有の強いパスワードを設定。空値・旧既定値 `reserve` は拒否します |
 | ADMIN_NAME | そのまま可 | 任意 |
 | LINE_CHANNEL_ACCESS_TOKEN | そのまま可 | 本番用チャネルなら本番用トークンに差し替え |
 | LINE_CHANNEL_SECRET | そのまま可 | 同上 |
@@ -211,8 +211,8 @@ Xserver 上のプロジェクト直下 `.env` に、以下を設定する。
 
 | 名前 | 値（例） | 備考 |
 |------|----------|------|
-| ADMIN_EMAIL | reserve | 未設定時は login_id にこの値が使われる |
-| ADMIN_PASSWORD | reserve | 本番では強めのパスワードに変更 |
+| ADMIN_EMAIL | 空 | ADMIN_LOGIN_ID が空の場合の代替ログインID。どちらかの設定が必要 |
+| ADMIN_PASSWORD | 空 | 初回作成時に固有の値を設定。既存アカウントのパスワード・権限は seed で更新しません |
 | ADMIN_NAME | システムアドミン | 任意 |
 
 ※ ADMIN_LOGIN_ID を設定すると、login_id はその値になる（未設定なら ADMIN_EMAIL）。

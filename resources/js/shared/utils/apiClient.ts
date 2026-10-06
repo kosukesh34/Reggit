@@ -186,6 +186,15 @@ export class ApiClient {
             ...this.baseHeaders,
             ...headers,
         };
+        // Cookie-authenticated API requests require the page's session CSRF token.
+        // Keep it confined to this origin, including when an absolute URL is used.
+        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+            const requestUrl = new URL(endpoint, window.location.origin);
+            if (requestUrl.origin === window.location.origin) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (csrfToken) requestHeaders['X-CSRF-TOKEN'] = csrfToken;
+            }
+        }
         const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
         if (isFormData) {
             delete requestHeaders['Content-Type'];
