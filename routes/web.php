@@ -91,6 +91,7 @@ use App\Http\Controllers\LegalDocumentController;
 use App\Http\Controllers\LiffController;
 use App\Http\Controllers\LiffLegacyRedirectController;
 use App\Http\Controllers\Onboarding\OnboardingPageController;
+use App\Http\Controllers\Payment\PaymentCardController;
 use App\Http\Controllers\Payment\PaymentReturnController;
 use App\Http\Controllers\PointGrantOpenController;
 use App\Http\Controllers\Queue\QueueOpenController;
@@ -422,3 +423,6 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'admin.auth.sess
 });
 Route::get('/mobile/payment/return', PaymentReturnController::class)
     ->name('mobile.payment.return');
+
+Route::get('/mobile/payment/card/{order}', PaymentCardController::class)
+    ->whereNumber('order')->middleware(['signed', 'bind.project', 'throttle:60,1'])->name('mobile.payment.card');

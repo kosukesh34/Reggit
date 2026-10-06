@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { Component, type ErrorInfo, type ReactNode, useEffect, useMemo, useState } from "react";
 import { Crown, Info, Maximize2 } from "lucide-react";
 import { useAppConfig, isDesignShowcaseMode } from "../context/AppConfigContext";

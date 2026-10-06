@@ -21,7 +21,7 @@ class ProjectRfmSetting extends Model
 
     public static function forProject(int $projectId): self
     {
-        return static::find($projectId) ?? new static([
+        return static::find($projectId) ?? new self([
             'project_id' => $projectId,
             'recency_active_days' => 30,
             'recency_sleeping_days' => 90,

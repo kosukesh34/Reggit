@@ -6,7 +6,6 @@ use App\Models\AdminUser;
 use Database\Seeders\AdminUserSeeder;
 use Database\Seeders\DemoAdminUsersSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -28,10 +27,17 @@ class AdminSeederSecurityTest extends TestCase
     protected function tearDown(): void
     {
         foreach ($this->originalEnvironment as $name => $value) {
-            Env::getRepository()->clear($name);
-            if ($value !== null) {
-                Env::getRepository()->set($name, $value);
+            if ($value['env'] === null) {
+                unset($_ENV[$name]);
+            } else {
+                $_ENV[$name] = $value['env'];
             }
+            if ($value['server'] === null) {
+                unset($_SERVER[$name]);
+            } else {
+                $_SERVER[$name] = $value['server'];
+            }
+            putenv($value['process'] === false ? $name : $name.'='.$value['process']);
         }
         $this->app->instance('env', 'testing');
         parent::tearDown();
@@ -40,10 +46,16 @@ class AdminSeederSecurityTest extends TestCase
     private function setEnvironment(string $name, string $value): void
     {
         if (! array_key_exists($name, $this->originalEnvironment)) {
-            $this->originalEnvironment[$name] = Env::getRepository()->get($name);
+            $this->originalEnvironment[$name] = [
+                'env' => $_ENV[$name] ?? null,
+                'server' => $_SERVER[$name] ?? null,
+                'process' => getenv($name),
+            ];
         }
-        Env::getRepository()->clear($name);
-        Env::getRepository()->set($name, $value);
+        // Docker env_file values are external to Laravel's immutable dotenv repository.
+        $_ENV[$name] = $value;
+        $_SERVER[$name] = $value;
+        putenv($name.'='.$value);
     }
 
     public function test_missing_admin_login_id_is_rejected(): void
