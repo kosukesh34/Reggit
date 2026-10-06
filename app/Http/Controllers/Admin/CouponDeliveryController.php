@@ -59,8 +59,14 @@ class CouponDeliveryController extends AdminBaseController
 
     public function searchMembers(Request $request): JsonResponse
     {
+        $projectId = $this->resolveAdminProjectId();
+        $numbers = trim((string) $request->query('numbers', ''));
+        if ($numbers !== '') {
+            return response()->json($this->searchMembersUseCase->findByNumberList($projectId, $numbers));
+        }
+
         $members = $this->searchMembersUseCase->handle(
-            $this->resolveAdminProjectId(),
+            $projectId,
             (string) $request->query('q', ''),
         );
 

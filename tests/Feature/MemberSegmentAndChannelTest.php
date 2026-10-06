@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Enums\MemberVisitSource;
 use App\Enums\OrderStatus;
+use App\Enums\SegmentCombineMode;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
 use App\Models\Member;
+use App\Models\MemberAudienceGroup;
 use App\Models\MemberVisit;
 use App\Models\MemberVisitItem;
 use App\Models\Order;
@@ -227,6 +229,37 @@ class MemberSegmentAndChannelTest extends TestCase
         $this->assertSame([$member->id], $ids->all());
     }
 
+    public function test_member_segment_service_保存したグループを条件に追加できること(): void
+    {
+        $project = $this->createProject();
+        $service = app(MemberSegmentService::class);
+        $male = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'sex' => '1',
+            'birthday' => '1990-07-15',
+        ]);
+        Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'sex' => '2',
+            'birthday' => '1990-07-15',
+        ]);
+        $group = MemberAudienceGroup::query()->create([
+            'project_id' => $project->id,
+            'name' => '男性',
+            'criteria' => ['sex' => '1'],
+        ]);
+
+        $criteria = $service->buildCriteriaFromInput([
+            'segment_birthday_months' => [7],
+            'segment_audience_group_ids' => [$group->id],
+        ]);
+
+        $this->assertSame([$group->id], $criteria['audience_group_ids']);
+        $this->assertSame([$male->id], $service->getMemberIds($project->id, $criteria)->all());
+    }
+
     public function test_member_segment_service_項目ごとに_or結合できること(): void
     {
         $project = $this->createProject();
@@ -307,6 +340,53 @@ class MemberSegmentAndChannelTest extends TestCase
 
         $this->assertNotNull($criteria);
         $this->assertSame([$matching->id], $service->getMemberIds($project->id, $criteria)->all());
+    }
+
+    public function test_member_segment_service_複数選択は_andとorを切り替えられること(): void
+    {
+        $project = $this->createProject();
+        $service = app(MemberSegmentService::class);
+        $both = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'profile_extra' => ['foods' => ['カレー', '焼肉']],
+        ]);
+        $curryOnly = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'profile_extra' => ['foods' => ['カレー']],
+        ]);
+        $input = ['segment_profile' => ['foods' => ['カレー', '焼肉']]];
+
+        $or = $service->buildCriteriaFromInput($input + ['segment_value_mode' => ['profile' => ['foods' => SegmentCombineMode::ANY]]]);
+        $and = $service->buildCriteriaFromInput($input + ['segment_value_mode' => ['profile' => ['foods' => SegmentCombineMode::ALL]]]);
+
+        $this->assertEqualsCanonicalizing([$both->id, $curryOnly->id], $service->getMemberIds($project->id, $or)->all());
+        $this->assertSame([$both->id], $service->getMemberIds($project->id, $and)->all());
+    }
+
+    public function test_member_segment_service_1人1つの属性はすべて指定でもいずれかで絞り込むこと(): void
+    {
+        $project = $this->createProject();
+        $service = app(MemberSegmentService::class);
+        $july = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'birthday' => '1990-07-15',
+        ]);
+        $january = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'birthday' => '1990-01-01',
+        ]);
+
+        $criteria = $service->buildCriteriaFromInput([
+            'segment_birthday_months' => [1, 7],
+            'segment_value_mode' => ['birthday_months' => SegmentCombineMode::ALL, 'rfm' => SegmentCombineMode::ALL],
+        ]);
+
+        $this->assertSame(['birthday_months' => [1, 7]], $criteria);
+        $this->assertEqualsCanonicalizing([$july->id, $january->id], $service->getMemberIds($project->id, $criteria)->all());
     }
 
     public function test_lifetime_granted_points_付与で累計が増え絞り込みできること(): void

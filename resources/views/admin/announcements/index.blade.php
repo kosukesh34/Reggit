@@ -24,6 +24,12 @@
     </div>
 </div>
 
+<div class="settings-category-tabs" role="tablist" aria-label="お知らせの表示" data-announcement-tabs>
+    <button type="button" role="tab" id="announcement-tab-list" aria-controls="announcement-panel-list" aria-selected="true">配信一覧</button>
+    <button type="button" role="tab" id="announcement-tab-groups" aria-controls="announcement-panel-groups" aria-selected="false" tabindex="-1">配信グループ</button>
+</div>
+<div id="announcement-panel-list" role="tabpanel" aria-labelledby="announcement-tab-list" data-announcement-panel>
+
 <div class="card card-mb-16">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-search"></i> 検索・絞り込み</h3>
@@ -159,4 +165,77 @@
         @endif
     </div>
 </div>
+</div>
+
+<div id="announcement-panel-groups" role="tabpanel" aria-labelledby="announcement-tab-groups" data-announcement-panel hidden>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-layer-group"></i> 配信グループ</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">条件を保存したグループです。お知らせ配信の「条件で絞る」から、条件として追加できます。同じ名前で保存すると条件を上書きします。</p>
+            @if($view->audienceGroups->isEmpty())
+            <div class="empty-state">
+                <i class="fas fa-layer-group"></i>
+                <p>配信グループはまだありません</p>
+                <p class="empty-state-hint">「お知らせを配信」で条件を選び、「グループとして保存」してください</p>
+            </div>
+            @else
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>グループ名</th>
+                            <th>条件</th>
+                            <th class="table-actions-cell">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($view->audienceGroups as $group)
+                        <tr>
+                            <td><strong>{{ $group->name }}</strong></td>
+                            <td>{{ count(array_diff(array_keys(is_array($group->criteria) ? $group->criteria : []), ['operators', 'match_mode'])) }}件</td>
+                            <td class="table-actions-cell">
+                                <a href="{{ admin_route('admin.announcements.delivery.create') }}" class="btn btn-action btn-edit"><i class="fas fa-paper-plane"></i> 配信に使う</a>
+                                <form action="{{ admin_route('admin.announcements.audience-groups.destroy', ['id' => $group->id]) }}" method="POST" class="d-inline delete-form" onsubmit="return confirm('この配信グループを削除しますか？');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-action btn-danger no-loading"><i class="fas fa-trash"></i> 削除</button>
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const tablist = document.querySelector('[data-announcement-tabs]');
+    if (tablist === null) {
+        return;
+    }
+    const buttons = Array.from(tablist.querySelectorAll('[role="tab"]'));
+    const panels = Array.from(document.querySelectorAll('[data-announcement-panel]'));
+    const activate = (id) => {
+        buttons.forEach((button) => {
+            const selected = button.getAttribute('aria-controls') === id;
+            button.setAttribute('aria-selected', selected ? 'true' : 'false');
+            button.tabIndex = selected ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+            panel.hidden = panel.id !== id;
+        });
+    };
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => activate(button.getAttribute('aria-controls')));
+    });
+    if (window.location.hash === '#groups') {
+        activate('announcement-panel-groups');
+    }
+})();
+</script>
 @endsection

@@ -13,12 +13,14 @@ type DeliveryConfig = {
 
 type MemberSearchResult = {
     id: number;
+    display_identifier?: string;
     member_number?: string | null;
     name?: string | null;
 };
 
 type AudiencePreviewMember = {
     id: number;
+    display_identifier?: string;
     member_number: string;
     name: string;
     rank: string;
@@ -53,11 +55,184 @@ type NotificationChannelCounts = {
     opted_out: number;
 };
 
+type SegmentConditionOperator = '=' | '≥' | '≤' | 'いずれか' | 'すべて';
+
 type SegmentConditionChip = {
     label: string;
-    operator: '=' | '≥' | '≤' | 'いずれか';
+    operator: SegmentConditionOperator;
     value: string;
+    clear: () => void;
 };
+
+/** App\Enums\SegmentCombineMode と同じ値 */
+type SegmentCombineMode = 'any' | 'all';
+const SEGMENT_COMBINE_ANY: SegmentCombineMode = 'any';
+const SEGMENT_COMBINE_ALL: SegmentCombineMode = 'all';
+
+function readCombineMode(form: HTMLFormElement, modeName: string): SegmentCombineMode {
+    const selected = Array.from(form.querySelectorAll<HTMLInputElement>('input[type="radio"]'))
+        .find((input) => input.name === modeName && input.checked && !input.disabled);
+    return selected?.value === SEGMENT_COMBINE_ALL ? SEGMENT_COMBINE_ALL : SEGMENT_COMBINE_ANY;
+}
+
+function listOperator(selectedCount: number, mode: SegmentCombineMode = SEGMENT_COMBINE_ANY): SegmentConditionOperator {
+    if (selectedCount < 2) return '=';
+    return mode === SEGMENT_COMBINE_ALL ? 'すべて' : 'いずれか';
+}
+
+function conditionSentence(label: string, operator: SegmentConditionOperator, value: string): string {
+    if (operator === 'すべて') return `${label}は ${value} のすべてを選択`;
+    if (operator === 'いずれか') return `${label}は ${value} のいずれかを選択`;
+    if (operator === '≥') return `${label}は ${value}以上`;
+    if (operator === '≤') return `${label}は ${value}以下`;
+    return `${label}は ${value}`;
+}
+
+function conditionItemHasValue(item: HTMLElement): boolean {
+    const controls = item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea');
+    for (const control of controls) {
+        if (control.dataset.ignoreEmpty === '1') continue;
+        const hiddenAncestor = control.closest('[hidden]');
+        if (hiddenAncestor !== null && hiddenAncestor !== item) continue;
+        if (control instanceof HTMLInputElement && (control.type === 'radio' || control.type === 'checkbox')) {
+            if (control.checked && control.value !== '') return true;
+            continue;
+        }
+        if (control.value.trim() !== '') return true;
+    }
+    return false;
+}
+
+function clearConditionItem(item: HTMLElement): void {
+    item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea').forEach((control) => {
+        if (control.dataset.ignoreEmpty === '1') return;
+        if (control instanceof HTMLInputElement && (control.type === 'checkbox' || control.type === 'radio')) {
+            control.checked = control.type === 'radio' && (control.value === '' || control.value === SEGMENT_COMBINE_ANY);
+            return;
+        }
+        control.value = '';
+    });
+}
+
+function syncConditionPicker(form: HTMLFormElement): void {
+    form.querySelectorAll<HTMLElement>('#segmentConditionPool [data-condition]').forEach((item) => {
+        item.hidden = true;
+    });
+}
+
+function bindConditionPicker(form: HTMLFormElement): void {
+    const list = form.querySelector<HTMLElement>('#segmentConditionRows');
+    const template = form.querySelector<HTMLTemplateElement>('#segmentConditionRowTemplate');
+    const pool = form.querySelector<HTMLElement>('#segmentConditionPool');
+    const addButton = form.querySelector<HTMLButtonElement>('#segmentAddCondition');
+    const menu = form.querySelector<HTMLElement>('#segmentConditionMenu');
+    if (list === null || template === null || pool === null || addButton === null || menu === null || addButton.dataset.bound === '1') return;
+    addButton.dataset.bound = '1';
+
+    const groupButtons = Array.from(menu.querySelectorAll<HTMLButtonElement>('[data-menu-group]'));
+    const fieldButtons = Array.from(menu.querySelectorAll<HTMLButtonElement>('[data-menu-field]'));
+    const visibleFields = (): HTMLButtonElement[] => fieldButtons.filter((button) => button.parentElement?.hidden !== true && !button.disabled);
+    const activeGroup = (): HTMLButtonElement | undefined => groupButtons.find((button) => button.getAttribute('aria-pressed') === 'true');
+
+    const showGroup = (group: string): void => {
+        const used = new Set(Array.from(list.querySelectorAll<HTMLElement>('[data-condition]')).map((item) => item.dataset.condition));
+        groupButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.menuGroup === group)));
+        fieldButtons.forEach((button) => {
+            if (button.parentElement) button.parentElement.hidden = button.dataset.group !== group;
+            button.disabled = used.has(button.dataset.menuField);
+        });
+    };
+
+    const closeMenu = (restoreFocus: boolean): void => {
+        menu.hidden = true;
+        addButton.setAttribute('aria-expanded', 'false');
+        if (restoreFocus) addButton.focus();
+    };
+
+    const openMenu = (): void => {
+        menu.hidden = false;
+        addButton.setAttribute('aria-expanded', 'true');
+        showGroup(groupButtons[0]?.dataset.menuGroup ?? '');
+        groupButtons[0]?.focus();
+    };
+
+    const addCard = (key: string, focus: boolean): void => {
+        const item = pool.querySelector<HTMLElement>(`[data-condition="${CSS.escape(key)}"]`);
+        const fieldButton = fieldButtons.find((button) => button.dataset.menuField === key);
+        const card = template.content.firstElementChild?.cloneNode(true);
+        if (item === null || fieldButton === undefined || !(card instanceof HTMLElement)) return;
+        const title = fieldButton.textContent?.trim() ?? '';
+        const groupLabel = groupButtons.find((button) => button.dataset.menuGroup === fieldButton.dataset.group)?.textContent?.trim() ?? '';
+        const groupElement = card.querySelector<HTMLElement>('.ad-cond-card-group');
+        const titleElement = card.querySelector<HTMLElement>('.ad-cond-card-title');
+        const remove = card.querySelector<HTMLButtonElement>('.ad-cond-card-remove');
+        const body = card.querySelector<HTMLElement>('.ad-cond-card-body');
+        if (groupElement) groupElement.textContent = groupLabel;
+        if (titleElement) titleElement.textContent = title;
+        remove?.setAttribute('aria-label', `${title}の条件を外す`);
+        remove?.addEventListener('click', () => {
+            clearConditionItem(item);
+            item.hidden = true;
+            pool.appendChild(item);
+            card.remove();
+            item.querySelector<HTMLElement>('.segment-filter')?.dispatchEvent(new Event('change', { bubbles: true }));
+            addButton.focus();
+        });
+        item.hidden = false;
+        body?.appendChild(item);
+        list.appendChild(card);
+        if (focus) item.querySelector<HTMLElement>('input, select, textarea')?.focus();
+    };
+
+    addButton.addEventListener('click', () => {
+        if (menu.hidden) openMenu();
+        else closeMenu(false);
+    });
+    groupButtons.forEach((button) => {
+        const select = (): void => showGroup(button.dataset.menuGroup ?? '');
+        button.addEventListener('click', select);
+        button.addEventListener('mouseenter', select);
+        button.addEventListener('focus', select);
+        button.addEventListener('keydown', (event) => {
+            if (event.key !== 'ArrowRight') return;
+            event.preventDefault();
+            visibleFields()[0]?.focus();
+        });
+    });
+    fieldButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            closeMenu(false);
+            addCard(button.dataset.menuField ?? '', true);
+        });
+        button.addEventListener('keydown', (event) => {
+            if (event.key !== 'ArrowLeft') return;
+            event.preventDefault();
+            activeGroup()?.focus();
+        });
+    });
+    menu.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeMenu(true);
+            return;
+        }
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+        const current = document.activeElement;
+        const column = current instanceof HTMLButtonElement && current.dataset.menuGroup !== undefined ? groupButtons : visibleFields();
+        const index = column.findIndex((button) => button === current);
+        if (index === -1) return;
+        event.preventDefault();
+        column[(index + (event.key === 'ArrowDown' ? 1 : -1) + column.length) % column.length]?.focus();
+    });
+    document.addEventListener('click', (event) => {
+        if (menu.hidden || !(event.target instanceof Node)) return;
+        if (!menu.contains(event.target) && !addButton.contains(event.target)) closeMenu(false);
+    });
+
+    Array.from(pool.querySelectorAll<HTMLElement>('[data-condition]'))
+        .filter((item) => conditionItemHasValue(item))
+        .forEach((item) => addCard(item.dataset.condition ?? '', false));
+}
 
 function initAnnouncementDelivery(): void {
     const pageKind = document.body.dataset.pageKind;
@@ -103,6 +278,7 @@ function initAnnouncementDelivery(): void {
     const couponPanel = field<HTMLElement>('couponPanel');
     const couponSelect = field<HTMLSelectElement>('delivery_coupon_id');
     const selectedCouponPreview = field<HTMLElement>('selectedCouponPreview');
+    const couponChecks = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="delivery_coupon_ids[]"], input[name="coupon_id"]'));
     const searchInput = field<HTMLInputElement>('memberSearch');
     const searchResults = field<HTMLElement>('memberSearchResults');
     const selectedMembersElement = field<HTMLElement>('selectedMembers');
@@ -209,67 +385,129 @@ function initAnnouncementDelivery(): void {
             .filter((value) => value !== '');
     }
 
+    function notifyCleared(control: HTMLElement | undefined): void {
+        control?.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function clearNamed(name: string): void {
+        const inputs = Array.from(form.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`));
+        inputs.forEach((input) => { input.checked = false; });
+        notifyCleared(inputs[0]);
+    }
+
+    function clearIds(ids: string[]): void {
+        const controls = ids
+            .map((id) => field<HTMLInputElement | HTMLSelectElement>(id))
+            .filter((control): control is HTMLInputElement | HTMLSelectElement => control !== null);
+        controls.forEach((control) => {
+            if (control instanceof HTMLInputElement && control.type === 'checkbox') {
+                control.checked = false;
+            } else {
+                control.value = '';
+            }
+        });
+        notifyCleared(controls[0]);
+    }
+
+    function clearSalesCondition(): void {
+        const empty = form.querySelector<HTMLInputElement>('input[name="segment_condition"][value=""]');
+        if (empty === null) return;
+        empty.checked = true;
+        notifyCleared(empty);
+    }
+
+    function checksByName(name: string): HTMLInputElement[] {
+        return Array.from(form.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))
+            .filter((input) => input.name === name);
+    }
+
+    function syncValueModes(): void {
+        form.querySelectorAll<HTMLElement>('[data-value-mode]').forEach((block) => {
+            const checkedCount = checksByName(block.dataset.valueMode ?? '').filter((input) => input.checked).length;
+            const visible = checkedCount >= 2;
+            block.hidden = !visible;
+            block.querySelectorAll<HTMLInputElement>('input').forEach((input) => {
+                input.disabled = !visible;
+            });
+        });
+    }
+
     function segmentConditionChips(): SegmentConditionChip[] {
         const chips: SegmentConditionChip[] = [];
-        const add = (label: string, operator: SegmentConditionChip['operator'], value: string): void => {
-            if (value !== '') chips.push({ label, operator, value });
+        const add = (label: string, operator: SegmentConditionChip['operator'], value: string, clear: () => void): void => {
+            if (value !== '') chips.push({ label, operator, value, clear });
         };
 
-        add('登録チャネル', '=', selectedOptionText('segment_channel'));
+        const groupLabels = checkedOptionLabels('segment_audience_group_ids[]');
+        add('保存したグループ', listOperator(groupLabels.length), groupLabels.join('、'), () => clearNamed('segment_audience_group_ids[]'));
+        add('登録チャネル', '=', selectedOptionText('segment_channel'), () => clearIds(['segment_channel']));
         const birthdayMonths = checkedValues('segment_birthday_months[]').map((month) => `${month}月`);
-        add('誕生月', 'いずれか', birthdayMonths.join('・'));
-        add('性別', '=', selectedOptionText('segment_sex'));
-        add('RFMセグメント', 'いずれか', checkedOptionLabels('segment_rfm_segments[]').join('・'));
-        add('会員タグ', 'いずれか', checkedOptionLabels('segment_tag_ids[]').join('・'));
+        add('誕生月', listOperator(birthdayMonths.length), birthdayMonths.join('、'), () => clearNamed('segment_birthday_months[]'));
+        add('性別', '=', selectedOptionText('segment_sex'), () => clearIds(['segment_sex']));
+        const rfmLabels = checkedOptionLabels('segment_rfm_segments[]');
+        add('RFMセグメント', listOperator(rfmLabels.length), rfmLabels.join('、'), () => clearNamed('segment_rfm_segments[]'));
+        const tagLabels = checkedOptionLabels('segment_tag_ids[]');
+        add('会員タグ', listOperator(tagLabels.length, readCombineMode(form, 'segment_value_mode[tags]')), tagLabels.join('、'), () => clearNamed('segment_tag_ids[]'));
 
         const visitMin = fieldValue('segment_visit_count_min');
         const visitMax = fieldValue('segment_visit_count_max');
         add('来店回数', '=', visitMin !== '' && visitMax !== ''
             ? `${formattedNumber(visitMin)}〜${formattedNumber(visitMax)}回`
-            : visitMin !== '' ? `${formattedNumber(visitMin)}回以上` : visitMax !== '' ? `${formattedNumber(visitMax)}回以下` : '');
+            : visitMin !== '' ? `${formattedNumber(visitMin)}回以上` : visitMax !== '' ? `${formattedNumber(visitMax)}回以下` : '', () => clearIds(['segment_visit_count_min', 'segment_visit_count_max']));
 
-        add('会員ランク', '=', fieldValue('segment_rank'));
+        add('会員ランク', '=', fieldValue('segment_rank'), () => clearIds(['segment_rank']));
         const pointsMin = fieldValue('segment_lifetime_points_min');
         const pointsMax = fieldValue('segment_lifetime_points_max');
         add('累計付与ポイント', '=', pointsMin !== '' && pointsMax !== ''
             ? `${formattedNumber(pointsMin)}〜${formattedNumber(pointsMax)}pt`
-            : pointsMin !== '' ? `${formattedNumber(pointsMin)}pt以上` : pointsMax !== '' ? `${formattedNumber(pointsMax)}pt以下` : '');
+            : pointsMin !== '' ? `${formattedNumber(pointsMin)}pt以上` : pointsMax !== '' ? `${formattedNumber(pointsMax)}pt以下` : '', () => clearIds(['segment_lifetime_points_min', 'segment_lifetime_points_max']));
 
         const lastVisitMode = fieldValue('segment_last_visit_mode');
         const lastVisitDays = fieldValue('segment_last_visit_days');
+        const clearLastVisit = (): void => clearIds(['segment_last_visit_mode']);
         if (lastVisitMode === 'inactive_days' && lastVisitDays !== '') {
-            add('最終来店', '=', `${formattedNumber(lastVisitDays)}日以上来店なし`);
+            add('最終来店', '=', `${formattedNumber(lastVisitDays)}日以上来店なし`, clearLastVisit);
         } else if (lastVisitMode === 'visited_within_days' && lastVisitDays !== '') {
-            add('最終来店', '=', `${formattedNumber(lastVisitDays)}日以内に来店あり`);
+            add('最終来店', '=', `${formattedNumber(lastVisitDays)}日以内に来店あり`, clearLastVisit);
         } else if (lastVisitMode === 'days_after' && lastVisitDays !== '') {
-            add('最終来店', '=', `${formattedNumber(lastVisitDays)}日後`);
+            add('最終来店', '=', `${formattedNumber(lastVisitDays)}日後`, clearLastVisit);
         }
 
-        add('購入商品', '=', selectedOptionText('segment_product_id'));
+        add('購入商品', '=', selectedOptionText('segment_product_id'), () => clearIds(['segment_product_id']));
         if (field<HTMLInputElement>('event_rank_up')?.checked === true) {
-            add('ランクアップ達成', '=', fieldValue('segment_rank') || '対象ランクを指定');
+            add('ランクアップ達成', '=', fieldValue('segment_rank') || '対象ランクを指定', () => clearIds(['event_rank_up', 'segment_rank']));
         }
-        add('スタンプカード', '=', selectedOptionText('stamp_card_id'));
+        add('スタンプカード', '=', selectedOptionText('stamp_card_id'), () => clearIds(['stamp_card_id']));
         const stampMin = fieldValue('stamp_count_min');
-        add('スタンプ累計', '≥', stampMin === '' ? '' : `${formattedNumber(stampMin)}個`);
+        add('スタンプ累計', '≥', stampMin === '' ? '' : `${formattedNumber(stampMin)}個`, () => clearIds(['stamp_count_min']));
         if (field<HTMLInputElement>('stamp_completed')?.checked === true) {
-            add('スタンプ', '=', '達成済み');
+            add('スタンプ', '=', '達成済み', () => clearIds(['stamp_completed']));
         }
 
         const salesCondition = document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '';
         const period = selectedOptionText('segment_period_days');
         if (salesCondition === 'min_amount') {
             const minAmount = fieldValue('segment_min_amount');
-            add(`購入額（${period}）`, '≥', minAmount === '' ? '' : `${formattedNumber(minAmount)}円`);
+            add(`購入額（${period}）`, '≥', minAmount === '' ? '' : `${formattedNumber(minAmount)}円`, clearSalesCondition);
         } else if (salesCondition === 'no_orders') {
-            add(`購入履歴（${period}）`, '=', 'なし');
+            add(`購入履歴（${period}）`, '=', 'なし', clearSalesCondition);
         }
 
         form.querySelectorAll<HTMLElement>('.ad-profile-filter').forEach((group) => {
-            const values = Array.from(group.querySelectorAll<HTMLInputElement>('[name^="segment_profile["]'))
+            const inputs = Array.from(group.querySelectorAll<HTMLInputElement>('[name^="segment_profile["]'));
+            const values = inputs
                 .filter((input) => input.type !== 'checkbox' || input.checked)
                 .map((input) => input.value.trim()).filter(Boolean);
-            add(group.dataset.profileLabel || 'プロフィール', 'いずれか', values.join('・'));
+            const modeName = `segment_value_mode[profile][${group.dataset.profileKey || ''}]`;
+            const selectedCount = inputs.filter((input) => input.type === 'checkbox' && input.checked).length;
+            const profileOperator = listOperator(selectedCount, readCombineMode(form, modeName));
+            add(group.dataset.profileLabel || 'プロフィール', profileOperator, values.join('、'), () => {
+                inputs.forEach((input) => {
+                    if (input.type === 'checkbox') input.checked = false;
+                    else input.value = '';
+                });
+                notifyCleared(inputs[0]);
+            });
         });
 
         return chips;
@@ -281,37 +519,30 @@ function initAnnouncementDelivery(): void {
         if (!block || !container) return;
 
         const isSegment = selectedAudienceType() === 'segment';
-        block.hidden = !isSegment;
+        const chips = isSegment ? segmentConditionChips() : [];
+        const matchMode = field<HTMLElement>('segmentMatchMode');
+        const groupSave = field<HTMLElement>('segmentGroupSave');
+        block.hidden = !isSegment || chips.length === 0;
+        if (matchMode) matchMode.hidden = chips.length < 2;
+        syncValueModes();
+        syncConditionPicker(form);
+        if (groupSave && groupSave.dataset.keepOpen !== '1') groupSave.hidden = chips.length === 0;
         container.replaceChildren();
-        if (!isSegment) return;
-
-        const chips = segmentConditionChips();
-        if (chips.length === 0) {
-            const empty = document.createElement('span');
-            empty.className = 'ad-condition-empty';
-            empty.textContent = '条件を1つ以上選択してください';
-            container.appendChild(empty);
-            return;
-        }
-
-        const matchMode = form.querySelector<HTMLInputElement>('input[name="segment_match_mode"]:checked')?.value;
-        const mode = document.createElement('strong');
-        mode.className = 'ad-condition-match-mode';
-        mode.textContent = matchMode === 'any' ? '項目間：OR' : '項目間：AND';
-        container.appendChild(mode);
+        if (!isSegment || chips.length === 0) return;
 
         chips.forEach((condition) => {
-            const chip = document.createElement('span');
+            const chip = document.createElement('div');
             chip.className = 'ad-condition-chip';
-            const label = document.createElement('span');
-            label.className = 'ad-condition-label';
-            label.textContent = condition.label;
-            const operator = document.createElement('span');
-            operator.className = 'ad-condition-operator';
-            operator.textContent = condition.operator;
-            const value = document.createElement('strong');
-            value.textContent = condition.value;
-            chip.append(label, operator, value);
+            const text = document.createElement('span');
+            text.className = 'ad-condition-text';
+            text.textContent = conditionSentence(condition.label, condition.operator, condition.value);
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'ad-condition-remove';
+            remove.textContent = '×';
+            remove.setAttribute('aria-label', `${condition.label}の条件を削除`);
+            remove.addEventListener('click', () => condition.clear());
+            chip.append(text, remove);
             container.appendChild(chip);
         });
     }
@@ -347,16 +578,30 @@ function initAnnouncementDelivery(): void {
 
     function couponOptions(): HTMLOptionElement[] {
         const attached = isCouponDelivery || couponToggle?.checked === true;
-        if (!couponSelect || !attached) return [];
-        return Array.from(couponSelect.selectedOptions);
+        if (!attached) return [];
+        if (couponChecks.length > 0) {
+            return couponChecks.filter((input) => input.checked).map((input) => {
+                const option = document.createElement('option');
+                option.value = input.value;
+                option.textContent = input.dataset.name || input.value;
+                option.dataset.benefit = input.dataset.benefit || '';
+                option.dataset.period = input.dataset.period || '';
+                return option;
+            });
+        }
+        if (!couponSelect) return [];
+        return Array.from(couponSelect.selectedOptions).filter((option) => option.value !== '');
     }
 
     function syncCoupon(): void {
         const enabled = isCouponDelivery || couponToggle?.checked === true;
         if (couponPanel) couponPanel.hidden = !enabled;
+        couponChecks.forEach((input) => {
+            input.disabled = input.dataset.expired === '1' || !enabled;
+        });
         if (couponSelect) {
             couponSelect.disabled = !enabled;
-            couponSelect.required = enabled;
+            couponSelect.required = enabled && couponChecks.length === 0;
         }
 
         const options = couponOptions();
@@ -364,10 +609,10 @@ function initAnnouncementDelivery(): void {
 
         if (options.length > 0) {
             const names = options.map((option) => option.textContent?.trim() || '選択したクーポン');
-            setText('selectedCouponName', couponSelect?.multiple ? `${options.length}件のクーポン` : names[0]);
-            setText('selectedCouponBenefit', couponSelect?.multiple ? names.join('・') : (options[0].dataset.benefit || ''));
+            setText('selectedCouponName', names.length > 1 ? `${names.length}件のクーポン` : names[0]);
+            setText('selectedCouponBenefit', names.length > 1 ? names.join('、') : (options[0].dataset.benefit || ''));
             setText('selectedCouponPeriod', options[0].dataset.period || '');
-            setText('deliverySummaryCoupon', names.join('・'));
+            setText('deliverySummaryCoupon', names.join('、'));
         } else {
             setText('deliverySummaryCoupon', enabled ? 'クーポンを選択' : '配布しない');
         }
@@ -551,7 +796,7 @@ function initAnnouncementDelivery(): void {
         } else {
             available.forEach((member) => {
                 const name = member.name?.trim() || '名前未登録';
-                const number = member.member_number?.trim() || `会員ID: ${member.id}`;
+                const number = (member.display_identifier ?? member.member_number)?.trim() || `会員ID: ${member.id}`;
                 const button = document.createElement('button');
                 button.type = 'button';
                 button.className = 'ad-member-result';
@@ -608,6 +853,10 @@ function initAnnouncementDelivery(): void {
         checkedValues('segment_birthday_months[]').forEach((value) => params.append('segment_birthday_months[]', value));
         checkedValues('segment_tag_ids[]').forEach((value) => params.append('segment_tag_ids[]', value));
         checkedValues('segment_rfm_segments[]').forEach((value) => params.append('segment_rfm_segments[]', value));
+        checkedValues('segment_audience_group_ids[]').forEach((value) => params.append('segment_audience_group_ids[]', value));
+        form.querySelectorAll<HTMLInputElement>('input[name^="segment_value_mode["]').forEach((input) => {
+            if (input.checked && !input.disabled) params.append(input.name, input.value);
+        });
         const matchMode = form.querySelector<HTMLInputElement>('input[name="segment_match_mode"]:checked');
         if (matchMode && !matchMode.disabled) params.set('segment_match_mode', matchMode.value);
         const condition = document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '';
@@ -681,7 +930,7 @@ function initAnnouncementDelivery(): void {
             tagsCell.appendChild(tags);
 
             const numberCell = document.createElement('td');
-            numberCell.textContent = member.member_number;
+            numberCell.textContent = (member.display_identifier ?? member.member_number);
             const sendableCell = document.createElement('td');
             const sendable = document.createElement('span');
             sendable.className = `ad-sendability ${member.notification_sendable ? 'is-sendable' : 'is-blocked'}`;
@@ -728,7 +977,7 @@ function initAnnouncementDelivery(): void {
         if (!memberDetailModal) return;
         setText('audienceMemberDetailAvatar', member.name.slice(0, 1) || '—');
         setText('audienceMemberDetailTitle', member.name);
-        setText('audienceMemberDetailNumber', member.member_number);
+        setText('audienceMemberDetailNumber', (member.display_identifier ?? member.member_number));
         setText('audienceMemberDetailSendable', member.notification_sendable ? '今回の通知を送信できます' : '今回は通知を送信しません');
         setText('audienceMemberDetailReason', member.notification_reason);
         setText('audienceMemberDetailPreference', member.notification_preference_label);
@@ -836,6 +1085,7 @@ function initAnnouncementDelivery(): void {
             || checkedValues('segment_birthday_months[]').length > 0
             || checkedValues('segment_tag_ids[]').length > 0
             || checkedValues('segment_rfm_segments[]').length > 0
+            || checkedValues('segment_audience_group_ids[]').length > 0
             || (document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '') !== ''
             || field<HTMLInputElement>('event_rank_up')?.checked === true
             || (field<HTMLInputElement | HTMLSelectElement>('stamp_card_id')?.value || '').trim() !== ''
@@ -889,7 +1139,9 @@ function initAnnouncementDelivery(): void {
         reviewConditions.replaceChildren();
         if (!show || !summaryConditions) return;
         Array.from(summaryConditions.children).forEach((chip) => {
-            reviewConditions.appendChild(chip.cloneNode(true));
+            const copy = chip.cloneNode(true) as HTMLElement;
+            copy.querySelector('.ad-condition-remove')?.remove();
+            reviewConditions.appendChild(copy);
         });
     }
 
@@ -972,6 +1224,58 @@ function initAnnouncementDelivery(): void {
         control.addEventListener('input', sync);
     });
 
+    const memberCsv = field<HTMLInputElement>('memberCsv');
+    const memberCsvMessage = field<HTMLElement>('memberCsvMessage');
+    memberCsv?.addEventListener('change', () => {
+        const file = memberCsv.files?.[0];
+        memberCsv.value = '';
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async () => {
+            const lines = String(reader.result || '').split(/\r?\n/).map((line) => line.trim()).filter((line) => line !== '');
+            const numbers = Array.from(new Set(lines.map((line, index) => {
+                const cell = (line.split(',')[0] || '').trim().replace(/^"|"$/g, '');
+                if (index === 0 && (cell === '会員番号' || cell === '会員ID' || cell.toLowerCase() === 'member_number' || cell.toLowerCase() === 'id')) return '';
+                return cell;
+            }).filter((number) => number !== '')));
+            if (numbers.length === 0) {
+                if (memberCsvMessage) {
+                    memberCsvMessage.hidden = false;
+                    memberCsvMessage.textContent = `${document.body.dataset.memberIdentifierLabel || '会員番号'}が見つかりませんでした。`;
+                }
+                return;
+            }
+            try {
+                const response = await fetch(`${config.membersUrl}?numbers=${encodeURIComponent(numbers.join(','))}`, {
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!response.ok) throw new Error('csv import failed');
+                const payload = await response.json() as { data?: MemberSearchResult[]; missing?: string[] };
+                (payload.data || []).forEach((member) => {
+                    const name = member.name?.trim() || '名前未登録';
+                    const number = (member.display_identifier ?? member.member_number)?.trim() || `会員ID: ${member.id}`;
+                    selectedMembers.set(Number(member.id), `${name}（${number}）`);
+                });
+                renderSelectedMembers();
+                updateAudiencePreview(1);
+                if (memberCsvMessage) {
+                    const missing = payload.missing || [];
+                    memberCsvMessage.hidden = false;
+                    memberCsvMessage.textContent = missing.length === 0
+                        ? `${(payload.data || []).length}人を追加しました。`
+                        : `${(payload.data || []).length}人を追加しました。見つからない${document.body.dataset.memberIdentifierLabel || '会員番号'}: ${missing.join('、')}`;
+                }
+            } catch {
+                if (memberCsvMessage) {
+                    memberCsvMessage.hidden = false;
+                    memberCsvMessage.textContent = 'CSVの読み込みに失敗しました。';
+                }
+            }
+        };
+        reader.readAsText(file);
+    });
+
     searchInput?.addEventListener('input', () => {
         window.clearTimeout(searchTimer);
         const query = searchInput.value.trim();
@@ -995,8 +1299,11 @@ function initAnnouncementDelivery(): void {
         }, 280);
     });
 
+    syncValueModes();
+
     couponToggle?.addEventListener('change', syncCoupon);
     couponSelect?.addEventListener('change', syncCoupon);
+    couponChecks.forEach((input) => input.addEventListener('change', syncCoupon));
     titleInput?.addEventListener('input', () => {
         updateCounter(titleInput, 'announcementTitleCounter', 200);
         syncPreview();
@@ -1089,7 +1396,7 @@ function initAnnouncementDelivery(): void {
     }
 
     form.addEventListener('submit', (event) => {
-        if (finalSubmitApproved) return;
+        if (finalSubmitApproved || event.submitter?.hasAttribute('formaction')) return;
         if (formError) formError.hidden = true;
         const type = selectedAudienceType();
         if (type === 'personal' && selectedMembers.size === 0) {
@@ -1104,7 +1411,7 @@ function initAnnouncementDelivery(): void {
         }
         if ((isCouponDelivery || couponToggle?.checked) && couponOptions().length === 0) {
             event.preventDefault();
-            showFormError('配布するクーポンを選択してください。', couponSelect);
+            showFormError('配布するクーポンを選択してください。', couponChecks[0] ?? couponSelect);
             return;
         }
         applyCouponDeliveryType();
@@ -1119,6 +1426,7 @@ function initAnnouncementDelivery(): void {
         openDeliveryReview();
     });
 
+    bindConditionPicker(form);
     renderSelectedMembers();
     syncAudienceType();
     syncDeliveryTiming();
@@ -1130,11 +1438,82 @@ function initAnnouncementDelivery(): void {
     updateCounter(bodyInput, 'announcementBodyCounter', 5000);
 }
 
+function initScheduledSegmentUi(): void {
+    if (document.body.dataset.pageKind !== 'scheduled-delivery-form') return;
+    const form = document.getElementById('scheduledDeliveryForm');
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const checksByName = (name: string): HTMLInputElement[] => Array.from(form.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')).filter((input) => input.name === name);
+    const checkedLabels = (name: string): string[] => checksByName(name).filter((input) => input.checked).map((input) => input.dataset.label?.trim() || input.value);
+
+    const render = (): void => {
+        form.querySelectorAll<HTMLElement>('[data-value-mode]').forEach((block) => {
+            const visible = checksByName(block.dataset.valueMode ?? '').filter((input) => input.checked).length >= 2;
+            block.hidden = !visible;
+            block.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.disabled = !visible; });
+        });
+        const minAmount = document.getElementById('segmentMinAmountBlock');
+        const sales = form.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '';
+        if (minAmount) minAmount.hidden = sales !== 'min_amount';
+
+        const container = document.getElementById('deliverySummaryConditions');
+        const block = document.getElementById('deliverySummaryConditionBlock');
+        const match = document.getElementById('segmentMatchMode');
+        const save = document.getElementById('segmentGroupSave');
+        if (!container || !block) return;
+        const chips: string[] = [];
+        const push = (label: string, operator: SegmentConditionOperator, value: string): void => {
+            if (value !== '') chips.push(conditionSentence(label, operator, value));
+        };
+        const months = checksByName('segment_birthday_months[]').filter((input) => input.checked).map((input) => `${input.value}月`);
+        push('誕生月', listOperator(months.length), months.join('、'));
+        const sex = form.querySelector<HTMLSelectElement>('#segment_sex');
+        push('性別', '=', sex?.selectedOptions[0]?.textContent?.trim() && sex.value !== '' ? sex.selectedOptions[0].textContent.trim() : '');
+        const rfm = checkedLabels('segment_rfm_segments[]');
+        push('RFMセグメント', listOperator(rfm.length), rfm.join('、'));
+        const tags = checkedLabels('segment_tag_ids[]');
+        push('会員タグ', listOperator(tags.length, readCombineMode(form, 'segment_value_mode[tags]')), tags.join('、'));
+        form.querySelectorAll<HTMLElement>('.ad-profile-filter').forEach((group) => {
+            const inputs = Array.from(group.querySelectorAll<HTMLInputElement>('[name^="segment_profile["]'));
+            const values = inputs.filter((input) => input.type !== 'checkbox' || input.checked).map((input) => input.value.trim()).filter(Boolean);
+            const selectedCount = inputs.filter((input) => input.type === 'checkbox' && input.checked).length;
+            const modeName = `segment_value_mode[profile][${group.dataset.profileKey || ''}]`;
+            const operator = listOperator(selectedCount, readCombineMode(form, modeName));
+            push(group.dataset.profileLabel || 'プロフィール', operator, values.join('、'));
+        });
+        block.hidden = chips.length === 0;
+        if (match) match.hidden = chips.length < 2;
+        if (save && save.dataset.keepOpen !== '1') save.hidden = chips.length === 0;
+        syncConditionPicker(form);
+        container.replaceChildren();
+        chips.forEach((text) => {
+            const row = document.createElement('div');
+            row.className = 'ad-condition-chip';
+            const label = document.createElement('span');
+            label.className = 'ad-condition-text';
+            label.textContent = text;
+            row.append(label);
+            container.appendChild(row);
+        });
+    };
+
+    form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.segment-filter').forEach((control) => {
+        control.addEventListener('change', render);
+        control.addEventListener('input', render);
+    });
+    bindConditionPicker(form);
+    render();
+}
+
 export function bootstrapAnnouncementDelivery(): void {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initAnnouncementDelivery);
-    } else {
+    const boot = (): void => {
         initAnnouncementDelivery();
+        initScheduledSegmentUi();
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
     }
 }
 

@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Coupon;
 
 use App\Models\Member;
 use App\Services\Admin\CouponDeliveryTargetService;
+use App\Support\AdminMemberIdentifier;
 use App\UseCases\Admin\Coupon\Data\AdminCouponDeliveryPreviewMembersOutput;
 
 class AdminCouponDeliveryPreviewMembersUseCase
@@ -43,9 +44,10 @@ class AdminCouponDeliveryPreviewMembersUseCase
                     'member_name' => $user !== null && trim((string) $user->name) !== ''
                         ? (string) $user->name
                         : '—',
+                    'display_identifier' => AdminMemberIdentifier::value($member),
                     'member_number' => $member !== null && trim((string) $member->member_number) !== ''
-                        ? (string) $member->member_number
-                        : '—',
+                            ? (string) $member->member_number
+                            : '—',
                 ];
             }
         }

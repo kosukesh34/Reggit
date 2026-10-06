@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\CouponDeliveryType;
 use App\Enums\RfmSegment;
+use App\Enums\SegmentCombineMode;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -47,17 +48,6 @@ class CouponBulkIssueRequest extends FormRequest
             return $isScheduled ? CouponDeliveryType::SCHEDULED_PERSONAL : CouponDeliveryType::IMMEDIATE_PERSONAL;
         }
         if ($audience === 'segment') {
-            $salesOnly = in_array((string) $this->input('segment_condition', ''), ['min_amount', 'no_orders'], true)
-                && ! $this->filled('segment_channel')
-                && ! $this->filled('segment_sex')
-                && ! $this->filled('segment_rank')
-                && ! $this->filled('segment_rfm_segments')
-                && ! $this->filled('segment_tag_ids')
-                && ! $this->filled('segment_birthday_months');
-            if ($salesOnly) {
-                return $isScheduled ? CouponDeliveryType::SCHEDULED_SEGMENT_SALES : CouponDeliveryType::IMMEDIATE_SEGMENT_SALES;
-            }
-
             return $isScheduled ? CouponDeliveryType::SCHEDULED_SEGMENT_ATTRIBUTES : CouponDeliveryType::IMMEDIATE_SEGMENT_ATTRIBUTES;
         }
 
@@ -140,6 +130,15 @@ class CouponBulkIssueRequest extends FormRequest
             'segment_birthday_months.*' => ['integer', 'min:1', 'max:12', 'distinct'],
             'segment_tag_ids' => ['nullable', 'array'],
             'segment_tag_ids.*' => ['integer', 'min:1', 'distinct'],
+            'segment_audience_group_ids' => ['nullable', 'array'],
+            'segment_audience_group_ids.*' => ['integer', 'min:1', 'distinct'],
+            'segment_match_mode' => ['nullable', Rule::in(SegmentCombineMode::keys())],
+            'segment_value_mode' => ['nullable', 'array'],
+            'segment_value_mode.tags' => ['nullable', Rule::in(SegmentCombineMode::keys())],
+            'segment_value_mode.profile' => ['nullable', 'array'],
+            'segment_value_mode.profile.*' => ['nullable', Rule::in(SegmentCombineMode::keys())],
+            'segment_profile' => ['nullable', 'array'],
+            'segment_profile.*' => ['nullable'],
             'event_rank_up' => ['nullable'],
             'send_notification' => ['nullable', 'boolean'],
             'segment_visit_count_min' => ['nullable', 'integer', 'min:0'],
