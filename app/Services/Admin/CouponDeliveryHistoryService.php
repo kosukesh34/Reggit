@@ -6,6 +6,7 @@ use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Models\Member;
+use App\Support\AdminMemberIdentifier;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -114,7 +115,7 @@ class CouponDeliveryHistoryService
             $name = $member->user !== null && trim((string) $member->user->name) !== ''
                 ? (string) $member->user->name
                 : '—';
-            $number = trim((string) $member->member_number);
+            $number = AdminMemberIdentifier::value($member);
             $labels[(int) $member->id] = $number !== '' ? $name.'（'.$number.'）' : $name;
         }
 

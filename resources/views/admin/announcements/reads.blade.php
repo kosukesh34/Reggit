@@ -92,7 +92,7 @@
                         <thead>
                             <tr>
                                 <th>会員</th>
-                                <th>会員番号</th>
+                                <th>{{ \App\Support\AdminMemberIdentifier::label() }}</th>
                                 <th>配信チャネル</th>
                                 <th>既読</th>
                                 @if($announcement->delivery_coupon_id !== null)<th>クーポン</th>@endif
@@ -103,7 +103,7 @@
                             @foreach($view->recipients as $recipient)
                                 <tr>
                                     <td><a href="{{ admin_route('admin.members.detail', ['id' => $recipient['member_id']]) }}"><strong>{{ $recipient['member_name'] }}</strong></a></td>
-                                    <td>{{ $recipient['member_number'] }}</td>
+                                    <td>{{ \App\Support\AdminMemberIdentifier::fromValues($recipient['member_id'] ?? $recipient['id'] ?? null, $recipient['member_number']) }}</td>
                                     <td>{{ $recipient['channel'] }}</td>
                                     <td>
                                         @if($recipient['read_at'])
