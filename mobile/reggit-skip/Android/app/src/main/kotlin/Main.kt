@@ -40,6 +40,11 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.core.app.ActivityCompat
 
 internal val logger: SkipLogger = SkipLogger(subsystem = "reggit.app", category = "Reggit")
@@ -92,9 +97,12 @@ open class AndroidAppMain: Application {
 
     private fun saveFcmToken(token: String) {
         val prefs = applicationContext.getSharedPreferences(PUSH_TOKEN_PREFS_NAME, Context.MODE_PRIVATE)
-        if (token == prefs.getString(PUSH_TOKEN_PREFS_KEY, null)) return
         prefs.edit().putString(PUSH_TOKEN_PREFS_KEY, token).apply()
-        AppDelegate.shared.onPushTokenReceived(token)
+        // Fuse uses native Foundation defaults, separate from these Java preferences.
+        // Replay cached tokens on every launch/resume so bootstrap can register them.
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            AppDelegate.shared.onPushTokenReceived(token)
+        }
     }
 
     fun saveFcmTokenPublic() {
@@ -113,7 +121,9 @@ class ReggitFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         val prefs = applicationContext.getSharedPreferences(PUSH_TOKEN_PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(PUSH_TOKEN_PREFS_KEY, token).apply()
-        AppDelegate.shared.onPushTokenReceived(token)
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            AppDelegate.shared.onPushTokenReceived(token)
+        }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -433,6 +443,7 @@ open class MainActivity: AppCompatActivity {
     override fun onResume() {
         super.onResume()
         AppDelegate.shared.onResume()
+        (application as? AndroidAppMain)?.saveFcmTokenPublic()
         // 既にログインしている場合も含め、アプリ表示のたびに通知許可を未取得ならリクエスト
         requestNotificationPermissionIfNeeded()
         // 取消し通知の復元に負けないよう即時＋遅延で掃除
@@ -532,19 +543,52 @@ internal fun SyncSystemBarsWithTheme() {
 /// BoxWithConstraints で明示的なサイズを渡して画面全体を描画する。
 @Composable
 internal fun PresentationRootView(context: ComposeContext) {
-    // SwiftUI 側と同じライトテーマを明示し、端末設定による色差をなくす。
+    // A light scheme alone still uses Android wallpaper-derived dynamic colors.
+    // Keep presentation/system-bar surfaces equal to the SwiftUI design tokens.
     val colorScheme = ColorScheme.light
-    PresentationRoot(defaultColorScheme = colorScheme, context = context) { ctx ->
-        SyncSystemBarsWithTheme()
-        val contentContext = ctx.content()
-        Box(modifier = ctx.modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .size(maxWidth, maxHeight.coerceAtLeast(400.dp))
-                        .background(Color(0xFFF9F6ED))
-                ) {
-                    AppRootView().Compose(context = contentContext)
+    Material3ColorScheme(scheme = { _, _ ->
+        lightColorScheme(
+            primary = Color(0xFF173F35),
+            onPrimary = Color.White,
+            primaryContainer = Color(0xFFF0F2F5),
+            onPrimaryContainer = Color.Black,
+            secondary = Color(0xFF173F35),
+            onSecondary = Color.White,
+            secondaryContainer = Color(0xFFF0F2F5),
+            onSecondaryContainer = Color.Black,
+            background = Color.White,
+            onBackground = Color.Black,
+            surface = Color.White,
+            onSurface = Color.Black,
+            surfaceVariant = Color(0xFFF0F2F5),
+            onSurfaceVariant = Color(0xFF57616B),
+            surfaceContainerLowest = Color.White,
+            surfaceContainerLow = Color(0xFFF0F2F5),
+            surfaceContainer = Color(0xFFF2F5F7),
+            surfaceContainerHigh = Color(0xFFF0F2F5),
+            // Material switches use these for the inactive track and thumb.
+            surfaceContainerHighest = Color(0xFFC7C7CC),
+            outline = Color.White,
+            outlineVariant = Color(0xFFD6DEE6),
+            surfaceTint = Color.Transparent
+        )
+    }) {
+        // The shared header/footer already delimit navigation content. Apply the
+        // system insets once here so nested NavigationStacks cannot add them again.
+        PresentationRoot(defaultColorScheme = colorScheme, absoluteSystemBarEdges = Edge.Set.of(), context = context) { ctx ->
+            SyncSystemBarsWithTheme()
+            val contentContext = ctx.content()
+            Box(modifier = ctx.modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).imePadding(), contentAlignment = Alignment.TopStart) {
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .size(maxWidth, maxHeight.coerceAtLeast(400.dp))
+                            .background(Color.White)
+                    ) {
+                        // Shared SwiftUI fields supply their own padding and height.
+                        // Remove Material's internal padding from those plain fields.
+                        AppRootView().textFieldContentPadding(bridgedTop = 0.0, bridgedLeading = 0.0, bridgedBottom = 0.0, bridgedTrailing = 0.0).Compose(context = contentContext)
+                    }
                 }
             }
         }

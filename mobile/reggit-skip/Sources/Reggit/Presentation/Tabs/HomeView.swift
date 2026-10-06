@@ -70,41 +70,43 @@ struct HomeView: View {
             .sheet(isPresented: $showMemberCode) {
                 if let member = member {
                     MemberCodeSheet(member: member, onClose: { showMemberCode = false })
-                        .presentationDetents([.medium, .large])
+                        .presentationDetents(PlatformRuntime.supportsMultipleModalDetents ? [.medium, .large] : [.large])
                         .presentationDragIndicator(.visible)
                 }
             }
     }
 
     private var homeContent: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                heroImage
-                if let member = member, member.isMember, !member.memberNumber.isEmpty {
-                    Button { showMemberCode = true } label: {
-                        VStack(spacing: 8) {
-                            MemberCodeView(value: member.memberNumber, codeType: member.cardCodeType, height: 56)
-                            Text(member.memberNumber)
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                .foregroundStyle(Color.black)
-                            Text("タップして拡大")
-                                .font(.caption)
-                                .foregroundStyle(Color.gray)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 16) {
+                    heroImage(width: max(geometry.size.width - PlatformRuntime.homeHorizontalPadding * 2, 0))
+                    if let member = member, member.isMember, !member.memberNumber.isEmpty {
+                        Button { showMemberCode = true } label: {
+                            VStack(spacing: 8) {
+                                MemberCodeView(value: member.memberNumber, codeType: member.cardCodeType, height: 56)
+                                Text(member.memberNumber)
+                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(Color.black)
+                                Text("タップして拡大")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.gray)
+                            }
+                            .padding(16)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .padding(16)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("会員コードを拡大して表示")
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("会員コードを拡大して表示")
+                    homeMenu
                 }
-                homeMenu
+                .padding(.horizontal, PlatformRuntime.homeHorizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
+                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, PlatformRuntime.homeHorizontalPadding)
-            .padding(.top, 12)
-            .padding(.bottom, 10)
-            .frame(maxWidth: .infinity)
         }
         .background(AppDesign.canvas.ignoresSafeArea())
         .task(id: homeImageURLs.count) {
@@ -136,24 +138,24 @@ struct HomeView: View {
         }
     }
 
-    private var heroImage: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
-                if homeImageURLs.count > 1 {
-                    heroSlider(width: geometry.size.width)
-                } else {
-                    heroImageButton(at: 0)
-                }
-                if homeImageURLs.count > 1 {
-                    heroPageDots
-                        .padding(.bottom, 14)
-                        .zIndex(1)
-                }
+    // Measure the viewport outside the scroll view: Compose gives a
+    // GeometryReader inside scrolling content an unconstrained height.
+    private func heroImage(width: CGFloat) -> some View {
+        ZStack(alignment: .bottom) {
+            if homeImageURLs.count > 1 {
+                heroSlider(width: width)
+            } else {
+                heroImageButton(at: 0)
+                    .frame(width: width, height: width)
             }
-            .frame(width: geometry.size.width, height: geometry.size.width)
-            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
+            if homeImageURLs.count > 1 {
+                heroPageDots
+                    .padding(.bottom, 14)
+                    .zIndex(1)
+            }
         }
-        .aspectRatio(1, contentMode: .fit)
+        .frame(width: width, height: width)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
     }
 
     private func heroImageButton(at index: Int) -> some View {
@@ -304,12 +306,15 @@ struct HomeMenuGrid: View {
     @Environment(\.brandAccent) var accent
 
     var body: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: columns),
-            spacing: 0
-        ) {
-            ForEach(0..<tabs.count, id: \.self) { index in
-                gridCell(at: index)
+        // Skip promotes a nested LazyVGrid to its own scrolling container.
+        // Eager rows keep the hero, member card and menu in the home's ScrollView.
+        VStack(spacing: 0) {
+            ForEach(0..<((tabs.count + columns - 1) / columns), id: \.self) { row in
+                HStack(spacing: 0) {
+                    ForEach(0..<columns, id: \.self) { column in
+                        gridCell(at: row * columns + column)
+                    }
+                }
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
