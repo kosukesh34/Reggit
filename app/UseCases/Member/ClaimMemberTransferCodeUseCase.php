@@ -36,7 +36,7 @@ class ClaimMemberTransferCodeUseCase
                 throw new InvalidArgumentException('引き継ぎコードが無効か、期限切れです');
             }
 
-            $source = User::query()->whereKey($row->user_id)->first();
+            $source = User::query()->whereKey($row->user_id)->lockForUpdate()->first();
             $member = $source?->member;
             $isSameProject = $source !== null
                 && $member !== null
@@ -64,12 +64,15 @@ class ClaimMemberTransferCodeUseCase
 
     private function moveIdentity(User $currentUser, User $source, ?UserDevice $device): void
     {
-        if ((int) $currentUser->id === (int) $source->id) {
+        $sameUser = (int) $currentUser->id === (int) $source->id;
+        if ($sameUser && $device === null) {
             return;
         }
 
+        $source->increment('authentication_version');
+
         $lineUserId = is_string($currentUser->line_user_id) ? $currentUser->line_user_id : '';
-        if (MemberChannel::isValidLineUserId($lineUserId)) {
+        if (! $sameUser && MemberChannel::isValidLineUserId($lineUserId)) {
             $currentUser->line_user_id = 'guest-moved-'.$currentUser->id;
             $currentUser->save();
             $source->line_user_id = $lineUserId;
@@ -85,7 +88,7 @@ class ClaimMemberTransferCodeUseCase
                 ->delete();
         }
 
-        if ($currentUser->member === null) {
+        if (! $sameUser && $currentUser->member === null) {
             $currentUser->delete();
         }
     }

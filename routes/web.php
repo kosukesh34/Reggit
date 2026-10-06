@@ -126,6 +126,9 @@ Route::get('/legal/{project_key}/privacy', [LegalDocumentController::class, 'pri
 
 Route::get('/api', ApiInfoController::class);
 
+Route::post('/existing-member-link/{token}', [ExistingMemberLinkConfirmController::class, 'confirm'])
+    ->middleware('throttle:20,1')
+    ->name('existing-member-link.complete');
 // ELB / ロードバランサー用ヘルスチェック（EB の「パス」を /health に設定すること）
 // 既定: DB 到達時 plain `ok`。?deep=1 で JSON {status,db} を返す。DB 障害時は 503。
 Route::get('/health', HealthController::class);

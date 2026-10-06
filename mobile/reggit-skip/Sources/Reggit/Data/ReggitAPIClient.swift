@@ -127,6 +127,15 @@ struct ReggitAPIClient: ReggitAPIServing {
         )
     }
 
+    func confirmExistingMemberLink(token: String) async throws -> ExistingMemberLinkResult {
+        let json = try await requestJSON(path: "/api/members/existing-link/confirm", method: "POST", body: ["token": token])
+        let data = json["data"] as? [String: Any]
+        return ExistingMemberLinkResult(
+            linked: data?["linked"] as? Bool ?? false,
+            message: json["message"] as? String ?? "既存会員を連携しました"
+        )
+    }
+
     func authorizeWalletChannel(socketID: String, memberID: Int) async throws -> String {
         let response = try await requestJSON(
             path: "/api/broadcasting/auth",

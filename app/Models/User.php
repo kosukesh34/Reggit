@@ -38,12 +38,14 @@ class User extends Authenticatable
     protected $hidden = [
         'remember_token',
         'line_name',
+        'authentication_version',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'authentication_version' => 'integer',
     ];
 
     public function project(): BelongsTo

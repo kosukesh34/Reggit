@@ -40,6 +40,7 @@ protocol ReggitAPIServing: Sendable {
     func claimTransferCode(memberId: Int, code: String) async throws
     func fetchExistingMemberLinkForm() async throws -> ExistingMemberLinkForm
     func submitExistingMemberLink(values: [String: String]) async throws -> ExistingMemberLinkResult
+    func confirmExistingMemberLink(token: String) async throws -> ExistingMemberLinkResult
     func registerMember(name: String, phone: String) async throws -> MemberProfileSnapshot
     func registerMember(name: String, phone: String, profilePayload: [String: String], profileListPayload: [String: [String]]) async throws -> MemberProfileSnapshot
     func updateMemberProfile(name: String, phone: String, profilePayload: [String: String], profileListPayload: [String: [String]]) async throws -> MemberProfileSnapshot
@@ -79,6 +80,10 @@ protocol ReggitAPIServing: Sendable {
 }
 
 extension ReggitAPIServing {
+    func confirmExistingMemberLink(token: String) async throws -> ExistingMemberLinkResult {
+        throw ReggitAPIError.invalidResponse
+    }
+
     func fetchAnnouncementImage(id: Int) async throws -> Data {
         throw ReggitAPIError.invalidResponse
     }
