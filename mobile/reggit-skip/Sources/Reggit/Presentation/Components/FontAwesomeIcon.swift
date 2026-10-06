@@ -16,7 +16,7 @@ enum FontAwesomeFont {
     }
 
     static var fontName: String {
-        #if SKIP
+        #if os(Android)
         androidResourceName
         #else
         postScriptName
