@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\StoreAppCredential;
@@ -60,6 +61,25 @@ class StoreAppAuthenticationTest extends TestCase
             'enrollment_token' => 'KITCHEN-CODE', 'app' => 'waiting',
             'device_key' => str_repeat('d', 32),
         ])->assertUnprocessable();
+    }
+
+    public function test_only_authenticated_waiting_device_can_register_non_members(): void
+    {
+        [$project] = $this->createEnrollment('waiting', 'WAITING-CODE');
+        ShopSettingStore::setValue('queue_require_membership', true, 'boolean', $project->id);
+        $this->withHeader('X-Queue-Client', 'waiting-system')
+            ->postJson("/api/store-app/waiting/{$project->project_key}/queue", ['party_size' => 1])->assertUnauthorized();
+
+        $token = $this->postJson('/api/store-app/login', [
+            'enrollment_token' => 'WAITING-CODE', 'app' => 'waiting',
+            'device_key' => str_repeat('e', 32),
+        ])->assertOk()->json('token');
+        $this->withToken($token)->withHeader('X-Device-Key', str_repeat('f', 32))
+            ->postJson("/api/store-app/waiting/{$project->project_key}/queue", ['party_size' => 1])->assertUnauthorized();
+        $this->withToken($token)->withHeader('X-Device-Key', str_repeat('e', 32))
+            ->postJson("/api/store-app/waiting/{$project->project_key}/queue", ['party_size' => 1])->assertCreated();
+        $this->assertDatabaseCount('queue_entries', 1);
+        $this->assertDatabaseHas('queue_entries', ['project_id' => $project->id, 'member_id' => null]);
     }
 
     private function createEnrollment(string $app, string $plainToken): array

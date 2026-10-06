@@ -7,6 +7,7 @@ use App\Models\ApiToken;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Project;
+use App\Models\Store;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -81,6 +82,23 @@ class AnalysisApiTest extends TestCase
             'Authorization' => 'Bearer '.$plain,
             'Accept' => 'application/json',
         ]);
+    }
+
+    public function test_legacy_multi_store_analysis_tokens_are_revoked_on_upgrade(): void
+    {
+        $multiStore = Project::factory()->create();
+        $singleStore = Project::factory()->create();
+        Store::create(['project_id' => $multiStore->id, 'store_key' => 'branch', 'name' => '支店', 'is_active' => true]);
+        $legacy = ApiToken::issue($multiStore, 'legacy', null, 'analysis')['token'];
+        $single = ApiToken::issue($singleStore, 'single', null, 'analysis')['token'];
+        $general = ApiToken::issue($multiStore, 'general')['token'];
+        $migration = require database_path('migrations/2026_10_05_100001_revoke_legacy_multi_store_analysis_tokens.php');
+        $migration->up();
+        $this->assertFalse($legacy->fresh()->is_active);
+        $this->assertTrue($single->fresh()->is_active);
+        $this->assertTrue($general->fresh()->is_active);
+        $migration->down();
+        $this->assertFalse($legacy->fresh()->is_active);
     }
 
     public function test_分析連携は初期無効で管理画面から有効化と失効ができる(): void

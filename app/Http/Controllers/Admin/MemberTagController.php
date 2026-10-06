@@ -46,7 +46,7 @@ class MemberTagController extends AdminBaseController
             ->with('success', 'タグを作成しました');
     }
 
-    public function destroy(int $id)
+    public function destroy(string $projectKey, int $id)
     {
         $projectId = $this->resolveAdminProjectId();
         $this->destroyUseCase->handle($projectId, $id);
