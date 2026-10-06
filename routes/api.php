@@ -291,8 +291,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/transfer', MemberTransferClaimController::class)->middleware('throttle:10,1');
     Route::get('/members/existing-link', [ExistingMemberLinkController::class, 'show']);
     Route::post('/members/existing-link', [ExistingMemberLinkController::class, 'store'])->middleware('throttle:10,1');
-    Route::post('/members/session/clear', [MemberSessionClearController::class, '__invoke']);
     Route::post('/members/existing-link/confirm', [ExistingMemberLinkController::class, 'confirm'])->middleware('throttle:10,1');
+    Route::post('/members/session/clear', [MemberSessionClearController::class, '__invoke']);
     Route::post('/devices/register', DeviceRegisterController::class);
     Route::get('/devices/session', DeviceSessionController::class);
     Route::get('/members/points', [MemberPointsController::class, '__invoke']);
