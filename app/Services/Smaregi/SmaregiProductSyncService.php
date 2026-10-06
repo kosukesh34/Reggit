@@ -636,11 +636,18 @@ class SmaregiProductSyncService
 
     private function deleteStoredProductImage(int $projectId, string $imageUrl): void
     {
-        $path = parse_url($imageUrl, PHP_URL_PATH);
-        $prefix = '/storage/'.PublicImageStorageService::DIR_PRODUCT.'/'.$projectId.'/';
-        if (is_string($path) && str_starts_with($path, $prefix)) {
-            Storage::disk('public')->delete(substr($path, strlen('/storage/')));
+        $directory = PublicImageStorageService::DIR_PRODUCT.'/'.$projectId.'/';
+        $prefix = asset('storage/'.rtrim($directory, '/')).'/';
+        if (! str_starts_with($imageUrl, $prefix)) {
+            return;
         }
+        // Only files directly created by our image storage belong to this project.
+        // Reject separators, relative components and encoded paths before Flysystem normalizes them.
+        $filename = substr($imageUrl, strlen($prefix));
+        if (! preg_match('/\A[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|gif|webp)\z/i', $filename)) {
+            return;
+        }
+        Storage::disk('public')->delete($directory.$filename);
     }
 
     /**
