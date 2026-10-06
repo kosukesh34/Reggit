@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\UseCases\Payment\PaymentGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\FakePaymentGateway;
 use Tests\TestCase;
 
@@ -41,11 +42,19 @@ class PaymentCheckoutApiTest extends TestCase
         ]);
         $this->app->instance(PaymentGateway::class, new FakePaymentGateway);
 
-        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+        $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
             ->post('/api/payment/checkout?project_key=default', ['order_id' => $order->id])
             ->assertOk()
-            ->assertJsonPath('checkout_url', 'https://checkout.stripe.test/session')
-            ->assertJsonPath('session_id', 'cs_test_123');
+            ->assertJsonPath('session_id', 'pi_test_123');
+        $url = $response->json('checkout_url');
+        $this->assertStringNotContainsString('cs_test_123', $url);
+        $this->get($url)->assertOk()->assertSee('カードでお支払い')->assertDontSee('type="email"', false);
+        $this->get(str_replace('signature=', 'signature=invalid', $url))->assertForbidden();
+        $this->get(str_replace('/card/'.$order->id, '/card/'.($order->id + 1), $url))->assertForbidden();
+        $this->travel(2)->days();
+        $this->get($url)->assertForbidden();
+        $this->travelBack();
+
     }
 
     public function test_payment_return_redirects_to_native_app(): void
@@ -54,7 +63,13 @@ class PaymentCheckoutApiTest extends TestCase
             ->assertRedirect('reggit://payment?status=success&order_id=42');
     }
 
-    public function test_device_user_can_confirm_paid_checkout_and_receive_order_number(): void
+    public static function paymentChannels(): array
+    {
+        return [['checkout'], ['card']];
+    }
+
+    #[DataProvider('paymentChannels')]
+    public function test_device_user_can_confirm_paid_checkout_and_receive_order_number(string $channel): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -71,7 +86,7 @@ class PaymentCheckoutApiTest extends TestCase
             'points_earned' => 0,
             'order_type' => OrderType::MOBILE,
         ]);
-        $order->payment_session = ['channel' => 'checkout', 'result' => ['id' => 'cs_test_123']];
+        $order->payment_session = ['channel' => $channel, 'result' => ['id' => $channel === 'card' ? 'pi_test_123' : 'cs_test_123']];
         $order->save();
         $gateway = new FakePaymentGateway;
         $gateway->intent = [
@@ -89,7 +104,8 @@ class PaymentCheckoutApiTest extends TestCase
         $this->assertNotEmpty($order->fresh()->order_number);
     }
 
-    public function test_unpaid_checkout_does_not_confirm_order(): void
+    #[DataProvider('paymentChannels')]
+    public function test_unpaid_checkout_does_not_confirm_order(string $channel): void
     {
         $project = Project::firstOrCreate(
             ['project_key' => 'default'],
@@ -101,15 +117,16 @@ class PaymentCheckoutApiTest extends TestCase
             'status' => OrderStatus::PENDING, 'payment_method' => PaymentMethod::STRIPE,
             'points_used' => 0, 'points_earned' => 0, 'order_type' => OrderType::MOBILE,
         ]);
-        $order->payment_session = ['channel' => 'checkout', 'result' => ['id' => 'cs_test_123']];
+        $order->payment_session = ['channel' => $channel, 'result' => ['id' => $channel === 'card' ? 'pi_test_123' : 'cs_test_123']];
         $order->save();
         $gateway = new FakePaymentGateway;
         $gateway->checkoutSession = ['payment_status' => 'unpaid', 'payment_intent_id' => 'pi_test_123'];
+        $gateway->intent = ['status' => 'requires_payment_method'];
         $this->app->instance(PaymentGateway::class, $gateway);
 
         $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
             ->post('/api/payment/checkout/confirm?project_key=default', ['order_id' => $order->id])
-            ->assertStatus(409);
+            ->assertStatus($channel === 'card' ? 400 : 409);
         $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
     }
 }

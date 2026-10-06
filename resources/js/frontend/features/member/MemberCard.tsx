@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useEffect, useId, useRef } from 'react';
 import {
     getMemberManager,

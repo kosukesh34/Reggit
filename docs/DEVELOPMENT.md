@@ -4,6 +4,8 @@
 
 PHP 8.4、Composer、MySQL 8、Node.js `^20.19.0` または `>=22.12.0` を使います。Docker の初回セットアップは [README](../README.md)、実行コマンドの定義は [Makefile](../Makefile)、`composer.json`、`package.json` を参照してください。
 
+Laravel 13 / React 19 / Vite 8 を使用します。Docker の Node サービスは Node.js 24 です。TypeScript は typescript-eslint が対応する 6.0 系、Guzzle は Reverb が対応する 7 系を使用します。Stripe SDK は 22 系ですが、決済 API のバージョンは従来の `2026-02-25.clover` を維持しています。
+
 Docker の `.env` は `DB_HOST=db`、`DB_PORT=3306`。ホストから接続する場合は `127.0.0.1:3307` です。コンテナの起動前に `.env` を用意します。
 
 Docker を使わない環境は `DB_HOST=127.0.0.1` と実際の MySQL ポートを設定し、Composer / npm のコマンドを直接実行します。Linux VM の MySQL は必要に応じて `sudo service mysql start` で起動します。アプリと Vite は別プロセスで起動します。
@@ -46,7 +48,7 @@ npm run lint
 npm run test:unit:frontend
 ```
 
-Docker では PHP / Composer のコマンドに `docker compose exec app` を付けます。整形の自動修正は `./vendor/bin/pint`、フロントの配布物は `npm run build` です。
+Docker では PHP / Composer のコマンドに `docker compose exec app`、npm のコマンドに `docker compose run --rm -T node` を付けます。整形の自動修正は `./vendor/bin/pint`、フロントの配布物は `npm run build` です。Node コンテナの依存は専用ボリュームに保存されるため、初回は `docker compose run --rm -T node npm ci` を実行します。
 
 スマレジ実接続テストは外部資格情報とテスト契約が必要です。ダミー値では自動スキップされず失敗する場合があるため、通常のコア検証では上記グループを除外します。実接続手順は [外部連携](INTEGRATIONS.md#スマレジ) を参照してください。
 
@@ -55,6 +57,8 @@ Docker では PHP / Composer のコマンドに `docker compose exec app` を付
 ## E2E
 
 Web は起動済みの開発アプリへ接続します。Playwright のブラウザは初回だけ `npx playwright install chromium` で準備します。
+
+Docker 内で実行する場合は `make e2e-web` を使います。Node コンテナ内で Chromium と必要な OS ライブラリを準備し、`http://nginx` に接続します。
 
 ```bash
 E2E_BASE_URL=http://localhost:8080 npm run test:e2e

@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { BuilderBlock } from './blocks/BuilderBlock';
 import { handleBuilderNavClick } from './blocks/builderNav';

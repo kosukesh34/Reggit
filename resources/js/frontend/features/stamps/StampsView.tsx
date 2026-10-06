@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { openStampScanner, StampScannerPopup } from '../../../liff-ui/components/stamp/StampScannerPopup';
 import { useStampGrantFromUrl } from '../../../liff-ui/hooks/useStampGrantFromUrl';

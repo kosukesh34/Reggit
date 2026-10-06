@@ -58,8 +58,8 @@ cache-clear:
 
 # フロント資産ビルド（Vite + React）
 npm-build:
-	npm ci
-	npm run build
+	docker compose run --rm -T node npm ci
+	docker compose run --rm -T node npm run build
 
 # テスト用DB作成（Docker 内でテストする前に1回実行）
 # reggit_user に reggit_test への権限を付与し、開発DB (reggit) を破壊しないようにする
@@ -77,7 +77,7 @@ lint:
 	docker-compose exec app ./vendor/bin/pint --test
 
 typecheck:
-	docker-compose exec app npm run typecheck
+	docker compose run --rm -T node npm run typecheck
 
 # 依存関係の脆弱性チェック（セキュリティ）
 audit:
@@ -89,8 +89,7 @@ test-security: test-env test-db
 
 # Web E2E（Playwright）。前提: make setup-dev 済み・:8080 で起動中
 e2e-web:
-	npx playwright install chromium
-	E2E_BASE_URL=http://localhost:8080 npm run test:e2e
+	docker compose run --rm -T -e E2E_BASE_URL=http://nginx node sh -c 'npx playwright install --with-deps chromium && npm run test:e2e'
 
 # Native E2E（Maestro / Android）。前提: APK インストール済み・adb 接続あり
 e2e-mobile:
