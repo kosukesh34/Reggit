@@ -60,7 +60,7 @@ class UserService
         }
 
         $user = $request->user();
-        if ($user !== null && (int) $user->project_id === $projectId) {
+        if ($user instanceof User && (int) $user->project_id === $projectId) {
             Session::put($this->getSessionKey($projectId), $user->id);
             $this->logResolution('auth_user', $user, $lineUserId, $deviceIdentifier);
 

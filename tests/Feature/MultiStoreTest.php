@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Domain\Settings\Repositories\OperationalSettings;
 use App\Models\AdminUser;
 use App\Models\Announcement;
+use App\Models\ApiToken;
 use App\Models\Member;
+use App\Models\MemberTag;
 use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Project;
@@ -52,6 +54,37 @@ class MultiStoreTest extends TestCase
         $admin->stores()->sync([$this->a->id => ['project_id' => $this->project->id]]);
 
         return $admin;
+    }
+
+    public function test_store_admin_cannot_manage_project_analysis_tokens_or_common_tags(): void
+    {
+        $this->project->update(['plan' => 'premium']);
+        $token = ApiToken::issue($this->project, 'analysis', null, 'analysis')['token'];
+        $tag = MemberTag::create(['project_id' => $this->project->id, 'name' => '共通', 'color' => '#123456']);
+        $this->actingAs($this->admin(), 'admin');
+        $this->post('/admin/brand/analysis-deliveries/settings', ['analysis_api_enabled' => '1'])->assertForbidden();
+        $this->post('/admin/brand/analysis-deliveries/token')->assertForbidden();
+        $this->delete('/admin/brand/analysis-deliveries/token/'.$token->id)->assertForbidden();
+        $this->post('/admin/brand/member-tags', ['name' => '禁止', 'color' => '#123456'])->assertForbidden();
+        $this->delete('/admin/brand/member-tags/'.$tag->id)->assertForbidden();
+        $this->assertFalse($this->project->fresh()->analysis_api_enabled);
+        $this->assertTrue($token->fresh()->is_active);
+        $this->assertDatabaseHas('member_tags', ['id' => $tag->id]);
+        $this->assertDatabaseCount('api_tokens', 1);
+        $this->assertDatabaseCount('member_tags', 1);
+    }
+
+    public function test_headquarters_deletes_the_route_tag_for_numeric_and_text_project_keys(): void
+    {
+        $admin = $this->admin(AdminUser::ROLE_PROJECT_ADMIN);
+        $wrong = MemberTag::create(['project_id' => $this->project->id, 'name' => '残す', 'color' => '#123456']);
+        foreach (['brand', (string) $wrong->id] as $key) {
+            $this->project->update(['project_key' => $key]);
+            $tag = MemberTag::create(['project_id' => $this->project->id, 'name' => '削除', 'color' => '#123456']);
+            $this->actingAs($admin, 'admin')->delete('/admin/'.$key.'/member-tags/'.$tag->id)->assertRedirect();
+            $this->assertDatabaseMissing('member_tags', ['id' => $tag->id]);
+            $this->assertDatabaseHas('member_tags', ['id' => $wrong->id]);
+        }
     }
 
     private function member(Store $store): Member
