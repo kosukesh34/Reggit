@@ -40,7 +40,9 @@ class ExistingMemberLinkTest extends TestCase
         $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
 
         $token = ExistingMemberLinkRequest::query()->where('user_id', $user->id)->value('token');
-        $this->get('/existing-member-link/'.$token)->assertOk()->assertSee('連携しました');
+        $this->get('/existing-member-link/'.$token)->assertOk()->assertSee('既存会員を連携しますか');
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
+        $this->post('/existing-member-link/'.$token)->assertOk()->assertSee('連携しました');
         $this->assertDatabaseHas('members', [
             'project_id' => $project->id,
             'user_id' => $user->id,
@@ -83,7 +85,9 @@ class ExistingMemberLinkTest extends TestCase
         $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
 
         $token = ExistingMemberLinkRequest::query()->where('user_id', $user->id)->value('token');
-        $this->get('/existing-member-link/'.$token)->assertOk()->assertSee('連携しました');
+        $this->get('/existing-member-link/'.$token)->assertOk()->assertSee('既存会員を連携しますか');
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
+        $this->post('/existing-member-link/'.$token)->assertOk()->assertSee('連携しました');
         $this->assertDatabaseHas('members', [
             'user_id' => $user->id,
             'smaregi_customer_id' => '9001',
@@ -132,6 +136,69 @@ class ExistingMemberLinkTest extends TestCase
             ->postJson('/api/members/existing-link?project_key=default', ['customer_code' => 'NOPE'])
             ->assertStatus(422);
         $this->assertDatabaseMissing('members', ['smaregi_customer_id' => '9001', 'project_id' => $project->id]);
+    }
+
+    public function test_link_confirmation_requires_requester_session_and_explicit_post(): void
+    {
+        $project = $this->createProject();
+        $requester = User::factory()->create(['project_id' => $project->id]);
+        $other = User::factory()->create(['project_id' => $project->id]);
+        $pending = ExistingMemberLinkRequest::create([
+            'project_id' => $project->id, 'user_id' => $requester->id,
+            'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+            'token' => str_repeat('a', 48), 'expires_at' => now()->addMinutes(30),
+        ]);
+        $api = $this->mockCustomers([$this->customer()]);
+        $api->shouldReceive('getCustomer')->once()->andReturn($this->customer());
+        $url = '/existing-member-link/'.$pending->token;
+        $this->get($url)->assertOk()->assertSee('既存会員を連携しますか');
+        $this->post($url)->assertOk()->assertSee('申請したアプリ・ブラウザ');
+        $this->withSession(['mobile_order_user_id_'.$project->id => $other->id])
+            ->post($url)->assertOk()->assertSee('申請したアプリ・ブラウザ');
+        $this->assertNull($pending->fresh()->confirmed_at);
+        $this->assertDatabaseMissing('members', ['smaregi_customer_id' => '9001']);
+        $this->withSession(['mobile_order_user_id_'.$project->id => $requester->id])
+            ->post($url)->assertOk()->assertSee('連携しました');
+        $this->assertNotNull($pending->fresh()->confirmed_at);
+        $this->post($url)->assertOk()->assertSee('確認リンクが無効');
+        $this->assertDatabaseCount('members', 1);
+    }
+
+    public function test_expired_confirmation_cannot_link_member(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $pending = ExistingMemberLinkRequest::create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+            'token' => str_repeat('b', 48), 'expires_at' => now()->subMinute(),
+        ]);
+        $this->withSession(['mobile_order_user_id_'.$project->id => $user->id])
+            ->post('/existing-member-link/'.$pending->token)->assertOk()->assertSee('確認リンクが無効');
+        $this->assertDatabaseCount('members', 0);
+    }
+
+    public function test_native_confirmation_requires_matching_authenticated_user_and_project(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U00000000000000000000000000000035']);
+        $otherProject = Project::factory()->create();
+        $other = User::factory()->create(['project_id' => $otherProject->id, 'line_user_id' => 'U00000000000000000000000000000036']);
+        $pending = ExistingMemberLinkRequest::create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+            'token' => str_repeat('c', 48), 'expires_at' => now()->addMinutes(30),
+        ]);
+        $api = $this->mockCustomers([$this->customer()]);
+        $api->shouldReceive('getCustomer')->once()->andReturn($this->customer());
+        $endpoint = '/api/members/existing-link/confirm?project_key=';
+        $this->postJson($endpoint.'default', ['token' => $pending->token])->assertUnauthorized();
+        $this->withHeaders(['X-Line-User-Id' => $other->line_user_id])
+            ->postJson($endpoint.$otherProject->project_key, ['token' => $pending->token])->assertUnprocessable();
+        $this->assertNull($pending->fresh()->confirmed_at);
+        $this->withHeaders(['X-Line-User-Id' => $user->line_user_id])
+            ->postJson($endpoint.'default', ['token' => $pending->token])->assertOk()->assertJsonPath('data.linked', true);
+        $this->assertDatabaseHas('members', ['project_id' => $project->id, 'user_id' => $user->id, 'smaregi_customer_id' => '9001']);
     }
 
     private function createProject(): Project

@@ -32,7 +32,7 @@ class UserService
         if ($lineUserId !== null) {
             $user = $this->findActiveUserByLineId($lineUserId, $projectId);
             if ($user !== null) {
-                Session::put($this->getSessionKey($projectId), $user->id);
+                $this->rememberUser($user, $projectId);
                 $this->logResolution('line', $user, $lineUserId, $deviceIdentifier);
 
                 return $user;
@@ -50,7 +50,7 @@ class UserService
 
                         return $resolved;
                     }
-                    Session::put($this->getSessionKey($projectId), $deviceUser->id);
+                    $this->rememberUser($deviceUser, $projectId);
                     $this->userDeviceRepository->touchLastUsedAt($device);
                     $this->logResolution('device', $deviceUser, $lineUserId, $deviceIdentifier);
 
@@ -61,7 +61,7 @@ class UserService
 
         $user = $request->user();
         if ($user instanceof User && (int) $user->project_id === $projectId) {
-            Session::put($this->getSessionKey($projectId), $user->id);
+            $this->rememberUser($user, $projectId);
             $this->logResolution('auth_user', $user, $lineUserId, $deviceIdentifier);
 
             return $user;
@@ -81,7 +81,7 @@ class UserService
             return $resolved;
         }
 
-        Session::put($this->getSessionKey($projectId), $sessionUser->id);
+        $this->rememberUser($sessionUser, $projectId);
         $this->logResolution('session', $sessionUser, $lineUserId, $deviceIdentifier);
 
         return $sessionUser;
@@ -96,7 +96,7 @@ class UserService
         if ($lineUserId !== null) {
             $byLine = $this->findActiveUserByLineId($lineUserId, $projectId);
             if ($byLine !== null) {
-                Session::put($this->getSessionKey($projectId), $byLine->id);
+                $this->rememberUser($byLine, $projectId);
                 $this->logResolution('get_or_create_line', $byLine, $lineUserId, $deviceIdentifier);
 
                 return $byLine;
@@ -109,7 +109,7 @@ class UserService
                 $this->releaseLineUserIdHeldByWithdrawnUsers($lineUserId, $projectId);
                 $this->linkLineUserIdIfPossible($existing, $lineUserId, $projectId);
             }
-            Session::put($this->getSessionKey($projectId), $existing->id);
+            $this->rememberUser($existing, $projectId);
             $this->logResolution('get_or_create_existing', $existing, $lineUserId, $deviceIdentifier);
 
             return $existing;
@@ -118,7 +118,7 @@ class UserService
         if ($lineUserId !== null) {
             $this->releaseLineUserIdHeldByWithdrawnUsers($lineUserId, $projectId);
             $user = $this->createGuestUser($lineUserId, $projectId);
-            Session::put($this->getSessionKey($projectId), $user->id);
+            $this->rememberUser($user, $projectId);
             $this->logResolution('get_or_create_new_line', $user, $lineUserId, $deviceIdentifier);
 
             return $user;
@@ -132,7 +132,7 @@ class UserService
         }
 
         $user = $this->createGuestUser('guest-'.uniqid(), $projectId);
-        Session::put($this->getSessionKey($projectId), $user->id);
+        $this->rememberUser($user, $projectId);
         $this->logResolution('get_or_create_guest', $user, $lineUserId, $deviceIdentifier);
 
         return $user;
@@ -158,7 +158,21 @@ class UserService
             return null;
         }
 
-        return $this->userRepository->findByIdAndProject((int) $sessionUserId, $projectId);
+        $user = $this->userRepository->findByIdAndProject((int) $sessionUserId, $projectId);
+        $version = Session::get($this->getSessionKey($projectId).'_version', 0);
+        if ($user === null || (int) $version !== (int) $user->authentication_version) {
+            Session::forget([$this->getSessionKey($projectId), $this->getSessionKey($projectId).'_version']);
+
+            return null;
+        }
+
+        return $user;
+    }
+
+    public function rememberUser(User $user, int $projectId): void
+    {
+        Session::put($this->getSessionKey($projectId), $user->id);
+        Session::put($this->getSessionKey($projectId).'_version', (int) $user->authentication_version);
     }
 
     private function isPlaceholderLineUserId(?string $lineUserId): bool
@@ -202,7 +216,7 @@ class UserService
     public function clearUserSession(Request $request): void
     {
         $projectId = AdminContext::requireCurrentProjectId();
-        Session::forget($this->getSessionKey($projectId));
+        Session::forget([$this->getSessionKey($projectId), $this->getSessionKey($projectId).'_version']);
     }
 
     private function resolveVerifiedLineUserId(Request $request): ?string
@@ -280,7 +294,7 @@ class UserService
             return null;
         }
 
-        Session::put($this->getSessionKey($projectId), $user->id);
+        $this->rememberUser($user, $projectId);
 
         return $user;
     }
@@ -299,7 +313,7 @@ class UserService
             $user->refresh();
 
             if ($user->line_user_id === $lineUserId) {
-                Session::put($this->getSessionKey($projectId), $user->id);
+                $this->rememberUser($user, $projectId);
 
                 return $user;
             }
@@ -309,7 +323,7 @@ class UserService
                 return $lineOwner;
             }
 
-            Session::put($this->getSessionKey($projectId), $user->id);
+            $this->rememberUser($user, $projectId);
 
             return $user;
         }
@@ -318,7 +332,7 @@ class UserService
             return $this->findActiveUserByLineId($lineUserId, $projectId);
         }
 
-        Session::put($this->getSessionKey($projectId), $user->id);
+        $this->rememberUser($user, $projectId);
 
         return $user;
     }
