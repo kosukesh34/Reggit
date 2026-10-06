@@ -276,4 +276,33 @@ class AppConfigApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('realtime.websocket_url', 'wss://ws.example.com/app/public-key?protocol=7&client=reggit-skip&version=1.0');
     }
+
+    public function test_native_realtime_uses_the_published_tunnel_host(): void
+    {
+        Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        $originalStorage = $this->app->storagePath();
+        $temporaryStorage = sys_get_temp_dir().'/reggit-reverb-'.bin2hex(random_bytes(6));
+        mkdir($temporaryStorage.'/app', 0777, true);
+        file_put_contents($temporaryStorage.'/app/reverb-ws-host', "tunnel.example.com\n");
+        $this->app->useStoragePath($temporaryStorage);
+        try {
+            config([
+                'app.url' => 'https://example.com',
+                'broadcasting.default' => 'reverb',
+                'broadcasting.client_ws_host' => '',
+                'broadcasting.connections.reverb.key' => 'public-key',
+            ]);
+            $this->getJson('/api/v1/app-config?project_key=default')
+                ->assertOk()
+                ->assertJsonPath('realtime.websocket_url', 'wss://tunnel.example.com/app/public-key?protocol=7&client=reggit-skip&version=1.0');
+        } finally {
+            $this->app->useStoragePath($originalStorage);
+            unlink($temporaryStorage.'/app/reverb-ws-host');
+            rmdir($temporaryStorage.'/app');
+            rmdir($temporaryStorage);
+        }
+    }
 }

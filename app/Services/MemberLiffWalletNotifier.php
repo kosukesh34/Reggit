@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Events\MemberWalletUpdated;
 use App\Models\Member;
 use App\Util\LogHelper;
+use Illuminate\Support\Facades\DB;
 
 class MemberLiffWalletNotifier
 {
@@ -13,6 +14,16 @@ class MemberLiffWalletNotifier
     ) {}
 
     public function notify(Member $member): void
+    {
+        DB::afterCommit(function () use ($member): void {
+            $freshMember = $member->fresh();
+            if ($freshMember !== null) {
+                $this->broadcast($freshMember);
+            }
+        });
+    }
+
+    private function broadcast(Member $member): void
     {
         $user = $member->user;
         if ($user === null) {
