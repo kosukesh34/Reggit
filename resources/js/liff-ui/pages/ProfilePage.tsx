@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useEffect, useState } from "react";
 import { ArrowLeft, Info, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";

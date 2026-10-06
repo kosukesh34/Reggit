@@ -1,4 +1,16 @@
 services:
+  node:
+    image: node:24-bookworm-slim
+    profiles: ["tools"]
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - reggit_node_modules:/var/www/html/node_modules
+    ports:
+      - "5173:5173"
+    networks:
+      - reggit_network
+
   app:
     build:
       context: .
@@ -94,10 +106,11 @@ services:
         condition: service_healthy
 
 volumes:
+  reggit_node_modules:
+    driver: local
   reggit_db_data:
     driver: local
 
 networks:
   reggit_network:
     driver: bridge
-

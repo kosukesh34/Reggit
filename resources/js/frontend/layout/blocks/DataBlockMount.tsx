@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useEffect } from 'react';
 import { AnnouncementView } from '../../features/announcements/AnnouncementView';
 import { GalleryView } from '../../features/gallery/GalleryView';

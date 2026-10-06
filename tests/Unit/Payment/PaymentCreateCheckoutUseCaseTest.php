@@ -42,12 +42,42 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
 
         $output = $useCase->handle((int) $order->id, (int) $project->id, (int) $user->id);
 
-        $this->assertSame('https://checkout.stripe.test/session', $output->checkoutUrl);
-        $this->assertSame(1480, $gateway->checkoutCreated['amount']);
-        $this->assertStringContainsString('status=success', $gateway->checkoutCreated['successUrl']);
-        $this->assertStringContainsString('order_id='.$order->id, $gateway->checkoutCreated['successUrl']);
-        $this->assertStringContainsString('{CHECKOUT_SESSION_ID}', $gateway->checkoutCreated['successUrl']);
-        $this->assertStringContainsString('status=cancel', $gateway->checkoutCreated['cancelUrl']);
+        $this->assertStringContainsString('/mobile/payment/card/'.$order->id, $output->checkoutUrl);
+        $this->assertStringContainsString('signature=', $output->checkoutUrl);
+        $this->assertStringNotContainsString('cs_test_123', $output->checkoutUrl);
+        $this->assertSame(1480, $gateway->created['amount']);
+        $this->assertEmpty($gateway->checkoutCreated);
+        $this->assertSame('card', $order->fresh()->payment_session['channel']);
+        $this->travel(2)->days();
+        $again = $useCase->handle((int) $order->id, (int) $project->id, (int) $user->id);
+        $this->assertSame($output->sessionId, $again->sessionId);
+        $this->assertNotSame($output->checkoutUrl, $again->checkoutUrl);
+        $this->travelBack();
+
+    }
+
+    public function test_existing_checkout_is_reused_without_creating_another_payment(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $order = Order::create([
+            'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 1480,
+            'status' => OrderStatus::PENDING, 'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 0, 'points_earned' => 0, 'order_type' => OrderType::MOBILE,
+        ]);
+        $order->payment_session = ['channel' => 'checkout', 'result' => [
+            'url' => 'https://checkout.stripe.test/existing', 'id' => 'cs_existing',
+        ]];
+        $order->save();
+        $gateway = new FakePaymentGateway;
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway));
+
+        $output = $useCase->handle((int) $order->id, (int) $project->id, (int) $user->id);
+
+        $this->assertSame('https://checkout.stripe.test/existing', $output->checkoutUrl);
+        $this->assertSame('cs_existing', $output->sessionId);
+        $this->assertEmpty($gateway->created);
+        $this->assertEmpty($gateway->checkoutCreated);
     }
 
     public function test_checkout_未決済以外の注文は拒否すること(): void

@@ -91,7 +91,7 @@ class OrderPaymentSessionService
     /** @return array<string, string> */
     private function createAtGateway(string $channel, int $amount, int $orderId): array
     {
-        if ($channel === 'intent') {
+        if (in_array($channel, ['intent', 'card'], true)) {
             return $this->gateway->createPaymentIntent($amount, $orderId);
         }
 

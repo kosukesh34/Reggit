@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useEffect, useRef, useState } from 'react';
 import { isFixedUiShell } from '../../demo/demoMode';
 import { BuilderLayout } from '../../layout/BuilderLayout';

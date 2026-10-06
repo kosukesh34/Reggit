@@ -2,11 +2,11 @@
 
 LINE ミニアプリと iOS / Android アプリで、会員証・ポイント・スタンプ・クーポン・注文・予約・順番待ちを提供する店舗向けサービスです。スマレジの会員・購買情報と連携し、来店から再来店までを支援します。
 
-PHP 8.4 / Laravel 12、MySQL 8、Vite / React / TypeScript を使用します。プロジェクトが契約・ブランド・会員基盤の単位で、その配下に複数の実店舗を持てます。
+PHP 8.4 / Laravel 13、MySQL 8.4、Vite / React / TypeScript を使用します。プロジェクトが契約・ブランド・会員基盤の単位で、その配下に複数の実店舗を持てます。
 
 ## 開発を始める
 
-Docker Compose と Node.js（`^20.19.0` または `>=22.12.0`）を用意します。
+Docker Compose を用意します。PHP は app コンテナ、Node.js 24 は node コンテナで実行します。node_modules は Docker の専用ボリュームに保存します。
 
 ```bash
 cp .env.example .env
@@ -17,8 +17,8 @@ docker compose exec app composer install
 docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate
 docker compose exec app php artisan storage:link
-npm ci
-npm run dev
+docker compose run --rm node npm ci
+docker compose run --rm --service-ports node npm run dev -- --host 0.0.0.0
 ```
 
 初期データが必要な場合は `docker compose exec app php artisan db:seed` を実行します。seed は既存管理者のパスワードやロールを更新しません。

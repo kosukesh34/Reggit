@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchGallery, type GalleryItem } from "../../../frontend/features/gallery/api";

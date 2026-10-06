@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useEffect, useState } from "react";
 import { CenterPopup } from "../ui/CenterPopup";
 import { Button } from "../ui/Button";
