@@ -54,6 +54,7 @@ class AuthenticateStoreApp
         app(StoreContext::class)->bind($request, (int) $project->id, $admin);
         app(StoreContext::class)->resolveForWrite((int) $project->id);
         $request->attributes->set('currentProject', $project);
+        $request->attributes->set('authenticated_store_app', $app);
 
         return $next($request);
     }

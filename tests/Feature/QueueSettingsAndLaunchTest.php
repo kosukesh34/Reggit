@@ -117,7 +117,7 @@ class QueueSettingsAndLaunchTest extends TestCase
         $this->assertSame(0, QueueEntry::count());
     }
 
-    public function test_store_会員必須でもi_pad受付は非会員で登録できること(): void
+    public function test_store_公開受付ではヘッダを指定しても会員必須を免除できないこと(): void
     {
         $project = $this->createProject();
         ShopSettingStore::setValue('queue_require_membership', true, 'boolean', (int) $project->id);
@@ -125,8 +125,8 @@ class QueueSettingsAndLaunchTest extends TestCase
         $response = $this->withHeaders(['X-Queue-Client' => 'waiting-system'])
             ->post('/api/queue?project_key=default', ['party_size' => 3]);
 
-        $response->assertStatus(201);
-        $this->assertSame(1, QueueEntry::count());
+        $response->assertStatus(403);
+        $this->assertSame(0, QueueEntry::count());
     }
 
     public function test_queue_open_lin_eのみならリダイレクトすること(): void
