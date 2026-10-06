@@ -12,13 +12,14 @@ class OrderFactory
         $order->loadMissing('items.product');
         $items = [];
         foreach ($order->items as $item) {
-            $productName = $item->product?->name ?? '';
+            $productName = $item->product_name ?? $item->product?->name ?? '';
             $items[] = new OrderItem(
                 $item->product_id,
                 $productName,
                 $item->quantity,
                 (float) $item->price,
-                $item->notes
+                $item->notes,
+                $item->option_ids,
             );
         }
 

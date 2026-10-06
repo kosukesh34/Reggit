@@ -217,6 +217,7 @@ class OrderService
                 (float) $item['price'],
                 $item['notes'] ?? null,
                 isset($item['product_name']) ? (string) $item['product_name'] : null,
+                $item['option_ids'] ?? [],
             );
         }
 
@@ -256,6 +257,7 @@ class OrderService
                 'quantity' => $quantity,
                 'price' => $unitPrice,
                 'notes' => $note,
+                'option_ids' => array_values(array_unique(array_map('intval', $item['option_ids'] ?? []))),
             ];
         }
 

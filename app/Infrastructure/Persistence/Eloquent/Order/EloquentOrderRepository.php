@@ -131,6 +131,7 @@ class EloquentOrderRepository implements OrderRepository
                 'order_id' => $model->id,
                 'product_id' => $item->productId,
                 'product_name' => $item->productName,
+                'option_ids' => $item->optionIds,
                 'quantity' => $item->quantity,
                 'price' => $item->unitPrice,
                 'notes' => $item->notes,
