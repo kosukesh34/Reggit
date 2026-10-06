@@ -1,1 +1,0 @@
-import{j as m}from"./react-vendor-9XZ66SAK.js";function c({children:r,className:s="",padding:t="md",...a}){return m.jsx("section",{...a,className:`card card--${t} ${s}`.trim(),children:r})}export{c as C};

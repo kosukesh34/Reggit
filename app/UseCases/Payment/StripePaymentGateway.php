@@ -11,6 +11,9 @@ class StripePaymentGateway implements PaymentGateway
 {
     public function __construct(?string $secretKey)
     {
+        // Keep the existing API contract when upgrading the Stripe SDK.
+        Stripe::setApiVersion('2026-02-25.clover');
+
         if ($secretKey !== null && $secretKey !== '') {
             Stripe::setApiKey($secretKey);
         }
@@ -21,11 +24,7 @@ class StripePaymentGateway implements PaymentGateway
         $intent = PaymentIntent::create([
             'amount' => $amount,
             'currency' => 'jpy',
-            // LIFF 内完結のためリダイレクト系決済は無効（カード 3DS のモーダルは利用可）
-            'automatic_payment_methods' => [
-                'enabled' => true,
-                'allow_redirects' => 'never',
-            ],
+            'payment_method_types' => ['card'],
             'metadata' => [
                 'order_id' => $orderId,
             ],

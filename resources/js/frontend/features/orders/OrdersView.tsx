@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppConstants } from '../../../shared/constants';
 import { DomHelper } from '../../../shared/utils/domHelper';

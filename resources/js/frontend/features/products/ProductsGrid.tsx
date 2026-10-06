@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { CategoryTabs } from './CategoryTabs';
 import { ProductCard } from './ProductCard';

@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React, { useEffect, useRef, useState } from 'react';
 import { getMemberManager } from './api';
 import { MemberProfileForm } from './MemberProfileForm';
