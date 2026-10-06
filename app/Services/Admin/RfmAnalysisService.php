@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use App\Enums\RfmSegment;
 use App\Models\Member;
 use App\Models\Order;
+use App\Models\Settings\ProjectRfmSetting;
 use App\Util\DateUtil;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -17,14 +18,6 @@ use Illuminate\Support\Facades\DB;
  */
 class RfmAnalysisService
 {
-    private const RECENCY_ACTIVE_DAYS = 30;
-
-    private const RECENCY_SLEEPING_DAYS = 90;
-
-    private const FREQUENCY_HIGH = 5;
-
-    private const MONETARY_HIGH = 10000;
-
     /**
      * プロジェクト全会員のRFMセグメント一覧を返す。
      *
@@ -41,14 +34,15 @@ class RfmAnalysisService
             return collect();
         }
 
+        $settings = ProjectRfmSetting::forProject($projectId);
         $orderStats = $this->fetchOrderStats($projectId, $members->pluck('user_id')->filter()->all());
 
-        return $members->map(function (Member $member) use ($orderStats): array {
+        return $members->map(function (Member $member) use ($orderStats, $settings): array {
             $stats = $orderStats[$member->user_id] ?? null;
             $recencyDays = $stats !== null ? (int) now()->diffInDays($stats['last_order_at'], true) : null;
             $frequency = $stats !== null ? (int) $stats['order_count'] : 0;
             $monetary = $stats !== null ? (float) $stats['total_amount'] : 0.0;
-            $segment = $this->resolveSegment($recencyDays, $frequency, $monetary);
+            $segment = $this->resolveSegment($recencyDays, $frequency, $monetary, $settings);
 
             return [
                 'member_id' => (int) $member->id,
@@ -150,21 +144,21 @@ class RfmAnalysisService
         return $result;
     }
 
-    private function resolveSegment(?int $recencyDays, int $frequency, float $monetary): string
+    private function resolveSegment(?int $recencyDays, int $frequency, float $monetary, ProjectRfmSetting $settings): string
     {
         if ($recencyDays === null) {
             return RfmSegment::NEVER;
         }
-        if ($recencyDays <= self::RECENCY_ACTIVE_DAYS && $frequency >= self::FREQUENCY_HIGH && $monetary >= self::MONETARY_HIGH) {
+        if ($recencyDays <= $settings->recency_active_days && $frequency >= $settings->frequency_high && $monetary >= $settings->monetary_high) {
             return RfmSegment::CHAMPION;
         }
-        if ($recencyDays <= self::RECENCY_ACTIVE_DAYS && $frequency >= self::FREQUENCY_HIGH) {
+        if ($recencyDays <= $settings->recency_active_days && $frequency >= $settings->frequency_high) {
             return RfmSegment::LOYAL;
         }
-        if ($recencyDays <= self::RECENCY_ACTIVE_DAYS) {
+        if ($recencyDays <= $settings->recency_active_days) {
             return RfmSegment::ACTIVE;
         }
-        if ($recencyDays <= self::RECENCY_SLEEPING_DAYS) {
+        if ($recencyDays <= $settings->recency_sleeping_days) {
             return RfmSegment::AT_RISK;
         }
 
