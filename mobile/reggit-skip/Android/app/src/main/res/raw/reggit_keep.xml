@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Skip resolves custom fonts by name at runtime; the resource shrinker
+     cannot see this reference from native Swift. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@font/fontawesome6free_solid" />
