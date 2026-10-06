@@ -10,7 +10,7 @@
     $canManage = $adminUser === null || $adminUser->hasPermission('members.manage');
     $user = $view->member->user;
     $hasName = admin_person_name($user?->name) !== '氏名未登録';
-    $memberName = $hasName ? $user->name : $view->member->member_number;
+    $memberName = $hasName ? $user->name : \App\Support\AdminMemberIdentifier::value($view->member);
     $lineName = trim((string) ($user?->line_name ?? ''));
     $kana = trim((string) ($user?->kana ?? ''));
     $phone = trim((string) ($user?->phone ?? ''));
@@ -71,8 +71,6 @@
                     <p class="member-identity-kana">{{ $kana }}</p>
                     @endif
                     <div class="member-identity-meta">
-                        <span class="member-identity-registered">登録 {{ $view->member->created_at->format('Y/m/d') }}</span>
-                        <span class="member-number-label">会員番号</span><code class="member-number">{{ $view->member->member_number }}</code>
                         <span class="member-rank-chip" data-rank="{{ $view->member->rank ?? '' }}">{{ $rankLabel }}</span>
                         <span class="badge badge-{{ $isActive ? 'success' : 'danger' }}">{{ $statusLabel }}</span>
                         @if($lineName !== '')
@@ -91,18 +89,26 @@
                 </div>
                 @endif
             </div>
-            @if($phone !== '' || $email !== '')
-            <p class="member-identity-contact">
-                @if($phone !== '')
-                <a href="tel:{{ $phone }}"><i class="fas fa-phone" aria-hidden="true"></i>{{ $phone }}</a>
-                @endif
-                @if($email !== '')
-                <a href="mailto:{{ $email }}"><i class="fas fa-envelope" aria-hidden="true"></i>{{ $email }}</a>
-                @endif
-            </p>
-            @endif
         </div>
     </div>
+    <dl class="member-identity-facts">
+        <div>
+            <dt>{{ \App\Support\AdminMemberIdentifier::label() }}</dt>
+            <dd><code class="member-number">{{ \App\Support\AdminMemberIdentifier::value($view->member) }}</code></dd>
+        </div>
+        <div>
+            <dt>登録日</dt>
+            <dd>{{ $view->member->created_at->format('Y/m/d') }}</dd>
+        </div>
+        <div>
+            <dt>電話</dt>
+            <dd>@if($phone !== '')<a href="tel:{{ $phone }}">{{ $phone }}</a>@else—@endif</dd>
+        </div>
+        <div>
+            <dt>メール</dt>
+            <dd>@if($email !== '')<a href="mailto:{{ $email }}">{{ $email }}</a>@else—@endif</dd>
+        </div>
+    </dl>
     <div class="member-identity-stats">
         <div class="member-identity-stat member-identity-stat--primary">
             <div class="member-identity-stat-label">保有ポイント</div>
@@ -115,7 +121,7 @@
             <div class="member-identity-stat-label">来店回数</div>
             <div class="member-identity-stat-value">{{ number_format((int) ($view->member->visits_count ?? 0)) }}<span>回</span></div>
             <div class="member-identity-stat-sub">
-                {{ $view->member->last_visited_at ? '最終 '.$view->member->last_visited_at->format('Y/m/d H:i') : '来店なし' }}
+                {{ $view->member->last_visited_at ? '最終 '.$view->member->last_visited_at->format('Y/m/d') : '来店なし' }}
             </div>
         </div>
         @if($firstStamp !== null)
@@ -125,22 +131,13 @@
             <div class="member-identity-stat-sub">{{ $firstStamp->stampCard?->name ?? 'スタンプカード' }}{{ $firstStamp->completed_at ? '（達成済み）' : '' }}</div>
         </div>
         @endif
-    </div>
-    <div class="member-identity-stats">
         <div class="member-identity-stat">
-            <div class="member-identity-stat-label">累計購買額（LTV）</div>
+            <div class="member-identity-stat-label">累計購買額</div>
             <div class="member-identity-stat-value">¥{{ number_format($view->purchaseSummary['total_revenue'] ?? 0) }}</div>
-        </div>
-        <div class="member-identity-stat">
-            <div class="member-identity-stat-label">総注文数</div>
-            <div class="member-identity-stat-value">{{ number_format($view->purchaseSummary['total_orders'] ?? 0) }}<span>件</span></div>
-        </div>
-        <div class="member-identity-stat">
-            <div class="member-identity-stat-label">平均注文単価</div>
-            <div class="member-identity-stat-value">¥{{ number_format($view->purchaseSummary['avg_order_value'] ?? 0) }}</div>
+            <div class="member-identity-stat-sub">{{ number_format($view->purchaseSummary['total_orders'] ?? 0) }}件 / 平均 ¥{{ number_format($view->purchaseSummary['avg_order_value'] ?? 0) }}</div>
         </div>
         <div class="member-identity-stat{{ isset($view->purchaseSummary['days_since_last_order']) && $view->purchaseSummary['days_since_last_order'] > 90 ? ' member-identity-stat--alert' : '' }}">
-            <div class="member-identity-stat-label">最終購買日</div>
+            <div class="member-identity-stat-label">最終購買</div>
             @if(isset($view->purchaseSummary['last_order_at']) && $view->purchaseSummary['last_order_at'])
             <div class="member-identity-stat-value">{{ $view->purchaseSummary['last_order_at']->format('Y/m/d') }}</div>
             <div class="member-identity-stat-sub">{{ $view->purchaseSummary['days_since_last_order'] }}日前</div>

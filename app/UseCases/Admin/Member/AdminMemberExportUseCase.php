@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Member;
 
 use App\Models\Member;
 use App\Services\Admin\MemberAdminListQueryService;
+use App\Support\AdminMemberIdentifier;
 use App\Support\MemberChannel;
 use Illuminate\Support\Collection;
 
@@ -24,8 +25,7 @@ class AdminMemberExportUseCase
                 $user = $m->user;
 
                 return [
-                    'ID' => (string) $m->id,
-                    '会員番号' => (string) ($m->member_number ?? ''),
+                    AdminMemberIdentifier::label($m->project_id) => AdminMemberIdentifier::value($m),
                     'ユーザー名' => (string) ($user !== null ? $user->name : ''),
                     '登録チャネル' => MemberChannel::label($user),
                     'メール' => (string) ($user !== null ? $user->email : ''),
