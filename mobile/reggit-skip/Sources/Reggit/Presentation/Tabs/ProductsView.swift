@@ -7,6 +7,7 @@ struct CartLine: Identifiable, Equatable {
     let product: ProductItem
     let quantity: Int
     let optionIds: [Int]
+    var notes: String? = nil
     var optionItems: [ProductOptionItem] { product.optionGroups.flatMap(\.options).filter { optionIds.contains($0.id) } }
     var unitPrice: Int { product.price + optionItems.reduce(0) { $0 + $1.priceDelta } }
     var lineTotal: Int { unitPrice * quantity }
@@ -30,6 +31,7 @@ final class ProductsViewModel {
     var products: [ProductItem] = []
     var cart: [Int: Int] = [:]
     var selectedOptions: [Int: [Int]] = [:]
+    var selectedNotes: [Int: String] = [:]
     var isSubmitting = false
     var actionMessage: String?
     var selectedCategory = ""
@@ -63,7 +65,7 @@ final class ProductsViewModel {
     var cartLines: [CartLine] {
         products.compactMap { product in
             guard product.isAvailable, let qty = cart[product.id], qty > 0 else { return nil }
-            return CartLine(id: product.id, product: product, quantity: qty, optionIds: selectedOptions[product.id] ?? [])
+            return CartLine(id: product.id, product: product, quantity: qty, optionIds: selectedOptions[product.id] ?? [], notes: selectedNotes[product.id])
         }
     }
 
@@ -94,6 +96,19 @@ final class ProductsViewModel {
         cart[product.id, default: 0] += 1
     }
 
+    func prepareReorder(_ order: OrderSnapshot) {
+        guard errorMessage == nil else { return }
+        do {
+            let plan = try ReorderCartPlan.make(order: order, products: products)
+            cart = plan.quantities
+            selectedOptions = plan.options
+            selectedNotes = plan.notes
+            showConfirm = true
+        } catch {
+            actionMessage = error.localizedDescription
+        }
+    }
+
     func removeFromCart(_ product: ProductItem) {
         guard let count = cart[product.id], count > 0 else { return }
         if count == 1 { cart.removeValue(forKey: product.id) }
@@ -102,7 +117,7 @@ final class ProductsViewModel {
 
     func placeOrder() async -> URL? {
         guard !isSubmitting else { return nil }
-        let lines = cartLines.map { OrderLineRequest(productId: $0.product.id, quantity: $0.quantity, optionIds: $0.optionIds) }
+        let lines = cartLines.map { OrderLineRequest(productId: $0.product.id, quantity: $0.quantity, optionIds: $0.optionIds, notes: $0.notes) }
         guard !lines.isEmpty else {
             actionMessage = "カートが空です"
             return nil
@@ -166,6 +181,8 @@ struct ProductsView: View {
     let paymentReturnRevision: Int
     let refreshRevision: Int
     let onPaymentConfirmed: () async -> Void
+    let reorderOrder: OrderSnapshot?
+    @State var didPrepareReorder = false
 
     init(
         apiClient: any ReggitAPIServing,
@@ -174,6 +191,7 @@ struct ProductsView: View {
         paymentReturnSucceeded: Bool = false,
         paymentReturnRevision: Int = 0,
         refreshRevision: Int = 0,
+        reorderOrder: OrderSnapshot? = nil,
         onPaymentConfirmed: @escaping () async -> Void = {}
     ) {
         _viewModel = State(initialValue: ProductsViewModel(apiClient: apiClient))
@@ -183,6 +201,7 @@ struct ProductsView: View {
         self.paymentReturnRevision = paymentReturnRevision
         self.refreshRevision = refreshRevision
         self.onPaymentConfirmed = onPaymentConfirmed
+        self.reorderOrder = reorderOrder
     }
 
     var body: some View {
@@ -203,6 +222,7 @@ struct ProductsView: View {
                             HStack(spacing: 10) {
                                 FontAwesomeIcon(systemName: "magnifyingglass").foregroundStyle(AppDesign.inkSecondary)
                                 TextField("商品・サービスを検索", text: Binding(get: { viewModel.searchText }, set: { viewModel.searchText = $0 }))
+                                    .textFieldStyle(.plain)
                                     .frame(minHeight: 44)
                                 if !viewModel.searchText.isEmpty {
                                     Button { viewModel.searchText = "" } label: { FontAwesomeIcon(systemName: "xmark.circle.fill") }
@@ -252,6 +272,8 @@ struct ProductsView: View {
                 )) {
                     if let product = selectedProduct {
                         productDetail(product).headerBackDestination()
+                            .environment(\.brandAccent, accent)
+                            .environment(\.appButtonColors, buttonColors)
                     }
                 }
                 .navigationDestination(isPresented: Binding(
@@ -304,7 +326,11 @@ struct ProductsView: View {
             }
         }
         .task(id: refreshRevision) {
-            await viewModel.load()
+            await viewModel.load(force: reorderOrder != nil)
+            if let reorderOrder, !didPrepareReorder, viewModel.errorMessage == nil {
+                didPrepareReorder = true
+                viewModel.prepareReorder(reorderOrder)
+            }
             let wasAwaitingPayment = viewModel.activeOrder?.isAwaitingCardPayment == true
             await viewModel.refreshActiveOrder()
             if wasAwaitingPayment, let order = viewModel.activeOrder, !order.isAwaitingCardPayment {
@@ -528,55 +554,65 @@ struct ProductsView: View {
     }
 
     private func productDetail(_ product: ProductItem) -> some View {
-        ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    if product.imageURL != nil {
-                        RemoteImageView(urlString: product.imageURL, baseURL: viewModel.mediaBaseURL, contentMode: .fit, cornerRadius: AppDesign.radiusXL)
-                            .frame(height: 260)
-                    }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(product.category).font(.caption.weight(.medium)).foregroundStyle(AppDesign.inkSecondary)
-                        Text(product.name).font(.title.weight(.bold)).foregroundStyle(AppDesign.ink)
-                        Text(AppFormat.yen(product.price)).font(.title2.weight(.semibold))
-                    }
-                    if !product.description.isEmpty {
-                        Divider()
-                        Text(product.description).font(.body).foregroundStyle(AppDesign.inkSecondary)
-                            .lineSpacing(5)
-                    }
-                    ForEach(product.optionGroups) { group in
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text(group.name).font(.headline)
-                                if group.isRequired { Text("必須").font(.caption2).foregroundStyle(AppDesign.danger) }
-                            }
-                            ForEach(group.options) { option in
-                                Button { toggleOption(option, in: group) } label: {
-                                    HStack {
-                                        FontAwesomeIcon(systemName: draftOptionIds.contains(option.id) ? "checkmark.circle.fill" : "circle")
-                                            .foregroundStyle(accent)
-                                        Text(option.name).foregroundStyle(AppDesign.ink)
-                                        Spacer()
-                                        if option.priceDelta != 0 { Text("\(option.priceDelta > 0 ? "+" : "")\(AppFormat.yen(option.priceDelta))").foregroundStyle(AppDesign.inkSecondary) }
-                                    }
-                                    .frame(minHeight: 44)
-                                }
-                                .buttonStyle(.plain)
-                            }
+        VStack(spacing: 0) {
+            HStack {
+                Button("閉じる") { selectedProduct = nil }
+                    .font(.body)
+                    .foregroundStyle(AppDesign.ink)
+                    .padding(.horizontal, 16)
+                    .frame(height: 44)
+                    .background(AppDesign.surface)
+                    .clipShape(Capsule())
+                    .buttonStyle(.plain)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 64)
+            ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if product.imageURL != nil {
+                            RemoteImageView(urlString: product.imageURL, baseURL: viewModel.mediaBaseURL, contentMode: .fit, cornerRadius: AppDesign.radiusXL)
+                                .frame(height: 260)
                         }
-                        .padding(14)
-                        .background(AppDesign.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM))
-                    }
-                }.padding(24)
-            }
-            .background(AppDesign.canvas)
-            .navigationTitle("")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") { selectedProduct = nil }
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(product.category).font(.caption.weight(.medium)).foregroundStyle(AppDesign.inkSecondary)
+                            Text(product.name).font(.title.weight(.bold)).foregroundStyle(AppDesign.ink)
+                            Text(AppFormat.yen(product.price)).font(.title2.weight(.semibold))
+                        }
+                        if !product.description.isEmpty {
+                            Divider()
+                            Text(product.description).font(.body).foregroundStyle(AppDesign.inkSecondary)
+                                .lineSpacing(5)
+                        }
+                        ForEach(product.optionGroups) { group in
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Text(group.name).font(.headline)
+                                    if group.isRequired { Text("必須").font(.caption2).foregroundStyle(AppDesign.danger) }
+                                }
+                                ForEach(group.options) { option in
+                                    Button { toggleOption(option, in: group) } label: {
+                                        HStack {
+                                            FontAwesomeIcon(systemName: draftOptionIds.contains(option.id) ? "checkmark.circle.fill" : "circle")
+                                                .foregroundStyle(accent)
+                                            Text(option.name).foregroundStyle(AppDesign.ink)
+                                            Spacer()
+                                            if option.priceDelta != 0 { Text("\(option.priceDelta > 0 ? "+" : "")\(AppFormat.yen(option.priceDelta))").foregroundStyle(AppDesign.inkSecondary) }
+                                        }
+                                        .frame(minHeight: 44)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(14)
+                            .background(AppDesign.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM))
+                        }
+                    }.padding(24)
                 }
-            }
+        }
+            .background(AppDesign.canvas)
+            .toolbar(.hidden, for: .navigationBar)
             .appBottomAction {
                 AppActionBar {
                     AppPrimaryButton(

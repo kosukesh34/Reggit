@@ -631,9 +631,12 @@ struct OrderLineRequest {
     let productId: Int
     let quantity: Int
     var optionIds: [Int] = []
+    var notes: String? = nil
 
     func asDictionary() -> [String: Any] {
-        ["product_id": productId, "quantity": quantity, "option_ids": optionIds]
+        var result: [String: Any] = ["product_id": productId, "quantity": quantity, "option_ids": optionIds]
+        if let notes { result["notes"] = notes }
+        return result
     }
 }
 
@@ -642,6 +645,9 @@ struct OrderLineItem: Identifiable, Equatable, Hashable {
     let productName: String
     let quantity: Int
     let price: Int
+    var productId: Int? = nil
+    var optionIds: [Int]? = nil
+    var notes: String? = nil
 }
 
 struct OrderSnapshot: Identifiable, Equatable, Hashable {
@@ -697,7 +703,9 @@ struct OrderSnapshot: Identifiable, Equatable, Hashable {
                 ?? "商品"
             let qty = item["quantity"] as? Int ?? 1
             let price = Self.parseIntAmount(item["price"])
-            return OrderLineItem(id: index, productName: name, quantity: qty, price: price)
+            return OrderLineItem(id: index, productName: name, quantity: qty, price: price,
+                                 productId: item["product_id"] as? Int ?? product?["id"] as? Int,
+                                 optionIds: item["option_ids"] as? [Int], notes: item["notes"] as? String)
         }
         return OrderSnapshot(
             id: id,

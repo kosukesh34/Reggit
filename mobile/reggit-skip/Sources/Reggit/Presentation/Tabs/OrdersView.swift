@@ -40,10 +40,13 @@ struct OrdersView: View {
     @Environment(\.brandAccent) var accent
     @State var selectedOrder: OrderSnapshot?
     @State var selectedSegment = 0
+    @State var reorderOrder: OrderSnapshot?
+    let apiClient: any ReggitAPIServing
 
     init(apiClient: any ReggitAPIServing, reloadRevision: Int = 0) {
         _viewModel = State(initialValue: OrdersViewModel(apiClient: apiClient))
         _viewModel.wrappedValue.reloadRevision = reloadRevision
+        self.apiClient = apiClient
     }
 
     var body: some View {
@@ -59,15 +62,14 @@ struct OrdersView: View {
                     onRetry: { Task { await viewModel.load() } },
                     skeleton: { OrdersSkeletonView() }
                 ) {
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
+                    List {
                             AppSegmentedControl(titles: ["すべて", "進行中", "完了・キャンセル"], selectedIndex: $selectedSegment)
                                 .padding(.bottom, 14)
                             let visible = viewModel.orders.filter { selectedSegment == 0 || (selectedSegment == 1 ? $0.isActive : !$0.isActive) }
                             if visible.isEmpty {
                                 AppEmptyState(title: "該当する注文はありません", subtitle: "注文状況はここで確認できます", systemImage: "bag")
                             }
-                            ForEach(Array(visible.enumerated()), id: \.element.id) { index, order in
+                            ForEach(visible) { order in
                                 Button {
                                     selectedOrder = order
                                 } label: {
@@ -75,11 +77,18 @@ struct OrdersView: View {
                                         .padding(.vertical, 16)
                                 }
                                 .buttonStyle(.plain)
-                                if index < visible.count - 1 { Divider() }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button {
+                                        reorderOrder = order
+                                    } label: {
+                                        Label("再注文", systemImage: "arrow.clockwise")
+                                    }
+                                    .tint(accent)
+                                }
                             }
-                        }
-                        .padding(16)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
                 .background(AppDesign.canvas.ignoresSafeArea())
                 .navigationBarHidden(true)
@@ -87,6 +96,12 @@ struct OrdersView: View {
                 .refreshable { await viewModel.load(force: true) }
                 .navigationDestination(item: $selectedOrder) { order in
                     OrderStatusView(order: order)
+                        .environment(\.brandAccent, accent)
+                        .environment(\.appButtonColors, buttonColors)
+                        .headerBackDestination()
+                }
+                .navigationDestination(item: $reorderOrder) { order in
+                    ProductsView(apiClient: apiClient, reorderOrder: order)
                         .environment(\.brandAccent, accent)
                         .environment(\.appButtonColors, buttonColors)
                         .headerBackDestination()
