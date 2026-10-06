@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="reggit_canvas">#FFF9F6ED</color>
+    <color name="reggit_canvas">#FF000000</color>
     <style name="Theme.Reggit.Splash" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@drawable/splash_background</item>
         <item name="android:windowFullscreen">false</item>
         <item name="android:statusBarColor">@color/reggit_canvas</item>
         <item name="android:navigationBarColor">@color/reggit_canvas</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>
