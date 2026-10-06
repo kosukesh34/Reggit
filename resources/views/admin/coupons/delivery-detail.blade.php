@@ -61,7 +61,7 @@
                 <thead>
                     <tr>
                         <th>会員名</th>
-                        <th>会員番号</th>
+                        <th>{{ \App\Support\AdminMemberIdentifier::label() }}</th>
                         <th>状態</th>
                         <th></th>
                     </tr>
@@ -76,7 +76,7 @@
                                 {{ $member['member_name'] }}
                             @endif
                         </td>
-                        <td>{{ $member['member_number'] }}</td>
+                        <td>{{ \App\Support\AdminMemberIdentifier::fromValues($member['member_id'] ?? $member['id'] ?? null, $member['member_number']) }}</td>
                         <td>
                             <span class="badge badge-{{ $member['is_issued'] ? 'success' : 'secondary' }}">{{ $member['status_label'] }}</span>
                         </td>

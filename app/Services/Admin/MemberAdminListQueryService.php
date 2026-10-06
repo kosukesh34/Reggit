@@ -21,6 +21,7 @@ class MemberAdminListQueryService
     /** @var array<string, string> */
     private const LIST_SORT_COLUMNS = [
         'id' => 'members.id',
+        'member_number' => 'members.member_number',
         'name' => 'users.name',
         'points' => 'members.points',
         'last_visited_at' => 'members.last_visited_at',
