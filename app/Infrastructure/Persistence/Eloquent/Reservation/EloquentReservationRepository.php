@@ -109,7 +109,8 @@ class EloquentReservationRepository implements ReservationRepository
             $query->where('id', '!=', $excludeReservationId);
         }
 
-        return (int) $query->count();
+        // Use a current locking read even when the caller already has a transaction snapshot.
+        return $query->lockForUpdate()->get(['id'])->count();
     }
 
     public function save(ReservationAggregate $reservation): void
