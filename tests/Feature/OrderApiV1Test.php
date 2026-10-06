@@ -6,6 +6,7 @@ use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Models\Member;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductOption;
 use App\Models\ProductOptionGroup;
@@ -112,6 +113,8 @@ class OrderApiV1Test extends TestCase
 
         $response->assertStatus(201);
         $this->assertSame(580.0, (float) $response->json('data.order.total_amount'));
+        $this->assertSame([$fixture['optL']->id], $response->json('data.order.items.0.option_ids'));
+        $this->assertSame([$fixture['optL']->id], OrderItem::first()->option_ids);
         $item = $response->json('data.order.items.0');
         $this->assertSame('L / ソース少なめ', $item['notes']);
     }

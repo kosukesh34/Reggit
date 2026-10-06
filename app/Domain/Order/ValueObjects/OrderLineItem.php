@@ -10,6 +10,7 @@ final class OrderLineItem
         public readonly float $unitPrice,
         public readonly ?string $notes,
         public readonly ?string $productName = null,
+        public readonly array $optionIds = [],
     ) {}
 
     public function lineTotal(): float
