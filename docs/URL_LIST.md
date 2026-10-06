@@ -20,7 +20,7 @@ docker compose exec app php artisan db:seed --force
 | システム管理者 | `demo_sys` | `DemoSys#2026` | http://localhost:8080/system-admin/login |
 | プロジェクト管理者 | `demo_proj` | `DemoProj#2026` | http://localhost:8080/admin/{project_key}/login |
 | 店舗管理者 | `demo_store` | `DemoStore#2026` | http://localhost:8080/admin/{project_key}/login |
-| 初回システム管理者（.env） | `reserve` | `reserve` | http://localhost:8080/system-admin/login |
+| 初回システム管理者（.env） | `ADMIN_LOGIN_ID` または `ADMIN_EMAIL` に設定した値 | `ADMIN_PASSWORD` に設定した固有の値 | http://localhost:8080/system-admin/login |
 
 ※ **システム管理者**は `/system-admin/login` からのみログインでき、**全プロジェクト**にアクセス可能です。
 ※ **店舗・プロジェクト管理者**は `/admin/login`（ID・パスワードのみ）または `/admin/{project_key}/login` でログインします。プロジェクト一覧は公開しません。

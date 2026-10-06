@@ -21,30 +21,40 @@ class AdminUserSeeder extends Seeder
 
     public function run(): void
     {
-        // .env の認証情報でシステム管理者を1件必ず作成/更新（DEMO_SEED 時は DEMO_SYSTEM_*、それ以外は ADMIN_*）
+        // Production must never provision accounts with documented demo credentials.
         $useDemo = filter_var(env('DEMO_SEED', false), FILTER_VALIDATE_BOOLEAN);
+        if ($useDemo && app()->environment('production')) {
+            throw new \RuntimeException('DEMO_SEED cannot be enabled in production.');
+        }
         if ($useDemo) {
             $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
             $password = self::demoSystemPassword();
             $name = env('DEMO_SYSTEM_NAME', 'デモシステム管理者');
             $email = env('DEMO_SYSTEM_EMAIL', $loginId.'@example.com');
         } else {
-            $loginId = env('ADMIN_LOGIN_ID', env('ADMIN_EMAIL', 'reserve'));
-            $password = env('ADMIN_PASSWORD', 'reserve');
+            $loginId = trim((string) (env('ADMIN_LOGIN_ID') ?: env('ADMIN_EMAIL', '')));
+            $password = (string) env('ADMIN_PASSWORD', '');
+            if ($loginId === '') {
+                throw new \RuntimeException('ADMIN_LOGIN_ID or ADMIN_EMAIL is required.');
+            }
             $name = env('ADMIN_NAME', 'システムアドミン');
             $email = $loginId.'@system.local';
         }
 
-        AdminUser::updateOrCreate(
-            ['login_id' => $loginId],
-            [
+        // Re-running a seed must not reset passwords or elevate an existing account.
+        if (! AdminUser::where('login_id', $loginId)->exists()) {
+            if (! $useDemo && (trim($password) === '' || $password === 'reserve')) {
+                throw new \RuntimeException('Set a non-default ADMIN_PASSWORD before creating a system administrator.');
+            }
+            AdminUser::create([
+                'login_id' => $loginId,
                 'email' => $email,
                 'password' => $password,
                 'name' => $name,
                 'role' => AdminUser::ROLE_SYSTEM_ADMIN,
                 'project_id' => null,
-            ]
-        );
+            ]);
+        }
 
         // DEMO_SEED=false でも非本番ではドキュメント通り demo_sys でログインできるようにする
         if ($useDemo === false && app()->environment('production') === false) {
@@ -65,8 +75,12 @@ class AdminUserSeeder extends Seeder
     /** ドキュメント記載のデモ用システム管理者（既定: demo_sys）を DB に反映する */
     public static function upsertDocumentedDemoSystemAdmin(): void
     {
+        if (app()->environment('production')) {
+            throw new \RuntimeException('Demo administrators cannot be seeded in production.');
+        }
+
         $loginId = env('DEMO_SYSTEM_LOGIN_ID', 'demo_sys');
-        AdminUser::updateOrCreate(
+        AdminUser::firstOrCreate(
             ['login_id' => $loginId],
             [
                 'email' => env('DEMO_SYSTEM_EMAIL', $loginId.'@example.com'),
