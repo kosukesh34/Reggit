@@ -29,12 +29,15 @@ class MemberTransferClaimController extends BaseApiController
 
         try {
             $device = $this->authenticatedDeviceResolver->resolve($request, $user->id);
-            $this->claimMemberTransferCodeUseCase->handle(
+            $transferredUser = $this->claimMemberTransferCodeUseCase->handle(
                 $user,
                 $device,
                 (string) $request->input('code', ''),
                 (int) $request->input('member_id', 0),
             );
+
+            $request->session()->regenerate();
+            $this->userService->rememberUser($transferredUser, (int) $transferredUser->project_id);
 
             return $this->success([], '会員を引き継ぎました');
         } catch (InvalidArgumentException $e) {

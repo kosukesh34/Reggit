@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Member;
 use App\Models\Project;
@@ -142,6 +143,38 @@ class MemberTransferTest extends TestCase
             'user_id' => $user->id,
             'issued_by_admin_user_id' => $admin->id,
         ]);
+    }
+
+    public function test_transfer_revokes_old_web_session_and_keeps_destination_authenticated(): void
+    {
+        $project = $this->createProject();
+        $source = User::factory()->create(['project_id' => $project->id, 'line_user_id' => self::SOURCE_LINE_ID]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $source->id]);
+        ShopSettingStore::setValue('member_registration_mode', 'force', 'string', $project->id);
+        $oldToken = $this->registerDevice(self::SOURCE_LINE_ID, 'old-device');
+        $code = $this->withHeaders(['X-Line-User-Id' => self::SOURCE_LINE_ID])
+            ->postJson('/api/members/transfer-code?project_key=default')->assertOk()->json('data.code');
+        $newToken = $this->registerDevice(self::DESTINATION_LINE_ID, 'new-device');
+        $this->withHeaders([
+            'X-Line-User-Id' => self::DESTINATION_LINE_ID,
+            'X-Device-Identifier' => 'new-device', 'X-Device-Token' => $newToken,
+        ])->postJson('/api/members/transfer?project_key=default', [
+            'member_id' => $member->id, 'code' => $code,
+        ])->assertOk();
+        $this->flushHeaders();
+        $this->getJson('/api/members/me?project_key=default')->assertOk();
+        $this->withSession([
+            'mobile_order_user_id_'.$project->id => $source->id,
+            'mobile_order_user_id_'.$project->id.'_version' => 0,
+        ])->withHeaders(['X-Device-Identifier' => 'old-device', 'X-Device-Token' => $oldToken])
+            ->getJson('/api/members/me?project_key=default')->assertOk()->assertJsonPath('is_member', false);
+        $this->withSession(['mobile_order_user_id_'.$project->id => $source->id])
+            ->postJson('/api/devices/register?project_key=default', ['platform' => 'ios', 'device_identifier' => 'replacement-device'])
+            ->assertOk();
+        $this->assertDatabaseMissing('user_devices', ['user_id' => $source->id, 'device_identifier' => 'replacement-device']);
+        $this->flushHeaders();
+        $this->withHeaders(['X-Device-Identifier' => 'new-device', 'X-Device-Token' => $newToken])
+            ->getJson('/api/members/me?project_key=default')->assertOk();
     }
 
     private function createProject(): Project
