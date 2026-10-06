@@ -495,6 +495,18 @@
             font-weight: 600;
             color: #334155;
         }
+        .profile-saving {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 24px 32px;
+            border-radius: 12px;
+            background: #fff;
+            color: #172033;
+            font-size: 14px;
+            font-weight: 700;
+        }
     </style>
 
     <div class="form-actions">
@@ -925,6 +937,68 @@
 
     syncValuesVisibility();
     syncAddButton();
+
+    var profileForms = ['#profile-fields form', '#profile-code form'].map(function(selector) {
+        return document.querySelector(selector);
+    }).filter(Boolean);
+    var savedSnapshots = profileForms.map(serializeForm);
+    var isLeaving = false;
+
+    function serializeForm(form) {
+        return new URLSearchParams(new FormData(form)).toString();
+    }
+
+    function hasUnsavedChanges() {
+        return profileForms.some(function(form, index) {
+            return serializeForm(form) !== savedSnapshots[index];
+        });
+    }
+
+    profileForms.forEach(function(form) {
+        form.addEventListener('submit', function() {
+            if (!form.checkValidity()) {
+                return;
+            }
+            isLeaving = true;
+        });
+    });
+
+    window.addEventListener('beforeunload', function(event) {
+        if (isLeaving || !hasUnsavedChanges()) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
+    });
+
+    document.addEventListener('click', function(event) {
+        if (isLeaving || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
+        var target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+        var link = target.closest('a');
+        if (!(link instanceof HTMLAnchorElement) || link.target === '_blank' || !link.href) {
+            return;
+        }
+        var nextUrl;
+        try {
+            nextUrl = new URL(link.href);
+        } catch (error) {
+            return;
+        }
+        if (nextUrl.origin !== window.location.origin || (nextUrl.pathname === window.location.pathname && nextUrl.search === window.location.search)) {
+            return;
+        }
+        if (!hasUnsavedChanges()) {
+            return;
+        }
+        if (!window.confirm('保存していない変更があります。このページを離れますか？')) {
+            event.preventDefault();
+        }
+    });
 })();
 </script>
 @endsection
