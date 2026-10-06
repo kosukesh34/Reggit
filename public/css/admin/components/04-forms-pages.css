@@ -192,17 +192,55 @@ textarea.form-control {
 /* ===== ツールチップ ===== */
 .tooltip {
     position: fixed;
-    background: var(--text-primary);
+    max-width: min(320px, calc(100vw - 16px));
+    background: #172033;
     color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 11px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
     pointer-events: none;
     z-index: 10000;
     opacity: 0;
     transition: opacity var(--transition-fast);
-    white-space: nowrap;
+    white-space: pre-line;
+    text-align: left;
     box-shadow: var(--shadow-md);
+}
+
+.admin-help {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fff;
+    color: #172033;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.admin-help:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.admin-saving {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px 32px;
+    border-radius: 12px;
+    background: #fff;
+    color: #172033;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.admin-saving p {
+    margin: 0;
 }
 
 .tooltip.show {
