@@ -121,14 +121,14 @@ Route::post('/lp/register/{registration}/form', [LandingRegistrationFormControll
 Route::get('/existing-member-link/{token}', ExistingMemberLinkConfirmController::class)
     ->middleware('throttle:20,1')
     ->name('existing-member-link.confirm');
+Route::post('/existing-member-link/{token}', [ExistingMemberLinkConfirmController::class, 'confirm'])
+    ->middleware('throttle:20,1')
+    ->name('existing-member-link.complete');
 Route::get('/legal/{project_key}/terms', [LegalDocumentController::class, 'terms'])->name('legal.terms');
 Route::get('/legal/{project_key}/privacy', [LegalDocumentController::class, 'privacy'])->name('legal.privacy');
 
 Route::get('/api', ApiInfoController::class);
 
-Route::post('/existing-member-link/{token}', [ExistingMemberLinkConfirmController::class, 'confirm'])
-    ->middleware('throttle:20,1')
-    ->name('existing-member-link.complete');
 // ELB / ロードバランサー用ヘルスチェック（EB の「パス」を /health に設定すること）
 // 既定: DB 到達時 plain `ok`。?deep=1 で JSON {status,db} を返す。DB 障害時は 503。
 Route::get('/health', HealthController::class);
@@ -246,12 +246,12 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::post('/member-tags', [AdminMemberTagController::class, 'store'])->name('admin.member-tags.store')->middleware('admin.permission:members.manage');
         Route::delete('/member-tags/{id}', [AdminMemberTagController::class, 'destroy'])->name('admin.member-tags.destroy')->middleware('admin.permission:members.manage');
         Route::get('/rfm', [AdminRfmController::class, 'index'])->name('admin.rfm')->middleware('admin.permission:members.view');
+        Route::put('/rfm/settings', [AdminRfmController::class, 'updateSettings'])->name('admin.rfm.settings.update')->middleware('admin.permission:settings.manage');
 
         Route::get('/reservations', [AdminReservationController::class, 'reservations'])->name('admin.reservations')->middleware('admin.permission:reservations.view');
         Route::get('/reservations/create', [AdminReservationController::class, 'createReservation'])->name('admin.reservations.create')->middleware('admin.permission:reservations.update');
         Route::post('/reservations', [AdminReservationController::class, 'storeReservation'])->name('admin.reservations.store')->middleware('admin.permission:reservations.update');
         Route::get('/reservations/{id}', [AdminReservationController::class, 'reservationDetail'])->name('admin.reservations.detail')->middleware('admin.permission:reservations.view');
-        Route::put('/rfm/settings', [AdminRfmController::class, 'updateSettings'])->name('admin.rfm.settings.update')->middleware('admin.permission:settings.manage');
         Route::get('/reservations/{id}/edit', [AdminReservationController::class, 'editReservation'])->name('admin.reservations.edit')->middleware('admin.permission:reservations.update');
         Route::put('/reservations/{id}', [AdminReservationController::class, 'updateReservation'])->name('admin.reservations.update')->middleware('admin.permission:reservations.update');
         Route::delete('/reservations/{id}', [AdminReservationController::class, 'destroyReservation'])->name('admin.reservations.destroy')->middleware('admin.permission:reservations.update');
@@ -293,13 +293,13 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/announcements/create', [AdminAnnouncementController::class, 'createAnnouncement'])->name('admin.announcements.create')->middleware('admin.permission:announcements.manage');
         Route::get('/announcements/delivery', [AnnouncementDeliveryController::class, 'create'])->name('admin.announcements.delivery.create')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
         Route::post('/announcements/delivery', [AnnouncementDeliveryController::class, 'store'])->name('admin.announcements.delivery.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
+        Route::post('/announcements/audience-groups', [AnnouncementDeliveryController::class, 'storeAudienceGroup'])->name('admin.announcements.audience-groups.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
+        Route::delete('/announcements/audience-groups/{id}', [AnnouncementDeliveryController::class, 'destroyAudienceGroup'])->name('admin.announcements.audience-groups.destroy')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
         Route::get('/announcements/ajax/members', [AnnouncementDeliveryController::class, 'searchMembers'])->name('admin.announcements.ajax.members')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/segment-preview', [AnnouncementDeliveryController::class, 'segmentPreview'])->name('admin.announcements.segment.preview')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/audience-preview', [AnnouncementDeliveryController::class, 'audiencePreview'])->name('admin.announcements.audience.preview')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/{id}/reads', [AdminAnnouncementController::class, 'announcementReads'])->name('admin.announcements.reads')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/{id}/edit', [AdminAnnouncementController::class, 'editAnnouncement'])->name('admin.announcements.edit')->middleware('admin.permission:announcements.manage');
-        Route::post('/announcements/audience-groups', [AnnouncementDeliveryController::class, 'storeAudienceGroup'])->name('admin.announcements.audience-groups.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
-        Route::delete('/announcements/audience-groups/{id}', [AnnouncementDeliveryController::class, 'destroyAudienceGroup'])->name('admin.announcements.audience-groups.destroy')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
         Route::put('/announcements/{id}', [AdminAnnouncementController::class, 'updateAnnouncement'])->name('admin.announcements.update')->middleware('admin.permission:announcements.manage');
         Route::delete('/announcements/{id}', [AdminAnnouncementController::class, 'deleteAnnouncement'])->name('admin.announcements.delete')->middleware('admin.permission:announcements.manage');
 
