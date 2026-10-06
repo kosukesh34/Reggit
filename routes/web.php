@@ -298,6 +298,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/announcements/audience-preview', [AnnouncementDeliveryController::class, 'audiencePreview'])->name('admin.announcements.audience.preview')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/{id}/reads', [AdminAnnouncementController::class, 'announcementReads'])->name('admin.announcements.reads')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/{id}/edit', [AdminAnnouncementController::class, 'editAnnouncement'])->name('admin.announcements.edit')->middleware('admin.permission:announcements.manage');
+        Route::post('/announcements/audience-groups', [AnnouncementDeliveryController::class, 'storeAudienceGroup'])->name('admin.announcements.audience-groups.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
+        Route::delete('/announcements/audience-groups/{id}', [AnnouncementDeliveryController::class, 'destroyAudienceGroup'])->name('admin.announcements.audience-groups.destroy')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
         Route::put('/announcements/{id}', [AdminAnnouncementController::class, 'updateAnnouncement'])->name('admin.announcements.update')->middleware('admin.permission:announcements.manage');
         Route::delete('/announcements/{id}', [AdminAnnouncementController::class, 'deleteAnnouncement'])->name('admin.announcements.delete')->middleware('admin.permission:announcements.manage');
 

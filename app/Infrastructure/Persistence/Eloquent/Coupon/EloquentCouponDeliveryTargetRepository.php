@@ -313,7 +313,7 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         return array_values(array_unique(array_merge($fromOrders, $fromVisits)));
     }
 
-    public function findIdsByProfileField(int $projectId, string $key, array $values): array
+    public function findIdsByProfileField(int $projectId, string $key, array $values, bool $requireAll = false): array
     {
         $expected = collect($values)
             ->map(fn ($value): string => trim((string) $value))
@@ -328,14 +328,17 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             ->where('project_id', $projectId)
             ->whereNotNull('profile_extra')
             ->get(['id', 'profile_extra'])
-            ->filter(function (Member $member) use ($key, $expected): bool {
+            ->filter(function (Member $member) use ($key, $expected, $requireAll): bool {
                 $actual = data_get($member->profile_extra, $key);
                 $actualValues = is_array($actual) ? $actual : [$actual];
 
-                return collect($actualValues)
+                $matched = collect($actualValues)
                     ->map(fn ($value): string => trim((string) $value))
-                    ->intersect($expected)
-                    ->isNotEmpty();
+                    ->intersect($expected);
+
+                return $requireAll
+                    ? $matched->count() === $expected->count()
+                    : $matched->isNotEmpty();
             })
             ->pluck('id')
             ->map(fn ($id) => (int) $id)

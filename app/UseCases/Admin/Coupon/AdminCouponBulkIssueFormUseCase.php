@@ -2,10 +2,12 @@
 
 namespace App\UseCases\Admin\Coupon;
 
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\CouponDeliveryType;
 use App\Models\Coupon;
 use App\Models\Member;
+use App\Models\MemberAudienceGroup;
 use App\Models\Product;
 use App\Models\StampCard;
 use App\Services\Admin\CouponAdminService;
@@ -22,6 +24,7 @@ class AdminCouponBulkIssueFormUseCase
         private RankSettings $shopSettingRepository,
         private RfmAnalysisService $rfmAnalysisService,
         private MemberTagAdminService $memberTagAdminService,
+        private ProfileSettings $profileSettings,
     ) {}
 
     public function handle(int $projectId): AdminCouponBulkIssueFormOutput
@@ -76,6 +79,8 @@ class AdminCouponBulkIssueFormUseCase
             defaultDeliveryType: CouponDeliveryType::IMMEDIATE_ALL,
             rfmSegments: $this->rfmAnalysisService->segmentOptions(),
             memberTags: $this->memberTagAdminService->getListByProject($projectId),
+            profileFields: array_values($this->profileSettings->getProfileFieldSettings($projectId)['custom_fields'] ?? []),
+            audienceGroups: MemberAudienceGroup::query()->where('project_id', $projectId)->orderBy('name')->get(),
         );
     }
 }
