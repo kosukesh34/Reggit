@@ -24,6 +24,10 @@ struct NativeRootView: View {
     private var accent: Color { themeHex.toNativeColor() }
 
     var body: some View {
+        SkipRefreshing { rootContent }
+    }
+
+    private var rootContent: some View {
         VStack(spacing: 0) {
             if expandedHomeImageIndex == nil && (viewModel.phase == .ready || viewModel.phase == .needsRegistration) {
                 NativeSharedHeader(
@@ -41,7 +45,6 @@ struct NativeRootView: View {
                 )
             }
         NavigationStack {
-        SkipRefreshing {
             Group {
                 switch viewModel.phase {
                 case .loading:
@@ -73,8 +76,7 @@ struct NativeRootView: View {
             .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
             .preferredColorScheme(.light)
             .environment(\.apiBaseURL, viewModel.apiClient?.baseURL ?? "")
-            .toolbar(viewModel.phase == .needsRegistration ? .visible : .hidden, for: .navigationBar)
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
         .alert("会員登録", isPresented: $viewModel.showRegistrationPopup) {
@@ -127,10 +129,11 @@ struct NativeRootView: View {
                 if let game = viewModel.lotteryPreviewGame {
                     LotteryRewardSheet(previewGame: game) { viewModel.lotteryModalPresented = false }
                 } else if let client = viewModel.apiClient {
-                    LotteryRewardSheet(apiClient: client) { viewModel.lotteryModalPresented = false }
+                    LotteryRewardSheet(apiClient: client, refreshRevision: viewModel.lotteryRevision) { viewModel.lotteryModalPresented = false }
                 }
             }
-            .presentationDetents([.medium, .large])
+            .id(viewModel.lotteryPreviewGame?.rawValue ?? "purchase")
+            .presentationDetents(PlatformRuntime.supportsMultipleModalDetents ? [.medium, .large] : [.large])
             .presentationDragIndicator(.visible)
         }
 
@@ -144,6 +147,14 @@ struct NativeRootView: View {
         }
         }
         .environment(\.headerNavigation, headerNavigation)
+        }
+        .textFieldStyle(.plain)
+        .preferredColorScheme(.light)
+        .background {
+            if viewModel.phase == .ready || viewModel.phase == .needsRegistration {
+                viewModel.navigationHeaderBackgroundColorHex.toNativeColor(fallback: AppDesign.surface)
+                    .ignoresSafeArea()
+            }
         }
     }
 
@@ -260,7 +271,7 @@ struct NativeRootView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .animation(nil, value: viewModel.selectedTab)
-                    if !viewModel.footerItems.isEmpty {
+                    if !viewModel.footerItems.isEmpty && headerNavigation.backAction == nil {
                         NativeTabBar(
                             items: viewModel.footerItems,
                             colors: viewModel.nativeChromeColors,

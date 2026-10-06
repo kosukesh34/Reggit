@@ -63,6 +63,7 @@ final class MemberWalletRealtime {
                             try await connection.send(.string(String(decoding: data, as: UTF8.self)))
                         case .subscribed(let channel):
                             if channel == "project.\(projectKey).data" { onProjectUpdated("all") }
+                            if channel == "private-liff.member.\(memberID ?? 0)" { onProjectUpdated("wallet") }
                         case .walletUpdated(let points, let stampsTotal, let count):
                             onWalletUpdated(points, stampsTotal, count)
                         case .projectUpdated(let topic):

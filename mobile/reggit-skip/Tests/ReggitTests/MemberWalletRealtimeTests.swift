@@ -43,6 +43,22 @@ final class MemberWalletRealtimeTests: XCTestCase {
     }
 
     @MainActor
+    func testRepeatedWalletEventsRefreshOffscreenScreensEvenWithEqualTotals() {
+        let model = NativeRootViewModel()
+        model.selectedTab = "home"
+        for _ in 0..<2 {
+            SecondaryScreenCache.pointHistory = []
+            model.handleWalletUpdate(points: 0, stampsTotal: 0, pendingCount: 0)
+            XCTAssertNil(SecondaryScreenCache.pointHistory)
+            XCTAssertTrue(SecondaryScreenCache.memberProfileNeedsRefresh)
+        }
+        XCTAssertEqual(model.membershipRevision, 2)
+        XCTAssertEqual(model.lotteryRevision, 2)
+        XCTAssertEqual(model.screenRevisions["stamps"], 2)
+        SecondaryScreenCache.reset()
+    }
+
+    @MainActor
     func testTemporaryMenuOpensEachPreviewWithoutLeavingOrderScreen() {
         let model = NativeRootViewModel()
         model.selectedTab = "products"
@@ -53,6 +69,7 @@ final class MemberWalletRealtimeTests: XCTestCase {
             XCTAssertEqual(model.selectedTab, "products")
             model.finishLotteryPresentation()
             XCTAssertNil(model.lotteryPreviewGame)
+            XCTAssertFalse(model.lotteryModalPresented)
         }
         XCTAssertFalse(model.openLotteryPreview(menuKey: "orders"))
     }
