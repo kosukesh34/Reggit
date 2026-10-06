@@ -61,6 +61,7 @@ use App\Http\Controllers\Payment\PaymentConfirmController;
 use App\Http\Controllers\Payment\PaymentCreateCheckoutController;
 use App\Http\Controllers\Payment\PaymentCreateIntentController;
 use App\Http\Controllers\Payment\PaymentWebhookController;
+use App\Http\Controllers\PointGrantCodeController;
 use App\Http\Controllers\PostalCodeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Queue\QueueCallController;
@@ -142,7 +143,7 @@ Route::post('/stamps/grant-code/{token}', StampGrantCodeController::class)
     ->middleware('throttle:60,1')
     ->name('api.stamps.grant-code');
 
-Route::post('/points/grant-code/{token}', \App\Http\Controllers\PointGrantCodeController::class)->where('token', '[0-9a-f]{48}')->middleware(['bind.project', 'throttle:60,1'])->name('api.points.grant-code');
+Route::post('/points/grant-code/{token}', PointGrantCodeController::class)->where('token', '[0-9a-f]{48}')->middleware(['bind.project', 'throttle:60,1'])->name('api.points.grant-code');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
 Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->group(function () {
