@@ -2,9 +2,13 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\RfmSegment;
 use App\Enums\ScheduledDeliveryContentType;
 use App\Enums\ScheduledDeliveryType;
+use App\Enums\SegmentCombineMode;
+use App\Support\MemberChannel;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class AfterRegistrationDeliveryRequest extends FormRequest
@@ -38,6 +42,34 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'day_of_week' => ['nullable', 'integer', 'min:0', 'max:6'],
             'day_of_month' => ['nullable'],
             'last_month_visit_min' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'segment_channel' => ['nullable', Rule::in([MemberChannel::LINE, MemberChannel::APP, MemberChannel::BOTH])],
+            'segment_birthday_months' => ['nullable', 'array', 'max:12'],
+            'segment_birthday_months.*' => ['integer', 'min:1', 'max:12', 'distinct'],
+            'segment_tag_ids' => ['nullable', 'array'],
+            'segment_tag_ids.*' => ['integer', 'min:1', 'distinct'],
+            'segment_rfm_segments' => ['nullable', 'array'],
+            'segment_rfm_segments.*' => ['string', Rule::in(RfmSegment::keys()), 'distinct'],
+            'segment_sex' => ['nullable', Rule::in(['1', '2'])],
+            'segment_visit_count_min' => ['nullable', 'integer', 'min:0'],
+            'segment_visit_count_max' => ['nullable', 'integer', 'min:0'],
+            'segment_lifetime_points_min' => ['nullable', 'integer', 'min:0'],
+            'segment_lifetime_points_max' => ['nullable', 'integer', 'min:0'],
+            'segment_last_visit_mode' => ['nullable', 'string', 'max:32'],
+            'segment_last_visit_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'segment_rank' => ['nullable', 'string', 'max:64'],
+            'segment_product_id' => ['nullable', 'integer', 'min:1'],
+            'segment_period_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+            'segment_condition' => ['nullable', Rule::in(['min_amount', 'no_orders'])],
+            'segment_min_amount' => ['nullable', 'numeric', 'min:0'],
+            'segment_profile' => ['nullable', 'array'],
+            'segment_profile.*' => ['nullable'],
+            'segment_value_mode' => ['nullable', 'array'],
+            'segment_value_mode.tags' => ['nullable', Rule::in(SegmentCombineMode::keys())],
+            'segment_value_mode.profile' => ['nullable', 'array'],
+            'segment_value_mode.profile.*' => ['nullable', Rule::in(SegmentCombineMode::keys())],
+            'segment_match_mode' => ['nullable', Rule::in(SegmentCombineMode::keys())],
+            'segment_audience_group_ids' => ['nullable', 'array'],
+            'segment_audience_group_ids.*' => ['integer', 'min:1', 'distinct'],
         ];
     }
 

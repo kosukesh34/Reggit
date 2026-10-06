@@ -7,12 +7,14 @@ use App\Enums\ScheduledDeliveryType;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
 use App\Models\MemberVisit;
+use App\Services\Admin\MemberSegmentService;
 use Carbon\Carbon;
 
 class ScheduledDeliveryTargetService
 {
     public function __construct(
         private CouponDeliveryTargetRepository $targetRepository,
+        private MemberSegmentService $memberSegmentService,
     ) {}
 
     /**
@@ -23,7 +25,7 @@ class ScheduledDeliveryTargetService
         $projectId = (int) $delivery->project_id;
         $type = (string) $delivery->schedule_type;
 
-        return match ($type) {
+        $memberIds = match ($type) {
             ScheduledDeliveryType::NEW_USER_MINUTES => $this->newUserMinutes($projectId, $delivery, $now),
             ScheduledDeliveryType::NEW_USER_DAYS => $this->createdOn($projectId, $now->copy()->subDays($delivery->intParam('delay_days', 1))),
             ScheduledDeliveryType::LAST_VISIT => $this->targetRepository->findIdsByLastVisited(
@@ -65,6 +67,15 @@ class ScheduledDeliveryTargetService
                 : [],
             default => [],
         };
+
+        $criteria = $delivery->params['segment_criteria'] ?? null;
+        if (! is_array($criteria) || $criteria === []) {
+            return $memberIds;
+        }
+
+        $matched = $this->memberSegmentService->getMemberIds($projectId, $criteria)->all();
+
+        return array_values(array_intersect($memberIds, $matched));
     }
 
     /**
