@@ -2,10 +2,14 @@
 
 namespace App\UseCases\Reservation;
 
+use App\Models\Store;
 use App\Services\ReservationService;
 use App\UseCases\Reservation\Data\ReservationActionOutput;
 use App\UseCases\Reservation\Data\ReservationStoreInput;
+use App\Util\AdminContext;
 use App\Util\DateUtil;
+use App\Util\StoreContext;
+use Illuminate\Support\Facades\DB;
 
 class ReservationStoreUseCase
 {
@@ -25,14 +29,22 @@ class ReservationStoreUseCase
         if ($reservedAt === null) {
             return new ReservationActionOutput(false, null, '予約日時が不正です');
         }
-        $availabilityError = $this->availabilityService->getAvailabilityError($reservedAt, null);
-        if ($availabilityError !== null) {
-            return new ReservationActionOutput(false, null, $availabilityError);
-        }
 
-        $reservationPayload['reserved_at'] = $reservedAt->format('Y-m-d H:i:s');
-        $reservation = $this->reservationService->createReservation($input->user, $reservationPayload);
+        return DB::transaction(function () use ($input, $reservedAt, $reservationPayload): ReservationActionOutput {
+            $projectId = AdminContext::requireCurrentProjectId();
+            $storeId = app(StoreContext::class)->resolveForWrite($projectId);
+            // An existing store row serializes capacity checks, including empty slots.
+            Store::where('project_id', $projectId)->whereKey($storeId)->lockForUpdate()->firstOrFail();
 
-        return new ReservationActionOutput(false, $reservation, null);
+            $availabilityError = $this->availabilityService->getAvailabilityError($reservedAt, null);
+            if ($availabilityError !== null) {
+                return new ReservationActionOutput(false, null, $availabilityError);
+            }
+
+            $reservationPayload['reserved_at'] = $reservedAt->format('Y-m-d H:i:s');
+            $reservation = $this->reservationService->createReservation($input->user, $reservationPayload);
+
+            return new ReservationActionOutput(false, $reservation, null);
+        }, 3);
     }
 }
