@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Announcement\Data;
 
 use App\Models\Coupon;
+use App\Models\MemberAudienceGroup;
 use App\Models\MemberTag;
 use App\Models\Product;
 use Illuminate\Support\Collection;
@@ -13,6 +14,7 @@ use Illuminate\Support\Collection;
  * @param  Collection<int, MemberTag>  $memberTags
  * @param  array<string, array{label: string, color: string}>  $rfmSegments
  * @param  list<array<string, mixed>>  $profileFields
+ * @param  Collection<int, MemberAudienceGroup>  $audienceGroups
  */
 class AdminAnnouncementDeliveryFormView
 {
@@ -23,5 +25,6 @@ class AdminAnnouncementDeliveryFormView
         public readonly Collection $memberTags = new Collection,
         public readonly array $rfmSegments = [],
         public readonly array $profileFields = [],
+        public readonly Collection $audienceGroups = new Collection,
     ) {}
 }

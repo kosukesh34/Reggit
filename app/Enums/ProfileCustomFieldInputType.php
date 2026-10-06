@@ -31,6 +31,11 @@ class ProfileCustomFieldInputType extends EnumBase
         return in_array($inputType, [self::RADIO, self::SELECTBOX, self::CHECKBOX], true);
     }
 
+    public static function allowsMultipleValues(string $inputType): bool
+    {
+        return $inputType === self::CHECKBOX;
+    }
+
     /**
      * @return array<string, string>
      */

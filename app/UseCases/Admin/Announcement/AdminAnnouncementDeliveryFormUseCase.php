@@ -18,6 +18,7 @@ class AdminAnnouncementDeliveryFormUseCase
         private MemberTagAdminService $memberTagAdminService,
         private RfmAnalysisService $rfmAnalysisService,
         private ProfileSettings $profileSettings,
+        private AdminMemberAudienceGroupUseCase $audienceGroupUseCase,
     ) {}
 
     public function handle(int $projectId): AdminAnnouncementDeliveryFormView
@@ -34,6 +35,7 @@ class AdminAnnouncementDeliveryFormUseCase
             $this->memberTagAdminService->getListByProject($projectId),
             $this->rfmAnalysisService->segmentOptions(),
             array_values($this->profileSettings->getProfileFieldSettings($projectId)['custom_fields'] ?? []),
+            $this->audienceGroupUseCase->list($projectId),
         );
     }
 }

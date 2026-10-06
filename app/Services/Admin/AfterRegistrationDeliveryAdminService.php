@@ -9,6 +9,10 @@ use Illuminate\Support\Collection;
 
 class AfterRegistrationDeliveryAdminService
 {
+    public function __construct(
+        private MemberSegmentService $memberSegmentService,
+    ) {}
+
     /** @return Collection<int, AfterRegistrationDelivery> */
     public function getListByProject(int $projectId): Collection
     {
@@ -83,7 +87,7 @@ class AfterRegistrationDeliveryAdminService
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array<string, int|string>
+     * @return array<string, mixed>
      */
     private function buildParams(string $scheduleType, array $data, int $delayMinutes): array
     {
@@ -122,6 +126,25 @@ class AfterRegistrationDeliveryAdminService
                 continue;
             }
             $params[$key] = (int) $data[$key];
+        }
+
+        $criteria = $this->memberSegmentService->buildCriteriaFromInput($data);
+        if (is_array($criteria)) {
+            $segmentInput = [];
+            foreach ([
+                'segment_channel', 'segment_birthday_months', 'segment_tag_ids', 'segment_rfm_segments',
+                'segment_sex', 'segment_visit_count_min', 'segment_visit_count_max', 'segment_rank',
+                'segment_lifetime_points_min', 'segment_lifetime_points_max', 'segment_last_visit_mode',
+                'segment_last_visit_days', 'segment_product_id', 'segment_period_days', 'segment_condition',
+                'segment_min_amount', 'segment_profile', 'segment_value_mode', 'segment_match_mode',
+                'segment_audience_group_ids',
+            ] as $key) {
+                if (array_key_exists($key, $data)) {
+                    $segmentInput[$key] = $data[$key];
+                }
+            }
+            $params['segment_criteria'] = $criteria;
+            $params['segment_input'] = $segmentInput;
         }
 
         return $params;
