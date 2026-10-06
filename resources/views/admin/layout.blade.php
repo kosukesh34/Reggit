@@ -78,7 +78,7 @@
     @endif
     @stack('styles')
 </head>
-<body data-page-kind="@yield('page-kind', 'default')">
+<body data-member-identifier-label="{{ \App\Support\AdminMemberIdentifier::label() }}" data-page-kind="@yield('page-kind', 'default')">
     <div class="admin-container">
 
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
