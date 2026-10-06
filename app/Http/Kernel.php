@@ -3,6 +3,7 @@
 namespace App\Http;
 
 use App\Http\Middleware\AdminAuditLogger;
+use App\Http\Middleware\AuthenticateAdminSession;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\AuthenticateStoreApp;
 use App\Http\Middleware\AuthorizeQueueAccess;
@@ -84,6 +85,7 @@ class Kernel extends HttpKernel
         'auth' => Authenticate::class,
         'auth.basic' => AuthenticateWithBasicAuth::class,
         'auth.session' => AuthenticateSession::class,
+        'admin.auth.session' => AuthenticateAdminSession::class,
         'cache.headers' => SetCacheHeaders::class,
         'can' => Authorize::class,
         'guest' => RedirectIfAuthenticated::class,
