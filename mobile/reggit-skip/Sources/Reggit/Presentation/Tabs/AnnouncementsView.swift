@@ -58,16 +58,22 @@ struct AnnouncementsView: View {
                 onRetry: { Task { await viewModel.load(force: true) } },
                 skeleton: { SkeletonBlock(height: 160, cornerRadius: AppDesign.radiusL) }
             ) {
-                ScrollView {
-                    LazyVStack(spacing: 14) {
-                        ForEach(viewModel.items) { item in
-                            AnnouncementCardView(item: item, apiClient: viewModel.apiClient)
+                GeometryReader { geometry in
+                    ScrollView {
+                        LazyVStack(spacing: 14) {
+                            ForEach(viewModel.items) { item in
+                                AnnouncementCardView(
+                                    item: item,
+                                    apiClient: viewModel.apiClient,
+                                    imageHeight: max(geometry.size.width - 56, 0) * 3 / 4
+                                )
+                            }
                         }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 14)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 14)
+                    .refreshable { await viewModel.load(force: true) }
                 }
-                .refreshable { await viewModel.load(force: true) }
             }
             .background(AppDesign.canvas.ignoresSafeArea())
             .navigationBarHidden(true)
@@ -80,6 +86,7 @@ struct AnnouncementsView: View {
 struct AnnouncementCardView: View {
     let item: AnnouncementItem
     let apiClient: any ReggitAPIServing
+    let imageHeight: CGFloat
     @Environment(\.brandAccent) var accent
 
     var body: some View {
@@ -116,7 +123,7 @@ struct AnnouncementCardView: View {
             }
             if item.imageURL != nil {
                 AnnouncementImageView(item: item, apiClient: apiClient)
-                    .aspectRatio(4.0 / 3.0, contentMode: .fit)
+                    .frame(height: imageHeight)
             }
             if !item.body.isEmpty {
                 Text(item.body)

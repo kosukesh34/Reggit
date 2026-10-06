@@ -96,25 +96,43 @@ struct StampsView: View {
                     Spacer()
                 }
 
-                ProgressView(value: Double(min(card.currentStamps, max(card.requiredStamps, 1))), total: Double(max(card.requiredStamps, 1)))
-                    .tint(accent)
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(AppDesign.hairline)
+                        Capsule().fill(accent)
+                            .frame(width: geometry.size.width * CGFloat(max(0, min(card.currentStamps, max(card.requiredStamps, 1)))) / CGFloat(max(card.requiredStamps, 1)))
+                    }
+                }
+                    .frame(height: 4)
                     .accessibilityLabel("スタンプの達成状況")
+                    .accessibilityValue("\(max(0, min(card.currentStamps, max(card.requiredStamps, 1))) * 100 / max(card.requiredStamps, 1))%")
 
-                LazyVGrid(
-                    columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: min(slots, 5)),
-                    spacing: 8
-                ) {
-                    ForEach(0 ..< slots, id: \.self) { index in
-                        ZStack {
-                            Circle()
-                                .stroke(AppDesign.hairline, lineWidth: 1.5)
-                                .background(Circle().fill(index < card.currentStamps ? AppDesign.ink : AppDesign.canvas))
-                            if index < card.currentStamps {
-                                FontAwesomeIcon(systemName: "star.fill")
-                                    .foregroundStyle(.white)
+                // A lazy grid inside the cards' lazy stack is suppressed by Skip's
+                // nested scroll handling. These at most twelve slots need no laziness.
+                VStack(spacing: 8) {
+                    ForEach(0 ..< (slots + 4) / 5, id: \.self) { row in
+                        HStack(spacing: 8) {
+                            ForEach(0 ..< min(slots, 5), id: \.self) { column in
+                                let index = row * 5 + column
+                                Group {
+                                    if index < slots {
+                                        ZStack {
+                                            Circle()
+                                                .stroke(AppDesign.hairline, lineWidth: 1.5)
+                                                .background(Circle().fill(index < card.currentStamps ? AppDesign.ink : AppDesign.canvas))
+                                            if index < card.currentStamps {
+                                                FontAwesomeIcon(systemName: "star.fill")
+                                                    .foregroundStyle(.white)
+                                            }
+                                        }
+                                        .frame(width: 40, height: 40)
+                                    } else {
+                                        Color.clear.frame(width: 40, height: 40)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity)
                             }
                         }
-                        .frame(height: 40)
                     }
                 }
 

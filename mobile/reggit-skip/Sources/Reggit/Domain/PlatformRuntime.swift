@@ -8,6 +8,16 @@ import UIKit
 
 /// プラットフォーム差分をこのファイルに閉じ込める。Presentation では `#if os` を書かない。
 enum PlatformRuntime {
+    /// Skip currently selects Set.first rather than supporting multiple detents.
+    /// A single Android detent keeps observation refreshes from changing sheet height.
+    static var supportsMultipleModalDetents: Bool {
+        #if os(Android)
+        return false
+        #else
+        return true
+        #endif
+    }
+
     @MainActor static var deviceModel: String {
         #if os(Android)
         return androidBuildField(className: "android/os/Build", fieldName: "MODEL") ?? "Android"
@@ -151,10 +161,6 @@ enum PlatformRuntime {
     }
 
     static var homeHorizontalPadding: CGFloat {
-        #if os(Android)
-        return 16
-        #else
         return 18
-        #endif
     }
 }
