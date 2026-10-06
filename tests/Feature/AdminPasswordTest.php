@@ -73,6 +73,39 @@ class AdminPasswordTest extends TestCase
         $this->assertTrue(Hash::check('OriginalPass123', $staff->fresh()->password));
     }
 
+    public function test_password_change_rejects_other_sessions_and_keeps_current_session(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN, 'password' => 'OriginalPass123']);
+        $oldHash = auth('admin')->hashPasswordForCookie($admin->password);
+        $this->post('/system-admin/login', ['login_id' => $admin->login_id, 'password' => 'OriginalPass123'])->assertRedirect();
+        $this->put(route('admin.password.change'), [
+            'current_password' => 'OriginalPass123', 'password' => 'NewPassword123', 'password_confirmation' => 'NewPassword123',
+        ])->assertRedirect();
+        $this->get('/system-admin')->assertRedirect(route('system-admin.dashboard'));
+        auth('admin')->forgetUser();
+        $this->withSession(['password_hash_admin' => $oldHash])->getJson('/system-admin')->assertUnauthorized();
+    }
+
+    public function test_password_reset_rejects_old_session_even_before_first_protected_request(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN, 'password' => 'OriginalPass123']);
+        $this->post('/system-admin/login', ['login_id' => $admin->login_id, 'password' => 'OriginalPass123'])->assertRedirect();
+        $token = Password::broker('admins')->createToken($admin);
+        $this->post(route('admin.password.update'), [
+            'email' => $admin->email, 'token' => $token, 'password' => 'NewPassword123', 'password_confirmation' => 'NewPassword123',
+        ])->assertRedirect();
+        auth('admin')->forgetUser();
+        $this->getJson('/system-admin')->assertUnauthorized();
+    }
+
+    public function test_legacy_admin_session_without_password_binding_is_rejected(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
+        $this->actingAs($admin, 'admin');
+        session()->forget('password_hash_admin');
+        $this->getJson('/system-admin')->assertUnauthorized();
+    }
+
     public function test_reset_password_requires_confirmation(): void
     {
         $staff = AdminUser::factory()->create();
