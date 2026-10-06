@@ -10,11 +10,13 @@ class DemoAdminUsersSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! env('DEMO_SEED', false)) {
+        if (! filter_var(env('DEMO_SEED', false), FILTER_VALIDATE_BOOLEAN)) {
             return;
         }
 
-        AdminUser::where('login_id', '1')->delete();
+        if (app()->environment('production')) {
+            throw new \RuntimeException('Demo administrators cannot be seeded in production.');
+        }
 
         $project = Project::where('is_active', true)->orderBy('id')->first();
         if ($project === null) {
@@ -95,7 +97,7 @@ class DemoAdminUsersSeeder extends Seeder
         string $role,
         ?int $projectId
     ): AdminUser {
-        $user = AdminUser::updateOrCreate(
+        $user = AdminUser::firstOrCreate(
             ['login_id' => $loginId],
             [
                 'email' => $email,
