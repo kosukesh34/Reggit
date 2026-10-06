@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Settings\Repositories\ProjectSettings;
 use App\Http\Controllers\Controller;
+use App\Repositories\Eloquent\ProjectAppLinkRepository;
 use App\UseCases\Admin\Project\Data\ProjectFormView;
 use App\UseCases\Admin\Project\ProjectEditUseCase;
 use App\UseCases\Admin\Project\ProjectIndexUseCase;
@@ -40,7 +41,7 @@ class ProjectController extends Controller
     {
         $project = $this->editUseCase->handle($id);
 
-        $appLinks = app(\App\Repositories\Eloquent\ProjectAppLinkRepository::class)->find((int) $project->id);
+        $appLinks = app(ProjectAppLinkRepository::class)->find((int) $project->id);
 
         return view('admin.projects.edit', ['appLinks' => $appLinks, 'view' => new ProjectFormView(
             $project,
