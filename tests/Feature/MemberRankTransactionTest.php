@@ -14,13 +14,23 @@ use App\Services\MemberRankCalculator;
 use App\Services\MemberRankSyncService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Util\AdminContext;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class MemberRankTransactionTest extends TestCase
 {
-    use RefreshDatabase;
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->artisan('migrate:fresh')->assertExitCode(0);
+    }
+
+    protected function tearDown(): void
+    {
+        RefreshDatabaseState::$migrated = false;
+        parent::tearDown();
+    }
 
     public function test_rank_delivery_waits_for_outer_commit_and_rollback_discards_it(): void
     {
@@ -42,7 +52,7 @@ class MemberRankTransactionTest extends TestCase
         $synced = 0;
         $this->mock(AnnouncementNotificationService::class, function ($mock) use (&$sent): void {
             $mock->shouldReceive('send')->andReturnUsing(function () use (&$sent): array {
-                $this->assertSame(1, DB::transactionLevel());
+                $this->assertSame(0, DB::transactionLevel());
                 $sent++;
 
                 return ['failed' => 0, 'line_failed' => 0];
@@ -50,7 +60,7 @@ class MemberRankTransactionTest extends TestCase
         });
         $this->mock(SmaregiCustomerRankAssignmentService::class, function ($mock) use (&$synced): void {
             $mock->shouldReceive('assignRankToCustomer')->andReturnUsing(function () use (&$synced): void {
-                $this->assertSame(1, DB::transactionLevel());
+                $this->assertSame(0, DB::transactionLevel());
                 $synced++;
             });
         });
