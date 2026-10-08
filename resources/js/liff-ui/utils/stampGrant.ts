@@ -43,6 +43,7 @@ export function parseStampGrant(rawValue: string): StampGrantPayload | null {
   try {
     const parsed = new URL(raw, typeof window === "undefined" ? "http://localhost" : window.location.origin);
     if (/\/api\/stamps\/grant\/\d+$/.test(parsed.pathname)) {
+      if (typeof window !== "undefined" && parsed.origin !== window.location.origin) return null;
       return { value: raw, kind: "signed" };
     }
     const direct = payloadFromParams(parsed.searchParams);

@@ -70,6 +70,10 @@ class KitchenPushService
                 ->update(['push_token' => null]);
         }
 
+        if ((int) ($result['failed'] ?? 0) > 0) {
+            throw new \RuntimeException('Kitchen push delivery failed');
+        }
+
         LogHelper::info('[Kitchen] push finished', [
             'order_id' => $orderId,
             'project_id' => $projectId,

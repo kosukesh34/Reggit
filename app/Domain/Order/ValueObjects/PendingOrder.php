@@ -12,5 +12,6 @@ final class PendingOrder
         public readonly float $totalAmount,
         public readonly int $pointsUsed,
         public readonly ?string $notes,
+        public readonly ?int $storeId = null,
     ) {}
 }

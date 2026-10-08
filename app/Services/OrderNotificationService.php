@@ -18,7 +18,7 @@ class OrderNotificationService
         private PushNotificationService $pushNotificationService,
     ) {}
 
-    public function notifyConfirmed(int $orderId, int $projectId): void
+    public function notifyConfirmed(int $orderId, int $projectId, string $channel = 'all'): void
     {
         $this->notifyMobileOrder(
             $orderId,
@@ -30,11 +30,12 @@ class OrderNotificationService
                 return $refNumber !== ''
                     ? '引換番号: '.$refNumber."\n店舗でこの番号をお伝えください。"
                     : 'ご注文ありがとうございました。';
-            }
+            },
+            $channel
         );
     }
 
-    public function notifyReady(int $orderId, int $projectId): void
+    public function notifyReady(int $orderId, int $projectId, string $channel = 'all'): void
     {
         $this->notifyMobileOrder(
             $orderId,
@@ -46,11 +47,12 @@ class OrderNotificationService
                 return $refNumber !== ''
                     ? '引換番号: '.$refNumber."\n店舗でお受け取りください。"
                     : '店舗でお受け取りください。';
-            }
+            },
+            $channel
         );
     }
 
-    public function notifyCompleted(int $orderId, int $projectId): void
+    public function notifyCompleted(int $orderId, int $projectId, string $channel = 'all'): void
     {
         $this->notifyMobileOrder(
             $orderId,
@@ -59,6 +61,7 @@ class OrderNotificationService
             'ご注文の商品をお渡ししました',
             'order_completed',
             static fn (string $refNumber): string => 'ご利用ありがとうございました。',
+            $channel,
         );
     }
 
@@ -72,6 +75,7 @@ class OrderNotificationService
         string $title,
         string $pushType,
         callable $bodyBuilder,
+        string $channel,
     ): void {
         $order = Order::query()
             ->with('user')
@@ -86,9 +90,11 @@ class OrderNotificationService
         }
         $refNumber = $order->formattedOrderNumber();
         $body = $bodyBuilder($refNumber);
-        $this->sendNativePush($order, $projectId, $title, $body, $pushType);
+        if ($channel === 'all' || $channel === 'native') {
+            $this->sendNativePush($order, $projectId, $title, $body, $pushType);
+        }
 
-        if ($isEnabled === false) {
+        if ($isEnabled === false || $channel === 'native') {
             return;
         }
 
@@ -130,6 +136,10 @@ class OrderNotificationService
                 'project_id' => (string) $projectId,
             ]
         );
+
+        if ((int) ($result['failed'] ?? 0) > 0) {
+            throw new \RuntimeException('Order push delivery failed');
+        }
 
         LogHelper::info('[Order] native push result', [
             'order_id' => $order->id,
@@ -216,6 +226,7 @@ class OrderNotificationService
                 'line_user_id' => $lineUserId,
                 'error' => $e->getMessage(),
             ]);
+            throw $e;
         }
     }
 

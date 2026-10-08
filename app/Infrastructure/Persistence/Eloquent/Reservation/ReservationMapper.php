@@ -18,6 +18,7 @@ final class ReservationMapper
             $model->reserved_at,
             (int) $model->number_of_people,
             $model->notes,
+            (int) $model->version,
         );
     }
 }

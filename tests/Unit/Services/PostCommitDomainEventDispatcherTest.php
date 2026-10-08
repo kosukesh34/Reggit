@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Services\OrderNotificationOutbox;
 use App\Services\PostCommitDomainEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -17,7 +18,7 @@ class PostCommitDomainEventDispatcherTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects(self::never())->method('error');
 
-        (new PostCommitDomainEventDispatcher($dispatcher, $logger))->dispatch($event);
+        (new PostCommitDomainEventDispatcher($dispatcher, $logger, $this->createMock(OrderNotificationOutbox::class)))->dispatch($event);
     }
 
     public function test_dispatch_logs_listener_failures_without_rethrowing_them(): void
@@ -36,7 +37,7 @@ class PostCommitDomainEventDispatcherTest extends TestCase
                 ],
             );
 
-        (new PostCommitDomainEventDispatcher($dispatcher, $logger))->dispatch($event);
+        (new PostCommitDomainEventDispatcher($dispatcher, $logger, $this->createMock(OrderNotificationOutbox::class)))->dispatch($event);
 
         self::assertTrue(true);
     }
