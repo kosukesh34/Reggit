@@ -11,6 +11,8 @@
 | `security-audit` | セキュリティレビュー。全面監査は明示的な依頼時のみ | 初回レビューで適用済み |
 | `skill-installer` | スキルの探索・インストール・参照先確認 | 今回の導入で適用済み |
 | `code-review-and-quality` | 正しさ・可読性・設計・安全性・性能のレビュー、マージ前確認 | 導入済み・該当作業で適用 |
+| `laravel-best-practices` | Laravelバックエンドの実装・レビュー・リファクタリング | 導入済み・今回適用 |
+| `playwright-best-practices` | PlaywrightのE2E設計・安定化・CI方針 | 導入済み・今回適用 |
 | `improve-codebase-architecture` | 依頼されたアーキテクチャレビュー・設計改善 | 導入済み・該当作業で適用 |
 | `vercel-react-best-practices` | Vite/React の実装・レビュー・性能改善 | 導入済み・該当作業で適用 |
 | `codebase-design` | アーキテクチャ検討時のモジュール・インターフェース設計 | 補助スキルとして導入済み |
@@ -19,7 +21,7 @@
 
 - グローバルスキルの保存先は `/Users/kosuke/.codex/skills/<スキル名>/SKILL.md`。`skill-installer` は `/Users/kosuke/.codex/skills/.system/skill-installer/SKILL.md`、`security-audit` はプロジェクト内の `.agents/skills/security-audit/SKILL.md` を使う。
 - 各作業の開始時に、今回適用するスキルをユーザーへ伝える。終了時は実際に適用したスキルと確認結果を報告し、導入済みの一覧をそのまま使用実績として報告しない。
-- `laravel-best-practices`・`systematic-debugging`・`playwright-best-practices` は調査した追加候補であり、現時点では未導入・未適用。
+- `laravel-best-practices` と `playwright-best-practices` は導入済みで、Laravel/E2Eの該当作業に適用する。`systematic-debugging` は追加候補のまま未導入。
 
 ## 開発スキル: Ponytail
 
