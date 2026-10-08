@@ -102,6 +102,9 @@ for (const width of [390, 1280]) {
   });
 }
 
+test.describe('実店舗のネイティブWebView', () => {
+  test.use({ userAgent: 'Reggit/1.0 (E2E)' });
+
 test('実店舗のホームで受付がない利用者にサンプルの待ち番号を表示しない', async ({ page }) => {
   await page.goto('/admin/login');
   await page.locator('#login_id').fill(process.env.E2E_ADMIN_LOGIN_ID ?? 'demo_store');
@@ -118,9 +121,9 @@ test('実店舗のホームで受付がない利用者にサンプルの待ち�
     }));
   }
   // Use the native WebView entry point: the real LIFF entry requires LINE login.
-  await page.setExtraHTTPHeaders({ 'User-Agent': 'Reggit/1.0 (E2E)' });
   await page.goto(href!);
   await expect(page).toHaveURL(/\/liff\/[^/?#]+.*#\/home/);
   await expect(page.getByRole('navigation', { name: '主要ナビゲーション' })).toBeVisible();
   await expect(page.getByText('現在 12番・あと5組', { exact: true })).toHaveCount(0);
+});
 });

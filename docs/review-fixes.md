@@ -25,3 +25,11 @@ A unique order/event/channel key prevents repeated confirmation requests or comp
 ## Client origin boundary
 
 The authenticated API client rejects cross-origin requests before adding credentials or calling `fetch`. Signed stamp URLs are also checked at parsing and submission. Relative and absolute same-origin API URLs remain supported. Links to external websites should use navigation rather than this credential-bearing API client.
+
+## Merge and E2E policy
+
+`AGENTS.md` requires local execution of browser/E2E checks and successful CI on the latest PR HEAD before merging. GitHub Actions runs PHP tests, frontend type checking/build and Pint; the `main` aggregate fails when a dependency fails or is cancelled. E2E jobs are not run in Actions.
+
+Run browser checks against an isolated local application and test database, for example `E2E_BASE_URL=http://127.0.0.1:8019 E2E_BROWSER_CHANNEL=chrome npx playwright test --config=e2e/web/security-review.config.ts`. The real-store check requires a seeded test admin (override `E2E_ADMIN_LOGIN_ID` and `E2E_ADMIN_PASSWORD` as needed); it uses the native WebView entry point, while the public demo uses `/demo/liff`. Do not reuse another ongoing E2E run's database or port.
+
+After user authorization to merge, use `scripts/merge-pr.sh <PR number>`. It refuses absent, failed or pending required checks and pins the merge to the validated HEAD. Configure GitHub branch protection requiring `main` when the repository plan supports it; local policy and the script cannot prevent a user with write access from bypassing them directly in GitHub.
