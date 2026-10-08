@@ -1,4 +1,17 @@
             <div class="card card-mb-24">
+                <div class="card-header"><h3 class="card-title">会員証ページのスタイル</h3></div>
+                <div class="card-body">
+                    <label for="member_page_style" class="form-label">ページ全体のデザイン</label>
+                    <select id="member_page_style" name="member_page_style" class="form-control">
+                        @foreach(['classic' => 'スタンダード', 'wallet' => 'ポイント', 'minimal' => 'シンプル', 'ticket' => 'パス'] as $key => $label)
+                            <option value="{{ $key }}" @selected(old('member_page_style', $view->memberPageStyle ?? 'classic') === $key)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('member_page_style')<p class="text-danger">{{ $message }}</p>@enderror
+                    <p class="form-text text-muted">会員証ページの背景・カード・情報エリアをまとめて切り替えます。</p>
+                </div>
+            </div>
+            <div class="card card-mb-24">
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-eye"></i> 会員証の表示</h3>
                 </div>
