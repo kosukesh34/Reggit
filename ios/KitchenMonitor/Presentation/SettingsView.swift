@@ -22,8 +22,10 @@ struct SettingsView: View {
                 }
                 Section {
                     Button("ログアウト", role: .destructive) {
-                        appState.logout()
-                        dismiss()
+                        Task {
+                            await appState.logout()
+                            dismiss()
+                        }
                     }
                 }
                 if let message = viewModel.message {

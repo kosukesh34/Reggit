@@ -3,6 +3,7 @@ import UIKit
 
 struct RootView: View {
     @EnvironmentObject private var appState: AppState
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showSplash = true
 
     var body: some View {
@@ -23,6 +24,11 @@ struct RootView: View {
                 SplashView()
                     .transition(.opacity)
                     .zIndex(10)
+            }
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active && appState.isAuthenticated {
+                PushRegistrationManager.shared.refreshRegistration()
             }
         }
         .onAppear {
