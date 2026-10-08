@@ -19,12 +19,13 @@ class KitchenPushService
             ->whereKey($orderId)
             ->where('project_id', $projectId)
             ->first();
-        if ($order === null) {
+        if ($order === null || $order->store_id === null) {
             return;
         }
 
         $tokens = KitchenDevice::query()
             ->where('project_id', $projectId)
+            ->where('store_id', $order->store_id)
             ->whereNotNull('push_token')
             ->where('push_token', '!=', '')
             ->pluck('push_token')
@@ -66,6 +67,7 @@ class KitchenPushService
         if ($invalidTokens !== []) {
             KitchenDevice::query()
                 ->where('project_id', $projectId)
+                ->where('store_id', $order->store_id)
                 ->whereIn('push_token', $invalidTokens)
                 ->update(['push_token' => null]);
         }

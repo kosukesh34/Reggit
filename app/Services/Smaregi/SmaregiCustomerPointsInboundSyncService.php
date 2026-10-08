@@ -10,6 +10,7 @@ use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Enums\SmaregiWebhookAction;
 use App\Models\Member;
+use App\Models\MemberRegistrationAttempt;
 use App\Models\Store;
 use App\Services\MemberRankSyncService;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +73,9 @@ class SmaregiCustomerPointsInboundSyncService
 
     private function resolveSmaregiCustomerIdByMemberNumber(string $contractId, Member $member): string
     {
+        if (MemberRegistrationAttempt::where('project_id', $member->project_id)->where('user_id', $member->user_id)->exists()) {
+            return ''; // Pending registrations require the durable marker, never code-only linking.
+        }
         $memberNumber = trim((string) ($member->member_number ?? ''));
         if ($memberNumber === '') {
             return '';

@@ -26,8 +26,7 @@ class SendScheduledAnnouncementJob implements ShouldQueue
         AnnouncementNotificationService $announcementNotificationService,
         AnnouncementAdminService $announcementAdminService,
     ): void {
-        $shouldNotify = false;
-        $announcement = DB::transaction(function () use ($announcementAdminService, &$shouldNotify): ?Announcement {
+        $announcement = DB::transaction(function () use ($announcementAdminService): ?Announcement {
             $locked = Announcement::withoutGlobalScopes()
                 ->whereKey($this->announcementId)
                 ->lockForUpdate()
@@ -50,14 +49,16 @@ class SendScheduledAnnouncementJob implements ShouldQueue
                 'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
                 'published_at' => $locked->published_at ?? now(),
                 'sent_at' => now(),
+                'notification_pending' => $shouldNotify,
+                'notification_retry_at' => $shouldNotify ? now() : null,
             ]);
 
             return $locked->fresh() ?? $locked;
         });
-        if ($announcement === null || $shouldNotify !== true) {
+        if ($announcement === null || ! $announcement->notification_pending) {
             return;
         }
 
-        $announcementNotificationService->send($announcement);
+        (new SendAnnouncementNotificationJob((int) $announcement->id))->handle($announcementNotificationService);
     }
 }

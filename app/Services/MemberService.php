@@ -12,6 +12,8 @@ use App\Enums\ScheduledDeliveryType;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
+use App\Models\MemberRegistrationAttempt;
+use App\Models\Project;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
@@ -40,6 +42,7 @@ class MemberService
         private MemberSettings $shopSettingRepository,
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberProfileRules $profileRules,
+        private MemberRegistrationRecovery $registrationRecovery,
     ) {}
 
     public function getMemberData(User $user): array
@@ -63,6 +66,14 @@ class MemberService
             ];
         }
 
+        if ((string) $member->smaregi_customer_id === '' && Cache::add('member_registration_recovery:'.$member->id, 1, 30)) {
+            try {
+                $this->registrationRecovery->recoverForMember($member);
+                $member->refresh();
+            } catch (\Throwable $exception) {
+                LogHelper::warning('[Member] registration recovery unavailable', ['member_id' => $member->id]);
+            }
+        }
         $this->maybeSyncMemberPointsFromSmaregi($member);
         $member->refresh();
         $member->syncPointsLedger();
@@ -387,16 +398,19 @@ class MemberService
             }
         }
 
-        if ($userUpdates !== []) {
-            $user->update($userUpdates);
-        }
-        if ($memberUpdates !== []) {
-            $member->update($memberUpdates);
-        }
-        if ($extraUpdates !== []) {
-            $current = $member->profile_extra ?? [];
-            $member->update(['profile_extra' => array_merge($current, $extraUpdates)]);
-        }
+        DB::transaction(function () use ($user, $member, $userUpdates, $memberUpdates, $extraUpdates): void {
+            $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $lockedMember = Member::query()->whereKey($member->id)->lockForUpdate()->firstOrFail();
+            if ($userUpdates !== []) {
+                $lockedUser->update($userUpdates);
+            }
+            if ($extraUpdates !== []) {
+                $memberUpdates['profile_extra'] = array_merge($lockedMember->profile_extra ?? [], $extraUpdates);
+            }
+            if ($memberUpdates !== []) {
+                $lockedMember->update($memberUpdates);
+            }
+        });
 
         $smaregiCustomerId = $member->smaregi_customer_id ?? '';
         if ($smaregiCustomerId !== '') {
@@ -446,65 +460,71 @@ class MemberService
      */
     public function registerMember(User $user, array $data, bool $requireSmaregi = true): Member
     {
-        return DB::transaction(function () use ($user, $data, $requireSmaregi): Member {
+        $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+        $contractId = trim((string) $this->smaregiApi->getContractIdForProject($projectId));
+        $hasPendingAttempt = MemberRegistrationAttempt::where('project_id', $projectId)->where('user_id', $user->id)->exists();
+        $attempt = $contractId !== '' || $hasPendingAttempt
+            ? $this->reserveRegistrationAttempt($user, $projectId, $contractId) : null;
+
+        $smaregiCustomerId = null;
+        $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
+        $resolved = $this->memberRankResolver->resolve(
+            $rankSettings,
+            $this->shopSettingRepository->getRankBasis($projectId),
+            0,
+            0,
+            null,
+        );
+        $defaultRankKey = (string) ($resolved['current_rank'] ?? 'bronze');
+        $defaultRank = null;
+        foreach ($rankSettings as $rank) {
+            if ((string) ($rank['key'] ?? '') === $defaultRankKey) {
+                $defaultRank = $rank;
+                break;
+            }
+        }
+        $smaregiRankId = is_array($defaultRank) && isset($defaultRank['smaregi_rank_id'])
+            ? trim((string) $defaultRank['smaregi_rank_id'])
+            : '';
+
+        if ($attempt !== null) {
+            $body = $this->buildSmaregiCustomerBody(
+                $attempt->member_number,
+                $data,
+                $smaregiRankId !== '' ? $smaregiRankId : null,
+                $defaultRankKey,
+                $projectId,
+            );
+            $smaregiCustomerId = $this->registrationRecovery->createOrRecover($attempt, $body);
+            if ($smaregiCustomerId === null) {
+                LogHelper::warning('[Member] smaregi create customer failed', [
+                    'project_id' => $projectId,
+                    'user_id' => (int) $user->id,
+                    'member_number' => $attempt->member_number,
+                    'detail' => $this->smaregiApi->getLastErrorDetail(),
+                ]);
+                if ($requireSmaregi) {
+                    throw new \RuntimeException(
+                        'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
+                    );
+                }
+            }
+        }
+
+        return DB::transaction(function () use ($user, $data, $attempt, $defaultRankKey, $smaregiCustomerId): Member {
             User::query()->whereKey($user->id)->lockForUpdate()->first();
+
+            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+            // Reserved codes already belong to this attempt; only unreserved allocation needs the project lock.
+            if ($attempt === null) {
+                Project::query()->whereKey($projectId)->lockForUpdate()->firstOrFail();
+            }
 
             if (Member::query()->where('user_id', $user->id)->exists()) {
                 throw new \Exception('既に会員登録済みです');
             }
 
-            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
-            $memberNumber = $this->generateMemberNumber($projectId);
-            $smaregiCustomerId = null;
-            $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
-            $resolved = $this->memberRankResolver->resolve(
-                $rankSettings,
-                $this->shopSettingRepository->getRankBasis($projectId),
-                0,
-                0,
-                null,
-            );
-            $defaultRankKey = (string) ($resolved['current_rank'] ?? 'bronze');
-            $defaultRank = null;
-            foreach ($rankSettings as $rank) {
-                if ((string) ($rank['key'] ?? '') === $defaultRankKey) {
-                    $defaultRank = $rank;
-                    break;
-                }
-            }
-            $smaregiRankId = is_array($defaultRank) && isset($defaultRank['smaregi_rank_id'])
-                ? trim((string) $defaultRank['smaregi_rank_id'])
-                : '';
-
-            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-            $contractId = is_string($contractId) ? trim($contractId) : '';
-            if ($contractId !== '') {
-                $body = $this->buildSmaregiCustomerBody(
-                    $memberNumber,
-                    $data,
-                    $smaregiRankId !== '' ? $smaregiRankId : null,
-                    $defaultRankKey,
-                    $projectId,
-                );
-                $this->smaregiApi->clearLastErrorDetail();
-                $result = $this->smaregiApi->createCustomer($contractId, $body);
-                if ($result === null || ! isset($result['customerId']) || (string) $result['customerId'] === '') {
-                    LogHelper::warning('[Member] smaregi create customer failed', [
-                        'project_id' => $projectId,
-                        'user_id' => (int) $user->id,
-                        'member_number' => $memberNumber,
-                        'detail' => $this->smaregiApi->getLastErrorDetail(),
-                    ]);
-                    if ($requireSmaregi) {
-                        throw new \RuntimeException(
-                            'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
-                        );
-                    }
-                } else {
-                    $smaregiCustomerId = (string) $result['customerId'];
-                }
-            }
-
+            $memberNumber = $attempt?->member_number ?? $this->generateMemberNumber($projectId);
             $member = Member::create([
                 'project_id' => $projectId,
                 'user_id' => $user->id,
@@ -535,7 +555,7 @@ class MemberService
                 ->where('schedule_type', ScheduledDeliveryType::NEW_USER_MINUTES)
                 ->get()
                 ->each(function (AfterRegistrationDelivery $delivery) use ($member): void {
-                    $job = SendAfterRegistrationJob::dispatch($member->id, $delivery->id);
+                    $job = SendAfterRegistrationJob::dispatch($member->id, $delivery->id)->afterCommit();
                     $delay = $delivery->resolvedDelayMinutes();
                     if ($delay > 0) {
                         $job->delay(now()->addMinutes($delay));
@@ -556,7 +576,36 @@ class MemberService
                 $user->update($userUpdates);
             }
 
+            if ($attempt !== null && $smaregiCustomerId !== null) {
+                $attempt->delete();
+            }
+
             return $member->load('user');
+        });
+    }
+
+    private function reserveRegistrationAttempt(User $user, int $projectId, string $contractId): MemberRegistrationAttempt
+    {
+        return DB::transaction(function () use ($user, $projectId, $contractId): MemberRegistrationAttempt {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            Project::query()->whereKey($projectId)->lockForUpdate()->firstOrFail();
+            if (Member::query()->where('user_id', $user->id)->exists()) {
+                throw new \Exception('既に会員登録済みです');
+            }
+            $attempt = MemberRegistrationAttempt::where('project_id', $projectId)->where('user_id', $user->id)->first();
+            if ($attempt !== null) {
+                if ($attempt->contract_id !== $contractId) {
+                    throw new \RuntimeException('登録途中にスマレジ契約が変更されました。管理者にご確認ください。');
+                }
+
+                return $attempt;
+            }
+
+            return MemberRegistrationAttempt::create([
+                'project_id' => $projectId, 'user_id' => $user->id,
+                'member_number' => $this->generateMemberNumber($projectId),
+                'contract_id' => $contractId, 'registration_key' => (string) Str::uuid(),
+            ]);
         });
     }
 
@@ -613,25 +662,26 @@ class MemberService
 
         if ($type === 'sequential') {
             $next = $this->shopSettingRepository->getMemberCodeNextNumber($projectId);
-            $maxExisting = Member::where('project_id', $projectId)
-                ->whereNotNull('member_number')
-                ->where('member_number', '!=', '')
-                ->get()
-                ->map(function (Member $m) use ($prefix) {
-                    $num = $m->member_number;
-                    if ($prefix !== '' && str_starts_with($num, $prefix)) {
+            $reserved = MemberRegistrationAttempt::where('project_id', $projectId)->pluck('member_number');
+            $maxExisting = Member::withoutGlobalScopes()->where('project_id', $projectId)
+                ->whereNotNull('member_number')->where('member_number', '!=', '')
+                ->pluck('member_number')->concat($reserved)
+                ->map(function (string $num) use ($prefix): int {
+                    if ($prefix !== '') {
+                        if (! str_starts_with($num, $prefix)) {
+                            return 0;
+                        }
                         $num = substr($num, strlen($prefix));
                     }
 
                     return ctype_digit($num) ? (int) $num : 0;
-                })
-                ->max();
+                })->max();
             $next = max($next, ($maxExisting ?? 0) + 1);
-            $this->shopSettingRepository->setMemberCodeNextNumber($next + 1, $projectId);
             $body = sprintf('%0'.$bodyLen.'d', $next);
             if (strlen($body) > $bodyLen) {
-                $body = substr($body, -$bodyLen);
+                throw ValidationException::withMessages(['member_number' => '会員番号を発行できません。会員コードの桁数を増やしてください。']);
             }
+            $this->shopSettingRepository->setMemberCodeNextNumber($next + 1, $projectId);
             $candidate = $prefix.$body;
 
             return strlen($candidate) <= 20 ? $candidate : substr($candidate, 0, 20);
@@ -649,12 +699,12 @@ class MemberService
             if (strlen($candidate) > 20) {
                 $candidate = substr($candidate, 0, 20);
             }
-            $exists = Member::where('project_id', $projectId)->where('member_number', $candidate)->exists();
-            if (! $exists) {
+            $exists = Member::withoutGlobalScopes()->where('project_id', $projectId)->where('member_number', $candidate)->exists();
+            if (! $exists && ! MemberRegistrationAttempt::where('project_id', $projectId)->where('member_number', $candidate)->exists()) {
                 return $candidate;
             }
         }
 
-        return $prefix.sprintf('%0'.$bodyLen.'d', (time() + random_int(0, 9999)) % (10 ** $bodyLen));
+        throw ValidationException::withMessages(['member_number' => '未使用の会員番号を確保できません。再度お試しいただくか、会員コードの桁数を増やしてください。']);
     }
 }

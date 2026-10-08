@@ -9,6 +9,6 @@ class MemberCouponObserver
 {
     public function created(MemberCoupon $memberCoupon): void
     {
-        SendCouponIssuedNotificationJob::dispatch($memberCoupon->id);
+        SendCouponIssuedNotificationJob::dispatch($memberCoupon->id)->afterCommit();
     }
 }

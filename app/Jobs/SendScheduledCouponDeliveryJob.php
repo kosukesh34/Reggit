@@ -18,6 +18,10 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $tries = 5;
+
+    public array $backoff = [60, 120, 300, 600];
+
     public function __construct(
         public int $couponDeliveryId
     ) {}
@@ -35,15 +39,19 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
                 return;
             }
 
-            try {
-                $this->send($delivery, $memberBenefitService, $targetService);
-            } catch (\Throwable $e) {
-                $delivery->update([
-                    'status' => CouponDeliveryStatus::FAILED,
-                    'error_message' => $e->getMessage(),
-                ]);
-            }
+            $this->send($delivery, $memberBenefitService, $targetService);
         });
+    }
+
+    public function failed(\Throwable $exception): void
+    {
+        CouponDelivery::withoutGlobalScopes()
+            ->whereKey($this->couponDeliveryId)
+            ->where('status', CouponDeliveryStatus::SCHEDULED)
+            ->update([
+                'status' => CouponDeliveryStatus::FAILED,
+                'error_message' => $exception->getMessage(),
+            ]);
     }
 
     private function send(

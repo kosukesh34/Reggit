@@ -39,9 +39,13 @@ final class AppState: ObservableObject {
         settingsStore.load().passcode
     }
 
-    func didLogin() { isAuthenticated = true }
+    func didLogin() {
+        isAuthenticated = true
+        PushRegistrationManager.shared.resumeRegistration()
+    }
 
-    func logout() {
+    func logout() async {
+        await PushRegistrationManager.shared.unregisterDevice()
         StoreAppCredentialStore.clear(app: "kitchen")
         var settings = settingsStore.load()
         settings.projectKey = ""
