@@ -11,6 +11,7 @@ use Database\Factories\ReservationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class Reservation extends Model
 {
@@ -71,6 +72,12 @@ class Reservation extends Model
                 $reservation->status = ReservationStatus::PENDING;
             }
         });
+    }
+
+    public function save(array $options = []): bool
+    {
+        // Keep the allocation lock until insert, including direct admin/seed creation.
+        return $this->exists ? parent::save($options) : DB::transaction(fn () => parent::save($options), 3);
     }
 
     public function isPending(): bool
