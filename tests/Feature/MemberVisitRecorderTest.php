@@ -31,5 +31,4 @@ class MemberVisitRecorderTest extends TestCase
         $recorder->record($stale, Carbon::parse('2026-10-10 12:00:00'), 'manual');
         $this->assertSame('2026-10-10 12:00:00', $member->fresh()->last_visited_at->format('Y-m-d H:i:s'));
     }
-
 }
