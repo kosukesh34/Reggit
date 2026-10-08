@@ -2,14 +2,83 @@
 
 namespace Tests\Unit\Payment;
 
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\UseCases\Payment\StripePaymentGateway;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Stripe\ApiRequestor;
+use Stripe\Exception\InvalidRequestException;
 use Stripe\HttpClient\ClientInterface;
 use Stripe\Stripe;
 
 class StripePaymentGatewayTest extends TestCase
 {
+    public static function cancellationCases(): array
+    {
+        return [
+            'open checkout' => ['checkout_web', 'cs_fixture', [['status' => 'open', 'payment_status' => 'unpaid'], ['status' => 'expired', 'payment_status' => 'unpaid']], true],
+            'expired checkout retry' => ['checkout', 'cs_fixture', [['status' => 'expired', 'payment_status' => 'unpaid']], true],
+            'paid checkout' => ['checkout', 'cs_fixture', [['status' => 'complete', 'payment_status' => 'paid']], false],
+            'processing checkout' => ['checkout', 'cs_fixture', [['status' => 'complete', 'payment_status' => 'unpaid']], false],
+            'card intent' => ['card', 'pi_fixture', [['status' => 'requires_action'], ['status' => 'canceled']], true],
+            'cancelled intent retry' => ['intent', 'pi_fixture', [['status' => 'canceled']], true],
+            'paid intent' => ['card', 'pi_fixture', [['status' => 'succeeded']], false],
+            'processing intent' => ['intent', 'pi_fixture', [['status' => 'processing']], false],
+        ];
+    }
+
+    #[DataProvider('cancellationCases')]
+    public function test_cancellation_stops_only_unpaid_sessions(string $channel, string $id, array $responses, bool $allowed): void
+    {
+        $originalClient = ApiRequestor::httpClient();
+        $originalTelemetry = Stripe::getEnableTelemetry();
+        $calls = 0;
+        $client = $this->createMock(ClientInterface::class);
+        $client->expects($this->exactly(count($responses)))->method('request')->willReturnCallback(
+            function ($method, $url, $headers, $params) use ($channel, $id, $responses, &$calls): array {
+                $this->assertSame($calls === 0 ? 'get' : 'post', $method);
+                $checkout = str_starts_with($channel, 'checkout');
+                $path = ($checkout ? '/v1/checkout/sessions/' : '/v1/payment_intents/').$id;
+                if ($calls > 0) {
+                    $path .= $checkout ? '/expire' : '/cancel';
+                }
+                $this->assertStringEndsWith($path, $url);
+                $this->assertContains('Authorization: Bearer sk_test_original', $headers);
+                $response = $responses[$calls++];
+
+                return [json_encode(['id' => $id, 'object' => $checkout ? 'checkout.session' : 'payment_intent'] + $response), 200, []];
+            }
+        );
+        try {
+            Stripe::setEnableTelemetry(false);
+            ApiRequestor::setHttpClient($client);
+            if (! $allowed) {
+                $this->expectException(OrderOperationException::class);
+            }
+            (new StripePaymentGateway('sk_test_original'))->cancelUnpaidSession($channel, $id);
+        } finally {
+            ApiRequestor::setHttpClient($originalClient);
+            Stripe::setEnableTelemetry($originalTelemetry);
+        }
+    }
+
+    public function test_payment_winning_expiration_race_is_not_cancelled(): void
+    {
+        $originalClient = ApiRequestor::httpClient();
+        $client = $this->createMock(ClientInterface::class);
+        $client->expects($this->exactly(2))->method('request')->willReturnOnConsecutiveCalls(
+            ['{"id":"cs_fixture","object":"checkout.session","status":"open","payment_status":"unpaid"}', 200, []],
+            ['{"error":{"type":"invalid_request_error","message":"Session is complete"}}', 400, []],
+        );
+        try {
+            ApiRequestor::setHttpClient($client);
+            $this->expectException(InvalidRequestException::class);
+            (new StripePaymentGateway('sk_test_fixture'))->cancelUnpaidSession('checkout_web', 'cs_fixture');
+        } finally {
+            ApiRequestor::setHttpClient($originalClient);
+        }
+    }
+
     public function test_checkout_isolates_account_keys_and_paypay_method(): void
     {
         $originalClient = ApiRequestor::httpClient();

@@ -26,6 +26,46 @@ const script = (await build({
   } }],
 })).outputFiles[0].text;
 
+const liffBootstrap = (await build({
+  entryPoints: ['resources/js/shared/utils/liffInit.ts'],
+  bundle: true, write: false, format: 'iife',
+})).outputFiles[0].text;
+
+for (const wrapped of [false, true]) {
+  test(`LINE初期化後も別ブラウザーの決済復帰を確認できる (${wrapped ? 'liff.state' : '通常URL'})`, async ({ page }) => {
+    const paymentQuery = '?payment_order_id=41&payment_status=success';
+    const query = wrapped ? '?liff.state=' + encodeURIComponent('/' + paymentQuery) : paymentQuery;
+    await page.route('http://payment.test/**', route => route.fulfill({
+      contentType: 'text/html',
+      body: '<meta name="line-login-required" content="true"><meta name="line-liff-id" content="test-liff"><div id="root"></div>',
+    }));
+    await page.route('**/api/payment/methods', route => route.fulfill({ json: { methods: ['card', 'cash'] } }));
+    await page.route('**/api/orders/41', route => route.fulfill({ json: { id: 41, status: 'pending', payment_method: 'stripe' } }));
+    await page.route('**/api/payment/checkout/confirm', route => route.fulfill({ json: {
+      success: true, order: { id: 41, status: 'confirmed', payment_method: 'stripe', order_number: '101' },
+    } }));
+    await page.goto('http://payment.test/' + query + '#/menu');
+    await page.evaluate(() => {
+      localStorage.clear();
+      Object.assign(window, { __PROJECT_KEY__: 'default', memberNumber: 'A', liff: {
+        init: async () => {}, isLoggedIn: () => true,
+        getDecodedIDToken: () => ({ sub: 'U' + 'a'.repeat(32) }),
+        permission: { query: async () => ({ state: 'granted' }) },
+        getProfile: async () => ({ displayName: 'テスト' }),
+      } });
+      document.addEventListener('liff-ready', () => {
+        (window as any).returnOrderAtMount = new URLSearchParams(location.search).get('payment_order_id');
+      }, { once: true });
+    });
+    await page.addScriptTag({ content: liffBootstrap });
+    await expect.poll(() => page.evaluate(() => (window as any).returnOrderAtMount)).toBe('41');
+    await page.addScriptTag({ content: script });
+    await expect(page.getByRole('heading', { name: 'ご注文を受け付けました' })).toBeVisible();
+    await expect(page.getByText('受付ID 101')).toBeVisible();
+    expect(new URL(page.url()).searchParams.has('payment_order_id')).toBe(false);
+  });
+}
+
 async function open(page: Page, saved: Record<string, string>) {
   await page.route('http://payment.test/', route => route.fulfill({ contentType: 'text/html', body: '<div id="root"></div>' }));
   await page.route('**/api/payment/methods', route => route.fulfill({ json: { methods: ['card', 'cash'] } }));

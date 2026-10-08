@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Payment;
 
+use App\Domain\Order\Exceptions\OrderOperationException;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
@@ -102,5 +103,39 @@ class StripePaymentGateway implements PaymentGateway
             'status' => $data->status ?? null,
             'amount' => isset($data->amount) ? (int) $data->amount : 0,
         ];
+    }
+
+    public function cancelUnpaidSession(string $channel, string $sessionId): void
+    {
+        if (in_array($channel, ['checkout', 'checkout_web'], true)) {
+            $session = $this->client->checkout->sessions->retrieve($sessionId);
+            if ($session->payment_status !== 'unpaid' || ! in_array($session->status, ['open', 'expired'], true)) {
+                throw new OrderOperationException('決済済みまたは処理中の注文はキャンセルできません');
+            }
+            if ($session->status === 'open') {
+                // Expiration fails if payment wins the race after the retrieval.
+                $session = $this->client->checkout->sessions->expire($sessionId);
+            }
+            if ($session->status !== 'expired' || $session->payment_status !== 'unpaid') {
+                throw new OrderOperationException('決済を停止できませんでした');
+            }
+
+            return;
+        }
+
+        if (! in_array($channel, ['intent', 'card'], true)) {
+            throw new OrderOperationException('決済情報を確認できません');
+        }
+        $intent = $this->client->paymentIntents->retrieve($sessionId);
+        if ($intent->status === 'canceled') {
+            return;
+        }
+        if (! in_array($intent->status, ['requires_payment_method', 'requires_confirmation', 'requires_action'], true)) {
+            throw new OrderOperationException('決済済みまたは処理中の注文はキャンセルできません');
+        }
+        $intent = $this->client->paymentIntents->cancel($sessionId, ['cancellation_reason' => 'requested_by_customer']);
+        if ($intent->status !== 'canceled') {
+            throw new OrderOperationException('決済を停止できませんでした');
+        }
     }
 }

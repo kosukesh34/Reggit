@@ -18,5 +18,8 @@ interface PaymentGateway
 
     public function retrieveCheckoutSession(string $sessionId): array;
 
+    /** Return only when the session can no longer collect a payment. */
+    public function cancelUnpaidSession(string $channel, string $sessionId): void;
+
     public function constructWebhookEvent(string $payload, string $sigHeader, string $secret): array;
 }

@@ -126,7 +126,13 @@ class OrderPaymentSessionService
         DB::transaction(function () use ($orderId, $projectId, $lease) {
             $order = Order::where('project_id', $projectId)->lockForUpdate()->findOrFail($orderId);
             if (($order->payment_session['lease'] ?? null) === $lease) {
-                $order->payment_session = null;
+                // A timeout may hide a successfully created Stripe session. Keep
+                // the marker so cancellation waits for an idempotent retry.
+                $order->payment_session = [
+                    'channel' => $order->payment_session['channel'],
+                    'lease' => $lease,
+                    'expires_at' => now()->toIso8601String(),
+                ];
                 $order->save();
             }
         });
