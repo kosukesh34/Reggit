@@ -64,7 +64,7 @@ external delivery is not guaranteed.
 
 ## Validation
 
-- Dedicated local MySQL 8.4, PHP 8.4: 1,333 core tests, 5,779 assertions passed.
+- Dedicated local MySQL 8.4, PHP 8.4: 1,352 core tests, 5,878 assertions passed.
   Smaregi real integration group excluded; external API behavior was not tested.
 - PHPStan and Pint passed.
 - Frontend typecheck, ESLint and 54 unit tests passed.
