@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## マージ・E2E の必須ルール
+
+- E2E・ブラウザーテストはローカルで実行する。GitHub Actions への追加・実行は禁止。必要なアプリ・DB は既存の実行に干渉しないローカル環境を使用し、実行結果を PR に記載する。
+- マージ前に、PR の最新 HEAD に対する CI の `test`・`lint`・`main` がすべて成功したことを確認する。他のチェックも失敗・保留・キャンセル・不明ならマージしない。
+- push 後は以前のコミットの成功結果を流用せず、最新 HEAD のチェック完了を待つ。CI の無効化、失敗を無視したマージ、`--admin` による迂回は禁止。
+- マージには `scripts/merge-pr.sh <PR番号>` を使用する。ユーザーのマージ承認は別途必要（会話内の明示的な承認を引き継ぐ）。
+- GitHub のプランが対応する場合は main の branch protection/ruleset でも `main` を required status check に設定する。設定できない場合も上記ルールを必ず守る。
+
+
 ## Cursor Cloud specific instructions
 
 Reggit は PHP 8.4 / Laravel 12 + Vite/React（管理画面・LIFF）+ MySQL のマルチテナント Web アプリです。リポジトリ本来のワークフローは Docker Compose（`setup.sh` / `Makefile` / `README.md` はすべて `docker-compose exec app ...` 前提）ですが、**Cloud Agent の VM では Docker を使わずネイティブに PHP・MySQL・Node を動かしています**。以下はネイティブ環境特有の非自明な注意点のみを記載します。標準的なコマンドは `README.md` / `Makefile` / `composer.json` / `package.json` を参照してください。
