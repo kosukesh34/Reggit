@@ -92,16 +92,39 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('queue_entries', fn (Blueprint $table) => $table->dropUnique('queue_entries_store_queue_number_unique'));
+        // MySQL DDL auto-commits: reject all incompatible data before altering any table.
+        foreach (['queue_entries' => ['project_id', 'queue_number'], 'store_app_credentials' => ['project_id', 'app']] as $name => $columns) {
+            $duplicates = DB::table($name)->select($columns)->groupBy($columns)->havingRaw('COUNT(*) > 1');
+            foreach ($columns as $column) {
+                $duplicates->whereNotNull($column);
+            }
+            if ($duplicates->exists()) {
+                throw new RuntimeException('Cannot roll back project stores: '.$name.' has duplicate ('.implode(', ', $columns).'). Resolve duplicates before retrying.');
+            }
+        }
+
+        Schema::table('queue_entries', function (Blueprint $table) {
+            $table->dropUnique('queue_entries_store_queue_number_unique');
+            $table->unique(['project_id', 'queue_number'], 'queue_entries_project_queue_number_unique');
+        });
         foreach (['point_transactions', 'member_stamp_transactions'] as $name) {
             Schema::table($name, fn (Blueprint $table) => $table->dropColumn('origin'));
         }
-        Schema::table('store_app_credentials', fn (Blueprint $table) => $table->dropUnique(['project_id', 'store_id', 'app']));
+        Schema::table('store_app_credentials', function (Blueprint $table) {
+            $table->dropUnique(['project_id', 'store_id', 'app']);
+            $table->unique(['project_id', 'app']);
+        });
         Schema::table('announcements', function (Blueprint $table) {
             $table->dropConstrainedForeignId('created_by_admin_id');
             $table->dropColumn(['store_ids', 'visibility', 'private_image_path']);
         });
         foreach ($this->transactions as $name) {
+            // InnoDB may reuse the store index for an existing project_id foreign key.
+            $hasProjectIndex = collect(Schema::getIndexes($name))->contains(fn (array $index): bool => $index['name'] !== $name.'_project_id_store_id_index' && ($index['columns'][0] ?? null) === 'project_id'
+            );
+            if (! $hasProjectIndex) {
+                Schema::table($name, fn (Blueprint $table) => $table->index('project_id'));
+            }
             Schema::table($name, function (Blueprint $table) {
                 $table->dropForeign(['project_id', 'store_id']);
                 $table->dropIndex(['project_id', 'store_id']);
