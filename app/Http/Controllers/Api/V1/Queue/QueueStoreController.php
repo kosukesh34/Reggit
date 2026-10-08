@@ -33,7 +33,7 @@ class QueueStoreController extends BaseApiController
                 $validated['guest_name'] ?? null,
                 $validated['guest_phone'] ?? null,
                 QueueRequestContext::lineUserId($request) ?: null,
-                is_string($request->header('X-Queue-Client')) ? $request->header('X-Queue-Client') : null,
+                $request->attributes->get('authenticated_store_app') === 'waiting' ? 'waiting-system' : null,
             ));
 
             if ($result->requiresMembership) {

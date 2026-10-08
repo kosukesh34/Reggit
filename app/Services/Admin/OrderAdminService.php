@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Domain\Order\Events\OrderCompleted;
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderReady;
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
@@ -12,6 +13,7 @@ use App\Models\Order;
 use App\Services\CouponIssueService;
 use App\Services\OrderService;
 use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
+use App\Services\UnpaidOrderCancellationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class OrderAdminService
@@ -21,6 +23,7 @@ class OrderAdminService
         private SmaregiOrderTransactionOutboundService $smaregiOrderTransactionOutbound,
         private OrderService $orderService,
         private DomainEventDispatcher $domainEvents,
+        private UnpaidOrderCancellationService $cancellation,
     ) {}
 
     /** 決済済み = 確定・準備中・受け取り可能・完了 */
@@ -73,6 +76,14 @@ class OrderAdminService
     public function updateStatus(int $id, string $status): void
     {
         $order = Order::with('user')->findOrFail($id);
+        if ($status === OrderStatus::CANCELLED) {
+            $this->cancellation->cancel($id, (int) $order->project_id);
+
+            return;
+        }
+        if ($order->status === OrderStatus::CANCELLED) {
+            throw new OrderOperationException('キャンセル済みの注文は変更できません');
+        }
         $previousStatus = (string) $order->status;
         $order->update(['status' => $status]);
         $this->notifyCompletedIfNeeded($order, $previousStatus);
@@ -102,6 +113,9 @@ class OrderAdminService
     public function complete(int $id): void
     {
         $order = Order::with('user.member')->findOrFail($id);
+        if ($order->status === OrderStatus::CANCELLED) {
+            throw new OrderOperationException('キャンセル済みの注文は変更できません');
+        }
         $previousStatus = (string) $order->status;
         $order->update(['status' => OrderStatus::COMPLETED]);
         $this->notifyCompletedIfNeeded($order, $previousStatus);

@@ -12,7 +12,6 @@ use App\Enums\ScheduledDeliveryType;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
-use App\Models\PointTransaction;
 use App\Models\User;
 use App\Rules\ProfileValidationRules;
 use App\Services\Smaregi\SmaregiApiService;
@@ -41,6 +40,7 @@ class MemberService
         private MemberRankCalculator $rankCalculator,
         private MemberRankResolver $memberRankResolver,
         private MemberSettings $shopSettingRepository,
+        private MemberPointsExpiryCalculator $expiryCalculator,
     ) {}
 
     public function getMemberData(User $user): array
@@ -70,7 +70,7 @@ class MemberService
         $member->refresh();
 
         $rankInfo = $this->getRankInfo($member);
-        $expiryInfo = $this->getPointsExpiryInfo($member);
+        $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
 
         $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
         $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
@@ -668,31 +668,6 @@ class MemberService
     private function getRankInfo(Member $member): array
     {
         return $this->rankCalculator->getRankInfo($member);
-    }
-
-    private function getPointsExpiryInfo(Member $member): ?array
-    {
-        $earliest = PointTransaction::where('member_id', $member->id)
-            ->where('type', 'earned')
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '>', now())
-            ->orderBy('expires_at')
-            ->first();
-
-        if ($earliest === null) {
-            return null;
-        }
-
-        $pointsExpiring = PointTransaction::where('member_id', $member->id)
-            ->where('type', 'earned')
-            ->where('expires_at', $earliest->expires_at)
-            ->sum('points');
-
-        return [
-            'expires_at' => $earliest->expires_at->format('Y-m-d'),
-            'expires_at_label' => $earliest->expires_at->format('Y年n月j日'),
-            'points_expiring' => (int) $pointsExpiring,
-        ];
     }
 
     private function generateMemberNumber(int $projectId): string

@@ -14,7 +14,8 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderService;
-use App\UseCases\Order\OrderCancelUnpaidUseCase;
+use App\Services\Payment\UnpaidPaymentSessionCanceller;
+use App\Services\UnpaidOrderCancellationService;
 use App\UseCases\Payment\OrderPaymentSessionService;
 use App\UseCases\Payment\PaymentGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,10 +56,10 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $service->shouldReceive('handleOrderCancellation')->once()->andReturnUsing(function () use ($gateway): void {
             $this->assertSame([['channel' => 'checkout_web', 'sessionId' => 'cs_fixture']], $gateway->cancelledSessions);
         });
-        $useCase = new OrderCancelUnpaidUseCase(app(OrderRepository::class), $service);
-        $useCase->handle($user, $order->id);
+        $useCase = new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class));
+        $useCase->cancel($order->id, (int) $user->project_id, (int) $user->id);
         $this->assertSame(OrderStatus::CANCELLED, $order->fresh()->status);
-        $useCase->handle($user, $order->id);
+        $useCase->cancel($order->id, (int) $user->project_id, (int) $user->id);
         $this->assertCount(1, $gateway->cancelledSessions);
     }
 
@@ -72,7 +73,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $service = Mockery::mock(OrderService::class);
         $service->shouldNotReceive('handleOrderCancellation');
         try {
-            (new OrderCancelUnpaidUseCase(app(OrderRepository::class), $service))->handle($user, $order->id);
+            (new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class)))->cancel($order->id, (int) $user->project_id, (int) $user->id);
             $this->fail('Expected remote cancellation failure');
         } catch (\RuntimeException $e) {
             $this->assertSame('Stripe rejected cancellation', $e->getMessage());
@@ -87,7 +88,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $service = Mockery::mock(OrderService::class);
         $service->shouldNotReceive('handleOrderCancellation');
         try {
-            (new OrderCancelUnpaidUseCase(app(OrderRepository::class), $service))->handle($user, $order->id);
+            (new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class)))->cancel($order->id, (int) $user->project_id, (int) $user->id);
             $this->fail('Expected in-progress cancellation rejection');
         } catch (OrderOperationException) {
             $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
@@ -111,7 +112,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $service = Mockery::mock(OrderService::class);
         $service->shouldNotReceive('handleOrderCancellation');
         try {
-            (new OrderCancelUnpaidUseCase(app(OrderRepository::class), $service))->handle($user, $order->id);
+            (new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class)))->cancel($order->id, (int) $user->project_id, (int) $user->id);
             $this->fail('Expected ambiguous cancellation rejection');
         } catch (OrderOperationException) {
             $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
@@ -139,12 +140,13 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $orderService = Mockery::mock(OrderService::class);
         $orderService->shouldReceive('handleOrderCancellation')->once();
 
-        $useCase = new OrderCancelUnpaidUseCase(
+        $useCase = new UnpaidOrderCancellationService(
             app(OrderRepository::class),
             $orderService,
+            app(UnpaidPaymentSessionCanceller::class),
         );
 
-        $result = $useCase->handle($user, (int) $order->id);
+        $result = $useCase->cancel((int) $order->id, (int) $user->project_id, (int) $user->id);
 
         $this->assertSame(OrderStatus::CANCELLED, $result->status);
     }
@@ -164,15 +166,16 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
             'order_type' => 'mobile',
         ]);
 
-        $useCase = new OrderCancelUnpaidUseCase(
+        $useCase = new UnpaidOrderCancellationService(
             app(OrderRepository::class),
             Mockery::mock(OrderService::class),
+            app(UnpaidPaymentSessionCanceller::class),
         );
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('決済済みまたは進行中の注文はキャンセルできません');
 
-        $useCase->handle($user, (int) $order->id);
+        $useCase->cancel((int) $order->id, (int) $user->project_id, (int) $user->id);
     }
 
     public function test_handle_キャンセル済みは副作用なしで返すこと(): void
@@ -193,12 +196,13 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $orderService = Mockery::mock(OrderService::class);
         $orderService->shouldNotReceive('handleOrderCancellation');
 
-        $useCase = new OrderCancelUnpaidUseCase(
+        $useCase = new UnpaidOrderCancellationService(
             app(OrderRepository::class),
             $orderService,
+            app(UnpaidPaymentSessionCanceller::class),
         );
 
-        $result = $useCase->handle($user, (int) $order->id);
+        $result = $useCase->cancel((int) $order->id, (int) $user->project_id, (int) $user->id);
 
         $this->assertSame(OrderStatus::CANCELLED, $result->status);
     }
@@ -225,7 +229,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
             throw new \RuntimeException('fixture failure after stock restoration');
         });
         try {
-            (new OrderCancelUnpaidUseCase(app(OrderRepository::class), $failingService))->handle($user, $order->id);
+            (new UnpaidOrderCancellationService(app(OrderRepository::class), $failingService, app(UnpaidPaymentSessionCanceller::class)))->cancel($order->id, (int) $user->project_id, (int) $user->id);
             $this->fail('Expected cancellation failure');
         } catch (\RuntimeException $e) {
             $this->assertSame('fixture failure after stock restoration', $e->getMessage());
@@ -234,12 +238,12 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $this->assertSame(3, $product->fresh()->stock);
         $this->assertSame(80, $member->fresh()->getDisplayPoints());
         $this->assertDatabaseMissing('point_transactions', ['order_id' => $order->id, 'type' => 'refunded']);
-        $useCase = new OrderCancelUnpaidUseCase(app(OrderRepository::class), $service);
-        $useCase->handle($user, $order->id);
+        $useCase = new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class));
+        $useCase->cancel($order->id, (int) $user->project_id, (int) $user->id);
         $this->assertSame(OrderStatus::CANCELLED, $order->fresh()->status);
         $this->assertSame(5, $product->fresh()->stock);
         $this->assertSame(100, $member->fresh()->getDisplayPoints());
-        $useCase->handle($user, $order->id);
+        $useCase->cancel($order->id, (int) $user->project_id, (int) $user->id);
         $this->assertSame(5, $product->fresh()->stock);
         $this->assertSame(100, $member->fresh()->getDisplayPoints());
     }

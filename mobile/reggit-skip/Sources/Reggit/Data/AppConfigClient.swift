@@ -8,7 +8,9 @@ struct AppConfigClient {
     let projectKey: String
 
     func fetchConfig() async -> AppConfig? {
-        let urlString = "\(baseUrl)/api/v1/app-config?project_key=\(projectKey)"
+        let storeID = MobileSelectedProjectStore.selectedStoreID(baseURL: baseUrl, projectKey: projectKey)
+        let storeQuery = storeID.map { "&store_id=\($0)" } ?? ""
+        let urlString = "\(baseUrl)/api/v1/app-config?project_key=\(projectKey)\(storeQuery)"
         guard let url = URL(string: urlString) else { return nil }
 
         var request = URLRequest(url: url)

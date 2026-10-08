@@ -88,7 +88,9 @@ use App\Repositories\Eloquent\EloquentAdminUserRepository;
 use App\Repositories\Eloquent\EloquentProjectRepository;
 use App\Repositories\Eloquent\EloquentUserDeviceRepository;
 use App\Repositories\Eloquent\EloquentUserRepository;
+use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\Smaregi\SmaregiApiClient;
+use App\UseCases\Payment\GatewayUnpaidPaymentSessionCanceller;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\UseCases\Product\Contracts\ProductReadRepository;
@@ -159,6 +161,7 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
+        $this->app->bind(UnpaidPaymentSessionCanceller::class, GatewayUnpaidPaymentSessionCanceller::class);
         $this->app->scoped(PaymentGateway::class, function () {
             $secret = (string) config('services.stripe.secret', '');
 
