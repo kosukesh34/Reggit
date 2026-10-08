@@ -36,6 +36,9 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('sb_test_contract');
         $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
+        $smaregiApi->shouldReceive('getCustomerByCode')->once()->andReturn(null);
+        $smaregiApi->shouldReceive('getLastHttpStatus')->andReturn(200);
+        $smaregiApi->shouldReceive('getLastErrorDetail')->andReturn(null);
         $smaregiApi->shouldReceive('createCustomer')
             ->once()
             ->withArgs(function (string $contractId, array $body): bool {
@@ -96,6 +99,9 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('sb_test_contract');
         $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
+        $smaregiApi->shouldReceive('getCustomerByCode')->once()->andReturn(null);
+        $smaregiApi->shouldReceive('getLastHttpStatus')->andReturn(200);
+        $smaregiApi->shouldReceive('getLastErrorDetail')->andReturn(null);
         $smaregiApi->shouldReceive('createCustomer')
             ->once()
             ->withArgs(function (string $contractId, array $body): bool {
@@ -128,8 +134,10 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('sb_test_contract');
         $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
+        $smaregiApi->shouldReceive('getCustomerByCode')->once()->andReturn(null);
+        $smaregiApi->shouldReceive('getLastHttpStatus')->andReturn(200);
         $smaregiApi->shouldReceive('createCustomer')->once()->andReturn(null);
-        $smaregiApi->shouldReceive('getLastErrorDetail')->andReturn('[lastKana]の入力内容に誤りがあります');
+        $smaregiApi->shouldReceive('getLastErrorDetail')->andReturn(null, '[lastKana]の入力内容に誤りがあります');
 
         $this->app->instance(SmaregiApiService::class, $smaregiApi);
 
@@ -155,8 +163,10 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
         $smaregiApi->shouldReceive('getContractIdForProject')->andReturn('sb_test_contract');
         $smaregiApi->shouldReceive('clearLastErrorDetail')->once();
+        $smaregiApi->shouldReceive('getCustomerByCode')->once()->andReturn(null);
+        $smaregiApi->shouldReceive('getLastHttpStatus')->andReturn(200);
         $smaregiApi->shouldReceive('createCustomer')->once()->andReturn(null);
-        $smaregiApi->shouldReceive('getLastErrorDetail')->andReturn('smaregi down');
+        $smaregiApi->shouldReceive('getLastErrorDetail')->andReturn(null, 'smaregi down');
 
         $couponIssue = Mockery::mock(CouponIssueService::class);
         $couponIssue->shouldReceive('issueForFirstRegistration')->once();
