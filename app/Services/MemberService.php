@@ -12,6 +12,7 @@ use App\Enums\ScheduledDeliveryType;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
+use App\Models\Project;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
@@ -452,11 +453,14 @@ class MemberService
         return DB::transaction(function () use ($user, $data, $requireSmaregi): Member {
             User::query()->whereKey($user->id)->lockForUpdate()->first();
 
+            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+            // Lock before snapshot reads so distinct users see the last committed allocation.
+            Project::query()->whereKey($projectId)->lockForUpdate()->firstOrFail();
+
             if (Member::query()->where('user_id', $user->id)->exists()) {
                 throw new \Exception('既に会員登録済みです');
             }
 
-            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
             $memberNumber = $this->generateMemberNumber($projectId);
             $smaregiCustomerId = null;
             $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
@@ -538,7 +542,7 @@ class MemberService
                 ->where('schedule_type', ScheduledDeliveryType::NEW_USER_MINUTES)
                 ->get()
                 ->each(function (AfterRegistrationDelivery $delivery) use ($member): void {
-                    $job = SendAfterRegistrationJob::dispatch($member->id, $delivery->id);
+                    $job = SendAfterRegistrationJob::dispatch($member->id, $delivery->id)->afterCommit();
                     $delay = $delivery->resolvedDelayMinutes();
                     if ($delay > 0) {
                         $job->delay(now()->addMinutes($delay));
@@ -616,13 +620,16 @@ class MemberService
 
         if ($type === 'sequential') {
             $next = $this->shopSettingRepository->getMemberCodeNextNumber($projectId);
-            $maxExisting = Member::where('project_id', $projectId)
+            $maxExisting = Member::withoutGlobalScopes()->where('project_id', $projectId)
                 ->whereNotNull('member_number')
                 ->where('member_number', '!=', '')
                 ->get()
                 ->map(function (Member $m) use ($prefix) {
                     $num = $m->member_number;
-                    if ($prefix !== '' && str_starts_with($num, $prefix)) {
+                    if ($prefix !== '') {
+                        if (! str_starts_with($num, $prefix)) {
+                            return 0;
+                        }
                         $num = substr($num, strlen($prefix));
                     }
 
@@ -630,11 +637,11 @@ class MemberService
                 })
                 ->max();
             $next = max($next, ($maxExisting ?? 0) + 1);
-            $this->shopSettingRepository->setMemberCodeNextNumber($next + 1, $projectId);
             $body = sprintf('%0'.$bodyLen.'d', $next);
             if (strlen($body) > $bodyLen) {
-                $body = substr($body, -$bodyLen);
+                throw ValidationException::withMessages(['member_number' => '会員番号を発行できません。会員コードの桁数を増やしてください。']);
             }
+            $this->shopSettingRepository->setMemberCodeNextNumber($next + 1, $projectId);
             $candidate = $prefix.$body;
 
             return strlen($candidate) <= 20 ? $candidate : substr($candidate, 0, 20);
@@ -652,12 +659,12 @@ class MemberService
             if (strlen($candidate) > 20) {
                 $candidate = substr($candidate, 0, 20);
             }
-            $exists = Member::where('project_id', $projectId)->where('member_number', $candidate)->exists();
+            $exists = Member::withoutGlobalScopes()->where('project_id', $projectId)->where('member_number', $candidate)->exists();
             if (! $exists) {
                 return $candidate;
             }
         }
 
-        return $prefix.sprintf('%0'.$bodyLen.'d', (time() + random_int(0, 9999)) % (10 ** $bodyLen));
+        throw ValidationException::withMessages(['member_number' => '未使用の会員番号を確保できません。再度お試しいただくか、会員コードの桁数を増やしてください。']);
     }
 }
