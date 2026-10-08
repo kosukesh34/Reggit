@@ -46,26 +46,24 @@ class MemberRankSyncService
                 $this->resolveRankLabel((int) $locked->project_id, $previousRank),
                 (string) ($rankInfo['current_rank_label'] ?? $newRank),
             );
+            $this->issueCouponOnRankUpService->handle(
+                $locked,
+                $previousRank,
+                $newRank,
+                (int) $history->id,
+            );
+            $this->scheduledDeliverySendService->sendRankUpArrival($locked, $newRank);
 
             return [
                 'member' => $locked->fresh() ?? $locked,
-                'previousRank' => $previousRank,
                 'newRank' => $newRank,
-                'historyId' => (int) $history->id,
             ];
         });
         if ($changed === null) {
             return false;
         }
 
-        $this->issueCouponOnRankUpService->handle(
-            $changed['member'],
-            $changed['previousRank'],
-            $changed['newRank'],
-            $changed['historyId'],
-        );
-        $this->scheduledDeliverySendService->sendRankUpArrival($changed['member'], $changed['newRank']);
-        $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($changed['member'], $changed['newRank']);
+        DB::afterCommit(fn () => $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($changed['member'], $changed['newRank']));
 
         return true;
     }
