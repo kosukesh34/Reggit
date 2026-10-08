@@ -19,6 +19,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasIndex('product_option_groups', ['project_id'])) {
+            Schema::table('product_option_groups', fn (Blueprint $table) => $table->index('project_id'));
+        }
         Schema::table('product_options', fn (Blueprint $table) => $table->dropColumn('smaregi_product_id'));
         Schema::table('product_option_groups', function (Blueprint $table) {
             $table->dropUnique('product_option_groups_smaregi_unique');
