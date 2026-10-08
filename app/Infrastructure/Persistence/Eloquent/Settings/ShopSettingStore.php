@@ -86,6 +86,7 @@ class ShopSettingStore
         'home_image_url' => ProjectAdminUiSetting::class,
         'home_image_urls' => ProjectAdminUiSetting::class,
         'home_menu_layout' => ProjectAdminUiSetting::class,
+        'home_content' => ProjectAdminUiSetting::class,
         'home_show_member_card' => ProjectAdminUiSetting::class,
         'native_chrome_colors' => ProjectAdminUiSetting::class,
         'product_display_layout' => ProjectAdminUiSetting::class,
