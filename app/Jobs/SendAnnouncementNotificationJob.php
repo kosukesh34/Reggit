@@ -26,13 +26,14 @@ class SendAnnouncementNotificationJob implements ShouldQueue
     {
         // Persist a lease before network I/O. A stopped worker becomes retryable
         // after five minutes, including when no queue message survives.
+        $leasedUntil = now()->addMinutes(5);
         $claimed = Announcement::withoutGlobalScopes()
             ->whereKey($this->announcementId)
             ->where('delivery_status', Announcement::DELIVERY_STATUS_SENT)
             ->where('send_notification', true)
             ->where('notification_pending', true)
             ->where('notification_retry_at', '<=', now())
-            ->update(['notification_retry_at' => now()->addMinutes(5)]);
+            ->update(['notification_retry_at' => $leasedUntil]);
         if ($claimed === 0) {
             return;
         }
@@ -48,13 +49,16 @@ class SendAnnouncementNotificationJob implements ShouldQueue
                 throw new \RuntimeException('Announcement notification delivery is incomplete.');
             }
         } catch (\Throwable $exception) {
-            $announcement->update(['notification_retry_at' => now()->addMinute()]);
+            Announcement::withoutGlobalScopes()->whereKey($this->announcementId)
+                ->where('notification_retry_at', $leasedUntil)
+                ->update(['notification_retry_at' => now()->addMinute()]);
             throw $exception;
         }
 
-        $announcement->update([
-            'notification_pending' => false,
-            'notification_retry_at' => null,
-        ]);
+        Announcement::withoutGlobalScopes()->whereKey($this->announcementId)
+            ->where('notification_retry_at', $leasedUntil)->update([
+                'notification_pending' => false,
+                'notification_retry_at' => null,
+            ]);
     }
 }

@@ -141,6 +141,27 @@ class DeliveryRetryTest extends TestCase
         $this->assertFalse($announcement->fresh()->notification_pending);
     }
 
+    public function test_expired_worker_cannot_complete_a_newer_failed_delivery(): void
+    {
+        $announcement = $this->announcement();
+        $replacement = Mockery::mock(AnnouncementNotificationService::class);
+        $replacement->shouldReceive('send')->once()->andThrow(new \RuntimeException('Replacement failed'));
+        $stale = Mockery::mock(AnnouncementNotificationService::class);
+        $stale->shouldReceive('send')->once()->andReturnUsing(function () use ($announcement, $replacement): array {
+            $this->travel(301)->seconds();
+            try {
+                (new SendAnnouncementNotificationJob($announcement->id))->handle($replacement);
+            } catch (\RuntimeException $exception) {
+                $this->assertSame('Replacement failed', $exception->getMessage());
+            }
+
+            return ['failed' => 0, 'line_failed' => 0];
+        });
+        (new SendAnnouncementNotificationJob($announcement->id))->handle($stale);
+        $this->assertTrue($announcement->fresh()->notification_pending);
+        $this->assertSame(now()->addMinute()->toDateTimeString(), $announcement->fresh()->notification_retry_at->toDateTimeString());
+    }
+
     public function test_recovery_command_only_dispatches_due_pending_notifications(): void
     {
         Bus::fake();
