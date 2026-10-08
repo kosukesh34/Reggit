@@ -387,16 +387,19 @@ class MemberService
             }
         }
 
-        if ($userUpdates !== []) {
-            $user->update($userUpdates);
-        }
-        if ($memberUpdates !== []) {
-            $member->update($memberUpdates);
-        }
-        if ($extraUpdates !== []) {
-            $current = $member->profile_extra ?? [];
-            $member->update(['profile_extra' => array_merge($current, $extraUpdates)]);
-        }
+        DB::transaction(function () use ($user, $member, $userUpdates, $memberUpdates, $extraUpdates): void {
+            $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $lockedMember = Member::query()->whereKey($member->id)->lockForUpdate()->firstOrFail();
+            if ($userUpdates !== []) {
+                $lockedUser->update($userUpdates);
+            }
+            if ($extraUpdates !== []) {
+                $memberUpdates['profile_extra'] = array_merge($lockedMember->profile_extra ?? [], $extraUpdates);
+            }
+            if ($memberUpdates !== []) {
+                $lockedMember->update($memberUpdates);
+            }
+        });
 
         $smaregiCustomerId = $member->smaregi_customer_id ?? '';
         if ($smaregiCustomerId !== '') {
