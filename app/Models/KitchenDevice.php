@@ -12,6 +12,7 @@ class KitchenDevice extends Model
 
     protected $fillable = [
         'project_id',
+        'store_id',
         'push_token',
         'platform',
         'device_name',
@@ -20,6 +21,7 @@ class KitchenDevice extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'store_id' => 'integer',
         'last_seen_at' => 'datetime',
     ];
 
