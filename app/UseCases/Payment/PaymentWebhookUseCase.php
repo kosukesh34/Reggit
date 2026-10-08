@@ -152,6 +152,10 @@ class PaymentWebhookUseCase
                 $this->orderService->applyStripePaymentRewardsIfNeeded($order);
             }
 
+            if ($confirmedEvent !== null) {
+                $this->postCommitEvents->record($confirmedEvent);
+            }
+
             // Stripe Webhook 経路は即時同期しない（決済完了 UI より先にスマレジ Webhook が来るのを防ぐ）
             // フロント confirm が来ない場合のフォールバックとして遅延ジョブを積む
             if ($aggregate->shouldSyncToSmaregi()) {

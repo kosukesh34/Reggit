@@ -64,6 +64,7 @@ use App\Http\Controllers\Admin\Settings\LotteryController as SettingsLotteryCont
 use App\Http\Controllers\Admin\Settings\MemberCardController;
 use App\Http\Controllers\Admin\Settings\MemberCodeController;
 use App\Http\Controllers\Admin\Settings\MenuController as SettingsMenuController;
+use App\Http\Controllers\Admin\Settings\PaymentsController;
 use App\Http\Controllers\Admin\Settings\ProfileController;
 use App\Http\Controllers\Admin\Settings\QueueController;
 use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksController;
@@ -318,8 +319,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/settings/basic', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
         Route::post('/settings/basic', [SettingsBasicController::class, 'update'])->name('admin.settings.basic.update')->middleware('admin.permission:settings.manage');
         Route::post('/settings/store-app-credential', [StoreAppCredentialController::class, 'store'])->name('admin.settings.store-app-credential.store')->middleware('admin.permission:settings.manage');
-        Route::get('/settings/payments', [\App\Http\Controllers\Admin\Settings\PaymentsController::class, 'index'])->name('admin.settings.payments')->middleware('admin.permission:settings.manage');
-        Route::post('/settings/payments', [\App\Http\Controllers\Admin\Settings\PaymentsController::class, 'update'])->name('admin.settings.payments.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/payments', [PaymentsController::class, 'index'])->name('admin.settings.payments')->middleware('admin.permission:settings.manage');
+        Route::post('/settings/payments', [PaymentsController::class, 'update'])->name('admin.settings.payments.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/advanced', [SettingsAdvancedController::class, 'index'])->name('admin.settings.advanced')->middleware('admin.permission:settings.view');
         Route::post('/settings/advanced', [SettingsAdvancedController::class, 'update'])->name('admin.settings.advanced.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/menu', [SettingsMenuController::class, 'index'])->name('admin.settings.menu')->middleware('admin.permission:settings.view');

@@ -379,7 +379,7 @@ export const reggitApi = {
     } catch {
       throw new Error('スタンプ付与QRを読み取ってください');
     }
-    if (!/^https?:$/.test(grantUrl.protocol) || !/^\/api\/stamps\/grant\/\d+$/.test(grantUrl.pathname)) {
+    if (grantUrl.origin !== window.location.origin || !/^https?:$/.test(grantUrl.protocol) || !/^\/api\/stamps\/grant\/\d+$/.test(grantUrl.pathname)) {
       throw new Error('このスタンプ付与URLは利用できません');
     }
     const postUrl = /^https?:\/\//i.test(raw) ? raw : grantUrl.href;

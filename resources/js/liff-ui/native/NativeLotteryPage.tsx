@@ -99,7 +99,7 @@ export function LotteryRewardModal({ open, onClose, previewGame, initialGame }: 
   const canvas = useRef<HTMLCanvasElement>(null);
   const cellsRef = useRef<number[]>([]);
   const requested = useRef(false);
-  const pendingResult = useRef<Result>();
+  const pendingResult = useRef<Result | undefined>(undefined);
   const notified = useRef(new Set<number>());
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);

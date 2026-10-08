@@ -20,40 +20,39 @@ class LiffBootScreenContractTest extends TestCase
         $this->assertStringContainsString('navigate(path, { replace: true })', $router);
     }
 
-    public function test_本番機能画面はpreview以外でデモ画面に落ちないこと(): void
+    public function test_本番機能画面はネイティブapi画面を使いデモに落ちないこと(): void
     {
         $root = dirname(__DIR__, 2);
         $feature = (string) file_get_contents($root.'/resources/js/liff-ui/pages/FeaturePage.tsx');
-        $runtime = (string) file_get_contents($root.'/resources/js/liff-ui/context/RuntimeDataContext.tsx');
-
-        $this->assertStringContainsString('if (mode !== "live" && mode !== "preview")', $feature);
-        $this->assertStringContainsString('return <FeaturePageSkeleton />', $feature);
-        $this->assertStringContainsString('window.__LIFF_READY__ !== true', $runtime);
-        $this->assertStringContainsString('generation !== refreshGeneration.current', $runtime);
+        $resource = (string) file_get_contents($root.'/resources/js/liff-ui/native/NativeResource.tsx');
+        $this->assertStringContainsString('<NativeCouponsPage />', $feature);
+        $this->assertStringContainsString('<NativeReservationsPage />', $feature);
+        $this->assertStringNotContainsString('Demo', $feature);
+        $this->assertStringContainsString('demo = isDemoDataMode()', $resource);
+        $this->assertStringContainsString('if (demo) { setLoading(false); return; }', $resource);
+        $this->assertStringContainsString('setData(await nativeRequest<T>(path))', $resource);
+        $this->assertStringContainsString('if (error || empty)', $resource);
     }
 
-    public function test_デモ会員証はpreviewでスケルトンに固定しないこと(): void
+    public function test_デモとデザイナープレビューの会員証はapiを待たないこと(): void
     {
         $root = dirname(__DIR__, 2);
         $page = (string) file_get_contents($root.'/resources/js/liff-ui/pages/MembershipPage.tsx');
-
-        $this->assertStringContainsString('isDemoDataMode()', $page);
-        $this->assertStringContainsString('mode === "preview"', $page);
-        $this->assertStringContainsString('if (booting)', $page);
-        $this->assertStringNotContainsString(
-            'mode !== "live" && !(mode === "offline" && !loading)',
-            $page,
-        );
+        $resource = (string) file_get_contents($root.'/resources/js/liff-ui/native/NativeResource.tsx');
+        $this->assertStringContainsString('window.__IS_DESIGNER_EMBED_PREVIEW__ === true', $page);
+        $this->assertStringContainsString('isDemoDataMode() || adminPreview', $page);
+        $this->assertStringContainsString('useState(!demo)', $resource);
     }
 
-    public function test_店舗オーダーはプロダクトページではなくオーダーデモを使うこと(): void
+    public function test_店舗オーダーは店内注文フラグをネイティブ注文画面へ渡すこと(): void
     {
         $root = dirname(__DIR__, 2);
         $feature = (string) file_get_contents($root.'/resources/js/liff-ui/pages/FeaturePage.tsx');
-
-        $this->assertStringNotContainsString('<ProductsPage />', $feature);
-        $this->assertStringContainsString('<OrderDemo dineIn={false}', $feature);
-        $this->assertStringContainsString('<OrderDemo dineIn', $feature);
+        $products = (string) file_get_contents($root.'/resources/js/liff-ui/native/NativeProductsPage.tsx');
+        $this->assertStringContainsString('case "mobileOrder": case "dineInOrder":', $feature);
+        $this->assertStringContainsString('dineIn={feature === "dineInOrder"}', $feature);
+        $this->assertStringContainsString('createOrder', $products);
+        $this->assertStringContainsString('PaymentBrandPicker', $products);
     }
 
     public function test_会員証はウォレットサマリーを定期購読して即時反映すること(): void
@@ -61,7 +60,8 @@ class LiffBootScreenContractTest extends TestCase
         $root = dirname(__DIR__, 2);
         $manager = (string) file_get_contents($root.'/resources/js/frontend/managers/MemberManager.ts');
         $page = (string) file_get_contents($root.'/resources/js/liff-ui/pages/MembershipPage.tsx');
-        $stamps = (string) file_get_contents($root.'/resources/js/frontend/features/stamps/StampsView.tsx');
+        $resource = (string) file_get_contents($root.'/resources/js/liff-ui/native/NativeResource.tsx');
+        $stamps = (string) file_get_contents($root.'/resources/js/liff-ui/native/NativeStampsPage.tsx');
 
         $this->assertStringContainsString("listen('.wallet.updated'", $manager);
         $this->assertStringContainsString('liff.member.', $manager);
@@ -72,20 +72,20 @@ class LiffBootScreenContractTest extends TestCase
         $this->assertStringContainsString('__REVERB_WS_HOST__', $echo);
         $scripts = (string) file_get_contents($root.'/resources/views/frontend/partials/_scripts-config.blade.php');
         $this->assertStringContainsString('reverb-ws-host', $scripts);
-        $this->assertStringContainsString('liff-wallet-summary-updated', $page);
-        $this->assertStringContainsString('fetchMemberContext({ force: true })', $page);
-        $this->assertStringContainsString("document.addEventListener('liff-wallet-summary-updated'", $stamps);
-        $this->assertStringContainsString('void reload(true)', $stamps);
+        $this->assertStringContainsString('useNativeResource("/api/member-profile"', $page);
+        $this->assertStringContainsString('useNativeResource("/api/stamps"', $stamps);
+        $this->assertStringContainsString('document.addEventListener("liff-wallet-summary-updated", update)', $resource);
+        $this->assertStringContainsString('document.removeEventListener("liff-wallet-summary-updated", update)', $resource);
     }
 
-    public function test_会員証は登録イベントでフォームを出すこと(): void
+    public function test_ログイン済みの非会員は会員証ページで登録フォームを出すこと(): void
     {
         $root = dirname(__DIR__, 2);
         $page = (string) file_get_contents($root.'/resources/js/liff-ui/pages/MembershipPage.tsx');
         $gate = (string) file_get_contents($root.'/resources/js/frontend/hooks/useMembershipGate.ts');
         $router = (string) file_get_contents($root.'/resources/js/liff-ui/app/router.tsx');
 
-        $this->assertStringContainsString('liff-member-open-register', $page);
+        $this->assertStringContainsString('window.__LINE_USER_ID__ || isDemoDataMode()', $page);
         $this->assertStringContainsString('<MemberRegisterHost mode="register"', $page);
         $this->assertStringContainsString('shouldShowStartupLoginPopup()', $gate);
         $this->assertStringContainsString('liff-member-open-login-popup', $gate);

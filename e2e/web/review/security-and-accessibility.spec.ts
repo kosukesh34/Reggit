@@ -80,7 +80,7 @@ test('@component 確認ダイアログをキーボードと支援技術で操作
 for (const width of [390, 1280]) {
   test(`デモのホームから順番待ちへ移動でき横スクロールが発生しない (${width}px)`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
-    const response = await page.goto('/liff#/home');
+    const response = await page.goto('/demo/liff#/home');
     expect(response?.status()).toBe(200);
     const loginPrompt = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'ログイン' }) });
     const homeMenu = page.getByRole('navigation', { name: 'ホームメニュー' });
@@ -102,6 +102,9 @@ for (const width of [390, 1280]) {
   });
 }
 
+test.describe('実店舗のネイティブWebView', () => {
+  test.use({ userAgent: 'Reggit/1.0 (E2E)' });
+
 test('実店舗のホームで受付がない利用者にサンプルの待ち番号を表示しない', async ({ page }) => {
   await page.goto('/admin/login');
   await page.locator('#login_id').fill(process.env.E2E_ADMIN_LOGIN_ID ?? 'demo_store');
@@ -117,8 +120,10 @@ test('実店舗のホームで受付がない利用者にサンプルの待ち�
       json: { queue_entry: null, waiting_count: 0, estimated_wait_minutes: 0 },
     }));
   }
+  // Use the native WebView entry point: the real LIFF entry requires LINE login.
   await page.goto(href!);
   await expect(page).toHaveURL(/\/liff\/[^/?#]+.*#\/home/);
   await expect(page.getByRole('navigation', { name: '主要ナビゲーション' })).toBeVisible();
   await expect(page.getByText('現在 12番・あと5組', { exact: true })).toHaveCount(0);
+});
 });

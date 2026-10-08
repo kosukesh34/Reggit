@@ -11,98 +11,118 @@ use App\Models\User;
 use App\Util\AdminContext;
 use App\Util\DateUtil;
 use App\Util\LogHelper;
+use App\Util\StoreContext;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 class ReservationService
 {
     public function __construct(
         private ReservationRepository $reservationRepository,
+        private StoreContext $storeContext,
     ) {}
 
     public function createReservation(User $user, array $data): Reservation
     {
-        $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
-        $reservedAt = DateUtil::nullableCarbon($data['reserved_at']);
-        if ($reservedAt === null) {
-            throw new \InvalidArgumentException('予約日時が不正です');
-        }
+        return DB::transaction(function () use ($user, $data): Reservation {
+            $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
+            $reservedAt = DateUtil::nullableCarbon($data['reserved_at']);
+            if ($reservedAt === null) {
+                throw new \InvalidArgumentException('予約日時が不正です');
+            }
 
-        $course = $this->resolveCourse($projectId, $data['reservation_course_id'] ?? null);
+            $course = $this->resolveCourse($projectId, $data['reservation_course_id'] ?? null);
 
-        $reservationId = $this->reservationRepository->persistPending(new PendingReservation(
-            $projectId,
-            (int) $user->id,
-            $reservedAt,
-            (int) ($data['number_of_people'] ?? 1),
-            $data['notes'] ?? null,
-        ));
+            $reservationId = $this->reservationRepository->persistPending(new PendingReservation(
+                $projectId,
+                (int) $user->id,
+                $reservedAt,
+                (int) ($data['number_of_people'] ?? 1),
+                $data['notes'] ?? null,
+                $this->storeContext->resolveForWrite($projectId),
+            ));
 
-        LogHelper::info('[Reservation] created', [
-            'reservation_id' => $reservationId,
-            'user_id' => $user->id,
-        ]);
+            LogHelper::info('[Reservation] created', [
+                'reservation_id' => $reservationId,
+                'user_id' => $user->id,
+            ]);
 
-        $reservation = Reservation::findOrFail($reservationId);
-        $this->applyCourse($reservation, $course);
+            $reservation = Reservation::findOrFail($reservationId);
+            $this->applyCourse($reservation, $course);
 
-        return $reservation;
+            return $reservation;
+
+        }, 3);
     }
 
     public function cancelReservation(int $reservationId, User $user): Reservation
     {
-        $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
-        $aggregate = $this->reservationRepository->findByIdAndUserIdOrFail(
-            $reservationId,
-            (int) $user->id,
-            $projectId,
-        );
-        $aggregate->cancel();
-        $this->reservationRepository->save($aggregate);
+        return DB::transaction(function () use ($reservationId, $user): Reservation {
+            $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
+            $aggregate = $this->reservationRepository->findByIdForUpdate(
+                $reservationId,
+                $projectId,
+                (int) $user->id,
+            );
+            if ($aggregate === null) {
+                throw (new ModelNotFoundException)->setModel(Reservation::class, [$reservationId]);
+            }
+            $aggregate->cancel();
+            $this->reservationRepository->save($aggregate);
 
-        LogHelper::info('[Reservation] cancelled', [
-            'reservation_id' => $aggregate->id()->value(),
-            'user_id' => $user->id,
-            'project_id' => $projectId,
-        ]);
+            LogHelper::info('[Reservation] cancelled', [
+                'reservation_id' => $aggregate->id()->value(),
+                'user_id' => $user->id,
+                'project_id' => $projectId,
+            ]);
 
-        return Reservation::findOrFail($aggregate->id()->value());
+            return Reservation::findOrFail($aggregate->id()->value());
+
+        }, 3);
     }
 
     public function updateReservation(int $reservationId, User $user, array $data): Reservation
     {
-        $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
-        $aggregate = $this->reservationRepository->findByIdAndUserIdOrFail(
-            $reservationId,
-            (int) $user->id,
-            $projectId,
-        );
+        return DB::transaction(function () use ($reservationId, $user, $data): Reservation {
+            $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
+            $aggregate = $this->reservationRepository->findByIdForUpdate(
+                $reservationId,
+                $projectId,
+                (int) $user->id,
+            );
+            if ($aggregate === null) {
+                throw (new ModelNotFoundException)->setModel(Reservation::class, [$reservationId]);
+            }
 
-        $reservedAt = DateUtil::nullableCarbon($data['reserved_at']);
-        if ($reservedAt === null) {
-            throw new \InvalidArgumentException('予約日時が不正です');
-        }
+            $reservedAt = DateUtil::nullableCarbon($data['reserved_at']);
+            if ($reservedAt === null) {
+                throw new \InvalidArgumentException('予約日時が不正です');
+            }
 
-        $course = array_key_exists('reservation_course_id', $data)
-            ? $this->resolveCourse($projectId, $data['reservation_course_id'])
-            : null;
+            $course = array_key_exists('reservation_course_id', $data)
+                ? $this->resolveCourse($projectId, $data['reservation_course_id'])
+                : null;
 
-        $aggregate->updateDetails(
-            $reservedAt,
-            (int) ($data['number_of_people'] ?? $aggregate->numberOfPeople()),
-            array_key_exists('notes', $data) ? $data['notes'] : $aggregate->notes(),
-        );
-        $this->reservationRepository->save($aggregate);
+            $aggregate->updateDetails(
+                $reservedAt,
+                (int) ($data['number_of_people'] ?? $aggregate->numberOfPeople()),
+                array_key_exists('notes', $data) ? $data['notes'] : $aggregate->notes(),
+            );
+            $this->reservationRepository->save($aggregate);
 
-        $reservation = Reservation::findOrFail($aggregate->id()->value());
-        if (array_key_exists('reservation_course_id', $data)) {
-            $this->applyCourse($reservation, $course);
-        }
+            $reservation = Reservation::findOrFail($aggregate->id()->value());
+            if (array_key_exists('reservation_course_id', $data)) {
+                $this->applyCourse($reservation, $course);
+            }
 
-        LogHelper::info('[Reservation] updated', [
-            'reservation_id' => $aggregate->id()->value(),
-            'user_id' => $user->id,
-        ]);
+            LogHelper::info('[Reservation] updated', [
+                'reservation_id' => $aggregate->id()->value(),
+                'user_id' => $user->id,
+            ]);
 
-        return $reservation;
+            return $reservation;
+
+        }, 3);
     }
 
     public function getUserReservations(User $user): array

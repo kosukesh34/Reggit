@@ -65,7 +65,7 @@ class AdminOrdersTest extends TestCase
         $user = User::factory()->create(['project_id' => $project->id]);
         $order = Order::create([
             'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 1000,
-            'order_type' => OrderType::MOBILE, 'status' => 'pending', 'payment_method' => 'stripe',
+            'order_type' => OrderType::MOBILE, 'status' => 'pending', 'payment_method' => 'cash',
         ]);
         $push = \Mockery::mock(PushNotificationService::class);
         $push->shouldReceive('sendToUser')->once()->with(

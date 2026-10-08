@@ -9,6 +9,7 @@ use App\Models\Reservation;
 use App\Models\ReservationCourse;
 use App\Util\AdminContext;
 use App\Util\DateUtil;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class ReservationAdminService
@@ -42,13 +43,15 @@ class ReservationAdminService
                 $selectedDateLabel = $date->format('Y年m月d日');
                 $dateStatusCounts = $this->getStatusCounts($selectedDate);
                 $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
+                $slotCounts = $this->reservationRepository->getActiveSlotCounts(
+                    $projectId, $date->copy()->startOfDay(), $date->copy()->endOfDay(), null,
+                );
                 foreach ($timeSlots as $slot) {
                     $slotStart = DateUtil::nullableCarbon($date->format('Y-m-d').' '.$slot);
                     if ($slotStart === null) {
                         continue;
                     }
-                    $slotEnd = $slotStart->copy()->addHour();
-                    $count = Reservation::whereBetween('reserved_at', [$slotStart, $slotEnd])->count();
+                    $count = $slotCounts[$date->format('Y-m-d')][$slot] ?? 0;
                     $timeSlotSummary[] = [
                         'time' => $slot,
                         'count' => $count,
@@ -93,26 +96,32 @@ class ReservationAdminService
 
     public function updateStatus(int $id, string $status): void
     {
-        $projectId = AdminContext::requireCurrentProjectId();
-        $aggregate = $this->reservationRepository->findById($id, $projectId);
-        if ($aggregate === null) {
-            return;
-        }
+        DB::transaction(function () use ($id, $status): void {
+            $projectId = AdminContext::requireCurrentProjectId();
+            $aggregate = $this->reservationRepository->findByIdForUpdate($id, $projectId);
+            if ($aggregate === null) {
+                return;
+            }
 
-        $aggregate->applyAdminStatus($status);
-        $this->reservationRepository->save($aggregate);
+            $aggregate->applyAdminStatus($status);
+            $this->reservationRepository->save($aggregate);
+
+        }, 3);
     }
 
     public function complete(int $id): void
     {
-        $projectId = AdminContext::requireCurrentProjectId();
-        $aggregate = $this->reservationRepository->findById($id, $projectId);
-        if ($aggregate === null) {
-            return;
-        }
+        DB::transaction(function () use ($id): void {
+            $projectId = AdminContext::requireCurrentProjectId();
+            $aggregate = $this->reservationRepository->findByIdForUpdate($id, $projectId);
+            if ($aggregate === null) {
+                return;
+            }
 
-        $aggregate->complete();
-        $this->reservationRepository->save($aggregate);
+            $aggregate->complete();
+            $this->reservationRepository->save($aggregate);
+
+        }, 3);
     }
 
     public function store(array $data, int $projectId): Reservation
@@ -138,32 +147,39 @@ class ReservationAdminService
 
     public function update(int $id, array $data): Reservation
     {
-        $reservation = Reservation::findOrFail($id);
+        return DB::transaction(function () use ($id, $data): Reservation {
+            $reservation = Reservation::lockForUpdate()->findOrFail($id);
 
-        $reservedAt = DateUtil::nullableCarbon($data['reserved_at_date'].' '.$data['reserved_at_time']);
-        if ($reservedAt === null) {
-            throw new InvalidArgumentException('予約日時が不正です');
-        }
+            $reservedAt = DateUtil::nullableCarbon($data['reserved_at_date'].' '.$data['reserved_at_time']);
+            if ($reservedAt === null) {
+                throw new InvalidArgumentException('予約日時が不正です');
+            }
 
-        $attributes = [
-            'reserved_at' => $reservedAt,
-            'number_of_people' => $data['number_of_people'],
-            'notes' => $data['notes'] ?? null,
-        ];
-        if (array_key_exists('reservation_course_id', $data)) {
-            $course = $this->resolveCourse((int) $reservation->project_id, $data['reservation_course_id']);
-            $attributes['reservation_course_id'] = $course?->id;
-            $attributes['course_name'] = $course?->name;
-            $attributes['course_price'] = $course?->price;
-        }
-        $reservation->update($attributes);
+            $attributes = [
+                'reserved_at' => $reservedAt,
+                'number_of_people' => $data['number_of_people'],
+                'notes' => $data['notes'] ?? null,
+            ];
+            if (array_key_exists('reservation_course_id', $data)) {
+                $course = $this->resolveCourse((int) $reservation->project_id, $data['reservation_course_id']);
+                $attributes['reservation_course_id'] = $course?->id;
+                $attributes['course_name'] = $course?->name;
+                $attributes['course_price'] = $course?->price;
+            }
+            $attributes['version'] = (int) $reservation->version + 1;
+            $reservation->update($attributes);
 
-        return $reservation->fresh();
+            return $reservation->fresh();
+
+        }, 3);
     }
 
     public function destroy(int $id): void
     {
-        Reservation::findOrFail($id)->delete();
+        DB::transaction(function () use ($id): void {
+            Reservation::lockForUpdate()->findOrFail($id)->delete();
+
+        }, 3);
     }
 
     private function resolveCourse(int $projectId, int|string|null $id): ?ReservationCourse

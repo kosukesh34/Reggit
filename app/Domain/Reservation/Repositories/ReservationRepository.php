@@ -7,6 +7,8 @@ use App\Domain\Reservation\ValueObjects\PendingReservation;
 
 interface ReservationRepository
 {
+    public function findByIdForUpdate(int $reservationId, int $projectId, ?int $userId = null): ?Reservation;
+
     public function findById(int $reservationId, int $projectId): ?Reservation;
 
     public function findByIdAndUserId(int $reservationId, int $userId, int $projectId): ?Reservation;

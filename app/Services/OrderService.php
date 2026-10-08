@@ -10,41 +10,29 @@ use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Domain\Order\Policies\OrderPlacementPolicy;
 use App\Domain\Order\Policies\ProductAvailabilityPolicy;
 use App\Domain\Order\Policies\ProductOptionSelectionPolicy;
-use App\Domain\Order\Policies\StampEarnPolicy;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Order\Repositories\ProductCatalogRepository;
 use App\Domain\Order\Repositories\ProductStockRepository;
 use App\Domain\Order\ValueObjects\OrderLineItem;
 use App\Domain\Order\ValueObjects\PendingOrder;
 use App\Domain\Settings\Repositories\OrderSettings;
-use App\Enums\LotterySourceType;
-use App\Enums\MemberCouponSource;
-use App\Enums\MemberVisitSource;
-use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Enums\PointTransactionType;
-use App\Models\MemberStampTransaction;
-use App\Models\MemberVisit;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\Settings\ProjectPaymentSetting;
 use App\Models\User;
-use App\Services\Admin\MemberAdminService;
-use App\Services\Admin\MemberBenefitService;
-use App\Services\Lottery\LotteryEntitlementService;
-use App\Services\Stamp\MemberCurrentStampCardResolver;
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use Illuminate\Support\Facades\DB;
 
 class OrderService
 {
-    private const DEFAULT_POINTS_EARN_RATE = 100;
-
     public function __construct(
-        private MemberAdminService $memberAdminService,
-        private MemberBenefitService $memberBenefitService,
         private MemberRepository $memberRepository,
+        private OrderRewardService $rewards,
+        private StoreContext $storeContext,
         private OrderRepository $orderRepository,
         private ProductStockRepository $productStockRepository,
         private ProductCatalogRepository $productCatalogRepository,
@@ -53,11 +41,7 @@ class OrderService
         private OrderPlacementPolicy $orderPlacementPolicy,
         private ProductAvailabilityPolicy $productAvailabilityPolicy,
         private ProductOptionSelectionPolicy $productOptionSelectionPolicy,
-        private StampEarnPolicy $stampEarnPolicy,
         private OrderNumberAssigner $orderNumberAssigner,
-        private LotteryEntitlementService $lotteryEntitlementService,
-        private MemberRankSyncService $memberRankSyncService,
-        private MemberCurrentStampCardResolver $memberCurrentStampCardResolver,
     ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
@@ -112,6 +96,7 @@ class OrderService
                     $finalAmount,
                     $pointsUsed,
                     $orderData['notes'] ?? null,
+                    $this->storeContext->resolveForWrite($projectId),
                 ),
                 $lineItems,
             );
@@ -127,14 +112,14 @@ class OrderService
             $this->updateProductStock($orderItems, $projectId);
             if ($paymentMethod === PaymentMethod::STRIPE) {
                 // 決済前はポイント消費のみ。獲得・来店・スタンプ・ガチャは決済確定後
-                $this->consumePointsForOrder($user, $order, $pointsUsed);
+                $this->rewards->consumePointsForOrder($user, $order, $pointsUsed);
             } else {
-                $this->applyOrderPointChanges($user, $order, $pointsUsed, $finalAmount);
-                $this->recordMemberVisit($user, $order);
-                $this->awardStamps($user, $order, $finalAmount);
+                $this->rewards->applyOrderPointChanges($user, $order, $pointsUsed, $finalAmount);
+                $this->rewards->recordMemberVisit($user, $order);
+                $this->rewards->awardStamps($user, $order, $finalAmount);
                 // 現金（店内注文・後で決済）のガチャは取置き時点では付与しない。注文完了時に付与する
                 if ($paymentMethod !== PaymentMethod::CASH) {
-                    $this->awardLotteryEntitlements($user, $order, $finalAmount);
+                    $this->rewards->awardLotteryEntitlements($user, $order, $finalAmount);
                 }
             }
 
@@ -143,7 +128,7 @@ class OrderService
 
         // commit 後に同期する（失敗しても注文は残す。try/catch 外で rollBack しない）
         if ($paymentMethod !== PaymentMethod::STRIPE) {
-            $this->syncMemberRank($user);
+            $this->rewards->syncMemberRank($user);
             $this->postCommitEvents->dispatch(new OrderPointsSyncRequested(
                 (int) $order->id,
                 $projectId,
@@ -164,44 +149,7 @@ class OrderService
      */
     public function applyStripePaymentRewardsIfNeeded(Order $order): void
     {
-        if ($order->payment_method !== PaymentMethod::STRIPE) {
-            return;
-        }
-        if ($order->status === OrderStatus::PENDING || $order->status === OrderStatus::CANCELLED) {
-            return;
-        }
-
-        $order->loadMissing('user.member');
-        $user = $order->user;
-        if ($user === null) {
-            return;
-        }
-
-        $finalAmount = (float) $order->total_amount;
-        if ((int) $order->points_earned <= 0) {
-            $this->awardPoints($user, $order, $finalAmount);
-            $order->refresh();
-        }
-
-        $projectId = (int) $order->project_id;
-        $hasVisit = MemberVisit::query()
-            ->where('project_id', $projectId)
-            ->where('order_id', (int) $order->id)
-            ->exists();
-        if ($hasVisit === false) {
-            $this->recordMemberVisit($user, $order);
-        }
-
-        $hasStamp = MemberStampTransaction::query()
-            ->where('project_id', $projectId)
-            ->where('order_id', (int) $order->id)
-            ->exists();
-        if ($hasStamp === false) {
-            $this->awardStamps($user, $order, $finalAmount);
-        }
-
-        $this->awardLotteryEntitlements($user, $order, $finalAmount);
-        $this->syncMemberRank($user);
+        $this->rewards->applyStripePaymentRewardsIfNeeded($order);
     }
 
     /**
@@ -210,20 +158,7 @@ class OrderService
      */
     public function applyCashOrderLotteryIfNeeded(Order $order): void
     {
-        if ($order->payment_method !== PaymentMethod::CASH) {
-            return;
-        }
-        if ($order->status !== OrderStatus::COMPLETED) {
-            return;
-        }
-
-        $order->loadMissing('user.member');
-        $user = $order->user;
-        if ($user === null) {
-            return;
-        }
-
-        $this->awardLotteryEntitlements($user, $order, (float) $order->total_amount);
+        $this->rewards->applyCashOrderLotteryIfNeeded($order);
     }
 
     /**
@@ -287,31 +222,6 @@ class OrderService
         return $orderItems;
     }
 
-    private function applyOrderPointChanges(
-        User $user,
-        Order $order,
-        int $pointsUsed,
-        float $finalAmount,
-    ): void {
-        $this->consumePointsForOrder($user, $order, $pointsUsed);
-        $this->awardPoints($user, $order, $finalAmount);
-    }
-
-    private function consumePointsForOrder(User $user, Order $order, int $pointsUsed): void
-    {
-        if ($pointsUsed <= 0) {
-            return;
-        }
-
-        $member = $this->loadMemberForPointUpdate($user);
-        if ($member->displayPoints() < $pointsUsed) {
-            throw new OrderOperationException('ポイントが不足しています');
-        }
-
-        $member->usePoints($pointsUsed, '注文で使用', (int) $order->id);
-        $this->memberRepository->save($member);
-    }
-
     private function updateProductStock(array $orderItems, int $projectId): void
     {
         foreach ($orderItems as $item) {
@@ -321,136 +231,6 @@ class OrderService
                 (int) $item['quantity'],
             );
         }
-    }
-
-    private function awardPoints(User $user, Order $order, float $finalAmount): void
-    {
-        $projectId = (int) ($user->project_id ?? 0);
-        if ($this->shopSettingRepository->getUsePoints($projectId) !== true) {
-            return;
-        }
-        $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
-        if ($member === null) {
-            return;
-        }
-
-        $pointsPerOrder = $this->shopSettingRepository->getPointsPerOrder($projectId);
-        $rankKey = $user->member !== null && is_string($user->member->rank) ? (string) $user->member->rank : null;
-        $rate = $this->getPointsEarnRate($projectId, $rankKey);
-        $pointsFromAmount = $rate > 0 && $finalAmount > 0 ? (int) floor($finalAmount / $rate) : 0;
-        $pointsEarned = $pointsPerOrder + $pointsFromAmount;
-
-        if ($pointsEarned <= 0) {
-            return;
-        }
-
-        $member = $this->loadMemberForPointUpdate($user);
-        $validDays = $this->shopSettingRepository->getPointsValidDays($projectId);
-        $member->earnPoints(
-            $pointsEarned,
-            '購入で獲得',
-            (int) $order->id,
-            now()->addDays($validDays),
-        );
-        $this->memberRepository->save($member);
-        $order->update(['points_earned' => $pointsEarned]);
-    }
-
-    private function loadMemberForPointUpdate(User $user): MemberAggregate
-    {
-        $projectId = (int) ($user->project_id ?? 0);
-        $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
-        if ($member === null) {
-            throw new OrderOperationException('会員登録が必要です');
-        }
-
-        $this->memberRepository->syncPointsLedger($member->id()->value(), $projectId);
-        $locked = $this->memberRepository->findByIdForUpdate($member->id()->value(), $projectId);
-        if ($locked === null) {
-            throw new OrderOperationException('会員登録が必要です');
-        }
-
-        return $locked;
-    }
-
-    private function recordMemberVisit(User $user, Order $order): void
-    {
-        $member = $user->member;
-        if ($member === null) {
-            return;
-        }
-
-        $this->memberAdminService->recordVisit(
-            $member,
-            $order->created_at ?? now(),
-            MemberVisitSource::ORDER,
-            (int) $order->id
-        );
-    }
-
-    private function awardStamps(User $user, Order $order, float $finalAmount): void
-    {
-        $member = $user->member;
-        if ($member === null || $finalAmount <= 0) {
-            return;
-        }
-
-        $projectId = (int) ($user->project_id ?? 0);
-        if ($this->shopSettingRepository->getUseStamps($projectId) !== true) {
-            return;
-        }
-        $stampCard = $this->memberCurrentStampCardResolver->resolve($member);
-        $rankKey = is_string($member->rank) ? $member->rank : null;
-        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmountForRank($projectId, $rankKey);
-
-        if ($stampCard === null || $stampEarnPerAmount <= 0) {
-            return;
-        }
-
-        $stampCount = $this->stampEarnPolicy->calculateCount($finalAmount, $stampEarnPerAmount);
-        if ($stampCount > 0) {
-            $this->memberBenefitService->addStampsToMember(
-                $member,
-                (int) $stampCard->id,
-                $stampCount,
-                '注文によるスタンプ付与',
-                (int) $order->id,
-                MemberCouponSource::ORDER,
-                (string) $order->id,
-            );
-        }
-    }
-
-    private function awardLotteryEntitlements(User $user, Order $order, float $finalAmount): void
-    {
-        $member = $user->member;
-        if ($member === null || $finalAmount <= 0) {
-            return;
-        }
-
-        $this->lotteryEntitlementService->grantForPurchase(
-            $member,
-            $finalAmount,
-            LotterySourceType::ORDER,
-            (string) $order->id,
-        );
-    }
-
-    private function getPointsEarnRate(int $projectId, ?string $rankKey = null): int
-    {
-        $rate = $this->shopSettingRepository->getPointEarnRateForRank($projectId, $rankKey);
-
-        return $rate > 0 ? $rate : self::DEFAULT_POINTS_EARN_RATE;
-    }
-
-    private function syncMemberRank(User $user): void
-    {
-        $member = $user->member;
-        if ($member === null) {
-            return;
-        }
-        $fresh = $member->fresh() ?? $member;
-        $this->memberRankSyncService->sync($fresh);
     }
 
     public function handleOrderCancellation(Order $order): void
@@ -475,18 +255,14 @@ class OrderService
                     $this->memberRepository->save($member);
                 }
                 if ($order->user->member !== null) {
-                    $this->lotteryEntitlementService->revokePendingForSource(
-                        $order->user->member,
-                        LotterySourceType::ORDER,
-                        (string) $order->id,
-                    );
+                    $this->rewards->revokeLottery($order);
                 }
             }
 
             $this->restoreProductStock($order, $projectId);
         });
         if ($order->user !== null) {
-            $this->syncMemberRank($order->user);
+            $this->rewards->syncMemberRank($order->user);
         }
         // 未決済キャンセル専用。作成時にスマレジ未同期のため差分同期しない。
     }
