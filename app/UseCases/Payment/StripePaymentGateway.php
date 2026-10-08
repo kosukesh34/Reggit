@@ -2,33 +2,29 @@
 
 namespace App\UseCases\Payment;
 
-use Stripe\Checkout\Session as CheckoutSession;
-use Stripe\PaymentIntent;
-use Stripe\Stripe;
+use App\Domain\Order\Exceptions\OrderOperationException;
+use Stripe\StripeClient;
 use Stripe\Webhook;
 
 class StripePaymentGateway implements PaymentGateway
 {
-    public function __construct(?string $secretKey)
+    private StripeClient $client;
+
+    public function __construct(?string $secretKey, private string $brand = 'card', private array $metadata = [])
     {
-        if ($secretKey !== null && $secretKey !== '') {
-            Stripe::setApiKey($secretKey);
-        }
+        $this->client = new StripeClient([
+            'api_key' => $secretKey ?: null,
+            'stripe_version' => '2026-02-25.clover',
+        ]);
     }
 
     public function createPaymentIntent(int $amount, ?int $orderId): array
     {
-        $intent = PaymentIntent::create([
+        $intent = $this->client->paymentIntents->create([
             'amount' => $amount,
             'currency' => 'jpy',
-            // LIFF 内完結のためリダイレクト系決済は無効（カード 3DS のモーダルは利用可）
-            'automatic_payment_methods' => [
-                'enabled' => true,
-                'allow_redirects' => 'never',
-            ],
-            'metadata' => [
-                'order_id' => $orderId,
-            ],
+            'payment_method_types' => ['card'],
+            'metadata' => ['order_id' => $orderId] + $this->metadata,
         ], ['idempotency_key' => 'reggit-order-'.$orderId.'-intent']);
 
         return [
@@ -43,8 +39,9 @@ class StripePaymentGateway implements PaymentGateway
         string $successUrl,
         string $cancelUrl,
     ): array {
-        $session = CheckoutSession::create([
+        $session = $this->client->checkout->sessions->create([
             'mode' => 'payment',
+            'payment_method_types' => [$this->brand === 'paypay' ? 'paypay' : 'card'],
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
             'line_items' => [[
@@ -56,9 +53,9 @@ class StripePaymentGateway implements PaymentGateway
                 ],
             ]],
             'payment_intent_data' => [
-                'metadata' => ['order_id' => $orderId],
+                'metadata' => ['order_id' => $orderId] + $this->metadata,
             ],
-            'metadata' => ['order_id' => $orderId],
+            'metadata' => ['order_id' => $orderId] + $this->metadata,
         ], ['idempotency_key' => 'reggit-order-'.$orderId.'-checkout']);
 
         return [
@@ -69,10 +66,11 @@ class StripePaymentGateway implements PaymentGateway
 
     public function retrievePaymentIntent(string $paymentIntentId): array
     {
-        $intent = PaymentIntent::retrieve($paymentIntentId);
+        $intent = $this->client->paymentIntents->retrieve($paymentIntentId, ['expand' => ['payment_method']]);
 
         return [
             'status' => $intent->status,
+            'paid_payment_brand' => $intent->payment_method?->card?->wallet?->type ?? $intent->payment_method?->type ?? null,
             'amount' => (int) ($intent->amount ?? 0),
             'currency' => (string) ($intent->currency ?? ''),
             'metadata' => $intent->metadata ? $intent->metadata->toArray() : [],
@@ -81,7 +79,7 @@ class StripePaymentGateway implements PaymentGateway
 
     public function retrieveCheckoutSession(string $sessionId): array
     {
-        $session = CheckoutSession::retrieve($sessionId);
+        $session = $this->client->checkout->sessions->retrieve($sessionId);
 
         return [
             'payment_status' => (string) $session->payment_status,
@@ -100,9 +98,44 @@ class StripePaymentGateway implements PaymentGateway
 
         return [
             'type' => $event->type,
+            'currency' => $data->currency ?? null,
             'metadata' => $metadata,
             'status' => $data->status ?? null,
             'amount' => isset($data->amount) ? (int) $data->amount : 0,
         ];
+    }
+
+    public function cancelUnpaidSession(string $channel, string $sessionId): void
+    {
+        if (in_array($channel, ['checkout', 'checkout_web'], true)) {
+            $session = $this->client->checkout->sessions->retrieve($sessionId);
+            if ($session->payment_status !== 'unpaid' || ! in_array($session->status, ['open', 'expired'], true)) {
+                throw new OrderOperationException('決済済みまたは処理中の注文はキャンセルできません');
+            }
+            if ($session->status === 'open') {
+                // Expiration fails if payment wins the race after the retrieval.
+                $session = $this->client->checkout->sessions->expire($sessionId);
+            }
+            if ($session->status !== 'expired' || $session->payment_status !== 'unpaid') {
+                throw new OrderOperationException('決済を停止できませんでした');
+            }
+
+            return;
+        }
+
+        if (! in_array($channel, ['intent', 'card'], true)) {
+            throw new OrderOperationException('決済情報を確認できません');
+        }
+        $intent = $this->client->paymentIntents->retrieve($sessionId);
+        if ($intent->status === 'canceled') {
+            return;
+        }
+        if (! in_array($intent->status, ['requires_payment_method', 'requires_confirmation', 'requires_action'], true)) {
+            throw new OrderOperationException('決済済みまたは処理中の注文はキャンセルできません');
+        }
+        $intent = $this->client->paymentIntents->cancel($sessionId, ['cancellation_reason' => 'requested_by_customer']);
+        if ($intent->status !== 'canceled') {
+            throw new OrderOperationException('決済を停止できませんでした');
+        }
     }
 }

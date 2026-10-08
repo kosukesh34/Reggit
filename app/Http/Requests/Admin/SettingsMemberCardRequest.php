@@ -16,6 +16,7 @@ class SettingsMemberCardRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'member_page_style' => 'nullable|in:classic,wallet,minimal,ticket',
             'show_points_display' => 'nullable|boolean',
             'show_rank_progress' => 'nullable|boolean',
             'show_member_card_for_guest' => 'nullable|boolean',
@@ -43,6 +44,7 @@ class SettingsMemberCardRequest extends FormRequest
             design: $v['member_card_design'] ?? null,
             displayType: $v['member_card_display_type'] ?? null,
             codeType: $v['member_card_code_type'] ?? null,
+            pageStyle: $v['member_page_style'] ?? null,
         );
     }
 }

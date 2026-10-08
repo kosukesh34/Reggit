@@ -31,8 +31,9 @@ return [
     'name' => env('APP_NAME', 'Reggit'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
-    /** 本番でもクライアントデバッグログを受け付ける場合のみ true（既定は APP_DEBUG に依存） */
+    /** クライアントデバッグログは環境ごとに明示的に有効化する */
     'client_debug_enabled' => (bool) env('CLIENT_DEBUG_ENABLED', false),
+    'client_debug_token' => env('CLIENT_DEBUG_TOKEN'),
     'url' => env('APP_URL', 'http://reggit.test'),
     'api_base' => env('APP_API_BASE', '/api'),
     /** プロジェクトキー未指定時のフォールバック（未設定なら先頭の active プロジェクト） */

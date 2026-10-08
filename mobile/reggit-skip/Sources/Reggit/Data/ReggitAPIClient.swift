@@ -45,6 +45,19 @@ struct ReggitAPIClient: ReggitAPIServing {
         self.session = session
     }
 
+    var selectedStoreID: Int? {
+        MobileSelectedProjectStore.selectedStoreID(baseURL: baseURL, projectKey: projectKey)
+    }
+
+    func fetchStores() async throws -> [BusinessStore] {
+        let json = try await requestJSON(path: "/api/v1/stores", method: "GET")
+        guard let rows = json["stores"] as? [[String: Any]] else { throw ReggitAPIError.invalidResponse }
+        return rows.compactMap { row in
+            guard let id = row["id"] as? Int, let name = row["name"] as? String else { return nil }
+            return BusinessStore(id: id, name: name)
+        }
+    }
+
     // MARK: - Device
 
     func registerDevice(
@@ -120,6 +133,15 @@ struct ReggitAPIClient: ReggitAPIServing {
 
     func submitExistingMemberLink(values: [String: String]) async throws -> ExistingMemberLinkResult {
         let json = try await requestJSON(path: "/api/members/existing-link", method: "POST", body: values)
+        let data = json["data"] as? [String: Any]
+        return ExistingMemberLinkResult(
+            linked: data?["linked"] as? Bool ?? false,
+            message: json["message"] as? String ?? "既存会員を連携しました"
+        )
+    }
+
+    func confirmExistingMemberLink(token: String) async throws -> ExistingMemberLinkResult {
+        let json = try await requestJSON(path: "/api/members/existing-link/confirm", method: "POST", body: ["token": token])
         let data = json["data"] as? [String: Any]
         return ExistingMemberLinkResult(
             linked: data?["linked"] as? Bool ?? false,
@@ -222,6 +244,13 @@ struct ReggitAPIClient: ReggitAPIServing {
 
     // MARK: - Products / Orders
 
+    func fetchPaymentMethods() async throws -> [String] {
+        let data = try await requestData(path: "/api/payment/methods", method: "GET")
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let methods = json["methods"] as? [String] else { throw ReggitAPIError.invalidResponse }
+        return methods.filter { ["card", "paypay", "apple_pay", "google_pay", "cash"].contains($0) }
+    }
+
     func fetchProducts() async throws -> [ProductItem] {
         let data = try await requestData(path: "/api/products", method: "GET")
         return try ProductListResponse.parse(data).products
@@ -234,9 +263,10 @@ struct ReggitAPIClient: ReggitAPIServing {
     ) async throws -> OrderSnapshot {
         var body: [String: Any] = [
             "items": items.map { $0.asDictionary() },
-            "payment_method": paymentMethod,
+            "payment_method": paymentMethod == "cash" ? "cash" : "stripe",
             "order_type": "mobile",
         ]
+        if paymentMethod != "cash" { body["payment_brand"] = paymentMethod == "stripe" ? "card" : paymentMethod }
         if let notes, !notes.isEmpty {
             body["notes"] = notes
         }
@@ -399,6 +429,16 @@ struct ReggitAPIClient: ReggitAPIServing {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(projectKey, forHTTPHeaderField: "X-Project-Key")
         request.setValue(deviceIdentifier, forHTTPHeaderField: "X-Device-Identifier")
+        if !["/api/devices/session", "/api/devices/register", "/api/v1/stores"].contains(path), let storeID = selectedStoreID {
+            request.setValue(String(storeID), forHTTPHeaderField: "X-Store-Id")
+        }
+        if !["GET", "HEAD", "OPTIONS"].contains(method) {
+            let bootstrap = try await requestJSON(path: "/api/devices/session", method: "GET")
+            guard let csrfToken = bootstrap["csrf_token"] as? String, !csrfToken.isEmpty else {
+                throw ReggitAPIError.invalidResponse
+            }
+            request.setValue(csrfToken, forHTTPHeaderField: "X-CSRF-TOKEN")
+        }
         if let token = UserDefaults.standard.string(forKey: credentialKey) {
             request.setValue(token, forHTTPHeaderField: "X-Device-Token")
         }

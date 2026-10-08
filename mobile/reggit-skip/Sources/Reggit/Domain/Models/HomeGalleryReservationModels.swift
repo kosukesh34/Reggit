@@ -8,6 +8,7 @@ struct AnnouncementItem: Identifiable, Equatable, Hashable {
     let publishedAt: String
     let isPinned: Bool
     let isRead: Bool
+    var imageURLs: [String] = []
 }
 
 struct AnnouncementListResponse {
@@ -35,7 +36,8 @@ struct AnnouncementListResponse {
                 imageURL: (row["image_url"] as? String)?.trimmedNonEmpty,
                 publishedAt: (row["published_at"] as? String) ?? "",
                 isPinned: row["is_pinned"] as? Bool ?? false,
-                isRead: row["is_read"] as? Bool ?? false
+                isRead: row["is_read"] as? Bool ?? false,
+                imageURLs: (row["image_urls"] as? [String] ?? []).compactMap { $0.trimmedNonEmpty }
             )
         }
         return AnnouncementListResponse(announcements: items)

@@ -12,10 +12,12 @@ use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\User;
+use App\Services\MemberLiffWalletNotifier;
 use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Contracts\Broadcasting\Broadcaster;
 use Illuminate\Contracts\Broadcasting\Factory as BroadcastingFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -124,6 +126,29 @@ class LiffWalletBroadcastTest extends TestCase
             return $event->memberId === (int) $member->id
                 && $event->pendingLotteryCount === 1;
         });
+    }
+
+    public function test_wallet_notification_waits_for_commit_and_uses_final_balance(): void
+    {
+        $member = $this->createMember($this->createProject());
+        Event::fake([MemberWalletUpdated::class]);
+        DB::beginTransaction();
+        app(MemberLiffWalletNotifier::class)->notify($member);
+        $member->update(['points' => 125]);
+        Event::assertNotDispatched(MemberWalletUpdated::class);
+        DB::commit();
+        Event::assertDispatched(MemberWalletUpdated::class, fn (MemberWalletUpdated $event): bool => $event->points === 125);
+    }
+
+    public function test_rolled_back_wallet_changes_are_not_broadcast(): void
+    {
+        $member = $this->createMember($this->createProject());
+        Event::fake([MemberWalletUpdated::class]);
+        DB::beginTransaction();
+        app(MemberLiffWalletNotifier::class)->notify($member);
+        $member->update(['points' => 125]);
+        DB::rollBack();
+        Event::assertNotDispatched(MemberWalletUpdated::class);
     }
 
     public function test_本人のウォレットチャネルは購読できること(): void

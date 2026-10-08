@@ -27,7 +27,15 @@ class PaymentConfirmUseCase
 
     public function handle(string $paymentIntentId, int $orderId, int $projectId, int $userId): PaymentConfirmOutput
     {
-        $intent = $this->gateway->retrievePaymentIntent($paymentIntentId);
+        $paymentOrder = Order::where('project_id', $projectId)->where('user_id', $userId)->findOrFail($orderId);
+        $gateway = app(ProjectPaymentGatewayResolver::class)->forOrder($paymentOrder, $this->gateway);
+        $intent = $gateway->retrievePaymentIntent($paymentIntentId);
+        if ($paymentOrder->payment_setting_id !== null
+            && ((int) ($intent['metadata']['project_id'] ?? 0) !== $projectId
+                || (int) ($intent['metadata']['payment_setting_id'] ?? 0) !== (int) $paymentOrder->payment_setting_id
+                || ($intent['currency'] ?? '') !== 'jpy')) {
+            return new PaymentConfirmOutput(false, '決済情報とプロジェクトが一致しません', (string) ($intent['status'] ?? ''), null);
+        }
         $status = $intent['status'] ?? null;
         if ($status !== PaymentIntentStatus::SUCCEEDED) {
             return new PaymentConfirmOutput(false, '決済が完了していません', (string) $status, null);
@@ -80,7 +88,15 @@ class PaymentConfirmUseCase
                 ->whereKey($orderId)
                 ->where('project_id', $projectId)
                 ->firstOrFail();
+            if (isset($intent['paid_payment_brand'])) {
+                $order->paid_payment_brand = $intent['paid_payment_brand'];
+                $order->save();
+            }
             $this->orderService->applyStripePaymentRewardsIfNeeded($order);
+
+            if ($confirmedEvent !== null) {
+                $this->postCommitEvents->record($confirmedEvent);
+            }
 
             // フロント決済完了経路では即時スマレジ同期（Webhook 遅延より先に送る）
             if ($aggregate->shouldSyncToSmaregi()) {

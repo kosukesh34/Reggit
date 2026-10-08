@@ -14,11 +14,12 @@ use App\Models\User;
 use App\Services\CustomerStoreProfile;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
+use App\Services\MemberVisitRecorder;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
 use App\Services\UserService;
-use App\Util\DateUtil;
+use App\Support\AdminMemberIdentifier;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Illuminate\Support\Collection;
@@ -36,6 +37,7 @@ class MemberAdminService
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberSettings $shopSettingRepository,
         private UserService $userService,
+        private MemberVisitRecorder $memberVisitRecorder,
     ) {}
 
     public function findOrFail(int $id, ?int $projectId = null): Member
@@ -167,28 +169,9 @@ class MemberAdminService
         ?float $amount = null,
         ?string $smaregiTransactionHeadId = null,
     ): MemberVisit {
-        $visitedCarbon = DateUtil::nullableCarbon($visitedAt);
-        if ($visitedCarbon === null) {
-            throw new \InvalidArgumentException('来店日時が不正です');
-        }
-        $visit = MemberVisit::create([
-            'project_id' => $member->project_id,
-            'member_id' => $member->id,
-            'visited_at' => $visitedCarbon,
-            'source' => $source,
-            'order_id' => $orderId,
-            'note' => $note,
-            'amount' => $amount,
-            'smaregi_transaction_head_id' => $smaregiTransactionHeadId,
-        ]);
-
-        $currentLast = DateUtil::nullableCarbon($member->getRawOriginal('last_visited_at'));
-        if ($currentLast === null || $visitedCarbon->gt($currentLast)) {
-            $member->update(['last_visited_at' => $visitedCarbon]);
-            $member->refresh();
-        }
-
-        return $visit;
+        return $this->memberVisitRecorder->record(
+            $member, $visitedAt, $source, $orderId, $note, $amount, $smaregiTransactionHeadId,
+        );
     }
 
     public function getCountByProject(int $projectId): int
@@ -229,8 +212,8 @@ class MemberAdminService
             ->with(['user:id,name']);
 
         if ($keyword !== '') {
-            $query->where(function ($inner) use ($keyword) {
-                $inner->where('member_number', 'like', '%'.$keyword.'%')
+            $query->where(function ($inner) use ($keyword, $projectId) {
+                $inner->where(AdminMemberIdentifier::usesId($projectId) ? 'id' : 'member_number', 'like', '%'.$keyword.'%')
                     ->orWhereHas('user', function ($userQuery) use ($keyword) {
                         $userQuery->where('name', 'like', '%'.$keyword.'%');
                     });
@@ -243,6 +226,37 @@ class MemberAdminService
             ->get()
             ->map(fn (Member $member) => [
                 'id' => (int) $member->id,
+                'display_identifier' => AdminMemberIdentifier::value($member),
+                'member_number' => (string) ($member->member_number ?? ''),
+                'name' => (string) ($member->user?->name ?? ''),
+            ])
+            ->values();
+    }
+
+    /**
+     * @param  list<string>  $numbers
+     * @return Collection<int, array{id: int, member_number: string, name: string}>
+     */
+    public function findByMemberNumbers(int $projectId, array $numbers): Collection
+    {
+        $normalized = collect($numbers)
+            ->map(fn ($number): string => trim((string) $number))
+            ->filter(fn (string $number): bool => $number !== '')
+            ->unique()
+            ->take(500)
+            ->values();
+        if ($normalized->isEmpty()) {
+            return collect();
+        }
+
+        return Member::query()
+            ->where('project_id', $projectId)
+            ->whereIn(AdminMemberIdentifier::usesId($projectId) ? 'id' : 'member_number', $normalized->all())
+            ->with(['user:id,name'])
+            ->get()
+            ->map(fn (Member $member) => [
+                'id' => (int) $member->id,
+                'display_identifier' => AdminMemberIdentifier::value($member),
                 'member_number' => (string) ($member->member_number ?? ''),
                 'name' => (string) ($member->user?->name ?? ''),
             ])

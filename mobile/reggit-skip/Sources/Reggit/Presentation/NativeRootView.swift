@@ -24,6 +24,10 @@ struct NativeRootView: View {
     private var accent: Color { themeHex.toNativeColor() }
 
     var body: some View {
+        SkipRefreshing { rootContent }
+    }
+
+    private var rootContent: some View {
         VStack(spacing: 0) {
             if expandedHomeImageIndex == nil && (viewModel.phase == .ready || viewModel.phase == .needsRegistration) {
                 NativeSharedHeader(
@@ -40,14 +44,27 @@ struct NativeRootView: View {
                     onOpenHamburger: { handleHeaderBack() }
                 )
             }
+            if viewModel.businessStores.count > 1 && (viewModel.phase == .ready || viewModel.phase == .needsRegistration) {
+                Button {
+                    viewModel.showStoreSelection()
+                } label: {
+                    HStack {
+                        Text(viewModel.selectedStoreName ?? "店舗を選択")
+                        Image(systemName: "chevron.down")
+                    }
+                    .font(.subheadline)
+                    .padding(.vertical, 8)
+                }
+            }
         NavigationStack {
-        SkipRefreshing {
             Group {
                 switch viewModel.phase {
                 case .loading:
                     splash
                 case .failed(let message):
                     errorScreen(message)
+                case .needsStoreSelection:
+                    businessStoreSelection
                 case .needsRegistration:
                     MembershipRegistrationGateView(
                         projectName: viewModel.projectName,
@@ -73,8 +90,7 @@ struct NativeRootView: View {
             .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
             .preferredColorScheme(.light)
             .environment(\.apiBaseURL, viewModel.apiClient?.baseURL ?? "")
-            .toolbar(viewModel.phase == .needsRegistration ? .visible : .hidden, for: .navigationBar)
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
         .alert("会員登録", isPresented: $viewModel.showRegistrationPopup) {
@@ -127,10 +143,11 @@ struct NativeRootView: View {
                 if let game = viewModel.lotteryPreviewGame {
                     LotteryRewardSheet(previewGame: game) { viewModel.lotteryModalPresented = false }
                 } else if let client = viewModel.apiClient {
-                    LotteryRewardSheet(apiClient: client) { viewModel.lotteryModalPresented = false }
+                    LotteryRewardSheet(apiClient: client, refreshRevision: viewModel.lotteryRevision) { viewModel.lotteryModalPresented = false }
                 }
             }
-            .presentationDetents([.medium, .large])
+            .id(viewModel.lotteryPreviewGame?.rawValue ?? "purchase")
+            .presentationDetents(PlatformRuntime.supportsMultipleModalDetents ? [.medium, .large] : [.large])
             .presentationDragIndicator(.visible)
         }
 
@@ -144,6 +161,14 @@ struct NativeRootView: View {
         }
         }
         .environment(\.headerNavigation, headerNavigation)
+        }
+        .textFieldStyle(.plain)
+        .preferredColorScheme(.light)
+        .background {
+            if viewModel.phase == .ready || viewModel.phase == .needsRegistration {
+                viewModel.navigationHeaderBackgroundColorHex.toNativeColor(fallback: AppDesign.surface)
+                    .ignoresSafeArea()
+            }
         }
     }
 
@@ -246,6 +271,19 @@ struct NativeRootView: View {
     }
 
     @ViewBuilder
+    private var businessStoreSelection: some View {
+        VStack(spacing: 20) {
+            Text("ご利用店舗を選択してください")
+                .font(.title2.bold())
+            ForEach(viewModel.businessStores) { store in
+                Button(store.name) { viewModel.selectBusinessStore(store) }
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(24)
+    }
+
+    @ViewBuilder
     private var mainChrome: some View {
         if let client = viewModel.apiClient {
             ZStack(alignment: .leading) {
@@ -260,7 +298,7 @@ struct NativeRootView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .animation(nil, value: viewModel.selectedTab)
-                    if !viewModel.footerItems.isEmpty {
+                    if !viewModel.footerItems.isEmpty && headerNavigation.backAction == nil {
                         NativeTabBar(
                             items: viewModel.footerItems,
                             colors: viewModel.nativeChromeColors,
@@ -414,6 +452,8 @@ struct NativeRootView: View {
                 member: viewModel.homeShowMemberCard ? viewModel.membership : nil,
                 projectName: viewModel.projectName,
                 menuLayout: viewModel.homeMenuLayout,
+                homeLayout: viewModel.homeLayout,
+                galleryItems: viewModel.homeGalleryItems,
                 tabs: viewModel.homeTabs,
                 onSelectTab: { selectMenu($0) },
                 onExpandImage: { index in
@@ -468,6 +508,7 @@ struct NativeRootView: View {
                 initialMember: viewModel.membership,
                 membershipRevision: viewModel.membershipRevision,
                 opensProfileEditor: tab.key == "profileEdit",
+                pageStyle: viewModel.memberPageStyle,
                 showRankProgress: viewModel.memberShowRankProgress,
                 showPointHistory: viewModel.memberShowPointHistory,
                 showCouponActivity: viewModel.memberShowCouponActivity,

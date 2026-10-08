@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 
 export type NativeTab = {
   key: string;
@@ -7,6 +7,8 @@ export type NativeTab = {
   sf_symbol?: string | null;
   url?: string | null;
 };
+
+export type HomeGalleryItem = { id: number; image_url: string; title: string; description?: string; mode: "detail" | "webview" | "external"; url?: string };
 
 export type NativeConfig = {
   project_key?: string;
@@ -18,6 +20,7 @@ export type NativeConfig = {
     hamburger?: NativeTab[];
   };
   theme?: { primary_color?: string };
+  native_chrome_colors?: Record<string, string>;
   header?: {
     image_url?: string;
     logo_url?: string;
@@ -25,12 +28,17 @@ export type NativeConfig = {
     text?: string;
   };
   home?: {
+    layout?: "legacy" | "gallery" | "member_news" | "buttons_gallery";
+    image_limit?: number | null;
+    gallery_items?: HomeGalleryItem[];
     image_url?: string;
     image_urls?: string[];
     menu_layout?: string;
+    show_member_card?: boolean;
   };
   products?: { display_layout?: string };
   member_screen?: {
+    style?: "classic" | "wallet" | "minimal" | "ticket";
     show_rank_progress?: boolean;
     show_point_history?: boolean;
     show_coupon_activity?: boolean;
@@ -114,17 +122,44 @@ function loadNativeConfig(key: string): Promise<NativeConfig> {
   return request;
 }
 
-export function NativeConfigProvider({ children }: PropsWithChildren) {
+export function NativeConfigProvider({ children, initialConfig }: PropsWithChildren<{ initialConfig?: NativeConfig }>) {
   const key = useMemo(projectKey, []);
-  const [state, setState] = useState<NativeConfigState>({ config: fallbackConfig, loading: true });
+  const receivedHomePreview = useRef(false);
+  const [state, setState] = useState<NativeConfigState>({ config: initialConfig ? normalizeConfig(initialConfig) : fallbackConfig, loading: !initialConfig });
 
   useEffect(() => {
+    if (initialConfig) return;
     let mounted = true;
     void loadNativeConfig(key).then((config) => {
-      if (mounted) setState({ config, loading: false });
+      if (mounted && !receivedHomePreview.current) setState({ config, loading: false });
     });
     return () => { mounted = false; };
-  }, [key]);
+  }, [key, initialConfig]);
+
+  useEffect(() => {
+    if (window.__IS_DESIGNER_EMBED_PREVIEW__ !== true || window.parent === window) return;
+    const receive = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== window.parent || event.data?.type !== 'reggit:home-form-preview:update') return;
+      const incoming = event.data.config as NativeConfig | undefined;
+      if (incoming && typeof incoming === 'object') {
+        receivedHomePreview.current = true;
+        setState({ config: normalizeConfig(incoming), loading: false });
+      }
+    };
+    const receiveDraft = (event: Event) => {
+      const incoming = (event as CustomEvent<NativeConfig>).detail;
+      if (!incoming || typeof incoming !== 'object') return;
+      receivedHomePreview.current = true;
+      setState({ config: normalizeConfig(incoming), loading: false });
+    };
+    window.addEventListener('reggit:home-preview-draft', receiveDraft);
+    window.addEventListener('message', receive);
+    window.parent.postMessage({ type: 'reggit:home-form-preview:ready' }, window.location.origin);
+    return () => {
+      window.removeEventListener('message', receive);
+      window.removeEventListener('reggit:home-preview-draft', receiveDraft);
+    };
+  }, []);
 
   return <NativeConfigContext.Provider value={state}>{children}</NativeConfigContext.Provider>;
 }
@@ -169,9 +204,12 @@ export function nativeTabHref(tab: NativeTab): string {
 
 const icons: Record<string, string> = {
   home: 'fa-house',
-  member: 'fa-user',
+  member: 'fa-id-card',
   membership: 'fa-id-card',
-  profile: 'fa-user',
+  profile: 'fa-user-pen',
+  profileEdit: 'fa-user-pen',
+  lottery: 'fa-dice',
+  storeSearch: 'fa-location-dot',
   products: 'fa-bag-shopping',
   mobileOrder: 'fa-bag-shopping',
   dineInOrder: 'fa-utensils',
@@ -183,7 +221,7 @@ const icons: Record<string, string> = {
   queue: 'fa-list-ol',
   reservations: 'fa-calendar-days',
   gallery: 'fa-images',
-  announcements: 'fa-bell',
+  announcements: 'fa-bullhorn',
   news: 'fa-bell',
   terms: 'fa-file-lines',
   privacy: 'fa-shield-halved',
@@ -214,8 +252,9 @@ const sfIcons: Record<string, string> = {
 };
 
 export function nativeTabIconClass(tab: NativeTab): string {
-  const name = tab.key === 'products' && ['fork.knife', 'fork.knife.circle', 'cart.fill'].includes(tab.sf_symbol ?? '')
-    ? 'fa-utensils'
-    : sfIcons[tab.sf_symbol ?? ''] ?? icons[tab.key] ?? 'fa-circle';
+  const customIcon = tab.icon?.trim();
+  const name = customIcon?.startsWith('fa-') && !(tab.key !== 'home' && ['fa-home', 'fa-house'].includes(customIcon))
+    ? customIcon
+    : tab.key === "products" && ["", "fork.knife", "fork.knife.circle", "cart.fill"].includes(tab.sf_symbol ?? "") ? "fa-bag-shopping" : sfIcons[tab.sf_symbol ?? ''] ?? icons[tab.key] ?? 'fa-circle';
   return `fa-solid ${name}`;
 }

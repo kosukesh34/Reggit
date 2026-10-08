@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\Member;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Admin\MemberSegmentService;
+use App\Support\AdminMemberIdentifier;
 use App\Support\MemberChannel;
 use Illuminate\Support\Collection;
 
@@ -60,6 +61,7 @@ class AdminAnnouncementAudiencePreviewUseCase
 
             return [
                 'id' => (int) $member->id,
+                'display_identifier' => AdminMemberIdentifier::value($member),
                 'member_number' => trim((string) $member->member_number) !== '' ? (string) $member->member_number : '—',
                 'name' => trim((string) ($member->user?->name ?? '')) !== '' ? (string) $member->user->name : '名前未登録',
                 'rank' => trim((string) $member->rank) !== '' ? (string) $member->rank : '—',

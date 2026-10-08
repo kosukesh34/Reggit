@@ -8,12 +8,15 @@ interface BottomSheetProps {
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  hideHeader?: boolean;
+  className?: string;
+  locked?: boolean;
 }
 
-export function BottomSheet({ open, onClose, title, children }: BottomSheetProps) {
+export function BottomSheet({ open, onClose, title, children, hideHeader = false, className = "", locked = false }: BottomSheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  closeRef.current = () => { if (!locked) onClose(); };
   useEffect(() => {
     if (!open) {
       return;
@@ -52,18 +55,18 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
   }
 
   return createPortal(
-    <div className="sheet" role="dialog" aria-modal="true" aria-label={title || "詳細"}>
-      <button className="sheet__backdrop" type="button" tabIndex={-1} aria-label="閉じる" onClick={onClose} />
+    <div className={`sheet ${className}`} role="dialog" aria-modal="true" aria-label={title || "詳細"}>
+      <button className="sheet__backdrop" type="button" tabIndex={-1} aria-label="閉じる" disabled={locked} onClick={onClose} />
       <div className="sheet__panel" ref={panelRef} tabIndex={-1}>
         <div className="sheet__handle" />
-        <div className="sheet__header">
+        {hideHeader ? null : <div className="sheet__header">
           <div>
             <div className="sheet__title">{title}</div>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} ariaLabel="閉じる">
             <X size={18} />
           </Button>
-        </div>
+        </div>}
         <div className="sheet__body">{children}</div>
       </div>
     </div>,

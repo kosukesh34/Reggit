@@ -7,20 +7,23 @@ struct LotteryRewardSheet: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     let onClose: () -> Void
     let isPreview: Bool
+    let refreshRevision: Int
 
     private let ink = Color(red: 0.12, green: 0.23, blue: 0.21)
     private let paper = Color(red: 0.98, green: 0.97, blue: 0.94)
 
-    init(apiClient: any ReggitAPIServing, onClose: @escaping () -> Void) {
+    init(apiClient: any ReggitAPIServing, refreshRevision: Int = 0, onClose: @escaping () -> Void) {
         _viewModel = State(initialValue: LotteryViewModel(apiClient: apiClient))
         self.onClose = onClose
         self.isPreview = false
+        self.refreshRevision = refreshRevision
     }
 
     init(previewGame: LotteryGameKind, onClose: @escaping () -> Void) {
         _viewModel = State(initialValue: LotteryViewModel(service: LotteryPreviewService(game: previewGame), usesCache: false))
         self.onClose = onClose
         self.isPreview = true
+        self.refreshRevision = 0
     }
 
     var body: some View {
@@ -83,7 +86,9 @@ struct LotteryRewardSheet: View {
             }
         }
         .interactiveDismissDisabled(viewModel.isLoading || viewModel.isPlaying || viewModel.isScratchInProgress)
-        .task {
+        .task(id: refreshRevision) {
+            guard !viewModel.isPlaying, !viewModel.isScratchInProgress,
+                  viewModel.revealedResult == nil, viewModel.scratchResult == nil else { return }
             await viewModel.load(force: true)
         }
     }

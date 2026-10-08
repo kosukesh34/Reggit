@@ -10,7 +10,8 @@ final class MembershipViewModel {
     var member: MemberProfileSnapshot?
     var pointHistory: [PointHistoryItem] = []
     var recentCoupons: [CouponItem] = []
-    var registerName = ""
+    var registerLastName = ""
+    var registerFirstName = ""
     var registerPhone = ""
     var isRegistering = false
     var registerError: String?
@@ -90,10 +91,13 @@ final class MembershipViewModel {
     }
 
     func register() async {
-        let name = registerName.trimmed
+        let name = [registerLastName, registerFirstName]
+            .map { $0.trimmed }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
         let phone = registerPhone.trimmed
-        guard !name.isEmpty, !phone.isEmpty else {
-            registerError = "氏名と電話番号を入力してください"
+        guard !registerLastName.trimmed.isEmpty, !registerFirstName.trimmed.isEmpty, !phone.isEmpty else {
+            registerError = "姓、名、電話番号を入力してください"
             return
         }
         isRegistering = true
@@ -178,6 +182,7 @@ struct MembershipView: View {
     let membershipRevision: Int
     @State var didOpenProfileEditor = false
     let opensProfileEditor: Bool
+    let pageStyle: String
     let showRankProgress: Bool
     let showPointHistory: Bool
     let showCouponActivity: Bool
@@ -190,6 +195,7 @@ struct MembershipView: View {
         initialMember: MemberProfileSnapshot? = nil,
         membershipRevision: Int = 0,
         opensProfileEditor: Bool = false,
+        pageStyle: String = "classic",
         showRankProgress: Bool = true,
         showPointHistory: Bool = true,
         showCouponActivity: Bool = true,
@@ -205,6 +211,7 @@ struct MembershipView: View {
         self.projectName = projectName
         self.membershipRevision = membershipRevision
         self.opensProfileEditor = opensProfileEditor
+        self.pageStyle = pageStyle
         self.showRankProgress = showRankProgress
         self.showPointHistory = showPointHistory
         self.showCouponActivity = showCouponActivity
@@ -233,7 +240,7 @@ struct MembershipView: View {
                         }
                     }
                 }
-                .background(AppDesign.canvas.ignoresSafeArea())
+                .background((pageStyle == "minimal" ? Color.white : pageStyle == "ticket" ? Color(red: 0.98, green: 0.96, blue: 0.93) : AppDesign.canvas).ignoresSafeArea())
                 .navigationBarHidden(true)
                 .toolbar(.hidden, for: .navigationBar)
                 .refreshable { await viewModel.load(force: true) }
@@ -285,7 +292,7 @@ struct MembershipView: View {
                 .sheet(isPresented: $viewModel.showBarcodeEnlarge) {
                     if let member = viewModel.member {
                         MemberCodeSheet(member: member, onClose: { viewModel.showBarcodeEnlarge = false })
-                            .presentationDetents([.medium, .large])
+                            .presentationDetents(PlatformRuntime.supportsMultipleModalDetents ? [.medium, .large] : [.large])
                             .presentationDragIndicator(.visible)
                     }
                 }
@@ -323,6 +330,7 @@ struct MembershipView: View {
                     member: member,
                     projectName: projectName,
                     baseURL: viewModel.mediaBaseURL,
+                    pageStyle: pageStyle,
                     onEnlargeCode: { viewModel.showBarcodeEnlarge = true }
                 )
 
@@ -381,10 +389,18 @@ struct MembershipView: View {
                         Text("次のランクまで")
                             .font(.caption)
                             .foregroundStyle(AppDesign.inkSecondary)
-                        Text("あと \(points)ポイントで\(next)")
+                        Text("あと \(points.formatted())ポイントで\(next)")
                             .font(.body.weight(.semibold))
-                        ProgressView(value: rankProgressValue(member: member, remaining: points))
-                            .tint(accent)
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(AppDesign.hairline)
+                                Capsule().fill(accent)
+                                    .frame(width: geometry.size.width * rankProgressValue(member: member, remaining: points))
+                            }
+                        }
+                        .frame(height: 4)
+                        .accessibilityLabel("次のランクまでの達成状況")
+                        .accessibilityValue("\(Int(rankProgressValue(member: member, remaining: points) * 100))%")
                     }
                     .padding(.vertical, 8)
                 }
@@ -485,7 +501,7 @@ struct MembershipView: View {
     }
 
     private func rankProgressValue(member: MemberProfileSnapshot, remaining: Int) -> Double {
-        Double(member.points) / Double(max(member.points + remaining, 1))
+        min(max(Double(member.points) / Double(max(member.points + remaining, 1)), 0), 1)
     }
 
     private func guestForm(_ member: MemberProfileSnapshot) -> some View {
@@ -494,9 +510,13 @@ struct MembershipView: View {
                 Text(member.message ?? "登録するとポイントやクーポンが使えます。")
                     .foregroundStyle(.secondary)
                 MemberFieldStack(
-                    name: Binding(
-                        get: { viewModel.registerName },
-                        set: { viewModel.registerName = $0 }
+                    lastName: Binding(
+                        get: { viewModel.registerLastName },
+                        set: { viewModel.registerLastName = $0 }
+                    ),
+                    firstName: Binding(
+                        get: { viewModel.registerFirstName },
+                        set: { viewModel.registerFirstName = $0 }
                     ),
                     phone: Binding(
                         get: { viewModel.registerPhone },
@@ -554,19 +574,41 @@ struct MembershipPassCard: View {
     let member: MemberProfileSnapshot
     let projectName: String
     let baseURL: String
+    var pageStyle: String = "classic"
     var onEnlargeCode: (() -> Void)? = nil
     @Environment(\.brandAccent) var accent
 
-    private var cardColor: Color {
-        member.rankColorHex?.toNativeColor(fallback: accent) ?? accent
+    private var cardColor: Color { member.rankColorHex?.toNativeColor(fallback: accent) ?? accent }
+    private var cardForeground: Color { BrandPalette(hex: member.rankColorHex ?? "#173F35").usesDarkForeground ? .black : .white }
+
+    @ViewBuilder private var imageHeader: some View {
+        if let imageURL = member.cardLogoURL {
+            RemoteImageView(urlString: imageURL, baseURL: baseURL, contentMode: .fill, usesDemoFallback: false)
+                .frame(maxWidth: .infinity).frame(height: 110).clipped()
+        }
     }
 
-    private var cardForeground: Color {
-        BrandPalette(hex: member.rankColorHex ?? "#173F35").usesDarkForeground ? .black : .white
+    private func codeSection(height: CGFloat) -> some View {
+        Button { onEnlargeCode?() } label: {
+            VStack(spacing: 10) {
+                MemberCodeView(value: member.memberNumber, codeType: member.cardCodeType, height: height)
+                Text(member.memberNumber).font(.system(.footnote, design: .monospaced).weight(.semibold)).tracking(1.5)
+                Text("タップして拡大").font(.caption2).foregroundStyle(.secondary)
+            }
+            .padding(22).frame(maxWidth: .infinity).foregroundStyle(Color.black).background(Color.white)
+        }
+        .buttonStyle(.plain).accessibilityLabel("会員コードを拡大")
     }
 
-    var body: some View {
+    @ViewBuilder private var expiry: some View {
+        if let value = member.pointsExpiryLabel, !value.isEmpty {
+            Text("ポイント期限 " + value).font(.caption)
+        }
+    }
+
+    private var classicCard: some View {
         VStack(spacing: 0) {
+            imageHeader
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(projectName)
@@ -614,16 +656,7 @@ struct MembershipPassCard: View {
                             .foregroundStyle(cardForeground)
                     }
                 }
-                if let imageURL = member.cardLogoURL {
-                    RemoteImageView(
-                        urlString: imageURL,
-                        baseURL: baseURL,
-                        contentMode: .fill,
-                        cornerRadius: 20,
-                        usesDemoFallback: false
-                    )
-                    .frame(width: 40, height: 40)
-                }
+
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 16)
@@ -657,6 +690,94 @@ struct MembershipPassCard: View {
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous).stroke(cardColor.opacity(0.35), lineWidth: 1))
         .shadow(color: cardColor.opacity(0.2), radius: 20, x: 0, y: 12)
+
+    }
+
+    var body: some View {
+        if pageStyle == "classic" {
+            classicCard
+        } else if pageStyle == "minimal" {
+            VStack(spacing: 0) {
+                imageHeader
+                VStack(spacing: 8) {
+                    Text(projectName).font(.caption).foregroundStyle(.secondary)
+                    Text("会員証").font(.title2.weight(.bold))
+                    Text(member.name).font(.headline)
+                }.padding(.top, 24)
+                if !member.memberNumber.isEmpty { codeSection(height: 96) }
+                HStack {
+                    VStack(spacing: 6) {
+                        Text("保有ポイント").font(.caption).foregroundStyle(.secondary)
+                        Text("\(member.points) pt").font(.title2.weight(.bold))
+                    }.frame(maxWidth: .infinity)
+                    Divider().frame(height: 42)
+                    VStack(spacing: 6) {
+                        Text("会員ランク").font(.caption).foregroundStyle(.secondary)
+                        Text(member.rankLabel).font(.headline)
+                    }.frame(maxWidth: .infinity)
+                }.padding(20).background(Color.black.opacity(0.025))
+                expiry.padding(.bottom, 16)
+            }
+            .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black.opacity(0.1), lineWidth: 1))
+        } else if pageStyle == "ticket" {
+            VStack(spacing: 0) {
+                imageHeader
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("MEMBER PASS").font(.caption2.weight(.bold)).tracking(2)
+                        Text(projectName).font(.title3.weight(.bold))
+                        Text(member.rankLabel).font(.caption.weight(.bold))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(20)
+                    .frame(minHeight: 170).background(cardColor).foregroundStyle(cardForeground)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("会員名").font(.caption).foregroundStyle(.secondary)
+                        Text(member.name).font(.headline)
+                        Text("\(member.points) pt").font(.title2.weight(.bold))
+                        expiry.foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
+                }
+                if !member.memberNumber.isEmpty {
+                    codeSection(height: 64).overlay(alignment: .top) {
+                        Rectangle().stroke(Color.black.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [5, 4])).frame(height: 1)
+                    }
+                }
+            }
+            .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 4)
+        } else {
+            VStack(spacing: 16) {
+                VStack(spacing: 0) {
+                    imageHeader
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(projectName).font(.caption)
+                                Text(member.name).font(.headline)
+                            }
+                            Spacer()
+                            Text(member.rankLabel).font(.caption.weight(.bold)).padding(8)
+                                .background(cardForeground.opacity(0.12)).clipShape(Capsule())
+                        }
+                        Text("保有ポイント").font(.subheadline)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("\(member.points)").font(.system(size: 64, weight: .bold, design: .rounded))
+                            Text("pt").font(.title3)
+                        }
+                        expiry
+                    }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .foregroundStyle(cardForeground).background(cardColor)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                if !member.memberNumber.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("会員コード").font(.headline).padding(.horizontal, 22).padding(.top, 18)
+                        codeSection(height: 64)
+                    }.background(Color.white).clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+            }
+        }
     }
 }
 
@@ -691,58 +812,62 @@ struct ProfileEditView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                Text(introduction ?? "連絡先や登録情報を変更できます。必須項目を入力して保存してください。")
-                    .font(.subheadline)
-                    .foregroundStyle(AppDesign.inkSecondary)
-                ForEach(groups, id: \.self) { title in
-                    let groupFields = fields.filter { group(for: $0) == title }
-                    if !groupFields.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(AppDesign.inkSecondary)
-                            VStack(spacing: 0) {
-                                ForEach(Array(groupFields.enumerated()), id: \.element.id) { index, field in
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        fieldLabel(field)
-                                        fieldEditor(field)
-                                        if let description = field.description, !description.isEmpty {
-                                            Text(description).font(.caption).foregroundStyle(AppDesign.inkSecondary)
+        VStack(spacing: 0) {
+            Text(isRegistration ? "会員登録" : "プロフィール編集")
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 64)
+                .accessibilityAddTraits(.isHeader)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text(introduction ?? "連絡先や登録情報を変更できます。必須項目を入力して保存してください。")
+                        .font(.subheadline)
+                        .foregroundStyle(AppDesign.inkSecondary)
+                    ForEach(groups, id: \.self) { title in
+                        let groupFields = fields.filter { group(for: $0) == title }
+                        if !groupFields.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(AppDesign.inkSecondary)
+                                VStack(spacing: 0) {
+                                    ForEach(Array(groupFields.enumerated()), id: \.element.id) { index, field in
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            fieldLabel(field)
+                                            fieldEditor(field)
+                                            if let description = field.description, !description.isEmpty {
+                                                Text(description).font(.caption).foregroundStyle(AppDesign.inkSecondary)
+                                            }
+                                            if let message = validationMessage(for: field) {
+                                                FontAwesomeLabel(message, systemImage: "exclamationmark.circle.fill")
+                                                    .font(.caption).foregroundStyle(AppDesign.danger)
+                                            }
                                         }
-                                        if let message = validationMessage(for: field) {
-                                            FontAwesomeLabel(message, systemImage: "exclamationmark.circle.fill")
-                                                .font(.caption).foregroundStyle(AppDesign.danger)
+                                        .padding(16)
+                                        if index < groupFields.count - 1 {
+                                            Divider().padding(.horizontal, 16)
                                         }
-                                    }
-                                    .padding(16)
-                                    if index < groupFields.count - 1 {
-                                        Divider().padding(.horizontal, 16)
                                     }
                                 }
+                                .background(AppDesign.surface)
+                                .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL))
                             }
-                            .background(AppDesign.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL))
                         }
                     }
+                    if let errorMessage, !errorMessage.isEmpty {
+                        FontAwesomeLabel(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(AppDesign.danger).font(.footnote)
+                    }
                 }
-                if let errorMessage, !errorMessage.isEmpty {
-                    FontAwesomeLabel(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(AppDesign.danger).font(.footnote)
-                }
+                .padding(16)
+                #if os(Android)
+                .padding(.bottom, onSkip == nil ? 90 : 130)
+                #endif
             }
-            .padding(16)
-            #if os(Android)
-            .padding(.bottom, onSkip == nil ? 90 : 130)
-            #endif
         }
         .foregroundStyle(AppDesign.ink)
         .scrollDismissesKeyboard(.interactively)
         .disabled(isSaving)
         .background(AppDesign.canvas.ignoresSafeArea())
-        .navigationTitle(isRegistration ? "会員登録" : "プロフィール編集")
-        .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .toolbar(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .navigationBar)
         .tint(accent)
         #if !os(Android)
         .safeAreaInset(edge: .bottom) {
@@ -784,12 +909,17 @@ struct ProfileEditView: View {
                     attemptedSave = true
                     if isValid { onSave(values, listValues) }
                 } label: {
-                    Text(isSaving ? (isRegistration ? "登録中…" : "保存中…") : (isRegistration ? "登録してはじめる" : "変更を保存")).fontWeight(.semibold)
-                        .frame(maxWidth: .infinity, minHeight: 50)
-                        .foregroundStyle((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground))
-                        .background((buttonColors["primary_button_background"] ?? "").toNativeColor(fallback: accent))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    HStack(spacing: 8) {
+                        if isSaving { ProgressView().tint((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground)) }
+                        else { FontAwesomeIcon(systemName: "checkmark") }
+                        Text(isSaving ? (isRegistration ? "登録中…" : "保存中…") : (isRegistration ? "登録してはじめる" : "変更を保存")).fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .foregroundStyle((buttonColors["primary_button_text"] ?? "").toNativeColor(fallback: foreground))
+                    .background((buttonColors["primary_button_background"] ?? "").toNativeColor(fallback: accent))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
+                .buttonStyle(.plain)
                 .disabled(isSaving || fields.isEmpty)
                 if let onSkip {
                     Button("あとで登録する", action: onSkip).disabled(isSaving)
@@ -806,6 +936,7 @@ struct ProfileEditView: View {
             for field in fields where field.inputType == "checkbox" {
                 if listValues[field.key] == nil { listValues[field.key] = [] }
             }
+            splitStoredNames()
             didInitialize = true
         }
     }
@@ -817,7 +948,60 @@ struct ProfileEditView: View {
     private func validationMessage(for field: ProfileFieldDefinition) -> String? {
         if let message = serverFieldErrors[field.key] { return message }
         guard attemptedSave else { return nil }
+        if isSplitName(field.key), field.required {
+            let last = (values["\(field.key)_last"] ?? "").trimmed
+            let first = (values["\(field.key)_first"] ?? "").trimmed
+            if last.isEmpty || first.isEmpty {
+                return "\(field.label)は姓と名の両方を入力してください"
+            }
+        }
         return field.validationMessage(value: values[field.key] ?? "", selections: listValues[field.key] ?? [])
+    }
+
+    private func isSplitName(_ key: String) -> Bool {
+        key == "name" || key == "kana" || key == "name_kana"
+    }
+
+    private func splitStoredNames() {
+        for field in fields where isSplitName(field.key) {
+            let stored = (values[field.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let space = stored.firstIndex(where: { $0.isWhitespace }) else {
+                values["\(field.key)_last"] = stored
+                values["\(field.key)_first"] = ""
+                continue
+            }
+            values["\(field.key)_last"] = String(stored[..<space])
+            values["\(field.key)_first"] = String(stored[stored.index(after: space)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+    }
+
+    private func splitNameField(_ field: ProfileFieldDefinition, part: String, title: String, placeholder: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.caption).foregroundStyle(AppDesign.inkSecondary)
+            TextField(placeholder, text: namePartBinding(field, part: part))
+                .accessibilityLabel(Text("\(field.label)の\(title)"))
+                .padding(.horizontal, 12)
+                .frame(height: 46)
+                .background(AppDesign.surfaceMuted)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay { RoundedRectangle(cornerRadius: 10).stroke(AppDesign.hairline, lineWidth: 1) }
+                #if !os(macOS)
+                .textInputAutocapitalization(.never)
+                #endif
+        }
+    }
+
+    private func namePartBinding(_ field: ProfileFieldDefinition, part: String) -> Binding<String> {
+        let partKey = "\(field.key)_\(part)"
+        return Binding(
+            get: { values[partKey] ?? "" },
+            set: { newValue in
+                values[partKey] = newValue
+                let last = (part == "last" ? newValue : (values["\(field.key)_last"] ?? "")).trimmed
+                let first = (part == "first" ? newValue : (values["\(field.key)_first"] ?? "")).trimmed
+                values[field.key] = [last, first].filter { !$0.isEmpty }.joined(separator: " ")
+            }
+        )
     }
 
     private func textBinding(_ key: String) -> Binding<String> {
@@ -867,6 +1051,11 @@ struct ProfileEditView: View {
                 ), displayedComponents: [.date])
                 .labelsHidden()
             }
+        } else if isSplitName(field.key) {
+            HStack(alignment: .top, spacing: 8) {
+                splitNameField(field, part: "last", title: field.key == "name" ? "姓" : "セイ", placeholder: field.key == "name" ? "山田" : "ヤマダ")
+                splitNameField(field, part: "first", title: field.key == "name" ? "名" : "メイ", placeholder: field.key == "name" ? "太郎" : "タロウ")
+            }
         } else if field.inputType == "textarea" {
             TextEditor(text: textBinding(field.key))
                 .frame(minHeight: 76)
@@ -880,7 +1069,7 @@ struct ProfileEditView: View {
             TextField(placeholder(for: field), text: textBinding(field.key))
                 .accessibilityLabel(Text(field.label))
                 .padding(.horizontal, 12)
-                .frame(minHeight: 46)
+                .frame(height: 46)
                 .background(AppDesign.surfaceMuted)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay { RoundedRectangle(cornerRadius: 10).stroke(AppDesign.hairline, lineWidth: 1) }

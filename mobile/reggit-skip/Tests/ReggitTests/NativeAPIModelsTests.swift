@@ -2,6 +2,18 @@ import XCTest
 @testable import Reggit
 
 final class NativeAPIModelsTests: XCTestCase {
+    func testAnnouncementParsesMultipleImagesAndLegacyImage() throws {
+        let urls = (1...10).map { "https://example.com/\($0).png" }
+        let data = try JSONSerialization.data(withJSONObject: ["announcements": [
+            ["id": 1, "image_url": urls[0], "image_urls": urls],
+            ["id": 2, "image_url": urls[0]]
+        ]])
+        let items = try AnnouncementListResponse.parse(data).announcements
+        XCTAssertEqual(items[0].imageURLs, urls)
+        XCTAssertEqual(items[1].imageURL, urls[0])
+        XCTAssertTrue(items[1].imageURLs.isEmpty)
+    }
+
     func testUnpaidStripeOrderDoesNotShowPickupNumber() {
         let unpaid = OrderSnapshot(id: 1, orderNumber: "202609241", totalAmount: 1200, status: "pending", paymentMethod: "stripe", createdAt: "", items: [])
         XCTAssertTrue(unpaid.isAwaitingCardPayment)

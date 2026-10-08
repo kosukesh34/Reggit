@@ -112,6 +112,7 @@ class EloquentOrderRepository implements OrderRepository
     {
         $model = OrderModel::withoutGlobalScope(ProjectScope::class)->create([
             'project_id' => $pendingOrder->projectId,
+            'store_id' => $pendingOrder->storeId,
             'user_id' => $pendingOrder->userId,
             'total_amount' => $pendingOrder->totalAmount,
             'status' => OrderStatus::PENDING,
@@ -131,6 +132,7 @@ class EloquentOrderRepository implements OrderRepository
                 'order_id' => $model->id,
                 'product_id' => $item->productId,
                 'product_name' => $item->productName,
+                'option_ids' => $item->optionIds,
                 'quantity' => $item->quantity,
                 'price' => $item->unitPrice,
                 'notes' => $item->notes,

@@ -12,13 +12,14 @@ class OrderFactory
         $order->loadMissing('items.product');
         $items = [];
         foreach ($order->items as $item) {
-            $productName = $item->product?->name ?? '';
+            $productName = $item->product_name ?? $item->product?->name ?? '';
             $items[] = new OrderItem(
                 $item->product_id,
                 $productName,
                 $item->quantity,
                 (float) $item->price,
-                $item->notes
+                $item->notes,
+                $item->option_ids,
             );
         }
 
@@ -36,7 +37,9 @@ class OrderFactory
             $order->order_type,
             $order->created_at?->toIso8601String() ?? now()->toIso8601String(),
             $order->updated_at?->toIso8601String() ?? now()->toIso8601String(),
-            $items
+            $items,
+            $order->payment_brand,
+            $order->paid_payment_brand,
         );
     }
 }

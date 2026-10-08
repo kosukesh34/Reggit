@@ -28,7 +28,7 @@ class DeviceSessionController extends Controller
         if ($devicePrefix === null) {
             LogHelper::info('[DeviceSession] missing device identifier');
 
-            return response()->json(['line_user_id' => null]);
+            return response()->json(['line_user_id' => null, 'csrf_token' => $request->session()->token()]);
         }
 
         $output = $this->getDeviceSessionUseCase->handle($projectId, $deviceIdentifier, $request->header('X-Device-Token'));
@@ -38,7 +38,7 @@ class DeviceSessionController extends Controller
                 'device_prefix' => $devicePrefix,
             ]);
 
-            return response()->json(['line_user_id' => null]);
+            return response()->json(['line_user_id' => null, 'csrf_token' => $request->session()->token()]);
         }
 
         LogHelper::info('[DeviceSession] restored line user', [
@@ -48,6 +48,7 @@ class DeviceSessionController extends Controller
 
         return response()->json([
             'line_user_id' => $output->lineUserId,
+            'csrf_token' => $request->session()->token(),
         ]);
     }
 }

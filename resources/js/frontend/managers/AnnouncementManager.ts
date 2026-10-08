@@ -10,6 +10,7 @@ type Announcement = {
     id?: number | string;
     title?: string;
     body?: string;
+    image_urls?: string[];
     image_url?: string | null;
     published_at?: string;
     is_pinned?: boolean;
@@ -290,9 +291,8 @@ export class AnnouncementManager {
         const date = formatPublishedAt(item.published_at);
         const hasImage = typeof item.image_url === 'string' && item.image_url !== '';
         const isPinned = item.is_pinned === true;
-        const image = hasImage
-            ? `<div class="announcement-detail__hero"><img src="${DomHelper.escapeHtml(item.image_url || '')}" alt=""></div>`
-            : '';
+        const images = item.image_urls?.length ? item.image_urls : (item.image_url ? [item.image_url] : []);
+        const image = images.map(url => `<div class="announcement-detail__hero"><img src="${DomHelper.escapeHtml(url)}" alt="" loading="lazy" style="width:100%;height:auto;object-fit:contain"></div>`).join('');
         const body = DomHelper.escapeHtml(item.body || '').replace(/\n/g, '<br>');
         const badges: string[] = [];
         if (isPinned) {
@@ -306,6 +306,7 @@ export class AnnouncementManager {
                     ${badges.length > 0 ? `<div class="announcement-detail__badges">${badges.join('')}</div>` : ''}
                     <h1 class="announcement-detail__title">${DomHelper.escapeHtml(item.title || '')}</h1>
                     ${date !== '' ? `<p class="announcement-detail__date"><i class="far fa-clock" aria-hidden="true"></i>${DomHelper.escapeHtml(date)}</p>` : ''}
+                    ${(item.image_urls || []).slice(1).map(url => `<img src="${DomHelper.escapeHtml(url)}" alt="" loading="lazy" style="width:100%;height:auto">`).join('')}
                     ${body !== '' ? `<div class="announcement-detail__body">${body}</div>` : ''}
                 </div>
             </article>
@@ -333,6 +334,7 @@ export class AnnouncementManager {
                     </div>
                     <h1 class="ios-detail__title">${DomHelper.escapeHtml(item.title || '')}</h1>
                     ${date !== '' ? `<p class="ios-detail__meta"><i class="far fa-clock" aria-hidden="true"></i>${DomHelper.escapeHtml(date)}</p>` : ''}
+                    ${(item.image_urls || []).slice(1).map(url => `<img src="${DomHelper.escapeHtml(url)}" alt="" loading="lazy" style="width:100%;height:auto">`).join('')}
                     ${body !== '' ? `<div class="ios-detail__body ios-detail__body--rich">${body}</div>` : ''}
                 </div>
             </article>

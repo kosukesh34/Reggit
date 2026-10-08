@@ -12,7 +12,6 @@ import type { AppCustomization } from '../liff-ui/types/customization';
 import './admin';
 import './couponForm';
 import './announcementDelivery';
-import './couponBulkIssue';
 import './scheduledDelivery';
 import './memberDetailHistory';
 import './memberLineQr';
@@ -301,7 +300,6 @@ async function loadLiffDesignerStyles(): Promise<void> {
     import('../../css/app.css'),
     import('../liff-ui/styles/tokens.css'),
     import('../liff-ui/styles/globals.css'),
-    import('../liff-ui/styles/design-layout-variants.css'),
   ]);
 }
 

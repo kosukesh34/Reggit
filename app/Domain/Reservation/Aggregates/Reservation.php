@@ -15,7 +15,13 @@ final class Reservation
         private \DateTimeInterface $reservedAt,
         private int $numberOfPeople,
         private ?string $notes,
+        private int $version = 0,
     ) {}
+
+    public function version(): int
+    {
+        return $this->version;
+    }
 
     public function id(): ReservationId
     {

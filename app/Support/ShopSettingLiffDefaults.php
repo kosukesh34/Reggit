@@ -166,24 +166,9 @@ class ShopSettingLiffDefaults
         return $settings;
     }
 
-    private static function defaultLiffCafePatternLayouts(): array
-    {
-        return self::layoutsFromSuite('rg-suite-cafe');
-    }
-
-    private static function defaultLiffFastPatternLayouts(): array
-    {
-        return self::layoutsFromSuite('rg-suite-order');
-    }
-
     public static function defaultLiffSalonPatternLayouts(): array
     {
         return self::layoutsFromSuite('rg-suite-salon');
-    }
-
-    private static function defaultLiffRetailPatternLayouts(): array
-    {
-        return self::layoutsFromSuite('rg-suite-retail');
     }
 
     public static function defaultLiffFitnessPatternLayouts(): array

@@ -38,6 +38,16 @@ class SystemHelpArticleController extends Controller
         return response()->json(['html' => app(HelpMarkdown::class)->toHtml($data['body'] ?? '')]);
     }
 
+    public function showPreview(string $id): View
+    {
+        $article = $this->findUseCase->handle((int) $id);
+
+        return view('admin.system-help.preview', [
+            'article' => $article,
+            'html' => app(HelpMarkdown::class)->toHtml($article->body),
+        ]);
+    }
+
     public function create(): View
     {
         return view('admin.system-help.form', ['article' => null]);

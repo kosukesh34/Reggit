@@ -7,6 +7,7 @@ import SkipFuse
 final class NativeRootViewModel: PushNotificationHandling {
     enum Phase: Equatable {
         case loading
+        case needsStoreSelection
         case needsRegistration
         case ready
         case failed(String)
@@ -20,6 +21,8 @@ final class NativeRootViewModel: PushNotificationHandling {
     var hamburgerItems: [AppTabItem] = []
     var announcementCount = 0
     var selectedTab: String = "home"
+    var businessStores: [BusinessStore] = []
+    var selectedStoreName: String?
     var currentProjectKey = ""
     var projectName: String = "Reggit"
     var primaryColorHex: String = "#173F35"
@@ -30,12 +33,15 @@ final class NativeRootViewModel: PushNotificationHandling {
     var nativeChromeColors: [String: String] = [:]
     var homeShowMemberCard = true
     var homeMenuLayout = "grid_3x2"
+    var homeLayout = "legacy"
+    var homeGalleryItems: [HomeGalleryCard] = []
     var productDisplayLayout = "list_with_image"
     var lotteryModalPresented = false
     var lotteryPreviewGame: LotteryGameKind?
     var pendingLotteryCount = 0
     private var lastStampsTotal: Int?
     private var realtimeWebSocketURL: String?
+    var memberPageStyle = "classic"
     var memberShowRankProgress = true
     var memberShowPointHistory = true
     var memberShowCouponActivity = true
@@ -66,6 +72,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     private let configRepository: any MobileWebConfigRepository
     private let walletRealtime = MemberWalletRealtime()
     private var walletRefreshTask: Task<Void, Never>?
+    private var walletRefreshGeneration = 0
     private var hasStarted = false
 
     init(
@@ -95,7 +102,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     func shutdown() {
         pushObserver.stopObserving()
         walletRealtime.stop()
-        walletRefreshTask?.cancel()
+        cancelWalletRefresh()
     }
 
     func retry() {
@@ -104,6 +111,8 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     func start() async {
         walletRealtime.stop()
+        cancelWalletRefresh()
+        offeredRewardIDs = []
         let hadReadyScreen = phase == .ready
         if !hadReadyScreen { phase = .loading }
         registrationError = nil
@@ -116,13 +125,27 @@ final class NativeRootViewModel: PushNotificationHandling {
                 registrationListPayload = [:]
                 registrationFieldErrors = [:]
                 announcementCount = 0
-                SecondaryScreenCache.announcements = nil
+                SecondaryScreenCache.reset()
                 pendingLotteryCount = 0
                 lastStampsTotal = nil
             }
             let client = try await bootstrap.registerDevice()
             apiClient = client
-            let config = await loadAppConfig(client: client)
+            businessStores = try await client.fetchStores()
+            let selectedID = MobileSelectedProjectStore.selectedStoreID(baseURL: client.baseURL, projectKey: currentProjectKey)
+            if !businessStores.isEmpty && !businessStores.contains(where: { $0.id == selectedID }) {
+                if businessStores.count == 1, let store = businessStores.first {
+                    MobileSelectedProjectStore.selectStore(store.id, baseURL: client.baseURL, projectKey: currentProjectKey)
+                    SecondaryScreenCache.reset()
+                } else {
+                    MobileSelectedProjectStore.selectStore(nil, baseURL: client.baseURL, projectKey: currentProjectKey)
+                    phase = .needsStoreSelection
+                    return
+                }
+            }
+            let activeID = MobileSelectedProjectStore.selectedStoreID(baseURL: client.baseURL, projectKey: currentProjectKey)
+            selectedStoreName = businessStores.first(where: { $0.id == activeID })?.name
+            let config = await loadAppConfig()
             let filtered = Self.filterNativeTabs(
                 Self.uniqueItems(config.tabs + config.headerItems + config.footerItems + config.hamburgerItems)
             )
@@ -151,8 +174,11 @@ final class NativeRootViewModel: PushNotificationHandling {
             nativeChromeColors = config.nativeChromeColors
             homeShowMemberCard = config.homeShowMemberCard
             homeMenuLayout = config.homeMenuLayout
+            homeLayout = config.homeLayout
+            homeGalleryItems = config.homeGalleryItems
             productDisplayLayout = config.productDisplayLayout
             realtimeWebSocketURL = config.realtimeWebSocketURL
+            memberPageStyle = config.memberPageStyle
             memberShowRankProgress = config.memberShowRankProgress
             memberShowPointHistory = config.memberShowPointHistory
             memberShowCouponActivity = config.memberShowCouponActivity
@@ -191,6 +217,21 @@ final class NativeRootViewModel: PushNotificationHandling {
             if !hadReadyScreen { phase = .failed(error.localizedDescription) }
             logger.error("Native bootstrap failed: \(error.localizedDescription)")
         }
+    }
+
+    func selectBusinessStore(_ store: BusinessStore) {
+        guard let client = apiClient, businessStores.contains(store) else { return }
+        MobileSelectedProjectStore.selectStore(store.id, baseURL: client.baseURL, projectKey: currentProjectKey)
+        SecondaryScreenCache.reset()
+        membership = nil
+        phase = .loading
+        Task { await start() }
+    }
+
+    func showStoreSelection() {
+        walletRealtime.stop()
+        cancelWalletRefresh()
+        phase = .needsStoreSelection
     }
 
     func submitRegistration(values: [String: String], listValues: [String: [String]]) async {
@@ -252,60 +293,111 @@ final class NativeRootViewModel: PushNotificationHandling {
             memberID: memberID,
             projectKey: currentProjectKey,
             onWalletUpdated: { [weak self] points, stampsTotal, count in
-            guard let self else { return }
-            let pointsChanged = points != nil && points != self.membership?.points
-            let stampsChanged = stampsTotal != nil && stampsTotal != self.lastStampsTotal
-            let lotteryChanged = count != self.pendingLotteryCount
-            guard pointsChanged || stampsChanged || lotteryChanged else { return }
-            if pointsChanged, let points, let member = self.membership {
-                self.membership = member.withWalletPoints(points)
-                SecondaryScreenCache.pointHistory = nil
-                SecondaryScreenCache.memberProfileNeedsRefresh = true
-                if self.selectedTab == "member" {
-                    self.walletRefreshTask?.cancel()
-                    self.walletRefreshTask = Task {
-                        try? await Task.sleep(nanoseconds: 350_000_000)
-                        if !Task.isCancelled { self.membershipRevision &+= 1 }
-                    }
-                }
-            }
-            if stampsChanged {
-                SecondaryScreenCache.stamps = nil
-                self.lastStampsTotal = stampsTotal
-                self.screenRevisions["stamps", default: 0] &+= 1
-            }
-            if lotteryChanged {
-                SecondaryScreenCache.lottery = nil
-                if self.selectedTab == "lottery" { self.lotteryRevision &+= 1 }
-            }
-            if count > self.pendingLotteryCount {
-                Task {
-                    await self.presentPurchaseLotteryIfAvailable()
-                }
-            }
-            self.pendingLotteryCount = count
+                self?.handleWalletUpdate(points: points, stampsTotal: stampsTotal, pendingCount: count)
         }, onProjectUpdated: { [weak self] topic in
             guard let self else { return }
             self.handleProjectUpdate(topic: topic)
         })
     }
 
+    func handleWalletUpdate(points: Int?, stampsTotal: Int?, pendingCount: Int) {
+        if let points, let member = membership {
+            membership = member.withWalletPoints(points)
+        }
+        lastStampsTotal = stampsTotal
+        let hasNewRewards = pendingCount > pendingLotteryCount
+        pendingLotteryCount = pendingCount
+        // Equal totals can still mean a new rank, history entry, stamp cycle or
+        // reward. Invalidate every dependent screen, even when it is off screen.
+        SecondaryScreenCache.pointHistory = nil
+        SecondaryScreenCache.recentMemberCoupons = nil
+        SecondaryScreenCache.memberProfileNeedsRefresh = true
+        SecondaryScreenCache.stamps = nil
+        SecondaryScreenCache.lottery = nil
+        membershipRevision &+= 1
+        screenRevisions["stamps", default: 0] &+= 1
+        lotteryRevision &+= 1
+        scheduleWalletRefresh(presentRewards: hasNewRewards)
+    }
+
+    private var walletRefreshRequested = false
+    private var walletRewardPresentationRequested = false
+    private var offeredRewardIDs: Set<Int> = []
+
+    private func cancelWalletRefresh() {
+        walletRefreshGeneration &+= 1
+        walletRefreshTask?.cancel()
+        walletRefreshTask = nil
+        walletRefreshRequested = false
+        walletRewardPresentationRequested = false
+    }
+
+    private func scheduleWalletRefresh(presentRewards: Bool) {
+        walletRefreshRequested = true
+        walletRewardPresentationRequested = walletRewardPresentationRequested || presentRewards
+        guard walletRefreshTask == nil, let client = apiClient else { return }
+        let generation = walletRefreshGeneration
+        let projectKey = currentProjectKey
+        let memberID = membership?.memberId
+        walletRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            defer {
+                if self.walletRefreshGeneration == generation { self.walletRefreshTask = nil }
+            }
+            while self.walletRefreshRequested && !Task.isCancelled {
+                self.walletRefreshRequested = false
+                let present = self.walletRewardPresentationRequested
+                self.walletRewardPresentationRequested = false
+                let member = try? await client.fetchMemberProfile()
+                let rewards = try? await client.fetchLotteryState()
+                guard !Task.isCancelled, self.currentProjectKey == projectKey,
+                      self.membership?.memberId == memberID else { return }
+                if var member {
+                    if member.isMember, member.memberNumber.isEmpty,
+                       let card = try? await client.fetchPointCard() {
+                        member = member.withCard(card)
+                    }
+                    guard !Task.isCancelled, self.currentProjectKey == projectKey,
+                          self.membership?.memberId == memberID else { return }
+                    self.membership = member
+                    SecondaryScreenCache.memberProfileNeedsRefresh = true
+                    self.membershipRevision &+= 1
+                }
+                if let rewards {
+                    SecondaryScreenCache.lottery = rewards
+                    self.pendingLotteryCount = rewards.entitlements.count
+                    self.lotteryRevision &+= 1
+                    let rewardIDs = Set(rewards.playableEntitlements.map { $0.id })
+                    if present && !rewardIDs.subtracting(self.offeredRewardIDs).isEmpty
+                        && !self.lotteryModalPresented {
+                        self.offeredRewardIDs.formUnion(rewardIDs)
+                        self.lotteryPreviewGame = nil
+                        self.lotteryModalPresented = true
+                    }
+                }
+            }
+        }
+    }
+
     func handleProjectUpdate(topic: String) {
         SecondaryScreenCache.invalidate(topic: topic)
+        if ["wallet", "orders", "points", "stamps", "coupons", "all"].contains(topic) {
+            SecondaryScreenCache.pointHistory = nil
+            SecondaryScreenCache.recentMemberCoupons = nil
+            SecondaryScreenCache.memberProfileNeedsRefresh = true
+            membershipRevision &+= 1
+            lotteryRevision &+= 1
+            scheduleWalletRefresh(presentRewards: topic == "orders" || topic == "wallet")
+        }
         if topic == "announcements" || topic == "all" {
             Task { await refreshAnnouncements() }
         }
         if topic == "orders" || topic == "all" {
             ordersRevision &+= 1
             productsRevision &+= 1
-            lotteryRevision &+= 1
         }
         if topic == "products" { productsRevision &+= 1 }
         if topic == "queue" || topic == "all" { queueRevision &+= 1 }
-        if ["points", "coupons", "stamps", "all"].contains(topic) {
-            SecondaryScreenCache.memberProfileNeedsRefresh = true
-            membershipRevision &+= 1
-        }
         let affected = topic == "all"
             ? ["coupons", "stamps", "reservations", "gallery", "announcements"]
             : [topic]
@@ -366,18 +458,8 @@ final class NativeRootViewModel: PushNotificationHandling {
         SecondaryScreenCache.lottery = nil
         ordersRevision &+= 1
         lotteryRevision &+= 1
-        await presentPurchaseLotteryIfAvailable()
-    }
-
-    private func presentPurchaseLotteryIfAvailable() async {
-        guard !lotteryModalPresented, let apiClient,
-              let state = try? await apiClient.fetchLotteryState() else { return }
-        SecondaryScreenCache.lottery = state
-        pendingLotteryCount = state.entitlements.count
-        if !state.playableEntitlements.isEmpty {
-            lotteryPreviewGame = nil
-            lotteryModalPresented = true
-        }
+        scheduleWalletRefresh(presentRewards: true)
+        await walletRefreshTask?.value
     }
 
     func openLotteryPreview(menuKey: String) -> Bool {
@@ -390,6 +472,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     }
 
     func finishLotteryPresentation() {
+        lotteryModalPresented = false
         if lotteryPreviewGame == nil { handleProjectUpdate(topic: "coupons") }
         lotteryPreviewGame = nil
     }
@@ -526,7 +609,7 @@ final class NativeRootViewModel: PushNotificationHandling {
         return member
     }
 
-    private func loadAppConfig(client _: any ReggitAPIServing) async -> AppConfig {
+    private func loadAppConfig() async -> AppConfig {
         if let cached = SecondaryScreenCache.appConfig {
             return cached
         }

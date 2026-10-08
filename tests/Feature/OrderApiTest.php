@@ -134,4 +134,21 @@ class OrderApiTest extends TestCase
         $data = $response->json('data');
         $this->assertCount(1, $data);
     }
+
+    public function test_zero_amount_stripe_order_is_rejected_without_consuming_stock_or_points(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_1, 'project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $product = Product::factory()->create(['project_id' => $project->id, 'price' => 500, 'stock' => 10]);
+        $pointsBefore = $member->getDisplayPoints();
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_1])->postJson('/api/orders?project_key=default', [
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+            'payment_method' => PaymentMethod::STRIPE, 'points_used' => 500, 'order_type' => OrderType::MOBILE,
+        ])->assertStatus(400)->assertJson(['error' => 'オンライン決済の金額は1円以上必要です。ポイント利用額を減らしてください']);
+        $this->assertDatabaseMissing('orders', ['user_id' => $user->id]);
+        $this->assertSame(10, $product->fresh()->stock);
+        $this->assertSame($pointsBefore, $member->fresh()->getDisplayPoints());
+        $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id, 'type' => 'used']);
+    }
 }

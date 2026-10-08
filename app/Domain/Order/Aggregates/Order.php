@@ -89,6 +89,30 @@ final class Order
         return ! $this->isCancelled() && $this->status !== OrderStatus::PENDING;
     }
 
+    /** All staff surfaces share the same transition rules as the payment flow. */
+    public function applyStaffStatus(string $status): bool
+    {
+        $states = [OrderStatus::PENDING, OrderStatus::CONFIRMED, OrderStatus::PREPARING, OrderStatus::READY, OrderStatus::COMPLETED];
+        if (! in_array($status, $states, true)) {
+            throw new OrderOperationException('更新できないステータスです');
+        }
+        if ($this->isCancelled()) {
+            throw new OrderOperationException('キャンセル済みの注文は変更できません');
+        }
+        if ($this->status === $status) {
+            return false;
+        }
+        if ($this->status === OrderStatus::PENDING && $this->paymentMethod === PaymentMethod::STRIPE) {
+            throw new OrderOperationException('オンライン決済が完了するまで注文を進めることはできません');
+        }
+        if (array_search($status, $states, true) < array_search($this->status, $states, true)) {
+            throw new OrderOperationException('注文ステータスを前の状態に戻すことはできません');
+        }
+        $this->status = $status;
+
+        return true;
+    }
+
     public function cancelUnpaidStripeMobile(): void
     {
         if ($this->isCancelled()) {

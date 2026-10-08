@@ -16,6 +16,13 @@ class FakePaymentGateway implements PaymentGateway
 
     public array $checkoutSession = [];
 
+    public array $cancelledSessions = [];
+
+    public function cancelUnpaidSession(string $channel, string $sessionId): void
+    {
+        $this->cancelledSessions[] = compact('channel', 'sessionId');
+    }
+
     public function retrieveCheckoutSession(string $sessionId): array
     {
         return $this->checkoutSession ?: ['payment_status' => 'paid', 'payment_intent_id' => 'pi_test_123'];

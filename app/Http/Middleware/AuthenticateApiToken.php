@@ -46,6 +46,7 @@ class AuthenticateApiToken
         $apiToken->forceFill(['last_used_at' => now()])->save();
         AdminContext::setCurrentProject($project);
         $request->attributes->set('apiToken', $apiToken);
+        $request->attributes->set('currentProject', $project);
 
         return $next($request);
     }

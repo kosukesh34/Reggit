@@ -11,7 +11,7 @@ export type PostalAddress = {
 };
 
 export function validatePostalCode(value: unknown): PostalCodeValidation {
-    const digits = String(value ?? '').trim().replace(/[‐－−ー]/g, '-').replace(/\D/g, '');
+    const digits = String(value ?? '').normalize('NFKC').trim().replace(/[‐－−ー]/g, '-').replace(/\D/g, '');
     if (digits.length < 3) {
         return { digits, errorMessage: '郵便番号を3桁以上入力してください。' };
     }

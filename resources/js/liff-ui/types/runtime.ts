@@ -81,7 +81,7 @@ export interface OrderInput {
   venueName: string;
   fulfillment: "pickup" | "dine_in";
   /** pickup 時のみ。未指定ならカード決済 */
-  paymentMethod?: "stripe" | "cash";
+  paymentMethod?: "stripe" | "card" | "paypay" | "apple_pay" | "google_pay" | "cash";
   tableNumber?: string;
   lines: OrderLineInput[];
   total: number;

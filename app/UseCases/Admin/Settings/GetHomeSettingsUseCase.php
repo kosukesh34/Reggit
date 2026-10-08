@@ -4,6 +4,8 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\Announcement;
+use App\Models\GalleryItem;
 use App\Models\Project;
 use App\Support\HomeImageUrls;
 use App\Support\LiffDesignerSanitizer;
@@ -74,6 +76,10 @@ class GetHomeSettingsUseCase
 
         return [
             'nativeChromeColors' => $this->shopSettingRepository->getValue('native_chrome_colors', [], $projectId),
+            'homePreviewProjectName' => (string) (Project::whereKey($projectId)->value('name') ?? 'Reggit'),
+            'homeContent' => $this->shopSettingRepository->getValue('home_content', ['layout' => 'legacy'], $projectId),
+            'homeGalleryItems' => GalleryItem::where('project_id', $projectId)->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get(),
+            'homePreviewNews' => Announcement::where('project_id', $projectId)->whereNotNull('published_at')->where('published_at', '<=', now())->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))->orderByDesc('is_pinned')->orderByDesc('published_at')->limit(3)->get(['id', 'title']),
             'homeShowMemberCard' => (bool) $this->shopSettingRepository->getValue('home_show_member_card', true, $projectId),
             'tabs' => $tabs,
             'availableIcons' => $availableIcons,

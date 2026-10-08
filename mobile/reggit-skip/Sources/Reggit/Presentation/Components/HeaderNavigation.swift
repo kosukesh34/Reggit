@@ -28,6 +28,7 @@ struct HeaderBackModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .navigationBarBackButtonHidden(true)
+            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 navigation.owner = owner
                 navigation.backAction = { dismiss() }

@@ -7,7 +7,7 @@ type RequestOptions = {
 };
 
 type ApiSuccess<T = unknown> = { success: true; data: T };
-type ApiFailure = { success: false; error: string };
+type ApiFailure = { success: false; error: string; fieldErrors?: Record<string, string | string[]>; status?: number };
 export type ApiResult<T = unknown> = ApiSuccess<T> | ApiFailure;
 
 export class ApiClient {
@@ -186,6 +186,18 @@ export class ApiClient {
             ...this.baseHeaders,
             ...headers,
         };
+        // Credentials belong only to the application origin. Reject before
+        // adding headers or sending a request, including protocol-relative URLs.
+        if (typeof window !== 'undefined') {
+            const requestUrl = new URL(endpoint, window.location.origin);
+            if (requestUrl.origin !== window.location.origin) {
+                return { success: false, error: '外部サイトへのAPIリクエストは許可されていません' };
+            }
+            const csrfToken = typeof document !== 'undefined'
+                ? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                : null;
+            if (csrfToken) requestHeaders['X-CSRF-TOKEN'] = csrfToken;
+        }
         const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
         if (isFormData) {
             delete requestHeaders['Content-Type'];
@@ -279,7 +291,7 @@ export class ApiClient {
                     status: response.status,
                     message: data && (data.error || data.message) ? String(data.error || data.message) : '',
                 });
-                throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
+                throw Object.assign(new Error(data.error || data.message || `HTTP error! status: ${response.status}`), { fieldErrors: data.errors, status: response.status });
             }
 
             return { success: true, data };
@@ -292,7 +304,9 @@ export class ApiClient {
             });
 
             console.error(`API request failed: ${endpoint}`, error);
-            return { success: false, error: message || 'An error occurred' };
+            const fieldErrors = error instanceof Error && 'fieldErrors' in error ? error.fieldErrors as Record<string, string | string[]> | undefined : undefined;
+            const status = error instanceof Error && 'status' in error ? Number(error.status) : undefined;
+            return { success: false, error: message || 'An error occurred', ...(fieldErrors ? { fieldErrors } : {}), ...(status ? { status } : {}) };
         }
     }
 

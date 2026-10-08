@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AnnouncementImageController;
+use App\Http\Controllers\AnnouncementMediaController;
 use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
 use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
 use App\Http\Controllers\Api\StoreAppAuthController;
@@ -60,6 +61,7 @@ use App\Http\Controllers\Payment\PaymentConfirmCheckoutController;
 use App\Http\Controllers\Payment\PaymentConfirmController;
 use App\Http\Controllers\Payment\PaymentCreateCheckoutController;
 use App\Http\Controllers\Payment\PaymentCreateIntentController;
+use App\Http\Controllers\Payment\PaymentMethodsController;
 use App\Http\Controllers\Payment\PaymentWebhookController;
 use App\Http\Controllers\PointGrantCodeController;
 use App\Http\Controllers\PostalCodeController;
@@ -146,7 +148,7 @@ Route::post('/stamps/grant-code/{token}', StampGrantCodeController::class)
 Route::post('/points/grant-code/{token}', PointGrantCodeController::class)->where('token', '[0-9a-f]{48}')->middleware(['bind.project', 'throttle:60,1'])->name('api.points.grant-code');
 
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
-Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->group(function () {
+Route::prefix('v1')->middleware([AuthenticateApiToken::class, 'bind.project'])->group(function () {
     Route::get('/products', [ApiV1ProductController::class, 'index']);
     Route::get('/products/{id}', [ApiV1ProductController::class, 'show']);
     Route::post('/orders', [ApiV1OrderController::class, 'store']);
@@ -189,6 +191,7 @@ Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->
     Route::post('/queue', ApiV1QueueStoreController::class);
     Route::get('/queue/me', ApiV1QueueMeController::class);
     Route::post('/queue/{id}/cancel', ApiV1QueueCancelController::class)->middleware('queue.access');
+    Route::get('/payment/methods', PaymentMethodsController::class);
     Route::post('/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
 });
@@ -254,6 +257,8 @@ Route::get('/v1/stores', StoreListController::class)->middleware(['web', 'bind.p
 Route::get('/v1/announcements/cancelled-ids', ApiV1AnnouncementCancelledIdsController::class);
 
 Route::middleware(['web', 'bind.project'])->group(function () {
+    Route::get('/device-coupons', [DeviceOnceCouponController::class, 'index']);
+    Route::post('/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim']);
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
 
@@ -291,6 +296,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/transfer', MemberTransferClaimController::class)->middleware('throttle:10,1');
     Route::get('/members/existing-link', [ExistingMemberLinkController::class, 'show']);
     Route::post('/members/existing-link', [ExistingMemberLinkController::class, 'store'])->middleware('throttle:10,1');
+    Route::post('/members/existing-link/confirm', [ExistingMemberLinkController::class, 'confirm'])->middleware('throttle:10,1');
     Route::post('/members/session/clear', [MemberSessionClearController::class, '__invoke']);
     Route::post('/devices/register', DeviceRegisterController::class);
     Route::get('/devices/session', DeviceSessionController::class);
@@ -304,6 +310,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
     Route::get('/members/me/wallet-summary', MemberWalletSummaryController::class);
 
+    Route::get('/payment/methods', PaymentMethodsController::class);
     Route::post('/payment/create-intent', [PaymentCreateIntentController::class, '__invoke']);
     Route::post('/payment/checkout', PaymentCreateCheckoutController::class);
     Route::post('/payment/confirm', [PaymentConfirmController::class, '__invoke']);
@@ -339,6 +346,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 });
 
 Route::post('/payment/webhook', [PaymentWebhookController::class, '__invoke']);
+Route::post('/payment/webhook/{project_key}/{setting}', [PaymentWebhookController::class, '__invoke'])
+    ->whereNumber('setting')->middleware(['web', 'bind.project'])->name('payment.project.webhook');
 Route::match(['get', 'post'], '/client-debug', ClientDebugController::class);
 
 // Apple Wallet PassKit Web Service
@@ -346,3 +355,5 @@ Route::post('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{p
 Route::delete('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}', [AppleWalletPasskitController::class, 'unregisterDevice']);
 Route::get('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}', [AppleWalletPasskitController::class, 'listUpdatedSerials']);
 Route::get('/apple-wallet/v1/passes/{passTypeIdentifier}/{serialNumber}', [AppleWalletPasskitController::class, 'getLatestPass']);
+
+Route::get('/announcement-media/{id}/{index}', AnnouncementMediaController::class)->whereNumber(['id', 'index'])->name('announcements.media');

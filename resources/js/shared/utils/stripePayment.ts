@@ -22,7 +22,7 @@ export class StripePayment {
         this.clientSecret = null;
         this.apiClient = new ApiClient();
         this.initPromise = null;
-        void this.init();
+        void this.init().catch(() => { /* setupPaymentForm reports loading errors. */ });
     }
 
     async init(): Promise<void> {
@@ -33,7 +33,7 @@ export class StripePayment {
             await this.initPromise;
             return;
         }
-        this.initPromise = new Promise<void>((resolve) => {
+        this.initPromise = new Promise<void>((resolve, reject) => {
             const finish = (): void => {
                 this.setupStripe();
                 resolve();
@@ -42,6 +42,7 @@ export class StripePayment {
                 const existing = document.querySelector('script[data-stripe-js="true"]');
                 if (existing instanceof HTMLScriptElement) {
                     existing.addEventListener('load', finish, { once: true });
+                    existing.addEventListener('error', () => reject(new Error('決済画面を読み込めませんでした')), { once: true });
                     return;
                 }
                 const script = document.createElement('script');
@@ -49,6 +50,7 @@ export class StripePayment {
                 script.async = true;
                 script.dataset.stripeJs = 'true';
                 script.onload = finish;
+                script.onerror = () => reject(new Error('決済画面を読み込めませんでした'));
                 document.head.appendChild(script);
                 return;
             }
@@ -80,8 +82,9 @@ export class StripePayment {
         if (result.success === false) {
             throw new Error(result.error || 'Payment intent creation failed');
         }
-        const data = result.data as { clientSecret?: string; error?: string };
+        const data = result.data as { clientSecret?: string; publishableKey?: string; error?: string };
         if (data.clientSecret) {
+            if (data.publishableKey && typeof Stripe === 'function') this.stripe = Stripe(data.publishableKey);
             this.clientSecret = data.clientSecret;
             return data;
         }
@@ -103,17 +106,14 @@ export class StripePayment {
 
     async setupPaymentForm(containerId: string, _amount: number, orderId: number | string): Promise<void> {
         await this.init();
-        if (this.stripe === null) {
-            throw new Error('Stripe の初期化に失敗しました。STRIPE_KEY を確認してください');
-        }
         this.destroyPaymentForm();
         const { clientSecret } = await this.createPaymentIntent(orderId);
+        if (this.stripe === null) {
+            throw new Error('Stripe の初期化に失敗しました。決済設定を確認してください');
+        }
         this.clientSecret = clientSecret;
-        this.elements = this.stripe.elements({
-            clientSecret,
-            appearance: { theme: 'stripe' },
-        });
-        this.paymentElement = this.elements.create('payment');
+        this.elements = this.stripe.elements();
+        this.paymentElement = this.elements.create('card', { hidePostalCode: true });
         const mountNode = document.getElementById(containerId);
         if (mountNode === null) {
             throw new Error('決済フォームの表示領域が見つかりません');
@@ -132,10 +132,8 @@ export class StripePayment {
         if (!this.stripe || !this.clientSecret || !this.elements) {
             throw new Error('Stripe not initialized');
         }
-        const { error, paymentIntent } = await this.stripe.confirmPayment({
-            elements: this.elements,
-            confirmParams: { return_url: this.buildReturnUrl(orderId) },
-            redirect: 'if_required',
+        const { error, paymentIntent } = await this.stripe.confirmCardPayment(this.clientSecret, {
+            payment_method: { card: this.paymentElement },
         }) as StripeConfirmResult;
 
         if (error) {

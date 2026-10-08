@@ -1,12 +1,12 @@
 @extends('admin.layout')
 @section('title', '会員編集')
-@section('page-title', '会員編集 #' . $view->member->id)
+@section('page-title', '会員編集 ' . \App\Support\AdminMemberIdentifier::value($view->member))
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.members') }}">会員一覧</a>
     <span class="breadcrumb-sep">/</span>
-    <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}">{{ $view->member->user->name ?? ('会員 #'.$view->member->id) }}</a>
+    <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}">{{ $view->member->user->name ?? ('会員 '.\App\Support\AdminMemberIdentifier::value($view->member)) }}</a>
     <span class="breadcrumb-sep">/</span>
     <span>編集</span>
 </nav>
@@ -32,12 +32,17 @@
         <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> 詳細に戻る</a>
     </div>
     <div class="card-body">
-        <form action="{{ admin_route('admin.members.update', ['id' => $view->member->id]) }}" method="POST">
+        <div class="settings-category-tabs" role="tablist" aria-label="会員編集の項目" data-member-edit-tabs>
+            <button type="button" role="tab" id="member-edit-tab-profile" aria-controls="member-edit-panel-profile" aria-selected="true">プロフィール項目</button>
+            <button type="button" role="tab" id="member-edit-tab-benefits" aria-controls="member-edit-panel-benefits" aria-selected="false" tabindex="-1">ポイント・スタンプ</button>
+        </div>
+        <form id="member-edit-form" action="{{ admin_route('admin.members.update', ['id' => $view->member->id]) }}" method="POST">
             @csrf
             @method('PUT')
 
+            <div class="settings-tab-panel" role="tabpanel" id="member-edit-panel-profile" aria-labelledby="member-edit-tab-profile" data-member-edit-panel>
             <section class="form-section mb-4">
-                <h4 class="form-section-title"><span class="form-section-num">1</span> ユーザー情報（登録情報）</h4>
+                <h4 class="form-section-title">連絡先</h4>
                 @php
                     [$nameLast, $nameFirst] = \App\Support\PersonNameParts::split(old('name', $view->member->user->name ?? ''));
                     [$kanaLast, $kanaFirst] = \App\Support\PersonNameParts::split(old('kana', $view->member->user->kana ?? ''));
@@ -85,12 +90,18 @@
             </section>
 
             <section class="form-section mb-4">
-                <h4 class="form-section-title"><span class="form-section-num">2</span> 会員情報</h4>
+                <h4 class="form-section-title">会員情報</h4>
                 <div class="row">
                     <div class="col-md-6 form-group">
+                        @if(\App\Support\AdminMemberIdentifier::usesId($view->member->project_id))
+                        <label class="form-label">会員ID</label>
+                        <input type="text" class="form-control" value="{{ $view->member->id }}" readonly>
+                        <input type="hidden" name="member_number" value="{{ $view->member->member_number }}">
+                        @else
                         <label for="member_number" class="form-label">会員番号 <span class="text-danger">*</span></label>
                         <input type="text" name="member_number" id="member_number" class="form-control" value="{{ old('member_number', $view->member->member_number) }}" maxlength="64" required>
                         @error('member_number')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                        @endif
                     </div>
                     <div class="col-md-3 form-group">
                         <label for="status" class="form-label">ステータス <span class="text-danger">*</span></label>
@@ -160,39 +171,12 @@
                 </div>
             </section>
 
-            <section class="form-section mb-4">
-                <h4 class="form-section-title"><span class="form-section-num">3</span> ポイント操作（任意）</h4>
-                <p class="text-muted small mb-3">「ポイントを直接指定」に数値を入れると、その値に合わせて調整されます（例: 500）。加算・減算と併用した場合は直接指定が優先されます。保存時にポイント履歴へ記録され、Apple Wallet / Google Wallet も更新されます。</p>
-                <div class="row">
-                    <div class="col-md-3 form-group">
-                        <label for="point_set" class="form-label">ポイントを直接指定</label>
-                        <input type="number" name="point_set" id="point_set" class="form-control" value="{{ old('point_set') }}" min="0" step="1" placeholder="例: 500">
-                        @error('point_set')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label for="point_add" class="form-label">ポイント加算</label>
-                        <input type="number" name="point_add" id="point_add" class="form-control" value="{{ old('point_add', 0) }}" min="0" step="1" placeholder="0">
-                        @error('point_add')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label for="point_subtract" class="form-label">ポイント減算</label>
-                        <input type="number" name="point_subtract" id="point_subtract" class="form-control" value="{{ old('point_subtract', 0) }}" min="0" step="1" placeholder="0">
-                        @error('point_subtract')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
-                    </div>
-                    <div class="col-md-3 form-group">
-                        <label for="point_description" class="form-label">理由（管理用メモ）</label>
-                        <input type="text" name="point_description" id="point_description" class="form-control" value="{{ old('point_description') }}" maxlength="255" placeholder="例: 管理画面での調整">
-                    </div>
-                </div>
-                <p class="text-muted small mb-0">現在のポイント: <strong>{{ number_format($view->member->points) }}pt</strong></p>
-            </section>
-
             @php
                 $profileExtra = is_array($view->member->profile_extra) ? $view->member->profile_extra : [];
             @endphp
             @if($view->customProfileFields !== [])
             <section class="form-section mb-4">
-                <h4 class="form-section-title"><span class="form-section-num">4</span> 追加プロフィール項目</h4>
+                <h4 class="form-section-title">追加プロフィール項目</h4>
                 <p class="text-muted small mb-3">プロフィール設定で追加した項目です。スマレジの会員自由項目と連携します。</p>
                 @foreach($view->customProfileFields as $cf)
                     @php
@@ -257,15 +241,40 @@
                 <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>変更を保存</button>
                 <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}" class="btn btn-secondary">キャンセル</a>
             </div>
+            </div>
         </form>
-    </div>
-</div>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-stamp"></i> スタンプ操作</h3>
-    </div>
-    <div class="card-body">
+        <div class="settings-tab-panel" role="tabpanel" id="member-edit-panel-benefits" aria-labelledby="member-edit-tab-benefits" data-member-edit-panel hidden>
+            <section class="form-section mb-4">
+                <h4 class="form-section-title">ポイント</h4>
+                <p class="text-muted small mb-3">「ポイントを直接指定」に数値を入れると、その値に合わせて調整されます（例: 500）。加算・減算と併用した場合は直接指定が優先されます。保存時にポイント履歴へ記録され、Apple Wallet / Google Wallet も更新されます。</p>
+                <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label for="point_set" class="form-label">ポイントを直接指定</label>
+                        <input type="number" name="point_set" id="point_set" class="form-control" form="member-edit-form" value="{{ old('point_set') }}" min="0" step="1" placeholder="例: 500">
+                        @error('point_set')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="point_add" class="form-label">ポイント加算</label>
+                        <input type="number" name="point_add" id="point_add" class="form-control" form="member-edit-form" value="{{ old('point_add', 0) }}" min="0" step="1" placeholder="0">
+                        @error('point_add')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="point_subtract" class="form-label">ポイント減算</label>
+                        <input type="number" name="point_subtract" id="point_subtract" class="form-control" form="member-edit-form" value="{{ old('point_subtract', 0) }}" min="0" step="1" placeholder="0">
+                        @error('point_subtract')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label for="point_description" class="form-label">理由（管理用メモ）</label>
+                        <input type="text" name="point_description" id="point_description" class="form-control" form="member-edit-form" value="{{ old('point_description') }}" maxlength="255" placeholder="例: 管理画面での調整">
+                    </div>
+                </div>
+                <p class="text-muted small mb-3">現在のポイント: <strong>{{ number_format($view->member->points) }}pt</strong></p>
+                <button type="submit" class="btn btn-primary" form="member-edit-form"><i class="fas fa-check me-1"></i>ポイントの変更を保存</button>
+            </section>
+
+            <section class="form-section mb-4">
+                <h4 class="form-section-title"><i class="fas fa-stamp"></i> スタンプ</h4>
         @if($view->activeStampCards->isEmpty())
             <p class="text-muted mb-0">スタンプカードがありません。<a href="{{ admin_route('admin.stamps.create') }}">スタンプカードを作成</a>してください。</p>
         @else
@@ -304,14 +313,10 @@
                 <button type="submit" class="btn btn-primary"><i class="fas fa-stamp"></i> スタンプを更新</button>
             </form>
         @endif
-    </div>
-</div>
+            </section>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-ticket-alt"></i> クーポン操作</h3>
-    </div>
-    <div class="card-body">
+            <section class="form-section mb-4">
+                <h4 class="form-section-title"><i class="fas fa-ticket-alt"></i> クーポン</h4>
         @if($view->activeCoupons->isEmpty())
             <p class="text-muted">配布可能なクーポンがありません。<a href="{{ admin_route('admin.coupons.create') }}">クーポンを作成</a>してください。</p>
         @else
@@ -372,14 +377,10 @@
                 @endforelse
             </tbody>
         </table>
-    </div>
-</div>
+            </section>
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-store"></i> 来店登録</h3>
-    </div>
-    <div class="card-body">
+            <section class="form-section mb-0">
+                <h4 class="form-section-title"><i class="fas fa-store"></i> 来店登録</h4>
         <form action="{{ admin_route('admin.members.record-visit', ['id' => $view->member->id]) }}" method="POST">
             @csrf
             <div class="row">
@@ -396,6 +397,60 @@
                 </div>
             </div>
         </form>
+            </section>
+        </div>
     </div>
 </div>
+<script>
+(function () {
+    const tablist = document.querySelector('[data-member-edit-tabs]');
+    const form = document.getElementById('member-edit-form');
+    if (tablist === null || form === null) {
+        return;
+    }
+    const buttons = Array.from(tablist.querySelectorAll('[role="tab"]'));
+    const panels = Array.from(document.querySelectorAll('[data-member-edit-panel]'));
+    const activate = (id) => {
+        buttons.forEach((button) => {
+            const selected = button.getAttribute('aria-controls') === id;
+            button.setAttribute('aria-selected', selected ? 'true' : 'false');
+            button.tabIndex = selected ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+            panel.hidden = panel.id !== id;
+        });
+    };
+    buttons.forEach((button, index) => {
+        button.addEventListener('click', () => activate(button.getAttribute('aria-controls')));
+        button.addEventListener('keydown', (event) => {
+            let next = null;
+            if (event.key === 'ArrowRight') next = buttons[(index + 1) % buttons.length];
+            if (event.key === 'ArrowLeft') next = buttons[(index + buttons.length - 1) % buttons.length];
+            if (event.key === 'Home') next = buttons[0];
+            if (event.key === 'End') next = buttons[buttons.length - 1];
+            if (next === null) return;
+            event.preventDefault();
+            activate(next.getAttribute('aria-controls'));
+            next.focus();
+        });
+    });
+    const invalidPanel = panels.find((panel) => panel.querySelector('.invalid-feedback'));
+    if (invalidPanel) {
+        activate(invalidPanel.id);
+    }
+    form.addEventListener('submit', (event) => {
+        if (form.checkValidity()) {
+            return;
+        }
+        const invalid = form.querySelector(':invalid');
+        const panel = invalid ? invalid.closest('[role="tabpanel"]') : null;
+        if (panel === null || panel.hidden !== true) {
+            return;
+        }
+        event.preventDefault();
+        activate(panel.id);
+        window.requestAnimationFrame(() => invalid.reportValidity());
+    });
+})();
+</script>
 @endsection

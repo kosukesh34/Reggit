@@ -12,6 +12,9 @@ return [
 
     'encrypt' => false,
 
+    // Preserve existing sessions when upgrading from Laravel 12.
+    'serialization' => 'php',
+
     'files' => storage_path('framework/sessions'),
 
     'connection' => env('SESSION_CONNECTION'),

@@ -43,6 +43,7 @@ function initScheduledDeliveryForm(): void {
         document.querySelectorAll('input[name="schedule_type"]').forEach((input) => {
             const radio = input as HTMLInputElement;
             radio.checked = radio.value === type;
+            radio.closest('.sd-choice')?.classList.toggle('is-selected', radio.checked);
         });
     }
 
@@ -88,7 +89,19 @@ function initScheduledDeliveryForm(): void {
         setFieldsEnabled(announcementFields, contentType !== 'coupon_only');
         setFieldsEnabled(notifyFields, contentType === 'coupon_only');
         if (couponLabel) {
-            couponLabel.textContent = contentType === 'coupon_only' ? '配布するクーポン' : '同時に配布するクーポン（任意）';
+            couponLabel.textContent = contentType === 'coupon_only' ? '配布するクーポン' : '同時に配布するクーポン';
+        }
+        document.querySelector('.scheduled-delivery-admin')?.classList.toggle('is-coupon-only', contentType === 'coupon_only');
+        const couponSelect = document.getElementById('coupon_id') as HTMLSelectElement | null;
+        const titleInput = document.getElementById('title') as HTMLInputElement | null;
+        const couponRequired = contentType === 'coupon_only';
+        if (couponSelect) {
+            couponSelect.required = couponRequired;
+            couponSelect.setAttribute('aria-required', couponRequired ? 'true' : 'false');
+        }
+        if (titleInput) {
+            titleInput.required = !couponRequired;
+            titleInput.setAttribute('aria-required', couponRequired ? 'false' : 'true');
         }
         setSelected('content_type', contentType);
         setSelected('category', category);

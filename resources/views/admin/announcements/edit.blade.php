@@ -40,13 +40,7 @@
                 <label for="body" class="form-label">本文 <span class="text-danger">*</span></label>
                 <textarea name="body" id="body" class="form-control" rows="5" required maxlength="2000">{{ old('body', $announcement->body) }}</textarea>
             </div>
-            @include('admin.partials._frontend_logo_dropzone', [
-                'logoInputName' => 'image_file',
-                'logoClearName' => 'image_file_clear',
-                'logoFieldId' => 'ann_image',
-                'logoCurrentUrl' => (string) old('image_url', $announcement->image_url),
-                'logoLabel' => '画像',
-            ])
+            @include('admin.announcements._images', ['currentImages' => $announcement->imageUrls()])
             <div class="form-group">
                 <label for="image_url" class="form-label">または 画像URL</label>
                 <input type="url" name="image_url" id="image_url" class="form-control" value="{{ old('image_url', $announcement->image_url) }}" maxlength="500" placeholder="https://example.com/image.png">

@@ -19,12 +19,14 @@ class OrderItem extends Model
         'quantity',
         'price',
         'notes',
+        'option_ids',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
         'quantity' => 'integer',
         'price' => 'decimal:2',
+        'option_ids' => 'array',
     ];
 
     public function project()

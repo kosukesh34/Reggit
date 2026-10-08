@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\AnnouncementAudienceResolveMode;
 use App\Enums\RfmSegment;
+use App\Enums\SegmentCombineMode;
 use App\Models\Announcement;
 use App\Services\Admin\MemberSegmentService;
 use App\Support\MemberChannel;
@@ -86,6 +87,8 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             'segment_birthday_months.*' => ['integer', 'min:1', 'max:12', 'distinct'],
             'segment_tag_ids' => ['nullable', 'array'],
             'segment_tag_ids.*' => ['integer', 'min:1', 'distinct'],
+            'segment_audience_group_ids' => ['nullable', 'array'],
+            'segment_audience_group_ids.*' => ['integer', 'min:1', 'distinct'],
             'segment_visit_count_min' => ['nullable', 'integer', 'min:0'],
             'segment_visit_count_max' => ['nullable', 'integer', 'min:0'],
             'segment_lifetime_points_min' => ['nullable', 'integer', 'min:0'],
@@ -107,7 +110,11 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             'segment_rfm_segments.*' => ['string', Rule::in(RfmSegment::keys()), 'distinct'],
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
             'segment_operators' => ['nullable', 'array'],
-            'segment_match_mode' => ['nullable', Rule::in(['all', 'any'])],
+            'segment_match_mode' => ['nullable', Rule::in(SegmentCombineMode::keys())],
+            'segment_value_mode' => ['nullable', 'array'],
+            'segment_value_mode.tags' => ['nullable', Rule::in(SegmentCombineMode::keys())],
+            'segment_value_mode.profile' => ['nullable', 'array'],
+            'segment_value_mode.profile.*' => ['nullable', Rule::in(SegmentCombineMode::keys())],
             'segment_operators.*' => ['nullable', Rule::in(['and', 'or'])],
             'segment_profile' => ['nullable', 'array'],
             'segment_profile.*' => ['nullable'],
@@ -129,6 +136,9 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             'send_notification' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date'],
             'image_url' => ['nullable', 'url', 'max:500'],
+            'image_files' => ['nullable', 'array', 'max:10'],
+            'image_files.*' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'clear_images' => ['nullable', 'boolean'],
             'image_file' => ['nullable', 'image', 'max:2048'],
         ];
     }

@@ -4,8 +4,9 @@ namespace App\Observers;
 
 use App\Models\MemberLotteryEntitlement;
 use App\Services\MemberLiffWalletNotifier;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class MemberLotteryEntitlementObserver
+class MemberLotteryEntitlementObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         private MemberLiffWalletNotifier $liffWalletNotifier,

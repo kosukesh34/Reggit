@@ -8,7 +8,9 @@ struct AppConfigClient {
     let projectKey: String
 
     func fetchConfig() async -> AppConfig? {
-        let urlString = "\(baseUrl)/api/v1/app-config?project_key=\(projectKey)"
+        let storeID = MobileSelectedProjectStore.selectedStoreID(baseURL: baseUrl, projectKey: projectKey)
+        let storeQuery = storeID.map { "&store_id=\($0)" } ?? ""
+        let urlString = "\(baseUrl)/api/v1/app-config?project_key=\(projectKey)\(storeQuery)"
         guard let url = URL(string: urlString) else { return nil }
 
         var request = URLRequest(url: url)
@@ -40,6 +42,11 @@ struct AppConfigClient {
         let homeImageURL = ((json["home"] as? [String: Any])?["image_url"] as? String)?.trimmedNonEmpty
         let homeImageURLs = (((json["home"] as? [String: Any])?["image_urls"] as? [String]) ?? [])
             .compactMap { $0.trimmedNonEmpty }
+        let home = json["home"] as? [String: Any] ?? [:]
+        let homeGalleryItems = (home["gallery_items"] as? [[String: Any]] ?? []).compactMap { row -> HomeGalleryCard? in
+            guard let id = row["id"] as? Int, let imageURL = row["image_url"] as? String else { return nil }
+            return HomeGalleryCard(id: id, title: row["title"] as? String ?? "", description: row["description"] as? String ?? "", imageURL: imageURL, mode: row["mode"] as? String ?? "detail", url: row["url"] as? String ?? "")
+        }
         let homeMenuLayout = ((json["home"] as? [String: Any])?["menu_layout"] as? String)?.trimmedNonEmpty ?? "grid_3x2"
         let productDisplayLayout = ((json["products"] as? [String: Any])?["display_layout"] as? String)?.trimmedNonEmpty ?? "list_with_image"
         let memberScreen = json["member_screen"] as? [String: Any] ?? [:]
@@ -71,7 +78,10 @@ struct AppConfigClient {
             nativeChromeColors: json["native_chrome_colors"] as? [String: String] ?? [:],
             homeShowMemberCard: (json["home"] as? [String: Any])?["show_member_card"] as? Bool ?? true,
             homeMenuLayout: homeMenuLayout,
+            homeLayout: home["layout"] as? String ?? "legacy",
+            homeGalleryItems: homeGalleryItems,
             productDisplayLayout: productDisplayLayout,
+            memberPageStyle: memberScreen["style"] as? String ?? "classic",
             memberShowRankProgress: memberScreen["show_rank_progress"] as? Bool ?? true,
             memberShowPointHistory: memberScreen["show_point_history"] as? Bool ?? true,
             memberShowCouponActivity: memberScreen["show_coupon_activity"] as? Bool ?? true,

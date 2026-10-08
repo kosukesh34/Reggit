@@ -10,7 +10,8 @@ class OrderItem
         public string $productName,
         public int $quantity,
         public float $price,
-        public ?string $notes
+        public ?string $notes,
+        public ?array $optionIds = null,
     ) {}
 
     /** @return array{product_id: int, product_name: string, quantity: int, price: float, notes: string|null} */
@@ -22,6 +23,7 @@ class OrderItem
             'quantity' => $this->quantity,
             'price' => $this->price,
             'notes' => $this->notes,
+            'option_ids' => $this->optionIds,
         ];
     }
 }

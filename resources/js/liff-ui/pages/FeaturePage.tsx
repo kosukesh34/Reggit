@@ -1,236 +1,37 @@
-import { SearchX } from "lucide-react";
-import type { ReactNode } from "react";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
-import { Card } from "../components/ui/Card";
-import { ErrorState } from "../components/ui/ErrorState";
-import { Skeleton } from "../components/ui/Skeleton";
-import { useAppConfig, isDesignShowcaseMode } from "../context/AppConfigContext";
-import { CollectionDemo } from "../features/demo/CollectionDemo";
-import { featureDefinitionMap, isFeatureType } from "../features/demo/featureCatalog";
-import { OrderDemo } from "../features/demo/OrderDemo";
-import { ReservationDemo } from "../features/demo/ReservationDemo";
-import { CouponDemo, PointDemo, QueueDemo, StampDemo, SubscriptionDemo, TicketDemo } from "../features/demo/RewardsDemo";
-import { isUtilityType, UtilityDemo } from "../features/demo/UtilityDemo";
+import { Navigate, useParams } from "react-router-dom";
+import { NativeCouponsPage } from "../native/NativeCouponsPage";
+import { NativeStampsPage } from "../native/NativeStampsPage";
+import { NativeQueuePage } from "../native/NativeQueuePage";
+import { NativeReservationsPage } from "../native/NativeReservationsPage";
+import { NativeGalleryPage, NativeNewsPage, NativeOrdersPage } from "../native/NativeContentPages";
+import { NativeStorePage, NativeLegalPage } from "../native/NativeUtilityPages";
+import { NativeProductsPage } from "../native/NativeProductsPage";
+import { useNativeConfig } from "../native/nativeConfig";
 import { useRuntimeData } from "../context/RuntimeDataContext";
-import { CouponsView } from "../../frontend/features/coupons/CouponsView";
-import { StampsView } from "../../frontend/features/stamps/StampsView";
-import { QueueView } from "../../frontend/features/queue/QueueView";
-import { ReservationsView } from "../../frontend/features/reservations/ReservationsView";
-import { GalleryView } from "../../frontend/features/gallery/GalleryView";
-import { OrdersView } from "../../frontend/features/orders/OrdersView";
-import { pathForLegacyTab } from "../navigation/tabPath";
-import { isLinkTabType } from "../types/app";
-import { resolveHomeLayout } from "../config/customization";
 import { LinkSitePage } from "./LinkSitePage";
-import { LandingShowcaseFeature, LandingShowcaseUtility } from "./LandingShowcasePage";
-import { SimpleRewardsFeature } from "./SimpleRewardsPage";
-
-const FEATURE_ALIASES: Record<string, string> = {
-  member: "membership",
-  profile: "membership",
-  coupons: "coupon",
-  stamps: "stamp",
-  reservations: "reservation",
-  products: "menu",
-  announcements: "news",
-  card: "membership",
-};
-
-function FeaturePageSkeleton(): JSX.Element {
-  return (
-    <div className="page feature-page stack stack--lg" aria-busy="true" aria-label="読み込み中">
-      <div className="feature-skeleton">
-        <Skeleton className="feature-skeleton__title" />
-        <Skeleton className="feature-skeleton__card" />
-        <Skeleton className="feature-skeleton__card" />
-      </div>
-    </div>
-  );
-}
+import { isLinkTabType } from "../types/app";
 
 export function FeaturePage() {
-  const { feature: rawFeature } = useParams();
-  const [searchParams] = useSearchParams();
-  const { activeStore, customization, experienceId } = useAppConfig();
-  const { member, coupons, news, stores, commerce, history, mode, loading, error, refresh, markAnnouncementRead } = useRuntimeData();
-  const activeVenue = stores[0];
-  const orderPath = activeStore.features.mobileOrder ? "/mobileOrder" : activeStore.features.dineInOrder ? "/dineInOrder" : "/reservation";
-  const isLiveBound = mode === "live";
-  const isCrm = resolveHomeLayout(customization.home.layout) === "crm";
-
-  if (rawFeature === undefined || rawFeature === "") {
-    return <Navigate to="/home" replace />;
-  }
-
-  if (isLinkTabType(rawFeature)) {
-    return <LinkSitePage tab={rawFeature} />;
-  }
-
-  const aliased = FEATURE_ALIASES[rawFeature];
-  if (aliased === "membership" || rawFeature === "membership") {
-    return <Navigate to="/membership" replace />;
-  }
-  if (rawFeature === "profile") {
-    return <Navigate to="/profile" replace />;
-  }
-
-  const legacyPath = pathForLegacyTab(rawFeature);
-  if (
-    legacyPath !== null
-    && legacyPath !== `/${rawFeature}`
-    && !isFeatureType(rawFeature)
-    && !isUtilityType(rawFeature)
-  ) {
-    return <Navigate to={legacyPath} replace />;
-  }
-
-  const feature = aliased !== undefined ? aliased : rawFeature;
-  const isNewsArticle = feature === "news" && searchParams.get("announcement") !== null;
-
-  // Remote-backed screens never flash partial content while the first bootstrap is in flight.
-  if (loading && mode !== "preview") {
-    return <FeaturePageSkeleton />;
-  }
-
-  if (isDesignShowcaseMode() && experienceId === "landing-showcase" && ["mobileOrder", "stamp", "queue"].includes(feature)) {
-    return <LandingShowcaseFeature feature={feature} />;
-  }
-  if (isDesignShowcaseMode() && experienceId === "landing-showcase" && ["coupon", "point", "reservation", "news", "storeSearch", "orderHistory", "purchaseHistory", "menu", "dineInOrder", "gallery", "favorite", "ticket", "subscription"].includes(feature)) {
-    return <LandingShowcaseUtility feature={feature} />;
-  }
-  if (experienceId === "simple-rewards" && ["coupon", "stamp"].includes(feature)) {
-    return <SimpleRewardsFeature feature={feature} />;
-  }
-
-  if (mode !== "live" && mode !== "preview") {
-    if (mode === "offline" && !loading) {
-      return (
-        <div className="page feature-page">
-          <ErrorState
-            title="店舗データに接続できません"
-            description={error ?? "通信環境をご確認ください"}
-            actionLabel="再読み込み"
-            onAction={() => { void refresh(); }}
-          />
-        </div>
-      );
-    }
-    return <FeaturePageSkeleton />;
-  }
-
-  if (!isFeatureType(feature)) {
-    if (isUtilityType(feature)) {
-      return <UtilityDemo type={feature} />;
-    }
-    return (
-      <div className="page">
-        <Card className="feature-success" padding="lg">
-          <SearchX size={40} />
-          <h1>ページが見つかりません</h1>
-          <p>URLをご確認のうえ、ホームからもう一度お試しください。</p>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!activeStore.features[feature]) {
-    return (
-      <div className="page">
-        <Card className="feature-success" padding="lg">
-          <SearchX size={40} />
-          <h1>現在このサービスは利用できません</h1>
-          <p>店舗の設定により、この機能は現在非公開になっています。</p>
-        </Card>
-      </div>
-    );
-  }
-
-  if (isLiveBound) {
-    if (feature === "coupon") {
-      return (
-        <div className={`page feature-page${isCrm ? " feature-page--crm" : ""}`}>
-          <div id="couponsSection" className="coupons-section">
-            <CouponsView />
-          </div>
-        </div>
-      );
-    }
-    if (feature === "stamp") {
-      return <div className="page feature-page"><StampsView /></div>;
-    }
-    if (feature === "queue") {
-      return <div className="page feature-page"><QueueView /></div>;
-    }
-    if (feature === "reservation") {
-      return <div className="page feature-page"><ReservationsView /></div>;
-    }
-    if (feature === "gallery") {
-      return <div className="page feature-page"><GalleryView /></div>;
-    }
-    if (feature === "orderHistory") {
-      return <div className="page feature-page"><OrdersView /></div>;
-    }
-  }
-
-  const definition = featureDefinitionMap[feature];
-  const Icon = definition.icon;
-  let content: ReactNode;
-
+  const { feature = "home" } = useParams();
+  const { config } = useNativeConfig();
+  const { stores } = useRuntimeData();
+  if (isLinkTabType(feature)) return <LinkSitePage tab={feature} />;
   switch (feature) {
-    case "mobileOrder":
-      content = <OrderDemo dineIn={false} image={activeStore.home.featuredImage} config={customization.order} storeId={activeStore.storeId} venueName={activeVenue?.name ?? activeStore.storeName} />;
-      break;
-    case "dineInOrder":
-      content = <OrderDemo dineIn image={activeStore.home.featuredImage} config={customization.order} storeId={activeStore.storeId} venueName={activeVenue?.name ?? activeStore.storeName} />;
-      break;
-    case "reservation":
-      content = <ReservationDemo storeId={activeStore.storeId} venueName={activeVenue?.name ?? activeStore.storeName} />;
-      break;
-    case "queue":
-      content = <QueueDemo storeId={activeStore.storeId} />;
-      break;
-    case "coupon":
-      content = <CouponDemo coupons={coupons} config={customization.coupon} />;
-      break;
-    case "stamp":
-      content = <StampDemo config={customization.stamp} storeId={activeStore.storeId} brandName={activeStore.brandName} />;
-      break;
-    case "point":
-      content = <PointDemo initialPoints={member.points} />;
-      break;
-    case "ticket":
-      content = <TicketDemo />;
-      break;
-    case "subscription":
-      content = <SubscriptionDemo />;
-      break;
-    default:
-      content = (
-        <CollectionDemo
-          feature={feature}
-          featureImage={activeStore.home.featuredImage}
-          heroImage={activeStore.home.heroImage}
-          news={news}
-          stores={stores}
-          storeId={activeStore.storeId}
-          orderPath={orderPath}
-          liveCatalog={commerce?.items}
-          history={history}
-          onReadNews={markAnnouncementRead}
-          isLive={isLiveBound}
-        />
-      );
+    case "member": case "membership": return <Navigate to="/membership" replace />;
+    case "profileEdit": return <Navigate to="/profile" replace />;
+    case "coupon": case "coupons": return <NativeCouponsPage />;
+    case "stamp": case "stamps": return <NativeStampsPage />;
+    case "queue": return <NativeQueuePage />;
+    case "reservation": case "reservations": return <NativeReservationsPage />;
+    case "gallery": return <NativeGalleryPage />;
+    case "news": case "announcements": return <NativeNewsPage />;
+    case "orderHistory": case "orders": case "purchaseHistory": return <NativeOrdersPage />;
+    case "storeSearch": return <NativeStorePage />;
+    case "terms": case "privacy": return <NativeLegalPage kind={feature} />;
+    case "lottery": return <Navigate to="/designlab" replace />;
+    case "menu": case "products": case "mobileOrder": case "dineInOrder": {
+      return <div className="native-screen native-products"><NativeProductsPage dineIn={feature === "dineInOrder"} image="/images/liff/product-placeholder.jpg" storeId={config.project_key ?? "demo"} venueName={stores[0]?.name ?? config.project_name ?? "店舗"} /></div>;
+    }
+    default: return <Navigate to="/home" replace />;
   }
-
-  return (
-    <div className={`page feature-page stack stack--lg${isNewsArticle ? " feature-page--news-article" : ""}${isCrm ? " feature-page--crm" : ""}`}>
-      {isNewsArticle || isCrm ? null : (
-        <section className="feature-intro">
-          <span className="feature-intro__icon"><Icon size={22} /></span>
-          <div><h1>{definition.label}</h1><p>{definition.description}</p></div>
-        </section>
-      )}
-      {content}
-    </div>
-  );
 }

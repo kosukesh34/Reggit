@@ -3,6 +3,7 @@
 namespace App\Http;
 
 use App\Http\Middleware\AdminAuditLogger;
+use App\Http\Middleware\AuthenticateAdminSession;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\AuthenticateStoreApp;
 use App\Http\Middleware\AuthorizeQueueAccess;
@@ -51,7 +52,7 @@ class Kernel extends HttpKernel
         // Resolve the tenant before implicit model binding executes its scope.
         $this->addToMiddlewarePriorityBefore(SubstituteBindings::class, BindProjectFromRequest::class);
         $this->addToMiddlewarePriorityBefore(SubstituteBindings::class, BindAdminProject::class);
-        $this->addToMiddlewarePriorityBefore(SubstituteBindings::class, AuthenticateApiToken::class);
+        $this->addToMiddlewarePriorityBefore(BindProjectFromRequest::class, AuthenticateApiToken::class);
         $this->addToMiddlewarePriorityAfter(AuthenticateApiToken::class, CheckApiProject::class);
     }
 
@@ -84,6 +85,7 @@ class Kernel extends HttpKernel
         'auth' => Authenticate::class,
         'auth.basic' => AuthenticateWithBasicAuth::class,
         'auth.session' => AuthenticateSession::class,
+        'admin.auth.session' => AuthenticateAdminSession::class,
         'cache.headers' => SetCacheHeaders::class,
         'can' => Authorize::class,
         'guest' => RedirectIfAuthenticated::class,

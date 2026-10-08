@@ -122,7 +122,6 @@ declare global {
         QRCode?: QRCodeCtor;
         liff?: LiffLike;
         LiffLayoutBlocks?: { premium?: Record<string, (...args: any[]) => string> };
-        CouponBulkIssueConfig?: Record<string, unknown>;
         StripePayment?: StripePaymentCtor;
         app?: AppLike;
         AppConstants?: AppConstantsType;

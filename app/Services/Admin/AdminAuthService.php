@@ -96,6 +96,7 @@ class AdminAuthService
         Auth::guard('admin')->login($user, $input->remember);
         Session::regenerate();
         Session::put('admin_login_via', 'admin');
+        Session::put('password_hash_admin', Auth::guard('admin')->hashPasswordForCookie($user->getAuthPassword()));
 
         $this->writeLoginAuditLog($input->auditContext, $user->id, 'login_success', [
             'login_id' => $input->loginId,
@@ -137,6 +138,7 @@ class AdminAuthService
         Auth::guard('admin')->login($user, $input->remember);
         Session::regenerate();
         Session::put('admin_login_via', 'system-admin');
+        Session::put('password_hash_admin', Auth::guard('admin')->hashPasswordForCookie($user->getAuthPassword()));
 
         $this->writeLoginAuditLog($input->auditContext, $user->id, 'login_success', [
             'login_id' => $input->loginId,

@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
+use App\Models\GalleryItem;
 use App\Support\LiffDesignerSanitizer;
 use App\UseCases\Admin\Settings\Data\UpdateHomeImagesInput;
 use App\UseCases\Admin\Settings\Data\UpdateHomeSettingsInput;
@@ -18,6 +19,20 @@ class UpdateHomeSettingsUseCase
     public function handle(UpdateHomeSettingsInput $input): void
     {
         $projectId = $input->projectId;
+        foreach ($input->homeGallery ?? [] as $id => $fields) {
+            GalleryItem::where('project_id', $projectId)->whereKey($id)->update([
+                'title' => $fields['title'] ?? '',
+                'description' => $fields['description'] ?? '',
+                'sort_order' => (int) $fields['sort_order'],
+            ]);
+        }
+        if ($input->homeContent !== null) {
+            $content = $input->homeContent;
+            $ids = GalleryItem::where('project_id', $projectId)->pluck('id')->map(fn ($id) => (string) $id)->all();
+            $content['actions'] = array_intersect_key($content['actions'] ?? [], array_flip($ids));
+            $content['image_limit'] = isset($content['image_limit']) ? (int) $content['image_limit'] : null;
+            $this->shopSettingRepository->setValue('home_content', $content, 'json', $projectId);
+        }
         $rawTabs = $input->tabs;
         $nativeNavigation = $input->navigation;
         $homeShowMemberCard = $input->showMemberCard;

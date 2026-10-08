@@ -70,6 +70,8 @@ class AfterRegistrationDeliveryTest extends TestCase
         $response->assertSee('予約配信');
         $response->assertSee('来月誕生日の人');
         $response->assertSee('クーポンのみ');
+        $response->assertSee('きっかけ');
+        $response->assertSee('届ける内容');
     }
 
     public function test_store_新規入会後配信を追加できること(): void

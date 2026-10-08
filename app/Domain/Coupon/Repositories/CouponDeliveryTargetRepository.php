@@ -98,7 +98,7 @@ interface CouponDeliveryTargetRepository
      * @param  list<string>  $values
      * @return list<int>
      */
-    public function findIdsByProfileField(int $projectId, string $key, array $values): array;
+    public function findIdsByProfileField(int $projectId, string $key, array $values, bool $requireAll = false): array;
 
     public function countAll(int $projectId): int;
 

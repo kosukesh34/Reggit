@@ -14,6 +14,7 @@ use App\Models\Announcement;
 use App\Models\AnnouncementRead;
 use App\Models\Coupon;
 use App\Models\Member;
+use App\Models\MemberAudienceGroup;
 use App\Models\MemberCoupon;
 use App\Models\MemberTag;
 use App\Models\Order;
@@ -34,6 +35,76 @@ use Tests\TestCase;
 class AdminAnnouncementsTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_audience_group_name_longer_than_database_limit_is_rejected(): void
+    {
+        $project = $this->createDistributionProject();
+        $this->actingAs($this->createAdmin($project), 'admin')
+            ->post(route('admin.announcements.audience-groups.store', ['project_key' => $project->project_key]), [
+                'audience_group_name' => str_repeat('あ', 41),
+                'segment_sex' => '1',
+            ])->assertSessionHasErrors('audience_group_name');
+        $this->assertDatabaseCount('member_audience_groups', 0);
+    }
+
+    public function test_audience_group_delete_uses_route_id_and_preserves_other_projects(): void
+    {
+        $project = $this->createDistributionProject();
+        $other = $this->createDistributionProject();
+        $group = MemberAudienceGroup::create(['project_id' => $project->id, 'name' => 'Current', 'criteria' => ['sex' => 1]]);
+        $otherGroup = MemberAudienceGroup::create(['project_id' => $other->id, 'name' => 'Other', 'criteria' => ['sex' => 1]]);
+        $this->actingAs($this->createAdmin($project), 'admin');
+
+        $this->delete(route('admin.announcements.audience-groups.destroy', ['project_key' => $project->project_key, 'id' => $otherGroup->id]))
+            ->assertRedirect();
+        $this->assertModelExists($otherGroup);
+
+        $this->delete(route('admin.announcements.audience-groups.destroy', ['project_key' => $project->project_key, 'id' => $group->id]))
+            ->assertRedirect();
+        $this->assertModelMissing($group);
+    }
+
+    public function test_delivery_accepts_ten_images_and_rejects_eleven(): void
+    {
+        Storage::fake('local');
+        $project = $this->createDistributionProject();
+        $this->actingAs($this->createAdmin($project), 'admin');
+        $data = [
+            'title' => '複数画像', 'body' => '本文',
+            'audience_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_timing' => Announcement::DELIVERY_TIMING_IMMEDIATE,
+            'send_notification' => '0',
+            'image_files' => array_map(fn ($i) => UploadedFile::fake()->image($i.'.png', 1600, 1200), range(1, 10)),
+        ];
+        $route = route('admin.announcements.delivery.store', ['project_key' => $project->project_key]);
+        $this->post($route, $data)->assertSessionHasNoErrors();
+        $announcement = Announcement::withoutGlobalScopes()->where('title', '複数画像')->firstOrFail();
+        $this->assertCount(10, $announcement->image_paths);
+        foreach ($announcement->image_paths as $path) {
+            Storage::disk('local')->assertExists($path);
+        }
+        $this->assertCount(10, $announcement->imageUrls());
+        $size = getimagesizefromstring(Storage::disk('local')->get($announcement->image_paths[0]));
+        $this->assertSame([1024, 768], [$size[0], $size[1]]);
+        $data['image_files'][] = UploadedFile::fake()->image('11.png');
+        $this->post($route, $data)->assertSessionHasErrors('image_files');
+    }
+
+    public function test_signed_media_requires_signature_and_revokes_replaced_images(): void
+    {
+        Storage::fake('local');
+        $project = $this->createDistributionProject();
+        Storage::disk('local')->put('announcement-private/test.png', 'image');
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id, 'image_paths' => ['announcement-private/test.png'],
+        ]);
+        $url = $announcement->imageUrls()[0];
+        $this->get($url)->assertOk();
+        $this->get(strtok($url, '?'))->assertForbidden();
+        $announcement->update(['image_paths' => ['announcement-private/replaced.png']]);
+        $this->get($url)->assertNotFound();
+        $this->assertArrayNotHasKey('image_paths', $announcement->toArray());
+    }
 
     private function createProject(): Project
     {
@@ -184,8 +255,8 @@ class AdminAnnouncementsTest extends TestCase
             ]));
 
         $response->assertStatus(200)
-            ->assertSee('name="image_file"', false)
-            ->assertSee('ドラッグ＆ドロップ')
+            ->assertSee('name="image_files[]"', false)
+            ->assertSee('最大10枚')
             ->assertSee('タイトル')
             ->assertDontSee('お知らせの内容をつくる')
             ->assertDontSee('会員がひと目で内容を理解できる')
@@ -199,10 +270,10 @@ class AdminAnnouncementsTest extends TestCase
             ->assertSee('name="segment_tag_ids[]"', false)
             ->assertSee('name="segment_rfm_segments[]"', false)
             ->assertSee('RFMセグメント')
-            ->assertSee('複数選択可')
+            ->assertSee('id="segmentAddCondition"', false)
+            ->assertSee('id="segmentConditionMenu"', false)
             ->assertSee('配信対象者一覧')
             ->assertSee('id="deliverySummaryConditionBlock"', false)
-            ->assertSee('条件ごとに指定した AND / OR の順で対象者を判定します')
             ->assertDontSee('クーポンを一緒に届ける')
             ->assertDontSee('選択したクーポンを、お知らせの配信対象と同じ会員へ1枚ずつ付与します。')
             ->assertDontSee('掲載方法を整える')
@@ -212,9 +283,8 @@ class AdminAnnouncementsTest extends TestCase
             ->assertDontSee('id="delivery-summary"', false)
             ->assertSee('配信内容を確認する')
             ->assertSee('LINE・Push通知を送る')
-            ->assertSee('配信後の見え方をプレビュー')
+            ->assertDontSee('配信後の見え方をプレビュー')
             ->assertSee('配信内容の最終確認')
-            ->assertSee('実際の会員アプリのお知らせ画面')
             ->assertSee('配信予定ユーザー')
             ->assertSee('LINE')
             ->assertSee('Push通知')

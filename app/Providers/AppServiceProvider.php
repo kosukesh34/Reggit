@@ -41,8 +41,6 @@ use App\Domain\Settings\Repositories\WalletSettings;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Infrastructure\Events\LoggingDomainEventListener;
 use App\Infrastructure\Events\MulticastDomainEventDispatcher;
-use App\Infrastructure\Events\NotifyOnOrderConfirmedListener;
-use App\Infrastructure\Events\NotifyOnOrderReadyListener;
 use App\Infrastructure\Events\SyncOrderPointsToSmaregiListener;
 use App\Infrastructure\Events\SyncOrderTransactionToSmaregiListener;
 use App\Infrastructure\Events\SyncPointsEarnedToSmaregiListener;
@@ -88,7 +86,9 @@ use App\Repositories\Eloquent\EloquentAdminUserRepository;
 use App\Repositories\Eloquent\EloquentProjectRepository;
 use App\Repositories\Eloquent\EloquentUserDeviceRepository;
 use App\Repositories\Eloquent\EloquentUserRepository;
+use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\Smaregi\SmaregiApiClient;
+use App\UseCases\Payment\GatewayUnpaidPaymentSessionCanceller;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
 use App\UseCases\Product\Contracts\ProductReadRepository;
@@ -151,15 +151,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(DomainEventDispatcher::class, function ($app) {
             return new MulticastDomainEventDispatcher([
                 $app->make(LoggingDomainEventListener::class),
-                $app->make(NotifyOnOrderConfirmedListener::class),
-                $app->make(NotifyOnOrderReadyListener::class),
                 $app->make(SyncPointsEarnedToSmaregiListener::class),
                 $app->make(SyncOrderPointsToSmaregiListener::class),
                 $app->make(SyncOrderTransactionToSmaregiListener::class),
             ]);
         });
 
-        $this->app->singleton(PaymentGateway::class, function () {
+        $this->app->bind(UnpaidPaymentSessionCanceller::class, GatewayUnpaidPaymentSessionCanceller::class);
+        $this->app->scoped(PaymentGateway::class, function () {
             $secret = (string) config('services.stripe.secret', '');
 
             return new StripePaymentGateway($secret);

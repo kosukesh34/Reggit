@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Http\Requests\Admin\OrderStatusRequest;
 use App\UseCases\Admin\Order\AdminOrderCompleteUseCase;
 use App\UseCases\Admin\Order\AdminOrderDetailUseCase;
@@ -55,7 +56,11 @@ class OrderController extends AdminBaseController
     public function updateOrderStatus(OrderStatusRequest $request, string $projectKey, $id)
     {
         $status = $request->validated('status');
-        $this->updateStatusUseCase->handle((int) $id, $status);
+        try {
+            $this->updateStatusUseCase->handle((int) $id, $status);
+        } catch (OrderOperationException $e) {
+            return redirect()->back()->withErrors(['status' => $e->getMessage()]);
+        }
 
         return redirect()->back()
             ->with('success', '注文ステータスを「'.AdminStatusLabels::orderStatusLabel($status).'」に更新しました');
@@ -63,7 +68,11 @@ class OrderController extends AdminBaseController
 
     public function completeOrder(string $projectKey, $id)
     {
-        $this->completeUseCase->handle((int) $id);
+        try {
+            $this->completeUseCase->handle((int) $id);
+        } catch (OrderOperationException $e) {
+            return redirect()->back()->withErrors(['status' => $e->getMessage()]);
+        }
 
         return redirect()->back()->with('success', '注文を完了しました');
     }

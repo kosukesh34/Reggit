@@ -64,6 +64,7 @@ use App\Http\Controllers\Admin\Settings\LotteryController as SettingsLotteryCont
 use App\Http\Controllers\Admin\Settings\MemberCardController;
 use App\Http\Controllers\Admin\Settings\MemberCodeController;
 use App\Http\Controllers\Admin\Settings\MenuController as SettingsMenuController;
+use App\Http\Controllers\Admin\Settings\PaymentsController;
 use App\Http\Controllers\Admin\Settings\ProfileController;
 use App\Http\Controllers\Admin\Settings\QueueController;
 use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksController;
@@ -91,6 +92,7 @@ use App\Http\Controllers\LegalDocumentController;
 use App\Http\Controllers\LiffController;
 use App\Http\Controllers\LiffLegacyRedirectController;
 use App\Http\Controllers\Onboarding\OnboardingPageController;
+use App\Http\Controllers\Payment\PaymentCardController;
 use App\Http\Controllers\Payment\PaymentReturnController;
 use App\Http\Controllers\PointGrantOpenController;
 use App\Http\Controllers\Queue\QueueOpenController;
@@ -121,6 +123,9 @@ Route::post('/lp/register/{registration}/form', [LandingRegistrationFormControll
 Route::get('/existing-member-link/{token}', ExistingMemberLinkConfirmController::class)
     ->middleware('throttle:20,1')
     ->name('existing-member-link.confirm');
+Route::post('/existing-member-link/{token}', [ExistingMemberLinkConfirmController::class, 'confirm'])
+    ->middleware('throttle:20,1')
+    ->name('existing-member-link.complete');
 Route::get('/legal/{project_key}/terms', [LegalDocumentController::class, 'terms'])->name('legal.terms');
 Route::get('/legal/{project_key}/privacy', [LegalDocumentController::class, 'privacy'])->name('legal.privacy');
 
@@ -176,8 +181,8 @@ Route::get('/admin/forgot-password', [AdminPasswordController::class, 'forgot'])
 Route::post('/admin/forgot-password', [AdminPasswordController::class, 'send'])->middleware('throttle:5,1')->name('admin.password.email');
 Route::get('/admin/reset-password/{token}', [AdminPasswordController::class, 'reset'])->name('admin.password.reset');
 Route::post('/admin/reset-password', [AdminPasswordController::class, 'update'])->middleware('throttle:5,1')->name('admin.password.update');
-Route::get('/admin/change-password', [AdminPasswordController::class, 'edit'])->middleware('auth:admin')->name('admin.password.edit');
-Route::put('/admin/change-password', [AdminPasswordController::class, 'change'])->middleware(['auth:admin', 'throttle:5,1'])->name('admin.password.change');
+Route::get('/admin/change-password', [AdminPasswordController::class, 'edit'])->middleware(['auth:admin', 'admin.auth.session'])->name('admin.password.edit');
+Route::put('/admin/change-password', [AdminPasswordController::class, 'change'])->middleware(['auth:admin', 'admin.auth.session', 'throttle:5,1'])->name('admin.password.change');
 
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
 Route::get('/admin/login/form', [AdminLoginController::class, 'showLoginForm'])->name('admin.login.form');
@@ -192,7 +197,7 @@ Route::post('/system-admin/login', [SystemAdminLoginController::class, 'login'])
 Route::get('/admin', AdminRootController::class)->middleware('web')->name('admin.root');
 
 // ========== 店舗管理画面（project_key 必須） ==========
-Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', 'admin.audit'])->group(function () {
+Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', 'bind.admin.project', 'admin.audit'])->group(function () {
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('admin.logout')->withoutMiddleware('bind.admin.project');
 
     Route::prefix('{project_key}')->group(function () {
@@ -243,6 +248,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::post('/member-tags', [AdminMemberTagController::class, 'store'])->name('admin.member-tags.store')->middleware('admin.permission:members.manage');
         Route::delete('/member-tags/{id}', [AdminMemberTagController::class, 'destroy'])->name('admin.member-tags.destroy')->middleware('admin.permission:members.manage');
         Route::get('/rfm', [AdminRfmController::class, 'index'])->name('admin.rfm')->middleware('admin.permission:members.view');
+        Route::put('/rfm/settings', [AdminRfmController::class, 'updateSettings'])->name('admin.rfm.settings.update')->middleware('admin.permission:settings.manage');
 
         Route::get('/reservations', [AdminReservationController::class, 'reservations'])->name('admin.reservations')->middleware('admin.permission:reservations.view');
         Route::get('/reservations/create', [AdminReservationController::class, 'createReservation'])->name('admin.reservations.create')->middleware('admin.permission:reservations.update');
@@ -289,6 +295,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/announcements/create', [AdminAnnouncementController::class, 'createAnnouncement'])->name('admin.announcements.create')->middleware('admin.permission:announcements.manage');
         Route::get('/announcements/delivery', [AnnouncementDeliveryController::class, 'create'])->name('admin.announcements.delivery.create')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
         Route::post('/announcements/delivery', [AnnouncementDeliveryController::class, 'store'])->name('admin.announcements.delivery.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
+        Route::post('/announcements/audience-groups', [AnnouncementDeliveryController::class, 'storeAudienceGroup'])->name('admin.announcements.audience-groups.store')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
+        Route::delete('/announcements/audience-groups/{id}', [AnnouncementDeliveryController::class, 'destroyAudienceGroup'])->name('admin.announcements.audience-groups.destroy')->middleware(['admin.permission:announcements.manage', 'admin.plan:announcement_delivery']);
         Route::get('/announcements/ajax/members', [AnnouncementDeliveryController::class, 'searchMembers'])->name('admin.announcements.ajax.members')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/segment-preview', [AnnouncementDeliveryController::class, 'segmentPreview'])->name('admin.announcements.segment.preview')->middleware('admin.permission:announcements.view');
         Route::get('/announcements/audience-preview', [AnnouncementDeliveryController::class, 'audiencePreview'])->name('admin.announcements.audience.preview')->middleware('admin.permission:announcements.view');
@@ -311,6 +319,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
         Route::get('/settings/basic', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
         Route::post('/settings/basic', [SettingsBasicController::class, 'update'])->name('admin.settings.basic.update')->middleware('admin.permission:settings.manage');
         Route::post('/settings/store-app-credential', [StoreAppCredentialController::class, 'store'])->name('admin.settings.store-app-credential.store')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/payments', [PaymentsController::class, 'index'])->name('admin.settings.payments')->middleware('admin.permission:settings.manage');
+        Route::post('/settings/payments', [PaymentsController::class, 'update'])->name('admin.settings.payments.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/advanced', [SettingsAdvancedController::class, 'index'])->name('admin.settings.advanced')->middleware('admin.permission:settings.view');
         Route::post('/settings/advanced', [SettingsAdvancedController::class, 'update'])->name('admin.settings.advanced.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/menu', [SettingsMenuController::class, 'index'])->name('admin.settings.menu')->middleware('admin.permission:settings.view');
@@ -378,7 +388,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'bind.admin.project', '
 });
 
 // ========== システム管理画面（システム管理者のみ） ==========
-Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 'admin.audit'])->group(function () {
+Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'admin.auth.session', 'system.admin', 'admin.audit'])->group(function () {
     Route::get('/', fn () => redirect()->route('system-admin.dashboard'));
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('system-admin.logout');
 
@@ -410,9 +420,13 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'system.admin', 
     Route::post('/help-articles/preview', [SystemHelpArticleController::class, 'preview'])->name('system-admin.help-articles.preview');
     Route::get('/help-articles/create', [SystemHelpArticleController::class, 'create'])->name('system-admin.help-articles.create');
     Route::post('/help-articles', [SystemHelpArticleController::class, 'store'])->name('system-admin.help-articles.store');
+    Route::get('/help-articles/{id}/preview', [SystemHelpArticleController::class, 'showPreview'])->name('system-admin.help-articles.show-preview');
     Route::get('/help-articles/{id}/edit', [SystemHelpArticleController::class, 'edit'])->name('system-admin.help-articles.edit');
     Route::put('/help-articles/{id}', [SystemHelpArticleController::class, 'update'])->name('system-admin.help-articles.update');
     Route::delete('/help-articles/{id}', [SystemHelpArticleController::class, 'destroy'])->name('system-admin.help-articles.destroy');
 });
 Route::get('/mobile/payment/return', PaymentReturnController::class)
     ->name('mobile.payment.return');
+
+Route::get('/mobile/payment/card/{order}', PaymentCardController::class)
+    ->whereNumber('order')->middleware(['signed', 'bind.project', 'throttle:60,1'])->name('mobile.payment.card');

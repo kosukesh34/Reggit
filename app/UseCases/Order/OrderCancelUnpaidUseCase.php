@@ -2,49 +2,21 @@
 
 namespace App\UseCases\Order;
 
-use App\Domain\Order\Repositories\OrderRepository;
 use App\Models\Order;
 use App\Models\User;
-use App\Services\OrderService;
+use App\Services\UnpaidOrderCancellationService;
 use App\Util\AdminContext;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\DB;
 
 class OrderCancelUnpaidUseCase
 {
-    public function __construct(
-        private OrderRepository $orderRepository,
-        private OrderService $orderService,
-    ) {}
+    public function __construct(private UnpaidOrderCancellationService $cancellation) {}
 
     public function handle(User $user, int $orderId): Order
     {
-        /** @var array{0: Order, 1: bool} $result */
-        $result = DB::transaction(function () use ($user, $orderId) {
-            $aggregate = $this->orderRepository->findByIdAndUserIdForUpdate(
-                $orderId,
-                (int) $user->id,
-                (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null)),
-            );
-            if ($aggregate === null) {
-                throw (new ModelNotFoundException)->setModel(Order::class, [$orderId]);
-            }
-
-            if ($aggregate->isCancelled()) {
-                return [Order::with('items.product')->findOrFail($orderId), false];
-            }
-
-            $aggregate->cancelUnpaidStripeMobile();
-            $this->orderRepository->save($aggregate);
-
-            return [Order::with('items.product')->findOrFail($orderId), true];
-        });
-
-        [$order, $shouldHandleCancellation] = $result;
-        if ($shouldHandleCancellation) {
-            $this->orderService->handleOrderCancellation($order);
-        }
-
-        return $order;
+        return $this->cancellation->cancel(
+            $orderId,
+            (int) AdminContext::resolveProjectId((int) $user->project_id),
+            (int) $user->id,
+        );
     }
 }

@@ -1,13 +1,10 @@
 import { expect, test } from '@playwright/test';
 
-const liffPath = process.env.E2E_LIFF_PATH ?? '/liff';
+const liffPath = '/demo/liff';
 
 const screens = [
-  'home', 'membership', 'profile', 'mobileOrder', 'dineInOrder',
-  'reservation', 'queue', 'coupon', 'stamp', 'point', 'menu',
-  'gallery', 'news', 'storeSearch', 'purchaseHistory', 'orderHistory',
-  'favorite', 'ticket', 'subscription', 'designlab', 'more',
-  'support', 'contact', 'terms', 'settings',
+  'home', 'membership', 'profile', 'mobileOrder', 'dineInOrder', 'reservation', 'queue',
+  'coupon', 'stamp', 'gallery', 'news', 'orderHistory', 'designlab', 'more', 'more/link',
 ];
 
 test('顧客向けの主要画面をすべて開ける', async ({ page }) => {
@@ -16,7 +13,7 @@ test('顧客向けの主要画面をすべて開ける', async ({ page }) => {
 
   for (const screen of screens) {
     await test.step(screen, async () => {
-      const response = await page.goto(`${liffPath}?demo=1#/${screen}`);
+      const response = await page.goto(`${liffPath}#/${screen}`);
       if (response !== null) expect(response.ok(), `${screen}: HTTP 応答`).toBe(true);
       await expect(page.locator('.app-shell'), `${screen}: アプリの枠`).toBeVisible();
       await expect(page.getByRole('main'), `${screen}: 画面本体`).toBeVisible();

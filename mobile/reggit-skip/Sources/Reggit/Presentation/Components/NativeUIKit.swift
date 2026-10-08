@@ -99,7 +99,7 @@ enum AppDesign {
     static let surfaceMuted = Color(red: 0.94, green: 0.95, blue: 0.96)
     static let ink = Color(red: 0.09, green: 0.13, blue: 0.11)
     static let inkSecondary = Color(red: 0.34, green: 0.38, blue: 0.42)
-    static let hairline = Color(red: 0.84, green: 0.87, blue: 0.90)
+    static let hairline = Color(red: 214.0 / 255.0, green: 222.0 / 255.0, blue: 230.0 / 255.0)
     static let danger = Color(red: 0.77, green: 0.25, blue: 0.21)
     static let success = Color(red: 0.16, green: 0.52, blue: 0.32)
 
@@ -530,12 +530,23 @@ struct AppSegmentedControl: View {
     @Binding var selectedIndex: Int
 
     var body: some View {
-        Picker("", selection: $selectedIndex) {
+        HStack(spacing: 0) {
             ForEach(Array(titles.enumerated()), id: \.offset) { index, title in
-                Text(title).tag(index)
+                Button { selectedIndex = index } label: {
+                    Text(title)
+                        .font(.system(size: 13, weight: selectedIndex == index ? .semibold : .regular))
+                        .foregroundStyle(AppDesign.ink)
+                        .frame(maxWidth: .infinity, minHeight: 28)
+                        .background(selectedIndex == index ? AppDesign.surface : Color.clear)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityValue(selectedIndex == index ? "選択中" : "")
             }
         }
-        .pickerStyle(.segmented)
+        .padding(2)
+        .background(AppDesign.hairline)
+        .clipShape(Capsule())
     }
 }
 
@@ -619,15 +630,24 @@ struct AppSectionHeader: View {
 }
 
 struct MemberFieldStack: View {
-    @Binding var name: String
+    @Binding var lastName: String
+    @Binding var firstName: String
     @Binding var phone: String
 
     var body: some View {
         VStack(spacing: 12) {
-            TextField("お名前", text: $name)
-                .padding(14)
-                .background(AppDesign.surface)
-                .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
+            HStack(spacing: 8) {
+                TextField("姓", text: $lastName)
+                    .padding(14)
+                    .background(AppDesign.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
+                    .accessibilityLabel("姓")
+                TextField("名", text: $firstName)
+                    .padding(14)
+                    .background(AppDesign.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
+                    .accessibilityLabel("名")
+            }
             TextField("電話番号", text: $phone)
                 .padding(14)
                 .background(AppDesign.surface)

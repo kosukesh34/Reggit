@@ -33,6 +33,7 @@ class OrderStoreRequest extends FormRequest
                 'integer',
                 Rule::exists('product_options', 'id')->where('project_id', $projectId),
             ],
+            'payment_brand' => ['nullable', Rule::in(['card', 'paypay', 'apple_pay', 'google_pay'])],
             'payment_method' => ['required', Rule::in(array_keys(PaymentMethod::getValues()))],
             'points_used' => ['integer', 'min:0'],
             'notes' => ['nullable', 'string'],

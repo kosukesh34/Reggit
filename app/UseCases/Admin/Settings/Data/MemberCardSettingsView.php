@@ -14,5 +14,6 @@ final readonly class MemberCardSettingsView
         public bool $memberShowRankProgress,
         public bool $memberShowPointHistory,
         public bool $memberShowCouponActivity,
+        public string $memberPageStyle = 'classic',
     ) {}
 }

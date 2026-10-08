@@ -28,35 +28,19 @@ class LiffDesignerStudioContractTest extends TestCase
         $this->assertStringNotContainsString('showFeatured', $admin);
     }
 
-    public function test_ホームにcrmレイアウトと店舗ギャラリーがあること(): void
+    public function test_ホームは設定したレイアウトと店舗ギャラリーを表示すること(): void
     {
         $root = dirname(__DIR__, 2);
-        $home = (string) file_get_contents($root.'/resources/js/liff-ui/pages/HomePage.tsx');
-        $types = (string) file_get_contents($root.'/resources/js/liff-ui/types/customization.ts');
-        $gallery = (string) file_get_contents($root.'/resources/js/liff-ui/components/home/HomeGallery.tsx');
-        $projectStore = (string) file_get_contents($root.'/resources/js/liff-ui/config/projectStore.ts');
-        $crmCss = (string) file_get_contents($root.'/resources/js/liff-ui/styles/globals.css');
-
-        $this->assertStringContainsString('crm: ["notice", "membership", "news", "gallery"]', $home);
-        $this->assertStringContainsString('HomeGallery', $home);
-        $this->assertStringNotContainsString('FeaturedContent', $home);
-        $this->assertStringContainsString('compact={layout === "crm"}', $home);
-        $customization = (string) file_get_contents($root.'/resources/js/liff-ui/config/customization.ts');
-        $this->assertStringContainsString('MEMBER_CRM_NAV_TABS', $customization);
-        $this->assertStringContainsString('storeExperienceMap.store_cafe', $customization);
-        $this->assertStringContainsString('const useMemberCrm = store.storeId === MEMBER_CRM_STORE_ID;', $customization);
-        $this->assertStringContainsString('MembershipQr', (string) file_get_contents($root.'/resources/js/liff-ui/pages/MembershipPage.tsx'));
-        $this->assertStringContainsString('| "crm"', $types);
-        $this->assertStringContainsString('showGallery', $types);
-        $this->assertStringContainsString('fetchGallery', $gallery);
-        $this->assertStringContainsString('おすすめ商品', $gallery);
-        $this->assertStringContainsString('写真を追加', $gallery);
-        $this->assertStringContainsString("heroImage: ''", $projectStore);
-        $this->assertStringContainsString("featuredImage: ''", $projectStore);
-        $this->assertStringContainsString('会員証を表示する', (string) file_get_contents($root.'/resources/js/liff-ui/components/home/MembershipSummary.tsx'));
-        $this->assertStringContainsString('membership-summary__pmark', (string) file_get_contents($root.'/resources/js/liff-ui/components/home/MembershipSummary.tsx'));
-        $this->assertStringContainsString('membership-crm-sheet', (string) file_get_contents($root.'/resources/js/liff-ui/pages/MembershipPage.tsx'));
-        $this->assertStringContainsString('background: var(--color-primary);', $crmCss);
-        $this->assertStringContainsString('.home-page--layout-crm .membership-summary--crm', $crmCss);
+        $home = (string) file_get_contents($root.'/resources/js/liff-ui/pages/NativeHome.tsx');
+        $config = (string) file_get_contents($root.'/resources/js/liff-ui/native/nativeConfig.tsx');
+        $this->assertStringContainsString('NativeHome as HomePage', (string) file_get_contents($root.'/resources/js/liff-ui/pages/HomePage.tsx'));
+        $this->assertStringContainsString('config.home?.layout', $home);
+        $this->assertStringContainsString('buttons_gallery', $home);
+        $this->assertStringContainsString('gallery_items', $home);
+        $this->assertStringContainsString('selectedGallery', $home);
+        $this->assertStringContainsString('HomeGalleryItem', $config);
+        $this->assertStringContainsString('showMemberCode', $home);
+        $this->assertStringContainsString('BarcodeEnlargeView', $home);
+        $this->assertStringContainsString('MembershipBarcode', $home);
     }
 }

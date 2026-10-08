@@ -19,14 +19,16 @@ private final class ProfileUpdateProtocol: URLProtocol, @unchecked Sendable {
         }
         let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
         let isRegistration = request.httpMethod == "POST" && request.url?.path == "/api/members/register"
-        let validRegistration = isRegistration
+        let bootstrap = request.url?.path == "/api/devices/session"
+        let csrf = request.value(forHTTPHeaderField: "X-CSRF-TOKEN") == "test-csrf"
+        let validRegistration = isRegistration && csrf
             && request.value(forHTTPHeaderField: "X-Project-Key") == "test-store"
             && body["name"] as? String == "登録する名前"
             && body["phone"] as? String == ""
             && body["email"] as? String == "new@example.com"
             && body["customer_store_id"] as? String == "12"
             && body["interests"] as? [String] == ["小売"]
-        let valid = request.httpMethod == "PUT"
+        let valid = csrf && request.httpMethod == "PUT"
             && request.url?.path == "/api/member-profile"
             && request.value(forHTTPHeaderField: "X-Project-Key") == "test-store"
             && request.value(forHTTPHeaderField: "X-Device-Identifier") == "test-device"
@@ -35,8 +37,8 @@ private final class ProfileUpdateProtocol: URLProtocol, @unchecked Sendable {
             && body["email"] as? String == "a@example.com"
             && body["interests"] as? [String] == []
             && body["customer_store_id"] as? String == "12"
-        let status = request.url?.host == "failure.example" ? 422 : (valid || validRegistration) ? 200 : 400
-        let responseBody = validRegistration
+        let status = bootstrap ? 200 : request.url?.host == "failure.example" ? 422 : (valid || validRegistration) ? 200 : 400
+        let responseBody = bootstrap ? "{\"csrf_token\":\"test-csrf\"}" : validRegistration
             ? "{\"is_member\":true,\"profile\":{\"name\":\"登録する名前\",\"phone\":\"\",\"email\":\"new@example.com\",\"customer_store_id\":\"12\",\"interests\":[\"小売\"]}}"
             : status == 200
             ? "{\"is_member\":true,\"profile\":{\"name\":\"更新した名前\",\"phone\":\"\",\"email\":\"a@example.com\",\"interests\":[]}}"

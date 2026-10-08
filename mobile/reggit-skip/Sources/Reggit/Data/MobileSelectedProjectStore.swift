@@ -32,6 +32,22 @@ enum MobileSelectedProjectStore {
         set { UserDefaults.standard.set(newValue, forKey: selectedFlagKey) }
     }
 
+    private static func storeDefaultsKey(baseURL: String, projectKey: String) -> String {
+        let base = baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return "reggit.selected_store_id:\(base):\(projectKey)"
+    }
+
+    static func selectedStoreID(baseURL: String, projectKey: String) -> Int? {
+        let value = UserDefaults.standard.integer(forKey: storeDefaultsKey(baseURL: baseURL, projectKey: projectKey))
+        return value > 0 ? value : nil
+    }
+
+    static func selectStore(_ id: Int?, baseURL: String, projectKey: String) {
+        let key = storeDefaultsKey(baseURL: baseURL, projectKey: projectKey)
+        if let id, id > 0 { UserDefaults.standard.set(id, forKey: key) }
+        else { UserDefaults.standard.removeObject(forKey: key) }
+    }
+
     static func needsSelection(bundleDefaultKey: String) -> Bool {
         if hasCompletedSelection, let selected = selectedProjectKey, !selected.isEmpty {
             return false

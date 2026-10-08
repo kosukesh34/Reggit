@@ -8,6 +8,7 @@ final class ExistingMemberLinkModel {
     var message: String?
     var errorMessage: String?
     var isBusy = false
+    var confirmationLink = ""
 
     private let apiClient: any ReggitAPIServing
 
@@ -41,6 +42,26 @@ final class ExistingMemberLinkModel {
         defer { isBusy = false }
         do {
             let result = try await apiClient.submitExistingMemberLink(values: values)
+            message = result.message
+            return result.linked
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func confirm() async -> Bool {
+        let link = confirmationLink.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: link), url.pathComponents.contains("existing-member-link"),
+              url.lastPathComponent.count == 48 else {
+            errorMessage = "確認メールにあるリンクを貼り付けてください"
+            return false
+        }
+        isBusy = true
+        errorMessage = nil
+        defer { isBusy = false }
+        do {
+            let result = try await apiClient.confirmExistingMemberLink(token: url.lastPathComponent)
             message = result.message
             return result.linked
         } catch {
@@ -105,6 +126,22 @@ struct ExistingMemberLinkView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(accent)
                     .disabled(model.isBusy || model.form?.isEnabled != true)
+                    if model.form?.isEnabled == true {
+                        Text("確認メールを受け取った方")
+                            .font(.subheadline.weight(.semibold))
+                        TextField("メールの確認リンクを貼り付け", text: $model.confirmationLink)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.URL)
+                        Button {
+                            Task {
+                                if await model.confirm() { onLinked() }
+                            }
+                        } label: {
+                            Text("メールを確認して連携する")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(model.isBusy || model.confirmationLink.isEmpty)
+                    }
                 }
                 .padding(16)
             }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\URL;
 
 class Announcement extends Model
 {
@@ -78,6 +79,9 @@ class Announcement extends Model
 
     public function getImageUrlAttribute($value)
     {
+        if ($this->image_paths && $this->exists) {
+            return $this->imageUrls()[0] ?? null;
+        }
         if ($this->private_image_path !== null && $this->exists) {
             $projectKey = Project::whereKey($this->project_id)->value('project_key');
 
@@ -87,11 +91,42 @@ class Announcement extends Model
         return $value;
     }
 
-    protected $hidden = ['private_image_path', 'notification_pending', 'notification_retry_at'];
+    /** @return list<string> */
+    public function imageUrls(): array
+    {
+        if ($this->image_paths && $this->exists) {
+            return array_map(fn ($index) => $this->signedImageUrl($index, $this->image_paths[$index]), array_keys($this->image_paths));
+        }
+
+        return $this->image_url ? [$this->image_url] : [];
+    }
+
+    public function signedImageUrl(int $index, string $path): string
+    {
+        return URL::signedRoute('announcements.media', [
+            'id' => $this->id, 'index' => $index, 'version' => hash('sha256', $path),
+        ]);
+    }
+
+    /** @return list<string> */
+    public function lineImageUrls(): array
+    {
+        if ($this->image_paths) {
+            return array_map(fn ($index) => $this->signedImageUrl($index, $this->image_paths[$index]), array_keys($this->image_paths));
+        }
+        if ($this->private_image_path && $this->exists) {
+            return [$this->signedImageUrl(0, $this->private_image_path)];
+        }
+
+        return $this->imageUrls();
+    }
+
+    protected $hidden = ['private_image_path', 'image_paths', 'notification_pending', 'notification_retry_at'];
 
     protected $fillable = [
         'project_id',
         'store_ids', 'visibility', 'created_by_admin_id', 'private_image_path',
+        'image_paths',
         'title',
         'body',
         'image_url',
@@ -131,6 +166,7 @@ class Announcement extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'image_paths' => 'array',
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
         'is_pinned' => 'boolean',

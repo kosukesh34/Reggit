@@ -20,11 +20,11 @@ export function WithdrawPage() {
   };
 
   return (
-    <div className="page stack stack--lg">
+    <div className="native-screen native-form">
       <h1>退会</h1>
       <p>退会すると会員情報・ポイント・スタンプは復元できません。</p>
       {error ? <div className="form-error" role="alert">{error}</div> : null}
-      <Button variant="soft" disabled={busy} onClick={() => void runWithdraw()}>
+      <Button className="native-button--danger" variant="solid" disabled={busy} onClick={() => void runWithdraw()}>
         {busy ? "処理中…" : "退会する"}
       </Button>
       <Link to="/more">戻る</Link>

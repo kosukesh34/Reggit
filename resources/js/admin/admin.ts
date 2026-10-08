@@ -47,46 +47,55 @@ function initDeleteConfirmations(): void {
     });
 }
 
+function showTooltip(element: TooltipHost): void {
+    if (element._tooltip) element._tooltip.remove();
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.textContent = element.dataset.tooltip || '';
+    document.body.appendChild(tooltip);
+
+    const rect = element.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    let top = rect.top - tooltipRect.height - 8;
+    let left = rect.left;
+    if (top < 8) top = rect.bottom + 8;
+    if (left + tooltipRect.width > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - tooltipRect.width - 8);
+    }
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+    tooltip.classList.add('show');
+    element._tooltip = tooltip;
+}
+
+function hideTooltip(element: TooltipHost): void {
+    element._tooltip?.remove();
+    element._tooltip = null;
+}
+
 function initTooltips(): void {
-    document.querySelectorAll('[data-tooltip]').forEach((el) => {
+    document.querySelectorAll<HTMLElement>('[data-tooltip]').forEach((el) => {
         const element = el as TooltipHost;
-        element.addEventListener('mouseenter', () => {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.textContent = element.dataset.tooltip || '';
-            document.body.appendChild(tooltip);
-
-            const rect = element.getBoundingClientRect();
-            const tooltipRect = tooltip.getBoundingClientRect();
-
-            let top = rect.top - tooltipRect.height - 8;
-            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
-
-            if (top < 0) {
-                top = rect.bottom + 8;
-            }
-
-            if (left < 0) {
-                left = 8;
-            } else if (left + tooltipRect.width > window.innerWidth) {
-                left = window.innerWidth - tooltipRect.width - 8;
-            }
-
-            tooltip.style.top = `${top}px`;
-            tooltip.style.left = `${left}px`;
-
-            setTimeout(() => tooltip.classList.add('show'), 10);
-
-            element._tooltip = tooltip;
-        });
-
-        element.addEventListener('mouseleave', () => {
-            if (element._tooltip) {
-                element._tooltip.remove();
-                element._tooltip = null;
-            }
-        });
+        if (!element.hasAttribute('tabindex') && element.tagName !== 'BUTTON' && element.tagName !== 'A') {
+            element.tabIndex = 0;
+        }
+        element.addEventListener('mouseenter', () => showTooltip(element));
+        element.addEventListener('mouseleave', () => hideTooltip(element));
+        element.addEventListener('focus', () => showTooltip(element));
+        element.addEventListener('blur', () => hideTooltip(element));
     });
+}
+
+function showAdminSavingOverlay(): void {
+    if (document.getElementById('adminSavingOverlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'adminSavingOverlay';
+    overlay.className = 'loading-overlay';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.innerHTML = '<div class="admin-saving"><div class="loading-spinner"></div><p>保存中</p></div>';
+    document.body.appendChild(overlay);
 }
 
 function initFormValidation(): void {
@@ -107,11 +116,15 @@ function initFormValidation(): void {
                 form.reportValidity();
                 return;
             }
-            // click 時ではなく submit 確定後に無効化（click で disabled にすると送信自体がキャンセルされる）
-            if (submitBtn && !submitBtn.disabled) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
-            }
+            // 確認画面など、後から登録された submit ハンドラーのキャンセルも確認する。
+            setTimeout(() => {
+                if (e.defaultPrevented) return;
+                if (submitBtn && !submitBtn.disabled) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
+                    showAdminSavingOverlay();
+                }
+            });
         });
     });
 }

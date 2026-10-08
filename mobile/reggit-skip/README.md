@@ -13,7 +13,7 @@
 ## 実装方針
 
 - 画面は SwiftUI（主要タブ: 会員・注文・クーポン・スタンプ・待ち順）
-- データは `/api/*` を直接呼び出し（`X-Device-Identifier` + `X-Project-Key`）
+- データは `/api/*` を直接呼び出し（端末識別子・端末トークン・プロジェクトキー）
 - 起動時に `POST /api/devices/register` で端末登録（push token 含む）
 - タブ構成は `GET /api/v1/app-config`（失敗時はデフォルト5タブ）
 - **FCM**: プッシュは Firebase Cloud Messaging。registration token をデバイス登録で送る
@@ -36,11 +36,9 @@
 
 ## 認証
 
-顧客本人特定は **`X-Device-Identifier`** です（管理用 Bearer `ApiToken` は使わない）。
+端末 UUID だけでは認証しません。`POST /api/devices/register` で取得した端末トークンを保存し、API クライアントが `X-Device-Identifier`、`X-Device-Token`、`X-Project-Key` を送ります。管理用の Bearer `ApiToken` とは別の認証です。
 
-1. 端末 UUID を UserDefaults に永続化
-2. `POST /api/devices/register`
-3. 以降の `/api/members/*` 等が device→user で解決される
+共通の境界・WebView の CSRF 対応は [セキュリティ](../../docs/SECURITY.md)、機能・画面設計は [機能概要](../../docs/PRODUCT.md) を参照してください。
 
 ## Android APK
 
@@ -56,11 +54,16 @@ Release ビルドで Android も更新する場合は、`Reggit.xcconfig` の `S
 ```bash
 cd mobile/reggit-skip
 xcodebuild -workspace Project.xcworkspace -scheme "Reggit App" -configuration Release -destination "platform=iOS Simulator,name=iPhone 16e" SKIP_ACTION=build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
+cd Android
+./gradlew :app:assembleRelease
+cd ..
 adb install -r .build/Android/app/outputs/apk/release/app-release.apk
 adb shell monkey -p com.reggit.default -c android.intent.category.LAUNCHER 1
 ```
 
 Release の最適化で Activity 名が変わる場合があるため、起動は固定 Activity 名の `launchRelease` ではなくランチャー Intent を使います。
+
+`SKIP_ACTION=build` の `buildRelease` は APK の生成まで行わない場合があります。インストール前に `assembleRelease` を明示的に実行し、古い APK が残ったままにならないようにしてください。アイコンフォントは実行時に名前で参照するため、`Android/app/src/main/res/raw/reggit_keep.xml` で Release のリソース縮小から保護しています。
 
 iOS のプッシュ受信を検証する場合は `CODE_SIGNING_ALLOWED=NO` を使わず、Xcode にシミュレーター用の APNs entitlement を生成させてください。FCM の送信受付成功と端末での受信成功は別に確認します。
 

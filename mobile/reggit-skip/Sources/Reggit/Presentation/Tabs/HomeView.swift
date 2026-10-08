@@ -5,7 +5,18 @@ import SwiftUI
 @MainActor
 @Observable
 final class HomeViewModel {
-    private let apiClient: any ReggitAPIServing
+    let apiClient: any ReggitAPIServing
+    var news: [AnnouncementItem] = []
+    var newsLoading = false
+    var newsError: String?
+
+    func loadNews() async {
+        newsLoading = true
+        newsError = nil
+        defer { newsLoading = false }
+        do { news = try await apiClient.fetchPublishedAnnouncements() }
+        catch { newsError = error.localizedDescription }
+    }
 
     init(apiClient: any ReggitAPIServing) {
         self.apiClient = apiClient
@@ -24,6 +35,12 @@ struct HomeView: View {
     var projectName: String = ""
     @State var showMemberCode = false
     let menuLayout: String
+    let homeLayout: String
+    let galleryItems: [HomeGalleryCard]
+    @State var selectedGallery: HomeGalleryCard?
+    @State var selectedWebPage: HomeGalleryCard?
+    @State var selectedNews: AnnouncementItem?
+    @Environment(\.openURL) var openURL
     let tabs: [AppTabItem]
     let onSelectTab: (String) -> Void
     let onExpandImage: (Int) -> Void
@@ -34,6 +51,8 @@ struct HomeView: View {
         member: MemberProfileSnapshot? = nil,
         projectName: String = "",
         menuLayout: String = "grid_3x2",
+        homeLayout: String = "legacy",
+        galleryItems: [HomeGalleryCard] = [],
         tabs: [AppTabItem],
         onSelectTab: @escaping (String) -> Void,
         onExpandImage: @escaping (Int) -> Void
@@ -43,6 +62,8 @@ struct HomeView: View {
         self.projectName = projectName
         self.homeImageURLs = homeImageURLs
         self.menuLayout = menuLayout
+        self.homeLayout = homeLayout
+        self.galleryItems = galleryItems
         self.tabs = tabs
         self.onSelectTab = onSelectTab
         self.onExpandImage = onExpandImage
@@ -67,55 +88,145 @@ struct HomeView: View {
 
     var body: some View {
         SkipRefreshing { homeContent }
+            .sheet(item: $selectedGallery) { item in
+                NavigationStack {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            RemoteImageView(urlString: item.imageURL, baseURL: viewModel.mediaBaseURL, contentMode: .fit)
+                                .frame(minHeight: 280)
+                            Text(item.title).font(.title2.weight(.bold))
+                            Text(item.description).foregroundStyle(.secondary)
+                        }.padding(20)
+                    }
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("閉じる") { selectedGallery = nil } } }
+                }
+            }
+            .sheet(item: $selectedWebPage) { item in
+                NavigationStack {
+                    LegalWebView(title: item.title, urlString: item.url, baseURL: viewModel.mediaBaseURL)
+                        .toolbar { ToolbarItem(placement: .confirmationAction) { Button("閉じる") { selectedWebPage = nil } } }
+                }
+            }
+            .sheet(item: $selectedNews) { item in
+                NavigationStack {
+                    ScrollView {
+                        AnnouncementCardView(item: item, apiClient: viewModel.apiClient, imageHeight: 240).padding(16)
+                    }
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("閉じる") { selectedNews = nil } } }
+                }
+            }
+            .task(id: homeLayout) { if homeLayout == "member_news" { await viewModel.loadNews() } }
             .sheet(isPresented: $showMemberCode) {
                 if let member = member {
                     MemberCodeSheet(member: member, onClose: { showMemberCode = false })
-                        .presentationDetents([.medium, .large])
+                        .presentationDetents(PlatformRuntime.supportsMultipleModalDetents ? [.medium, .large] : [.large])
                         .presentationDragIndicator(.visible)
                 }
             }
     }
 
     private var homeContent: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                heroImage
-                if let member = member, member.isMember, !member.memberNumber.isEmpty {
-                    Button { showMemberCode = true } label: {
-                        VStack(spacing: 8) {
-                            MemberCodeView(value: member.memberNumber, codeType: member.cardCodeType, height: 56)
-                            Text(member.memberNumber)
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                .foregroundStyle(Color.black)
-                            Text("タップして拡大")
-                                .font(.caption)
-                                .foregroundStyle(Color.gray)
-                        }
-                        .padding(16)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 16) {
+                    if homeLayout == "legacy" {
+                        heroImage(width: max(geometry.size.width - PlatformRuntime.homeHorizontalPadding * 2, 0))
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("会員コードを拡大して表示")
+                    if let member = member, member.isMember, !member.memberNumber.isEmpty {
+                        Button { showMemberCode = true } label: {
+                            VStack(spacing: 0) {
+                                if let headerImage = homeImageURLs.first {
+                                    RemoteImageView(urlString: headerImage, baseURL: viewModel.mediaBaseURL, contentMode: .fill, usesDemoFallback: false)
+                                        .frame(maxWidth: .infinity).frame(height: max(geometry.size.width - PlatformRuntime.homeHorizontalPadding * 2, 0) / 3).clipped()
+                                }
+                                VStack(spacing: 8) {
+                                    MemberCodeView(value: member.memberNumber, codeType: member.cardCodeType, height: 56)
+                                    Text(member.memberNumber)
+                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(Color.black)
+                                    Text("タップして拡大")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.gray)
+                                }
+                                .padding(16)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("会員コードを拡大して表示")
+                    }
+                    if homeLayout == "buttons_gallery" {
+                        HomeMenuGrid(tabs: Array(menuTabs.prefix(2)), columns: 2, onSelect: onSelectTab)
+                    } else if homeLayout != "gallery" {
+                        homeMenu
+                    }
+                    if homeLayout == "gallery" || homeLayout == "buttons_gallery" {
+                        galleryStack
+                    }
+                    if homeLayout == "member_news" {
+                        newsSection
+                    }
                 }
-                homeMenu
+                .padding(.horizontal, PlatformRuntime.homeHorizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
+                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, PlatformRuntime.homeHorizontalPadding)
-            .padding(.top, 12)
-            .padding(.bottom, 10)
-            .frame(maxWidth: .infinity)
         }
         .background(AppDesign.canvas.ignoresSafeArea())
         .task(id: homeImageURLs.count) {
             selectedHeroIndex = 0
             loopIndex = 1
-            guard homeImageURLs.count > 1 else { return }
+            guard homeLayout == "legacy", homeImageURLs.count > 1 else { return }
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 if !Task.isCancelled {
                     advanceHero(1)
                 }
+            }
+        }
+    }
+
+    private var galleryStack: some View {
+        VStack(spacing: 16) {
+            if galleryItems.isEmpty { Text("ギャラリー画像はありません").foregroundStyle(.secondary) }
+            ForEach(galleryItems) { item in
+                Button {
+                    if item.mode == "external", let url = URL(string: item.url), url.scheme?.lowercased() == "https" {
+                        openURL(url)
+                    } else if item.mode == "webview", let url = URL(string: item.url), url.scheme?.lowercased() == "https" {
+                        selectedWebPage = item
+                    } else {
+                        selectedGallery = item
+                    }
+                } label: {
+                    VStack(alignment: .leading, spacing: 0) {
+                        RemoteImageView(urlString: item.imageURL, baseURL: viewModel.mediaBaseURL, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                        if !item.title.isEmpty { Text(item.title).font(.headline).foregroundStyle(AppDesign.ink).padding(16) }
+                    }
+                    .background(AppDesign.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL))
+                }.buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var newsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("ニュース").font(.title3.weight(.bold))
+            if viewModel.newsLoading { ProgressView() }
+            else if let error = viewModel.newsError {
+                Text(error).foregroundStyle(.secondary)
+                Button("再読み込み") { Task { await viewModel.loadNews() } }
+            } else if viewModel.news.isEmpty { Text("お知らせはありません").foregroundStyle(.secondary) }
+            ForEach(Array(viewModel.news.prefix(3))) { item in
+                Button { selectedNews = item } label: {
+                    Text(item.title).foregroundStyle(AppDesign.ink).frame(maxWidth: .infinity, alignment: .leading).padding(16)
+                        .background(AppDesign.surface).clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM))
+                }.buttonStyle(.plain)
             }
         }
     }
@@ -136,24 +247,24 @@ struct HomeView: View {
         }
     }
 
-    private var heroImage: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
-                if homeImageURLs.count > 1 {
-                    heroSlider(width: geometry.size.width)
-                } else {
-                    heroImageButton(at: 0)
-                }
-                if homeImageURLs.count > 1 {
-                    heroPageDots
-                        .padding(.bottom, 14)
-                        .zIndex(1)
-                }
+    // Measure the viewport outside the scroll view: Compose gives a
+    // GeometryReader inside scrolling content an unconstrained height.
+    private func heroImage(width: CGFloat) -> some View {
+        ZStack(alignment: .bottom) {
+            if homeImageURLs.count > 1 {
+                heroSlider(width: width)
+            } else {
+                heroImageButton(at: 0)
+                    .frame(width: width, height: width)
             }
-            .frame(width: geometry.size.width, height: geometry.size.width)
-            .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
+            if homeImageURLs.count > 1 {
+                heroPageDots
+                    .padding(.bottom, 14)
+                    .zIndex(1)
+            }
         }
-        .aspectRatio(1, contentMode: .fit)
+        .frame(width: width, height: width)
+        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
     }
 
     private func heroImageButton(at index: Int) -> some View {
@@ -304,12 +415,15 @@ struct HomeMenuGrid: View {
     @Environment(\.brandAccent) var accent
 
     var body: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: columns),
-            spacing: 0
-        ) {
-            ForEach(0..<tabs.count, id: \.self) { index in
-                gridCell(at: index)
+        // Skip promotes a nested LazyVGrid to its own scrolling container.
+        // Eager rows keep the hero, member card and menu in the home's ScrollView.
+        VStack(spacing: 0) {
+            ForEach(0..<((tabs.count + columns - 1) / columns), id: \.self) { row in
+                HStack(spacing: 0) {
+                    ForEach(0..<columns, id: \.self) { column in
+                        gridCell(at: row * columns + column)
+                    }
+                }
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))

@@ -117,6 +117,6 @@ class RequestExistingMemberLinkUseCase
             'user_id' => $user?->id,
         ]);
 
-        return ['linked' => false, 'message' => '確認メールを送信しました。30分以内に開いてください'];
+        return ['linked' => false, 'message' => '確認メールを送信しました。30分以内に、申請したブラウザで確認するか、メールのリンクをアプリに貼り付けて連携してください'];
     }
 }
