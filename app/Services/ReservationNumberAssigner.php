@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Project;
 use App\Models\Reservation;
+use App\Models\Scopes\StoreAccessScope;
 use App\Support\DailySequenceNumber;
 
 /**
@@ -12,12 +14,14 @@ class ReservationNumberAssigner
 {
     public function buildNext(int $projectId): string
     {
+        // The database sequence is shared by all stores in this project.
+        Project::query()->whereKey($projectId)->lockForUpdate()->firstOrFail();
         $prefix = DailySequenceNumber::datePrefix();
         $maxSeq = 0;
-        $existing = Reservation::query()
+        $existing = Reservation::withoutGlobalScope(StoreAccessScope::class)
             ->where('project_id', $projectId)
             ->where('reservation_number', 'like', $prefix.'%')
-            ->pluck('reservation_number');
+            ->lockForUpdate()->pluck('reservation_number');
 
         foreach ($existing as $reservationNumber) {
             $seq = DailySequenceNumber::parseSeq((string) $reservationNumber);
