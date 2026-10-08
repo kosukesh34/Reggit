@@ -33,12 +33,15 @@ final class NativeRootViewModel: PushNotificationHandling {
     var nativeChromeColors: [String: String] = [:]
     var homeShowMemberCard = true
     var homeMenuLayout = "grid_3x2"
+    var homeLayout = "legacy"
+    var homeGalleryItems: [HomeGalleryCard] = []
     var productDisplayLayout = "list_with_image"
     var lotteryModalPresented = false
     var lotteryPreviewGame: LotteryGameKind?
     var pendingLotteryCount = 0
     private var lastStampsTotal: Int?
     private var realtimeWebSocketURL: String?
+    var memberPageStyle = "classic"
     var memberShowRankProgress = true
     var memberShowPointHistory = true
     var memberShowCouponActivity = true
@@ -171,8 +174,11 @@ final class NativeRootViewModel: PushNotificationHandling {
             nativeChromeColors = config.nativeChromeColors
             homeShowMemberCard = config.homeShowMemberCard
             homeMenuLayout = config.homeMenuLayout
+            homeLayout = config.homeLayout
+            homeGalleryItems = config.homeGalleryItems
             productDisplayLayout = config.productDisplayLayout
             realtimeWebSocketURL = config.realtimeWebSocketURL
+            memberPageStyle = config.memberPageStyle
             memberShowRankProgress = config.memberShowRankProgress
             memberShowPointHistory = config.memberShowPointHistory
             memberShowCouponActivity = config.memberShowCouponActivity

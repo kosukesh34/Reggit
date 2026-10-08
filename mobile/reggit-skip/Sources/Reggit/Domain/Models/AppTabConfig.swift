@@ -27,6 +27,15 @@ struct AppTabItem: Identifiable, Equatable {
     ]
 }
 
+struct HomeGalleryCard: Identifiable, Equatable {
+    let id: Int
+    let title: String
+    let description: String
+    let imageURL: String
+    let mode: String
+    let url: String
+}
+
 struct AppConfig {
     let projectName: String
     let tabs: [AppTabItem]
@@ -43,7 +52,10 @@ struct AppConfig {
     let nativeChromeColors: [String: String]
     let homeShowMemberCard: Bool
     let homeMenuLayout: String
+    let homeLayout: String
+    let homeGalleryItems: [HomeGalleryCard]
     let productDisplayLayout: String
+    let memberPageStyle: String
     let memberShowRankProgress: Bool
     let memberShowPointHistory: Bool
     let memberShowCouponActivity: Bool
@@ -65,7 +77,10 @@ struct AppConfig {
         nativeChromeColors: [String: String] = [:],
         homeShowMemberCard: Bool = true,
         homeMenuLayout: String = "grid_3x2",
+        homeLayout: String = "legacy",
+        homeGalleryItems: [HomeGalleryCard] = [],
         productDisplayLayout: String = "list_with_image",
+        memberPageStyle: String = "classic",
         memberShowRankProgress: Bool = true,
         memberShowPointHistory: Bool = true,
         memberShowCouponActivity: Bool = true,
@@ -86,7 +101,10 @@ struct AppConfig {
         self.nativeChromeColors = nativeChromeColors
         self.homeShowMemberCard = homeShowMemberCard
         self.homeMenuLayout = homeMenuLayout
+        self.homeLayout = homeLayout
+        self.homeGalleryItems = homeGalleryItems
         self.productDisplayLayout = productDisplayLayout
+        self.memberPageStyle = memberPageStyle
         self.memberShowRankProgress = memberShowRankProgress
         self.memberShowPointHistory = memberShowPointHistory
         self.memberShowCouponActivity = memberShowCouponActivity
