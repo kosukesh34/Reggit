@@ -90,13 +90,13 @@ class MemberUpdateRequest extends FormRequest
             if ($inputType === ProfileCustomFieldInputType::CHECKBOX) {
                 $rules['custom_profile.'.$key] = ['nullable', 'array'];
                 if ($values !== []) {
-                    $rules['custom_profile.'.$key.'.*'] = ['string', 'in:'.implode(',', $values)];
+                    $rules['custom_profile.'.$key.'.*'] = ['string', Rule::in($values)];
                 }
 
                 continue;
             }
             if (ProfileCustomFieldInputType::needsValues($inputType) && $values !== []) {
-                $rules['custom_profile.'.$key] = ['nullable', 'string', 'in:'.implode(',', $values)];
+                $rules['custom_profile.'.$key] = ['nullable', 'string', Rule::in($values)];
 
                 continue;
             }
