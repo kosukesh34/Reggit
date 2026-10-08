@@ -2,10 +2,13 @@
 
 namespace App\UseCases\Order;
 
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\OrderService;
+use App\UseCases\Payment\PaymentGateway;
+use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use App\Util\AdminContext;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +37,17 @@ class OrderCancelUnpaidUseCase
             }
 
             $aggregate->cancelUnpaidStripeMobile();
+            $order = Order::with('items.product')->findOrFail($orderId);
+            $session = $order->payment_session;
+            if ($session !== null) {
+                $sessionId = $session['result']['id'] ?? null;
+                if (! is_string($sessionId) || $sessionId === '') {
+                    // The creator releases the row lock while contacting Stripe.
+                    throw new OrderOperationException('決済画面を作成中です。しばらくしてから再度お試しください');
+                }
+                $gateway = app(ProjectPaymentGatewayResolver::class)->forOrder($order, app(PaymentGateway::class));
+                $gateway->cancelUnpaidSession((string) ($session['channel'] ?? ''), $sessionId);
+            }
             $this->orderRepository->save($aggregate);
 
             $order = Order::with('items.product')->findOrFail($orderId);

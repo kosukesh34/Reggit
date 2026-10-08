@@ -220,7 +220,7 @@ function bootstrapLiffInit(): void {
         }
         try {
             const current = new URL(window.location.href);
-            const keepParams = ['queue_id', 'queue_token', 'project_key', 'store_id', 'g', 'point_code'];
+            const keepParams = ['queue_id', 'queue_token', 'project_key', 'store_id', 'g', 'point_code', 'payment_order_id', 'payment_status'];
             const kept = new URLSearchParams();
             keepParams.forEach((key) => {
                 const value = current.searchParams.get(key);
@@ -228,6 +228,15 @@ function bootstrapLiffInit(): void {
                     kept.set(key, value);
                 }
             });
+            // LIFF can wrap return parameters in liff.state on its primary redirect.
+            const liffState = current.searchParams.get('liff.state');
+            if (liffState) {
+                const stateUrl = new URL(liffState, current.origin);
+                for (const key of ['payment_order_id', 'payment_status']) {
+                    const value = stateUrl.searchParams.get(key);
+                    if (!kept.has(key) && value) kept.set(key, value);
+                }
+            }
             const pointCode = pointQrTokenFromUrl(current.href);
             if (pointCode) kept.set('point_code', pointCode);
             const hashQueue = extractQueueTokenFromString(current.hash || '');
