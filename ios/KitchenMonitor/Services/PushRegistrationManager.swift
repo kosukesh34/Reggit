@@ -15,6 +15,8 @@ extension Notification.Name {
 final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = PushRegistrationManager()
     private var isConfigured = false
+    private var registrationTask: Task<Void, Error>?
+    private var isLoggingOut = false
 
     func configure() {
         guard !isConfigured else { return }
@@ -70,20 +72,57 @@ final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate 
                 return
             }
             guard let token, !token.isEmpty else { return }
-            self.saveAndRegister(token: token)
+            Task { @MainActor in self.saveAndRegister(token: token) }
         }
         #endif
     }
 
+    @MainActor
+    func resumeRegistration() {
+        isLoggingOut = false
+        refreshRegistration()
+    }
+
+    func refreshRegistration() {
+        refreshFcmToken()
+    }
+
+    @MainActor
     private func saveAndRegister(token: String) {
-        let existing = UserDefaults.standard.string(forKey: AppConstants.Storage.pushTokenKey)
-        if token == existing { return }
-        UserDefaults.standard.set(token, forKey: AppConstants.Storage.pushTokenKey)
-        print("[Kitchen FCM] Saved registration token (\(token.count) chars)")
         Task { @MainActor in
-            let store = KitchenSettingsStore()
-            let settings = store.load()
-            try? await KitchenAPIClient().registerDevice(pushToken: token, deviceName: settings.deviceName)
+            do {
+                try await registerDevice(token: token, deviceName: KitchenSettingsStore().load().deviceName)
+            } catch {
+                print("[Kitchen FCM] registration failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    @MainActor
+    func registerDevice(token: String, deviceName: String) async throws {
+        guard !isLoggingOut, StoreAppCredentialStore.token(app: "kitchen") != nil else { throw CancellationError() }
+        let previous = registrationTask
+        let task = Task { @MainActor in
+            _ = try? await previous?.value
+            guard !isLoggingOut, StoreAppCredentialStore.token(app: "kitchen") != nil else { throw CancellationError() }
+            try await KitchenAPIClient().registerDevice(pushToken: token, deviceName: deviceName)
+            UserDefaults.standard.set(token, forKey: AppConstants.Storage.pushTokenKey)
+        }
+        registrationTask = task
+        try await task.value
+    }
+
+    @MainActor
+    func unregisterDevice() async {
+        isLoggingOut = true
+        _ = try? await registrationTask?.value
+        if let token = UserDefaults.standard.string(forKey: AppConstants.Storage.pushTokenKey), !token.isEmpty {
+            do {
+                try await KitchenAPIClient().unregisterDevice(pushToken: token)
+            } catch {
+                print("[Kitchen FCM] unregister failed: \(error.localizedDescription)")
+            }
+            UserDefaults.standard.removeObject(forKey: AppConstants.Storage.pushTokenKey)
         }
     }
 
@@ -110,7 +149,7 @@ final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate 
 extension PushRegistrationManager: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let fcmToken, !fcmToken.isEmpty else { return }
-        saveAndRegister(token: fcmToken)
+        Task { @MainActor in saveAndRegister(token: fcmToken) }
     }
 }
 #endif

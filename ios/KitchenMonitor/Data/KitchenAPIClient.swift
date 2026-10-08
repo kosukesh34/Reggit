@@ -33,7 +33,15 @@ final class KitchenAPIClient {
             "device_name": deviceName,
         ])
         var request = try makeRequest(path: "/devices", method: "POST")
+        request.timeoutInterval = 5
         request.httpBody = body
+        _ = try await execute(request)
+    }
+
+    func unregisterDevice(pushToken: String) async throws {
+        var request = try makeRequest(path: "/devices", method: "DELETE")
+        request.timeoutInterval = 5
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["push_token": pushToken])
         _ = try await execute(request)
     }
 

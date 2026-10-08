@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Admin\OrderAdminService;
 use App\Support\DailySequenceNumber;
+use App\Util\StoreContext;
 use Carbon\Carbon;
 use InvalidArgumentException;
 
@@ -29,6 +30,7 @@ class KitchenOrderService
 
     public function __construct(
         private OrderAdminService $orderAdminService,
+        private StoreContext $storeContext,
     ) {}
 
     /**
@@ -94,6 +96,7 @@ class KitchenOrderService
                 'push_token' => $token,
             ],
             [
+                'store_id' => $this->storeContext->resolveForWrite($projectId),
                 'platform' => trim($platform) !== '' ? trim($platform) : 'ios',
                 'device_name' => $deviceName !== null ? trim($deviceName) : null,
                 'last_seen_at' => Carbon::now(),
@@ -112,6 +115,7 @@ class KitchenOrderService
         KitchenDevice::query()
             ->where('project_id', $projectId)
             ->where('push_token', $token)
+            ->where('store_id', $this->storeContext->resolveForWrite($projectId))
             ->delete();
     }
 

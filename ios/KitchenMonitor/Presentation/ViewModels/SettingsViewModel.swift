@@ -7,11 +7,9 @@ final class SettingsViewModel: ObservableObject {
     @Published var message: String?
 
     private let store: KitchenSettingsStore
-    private let api: KitchenAPIClient
 
-    init(store: KitchenSettingsStore = KitchenSettingsStore(), api: KitchenAPIClient = KitchenAPIClient()) {
+    init(store: KitchenSettingsStore = KitchenSettingsStore()) {
         self.store = store
-        self.api = api
         let settings = store.load()
         self.passcode = settings.passcode
         self.deviceName = settings.deviceName
@@ -35,7 +33,7 @@ final class SettingsViewModel: ObservableObject {
             return
         }
         do {
-            try await api.registerDevice(pushToken: token, deviceName: deviceName)
+            try await PushRegistrationManager.shared.registerDevice(token: token, deviceName: deviceName)
             message = "端末を登録しました"
         } catch {
             message = error.localizedDescription
