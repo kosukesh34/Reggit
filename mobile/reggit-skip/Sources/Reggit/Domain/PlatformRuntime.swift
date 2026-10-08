@@ -8,6 +8,14 @@ import UIKit
 
 /// プラットフォーム差分をこのファイルに閉じ込める。Presentation では `#if os` を書かない。
 enum PlatformRuntime {
+    static var walletPaymentBrand: String {
+        #if os(Android)
+        return "google_pay"
+        #else
+        return "apple_pay"
+        #endif
+    }
+
     /// Skip currently selects Set.first rather than supporting multiple detents.
     /// A single Android detent keeps observation refreshes from changing sheet height.
     static var supportsMultipleModalDetents: Bool {

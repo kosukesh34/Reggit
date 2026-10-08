@@ -2,10 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { useRuntimeData } from "../context/RuntimeDataContext";
+import { NativeSegments } from "../native/NativeResource";
+import { isDemoDataMode } from "../../frontend/demo/demoMode";
 import { reggitApi } from "../services/reggitApi";
 
 export function TransferPage() {
   const { member, refresh } = useRuntimeData();
+  const [segment, setSegment] = useState(0);
   const [memberId, setMemberId] = useState("");
   const [code, setCode] = useState("");
   const [issuedMemberId, setIssuedMemberId] = useState("");
@@ -20,7 +23,7 @@ export function TransferPage() {
     setError(undefined);
     setMessage(undefined);
     try {
-      const issued = await reggitApi.issueTransferCode();
+      const issued = isDemoDataMode() ? { memberId: 1234, code: "DEMO123456", expiresAt: new Date(Date.now() + 30 * 60000).toLocaleString("ja-JP") } : await reggitApi.issueTransferCode();
       setIssuedMemberId(String(issued.memberId));
       setIssuedCode(issued.code);
       setExpiresAt(issued.expiresAt);
@@ -36,7 +39,7 @@ export function TransferPage() {
     setError(undefined);
     setMessage(undefined);
     try {
-      await reggitApi.claimTransfer(Number(memberId), code);
+      if (!isDemoDataMode()) await reggitApi.claimTransfer(Number(memberId), code);
       setMessage("会員を引き継ぎました");
       await refresh();
     } catch (caught) {
@@ -47,8 +50,10 @@ export function TransferPage() {
   };
 
   return (
-    <div className="page stack stack--lg">
+    <div className="native-screen native-form">
       <h1>会員引き継ぎ</h1>
+      <NativeSegments labels={["IDを発行", "引き継ぐ"]} selected={segment} onSelect={setSegment} />
+      {segment === 0 ? <>
       <p>コードは30分で一度だけ使えます。新しい端末でコードを入力すると、今の会員が移ります。</p>
       {member.isMember ? (
         <Button variant="solid" disabled={busy} onClick={() => void issue()}>
@@ -62,17 +67,19 @@ export function TransferPage() {
           <p>有効期限 {expiresAt}</p>
         </div>
       ) : null}
+      </> : <>
       <label>
         会員ID
-        <input className="form-control" value={memberId} onChange={(event) => setMemberId(event.target.value)} inputMode="numeric" />
+        <input value={memberId} onChange={(event) => setMemberId(event.target.value)} inputMode="numeric" />
       </label>
       <label>
         受け取ったコード
-        <input className="form-control" value={code} onChange={(event) => setCode(event.target.value)} autoCapitalize="characters" />
+        <input value={code} onChange={(event) => setCode(event.target.value)} autoCapitalize="characters" />
       </label>
       <Button variant="outline" disabled={busy || code.trim() === "" || !Number.isSafeInteger(Number(memberId)) || Number(memberId) <= 0} onClick={() => void claim()}>
         このアカウントへ引き継ぐ
       </Button>
+      </>}
       {error ? <div className="form-error" role="alert">{error}</div> : null}
       {message ? <p>{message}</p> : null}
       <Link to="/more">戻る</Link>

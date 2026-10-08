@@ -40,7 +40,7 @@
                 <div class="publishing-toolbar"><button type="button" class="btn btn-secondary" data-help-format="heading">見出し</button><button type="button" class="btn btn-secondary" data-help-format="bold">太字</button><button type="button" class="btn btn-secondary" data-help-format="list">箇条書き</button><button type="button" class="btn btn-secondary" id="help-preview">プレビュー</button></div>
                 <textarea id="body" name="body" class="form-control" rows="16" required>{{ old('body', $article->body ?? '') }}</textarea>
                 <p class="form-text">見出しは ##、箇条書きは行頭の -、強調は **文字** です。</p>
-                <section id="help-preview-panel" class="publishing-preview" hidden aria-live="polite"><h2>記事のプレビュー</h2><div id="help-preview-content"></div></section>
+                <section id="help-preview-panel" class="publishing-preview" hidden aria-live="polite"><p class="form-text">保存前の内容を店舗ヘルプと同じ表示で確認できます。</p><article class="help-manual"><h1 id="help-preview-title"></h1><p id="help-preview-summary" class="help-lead"></p><div id="help-preview-content" class="help-markdown"></div></article></section>
                 @error('body')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
@@ -72,6 +72,7 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/components/14-publishing.css') }}">
+<link rel="stylesheet" href="{{ asset('css/admin/components/12-help-manual.css') }}">
 @endpush
 @push('scripts')
 <script>
@@ -89,6 +90,9 @@ document.getElementById('help-preview').addEventListener('click', async function
     const panel = document.getElementById('help-preview-panel');
     const content = document.getElementById('help-preview-content');
     panel.hidden = false;
+    document.getElementById('help-preview-title').textContent = document.getElementById('title').value || 'タイトル未入力';
+    document.getElementById('help-preview-summary').textContent = document.getElementById('summary').value;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     this.disabled = true;
     content.textContent = '読み込み中…';
     try {

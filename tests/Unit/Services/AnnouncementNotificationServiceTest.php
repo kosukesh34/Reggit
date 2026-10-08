@@ -31,6 +31,19 @@ class AnnouncementNotificationServiceTest extends TestCase
         }
     }
 
+    public function test_line_payload_contains_all_ten_images_in_order(): void
+    {
+        $service = app(AnnouncementNotificationService::class);
+        $method = new \ReflectionMethod($service, 'buildLinePayload');
+        $urls = array_map(fn ($i) => 'https://example.com/'.$i.'.png', range(1, 10));
+        $payload = $method->invoke($service, 'お知らせ', '本文', 'https://example.com/liff', $urls, new Announcement, 1, 'default', true);
+        $this->assertSame('carousel', $payload['contents']['type']);
+        $this->assertSame($urls, array_column(array_column($payload['contents']['contents'], 'hero'), 'url'));
+        $fallback = $method->invoke($service, 'お知らせ', '本文', 'https://example.com/liff', [], new Announcement, 1, 'default', false);
+        $this->assertSame('bubble', $fallback['contents']['type']);
+        $this->assertArrayNotHasKey('hero', $fallback['contents']);
+    }
+
     public function test_send_delivers_native_push_and_line_message(): void
     {
         $project = $this->createProject();

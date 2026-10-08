@@ -48,7 +48,7 @@ function encodeCode128B(value: string) {
   return { bars, safeValue, width: Math.max(x + quietZone, quietZone * 2 + 20) };
 }
 
-export function MembershipBarcode({ value, enlarged = false }: { value?: string | null; enlarged?: boolean }) {
+export function MembershipBarcode({ value, enlarged = false, height, showValue = true }: { value?: string | null; enlarged?: boolean; height?: number; showValue?: boolean }) {
   const barcode = encodeCode128B(String(value ?? "0"));
 
   return (
@@ -58,18 +58,19 @@ export function MembershipBarcode({ value, enlarged = false }: { value?: string 
     >
       <svg
         className="barcode__svg"
+        style={height ? { height } : undefined}
         viewBox={`0 0 ${barcode.width} 66`}
         role="img"
         aria-hidden="true"
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio="none"
         shapeRendering="crispEdges"
       >
         <rect width={barcode.width} height="66" className="barcode__paper" />
         {barcode.bars.map((bar, index) => (
-          <rect key={`${bar.x}-${index}`} x={bar.x} y="4" width={bar.width} height="48" className="barcode__ink" />
+          <rect key={`${bar.x}-${index}`} x={bar.x} y="0" width={bar.width} height="66" className="barcode__ink" />
         ))}
       </svg>
-      <figcaption className="barcode__value">{barcode.safeValue || "—"}</figcaption>
+      {showValue ? <figcaption className="barcode__value">{barcode.safeValue || "—"}</figcaption> : null}
     </figure>
   );
 }

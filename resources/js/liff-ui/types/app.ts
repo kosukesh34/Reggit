@@ -134,6 +134,7 @@ export interface MemberProfile {
   expiration: string;
   nextRankLabel: string;
   isMember: boolean;
+  codeType?: "barcode" | "qrcode";
 }
 
 export interface CouponItem {
@@ -147,6 +148,7 @@ export interface CouponItem {
 }
 
 export interface NewsItem {
+  images?: string[];
   id: string;
   title: string;
   date: string;

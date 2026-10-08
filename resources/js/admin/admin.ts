@@ -116,12 +116,15 @@ function initFormValidation(): void {
                 form.reportValidity();
                 return;
             }
-            // click 時ではなく submit 確定後に無効化（click で disabled にすると送信自体がキャンセルされる）
-            if (submitBtn && !submitBtn.disabled) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
-                showAdminSavingOverlay();
-            }
+            // 確認画面など、後から登録された submit ハンドラーのキャンセルも確認する。
+            setTimeout(() => {
+                if (e.defaultPrevented) return;
+                if (submitBtn && !submitBtn.disabled) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
+                    showAdminSavingOverlay();
+                }
+            });
         });
     });
 }

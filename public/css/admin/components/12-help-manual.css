@@ -200,3 +200,25 @@
 .help-mark--analysis-run { top: 50%; left: 26%; width: 68%; height: 38%; }
 .help-mark--home-menu { top: 47.5%; left: 25.8%; width: 34%; height: 9.5%; }
 .help-mark--home-header { top: 17%; left: 26%; width: 68%; height: 58%; }
+
+.help-guide-section {
+    margin: 20px 0;
+    padding: 22px;
+    border: 1px solid #dbe3e8;
+    border-radius: 12px;
+    background: #fff;
+    scroll-margin-top: 80px;
+}
+.help-guide-section > h2:first-child { margin-top: 0; }
+.help-guide-section--caution { background: #fff7ed; border-color: #fdba74; }
+.help-shot__frame { display: block; text-decoration: none; }
+.help-shot img { max-height: 600px; object-fit: contain; }
+.help-shot__zoom { display: block; text-align: right; font-size: 13px; margin-top: 6px; color: #1d4ed8; }
+.help-shot figcaption { padding: 10px 12px; background: #f1f5f9; border-radius: 6px; color: #334155; }
+.help-toc ol { list-style: none; padding: 0; }
+.help-toc li { margin: 8px 0; }
+.help-guide-section strong { color: #111827; }
+@media (max-width: 640px) {
+    .help-guide-section { padding: 14px; }
+    .help-manual h1 { font-size: 24px; }
+}

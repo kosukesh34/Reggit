@@ -5,7 +5,11 @@ namespace Tests\Unit\UseCases\Order;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Models\Member;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\PointTransaction;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderService;
@@ -104,5 +108,46 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $result = $useCase->handle($user, (int) $order->id);
 
         $this->assertSame(OrderStatus::CANCELLED, $result->status);
+    }
+
+    public function test_cancellation_side_effect_failure_rolls_back_and_can_be_retried(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $product = Product::factory()->create(['project_id' => $project->id, 'stock' => 3]);
+        $order = Order::create([
+            'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 1000,
+            'status' => OrderStatus::PENDING, 'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 20, 'points_earned' => 0, 'order_type' => 'mobile',
+        ]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $member->id, 'type' => 'earned', 'points' => 100]);
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $member->id, 'order_id' => $order->id, 'type' => 'used', 'points' => -20]);
+        $member->recalcPointsFromTransactions();
+        OrderItem::create(['order_id' => $order->id, 'product_id' => $product->id, 'quantity' => 2, 'price' => 500]);
+        $service = app(OrderService::class);
+        $failingService = Mockery::mock(OrderService::class);
+        $failingService->shouldReceive('handleOrderCancellation')->once()->andReturnUsing(function (Order $cancelled) use ($service): void {
+            $service->handleOrderCancellation($cancelled);
+            throw new \RuntimeException('fixture failure after stock restoration');
+        });
+        try {
+            (new OrderCancelUnpaidUseCase(app(OrderRepository::class), $failingService))->handle($user, $order->id);
+            $this->fail('Expected cancellation failure');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('fixture failure after stock restoration', $e->getMessage());
+        }
+        $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
+        $this->assertSame(3, $product->fresh()->stock);
+        $this->assertSame(80, $member->fresh()->getDisplayPoints());
+        $this->assertDatabaseMissing('point_transactions', ['order_id' => $order->id, 'type' => 'refunded']);
+        $useCase = new OrderCancelUnpaidUseCase(app(OrderRepository::class), $service);
+        $useCase->handle($user, $order->id);
+        $this->assertSame(OrderStatus::CANCELLED, $order->fresh()->status);
+        $this->assertSame(5, $product->fresh()->stock);
+        $this->assertSame(100, $member->fresh()->getDisplayPoints());
+        $useCase->handle($user, $order->id);
+        $this->assertSame(5, $product->fresh()->stock);
+        $this->assertSame(100, $member->fresh()->getDisplayPoints());
     }
 }

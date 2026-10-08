@@ -82,8 +82,9 @@ export class StripePayment {
         if (result.success === false) {
             throw new Error(result.error || 'Payment intent creation failed');
         }
-        const data = result.data as { clientSecret?: string; error?: string };
+        const data = result.data as { clientSecret?: string; publishableKey?: string; error?: string };
         if (data.clientSecret) {
+            if (data.publishableKey && typeof Stripe === 'function') this.stripe = Stripe(data.publishableKey);
             this.clientSecret = data.clientSecret;
             return data;
         }
@@ -105,11 +106,11 @@ export class StripePayment {
 
     async setupPaymentForm(containerId: string, _amount: number, orderId: number | string): Promise<void> {
         await this.init();
-        if (this.stripe === null) {
-            throw new Error('Stripe の初期化に失敗しました。STRIPE_KEY を確認してください');
-        }
         this.destroyPaymentForm();
         const { clientSecret } = await this.createPaymentIntent(orderId);
+        if (this.stripe === null) {
+            throw new Error('Stripe の初期化に失敗しました。決済設定を確認してください');
+        }
         this.clientSecret = clientSecret;
         this.elements = this.stripe.elements();
         this.paymentElement = this.elements.create('card', { hidePostalCode: true });

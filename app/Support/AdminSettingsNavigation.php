@@ -35,6 +35,7 @@ final class AdminSettingsNavigation
                 $can('announcements.view') ? ['route' => 'admin.settings.announcements', 'icon' => 'fas fa-bullhorn', 'label' => 'お知らせ', 'hint' => '新規お知らせの固定表示・掲載期間'] : null,
             ]],
             ['title' => '連携・管理', 'items' => [
+                $can('settings.manage') ? ['route' => 'admin.settings.payments', 'icon' => 'fas fa-credit-card', 'label' => '決済・入金先', 'hint' => 'Stripeアカウント、PayPay・Apple Pay・決済ブランド'] : null,
                 $can('settings.view') ? ['route' => 'admin.settings.liff-connection', 'icon' => 'fab fa-line', 'label' => 'LINE接続・通知API', 'hint' => 'LIFF ID・URL、友だち追加、Messaging API'] : null,
                 ($user !== null && $user->canCreateRole(AdminUser::ROLE_STAFF)) ? ['route' => 'admin.settings.staff', 'icon' => 'fas fa-user-shield', 'label' => 'スタッフ・権限', 'hint' => '追加・操作権限'] : null,
                 $can('audit_logs.view') ? ['route' => 'admin.audit-logs.index', 'icon' => 'fas fa-clipboard-list', 'label' => '操作履歴', 'hint' => '監査ログ'] : null,

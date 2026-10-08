@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AnnouncementImageController;
+use App\Http\Controllers\AnnouncementMediaController;
 use App\Http\Controllers\Api\Kitchen\KitchenDeviceController;
 use App\Http\Controllers\Api\Kitchen\KitchenOrderController;
 use App\Http\Controllers\Api\StoreAppAuthController;
@@ -189,6 +190,7 @@ Route::prefix('v1')->middleware(['bind.project', AuthenticateApiToken::class])->
     Route::post('/queue', ApiV1QueueStoreController::class);
     Route::get('/queue/me', ApiV1QueueMeController::class);
     Route::post('/queue/{id}/cancel', ApiV1QueueCancelController::class)->middleware('queue.access');
+    Route::get('/payment/methods', \App\Http\Controllers\Payment\PaymentMethodsController::class);
     Route::post('/payment/create-intent', [ApiV1PaymentController::class, 'createPaymentIntent']);
     Route::post('/payment/confirm', [ApiV1PaymentController::class, 'confirmPayment']);
 });
@@ -305,6 +307,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
     Route::get('/members/me/wallet-summary', MemberWalletSummaryController::class);
 
+    Route::get('/payment/methods', \App\Http\Controllers\Payment\PaymentMethodsController::class);
     Route::post('/payment/create-intent', [PaymentCreateIntentController::class, '__invoke']);
     Route::post('/payment/checkout', PaymentCreateCheckoutController::class);
     Route::post('/payment/confirm', [PaymentConfirmController::class, '__invoke']);
@@ -340,6 +343,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
 });
 
 Route::post('/payment/webhook', [PaymentWebhookController::class, '__invoke']);
+Route::post('/payment/webhook/{project_key}/{setting}', [PaymentWebhookController::class, '__invoke'])
+    ->whereNumber('setting')->middleware(['web', 'bind.project'])->name('payment.project.webhook');
 Route::match(['get', 'post'], '/client-debug', ClientDebugController::class);
 
 // Apple Wallet PassKit Web Service
@@ -347,3 +352,5 @@ Route::post('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{p
 Route::delete('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}/{serialNumber}', [AppleWalletPasskitController::class, 'unregisterDevice']);
 Route::get('/apple-wallet/v1/devices/{deviceLibraryIdentifier}/registrations/{passTypeIdentifier}', [AppleWalletPasskitController::class, 'listUpdatedSerials']);
 Route::get('/apple-wallet/v1/passes/{passTypeIdentifier}/{serialNumber}', [AppleWalletPasskitController::class, 'getLatestPass']);
+
+Route::get('/announcement-media/{id}/{index}', AnnouncementMediaController::class)->whereNumber(['id', 'index'])->name('announcements.media');

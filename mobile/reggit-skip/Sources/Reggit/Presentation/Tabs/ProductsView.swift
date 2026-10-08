@@ -38,7 +38,9 @@ final class ProductsViewModel {
     var searchText = ""
     var showConfirm = false
     var activeOrder: OrderSnapshot?
-    var paymentMethod = "stripe"
+    var paymentMethod = "card"
+    var paymentMethods: [String] = []
+    var paymentMethodsError: String?
     var checkoutURL: URL?
     var isVerifyingPayment = false
 
@@ -75,6 +77,16 @@ final class ProductsViewModel {
     }
 
     func load(force: Bool = false) async {
+        do {
+            paymentMethods = try await apiClient.fetchPaymentMethods()
+            paymentMethods.removeAll { ($0 == "apple_pay" || $0 == "google_pay") && $0 != PlatformRuntime.walletPaymentBrand }
+            paymentMethodsError = nil
+            if !paymentMethods.contains(paymentMethod) { paymentMethod = paymentMethods.first ?? "card" }
+        } catch {
+            paymentMethods = []
+            paymentMethodsError = "お支払い方法を読み込めませんでした。もう一度お試しください"
+        }
+
         if !force, let cached = SecondaryScreenCache.products {
             products = cached
             isLoading = false
@@ -126,9 +138,13 @@ final class ProductsViewModel {
         actionMessage = nil
         defer { isSubmitting = false }
         do {
+            guard paymentMethods.contains(paymentMethod) else {
+                actionMessage = paymentMethodsError ?? "このお支払い方法は現在利用できません"
+                return nil
+            }
             let order = try await apiClient.createOrder(items: lines, paymentMethod: paymentMethod, notes: nil)
             var paymentURL: URL?
-            if paymentMethod == "stripe" {
+            if paymentMethod != "cash" {
                 do {
                     let checkout = try await apiClient.createPaymentCheckout(orderId: order.id)
                     guard let url = URL(string: checkout.checkoutURL) else {
@@ -287,8 +303,9 @@ struct ProductsView: View {
                             get: { viewModel.paymentMethod },
                             set: { viewModel.paymentMethod = $0 }
                         ),
+                        paymentMethods: viewModel.paymentMethods,
                         isSubmitting: viewModel.isSubmitting,
-                        errorMessage: viewModel.actionMessage,
+                        errorMessage: viewModel.actionMessage ?? viewModel.paymentMethodsError,
                         onConfirm: {
                             Task {
                                 if let url = await viewModel.placeOrder() {
@@ -709,6 +726,7 @@ struct OrderConfirmView: View {
     let lines: [CartLine]
     let total: Int
     @Binding var paymentMethod: String
+    let paymentMethods: [String]
     let isSubmitting: Bool
     let errorMessage: String?
     let onConfirm: () -> Void
@@ -735,18 +753,14 @@ struct OrderConfirmView: View {
                 }
             }
             Section("お支払い方法") {
-                paymentOption(
-                    value: "stripe",
-                    title: "カードで支払う",
-                    subtitle: "安全なStripe決済画面でお支払い",
-                    icon: "creditcard"
-                )
-                paymentOption(
-                    value: "cash",
-                    title: "店頭で支払う",
-                    subtitle: "商品受け取り時にお支払い",
-                    icon: "banknote"
-                )
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    paymentOption(value: "card", title: "クレジットカード", subtitle: "カード情報を入力", icon: "creditcard")
+                    paymentOption(value: "paypay", title: "PayPay", subtitle: "PayPayでお支払い", icon: "qrcode")
+                    paymentOption(value: PlatformRuntime.walletPaymentBrand, title: PlatformRuntime.walletPaymentBrand == "google_pay" ? "Google Pay" : "Apple Pay", subtitle: "対応端末・ブラウザーで利用", icon: "apple.logo")
+                    paymentOption(value: "cash", title: "現金", subtitle: "商品受け取り時にお支払い", icon: "banknote")
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
             }
             Section {
                 HStack {
@@ -756,7 +770,7 @@ struct OrderConfirmView: View {
                         .font(.title3.weight(.bold))
                         .foregroundStyle(accent)
                 }
-                Text(paymentMethod == "stripe" ? "注文後にカード決済画面を開きます" : "商品受け取り時に店頭でお支払いください")
+                Text(paymentMethod != "cash" ? "注文後にお支払い画面へ進みます" : "商品受け取り時に現金でお支払いください")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -771,9 +785,9 @@ struct OrderConfirmView: View {
                         Text(errorMessage).font(.footnote).foregroundStyle(AppDesign.danger)
                     }
                     AppPrimaryButton(
-                        title: paymentMethod == "stripe" ? "カード決済へ · \(AppFormat.yen(total))" : "注文を確定 · \(AppFormat.yen(total))",
+                        title: paymentMethod != "cash" ? "お支払いへ · \(AppFormat.yen(total))" : "注文を確定 · \(AppFormat.yen(total))",
                         isLoading: isSubmitting,
-                        enabled: !lines.isEmpty,
+                        enabled: !lines.isEmpty && paymentMethods.contains(paymentMethod),
                         action: onConfirm
                     )
                 }
@@ -782,23 +796,58 @@ struct OrderConfirmView: View {
     }
 
     private func paymentOption(value: String, title: String, subtitle: String, icon: String) -> some View {
-        Button {
+        let available = paymentMethods.contains(value)
+        let selected = paymentMethod == value && available
+        return Button {
             paymentMethod = value
         } label: {
-            HStack(spacing: 12) {
-                FontAwesomeIcon(systemName: icon)
-                    .frame(width: 28)
-                    .foregroundStyle(paymentMethod == value ? accent : AppDesign.inkSecondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.body.weight(.semibold)).foregroundStyle(AppDesign.ink)
-                    Text(subtitle).font(.caption).foregroundStyle(AppDesign.inkSecondary)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Spacer()
+                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(selected ? accent : AppDesign.hairline)
                 }
-                Spacer()
-                FontAwesomeIcon(systemName: paymentMethod == value ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(paymentMethod == value ? accent : AppDesign.hairline)
+                HStack(spacing: 6) {
+                    Spacer()
+                    if value == "paypay" {
+                        Image("PaymentPayPay", bundle: .module)
+                            .resizable().scaledToFit()
+                            .frame(maxWidth: 170, maxHeight: 55)
+                            .accessibilityHidden(true)
+                    } else if value == "google_pay" {
+                        Image("PaymentGooglePay", bundle: .module)
+                            .resizable().scaledToFit()
+                            .frame(width: 96, height: 42)
+                            .padding(8)
+                            .accessibilityHidden(true)
+                    } else if value == "card" {
+                        Image("PaymentCreditCard", bundle: .module)
+                            .resizable().scaledToFit()
+                            .frame(width: 72, height: 55)
+                            .accessibilityHidden(true)
+                    } else {
+                        Image(systemName: icon).font(.system(size: 26))
+                        if value == "apple_pay" { Text("Pay").font(.system(size: 28, weight: .semibold)) }
+                    }
+                    Spacer()
+                }
+                .foregroundStyle(value == "paypay" ? Color(red: 0.91, green: 0.14, blue: 0.24) : AppDesign.ink)
+                .frame(height: 55)
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(AppDesign.ink)
+                Text(available ? subtitle : "現在利用できません").font(.caption2).foregroundStyle(AppDesign.inkSecondary)
             }
+            .padding(14)
+            .frame(maxWidth: .infinity, minHeight: 156, alignment: .leading)
+            .background(AppDesign.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(selected ? accent : AppDesign.hairline, lineWidth: selected ? 2 : 1))
+            .opacity(available ? 1 : 0.45)
         }
         .buttonStyle(.plain)
+        .disabled(!available || isSubmitting)
+        .accessibilityLabel(title)
+        .accessibilityValue(selected ? "選択中" : available ? "未選択" : "現在利用できません")
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
@@ -812,7 +861,7 @@ struct OrderStatusView: View {
         ScrollView {
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
-                    Text(order.isAwaitingCardPayment ? (isVerifyingPayment ? "決済を確認しています" : "カード決済を確認できていません") : order.isActive ? "ご注文を受け付けました" : order.statusLabel)
+                    Text(order.isAwaitingCardPayment ? (isVerifyingPayment ? "決済を確認しています" : "お支払いを確認できていません") : order.isActive ? "ご注文を受け付けました" : order.statusLabel)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(AppDesign.inkSecondary)
                     Text(order.pickupNumberLabel)
@@ -826,7 +875,7 @@ struct OrderStatusView: View {
 
                 if order.isAwaitingCardPayment && !isVerifyingPayment, let onContinuePayment {
                     VStack(spacing: 10) {
-                        AppPrimaryButton(title: "カード決済を続ける", action: onContinuePayment)
+                        AppPrimaryButton(title: "お支払いを続ける", action: onContinuePayment)
                         Text("決済完了後に受取番号が発行されます")
                             .font(.caption)
                             .foregroundStyle(AppDesign.inkSecondary)

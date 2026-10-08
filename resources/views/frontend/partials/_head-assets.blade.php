@@ -1,34 +1,12 @@
-{{-- 旧 frontend/style.css は DesignMock 全面刷新後は読み込まない（衝突回避）。機能画面の旧クラスは個別に読む --}}
 @php
-    $memberCssVersion = isset($assetVersion) ? $assetVersion : (string) (@filemtime(public_path('css/frontend/components/16-profile-modal.css')) ?: time());
+    $memberCssVersion = isset($assetVersion) ? $assetVersion : (string) (@filemtime(public_path('css/frontend/components/05-overlay-skeleton-toast.css')) ?: time());
 @endphp
 <link rel="stylesheet" href="{{ asset('css/frontend/components/05-overlay-skeleton-toast.css') }}?v={{ $memberCssVersion }}">
 <link rel="stylesheet" href="{{ asset('css/frontend/components/07-payment-modal.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/09-tabs-sections.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/10-orders.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/11-orders-reservations.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/12-orders-reservations-2.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/13-member-card-design.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/14-member-card-design-2.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/15-member-card-design-3.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/16-profile-modal.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/17-stamp.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/18-liff-builder-gallery.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/19-coupon.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/20-queue.css') }}?v={{ $memberCssVersion }}">
-{{-- Designer 画面バリアント（coupon/reservation/member-screen-* / system-ui-*）。body クラスは _head-theme が付与 --}}
-<link rel="stylesheet" href="{{ asset('css/frontend/components/22-chrome-accent.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/29-system-ui-customization.css') }}?v={{ $memberCssVersion }}">
-{{-- LIFF Designer / DesignLab のビルダーブロック（hero・collection・design バリアント等）。18 だけでは足りない --}}
-<link rel="stylesheet" href="{{ asset('css/frontend/components/23-builder-blocks-theme.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/26-retail-app-ui.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/27-component-designs.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/30-builder-component-variants.css') }}?v={{ $memberCssVersion }}">
-<link rel="stylesheet" href="{{ asset('css/frontend/components/34-apple-block-variants.css') }}?v={{ $memberCssVersion }}">
-{{-- ガチャ・スクラッチ・design-lab（body.liff-lottery-ui / liff-fixed-ui 配下）。style.css 全体は読まない方針のため個別に読む --}}
-<link rel="stylesheet" href="{{ asset('css/frontend/components/38-liff-fixed-ui.css') }}?v={{ $memberCssVersion }}">
 <style>
-  #liff-loading { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+  #liff-loading { position: fixed; inset: 0; z-index: 2147483647; display: flex; align-items: center; justify-content: center; background: #173f35; color: #fff; }
+  #liff-loading.liff-loading--hidden { display: none; }
+  .liff-loading-inner { padding: 24px; text-align: center; max-width: 360px; }
   body.reggit-liff-ui, .reggit-liff-ui-root { min-height: 100vh; }
   body.reggit-liff-ui:not(.liff-ui-ready):not(.designer-live-preview-embed)::before {
     content: "";
@@ -39,9 +17,4 @@
     pointer-events: auto;
   }
 </style>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap">
-@if(!(isset($isFixedUi) && $isFixedUi) && isset($liffCustomCss) && $liffCustomCss !== null && $liffCustomCss !== '')
-    <style id="liff-custom-style">{!! $liffCustomCss !!}</style>
-@endif

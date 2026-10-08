@@ -318,6 +318,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/settings/basic', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
         Route::post('/settings/basic', [SettingsBasicController::class, 'update'])->name('admin.settings.basic.update')->middleware('admin.permission:settings.manage');
         Route::post('/settings/store-app-credential', [StoreAppCredentialController::class, 'store'])->name('admin.settings.store-app-credential.store')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/payments', [\App\Http\Controllers\Admin\Settings\PaymentsController::class, 'index'])->name('admin.settings.payments')->middleware('admin.permission:settings.manage');
+        Route::post('/settings/payments', [\App\Http\Controllers\Admin\Settings\PaymentsController::class, 'update'])->name('admin.settings.payments.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/advanced', [SettingsAdvancedController::class, 'index'])->name('admin.settings.advanced')->middleware('admin.permission:settings.view');
         Route::post('/settings/advanced', [SettingsAdvancedController::class, 'update'])->name('admin.settings.advanced.update')->middleware('admin.permission:settings.manage');
         Route::get('/settings/menu', [SettingsMenuController::class, 'index'])->name('admin.settings.menu')->middleware('admin.permission:settings.view');
@@ -417,6 +419,7 @@ Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'admin.auth.sess
     Route::post('/help-articles/preview', [SystemHelpArticleController::class, 'preview'])->name('system-admin.help-articles.preview');
     Route::get('/help-articles/create', [SystemHelpArticleController::class, 'create'])->name('system-admin.help-articles.create');
     Route::post('/help-articles', [SystemHelpArticleController::class, 'store'])->name('system-admin.help-articles.store');
+    Route::get('/help-articles/{id}/preview', [SystemHelpArticleController::class, 'showPreview'])->name('system-admin.help-articles.show-preview');
     Route::get('/help-articles/{id}/edit', [SystemHelpArticleController::class, 'edit'])->name('system-admin.help-articles.edit');
     Route::put('/help-articles/{id}', [SystemHelpArticleController::class, 'update'])->name('system-admin.help-articles.update');
     Route::delete('/help-articles/{id}', [SystemHelpArticleController::class, 'destroy'])->name('system-admin.help-articles.destroy');

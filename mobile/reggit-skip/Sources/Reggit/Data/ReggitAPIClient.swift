@@ -231,6 +231,13 @@ struct ReggitAPIClient: ReggitAPIServing {
 
     // MARK: - Products / Orders
 
+    func fetchPaymentMethods() async throws -> [String] {
+        let data = try await requestData(path: "/api/payment/methods", method: "GET")
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let methods = json["methods"] as? [String] else { throw ReggitAPIError.invalidResponse }
+        return methods.filter { ["card", "paypay", "apple_pay", "google_pay", "cash"].contains($0) }
+    }
+
     func fetchProducts() async throws -> [ProductItem] {
         let data = try await requestData(path: "/api/products", method: "GET")
         return try ProductListResponse.parse(data).products
@@ -243,9 +250,10 @@ struct ReggitAPIClient: ReggitAPIServing {
     ) async throws -> OrderSnapshot {
         var body: [String: Any] = [
             "items": items.map { $0.asDictionary() },
-            "payment_method": paymentMethod,
+            "payment_method": paymentMethod == "cash" ? "cash" : "stripe",
             "order_type": "mobile",
         ]
+        if paymentMethod != "cash" { body["payment_brand"] = paymentMethod == "stripe" ? "card" : paymentMethod }
         if let notes, !notes.isEmpty {
             body["notes"] = notes
         }

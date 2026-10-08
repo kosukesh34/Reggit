@@ -15,7 +15,10 @@ export function bootstrapLegacyApp(
     window.__LIFF_APP_BOOTSTRAP__ = true;
     window.__clientDebugLog?.('app_bootstrap_set', {});
 
-    const hideLoading = () => document.getElementById('liff-loading')?.classList.add('liff-loading--hidden');
+    const hideLoading = () => {
+        if (document.querySelector('meta[name="line-login-required"]') !== null && (!window.__LIFF_READY__ || !window.__LINE_USER_ID__)) return;
+        document.getElementById('liff-loading')?.classList.add('liff-loading--hidden');
+    };
     const restoreIdentity = () => {
         if (window.__LINE_USER_ID__ || window.__IS_LIFF__) return;
         try {
@@ -28,6 +31,7 @@ export function bootstrapLegacyApp(
     };
     const createApp = () => {
         if (browser.app) return;
+        if (document.querySelector('meta[name="line-login-required"]') !== null && (!window.__LIFF_READY__ || !window.__LINE_USER_ID__)) return;
         restoreIdentity();
         browser.app = createInstance();
         window.__clientDebugLog?.('app_created', {

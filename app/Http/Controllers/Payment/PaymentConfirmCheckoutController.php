@@ -8,6 +8,7 @@ use App\Services\UserService;
 use App\UseCases\Order\Data\OrderFactory;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\UseCases\Payment\PaymentGateway;
+use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
@@ -37,14 +38,15 @@ class PaymentConfirmCheckoutController extends Controller
         $order = Order::where('project_id', $projectId)->where('user_id', $user->id)
             ->find($request->integer('order_id'));
         $sessionId = $order?->payment_session['result']['id'] ?? null;
-        if ($order === null || ! in_array($order->payment_session['channel'] ?? null, ['checkout', 'card'], true) || ! is_string($sessionId)) {
+        if ($order === null || ! in_array($order->payment_session['channel'] ?? null, ['checkout', 'checkout_web', 'card'], true) || ! is_string($sessionId)) {
             return response()->json(['error' => '決済情報が見つかりません'], 404);
         }
 
         try {
+            $gateway = app(ProjectPaymentGatewayResolver::class)->forOrder($order, $this->gateway);
             $paymentIntentId = $sessionId;
-            if ($order->payment_session['channel'] === 'checkout') {
-                $session = $this->gateway->retrieveCheckoutSession($sessionId);
+            if (in_array($order->payment_session['channel'], ['checkout', 'checkout_web'], true)) {
+                $session = $gateway->retrieveCheckoutSession($sessionId);
                 if (($session['payment_status'] ?? null) !== 'paid' || empty($session['payment_intent_id'])) {
                     return response()->json(['success' => false, 'message' => '決済が完了していません'], 409);
                 }

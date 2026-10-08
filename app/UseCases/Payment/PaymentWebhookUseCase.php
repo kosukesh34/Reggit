@@ -7,10 +7,14 @@ use App\Domain\Order\Repositories\OrderRepository;
 use App\Jobs\SyncOrderPointsToSmaregiJob;
 use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
+use App\Models\Project;
+use App\Models\Store;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
 use App\Services\PostCommitDomainEventDispatcher;
+use App\Util\AdminContext;
 use App\Util\LogHelper;
+use App\Util\StoreContext;
 use Illuminate\Support\Facades\DB;
 
 class PaymentWebhookUseCase
@@ -28,7 +32,7 @@ class PaymentWebhookUseCase
         private OrderService $orderService,
     ) {}
 
-    public function handle(string $payload, string $sigHeader, string $secret): bool
+    public function handle(string $payload, string $sigHeader, string $secret, ?int $projectId = null, ?int $settingId = null): bool
     {
         $event = $this->gateway->constructWebhookEvent($payload, $sigHeader, $secret);
         if (($event['type'] ?? null) !== self::EVENT_SUCCEEDED) {
@@ -40,6 +44,40 @@ class PaymentWebhookUseCase
             return true;
         }
 
+        $order = Order::withoutGlobalScopes()->find((int) $orderId);
+        if ($order === null || ! $this->matchesPaymentAccount($order, $event, $projectId, $settingId)) {
+            return true;
+        }
+
+        $previousProject = AdminContext::getCurrentProject();
+        AdminContext::setCurrentProject(Project::findOrFail($order->project_id));
+        try {
+            // Use the order's store, not a webhook query/header selection, for rewards and notifications.
+            $store = Store::where('project_id', $order->project_id)->findOrFail($order->store_id);
+
+            return app(StoreContext::class)->runForStore($store,
+                fn () => $this->processEvent($event, $projectId, $settingId));
+        } finally {
+            AdminContext::setCurrentProject($previousProject);
+        }
+    }
+
+    private function matchesPaymentAccount(Order $order, array $event, ?int $projectId, ?int $settingId): bool
+    {
+        if ($projectId === null) {
+            return $order->payment_setting_id === null;
+        }
+
+        return (int) $order->project_id === $projectId
+            && (int) $order->payment_setting_id === $settingId
+            && (int) ($event['metadata']['project_id'] ?? 0) === $projectId
+            && (int) ($event['metadata']['payment_setting_id'] ?? 0) === $settingId
+            && ($event['currency'] ?? '') === 'jpy';
+    }
+
+    private function processEvent(array $event, ?int $projectId, ?int $settingId): bool
+    {
+        $orderId = (int) $event['metadata']['order_id'];
         $confirmedEvent = null;
         $shouldDelaySmaregiSync = false;
         $syncOrderId = 0;
@@ -49,6 +87,9 @@ class PaymentWebhookUseCase
         DB::transaction(function () use (
             $orderId,
             $paidAmount,
+            $projectId,
+            $settingId,
+            $event,
             &$confirmedEvent,
             &$shouldDelaySmaregiSync,
             &$syncOrderId,
@@ -57,6 +98,11 @@ class PaymentWebhookUseCase
         ) {
             $aggregate = $this->orderRepository->findByPrimaryKeyForUpdate((int) $orderId);
             if ($aggregate === null) {
+                return;
+            }
+
+            $orderModel = Order::withoutGlobalScopes()->findOrFail((int) $orderId);
+            if (! $this->matchesPaymentAccount($orderModel, $event, $projectId, $settingId)) {
                 return;
             }
 

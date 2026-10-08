@@ -241,4 +241,23 @@ class ReservationControllerTest extends TestCase
         $response->assertStatus(Response::HTTP_BAD_REQUEST)
             ->assertJson(['error' => '選択した時間帯は満席です']);
     }
+
+    public function test_utc_reservation_input_is_checked_and_saved_in_store_timezone(): void
+    {
+        $project = $this->createDefaultProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $local = Carbon::parse(now()->addDays(2)->format('Y-m-d').' '.ShopSettingStore::getReservationTimeSlots($project->id)[0], 'Asia/Tokyo');
+        $this->withSession($this->sessionForUser($project, $user))->postJson($this->reservationUrl(), [
+            'reserved_at' => $local->copy()->utc()->toIso8601String(), 'number_of_people' => 2,
+        ])->assertCreated();
+        $reservation = Reservation::where('user_id', $user->id)->firstOrFail();
+        $this->assertSame($local->format('Y-m-d H:i:s'), $reservation->reserved_at->format('Y-m-d H:i:s'));
+
+        $nextLocal = $local->copy()->addDay();
+        $this->putJson($this->reservationUrl('/'.$reservation->id), [
+            'reserved_at' => $nextLocal->copy()->utc()->toIso8601String(), 'number_of_people' => 3,
+        ])->assertOk();
+        $this->assertSame($nextLocal->format('Y-m-d H:i:s'), $reservation->fresh()->reserved_at->format('Y-m-d H:i:s'));
+    }
 }

@@ -40,7 +40,7 @@
             </div>
             <div class="info-item">
                 <div class="info-label">支払い方法</div>
-                <div class="info-value">{{ $order->payment_method ?? '未設定' }}</div>
+                <div class="info-value">{{ $order->payment_brand_label }}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">ステータス</div>

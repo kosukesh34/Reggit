@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
+use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -24,6 +25,9 @@ class OrderPaymentSessionService
         $reservation = DB::transaction(function () use ($orderId, $projectId, $userId, $channel, $lease) {
             $order = Order::where('project_id', $projectId)->lockForUpdate()->findOrFail($orderId);
             $this->validateOrder($order, $userId);
+            if (in_array($channel, ['intent', 'card'], true) && ($order->payment_brand ?? 'card') !== 'card') {
+                throw new InvalidArgumentException('選択したブランドの決済画面をご利用ください');
+            }
 
             $saved = $order->payment_session;
             if (is_array($saved)) {
@@ -53,7 +57,9 @@ class OrderPaymentSessionService
         }
 
         try {
-            $result = $this->createAtGateway($channel, $reservation['amount'], $orderId);
+            $order = Order::where('project_id', $projectId)->findOrFail($orderId);
+            $gateway = app(ProjectPaymentGatewayResolver::class)->forOrder($order, $this->gateway);
+            $result = $this->createAtGateway($gateway, $channel, $reservation['amount'], $orderId);
         } catch (Throwable $e) {
             $this->clearReservation($orderId, $projectId, $lease);
             throw $e;
@@ -83,24 +89,30 @@ class OrderPaymentSessionService
         if ($order->status !== OrderStatus::PENDING) {
             throw new InvalidArgumentException('未決済の注文のみ決済できます');
         }
+        if (($order->payment_brand ?? 'card') === 'paypay' && ((int) $order->total_amount < 50 || (int) $order->total_amount > 1000000)) {
+            throw new InvalidArgumentException('PayPayのお支払い金額は50円〜100万円です');
+        }
         if ((int) $order->total_amount < 1) {
             throw new InvalidArgumentException('決済金額が不正です');
         }
     }
 
     /** @return array<string, string> */
-    private function createAtGateway(string $channel, int $amount, int $orderId): array
+    private function createAtGateway(PaymentGateway $gateway, string $channel, int $amount, int $orderId): array
     {
         if (in_array($channel, ['intent', 'card'], true)) {
-            return $this->gateway->createPaymentIntent($amount, $orderId);
+            return $gateway->createPaymentIntent($amount, $orderId);
         }
 
+        $order = Order::findOrFail($orderId);
+        $projectKey = Project::findOrFail($order->project_id)->project_key;
         $base = rtrim((string) config('app.url'), '/').'/mobile/payment/return';
-        $result = $this->gateway->createCheckoutSession(
+        $query = '&project_key='.rawurlencode($projectKey).'&surface='.($channel === 'checkout_web' ? 'web' : 'native');
+        $result = $gateway->createCheckoutSession(
             $amount,
             $orderId,
-            $base.'?status=success&order_id='.$orderId.'&session_id={CHECKOUT_SESSION_ID}',
-            $base.'?status=cancel&order_id='.$orderId,
+            $base.'?status=success&order_id='.$orderId.$query.'&session_id={CHECKOUT_SESSION_ID}',
+            $base.'?status=cancel&order_id='.$orderId.$query,
         );
         if (trim((string) ($result['url'] ?? '')) === '') {
             throw new RuntimeException('決済画面を作成できませんでした');

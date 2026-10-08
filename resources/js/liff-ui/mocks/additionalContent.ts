@@ -43,8 +43,8 @@ export const additionalCoupons: Record<string, CouponItem[]> = {
     { id: "sh2", title: "ドリンク 1杯無料", description: "お好きなドリンク1杯に使えます", validUntil: "2027-12-31" },
   ],
   store_counter_operations: [
-    { id: "co1", title: "セットポテト無料", description: "モバイルオーダー限定で利用できます", validUntil: "2026-09-30", image: "/assets/fastfood-feature.webp", featured: true },
-    { id: "co2", title: "ドリンクサイズアップ", description: "店頭・モバイルオーダー共通特典", validUntil: "2026-10-31", image: "/assets/fastfood-hero.webp" },
+    { id: "co1", title: "セットポテト無料", description: "モバイルオーダー限定で利用できます", validUntil: "2026-09-30", image: "/images/liff/image-placeholder.svg", featured: true },
+    { id: "co2", title: "ドリンクサイズアップ", description: "店頭・モバイルオーダー共通特典", validUntil: "2026-10-31", image: "/images/liff/image-placeholder.svg" },
   ],
   store_appointment_operations: [
     { id: "ao1", title: "ヘッドスパ 10分無料", description: "カットまたはカラーの予約時に利用できます", validUntil: "2026-10-31", image: "/images/beauty.jpg", featured: true },
@@ -86,8 +86,8 @@ export const additionalCoupons: Record<string, CouponItem[]> = {
     { id: "i2", title: "焼き鳥 五本盛り 200円引き", description: "会員証のご提示でテーブル会計に適用", validUntil: "2026-10-31", image: "/assets/izakaya-hero.webp" },
   ],
   store_fastfood: [
-    { id: "q1", title: "ポテト M 無料", description: "バーガーセットのモバイルオーダーで利用可能", validUntil: "2026-09-15", image: "/assets/fastfood-feature.webp", featured: true },
-    { id: "q2", title: "ダブルチーズセット 150円OFF", description: "ランチタイムを除く全時間帯で利用できます", validUntil: "2026-10-31", image: "/assets/fastfood-hero.webp" },
+    { id: "q1", title: "ポテト M 無料", description: "バーガーセットのモバイルオーダーで利用可能", validUntil: "2026-09-15", image: "/images/liff/image-placeholder.svg", featured: true },
+    { id: "q2", title: "ダブルチーズセット 150円OFF", description: "ランチタイムを除く全時間帯で利用できます", validUntil: "2026-10-31", image: "/images/liff/image-placeholder.svg" },
   ],
 };
 

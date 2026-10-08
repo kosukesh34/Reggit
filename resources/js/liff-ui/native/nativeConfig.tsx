@@ -18,6 +18,7 @@ export type NativeConfig = {
     hamburger?: NativeTab[];
   };
   theme?: { primary_color?: string };
+  native_chrome_colors?: Record<string, string>;
   header?: {
     image_url?: string;
     logo_url?: string;
@@ -28,6 +29,7 @@ export type NativeConfig = {
     image_url?: string;
     image_urls?: string[];
     menu_layout?: string;
+    show_member_card?: boolean;
   };
   products?: { display_layout?: string };
   member_screen?: {
@@ -114,17 +116,18 @@ function loadNativeConfig(key: string): Promise<NativeConfig> {
   return request;
 }
 
-export function NativeConfigProvider({ children }: PropsWithChildren) {
+export function NativeConfigProvider({ children, initialConfig }: PropsWithChildren<{ initialConfig?: NativeConfig }>) {
   const key = useMemo(projectKey, []);
-  const [state, setState] = useState<NativeConfigState>({ config: fallbackConfig, loading: true });
+  const [state, setState] = useState<NativeConfigState>({ config: initialConfig ? normalizeConfig(initialConfig) : fallbackConfig, loading: !initialConfig });
 
   useEffect(() => {
+    if (initialConfig) return;
     let mounted = true;
     void loadNativeConfig(key).then((config) => {
       if (mounted) setState({ config, loading: false });
     });
     return () => { mounted = false; };
-  }, [key]);
+  }, [key, initialConfig]);
 
   return <NativeConfigContext.Provider value={state}>{children}</NativeConfigContext.Provider>;
 }
@@ -169,9 +172,12 @@ export function nativeTabHref(tab: NativeTab): string {
 
 const icons: Record<string, string> = {
   home: 'fa-house',
-  member: 'fa-user',
+  member: 'fa-id-card',
   membership: 'fa-id-card',
-  profile: 'fa-user',
+  profile: 'fa-user-pen',
+  profileEdit: 'fa-user-pen',
+  lottery: 'fa-dice',
+  storeSearch: 'fa-location-dot',
   products: 'fa-bag-shopping',
   mobileOrder: 'fa-bag-shopping',
   dineInOrder: 'fa-utensils',
@@ -183,7 +189,7 @@ const icons: Record<string, string> = {
   queue: 'fa-list-ol',
   reservations: 'fa-calendar-days',
   gallery: 'fa-images',
-  announcements: 'fa-bell',
+  announcements: 'fa-bullhorn',
   news: 'fa-bell',
   terms: 'fa-file-lines',
   privacy: 'fa-shield-halved',
@@ -214,8 +220,9 @@ const sfIcons: Record<string, string> = {
 };
 
 export function nativeTabIconClass(tab: NativeTab): string {
-  const name = tab.key === 'products' && ['fork.knife', 'fork.knife.circle', 'cart.fill'].includes(tab.sf_symbol ?? '')
-    ? 'fa-utensils'
-    : sfIcons[tab.sf_symbol ?? ''] ?? icons[tab.key] ?? 'fa-circle';
+  const customIcon = tab.icon?.trim();
+  const name = customIcon?.startsWith('fa-') && !(tab.key !== 'home' && ['fa-home', 'fa-house'].includes(customIcon))
+    ? customIcon
+    : tab.key === "products" && ["", "fork.knife", "fork.knife.circle", "cart.fill"].includes(tab.sf_symbol ?? "") ? "fa-bag-shopping" : sfIcons[tab.sf_symbol ?? ''] ?? icons[tab.key] ?? 'fa-circle';
   return `fa-solid ${name}`;
 }

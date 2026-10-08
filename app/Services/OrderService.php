@@ -27,6 +27,8 @@ use App\Enums\PointTransactionType;
 use App\Models\MemberStampTransaction;
 use App\Models\MemberVisit;
 use App\Models\Order;
+use App\Models\Project;
+use App\Models\Settings\ProjectPaymentSetting;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Admin\MemberBenefitService;
@@ -80,8 +82,26 @@ class OrderService
             $lineItems = $this->toOrderLineItems($orderItems);
             $totalAmount = OrderLineItem::sumTotal($lineItems);
 
+            $paymentSetting = ProjectPaymentSetting::current($projectId);
+            $brand = $paymentMethod === PaymentMethod::STRIPE ? ($orderData['payment_brand'] ?? 'card') : 'cash';
+            if ($orderType === OrderType::MOBILE && $paymentSetting !== null && ! in_array($brand, $paymentSetting->methods, true)) {
+                throw new OrderOperationException('このお支払い方法は現在利用できません');
+            }
+            if ($paymentSetting === null && ($brand !== 'card' && $brand !== 'cash')) {
+                throw new OrderOperationException('このお支払い方法は現在利用できません');
+            }
+            if ($paymentMethod === PaymentMethod::STRIPE && $paymentSetting === null
+                && Project::find($projectId)?->project_key !== (config('app.default_project_key') ?: 'default')) {
+                throw new OrderOperationException('このプロジェクトの決済設定を登録してください');
+            }
             $pointsUsed = (int) ($orderData['points_used'] ?? 0);
             $finalAmount = max(0, $totalAmount - $pointsUsed);
+            if ($paymentMethod === PaymentMethod::STRIPE && $finalAmount < 1) {
+                throw new OrderOperationException('オンライン決済の金額は1円以上必要です。ポイント利用額を減らしてください');
+            }
+            if ($brand === 'paypay' && ($finalAmount < 50 || $finalAmount > 1000000)) {
+                throw new OrderOperationException('PayPayのお支払い金額は50円〜100万円です');
+            }
 
             $orderId = $this->orderRepository->persistPending(
                 new PendingOrder(
@@ -97,6 +117,9 @@ class OrderService
             );
 
             $order = Order::findOrFail($orderId);
+            $order->payment_brand = $brand;
+            $order->payment_setting_id = $paymentMethod === PaymentMethod::STRIPE ? $paymentSetting?->id : null;
+            $order->save();
             if ($paymentMethod !== PaymentMethod::STRIPE) {
                 $this->orderNumberAssigner->assignIfMissing((int) $order->id, $projectId);
                 $order->refresh();

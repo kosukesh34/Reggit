@@ -202,6 +202,7 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
         title: typeof incoming.title === 'string' && incoming.title.trim() !== '' ? incoming.title : 'お知らせのタイトル',
         date: typeof incoming.published_at === 'string' ? incoming.published_at : new Date().toISOString(),
         category: incoming.is_pinned === true ? '重要' : 'お知らせ',
+        images: Array.isArray(incoming.image_urls) ? incoming.image_urls.filter((url): url is string => typeof url === "string") : undefined,
         body: typeof incoming.body === 'string' ? incoming.body : '',
         image: typeof incoming.image_url === 'string' && incoming.image_url !== '' ? incoming.image_url : undefined,
         isRead: false,

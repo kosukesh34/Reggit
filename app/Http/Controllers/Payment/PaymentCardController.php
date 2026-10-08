@@ -8,6 +8,7 @@ use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Scopes\StoreAccessScope;
+use App\Models\Settings\ProjectPaymentSetting;
 use App\Util\AdminContext;
 
 class PaymentCardController extends Controller
@@ -30,7 +31,8 @@ class PaymentCardController extends Controller
 
         return response()->view('payment.card', [
             'amount' => (int) $paymentOrder->total_amount,
-            'stripeKey' => config('services.stripe.key'),
+            'stripeKey' => $paymentOrder->payment_setting_id === null ? config('services.stripe.key')
+                : ProjectPaymentSetting::where('project_id', $paymentOrder->project_id)->findOrFail($paymentOrder->payment_setting_id)->publishable_key,
             'clientSecret' => $clientSecret,
             'successUrl' => $returnUrl.'&status=success',
             'cancelUrl' => $returnUrl.'&status=cancel',

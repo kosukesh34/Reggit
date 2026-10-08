@@ -4,6 +4,7 @@ import { resolvePostalAddress, validatePostalCode } from './postalAddressPolicy.
 
 test('postal code validation normalizes separators and accepts exactly seven digits', () => {
     assert.deepEqual(validatePostalCode('100－0001'), { digits: '1000001', errorMessage: null });
+    assert.deepEqual(validatePostalCode('１００－０００１'), { digits: '1000001', errorMessage: null });
     assert.deepEqual(validatePostalCode('12'), { digits: '12', errorMessage: '郵便番号を3桁以上入力してください。' });
     assert.deepEqual(validatePostalCode('1234'), { digits: '1234', errorMessage: '郵便番号は7桁で入力してください。' });
     assert.deepEqual(validatePostalCode('12345678'), { digits: '12345678', errorMessage: '郵便番号は7桁で入力してください。' });

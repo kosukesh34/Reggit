@@ -64,6 +64,48 @@ class AdminAnnouncementsTest extends TestCase
         $this->assertModelMissing($group);
     }
 
+    public function test_delivery_accepts_ten_images_and_rejects_eleven(): void
+    {
+        Storage::fake('local');
+        $project = $this->createDistributionProject();
+        $this->actingAs($this->createAdmin($project), 'admin');
+        $data = [
+            'title' => '複数画像', 'body' => '本文',
+            'audience_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK,
+            'delivery_timing' => Announcement::DELIVERY_TIMING_IMMEDIATE,
+            'send_notification' => '0',
+            'image_files' => array_map(fn ($i) => UploadedFile::fake()->image($i.'.png', 1600, 1200), range(1, 10)),
+        ];
+        $route = route('admin.announcements.delivery.store', ['project_key' => $project->project_key]);
+        $this->post($route, $data)->assertSessionHasNoErrors();
+        $announcement = Announcement::withoutGlobalScopes()->where('title', '複数画像')->firstOrFail();
+        $this->assertCount(10, $announcement->image_paths);
+        foreach ($announcement->image_paths as $path) {
+            Storage::disk('local')->assertExists($path);
+        }
+        $this->assertCount(10, $announcement->imageUrls());
+        $size = getimagesizefromstring(Storage::disk('local')->get($announcement->image_paths[0]));
+        $this->assertSame([1024, 768], [$size[0], $size[1]]);
+        $data['image_files'][] = UploadedFile::fake()->image('11.png');
+        $this->post($route, $data)->assertSessionHasErrors('image_files');
+    }
+
+    public function test_signed_media_requires_signature_and_revokes_replaced_images(): void
+    {
+        Storage::fake('local');
+        $project = $this->createDistributionProject();
+        Storage::disk('local')->put('announcement-private/test.png', 'image');
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id, 'image_paths' => ['announcement-private/test.png'],
+        ]);
+        $url = $announcement->imageUrls()[0];
+        $this->get($url)->assertOk();
+        $this->get(strtok($url, '?'))->assertForbidden();
+        $announcement->update(['image_paths' => ['announcement-private/replaced.png']]);
+        $this->get($url)->assertNotFound();
+        $this->assertArrayNotHasKey('image_paths', $announcement->toArray());
+    }
+
     private function createProject(): Project
     {
         return Project::firstOrCreate(
@@ -213,8 +255,8 @@ class AdminAnnouncementsTest extends TestCase
             ]));
 
         $response->assertStatus(200)
-            ->assertSee('name="image_file"', false)
-            ->assertSee('ドラッグ＆ドロップ')
+            ->assertSee('name="image_files[]"', false)
+            ->assertSee('最大10枚')
             ->assertSee('タイトル')
             ->assertDontSee('お知らせの内容をつくる')
             ->assertDontSee('会員がひと目で内容を理解できる')

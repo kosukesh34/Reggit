@@ -5,6 +5,7 @@ export type Announcement = {
     id?: number | string;
     title?: string;
     body?: string;
+    image_urls?: string[];
     image_url?: string | null;
     published_at?: string;
     is_pinned?: boolean;

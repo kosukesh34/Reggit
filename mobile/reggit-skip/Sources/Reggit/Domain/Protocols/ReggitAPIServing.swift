@@ -56,6 +56,7 @@ protocol ReggitAPIServing: Sendable {
     func playLottery(entitlementId: Int) async throws -> LotteryPlayResult
     func notifyLotteryWin(entitlementId: Int) async throws
 
+    func fetchPaymentMethods() async throws -> [String]
     func fetchProducts() async throws -> [ProductItem]
     func createOrder(items: [OrderLineRequest], paymentMethod: String, notes: String?) async throws -> OrderSnapshot
     func createPaymentCheckout(orderId: Int) async throws -> PaymentCheckoutSession
@@ -80,6 +81,8 @@ protocol ReggitAPIServing: Sendable {
 }
 
 extension ReggitAPIServing {
+    func fetchPaymentMethods() async throws -> [String] { ["card", "cash"] }
+
     func confirmExistingMemberLink(token: String) async throws -> ExistingMemberLinkResult {
         throw ReggitAPIError.invalidResponse
     }
