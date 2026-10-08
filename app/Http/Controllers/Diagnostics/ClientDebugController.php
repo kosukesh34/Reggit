@@ -16,7 +16,7 @@ class ClientDebugController extends Controller
 
     public function __invoke(Request $request)
     {
-        if (! config('app.debug') && ! (bool) config('app.client_debug_enabled', false)) {
+        if (! (bool) config('app.client_debug_enabled', false)) {
             abort(404);
         }
 
