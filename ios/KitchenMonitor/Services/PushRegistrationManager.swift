@@ -15,7 +15,7 @@ extension Notification.Name {
 final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = PushRegistrationManager()
     private var isConfigured = false
-    private var registrationTask: Task<Void, Never>?
+    private var registrationTask: Task<Void, Error>?
     private var isLoggingOut = false
 
     func configure() {
@@ -89,15 +89,9 @@ final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate 
 
     @MainActor
     private func saveAndRegister(token: String) {
-        guard !isLoggingOut, StoreAppCredentialStore.token(app: "kitchen") != nil else { return }
-        let previous = registrationTask
-        registrationTask = Task { @MainActor in
-            await previous?.value
-            guard !isLoggingOut, StoreAppCredentialStore.token(app: "kitchen") != nil else { return }
-            let settings = KitchenSettingsStore().load()
+        Task { @MainActor in
             do {
-                try await KitchenAPIClient().registerDevice(pushToken: token, deviceName: settings.deviceName)
-                UserDefaults.standard.set(token, forKey: AppConstants.Storage.pushTokenKey)
+                try await registerDevice(token: token, deviceName: KitchenSettingsStore().load().deviceName)
             } catch {
                 print("[Kitchen FCM] registration failed: \(error.localizedDescription)")
             }
@@ -105,9 +99,23 @@ final class PushRegistrationManager: NSObject, UNUserNotificationCenterDelegate 
     }
 
     @MainActor
+    func registerDevice(token: String, deviceName: String) async throws {
+        guard !isLoggingOut, StoreAppCredentialStore.token(app: "kitchen") != nil else { throw CancellationError() }
+        let previous = registrationTask
+        let task = Task { @MainActor in
+            _ = try? await previous?.value
+            guard !isLoggingOut, StoreAppCredentialStore.token(app: "kitchen") != nil else { throw CancellationError() }
+            try await KitchenAPIClient().registerDevice(pushToken: token, deviceName: deviceName)
+            UserDefaults.standard.set(token, forKey: AppConstants.Storage.pushTokenKey)
+        }
+        registrationTask = task
+        try await task.value
+    }
+
+    @MainActor
     func unregisterDevice() async {
         isLoggingOut = true
-        await registrationTask?.value
+        _ = try? await registrationTask?.value
         if let token = UserDefaults.standard.string(forKey: AppConstants.Storage.pushTokenKey), !token.isEmpty {
             do {
                 try await KitchenAPIClient().unregisterDevice(pushToken: token)
