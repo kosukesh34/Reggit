@@ -24,7 +24,7 @@ PR #286 contains the profile fixes; PR #287 contains the registration fixes. Bot
 Regression tests fail against the preceding implementation and pass with fixes.
 Independent PHP processes verify that concurrent users receive 0001 and 0002.
 
-## Architecture findings still requiring work
+## Architecture findings
 
 ### P1 corrected: External registration recovery identity
 
@@ -42,13 +42,16 @@ synchronization from the read projection only after preserving the current point
 freshness contract with behavior tests. This would improve locality and make read
 failures independently testable.
 
-### P2: Registration holds a project lock during external I/O
+### P2 corrected: Registration held a project lock during external I/O
 
-The correctness fix serializes registration per project, including Smaregi I/O.
-It does not serialize different projects. A durable attempt/reservation module
-would allow releasing the lock before network I/O without losing code ownership.
-Sequential allocation still scans existing codes; measure this with realistic
-member counts before replacing the existing compatibility scan.
+The durable reservation transaction commits before network I/O. Finalization of a
+reserved code locks the user. External lookup/creation happens before that
+transaction, allowing different users to contact Smaregi without holding local
+transaction locks. An independent PDO connection verifies this
+with `FOR UPDATE NOWAIT` inside the external creation callback; the check fails
+against the old implementation. Local-only allocation retains the project lock.
+Sequential allocation still scans existing codes; measure realistic member counts
+before replacing the compatibility scan.
 
 `docs/ARCHITECTURE.md` explicitly preserves thin Admin UseCases; deleting them
 would conflict with the established architecture. File length alone is not a
@@ -64,7 +67,7 @@ external delivery is not guaranteed.
 
 ## Validation
 
-- Dedicated local MySQL 8.4, PHP 8.4: 1,352 core tests, 5,878 assertions passed.
+- Dedicated local MySQL 8.4, PHP 8.4: 1,352 core tests, 5,880 assertions passed.
   Smaregi real integration group excluded; external API behavior was not tested.
 - PHPStan and Pint passed.
 - Frontend typecheck, ESLint and 54 unit tests passed.
