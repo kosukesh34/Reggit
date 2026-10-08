@@ -32,11 +32,12 @@ class MemberVisitRecorder
             'smaregi_transaction_head_id' => $smaregiTransactionHeadId,
         ]);
 
-        $currentLast = DateUtil::nullableCarbon($member->getRawOriginal('last_visited_at'));
-        if ($currentLast === null || $visitedCarbon->gt($currentLast)) {
-            $member->update(['last_visited_at' => $visitedCarbon]);
-            $member->refresh();
-        }
+        Member::query()
+            ->where('project_id', $member->project_id)
+            ->whereKey($member->id)
+            ->where(fn ($query) => $query->whereNull('last_visited_at')->orWhere('last_visited_at', '<', $visitedCarbon))
+            ->update(['last_visited_at' => $visitedCarbon]);
+        $member->refresh();
 
         return $visit;
     }

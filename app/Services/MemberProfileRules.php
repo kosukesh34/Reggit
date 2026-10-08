@@ -7,6 +7,7 @@ use App\Enums\MemberNotificationPreference;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Rules\ProfileValidationRules;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\In;
 
 /** Builds profile validation rules from project settings. */
 final class MemberProfileRules
@@ -61,7 +62,7 @@ final class MemberProfileRules
 
     /**
      * @param  array<string, mixed>  $cf
-     * @return array<string, list<string>>
+     * @return array<string, list<string|In>>
      */
     private function buildCustomFieldValidationRules(string $key, array $cf): array
     {
@@ -77,7 +78,7 @@ final class MemberProfileRules
                 $key => array_merge($base, ['array']),
             ];
             if ($values !== []) {
-                $rules[$key.'.*'] = ['string', 'in:'.implode(',', $values)];
+                $rules[$key.'.*'] = ['string', Rule::in($values)];
             }
 
             return $rules;
@@ -88,7 +89,7 @@ final class MemberProfileRules
         }
 
         if (ProfileCustomFieldInputType::needsValues($inputType) && $values !== []) {
-            return [$key => array_merge($base, ['string', 'in:'.implode(',', $values)])];
+            return [$key => array_merge($base, ['string', Rule::in($values)])];
         }
 
         return [$key => array_merge($base, ['string', 'max:'.ProfileValidationRules::CUSTOM_TEXT_MAX])];
