@@ -10,5 +10,6 @@ final class PendingReservation
         public readonly \DateTimeInterface $reservedAt,
         public readonly int $numberOfPeople,
         public readonly ?string $notes,
+        public readonly ?int $storeId = null,
     ) {}
 }

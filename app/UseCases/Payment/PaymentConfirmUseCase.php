@@ -94,6 +94,10 @@ class PaymentConfirmUseCase
             }
             $this->orderService->applyStripePaymentRewardsIfNeeded($order);
 
+            if ($confirmedEvent !== null) {
+                $this->postCommitEvents->record($confirmedEvent);
+            }
+
             // フロント決済完了経路では即時スマレジ同期（Webhook 遅延より先に送る）
             if ($aggregate->shouldSyncToSmaregi()) {
                 $pointsSyncEvent = new OrderPointsSyncRequested(

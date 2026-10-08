@@ -22,7 +22,7 @@ class Reservation extends Model
     }
 
     protected $fillable = [
-        'project_id', 'store_id',
+        'project_id', 'store_id', 'version',
         'user_id',
         'reservation_number',
         'reserved_at',
@@ -37,6 +37,7 @@ class Reservation extends Model
     /** @var array<string, string> */
     protected $casts = [
         'reserved_at' => 'datetime',
+        'version' => 'integer',
         'number_of_people' => 'integer',
         'course_price' => 'integer',
     ];

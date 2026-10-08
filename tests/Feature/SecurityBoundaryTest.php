@@ -266,7 +266,17 @@ class SecurityBoundaryTest extends TestCase
         } catch (\RuntimeException $e) {
             $this->assertSame('gateway unavailable', $e->getMessage());
         }
-        $this->assertNull($order->fresh()->payment_session);
+        // A timeout can hide a successfully created gateway session. Retain
+        // the expired marker so cancellation cannot silently abandon payment.
+        $saved = $order->fresh()->payment_session;
+        $this->assertSame('intent', $saved['channel']);
+        $this->assertNotEmpty($saved['lease']);
+        $this->assertTrue(now()->gte($saved['expires_at']));
+        $retryGateway = \Mockery::mock(PaymentGateway::class);
+        $retryGateway->shouldReceive('createPaymentIntent')->once()
+            ->andReturn(['id' => 'pi_retry', 'client_secret' => 'retry_secret']);
+        $this->assertSame('pi_retry', (new OrderPaymentSessionService($retryGateway))
+            ->create($order->id, $this->project->id, $user->id, 'intent')['id']);
     }
 
     public function test_expired_payment_reservation_can_be_recovered(): void

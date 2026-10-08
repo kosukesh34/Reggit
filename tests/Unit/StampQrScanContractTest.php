@@ -6,42 +6,27 @@ use PHPUnit\Framework\TestCase;
 
 class StampQrScanContractTest extends TestCase
 {
-    public function test_アプリ内カメラはgetusermediaとjsqrで読むこと(): void
+    public function test_スタンプ付与urlは自サイトのapiだけを許可すること(): void
     {
         $root = dirname(__DIR__, 2);
-        $popup = (string) file_get_contents($root.'/resources/js/liff-ui/components/stamp/StampScannerPopup.tsx');
-
-        $this->assertStringContainsString("from 'jsqr'", $popup);
-        $this->assertStringContainsString('webkitGetUserMedia', $popup);
-        $this->assertStringContainsString('width: 640', $popup);
-        $this->assertStringContainsString('height: 420', $popup);
-        $this->assertStringContainsString("facingMode: 'environment'", $popup);
-        $this->assertStringContainsString('stamp-scanner__live', $popup);
-        $this->assertStringNotContainsString('BarcodeDetector', $popup);
-        $this->assertStringNotContainsString('CenterPopup', $popup);
-        $this->assertStringNotContainsString('この端末ではアプリ内カメラに対応していません', $popup);
-        $this->assertStringContainsString('parseStampGrant', $popup);
-        $this->assertStringContainsString('STAMP_GRANT_INVALID_QR_MESSAGE', $popup);
-        $this->assertStringContainsString('onInvalid', $popup);
-
-        $grantUtil = (string) file_get_contents($root.'/resources/js/liff-ui/utils/stampGrant.ts');
-        $this->assertStringContainsString("export const STAMP_GRANT_INVALID_QR_MESSAGE = 'スタンプ付与用のQRではありません'", $grantUtil);
+        $grant = (string) file_get_contents($root.'/resources/js/liff-ui/utils/stampGrant.ts');
+        $api = (string) file_get_contents($root.'/resources/js/liff-ui/services/reggitApi.ts');
+        $this->assertStringContainsString('parsed.origin !== window.location.origin', $grant);
+        $this->assertStringContainsString('grantUrl.origin !== window.location.origin', $api);
+        $this->assertStringContainsString('STAMP_GRANT_INVALID_QR_MESSAGE', $grant);
     }
 
-    public function test_カメラ起動はクリックのユーザー操作内で始めること(): void
+    public function test_ネイティブスタンプ画面は付与完了後にapiを再取得すること(): void
     {
         $root = dirname(__DIR__, 2);
-        $popup = (string) file_get_contents($root.'/resources/js/liff-ui/components/stamp/StampScannerPopup.tsx');
-        $stampsView = (string) file_get_contents($root.'/resources/js/frontend/features/stamps/StampsView.tsx');
-        $simpleRewards = (string) file_get_contents($root.'/resources/js/liff-ui/pages/SimpleRewardsPage.tsx');
-        $rewardsDemo = (string) file_get_contents($root.'/resources/js/liff-ui/features/demo/RewardsDemo.tsx');
-
-        $this->assertStringContainsString('export function openStampScanner', $popup);
-        $this->assertStringContainsString('openStampScanner(setScannerOpen)', $stampsView);
-        $this->assertStringContainsString('openStampScanner(setScannerOpen)', $simpleRewards);
-        $this->assertStringContainsString('openStampScanner(setScannerOpen)', $rewardsDemo);
-        $this->assertStringNotContainsString('onClick={() => setScannerOpen(true)}', $stampsView);
-        $this->assertStringNotContainsString('onClick={() => setScannerOpen(true)}', $simpleRewards);
+        $page = (string) file_get_contents($root.'/resources/js/liff-ui/native/NativeStampsPage.tsx');
+        $hook = (string) file_get_contents($root.'/resources/js/liff-ui/hooks/useStampGrantFromUrl.ts');
+        $this->assertStringContainsString('useStampGrantFromUrl()', $page);
+        $this->assertStringContainsString('grant.phase === "success") void reload()', $page);
+        $this->assertStringContainsString('parseStampGrant(raw)', $hook);
+        $this->assertStringContainsString('await addStamp(payload.value)', $hook);
+        $this->assertStringContainsString('clearStampGrantCodeFromUrl()', $hook);
+        $this->assertStringContainsString('setPhase("error")', $hook);
     }
 
     public function test_liff_stateの付与トークンをクエリから取り出せること(): void

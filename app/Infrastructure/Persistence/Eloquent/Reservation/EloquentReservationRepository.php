@@ -8,9 +8,22 @@ use App\Domain\Reservation\ValueObjects\PendingReservation;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation as ReservationModel;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class EloquentReservationRepository implements ReservationRepository
 {
+    public function findByIdForUpdate(int $reservationId, int $projectId, ?int $userId = null): ?ReservationAggregate
+    {
+        $query = ReservationModel::query()->whereKey($reservationId)->where('project_id', $projectId);
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+        $model = $query->lockForUpdate()->first();
+
+        return $model === null ? null : ReservationMapper::toDomain($model);
+    }
+
     public function findById(int $reservationId, int $projectId): ?ReservationAggregate
     {
         $model = ReservationModel::query()
@@ -53,6 +66,7 @@ class EloquentReservationRepository implements ReservationRepository
     {
         $model = ReservationModel::create([
             'project_id' => $pending->projectId,
+            'store_id' => $pending->storeId,
             'user_id' => $pending->userId,
             'reserved_at' => $pending->reservedAt,
             'number_of_people' => $pending->numberOfPeople,
@@ -116,19 +130,21 @@ class EloquentReservationRepository implements ReservationRepository
 
     public function save(ReservationAggregate $reservation): void
     {
-        $model = ReservationModel::query()
-            ->whereKey($reservation->id()->value())
-            ->where('project_id', $reservation->projectId())
-            ->first();
-        if ($model === null) {
-            throw new \RuntimeException('Reservation not found for save: '.$reservation->id()->value());
-        }
-
-        $model->update([
-            'status' => $reservation->status(),
-            'reserved_at' => $reservation->reservedAt(),
-            'number_of_people' => $reservation->numberOfPeople(),
-            'notes' => $reservation->notes(),
-        ]);
+        DB::transaction(function () use ($reservation): void {
+            $model = ReservationModel::query()
+                ->whereKey($reservation->id()->value())
+                ->where('project_id', $reservation->projectId())
+                ->lockForUpdate()->firstOrFail();
+            if ((int) $model->version !== $reservation->version()) {
+                throw ValidationException::withMessages(['reservation' => '予約が他の操作で変更されました。再読み込みしてください。']);
+            }
+            $model->update([
+                'status' => $reservation->status(),
+                'reserved_at' => $reservation->reservedAt(),
+                'number_of_people' => $reservation->numberOfPeople(),
+                'notes' => $reservation->notes(),
+                'version' => $reservation->version() + 1,
+            ]);
+        });
     }
 }

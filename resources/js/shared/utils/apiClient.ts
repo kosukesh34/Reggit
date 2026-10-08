@@ -186,14 +186,17 @@ export class ApiClient {
             ...this.baseHeaders,
             ...headers,
         };
-        // Cookie-authenticated API requests require the page's session CSRF token.
-        // Keep it confined to this origin, including when an absolute URL is used.
-        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        // Credentials belong only to the application origin. Reject before
+        // adding headers or sending a request, including protocol-relative URLs.
+        if (typeof window !== 'undefined') {
             const requestUrl = new URL(endpoint, window.location.origin);
-            if (requestUrl.origin === window.location.origin) {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                if (csrfToken) requestHeaders['X-CSRF-TOKEN'] = csrfToken;
+            if (requestUrl.origin !== window.location.origin) {
+                return { success: false, error: '外部サイトへのAPIリクエストは許可されていません' };
             }
+            const csrfToken = typeof document !== 'undefined'
+                ? document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                : null;
+            if (csrfToken) requestHeaders['X-CSRF-TOKEN'] = csrfToken;
         }
         const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
         if (isFormData) {
