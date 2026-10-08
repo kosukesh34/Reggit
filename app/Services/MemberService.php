@@ -12,6 +12,7 @@ use App\Enums\ScheduledDeliveryType;
 use App\Jobs\SendAfterRegistrationJob;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
+use App\Models\MemberRegistrationAttempt;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
@@ -41,6 +42,7 @@ class MemberService
         private MemberSettings $shopSettingRepository,
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberProfileRules $profileRules,
+        private MemberRegistrationRecovery $registrationRecovery,
     ) {}
 
     public function getMemberData(User $user): array
@@ -64,6 +66,14 @@ class MemberService
             ];
         }
 
+        if ((string) $member->smaregi_customer_id === '' && Cache::add('member_registration_recovery:'.$member->id, 1, 30)) {
+            try {
+                $this->registrationRecovery->recoverForMember($member);
+                $member->refresh();
+            } catch (\Throwable $exception) {
+                LogHelper::warning('[Member] registration recovery unavailable', ['member_id' => $member->id]);
+            }
+        }
         $this->maybeSyncMemberPointsFromSmaregi($member);
         $member->refresh();
         $member->syncPointsLedger();
@@ -450,7 +460,13 @@ class MemberService
      */
     public function registerMember(User $user, array $data, bool $requireSmaregi = true): Member
     {
-        return DB::transaction(function () use ($user, $data, $requireSmaregi): Member {
+        $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+        $contractId = trim((string) $this->smaregiApi->getContractIdForProject($projectId));
+        $hasPendingAttempt = MemberRegistrationAttempt::where('project_id', $projectId)->where('user_id', $user->id)->exists();
+        $attempt = $contractId !== '' || $hasPendingAttempt
+            ? $this->reserveRegistrationAttempt($user, $projectId, $contractId) : null;
+
+        return DB::transaction(function () use ($user, $data, $requireSmaregi, $attempt): Member {
             User::query()->whereKey($user->id)->lockForUpdate()->first();
 
             $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
@@ -461,7 +477,7 @@ class MemberService
                 throw new \Exception('既に会員登録済みです');
             }
 
-            $memberNumber = $this->generateMemberNumber($projectId);
+            $memberNumber = $attempt?->member_number ?? $this->generateMemberNumber($projectId);
             $smaregiCustomerId = null;
             $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
             $resolved = $this->memberRankResolver->resolve(
@@ -483,9 +499,7 @@ class MemberService
                 ? trim((string) $defaultRank['smaregi_rank_id'])
                 : '';
 
-            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-            $contractId = is_string($contractId) ? trim($contractId) : '';
-            if ($contractId !== '') {
+            if ($attempt !== null) {
                 $body = $this->buildSmaregiCustomerBody(
                     $memberNumber,
                     $data,
@@ -493,9 +507,8 @@ class MemberService
                     $defaultRankKey,
                     $projectId,
                 );
-                $this->smaregiApi->clearLastErrorDetail();
-                $result = $this->smaregiApi->createCustomer($contractId, $body);
-                if ($result === null || ! isset($result['customerId']) || (string) $result['customerId'] === '') {
+                $smaregiCustomerId = $this->registrationRecovery->createOrRecover($attempt, $body);
+                if ($smaregiCustomerId === null) {
                     LogHelper::warning('[Member] smaregi create customer failed', [
                         'project_id' => $projectId,
                         'user_id' => (int) $user->id,
@@ -507,8 +520,6 @@ class MemberService
                             'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
                         );
                     }
-                } else {
-                    $smaregiCustomerId = (string) $result['customerId'];
                 }
             }
 
@@ -563,7 +574,36 @@ class MemberService
                 $user->update($userUpdates);
             }
 
+            if ($attempt !== null && $smaregiCustomerId !== null) {
+                $attempt->delete();
+            }
+
             return $member->load('user');
+        });
+    }
+
+    private function reserveRegistrationAttempt(User $user, int $projectId, string $contractId): MemberRegistrationAttempt
+    {
+        return DB::transaction(function () use ($user, $projectId, $contractId): MemberRegistrationAttempt {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            Project::query()->whereKey($projectId)->lockForUpdate()->firstOrFail();
+            if (Member::query()->where('user_id', $user->id)->exists()) {
+                throw new \Exception('既に会員登録済みです');
+            }
+            $attempt = MemberRegistrationAttempt::where('project_id', $projectId)->where('user_id', $user->id)->first();
+            if ($attempt !== null) {
+                if ($attempt->contract_id !== $contractId) {
+                    throw new \RuntimeException('登録途中にスマレジ契約が変更されました。管理者にご確認ください。');
+                }
+
+                return $attempt;
+            }
+
+            return MemberRegistrationAttempt::create([
+                'project_id' => $projectId, 'user_id' => $user->id,
+                'member_number' => $this->generateMemberNumber($projectId),
+                'contract_id' => $contractId, 'registration_key' => (string) Str::uuid(),
+            ]);
         });
     }
 
@@ -620,12 +660,11 @@ class MemberService
 
         if ($type === 'sequential') {
             $next = $this->shopSettingRepository->getMemberCodeNextNumber($projectId);
+            $reserved = MemberRegistrationAttempt::where('project_id', $projectId)->pluck('member_number');
             $maxExisting = Member::withoutGlobalScopes()->where('project_id', $projectId)
-                ->whereNotNull('member_number')
-                ->where('member_number', '!=', '')
-                ->get()
-                ->map(function (Member $m) use ($prefix) {
-                    $num = $m->member_number;
+                ->whereNotNull('member_number')->where('member_number', '!=', '')
+                ->pluck('member_number')->concat($reserved)
+                ->map(function (string $num) use ($prefix): int {
                     if ($prefix !== '') {
                         if (! str_starts_with($num, $prefix)) {
                             return 0;
@@ -634,8 +673,7 @@ class MemberService
                     }
 
                     return ctype_digit($num) ? (int) $num : 0;
-                })
-                ->max();
+                })->max();
             $next = max($next, ($maxExisting ?? 0) + 1);
             $body = sprintf('%0'.$bodyLen.'d', $next);
             if (strlen($body) > $bodyLen) {
@@ -660,7 +698,7 @@ class MemberService
                 $candidate = substr($candidate, 0, 20);
             }
             $exists = Member::withoutGlobalScopes()->where('project_id', $projectId)->where('member_number', $candidate)->exists();
-            if (! $exists) {
+            if (! $exists && ! MemberRegistrationAttempt::where('project_id', $projectId)->where('member_number', $candidate)->exists()) {
                 return $candidate;
             }
         }

@@ -20,25 +20,19 @@ this is not a claim that every file or external integration is defect-free.
 - P1: Registration and coupon notifications could execute before the transaction
   committed. Both jobs now use `afterCommit`; rollback discards the callbacks.
 
-PR #286 contains the profile fixes. Registration fixes are a separate small PR.
+PR #286 contains the profile fixes; PR #287 contains the registration fixes. Both are merged.
 Regression tests fail against the preceding implementation and pass with fixes.
 Independent PHP processes verify that concurrent users receive 0001 and 0002.
 
 ## Architecture findings still requiring work
 
-### P1: External registration is not atomic with local registration
+### P1 corrected: External registration recovery identity
 
-`MemberService::registerMember` creates a Smaregi customer before persisting the
-member and local registration benefits. Later rollback, process death, or an
-ambiguous provider response can leave an external-only customer. A project lock
-fixes local code collisions but does not roll back an external write.
-
-The registration module should retain a durable registration attempt and reserved
-code, reconcile external creation through the adapter, and resume local
-finalization on retry. The existing `requireSmaregi` contract requires synchronous
-external success for explicit registration; changing to unconditional asynchronous
-registration would change behavior. Do not automatically delete or attach an
-external customer based only on a matching code without verifying ownership.
+A durable attempt now reserves the code and contract before external creation.
+New external customers receive a random attempt marker in note2 (owner approved).
+Retry requires matching contract, code and marker, and never overwrites existing
+note2. Local rollback retains the identity. See MEMBER_REGISTRATION_RECOVERY.md
+for limitations, deployment order and failure behavior.
 
 ### P2: Read paths perform writes and external synchronization
 
@@ -62,14 +56,15 @@ reason to introduce additional pass-through modules.
 
 ## Related existing work
 
-PR #262 already implements announcement recovery and scheduled coupon retries.
-It remains separate work and is not counted as merged or verified in this review.
-The shared coupon `afterCommit` fix overlaps its observer change intentionally;
-no second retry implementation was added here.
+PR #262 is merged after latest-HEAD CI and local regression checks. It recovers
+announcement delivery and coupon batches, and fences expired announcement workers
+so they cannot overwrite a newer retry's state. At-least-once delivery may still
+duplicate successful recipients after partial provider failures; exactly-once
+external delivery is not guaranteed.
 
 ## Validation
 
-- Dedicated local MySQL 8.4, PHP 8.4: 1,333 core tests, 5,779 assertions passed.
+- Dedicated local MySQL 8.4, PHP 8.4: 1,352 core tests, 5,878 assertions passed.
   Smaregi real integration group excluded; external API behavior was not tested.
 - PHPStan and Pint passed.
 - Frontend typecheck, ESLint and 54 unit tests passed.
