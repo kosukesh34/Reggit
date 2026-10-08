@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Settings\Repositories\AppConfigSettings;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Repositories\Contracts\ProjectRepository;
+use App\Support\HomeContent;
 use App\Support\HomeImageUrls;
 use App\Support\LiffDesignerSanitizer;
 use App\Support\LiffThemePresets;
@@ -170,16 +171,17 @@ class AppConfigService
                     ? (string) $global['app_display_name']
                     : $repo->getFrontendHeaderText($projectId),
             ],
-            'home' => [
+            'home' => array_merge(HomeContent::forProject($repo, $projectId), [
                 'show_member_card' => (bool) $repo->getValue('home_show_member_card', true, $projectId),
                 'menu_layout' => (string) $repo->getValue('home_menu_layout', 'grid_3x2', $projectId),
                 'image_url' => $homeImageUrls[0] ?? '',
                 'image_urls' => $homeImageUrls,
-            ],
+            ]),
             'products' => [
                 'display_layout' => (string) $repo->getValue('product_display_layout', 'list_with_image', $projectId),
             ],
             'member_screen' => [
+                'style' => in_array($global['member_page_style'] ?? '', ['classic', 'wallet', 'minimal', 'ticket'], true) ? $global['member_page_style'] : 'classic',
                 'show_rank_progress' => (bool) $repo->getValue('member_show_rank_progress', true, $projectId),
                 'show_point_history' => (bool) $repo->getValue('member_show_point_history', true, $projectId),
                 'show_coupon_activity' => (bool) $repo->getValue('member_show_coupon_activity', true, $projectId),

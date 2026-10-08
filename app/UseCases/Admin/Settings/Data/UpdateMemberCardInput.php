@@ -15,5 +15,6 @@ final readonly class UpdateMemberCardInput
         public ?string $design = null,
         public ?string $displayType = null,
         public ?string $codeType = null,
+        public ?string $pageStyle = null,
     ) {}
 }

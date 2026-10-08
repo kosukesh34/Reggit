@@ -33,6 +33,11 @@ class UpdateMemberCardUseCase
         if ($input->displayType !== null) {
             $this->settings->setMemberCardDisplayType($input->displayType, $input->projectId);
         }
+        if ($input->pageStyle !== null) {
+            $tabs = (array) $this->settings->getValue('liff_tab_settings', [], $input->projectId);
+            $tabs['_global']['member_page_style'] = $input->pageStyle;
+            $this->settings->setValue('liff_tab_settings', $tabs, 'json', $input->projectId);
+        }
         if ($input->codeType !== null) {
             $this->settings->setMemberCardCodeType($input->codeType, $input->projectId);
         }

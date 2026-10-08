@@ -29,5 +29,7 @@ final readonly class UpdateHomeSettingsInput
         public bool $homeImagesPresent,
         public ?string $headerBackground = null,
         public ?array $nativeColors = null,
+        public ?array $homeContent = null,
+        public ?array $homeGallery = null,
     ) {}
 }

@@ -21,6 +21,7 @@ class GetMemberCardSettingsUseCase
             (bool) $this->settings->getValue('member_show_rank_progress', true, $projectId),
             (bool) $this->settings->getValue('member_show_point_history', true, $projectId),
             (bool) $this->settings->getValue('member_show_coupon_activity', true, $projectId),
+            (string) (($this->settings->getValue('liff_tab_settings', [], $projectId)['_global'] ?? [])['member_page_style'] ?? 'classic'),
         );
     }
 }
