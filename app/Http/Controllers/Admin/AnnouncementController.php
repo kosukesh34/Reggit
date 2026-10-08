@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\AnnouncementUpdateRequest;
+use App\Services\Admin\AnnouncementImageStorage;
 use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeleteUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementEditUseCase;
@@ -52,9 +53,11 @@ class AnnouncementController extends AdminBaseController
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
+        $this->editUseCase->handle($id);
 
         $imageFile = $request->file('image_file');
         if ($imageFile instanceof UploadedFile) {
+            $validated['image_paths'] = null;
             $announcement = $this->editUseCase->handle($id);
             if ($announcement->visibility === 'recipients') {
                 $validated['private_image_path'] = $imageFile->store('announcement-private/'.$projectId, 'local');
@@ -63,7 +66,19 @@ class AnnouncementController extends AdminBaseController
                 $validated['image_url'] = $this->publicImageStorage->store($imageFile, $projectId, PublicImageStorageService::DIR_ANNOUNCEMENT);
             }
         }
-        unset($validated['image_file']);
+        if ($request->hasFile('image_files')) {
+            $validated['image_paths'] = array_map(
+                fn (UploadedFile $file) => app(AnnouncementImageStorage::class)->store($file, $projectId),
+                array_values($request->file('image_files')),
+            );
+            $validated['private_image_path'] = null;
+            $validated['image_url'] = null;
+        } elseif ($request->boolean('clear_images')) {
+            $validated['image_paths'] = null;
+            $validated['private_image_path'] = null;
+            $validated['image_url'] = null;
+        }
+        unset($validated['image_file'], $validated['image_files'], $validated['clear_images']);
 
         $this->updateUseCase->handle($id, $validated);
 

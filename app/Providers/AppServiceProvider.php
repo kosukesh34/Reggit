@@ -159,7 +159,7 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        $this->app->singleton(PaymentGateway::class, function () {
+        $this->app->scoped(PaymentGateway::class, function () {
             $secret = (string) config('services.stripe.secret', '');
 
             return new StripePaymentGateway($secret);

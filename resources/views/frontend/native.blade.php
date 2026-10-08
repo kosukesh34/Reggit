@@ -4,18 +4,11 @@
         && request()->query('designer_embed') === '1';
 
     $configuredAssetVersion = (string) config('app.asset_version', env('APP_VERSION', ''));
-    $cssDir = public_path('css/frontend');
-    $cssMtime = @filemtime($cssDir . '/style.css') ?: 0;
-    $componentsDir = $cssDir . '/components';
-    if (is_dir($componentsDir)) {
-        foreach (glob($componentsDir . '/*.css') ?: [] as $f) {
-            $t = @filemtime($f) ?: 0;
-            if ($t > $cssMtime) { $cssMtime = $t; }
-        }
-    }
-    $appJsMtime = @filemtime(public_path('js/frontend/app.js')) ?: 0;
-    $layoutJsMtime = @filemtime(public_path('js/frontend/managers/LiffLayoutManager.js')) ?: 0;
-    $latestAssetMtime = max($cssMtime, $appJsMtime, $layoutJsMtime);
+    $latestAssetMtime = max(
+        @filemtime(public_path('build/manifest.json')) ?: 0,
+        @filemtime(public_path('css/frontend/components/05-overlay-skeleton-toast.css')) ?: 0,
+        @filemtime(public_path('css/frontend/components/07-payment-modal.css')) ?: 0,
+    );
     $assetVersion = $configuredAssetVersion !== ''
         ? $configuredAssetVersion
         : (string) ($latestAssetMtime > 0 ? $latestAssetMtime : time());
@@ -24,9 +17,6 @@
     // デモは /demo/liff に分離。ここでは店舗の設定を反映する。
     $isFixedUi = false;
     $isDemoData = $isFixedUi;
-    $themeBodyClasses = (! $isFixedUi && isset($liffTabSettings['_global']) && is_array($liffTabSettings['_global']))
-        ? \App\Support\LiffThemePresets::bodyClassesFor($liffTabSettings['_global'])
-        : [];
 @endphp
 <html lang="ja" @class([
     'native-app-embed' => true,
@@ -47,12 +37,9 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://js.stripe.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @include('frontend.partials._head-assets')
-    @include('frontend.partials._head-theme')
     {{-- ネイティブアプリ（iOS/Android）: Android WebView では初回 100vh が 0 になりやすいため、px フォールバックを指定 --}}
     <style id="native-app-inline">
         #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
@@ -65,7 +52,7 @@
         .tab-content.active .tab-section { flex: 1 1 auto !important; min-height: 0 !important; height: auto !important; max-height: none !important; overflow-y: auto !important; overflow-x: hidden !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-y !important; background: #fff !important; padding-bottom: 16px !important; box-sizing: border-box !important; }
     </style>
 </head>
-<body class="native-app-embed reggit-liff-ui {{ $isFixedUi ? 'liff-fixed-ui' : '' }} {{ $isDemoData ? 'liff-demo-data' : '' }} {{ $isDesignerEmbedPreview ? 'designer-live-preview-embed' : '' }} {{ implode(' ', $themeBodyClasses) }}">
+<body class="skip-native native-app-embed reggit-liff-ui {{ $isFixedUi ? 'liff-fixed-ui' : '' }} {{ $isDemoData ? 'liff-demo-data' : '' }} {{ $isDesignerEmbedPreview ? 'designer-live-preview-embed' : '' }} ">
     <script>
     (function() {
         window.__MOBILE_APP_MODE__ = true;

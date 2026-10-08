@@ -100,7 +100,7 @@
                         @endif
                     </td>
                     <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
-                    <td>{{ $order->payment_method ?? '未設定' }}</td>
+                    <td>{{ $order->payment_brand_label }}</td>
                     <td>
                         @php
                             $statusLabels = [

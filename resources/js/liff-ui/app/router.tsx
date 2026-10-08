@@ -11,13 +11,13 @@ import { getStampGrantCodeFromUrl } from "../../shared/utils/stampGrantToken";
 const HomePage = lazy(() => import("../pages/HomePage").then((module) => ({ default: module.HomePage })));
 const MembershipPage = lazy(() => import("../pages/MembershipPage").then((module) => ({ default: module.MembershipPage })));
 const ProfilePage = lazy(() => import("../pages/ProfilePage").then((module) => ({ default: module.ProfilePage })));
+const NativeExistingMemberPage = lazy(() => import("../native/NativeExistingMemberPage").then((module) => ({ default: module.NativeExistingMemberPage })));
 const MorePage = lazy(() => import("../pages/MorePage").then((module) => ({ default: module.MorePage })));
 const TransferPage = lazy(() => import("../pages/TransferPage").then((module) => ({ default: module.TransferPage })));
 const WithdrawPage = lazy(() => import("../pages/WithdrawPage").then((module) => ({ default: module.WithdrawPage })));
-const ThemePreviewPage = lazy(() => import("../pages/ThemePreviewPage").then((module) => ({ default: module.ThemePreviewPage })));
 const FeaturePage = lazy(() => import("../pages/FeaturePage").then((module) => ({ default: module.FeaturePage })));
 const StampIssuePage = lazy(() => import("../pages/StampIssuePage").then((module) => ({ default: module.StampIssuePage })));
-const DesignLabPage = lazy(() => import("../../frontend/features/designlab/DesignLabPage").then((module) => ({ default: module.DesignLabPage })));
+const NativeLotteryPage = lazy(() => import("../native/NativeLotteryPage").then((module) => ({ default: module.NativeLotteryPage })));
 
 function ScreenLoadingFallback() {
   return (
@@ -86,11 +86,11 @@ function ScreenRoutes() {
           <Route path="/member" element={<Navigate to="/membership" replace />} />
           <Route path="/card" element={<Navigate to="/membership" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/designlab" element={<div className="page feature-page"><DesignLabPage /></div>} />
+          <Route path="/designlab" element={<NativeLotteryPage />} />
+          <Route path="/more/link" element={<NativeExistingMemberPage />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="/more/withdraw" element={<WithdrawPage />} />
           <Route path="/more/transfer" element={<TransferPage />} />
-          <Route path="/dev/themes" element={<ThemePreviewPage />} />
           <Route path="/stamp/issue" element={<StampIssuePage />} />
           <Route path="/coupons" element={<Navigate to="/coupon" replace />} />
           <Route path="/stamps" element={<Navigate to="/stamp" replace />} />

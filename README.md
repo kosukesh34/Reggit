@@ -44,6 +44,7 @@ DB のホスト公開ポートは `3307`、コンテナ内は `3306` です。�
 | LINE・スマレジ・Stripe・Wallet・日本郵便・分析 MCP | [外部連携](docs/INTEGRATIONS.md) |
 | 本番設定とデプロイ | [デプロイ](docs/DEPLOY.md) |
 | 認証・CSRF・機密情報・確認対象 | [セキュリティ](docs/SECURITY.md) |
+| 開発タイムライン（PR・日時） | [開発史](docs/HISTORY.md) |
 | 顧客向けネイティブアプリのビルド | [Skip アプリ](mobile/reggit-skip/README.md) |
 | 店舗向け iPad アプリのビルド | [Kitchen / Waiting](ios/README.md) |
 

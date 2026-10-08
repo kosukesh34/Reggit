@@ -161,7 +161,7 @@ class AllSampleDataSeeder extends Seeder
             'start_at' => $now,
             'end_at' => $now->copy()->addMonths(3),
             'is_active' => true,
-            'issue_trigger' => 'winback',
+            'issue_trigger' => Coupon::ISSUE_TRIGGER_MANUAL,
         ]);
 
         $this->command->info('追加クーポン（誕生日・ウィンバック）を投入しました');

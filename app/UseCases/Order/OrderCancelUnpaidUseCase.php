@@ -19,8 +19,7 @@ class OrderCancelUnpaidUseCase
 
     public function handle(User $user, int $orderId): Order
     {
-        /** @var array{0: Order, 1: bool} $result */
-        $result = DB::transaction(function () use ($user, $orderId) {
+        return DB::transaction(function () use ($user, $orderId) {
             $aggregate = $this->orderRepository->findByIdAndUserIdForUpdate(
                 $orderId,
                 (int) $user->id,
@@ -31,20 +30,17 @@ class OrderCancelUnpaidUseCase
             }
 
             if ($aggregate->isCancelled()) {
-                return [Order::with('items.product')->findOrFail($orderId), false];
+                return Order::with('items.product')->findOrFail($orderId);
             }
 
             $aggregate->cancelUnpaidStripeMobile();
             $this->orderRepository->save($aggregate);
 
-            return [Order::with('items.product')->findOrFail($orderId), true];
+            $order = Order::with('items.product')->findOrFail($orderId);
+            $this->orderService->handleOrderCancellation($order);
+
+            return $order->refresh();
         });
 
-        [$order, $shouldHandleCancellation] = $result;
-        if ($shouldHandleCancellation) {
-            $this->orderService->handleOrderCancellation($order);
-        }
-
-        return $order;
     }
 }

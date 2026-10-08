@@ -37,7 +37,9 @@ class OrderFactory
             $order->order_type,
             $order->created_at?->toIso8601String() ?? now()->toIso8601String(),
             $order->updated_at?->toIso8601String() ?? now()->toIso8601String(),
-            $items
+            $items,
+            $order->payment_brand,
+            $order->paid_payment_brand,
         );
     }
 }

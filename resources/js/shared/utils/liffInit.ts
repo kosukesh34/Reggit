@@ -136,12 +136,12 @@ function bootstrapLiffInit(): void {
             + '<button type="button" id="liff-login-retry-btn" style="border:none;border-radius:8px;padding:14px 24px;background:#06C755;color:#fff;font-size:15px;font-weight:700;cursor:pointer;width:100%;max-width:280px;">LINEでログインする</button>';
         const btn = document.getElementById('liff-login-retry-btn');
         btn?.addEventListener('click', () => {
-            if (typeof liff !== 'undefined' && typeof liff.login === 'function') {
-                try {
-                    liff.login();
-                } catch (_e) {
-                    setLoadingText('エラーが発生しました。画面を再読み込みしてください。');
-                }
+            const id = getLiffId();
+            if (typeof liff !== 'undefined' && id) {
+                setLoadingText('読み込み中...');
+                runInit(id);
+            } else {
+                window.location.reload();
             }
         });
         debug('liff_login_fallback_shown', {});
@@ -220,7 +220,7 @@ function bootstrapLiffInit(): void {
         }
         try {
             const current = new URL(window.location.href);
-            const keepParams = ['queue_id', 'queue_token', 'project_key', 'g', 'point_code'];
+            const keepParams = ['queue_id', 'queue_token', 'project_key', 'store_id', 'g', 'point_code'];
             const kept = new URLSearchParams();
             keepParams.forEach((key) => {
                 const value = current.searchParams.get(key);
@@ -405,12 +405,7 @@ function bootstrapLiffInit(): void {
             }
             if (Date.now() - start >= maxWaitMs) {
                 setLineUserId(null, 'liff_id_missing');
-                if (window.__IS_LIFF__) {
-                    setLoadingText('認証が必要です。');
-                    showLoginRequiredFallback();
-                } else {
-                    dispatchReady();
-                }
+                showLoginRequiredFallback();
                 return;
             }
             setTimeout(check, 50);
@@ -419,10 +414,15 @@ function bootstrapLiffInit(): void {
     }
 
     function runInit(liffId: string): void {
+        // SDK initialization may never settle on a poor connection.
+        const initTimer = window.setTimeout(() => {
+            if (!window.__LIFF_READY__) showLoginRequiredFallback();
+        }, 15000);
         liff.init({
             liffId,
-            withLoginOnExternalBrowser: false,
+            withLoginOnExternalBrowser: true,
         }).then(() => {
+            window.clearTimeout(initTimer);
             debug('liff_init_success', {});
             if (typeof liff.getOS === 'function') {
                 const liffOs = liff.getOS();
@@ -468,18 +468,10 @@ function bootstrapLiffInit(): void {
                     }
                 });
         }).catch((err: { message?: string }) => {
+            window.clearTimeout(initTimer);
             debug('liff_init_failed', { message: err && err.message ? err.message : 'unknown' });
-            if (window.__IS_LIFF__) {
-                try {
-                    liff.login();
-                    scheduleLoginFallback();
-                } catch (_e) {
-                    // ignore
-                }
-                return;
-            }
-            setLineUserId(null, 'liff_id_missing');
-            dispatchReady();
+            setLineUserId(null, 'liff_init_failed');
+            showLoginRequiredFallback();
         });
     }
 
@@ -491,28 +483,19 @@ function bootstrapLiffInit(): void {
     const liffId = getLiffId();
     debug('liff_boot_start', { isLiff: !!window.__IS_LIFF__, hasLiffId: !!liffId });
 
-    // React 移行で app.ts の bootstrap が消えたあと、liff-ready 未着でも固まるのを防ぐ
-    setTimeout(() => {
-        const loadingEl = document.getElementById('liff-loading');
-        if (loadingEl !== null && !loadingEl.classList.contains('liff-loading--hidden')) {
-            if (document.getElementById('liff-login-retry-btn') !== null) {
-                return;
-            }
-            loadingEl.classList.add('liff-loading--hidden');
-        }
-    }, 5000);
-
-    if (!liffId) {
-        window.__LIFF_ID_MISSING__ = true;
-        setLineUserId(null, 'liff_id_missing');
+    // Native screens use device authentication. The LINE web route always requires LINE login.
+    const loginRequired = document.querySelector('meta[name="line-login-required"]') !== null;
+    if (!loginRequired) {
+        setLineUserId(null, 'native');
         setLineProfile(null);
         setTimeout(dispatchReady, 50);
         return;
     }
-    if (!window.__IS_LIFF__) {
-        setLineUserId(null, 'external_browser');
+    if (!liffId) {
+        window.__LIFF_ID_MISSING__ = true;
+        setLineUserId(null, 'liff_id_missing');
         setLineProfile(null);
-        setTimeout(dispatchReady, 50);
+        setLoadingText('LINE連携が設定されていません。店舗にお問い合わせください。');
         return;
     }
     setLoadingText('読み込み中...');

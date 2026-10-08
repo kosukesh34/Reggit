@@ -83,15 +83,7 @@
                     </div>
 
                     <div class="ad-media-field">
-                        @include('admin.partials._frontend_logo_dropzone', [
-                            'logoInputName' => 'image_file',
-                            'logoClearName' => 'image_file_clear',
-                            'logoFieldId' => 'ann_image',
-                            'logoCurrentUrl' => '',
-                            'logoLabel' => 'お知らせの画像（任意）',
-                            'logoHelp' => '',
-                            'logoCompact' => false,
-                        ])
+                        @include('admin.announcements._images', ['currentImages' => []])
                         @error('image_file')<span class="invalid-feedback">{{ $message }}</span>@enderror
                     </div>
                 </div>

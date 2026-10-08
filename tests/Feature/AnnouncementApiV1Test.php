@@ -23,6 +23,20 @@ class AnnouncementApiV1Test extends TestCase
         );
     }
 
+    public function test_index_returns_ordered_images_and_legacy_thumbnail(): void
+    {
+        $project = $this->createProject();
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'image_paths' => ['announcement-private/first.png', 'announcement-private/second.png'],
+        ]);
+        $this->withoutMiddleware(AuthenticateApiToken::class)
+            ->get('/api/v1/announcements')
+            ->assertOk()
+            ->assertJsonPath('data.announcements.0.image_urls', $announcement->imageUrls())
+            ->assertJsonPath('data.announcements.0.image_url', $announcement->imageUrls()[0]);
+    }
+
     public function test_index_お知らせ一覧を返すこと(): void
     {
         $project = $this->createProject();

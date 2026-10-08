@@ -1,5 +1,6 @@
 /** React が所有するマウント（innerHTML で上書きしない） */
 export function isReactOwnedMount(el: Element | null | undefined): boolean {
+    if (typeof window !== 'undefined' && window.__REGGIT_LIFF_UI__ === true) return true;
     if (el === null || el === undefined) {
         return false;
     }

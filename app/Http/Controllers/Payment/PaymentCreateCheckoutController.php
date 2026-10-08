@@ -23,6 +23,7 @@ class PaymentCreateCheckoutController extends Controller
     {
         $projectId = AdminContext::requireCurrentProjectId();
         $request->validate([
+            'surface' => ['nullable', Rule::in(['web', 'native'])],
             'order_id' => ['required', 'integer', Rule::exists('orders', 'id')->where('project_id', $projectId)],
         ]);
         $user = $this->userService->findUser($request);
@@ -35,6 +36,7 @@ class PaymentCreateCheckoutController extends Controller
                 (int) $request->order_id,
                 $projectId,
                 (int) $user->id,
+                (string) $request->input('surface', 'native'),
             )->toArray());
         } catch (PaymentSessionInProgressException $e) {
             return response()->json(['error' => $e->getMessage()], 409);

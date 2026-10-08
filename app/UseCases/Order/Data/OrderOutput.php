@@ -17,7 +17,9 @@ class OrderOutput
         public string $orderType,
         public string $createdAt,
         public string $updatedAt,
-        public array $items
+        public array $items,
+        public ?string $paymentBrand = null,
+        public ?string $paidPaymentBrand = null,
     ) {}
 
     /** @return array{id: int, order_number: string|null, total_amount: float, status: string, payment_method: string, points_used: int, points_earned: int, notes: string|null, order_type: string, created_at: string, updated_at: string, items: array<int, array{product_id: int, product_name: string, quantity: int, price: float, notes: string|null}>} */
@@ -29,6 +31,8 @@ class OrderOutput
             'total_amount' => $this->totalAmount,
             'status' => $this->status,
             'payment_method' => $this->paymentMethod,
+            'payment_brand' => $this->paymentBrand,
+            'paid_payment_brand' => $this->paidPaymentBrand,
             'points_used' => $this->pointsUsed,
             'points_earned' => $this->pointsEarned,
             'notes' => $this->notes,

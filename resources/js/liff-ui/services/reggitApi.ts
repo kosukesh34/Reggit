@@ -87,6 +87,7 @@ function mapMember(payload: Record<string, unknown>): MemberProfile {
     expiration: String(pointsExpiry.expires_at_label ?? pointsExpiry.expires_at ?? '—'),
     nextRankLabel: String(payload.next_rank_label ?? '次のランク'),
     isMember,
+    codeType: payload.member_card_code_type === "qrcode" ? "qrcode" : "barcode",
   };
 }
 
@@ -110,6 +111,7 @@ function mapNews(row: Record<string, unknown>): NewsItem {
     category: row.is_pinned === true ? '重要' : 'お知らせ',
     body: String(row.body ?? ''),
     image: row.image_url ? String(row.image_url) : undefined,
+    images: Array.isArray(row.image_urls) ? row.image_urls.filter((url): url is string => typeof url === "string") : undefined,
     isRead: row.is_read === true,
     isPinned: row.is_pinned === true,
   };
@@ -296,6 +298,7 @@ export const reggitApi = {
     const result = await client().post(withProject(AppConstants.API_ENDPOINTS.ORDERS), {
       items,
       payment_method: paymentMethod,
+      payment_brand: paymentMethod === "stripe" ? (input.paymentMethod === "stripe" ? "card" : input.paymentMethod ?? "card") : undefined,
       points_used: 0,
       notes: input.tableNumber ? `卓番: ${input.tableNumber}` : null,
       order_type: orderType,

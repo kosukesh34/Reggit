@@ -8,7 +8,8 @@ import {
   useNativeConfig,
   type NativeTab,
 } from "../../native/nativeConfig";
-import { DesignPicker, OPEN_DESIGN_PICKER_EVENT } from "./DesignPicker";
+
+import { useNativeNavigation } from "../../native/NativeNavigation";
 
 function validColor(value: string | undefined): string {
   return value !== undefined && /^#[0-9a-f]{6}$/i.test(value) ? value : "#ffffff";
@@ -33,26 +34,22 @@ function DrawerTab({ tab, onSelect }: { tab: NativeTab; onSelect: () => void }) 
 }
 
 export function Header() {
-  const { activeStore, stores } = useAppConfig();
+  const { activeStore } = useAppConfig();
   const { member } = useRuntimeData();
+  const { back } = useNativeNavigation();
   const { config } = useNativeConfig();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const designerEmbed = typeof window !== "undefined" && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
-  const canSwitchStore = designerEmbed && stores.length > 1;
 
   const background = validColor(config.header?.background_color);
-  const foreground = foregroundFor(background);
+  const foreground = /^#[0-9a-f]{6}$/i.test(config.native_chrome_colors?.header_icon ?? "") ? config.native_chrome_colors?.header_icon : foregroundFor(background);
   const projectName = config.header?.text?.trim()
     || config.project_name?.trim()
     || activeStore.storeName;
-  const drawerTabs = config.navigation?.hamburger?.length
-    ? config.navigation.hamburger
-    : (config.tabs ?? []);
-  const headerTabs = config.navigation?.header ?? [];
+  const drawerTabs = config.navigation?.hamburger ?? config.tabs ?? [];
+  const headerTabs = (config.navigation?.header ?? []).slice(0, 1);
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -75,12 +72,6 @@ export function Header() {
     if (drawerOpen) closeButtonRef.current?.focus();
   }, [drawerOpen]);
 
-  useEffect(() => {
-    if (!canSwitchStore) return undefined;
-    const openPicker = () => setPickerOpen(true);
-    window.addEventListener(OPEN_DESIGN_PICKER_EVENT, openPicker);
-    return () => window.removeEventListener(OPEN_DESIGN_PICKER_EVENT, openPicker);
-  }, [canSwitchStore]);
 
   const headerStyle = {
     "--native-header-background": background,
@@ -90,21 +81,19 @@ export function Header() {
   return (
     <>
       <header className="native-header" style={headerStyle}>
-        <button
+        {back || drawerTabs.length ? <button
           className="native-header__action"
           type="button"
-          aria-label="メニューを開く"
+          aria-label={back ? "戻る" : "メニューを開く"}
           aria-controls="native-navigation-drawer"
           aria-expanded={drawerOpen}
-          onClick={() => setDrawerOpen(true)}
+          onClick={back ?? (() => setDrawerOpen(true))}
         >
-          <i className="fa-solid fa-bars" aria-hidden="true" />
-        </button>
-        {canSwitchStore ? (
-          <button className="native-header__brand native-header__brand--button" type="button" aria-label="デザインを選ぶ" onClick={() => setPickerOpen(true)}>
-            <span>{projectName}</span>
-          </button>
-        ) : null}
+          <i className={`fa-solid ${back ? "fa-chevron-left" : "fa-bars"}`} aria-hidden="true" />
+        </button> : <span className="native-header__action" />}
+        <div className="native-header__brand">
+          {config.header?.logo_url || config.header?.image_url ? <img src={config.header.image_url || config.header.logo_url} alt={projectName} /> : <span>{projectName}</span>}
+        </div>
         <div className="native-header__trailing">
           {headerTabs.map((tab) => (
             <a className="native-header__action" href={nativeTabHref(tab)} key={tab.key} aria-label={tab.label}>
@@ -126,6 +115,8 @@ export function Header() {
             </div>
             <nav className="native-drawer__list" aria-label="すべてのメニュー">
               {drawerTabs.map((tab) => <DrawerTab key={tab.key} tab={tab} onSelect={() => setDrawerOpen(false)} />)}
+              {(["gacha", "scratch", "roulette"] as const).map((game, index) => <Link className="native-drawer__item" key={game} to={`/designlab?preview=${game}`} onClick={() => setDrawerOpen(false)}><i className="fa-solid fa-dice" /><span>{["ガチャ", "スクラッチ", "ルーレット"][index]}（テスト）</span><i className="fa-solid fa-chevron-right" /></Link>)}
+              <Link className="native-drawer__item" to="/more/link" onClick={() => setDrawerOpen(false)}><i className="fa-solid fa-link" /><span>既存会員連携</span><i className="fa-solid fa-chevron-right" /></Link>
               <Link className="native-drawer__item" to="/more/transfer" onClick={() => setDrawerOpen(false)}>
                 <i className="fa-solid fa-right-left" aria-hidden="true" />
                 <span>引き継ぎ</span><i className="fa-solid fa-chevron-right" aria-hidden="true" />
@@ -160,7 +151,6 @@ export function Header() {
           </section>
         </div>
       ) : null}
-      {canSwitchStore ? <DesignPicker open={pickerOpen} onClose={() => setPickerOpen(false)} /> : null}
     </>
   );
 }

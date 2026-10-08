@@ -7,16 +7,11 @@ import './app';
 import { CheckoutModal } from './features/cart/CheckoutModal';
 import { App } from '../liff-ui/app/App';
 import { normalizeLegacyLocationHash } from '../liff-ui/navigation/tabPath';
-import '../liff-ui/styles/tokens.css';
-import '../liff-ui/styles/globals.css';
-import '../liff-ui/styles/skip-native.css';
-import '../liff-ui/styles/native-features.css';
-import '../liff-ui/styles/design-layout-variants.css';
-import '../../css/frontend/member-legacy.css';
 
 normalizeLegacyLocationHash();
 
 const mountNode = document.getElementById('app-container') ?? document.getElementById('react-frontend-root');
+function mountApp(): void {
 if (mountNode !== null) {
   mountNode.replaceChildren();
   mountNode.classList.add('reggit-liff-ui-root');
@@ -28,3 +23,14 @@ if (mountNode !== null) {
     </React.StrictMode>,
   );
 }
+
+}
+if (document.querySelector('meta[name="line-login-required"]') === null || (window.__LIFF_READY__ && window.__LINE_USER_ID__)) {
+  mountApp();
+} else {
+  document.addEventListener('liff-ready', () => {
+    if (window.__LINE_USER_ID__) mountApp();
+  }, { once: true });
+}
+
+import "../liff-ui/styles/native.css";

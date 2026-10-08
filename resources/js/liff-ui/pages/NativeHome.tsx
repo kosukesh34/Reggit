@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } fr
 import { createPortal } from "react-dom";
 import { nativeTabHref, nativeTabIconClass, useNativeConfig } from "../native/nativeConfig";
 import "../styles/native-home.css";
+import { useRuntimeData } from "../context/RuntimeDataContext";
+import { MembershipBarcode } from "../components/membership/MembershipBarcode";
+import { BarcodeEnlargeView } from "../components/membership/BarcodeEnlargeView";
+import { CenterPopup } from "../components/ui/CenterPopup";
 
 const FALLBACK_IMAGE = "/images/liff/skip-demo-store-hero.png";
 const SWIPE_THRESHOLD = 45;
@@ -75,6 +79,8 @@ function HomeImageViewer({ images, initialIndex, projectName, onClose }: {
 
 export function NativeHome() {
   const { config, loading } = useNativeConfig();
+  const { member } = useRuntimeData();
+  const [showMemberCode, setShowMemberCode] = useState(false);
   const [index, setIndex] = useState(0);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const heroRef = useRef<HTMLButtonElement>(null);
@@ -89,11 +95,12 @@ export function NativeHome() {
     return cleaned.length > 0 ? cleaned : [FALLBACK_IMAGE];
   }, [config?.home?.image_url, config?.home?.image_urls]);
   const imageKey = images.join("|");
-  const menu = (config?.tabs ?? []).filter((tab) => tab.key !== "home").slice(0, 6);
+  const menu = (config?.tabs ?? []).filter((tab) => !["home", "terms", "privacy"].includes(tab.key));
   const layout = config?.home?.menu_layout === "list"
     ? "list"
     : config?.home?.menu_layout === "grid_2_columns" ? "grid-2" : "grid-3";
   const columns = layout === "grid-2" ? 2 : 3;
+  const cellCount = Math.ceil(menu.length / columns) * columns;
   const selectedIndex = Math.min(index, images.length - 1);
   const projectName = config?.project_name?.trim() || "店舗";
 
@@ -138,18 +145,27 @@ export function NativeHome() {
       </div> : null}
     </div>
 
+    {config.home?.show_member_card !== false && member.isMember && member.number && member.number !== "未発行" ?
+      <button type="button" className="native-home__member" onClick={() => setShowMemberCode(true)} aria-label="会員コードを拡大して表示">
+        {member.codeType === "qrcode" ? <div className="native-code-fallback"><strong>{member.number}</strong><MembershipBarcode value={member.number} height={39} /></div> : <MembershipBarcode value={member.number} height={56} />}
+        <span>タップして拡大</span>
+      </button> : null}
+    <CenterPopup open={showMemberCode} onClose={() => setShowMemberCode(false)} title="会員コード">
+      {member.codeType === "qrcode" ? <div className="native-code-fallback"><strong>{member.number}</strong><MembershipBarcode value={member.number} height={39} /></div> : <BarcodeEnlargeView value={member.number} />}
+    </CenterPopup>
+
     {layout === "list" ? <nav className="native-home__menu native-home__menu--list" aria-label="ホームメニュー">
       {menu.map((tab) => {
         return <a key={tab.key} className="native-home__list-item" href={nativeTabHref(tab)}>
           <i className={nativeTabIconClass(tab)} aria-hidden="true" />
-          <span className="native-home__list-label"><strong>{tab.label}</strong><small>{tab.key}</small></span>
+          <span className="native-home__list-label"><strong>{tab.label}</strong></span>
           <i className="fa-solid fa-chevron-right" aria-hidden="true" />
         </a>;
       })}
     </nav> : <nav className={`native-home__menu native-home__menu--${layout}`} aria-label="ホームメニュー">
-      {Array.from({ length: 6 }, (_, cell) => {
+      {Array.from({ length: cellCount }, (_, cell) => {
         const tab = menu[cell];
-        const borders = `${cell % columns < columns - 1 ? " has-right-border" : ""}${cell < 6 - columns ? " has-bottom-border" : ""}`;
+        const borders = `${cell % columns < columns - 1 ? " has-right-border" : ""}${cell < cellCount - columns ? " has-bottom-border" : ""}`;
         if (!tab) return <div key={`empty-${cell}`} className={`native-home__cell native-home__cell--empty${borders}`} aria-hidden="true" />;
         return <a key={tab.key} className={`native-home__cell${borders}`} href={nativeTabHref(tab)}>
           <i className={nativeTabIconClass(tab)} aria-hidden="true" /><span>{tab.label}</span>

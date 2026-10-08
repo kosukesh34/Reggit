@@ -12,6 +12,8 @@ class Handler extends ExceptionHandler
         'current_password',
         'password',
         'password_confirmation',
+        'secret_key',
+        'webhook_secret',
     ];
 
     public function register(): void

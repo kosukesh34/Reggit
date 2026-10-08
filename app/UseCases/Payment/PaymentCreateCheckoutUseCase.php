@@ -13,13 +13,17 @@ class PaymentCreateCheckoutUseCase
         private OrderPaymentSessionService $sessions,
     ) {}
 
-    public function handle(int $orderId, int $projectId, int $userId): PaymentCheckoutOutput
+    public function handle(int $orderId, int $projectId, int $userId, string $surface = 'native'): PaymentCheckoutOutput
     {
         $order = Order::where('project_id', $projectId)->findOrFail($orderId);
-        // Preserve an existing Checkout session during the switch to card-only payments.
-        $channel = ($order->payment_session['channel'] ?? null) === 'checkout' ? 'checkout' : 'card';
+        $savedChannel = $order->payment_session['channel'] ?? null;
+        if ($savedChannel !== null && ! in_array($savedChannel, ['checkout', 'checkout_web', 'card'], true)) {
+            throw new \InvalidArgumentException('作成済みの決済画面からお支払いください');
+        }
+        $channel = $savedChannel ?? ($order->payment_setting_id !== null || $surface === 'web'
+            ? ($surface === 'web' ? 'checkout_web' : 'checkout') : 'card');
         $result = $this->sessions->create($orderId, $projectId, $userId, $channel);
-        if ($channel === 'checkout') {
+        if (in_array($channel, ['checkout', 'checkout_web'], true)) {
             return new PaymentCheckoutOutput($result['url'], $result['id']);
         }
 

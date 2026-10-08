@@ -84,14 +84,10 @@ class AnnouncementNotificationService
         );
         $title = trim((string) $announcement->title);
         $body = trim((string) ($announcement->body ?? ''));
-        $rawImageUrl = $announcement->private_image_path !== null ? '' : trim((string) ($announcement->image_url ?? ''));
-        $imageUrl = NotificationImageUrl::forLine($rawImageUrl !== '' ? $rawImageUrl : null);
-        if ($rawImageUrl !== '' && $imageUrl === null) {
-            LogHelper::warning('[Announcement] LINE image URL skipped (not publicly accessible via HTTPS)', [
-                'announcement_id' => $announcement->id,
-                'image_url' => $rawImageUrl,
-            ]);
-        }
+        $imageUrls = array_values(array_filter(array_map(
+            fn ($url) => NotificationImageUrl::forLine($url),
+            $announcement->lineImageUrls(),
+        )));
 
         $sent = 0;
         $failed = 0;
@@ -110,7 +106,7 @@ class AnnouncementNotificationService
                 $title,
                 $body,
                 $announcementsUrl,
-                $includeImages ? $imageUrl : null,
+                $includeImages ? $imageUrls : [],
                 $announcement,
                 $projectId,
                 $projectKey,
@@ -133,7 +129,7 @@ class AnnouncementNotificationService
                             $title,
                             $body,
                             $announcementsUrl,
-                            null,
+                            [],
                             $announcement,
                             $projectId,
                             $projectKey,
@@ -206,13 +202,25 @@ class AnnouncementNotificationService
         string $title,
         string $body,
         string $announcementsUrl,
-        ?string $imageUrl,
+        array $imageUrls,
         Announcement $announcement,
         int $projectId,
         string $projectKey,
         bool $includeCouponImage,
     ): array {
-        $messages = [$this->buildFlexMessage($title, $body, $announcementsUrl, $imageUrl)];
+        $message = $this->buildFlexMessage($title, $body, $announcementsUrl, $imageUrls[0] ?? null);
+        if (count($imageUrls) > 1) {
+            $bubbles = [$message['contents']];
+            foreach (array_slice($imageUrls, 1, 9) as $url) {
+                $bubbles[] = [
+                    'type' => 'bubble',
+                    'hero' => ['type' => 'image', 'url' => $url, 'size' => 'full', 'aspectRatio' => '20:13', 'aspectMode' => 'fit'],
+                    'footer' => $message['contents']['footer'],
+                ];
+            }
+            $message['contents'] = ['type' => 'carousel', 'contents' => $bubbles];
+        }
+        $messages = [$message];
         $couponMessage = $this->couponLineMessage($announcement, $projectId, $projectKey, $includeCouponImage);
         if ($couponMessage !== null) {
             $messages[] = $couponMessage;
@@ -255,10 +263,10 @@ class AnnouncementNotificationService
     private function linePayloadHasHero(array $payload): bool
     {
         if (array_key_exists('type', $payload)) {
-            return isset($payload['contents']['hero']);
+            return isset($payload['contents']['hero']) || isset($payload['contents']['contents'][0]['hero']);
         }
         foreach ($payload as $message) {
-            if (isset($message['contents']['hero'])) {
+            if ($this->linePayloadHasHero($message)) {
                 return true;
             }
         }
@@ -309,7 +317,7 @@ class AnnouncementNotificationService
                 'url' => $imageUrl,
                 'size' => 'full',
                 'aspectRatio' => '20:13',
-                'aspectMode' => 'cover',
+                'aspectMode' => 'fit',
             ];
         }
 

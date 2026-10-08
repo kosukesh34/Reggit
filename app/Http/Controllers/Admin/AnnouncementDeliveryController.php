@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\AnnouncementDeliveryStoreRequest;
+use App\Services\Admin\AnnouncementImageStorage;
 use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\Announcement\AdminAnnouncementAudiencePreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeliveryFormUseCase;
@@ -79,7 +80,19 @@ class AnnouncementDeliveryController extends AdminBaseController
             $validated['private_image_path'] = $imageFile->store('announcement-private/'.$projectId, 'local');
             $validated['image_url'] = null;
         }
-        unset($validated['image_file']);
+        if ($request->hasFile('image_files')) {
+            $validated['image_paths'] = array_map(
+                fn (UploadedFile $file) => app(AnnouncementImageStorage::class)->store($file, $projectId),
+                array_values($request->file('image_files')),
+            );
+            $validated['private_image_path'] = null;
+            $validated['image_url'] = null;
+        } elseif ($request->boolean('clear_images')) {
+            $validated['image_paths'] = null;
+            $validated['private_image_path'] = null;
+            $validated['image_url'] = null;
+        }
+        unset($validated['image_file'], $validated['image_files'], $validated['clear_images']);
 
         $output = $this->storeDeliveryUseCase->handle($projectId, $validated);
 

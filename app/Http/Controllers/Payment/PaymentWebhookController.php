@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
+use App\Models\Settings\ProjectPaymentSetting;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Illuminate\Http\Request;
+use Stripe\Exception\SignatureVerificationException;
 
 class PaymentWebhookController extends Controller
 {
@@ -18,8 +20,14 @@ class PaymentWebhookController extends Controller
     public function __invoke(Request $request)
     {
         $payload = $request->getContent();
-        $sigHeader = $request->header('Stripe-Signature');
-        $endpointSecret = (string) config('services.stripe.webhook_secret', '');
+        $sigHeader = (string) $request->header('Stripe-Signature', '');
+        $settingId = $request->route('setting');
+        $projectId = null;
+        if ($settingId !== null) {
+            $projectId = AdminContext::requireCurrentProjectId();
+            $setting = ProjectPaymentSetting::where('project_id', $projectId)->findOrFail($settingId);
+        }
+        $endpointSecret = isset($setting) ? $setting->webhook_secret : (string) config('services.stripe.webhook_secret', '');
 
         if (StrHelper::isEmptyStringOrNull($endpointSecret)) {
             LogHelper::warning('[Payment] webhook secret missing', [
@@ -30,14 +38,16 @@ class PaymentWebhookController extends Controller
         }
 
         try {
-            $this->webhookUseCase->handle($payload, $sigHeader, $endpointSecret);
+            $this->webhookUseCase->handle($payload, $sigHeader, $endpointSecret, $projectId, isset($setting) ? (int) $setting->id : null);
+        } catch (SignatureVerificationException|\UnexpectedValueException $e) {
+            return response()->json(['error' => 'Invalid signature'], 400);
         } catch (\Exception $e) {
             LogHelper::error('[Payment] webhook failed', [
                 'project_id' => AdminContext::getCurrentProjectId(),
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json(['error' => 'Invalid signature'], 400);
+            return response()->json(['error' => 'Payment processing failed'], 503);
         }
 
         return response()->json(['received' => true]);

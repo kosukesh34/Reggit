@@ -150,6 +150,7 @@ class AdminAnnouncementStoreDeliveryUseCase
         return $this->announcementAdminService->create($projectId, [
             'title' => (string) $validated['title'],
             'body' => $validated['body'] ?? null,
+            'image_paths' => $validated['image_paths'] ?? null,
             'image_url' => $validated['image_url'] ?? null,
             'is_pinned' => (bool) ($validated['is_pinned'] ?? false),
             'send_notification' => $this->shouldSendNotification($validated),

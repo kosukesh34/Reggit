@@ -300,7 +300,6 @@ async function loadLiffDesignerStyles(): Promise<void> {
     import('../../css/app.css'),
     import('../liff-ui/styles/tokens.css'),
     import('../liff-ui/styles/globals.css'),
-    import('../liff-ui/styles/design-layout-variants.css'),
   ]);
 }
 

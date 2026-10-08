@@ -305,6 +305,7 @@ function initAnnouncementDelivery(): void {
     let audiencePage = 1;
     let searchTimer: number | undefined;
     let uploadedImageUrl = '';
+    let uploadedImageUrls: string[] = [];
     let notificationChannels: NotificationChannelCounts | null = null;
     let resolvedAudienceCount: number | null = null;
     let lastAudiencePreview: AudiencePreviewResponse | null = null;
@@ -633,6 +634,7 @@ function initAnnouncementDelivery(): void {
                 title: titleInput?.value.trim() || 'お知らせのタイトル',
                 body: bodyInput?.value.trim() || '',
                 image_url: currentImageUrl() || null,
+                image_urls: uploadedImageUrls,
                 published_at: new Date().toISOString(),
                 is_pinned: pinInput?.checked === true,
                 is_read: false,
@@ -1317,9 +1319,9 @@ function initAnnouncementDelivery(): void {
         syncPreview();
     });
     imageFileInput?.addEventListener('change', () => {
-        const file = imageFileInput.files?.[0];
-        if (uploadedImageUrl.startsWith('blob:')) URL.revokeObjectURL(uploadedImageUrl);
-        uploadedImageUrl = file ? URL.createObjectURL(file) : '';
+        uploadedImageUrls.forEach(url => URL.revokeObjectURL(url));
+        uploadedImageUrls = Array.from(imageFileInput.files || []).slice(0, 10).map(file => URL.createObjectURL(file));
+        uploadedImageUrl = uploadedImageUrls[0] || '';
         syncPreview();
     });
     imageFileInput?.addEventListener('admin-image-preview', syncPreview);
@@ -1358,6 +1360,11 @@ function initAnnouncementDelivery(): void {
         button.addEventListener('click', closeMemberDetail);
     });
     reviewConfirm?.addEventListener('click', () => {
+        applyCouponDeliveryType();
+        if (!form.reportValidity()) {
+            closeDeliveryReview();
+            return;
+        }
         reviewConfirm.disabled = true;
         setText('deliveryReviewConfirmLabel', selectedDeliveryTiming() === 'scheduled' ? '予約しています…' : '配信しています…');
         finalSubmitApproved = true;

@@ -121,7 +121,12 @@ struct AnnouncementCardView: View {
                         .accessibilityLabel(Text("固定されたお知らせ"))
                 }
             }
-            if item.imageURL != nil {
+            if !item.imageURLs.isEmpty {
+                ForEach(Array(item.imageURLs.enumerated()), id: \.offset) { _, url in
+                    AnnouncementImageView(item: item, apiClient: apiClient, imageURL: url)
+                        .frame(height: imageHeight)
+                }
+            } else if item.imageURL != nil {
                 AnnouncementImageView(item: item, apiClient: apiClient)
                     .frame(height: imageHeight)
             }
@@ -145,18 +150,20 @@ struct AnnouncementCardView: View {
 struct AnnouncementImageView: View {
     let item: AnnouncementItem
     let apiClient: any ReggitAPIServing
+    var imageURL: String? = nil
+    private var resolvedImageURL: String? { imageURL ?? item.imageURL }
     @State var image: UIImage?
     @State var failed = false
 
     private var isPrivateImage: Bool {
-        guard let url = MediaURL.resolve(item.imageURL, baseURL: apiClient.baseURL) else { return false }
+        guard let url = MediaURL.resolve(resolvedImageURL, baseURL: apiClient.baseURL) else { return false }
         return url.path == "/api/v1/announcements/\(item.id)/image"
     }
 
     var body: some View {
         Group {
             if !isPrivateImage {
-                RemoteImageView(urlString: item.imageURL, baseURL: apiClient.baseURL, contentMode: .fit)
+                RemoteImageView(urlString: resolvedImageURL, baseURL: apiClient.baseURL, contentMode: .fit)
             } else if let image {
                 Image(uiImage: image).resizable().aspectRatio(contentMode: .fit)
             } else if failed {
@@ -168,7 +175,7 @@ struct AnnouncementImageView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL))
-        .task(id: item.imageURL) {
+        .task(id: resolvedImageURL) {
             guard isPrivateImage else { return }
             image = nil
             failed = false

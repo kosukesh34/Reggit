@@ -25,7 +25,8 @@ class ReservationUpdateUseCase
         }
 
         $reservationPayload = $input->reservationPayload;
-        $reservedAt = DateUtil::nullableCarbon($reservationPayload['reserved_at']);
+        $reservedAt = DateUtil::nullableCarbon($reservationPayload['reserved_at'])
+            ?->setTimezone(config('app.timezone'));
         if ($reservedAt === null) {
             return new ReservationActionOutput(false, null, '予約日時が不正です');
         }

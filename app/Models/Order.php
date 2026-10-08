@@ -13,7 +13,7 @@ class Order extends Model
 {
     use BelongsToProject, HasFactory;
 
-    protected $hidden = ['payment_session'];
+    protected $hidden = ['payment_session', 'payment_setting_id'];
 
     protected $fillable = [
         'project_id', 'store_id',
@@ -45,6 +45,19 @@ class Order extends Model
         'smaregi_transaction_synced_at' => 'datetime',
         'smaregi_transaction_sync_started_at' => 'datetime',
     ];
+
+    public function getPaymentBrandLabelAttribute(): string
+    {
+        return match ($this->paid_payment_brand ?? $this->payment_brand ?? $this->payment_method) {
+            'card', 'stripe' => 'クレジットカード',
+            'paypay' => 'PayPay',
+            'apple_pay' => 'Apple Pay',
+            'google_pay' => 'Google Pay',
+            'cash' => '現金',
+            'points' => 'ポイント',
+            default => 'その他',
+        };
+    }
 
     public function project(): BelongsTo
     {

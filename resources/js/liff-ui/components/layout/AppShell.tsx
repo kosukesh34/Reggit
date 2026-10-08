@@ -1,21 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, type PropsWithChildren } from "react";
 import { useLocation } from "react-router-dom";
-import { useAppConfig } from "../../context/AppConfigContext";
 import { useRuntimeData } from "../../context/RuntimeDataContext";
-import { themeMap } from "../../themes/themes";
-import { themeToCssVars } from "../../utils/theme";
-import { contrastCssVars, customizationToCssVars } from "../../utils/customization";
-import { resolveHomeLayout } from "../../config/customization";
-import { StorePicker } from "./StorePicker";
+import { useNativeConfig } from "../../native/nativeConfig";
 import { Header } from "./Header";
 import { BottomNavigation } from "./BottomNavigation";
 
 export function AppShell({ children, gateSettled = true }: PropsWithChildren<{ gateSettled?: boolean }>) {
-  const { activeStore, activeThemeId, customization, experienceId } = useAppConfig();
   const { loading, mode } = useRuntimeData();
+  const { config } = useNativeConfig();
+  const nativeAccent = /^#[0-9a-f]{6}$/i.test(config.theme?.primary_color ?? "") ? config.theme?.primary_color : undefined;
   const location = useLocation();
-  const theme = themeMap[customization.themeId ?? ""] ?? themeMap[activeThemeId] ?? themeMap[activeStore.themeId] ?? themeMap["minimal-light"];
-  const showNavigationBelowHeader = customization.navigation.position === "top";
+
   const mainRef = useRef<HTMLElement>(null);
   const dataSettled = mode === "preview" || mode === "live" || (mode === "offline" && !loading);
 
@@ -45,24 +40,21 @@ export function AppShell({ children, gateSettled = true }: PropsWithChildren<{ g
 
   return (
     <div
-      className="app-shell"
-      data-store-id={activeStore.storeId}
-      data-design-preset={customization.designPreset}
-      data-home-layout={resolveHomeLayout(customization.home.layout)}
-      data-app-experience={experienceId}
-      data-visual-style={customization.brand?.visualStyle ?? ""}
-      data-nav-position={customization.navigation.position}
-      data-button-style={customization.appearance.buttonStyle}
-      data-density={customization.appearance.density}
-      style={{ ...themeToCssVars(theme), ...customizationToCssVars(customization), ...contrastCssVars(customization, theme) }}
+      className={`app-shell${location.pathname === "/profile" ? " app-shell--profile" : ""}`}
+      style={{
+        "--skip-accent": nativeAccent ?? "#173f35",
+        "--color-primary": nativeAccent ?? "#173f35",
+        ...Object.fromEntries(Object.entries(config.native_chrome_colors ?? {}).filter(([, value]) => /^#[0-9a-f]{6}$/i.test(value)).map(([key, value]) => {
+          const variable: Record<string, string> = { primary_button_background: "--native-primary-background", primary_button_text: "--native-primary-text", secondary_button_background: "--native-secondary-background", secondary_button_text: "--native-secondary-text" };
+          return [variable[key] ?? `--native-${key.replace(/_/g, "-")}`, value];
+        })),
+      } as import("react").CSSProperties}
     >
       <div className="app-shell__backdrop" />
       <div className="app-shell__frame">
         <Header />
-        <StorePicker />
-        {showNavigationBelowHeader ? <BottomNavigation /> : null}
         <main className="app-shell__main" ref={mainRef}>{children}</main>
-        {!showNavigationBelowHeader ? <BottomNavigation /> : null}
+        <BottomNavigation />
       </div>
     </div>
   );
