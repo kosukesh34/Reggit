@@ -14,6 +14,7 @@ use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Mockery;
 use Mockery\MockInterface;
@@ -59,11 +60,17 @@ class MemberRegistrationRecoveryTest extends TestCase
             return $remote;
         });
         $api->shouldReceive('createCustomer')->once()->andReturnUsing(function ($contract, $body) use (&$remote, $user) {
+            $this->assertSame(0, DB::transactionLevel(), 'External creation must happen outside the finalization transaction');
             $connection = config('database.connections.mysql');
             $pdo = new \PDO('mysql:host='.$connection['host'].';port='.$connection['port'].';dbname='.$connection['database'], $connection['username'], $connection['password']);
             $statement = $pdo->prepare('SELECT member_number FROM member_registration_attempts WHERE user_id = ?');
             $statement->execute([$user->id]);
             $this->assertSame($body['customerCode'], $statement->fetchColumn(), 'Reservation must be committed before remote creation');
+            $pdo->beginTransaction();
+            $projectLock = $pdo->prepare('SELECT id FROM projects WHERE id = ? FOR UPDATE NOWAIT');
+            $projectLock->execute([$user->project_id]);
+            $this->assertEquals($user->project_id, $projectLock->fetchColumn(), 'Network I/O must not hold the project allocation lock');
+            $pdo->rollBack();
             $remote = ['customerId' => 'remote-1', 'customerCode' => $body['customerCode'], 'note2' => $body['note2']];
 
             return $remote;

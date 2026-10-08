@@ -466,63 +466,65 @@ class MemberService
         $attempt = $contractId !== '' || $hasPendingAttempt
             ? $this->reserveRegistrationAttempt($user, $projectId, $contractId) : null;
 
-        return DB::transaction(function () use ($user, $data, $requireSmaregi, $attempt): Member {
+        $smaregiCustomerId = null;
+        $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
+        $resolved = $this->memberRankResolver->resolve(
+            $rankSettings,
+            $this->shopSettingRepository->getRankBasis($projectId),
+            0,
+            0,
+            null,
+        );
+        $defaultRankKey = (string) ($resolved['current_rank'] ?? 'bronze');
+        $defaultRank = null;
+        foreach ($rankSettings as $rank) {
+            if ((string) ($rank['key'] ?? '') === $defaultRankKey) {
+                $defaultRank = $rank;
+                break;
+            }
+        }
+        $smaregiRankId = is_array($defaultRank) && isset($defaultRank['smaregi_rank_id'])
+            ? trim((string) $defaultRank['smaregi_rank_id'])
+            : '';
+
+        if ($attempt !== null) {
+            $body = $this->buildSmaregiCustomerBody(
+                $attempt->member_number,
+                $data,
+                $smaregiRankId !== '' ? $smaregiRankId : null,
+                $defaultRankKey,
+                $projectId,
+            );
+            $smaregiCustomerId = $this->registrationRecovery->createOrRecover($attempt, $body);
+            if ($smaregiCustomerId === null) {
+                LogHelper::warning('[Member] smaregi create customer failed', [
+                    'project_id' => $projectId,
+                    'user_id' => (int) $user->id,
+                    'member_number' => $attempt->member_number,
+                    'detail' => $this->smaregiApi->getLastErrorDetail(),
+                ]);
+                if ($requireSmaregi) {
+                    throw new \RuntimeException(
+                        'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
+                    );
+                }
+            }
+        }
+
+        return DB::transaction(function () use ($user, $data, $attempt, $defaultRankKey, $smaregiCustomerId): Member {
             User::query()->whereKey($user->id)->lockForUpdate()->first();
 
             $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
-            // Lock before snapshot reads so distinct users see the last committed allocation.
-            Project::query()->whereKey($projectId)->lockForUpdate()->firstOrFail();
+            // Reserved codes already belong to this attempt; only unreserved allocation needs the project lock.
+            if ($attempt === null) {
+                Project::query()->whereKey($projectId)->lockForUpdate()->firstOrFail();
+            }
 
             if (Member::query()->where('user_id', $user->id)->exists()) {
                 throw new \Exception('既に会員登録済みです');
             }
 
             $memberNumber = $attempt?->member_number ?? $this->generateMemberNumber($projectId);
-            $smaregiCustomerId = null;
-            $rankSettings = $this->shopSettingRepository->getMemberRankSettings($projectId);
-            $resolved = $this->memberRankResolver->resolve(
-                $rankSettings,
-                $this->shopSettingRepository->getRankBasis($projectId),
-                0,
-                0,
-                null,
-            );
-            $defaultRankKey = (string) ($resolved['current_rank'] ?? 'bronze');
-            $defaultRank = null;
-            foreach ($rankSettings as $rank) {
-                if ((string) ($rank['key'] ?? '') === $defaultRankKey) {
-                    $defaultRank = $rank;
-                    break;
-                }
-            }
-            $smaregiRankId = is_array($defaultRank) && isset($defaultRank['smaregi_rank_id'])
-                ? trim((string) $defaultRank['smaregi_rank_id'])
-                : '';
-
-            if ($attempt !== null) {
-                $body = $this->buildSmaregiCustomerBody(
-                    $memberNumber,
-                    $data,
-                    $smaregiRankId !== '' ? $smaregiRankId : null,
-                    $defaultRankKey,
-                    $projectId,
-                );
-                $smaregiCustomerId = $this->registrationRecovery->createOrRecover($attempt, $body);
-                if ($smaregiCustomerId === null) {
-                    LogHelper::warning('[Member] smaregi create customer failed', [
-                        'project_id' => $projectId,
-                        'user_id' => (int) $user->id,
-                        'member_number' => $memberNumber,
-                        'detail' => $this->smaregiApi->getLastErrorDetail(),
-                    ]);
-                    if ($requireSmaregi) {
-                        throw new \RuntimeException(
-                            'スマレジへの会員登録に失敗しました。入力内容やスマレジ連携設定を確認してください。'
-                        );
-                    }
-                }
-            }
-
             $member = Member::create([
                 'project_id' => $projectId,
                 'user_id' => $user->id,

@@ -24,10 +24,18 @@ Legacy external-only customers without a stored attempt cannot be automatically
 recovered. Marker edits also require manual reconciliation. Remote fields from the
 original creation are not silently rewritten during recovery.
 
-The project lock still spans external I/O during finalization, preserving existing
-serialization. Removing that lock needs separate concurrency tests. Member reads
-still have synchronization side effects. This change repairs remote/local failure
-recovery without changing those existing freshness or locking contracts.
+The project lock protects code reservation and commits before external I/O.
+Remote lookup/creation runs outside the finalization transaction. Finalization
+locks the user to prevent duplicate local members. Concurrent same-user POSTs
+use the same reserved customer code, whose provider uniqueness prevents duplicate
+customers; a losing request may require retry after the winner completes. Different
+users can contact the provider concurrently. Registrations without
+a reservation retain the project lock through their local allocation and commit.
+Pending codes remain reserved until the same transaction persists the member and
+deletes the attempt, so concurrent allocators never observe a reuse window. A
+second PDO connection acquires the project lock with NOWAIT inside the remote POST
+callback, verifying that external I/O does not hold that lock. Member reads still
+have synchronization side effects; the existing freshness contract is preserved.
 
 Validation uses a dedicated local MySQL server and mocked Smaregi transport. A
 second PDO connection proves the attempt is committed before external creation.
