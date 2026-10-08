@@ -283,6 +283,7 @@ struct NativeRootView: View {
         .padding(24)
     }
 
+    @ViewBuilder
     private var mainChrome: some View {
         if let client = viewModel.apiClient {
             ZStack(alignment: .leading) {
@@ -451,6 +452,8 @@ struct NativeRootView: View {
                 member: viewModel.homeShowMemberCard ? viewModel.membership : nil,
                 projectName: viewModel.projectName,
                 menuLayout: viewModel.homeMenuLayout,
+                homeLayout: viewModel.homeLayout,
+                galleryItems: viewModel.homeGalleryItems,
                 tabs: viewModel.homeTabs,
                 onSelectTab: { selectMenu($0) },
                 onExpandImage: { index in
@@ -505,6 +508,7 @@ struct NativeRootView: View {
                 initialMember: viewModel.membership,
                 membershipRevision: viewModel.membershipRevision,
                 opensProfileEditor: tab.key == "profileEdit",
+                pageStyle: viewModel.memberPageStyle,
                 showRankProgress: viewModel.memberShowRankProgress,
                 showPointHistory: viewModel.memberShowPointHistory,
                 showCouponActivity: viewModel.memberShowCouponActivity,

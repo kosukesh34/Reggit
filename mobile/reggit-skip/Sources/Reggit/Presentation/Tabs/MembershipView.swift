@@ -182,6 +182,7 @@ struct MembershipView: View {
     let membershipRevision: Int
     @State var didOpenProfileEditor = false
     let opensProfileEditor: Bool
+    let pageStyle: String
     let showRankProgress: Bool
     let showPointHistory: Bool
     let showCouponActivity: Bool
@@ -194,6 +195,7 @@ struct MembershipView: View {
         initialMember: MemberProfileSnapshot? = nil,
         membershipRevision: Int = 0,
         opensProfileEditor: Bool = false,
+        pageStyle: String = "classic",
         showRankProgress: Bool = true,
         showPointHistory: Bool = true,
         showCouponActivity: Bool = true,
@@ -209,6 +211,7 @@ struct MembershipView: View {
         self.projectName = projectName
         self.membershipRevision = membershipRevision
         self.opensProfileEditor = opensProfileEditor
+        self.pageStyle = pageStyle
         self.showRankProgress = showRankProgress
         self.showPointHistory = showPointHistory
         self.showCouponActivity = showCouponActivity
@@ -237,7 +240,7 @@ struct MembershipView: View {
                         }
                     }
                 }
-                .background(AppDesign.canvas.ignoresSafeArea())
+                .background((pageStyle == "minimal" ? Color.white : pageStyle == "ticket" ? Color(red: 0.98, green: 0.96, blue: 0.93) : AppDesign.canvas).ignoresSafeArea())
                 .navigationBarHidden(true)
                 .toolbar(.hidden, for: .navigationBar)
                 .refreshable { await viewModel.load(force: true) }
@@ -327,6 +330,7 @@ struct MembershipView: View {
                     member: member,
                     projectName: projectName,
                     baseURL: viewModel.mediaBaseURL,
+                    pageStyle: pageStyle,
                     onEnlargeCode: { viewModel.showBarcodeEnlarge = true }
                 )
 
@@ -570,19 +574,41 @@ struct MembershipPassCard: View {
     let member: MemberProfileSnapshot
     let projectName: String
     let baseURL: String
+    var pageStyle: String = "classic"
     var onEnlargeCode: (() -> Void)? = nil
     @Environment(\.brandAccent) var accent
 
-    private var cardColor: Color {
-        member.rankColorHex?.toNativeColor(fallback: accent) ?? accent
+    private var cardColor: Color { member.rankColorHex?.toNativeColor(fallback: accent) ?? accent }
+    private var cardForeground: Color { BrandPalette(hex: member.rankColorHex ?? "#173F35").usesDarkForeground ? .black : .white }
+
+    @ViewBuilder private var imageHeader: some View {
+        if let imageURL = member.cardLogoURL {
+            RemoteImageView(urlString: imageURL, baseURL: baseURL, contentMode: .fill, usesDemoFallback: false)
+                .frame(maxWidth: .infinity).frame(height: 110).clipped()
+        }
     }
 
-    private var cardForeground: Color {
-        BrandPalette(hex: member.rankColorHex ?? "#173F35").usesDarkForeground ? .black : .white
+    private func codeSection(height: CGFloat) -> some View {
+        Button { onEnlargeCode?() } label: {
+            VStack(spacing: 10) {
+                MemberCodeView(value: member.memberNumber, codeType: member.cardCodeType, height: height)
+                Text(member.memberNumber).font(.system(.footnote, design: .monospaced).weight(.semibold)).tracking(1.5)
+                Text("タップして拡大").font(.caption2).foregroundStyle(.secondary)
+            }
+            .padding(22).frame(maxWidth: .infinity).foregroundStyle(Color.black).background(Color.white)
+        }
+        .buttonStyle(.plain).accessibilityLabel("会員コードを拡大")
     }
 
-    var body: some View {
+    @ViewBuilder private var expiry: some View {
+        if let value = member.pointsExpiryLabel, !value.isEmpty {
+            Text("ポイント期限 " + value).font(.caption)
+        }
+    }
+
+    private var classicCard: some View {
         VStack(spacing: 0) {
+            imageHeader
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(projectName)
@@ -630,16 +656,7 @@ struct MembershipPassCard: View {
                             .foregroundStyle(cardForeground)
                     }
                 }
-                if let imageURL = member.cardLogoURL {
-                    RemoteImageView(
-                        urlString: imageURL,
-                        baseURL: baseURL,
-                        contentMode: .fill,
-                        cornerRadius: 20,
-                        usesDemoFallback: false
-                    )
-                    .frame(width: 40, height: 40)
-                }
+
             }
             .padding(.horizontal, 18)
             .padding(.bottom, 16)
@@ -673,6 +690,94 @@ struct MembershipPassCard: View {
         .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous).stroke(cardColor.opacity(0.35), lineWidth: 1))
         .shadow(color: cardColor.opacity(0.2), radius: 20, x: 0, y: 12)
+
+    }
+
+    var body: some View {
+        if pageStyle == "classic" {
+            classicCard
+        } else if pageStyle == "minimal" {
+            VStack(spacing: 0) {
+                imageHeader
+                VStack(spacing: 8) {
+                    Text(projectName).font(.caption).foregroundStyle(.secondary)
+                    Text("会員証").font(.title2.weight(.bold))
+                    Text(member.name).font(.headline)
+                }.padding(.top, 24)
+                if !member.memberNumber.isEmpty { codeSection(height: 96) }
+                HStack {
+                    VStack(spacing: 6) {
+                        Text("保有ポイント").font(.caption).foregroundStyle(.secondary)
+                        Text("\(member.points) pt").font(.title2.weight(.bold))
+                    }.frame(maxWidth: .infinity)
+                    Divider().frame(height: 42)
+                    VStack(spacing: 6) {
+                        Text("会員ランク").font(.caption).foregroundStyle(.secondary)
+                        Text(member.rankLabel).font(.headline)
+                    }.frame(maxWidth: .infinity)
+                }.padding(20).background(Color.black.opacity(0.025))
+                expiry.padding(.bottom, 16)
+            }
+            .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black.opacity(0.1), lineWidth: 1))
+        } else if pageStyle == "ticket" {
+            VStack(spacing: 0) {
+                imageHeader
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("MEMBER PASS").font(.caption2.weight(.bold)).tracking(2)
+                        Text(projectName).font(.title3.weight(.bold))
+                        Text(member.rankLabel).font(.caption.weight(.bold))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(20)
+                    .frame(minHeight: 170).background(cardColor).foregroundStyle(cardForeground)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("会員名").font(.caption).foregroundStyle(.secondary)
+                        Text(member.name).font(.headline)
+                        Text("\(member.points) pt").font(.title2.weight(.bold))
+                        expiry.foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
+                }
+                if !member.memberNumber.isEmpty {
+                    codeSection(height: 64).overlay(alignment: .top) {
+                        Rectangle().stroke(Color.black.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [5, 4])).frame(height: 1)
+                    }
+                }
+            }
+            .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 4)
+        } else {
+            VStack(spacing: 16) {
+                VStack(spacing: 0) {
+                    imageHeader
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(projectName).font(.caption)
+                                Text(member.name).font(.headline)
+                            }
+                            Spacer()
+                            Text(member.rankLabel).font(.caption.weight(.bold)).padding(8)
+                                .background(cardForeground.opacity(0.12)).clipShape(Capsule())
+                        }
+                        Text("保有ポイント").font(.subheadline)
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("\(member.points)").font(.system(size: 64, weight: .bold, design: .rounded))
+                            Text("pt").font(.title3)
+                        }
+                        expiry
+                    }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .foregroundStyle(cardForeground).background(cardColor)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                if !member.memberNumber.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("会員コード").font(.headline).padding(.horizontal, 22).padding(.top, 18)
+                        codeSection(height: 64)
+                    }.background(Color.white).clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+            }
+        }
     }
 }
 
