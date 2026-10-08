@@ -33,6 +33,7 @@ return [
     'debug' => (bool) env('APP_DEBUG', false),
     /** クライアントデバッグログは環境ごとに明示的に有効化する */
     'client_debug_enabled' => (bool) env('CLIENT_DEBUG_ENABLED', false),
+    'client_debug_token' => env('CLIENT_DEBUG_TOKEN'),
     'url' => env('APP_URL', 'http://reggit.test'),
     'api_base' => env('APP_API_BASE', '/api'),
     /** プロジェクトキー未指定時のフォールバック（未設定なら先頭の active プロジェクト） */
