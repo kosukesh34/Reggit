@@ -4,8 +4,9 @@
 @section('page-title', 'アプリデザイン')
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}">
 <style>
-.home-settings { max-width: 920px; }
+.home-settings { max-width: 1250px; }
 [data-design-panel][hidden] { display:none; }
 .web-page-editor[hidden], .home-sort-row[hidden] { display: none; }
 .home-settings .card { margin-bottom: 16px; }
@@ -64,11 +65,21 @@
     .home-sort-row--menu { grid-template-columns: 28px auto 1fr; }
     .home-sort-row--menu .home-sort-icon { grid-column: 3; }
 }
+.home-editor-layout { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:24px; align-items:start; }
+.home-preview-panel { position:sticky; top:20px; }
+.home-preview-panel h2 { font-size:16px; }
+.home-gallery-action { display:grid; gap:8px; padding:12px; border:1px solid #e7e5e4; border-radius:12px; margin-bottom:12px; }
+.home-gallery-action img { width:80px; max-height:80px; object-fit:cover; border-radius:8px; }
+.home-preview-news { background:#fff; padding:14px; border-radius:12px; }
+@media(max-width:1000px) { .home-editor-layout { grid-template-columns:minmax(0,1fr); } .home-preview-panel { position:static; width:min(100%,330px); margin:auto; } }
 </style>
 @endpush
 
 @section('content')
 @php
+    $homePreviewBase = route('liff.project', ['project_key' => request()->route('project_key')], false);
+    $homePreviewUrl = $homePreviewBase ? $homePreviewBase.(str_contains($homePreviewBase, '?') ? '&' : '?').'designer_live_preview=1&designer_embed=1&designer_source=member&home_form_preview=1#/home' : null;
+
     $reorderChoices = static function (array $choices, ?array $selectedKeys): array {
         $selectedKeys = is_array($selectedKeys) ? $selectedKeys : [];
         $byKey = collect($choices)->keyBy('key');
@@ -119,12 +130,14 @@
 <input type="hidden" name="design_tab" id="design-active-tab" value="home">
 <input type="hidden" name="native_navigation_present" value="1">
 <p class="section-help">編集する画面を選んでください。各タブの変更は最後に「設定を保存」でまとめて保存します。</p>
-<div class="settings-category-tabs" role="tablist" aria-label="デザイン設定"><button type="button" role="tab" id="tab-home" aria-controls="panel-home" aria-selected="false" data-design-tab="home">ホーム</button><button type="button" role="tab" id="tab-header" aria-controls="panel-header" aria-selected="false" data-design-tab="header">ヘッダー</button><button type="button" role="tab" id="tab-footer" aria-controls="panel-footer" aria-selected="false" data-design-tab="footer">フッター</button><button type="button" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false" data-design-tab="menu">メニュー</button><button type="button" role="tab" id="tab-products" aria-controls="panel-products" aria-selected="false" data-design-tab="products">商品一覧</button></div><section role="tabpanel" id="panel-home" aria-labelledby="tab-home" data-design-panel="home">    <div class="card">
+<div class="settings-category-tabs" role="tablist" aria-label="デザイン設定"><button type="button" role="tab" id="tab-home" aria-controls="panel-home" aria-selected="false" data-design-tab="home">ホーム</button><button type="button" role="tab" id="tab-header" aria-controls="panel-header" aria-selected="false" data-design-tab="header">ヘッダー</button><button type="button" role="tab" id="tab-footer" aria-controls="panel-footer" aria-selected="false" data-design-tab="footer">フッター</button><button type="button" role="tab" id="tab-menu" aria-controls="panel-menu" aria-selected="false" data-design-tab="menu">メニュー</button><button type="button" role="tab" id="tab-products" aria-controls="panel-products" aria-selected="false" data-design-tab="products">商品一覧</button></div><section role="tabpanel" id="panel-home" aria-labelledby="tab-home" data-design-panel="home"><div class="home-editor-layout"><div>
+@include('admin.settings._home-content')
+<div class="card">
         <div class="card-header"><h2 class="card-title">ホーム画面</h2></div>
         <div class="card-body">
             <input type="hidden" name="home_show_member_card" value="0">
             <label class="checkbox-label"><input type="checkbox" name="home_show_member_card" value="1" {{ old('home_show_member_card', $homeShowMemberCard) ? 'checked' : '' }}> ホームに会員証を表示する</label>
-            <p class="section-help">Skipアプリでホーム画像とメニューの間に会員コード（バーコード部分）を表示します。コードをタップすると提示用のシートが開きます。未登録のお客様には表示されません。</p>
+            <p class="section-help">LINE・Skipのホームに会員コード（バーコード部分）を表示します。コードをタップすると提示用のシートが開きます。未登録のお客様には表示されません。</p>
         </div>
         <div class="card-body">
             <div class="form-group">
@@ -167,6 +180,18 @@
         </div>
     </div>
 
+</div><aside class="home-preview-panel"><h2>ホームプレビュー</h2><p class="section-help">実際の店舗アプリを表示します。変更は保存するまで公開されません。</p>
+
+<div class="cp-real-preview-stage">
+@if($homePreviewUrl)
+<div class="cp-device-shell">
+<span class="cp-device-button cp-device-button--silent" aria-hidden="true"></span><span class="cp-device-button cp-device-button--volume-up" aria-hidden="true"></span><span class="cp-device-button cp-device-button--volume-down" aria-hidden="true"></span><span class="cp-device-button cp-device-button--power" aria-hidden="true"></span>
+<div class="cp-real-preview-frame"><div class="cp-real-preview-screen"><iframe id="home-live-preview" title="実際の店舗アプリのホーム" src="{{ $homePreviewUrl }}"></iframe></div></div>
+</div>
+@else
+<p>店舗アプリのURLを取得できませんでした。</p>
+@endif
+</div></aside></div>
 </section>
 <section role="tabpanel" id="panel-header" aria-labelledby="tab-header" data-design-panel="header">    <div class="card">
         <div class="card-header"><h2 class="card-title">ヘッダー</h2></div>

@@ -1,11 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import { createPortal } from "react-dom";
-import { nativeTabHref, nativeTabIconClass, useNativeConfig } from "../native/nativeConfig";
+import { type HomeGalleryItem, nativeTabHref, nativeTabIconClass, useNativeConfig } from "../native/nativeConfig";
 import "../styles/native-home.css";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { BarcodeEnlargeView } from "../components/membership/BarcodeEnlargeView";
 import { CenterPopup } from "../components/ui/CenterPopup";
+
+import { BottomSheet } from "../components/ui/BottomSheet";
+import { NativeState, useNativeResource } from "../native/NativeResource";
+import type { Announcement } from "../../frontend/features/announcements/api";
+
+function HomeNews() {
+  const resource = useNativeResource<{ announcements: Announcement[] }>("/api/announcements", { announcements: [] });
+  return <section className="native-home__news"><h2>ニュース</h2><NativeState loading={resource.loading} error={resource.error} empty={!resource.data.announcements.length} title="お知らせはありません" reload={() => void resource.reload()}>
+    {resource.data.announcements.slice(0, 3).map((item) => <a key={item.id} href={`#/news?announcement=${item.id}`}>{item.title}</a>)}
+  </NativeState></section>;
+}
+
+function openGalleryUrl(item: HomeGalleryItem) {
+  if (!item.url || !/^https:\/\//i.test(item.url)) return;
+  const liff = window.liff as { isInClient?: () => boolean; openWindow?: (input: { url: string; external: boolean }) => void } | undefined;
+  if (liff?.isInClient?.() && liff.openWindow) liff.openWindow({ url: item.url, external: item.mode === "external" });
+  else if (item.mode === "external") window.open(item.url, "_blank", "noopener,noreferrer");
+  else window.location.assign(item.url);
+}
 
 const FALLBACK_IMAGE = "/images/liff/skip-demo-store-hero.png";
 const SWIPE_THRESHOLD = 45;
@@ -80,6 +99,8 @@ function HomeImageViewer({ images, initialIndex, projectName, onClose }: {
 export function NativeHome() {
   const { config, loading } = useNativeConfig();
   const { member } = useRuntimeData();
+  const [selectedGallery, setSelectedGallery] = useState<HomeGalleryItem>();
+  const homeLayout = config.home?.layout ?? "legacy";
   const [showMemberCode, setShowMemberCode] = useState(false);
   const [index, setIndex] = useState(0);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
@@ -95,8 +116,9 @@ export function NativeHome() {
     return cleaned.length > 0 ? cleaned : [FALLBACK_IMAGE];
   }, [config?.home?.image_url, config?.home?.image_urls]);
   const imageKey = images.join("|");
-  const menu = (config?.tabs ?? []).filter((tab) => !["home", "terms", "privacy"].includes(tab.key));
-  const layout = config?.home?.menu_layout === "list"
+  const allMenu = (config?.tabs ?? []).filter((tab) => !["home", "terms", "privacy"].includes(tab.key));
+  const menu = homeLayout === "buttons_gallery" ? allMenu.slice(0, 2) : allMenu;
+  const layout = homeLayout === "buttons_gallery" ? "grid-2" : config?.home?.menu_layout === "list"
     ? "list"
     : config?.home?.menu_layout === "grid_2_columns" ? "grid-2" : "grid-3";
   const columns = layout === "grid-2" ? 2 : 3;
@@ -127,8 +149,8 @@ export function NativeHome() {
     }
   };
 
-  return <div className="native-home" aria-busy={loading}>
-    <div className="native-home__hero-frame">
+  return <div className={`native-home native-home--${homeLayout}`} aria-busy={loading}>
+    {homeLayout === "legacy" ? <div className="native-home__hero-frame">
       <button ref={heroRef} type="button" className="native-home__hero"
         onClick={() => {
           if (ignoreNextClick.current) { ignoreNextClick.current = false; return; }
@@ -143,18 +165,21 @@ export function NativeHome() {
           onClick={() => setIndex(page)} aria-label={`${page + 1}枚目の画像`}
           aria-current={page === selectedIndex ? "true" : undefined} />)}
       </div> : null}
-    </div>
+    </div> : null}
 
     {config.home?.show_member_card !== false && member.isMember && member.number && member.number !== "未発行" ?
       <button type="button" className="native-home__member" onClick={() => setShowMemberCode(true)} aria-label="会員コードを拡大して表示">
+        {config.home?.image_url ? <img className="native-home__member-header" src={imageUrl(config.home.image_url)} alt={`${projectName}の会員証ヘッダー`} /> : null}
+        <div className="native-home__member-body">
         {member.codeType === "qrcode" ? <div className="native-code-fallback"><strong>{member.number}</strong><MembershipBarcode value={member.number} height={39} /></div> : <MembershipBarcode value={member.number} height={56} />}
         <span>タップして拡大</span>
+        </div>
       </button> : null}
     <CenterPopup open={showMemberCode} onClose={() => setShowMemberCode(false)} title="会員コード">
       {member.codeType === "qrcode" ? <div className="native-code-fallback"><strong>{member.number}</strong><MembershipBarcode value={member.number} height={39} /></div> : <BarcodeEnlargeView value={member.number} />}
     </CenterPopup>
 
-    {layout === "list" ? <nav className="native-home__menu native-home__menu--list" aria-label="ホームメニュー">
+    {homeLayout !== "gallery" && (layout === "list" ? <nav className="native-home__menu native-home__menu--list" aria-label="ホームメニュー">
       {menu.map((tab) => {
         return <a key={tab.key} className="native-home__list-item" href={nativeTabHref(tab)}>
           <i className={nativeTabIconClass(tab)} aria-hidden="true" />
@@ -171,7 +196,14 @@ export function NativeHome() {
           <i className={nativeTabIconClass(tab)} aria-hidden="true" /><span>{tab.label}</span>
         </a>;
       })}
-    </nav>}
+    </nav>)}
+
+    {homeLayout === "member_news" ? <HomeNews /> : null}
+    {homeLayout === "gallery" || homeLayout === "buttons_gallery" ? <section className="native-home__gallery" aria-label="ギャラリー">
+      {(config.home?.gallery_items ?? []).map((item) => <button type="button" key={item.id} onClick={() => item.mode === "detail" ? setSelectedGallery(item) : openGalleryUrl(item)}><img src={imageUrl(item.image_url)} alt={item.title || "ギャラリー画像"} loading="lazy" />{item.title ? <strong>{item.title}</strong> : null}</button>)}
+      {!config.home?.gallery_items?.length ? <p>ギャラリー画像はありません</p> : null}
+    </section> : null}
+    <BottomSheet open={!!selectedGallery} onClose={() => setSelectedGallery(undefined)} title={selectedGallery?.title}><img className="native-gallery__detail" src={selectedGallery?.image_url} alt={selectedGallery?.title ?? ""} /><p className="native-body-text">{selectedGallery?.description}</p></BottomSheet>
 
     {expandedIndex !== null ? <HomeImageViewer images={images} initialIndex={expandedIndex}
       projectName={projectName} onClose={closeViewer} /> : null}

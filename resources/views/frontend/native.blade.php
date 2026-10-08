@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 @php
     $isDesignerEmbedPreview = request()->query('designer_live_preview') === '1'
-        && request()->query('designer_embed') === '1';
+        && request()->query('designer_embed') === '1'
+        && auth('admin')->check()
+        && auth('admin')->user()->canAccessProject((int) (request()->attributes->get('currentProject')?->id ?? \App\Util\AdminContext::getCurrentProject()?->id ?? 0));
 
     $configuredAssetVersion = (string) config('app.asset_version', env('APP_VERSION', ''));
     $latestAssetMtime = max(
@@ -40,6 +42,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @include('frontend.partials._head-assets')
+    @if($isDesignerEmbedPreview)
+    <style>html, body { background: #f2f5f7 !important; } #liff-loading { display: none !important; } #react-frontend-root { opacity: 1 !important; visibility: visible !important; }</style>
+    @endif
     {{-- ネイティブアプリ（iOS/Android）: Android WebView では初回 100vh が 0 になりやすいため、px フォールバックを指定 --}}
     <style id="native-app-inline">
         #liff-loading { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
@@ -92,6 +97,7 @@
         });
     })();
     </script>
+    @unless($isDesignerEmbedPreview)
     <div id="liff-loading" class="liff-loading" aria-live="polite" style="display: none !important; visibility: hidden !important;">
         <div class="liff-loading-inner">
             <div class="liff-loading-spinner"></div>
@@ -99,6 +105,7 @@
         </div>
     </div>
 
+    @endunless
     <div class="app-container" id="app-container" style="display: flex; flex-direction: column; min-height: max(100vh, 800px); height: 100%; background: #fff; visibility: visible; box-sizing: border-box;"></div>
     <div id="react-frontend-root" aria-hidden="true"></div>
 

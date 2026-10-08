@@ -484,6 +484,15 @@ function bootstrapLiffInit(): void {
         });
     }
 
+    if (window.__IS_DESIGNER_EMBED_PREVIEW__ === true) {
+        hideLiffLoading();
+        document.body.classList.add('liff-ui-ready');
+        setLineUserId(null, 'admin_preview');
+        setLineProfile(null);
+        setTimeout(dispatchReady, 0);
+        return;
+    }
+
     applyNativeEmbedClass();
     applyLiffDesignTokens();
     persistQueueTokenIfPresent();
