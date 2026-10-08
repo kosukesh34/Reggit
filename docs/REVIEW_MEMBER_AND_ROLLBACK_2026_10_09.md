@@ -23,7 +23,7 @@ MemberService::getMemberData still performs registration recovery, Smaregi refre
 ## Verification
 
 - PR #294: latest-HEAD test/lint/main succeeded and scripts/merge-pr.sh merged it. Isolated local full suite: 1,363 tests and 5,954 assertions passed; final targeted checks: 5 tests and 15 assertions.
-- PR #295: 25 targeted tests and 123 assertions passed after updating the existing notification-failure expectation. Tests cover local rollback/retry, outer transaction rollback/commit, and the first notification failing without stopping the second. Full-suite and latest-HEAD CI results are recorded in the PR before merge.
+- PR #295: 25 targeted tests and 123 assertions passed after updating the existing notification-failure expectation. Tests cover local rollback/retry, outer transaction rollback/commit, and the first notification failing without stopping the second. Local full suite: 1,367 tests and 5,991 assertions passed. The strengthened real-commit test passed separately (2 tests, 28 assertions). Latest-HEAD CI results are recorded in the PR before merge.
 - PR #296: focused rollback test passed (8 assertions). Test forces the missing single-column index and checks foreign-key preservation and down/up/down. Final results are recorded in its PR before merge.
 - Test containers use scratch source, read-only installed dependencies, an isolated network namespace, a dedicated test database and resource limits. No existing development database is used.
 - Browser E2E and real external provider calls were not run for these backend fixes. No browser/E2E jobs were added to Actions.
