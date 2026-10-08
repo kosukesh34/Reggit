@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Member\Services\PointLedgerBalanceCalculator;
 use App\Domain\Settings\Repositories\OrderSettings;
 use App\Enums\PointTransactionType;
 use App\Models\Concerns\BelongsToProject;
@@ -183,47 +184,43 @@ class Member extends Model
         ], static fn (string $part): bool => $part !== '')));
     }
 
-    public function getTotalPointsFromTransactions(): int
+    /** @return array{balance: int, expires_at: ?\DateTimeImmutable, points_expiring: int, has_transactions: bool} */
+    public function getPointBalance(): array
     {
-        return (int) $this->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
+        $transactions = $this->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
             ->withoutGlobalScope(ProjectScope::class)
-            ->sum('points');
+            ->orderBy('created_at')->orderBy('id')
+            ->get(['type', 'points', 'expires_at', 'order_id', 'created_at'])
+            ->map(fn (PointTransaction $transaction): array => [
+                'type' => $transaction->type,
+                'points' => $transaction->points,
+                'expires_at' => $transaction->expires_at,
+                'order_id' => $transaction->order_id,
+                'created_at' => $transaction->created_at,
+            ])->all();
+
+        return app(PointLedgerBalanceCalculator::class)->calculate($transactions, now());
     }
 
-    /** members.points カラムのみ残っている古いデータを point_transactions に寄せる */
+    public function getTotalPointsFromTransactions(): int
+    {
+        return $this->getPointBalance()['balance'];
+    }
+
     public const POINTS_LEDGER_BACKFILL_DESCRIPTION = 'ポイント残高の整合';
 
-    /**
-     * 表示用カラムと取引合計を一致させる。カラムのみ残っている場合は取引を補完する。
-     */
+    /** Backfill only members with no ledger, never resurrect spent or expired points. */
     public function syncPointsLedger(): void
     {
-        $columnPoints = max(0, (int) $this->points);
-        $ledgerPoints = $this->getTotalPointsFromTransactions();
-
-        if ($ledgerPoints === $columnPoints) {
-            return;
-        }
-
-        if ($ledgerPoints === 0 && $columnPoints > 0) {
-            $this->backfillEarnedPoints($columnPoints);
+        $balance = $this->getPointBalance();
+        if (! $balance['has_transactions'] && (int) $this->points > 0) {
+            $this->backfillEarnedPoints((int) $this->points);
 
             return;
         }
-
-        if ($columnPoints > $ledgerPoints) {
-            if ($ledgerPoints > 0) {
-                $this->recalcPointsFromTransactions();
-
-                return;
-            }
-
-            $this->backfillEarnedPoints($columnPoints - $ledgerPoints);
-
-            return;
+        if ((int) $this->points !== $balance['balance']) {
+            $this->update(['points' => $balance['balance']]);
         }
-
-        $this->recalcPointsFromTransactions();
     }
 
     private function backfillEarnedPoints(int $points): void
@@ -247,12 +244,9 @@ class Member extends Model
     /** 表示・判定用。既存データに台帳がない場合はカラム値を使い、読み取り時には更新しない。 */
     public function getDisplayPoints(): int
     {
-        $ledgerPoints = $this->getTotalPointsFromTransactions();
-        if ($ledgerPoints === 0 && (int) $this->points > 0) {
-            return (int) $this->points;
-        }
+        $balance = $this->getPointBalance();
 
-        return $ledgerPoints;
+        return $balance['has_transactions'] ? $balance['balance'] : max(0, (int) $this->points);
     }
 
     public function recalcPointsFromTransactions(): void

@@ -44,6 +44,18 @@ struct NativeRootView: View {
                     onOpenHamburger: { handleHeaderBack() }
                 )
             }
+            if viewModel.businessStores.count > 1 && (viewModel.phase == .ready || viewModel.phase == .needsRegistration) {
+                Button {
+                    viewModel.showStoreSelection()
+                } label: {
+                    HStack {
+                        Text(viewModel.selectedStoreName ?? "店舗を選択")
+                        Image(systemName: "chevron.down")
+                    }
+                    .font(.subheadline)
+                    .padding(.vertical, 8)
+                }
+            }
         NavigationStack {
             Group {
                 switch viewModel.phase {
@@ -51,6 +63,8 @@ struct NativeRootView: View {
                     splash
                 case .failed(let message):
                     errorScreen(message)
+                case .needsStoreSelection:
+                    businessStoreSelection
                 case .needsRegistration:
                     MembershipRegistrationGateView(
                         projectName: viewModel.projectName,
@@ -257,6 +271,18 @@ struct NativeRootView: View {
     }
 
     @ViewBuilder
+    private var businessStoreSelection: some View {
+        VStack(spacing: 20) {
+            Text("ご利用店舗を選択してください")
+                .font(.title2.bold())
+            ForEach(viewModel.businessStores) { store in
+                Button(store.name) { viewModel.selectBusinessStore(store) }
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(24)
+    }
+
     private var mainChrome: some View {
         if let client = viewModel.apiClient {
             ZStack(alignment: .leading) {

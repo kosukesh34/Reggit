@@ -144,7 +144,7 @@ class SmaregiOrderTransactionOutboundService
             return true;
         }
 
-        SyncOrderTransactionToSmaregiJob::dispatch($orderId, $projectId, $userId, 1, true)
+        SyncOrderTransactionToSmaregiJob::dispatch($orderId, $projectId, $userId, finalize: true)
             ->delay(now()->addSeconds(30));
 
         return false;

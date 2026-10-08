@@ -52,7 +52,7 @@ class Kernel extends HttpKernel
         // Resolve the tenant before implicit model binding executes its scope.
         $this->addToMiddlewarePriorityBefore(SubstituteBindings::class, BindProjectFromRequest::class);
         $this->addToMiddlewarePriorityBefore(SubstituteBindings::class, BindAdminProject::class);
-        $this->addToMiddlewarePriorityBefore(SubstituteBindings::class, AuthenticateApiToken::class);
+        $this->addToMiddlewarePriorityBefore(BindProjectFromRequest::class, AuthenticateApiToken::class);
         $this->addToMiddlewarePriorityAfter(AuthenticateApiToken::class, CheckApiProject::class);
     }
 

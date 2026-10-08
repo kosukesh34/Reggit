@@ -45,6 +45,19 @@ struct ReggitAPIClient: ReggitAPIServing {
         self.session = session
     }
 
+    var selectedStoreID: Int? {
+        MobileSelectedProjectStore.selectedStoreID(baseURL: baseURL, projectKey: projectKey)
+    }
+
+    func fetchStores() async throws -> [BusinessStore] {
+        let json = try await requestJSON(path: "/api/v1/stores", method: "GET")
+        guard let rows = json["stores"] as? [[String: Any]] else { throw ReggitAPIError.invalidResponse }
+        return rows.compactMap { row in
+            guard let id = row["id"] as? Int, let name = row["name"] as? String else { return nil }
+            return BusinessStore(id: id, name: name)
+        }
+    }
+
     // MARK: - Device
 
     func registerDevice(
@@ -416,6 +429,16 @@ struct ReggitAPIClient: ReggitAPIServing {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(projectKey, forHTTPHeaderField: "X-Project-Key")
         request.setValue(deviceIdentifier, forHTTPHeaderField: "X-Device-Identifier")
+        if !["/api/devices/session", "/api/devices/register", "/api/v1/stores"].contains(path), let storeID = selectedStoreID {
+            request.setValue(String(storeID), forHTTPHeaderField: "X-Store-Id")
+        }
+        if !["GET", "HEAD", "OPTIONS"].contains(method) {
+            let bootstrap = try await requestJSON(path: "/api/devices/session", method: "GET")
+            guard let csrfToken = bootstrap["csrf_token"] as? String, !csrfToken.isEmpty else {
+                throw ReggitAPIError.invalidResponse
+            }
+            request.setValue(csrfToken, forHTTPHeaderField: "X-CSRF-TOKEN")
+        }
         if let token = UserDefaults.standard.string(forKey: credentialKey) {
             request.setValue(token, forHTTPHeaderField: "X-Device-Token")
         }

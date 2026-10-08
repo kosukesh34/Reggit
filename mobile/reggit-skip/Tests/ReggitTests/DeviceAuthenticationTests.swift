@@ -7,10 +7,16 @@ private final class DeviceAuthenticationProtocol: URLProtocol, @unchecked Sendab
     override func startLoading() {
         let registering = request.url?.path == "/api/devices/register"
         let authenticated = request.value(forHTTPHeaderField: "X-Device-Token") == "test-secret-token"
-        let status = registering || authenticated ? 200 : 401
-        let body = registering
+        let bootstrap = request.url?.path == "/api/devices/session"
+        let stores = request.url?.path == "/api/v1/stores"
+        let csrf = request.value(forHTTPHeaderField: "X-CSRF-TOKEN") == "test-csrf"
+        let unscoped = request.value(forHTTPHeaderField: "X-Store-Id") == nil
+        let status = bootstrap || stores ? (unscoped ? 200 : 422) : registering ? (csrf && unscoped ? 200 : 419) : authenticated ? 200 : 401
+        let body = bootstrap ? "{\"csrf_token\":\"test-csrf\"}"
+            : stores ? "{\"stores\":[{\"id\":12,\"name\":\"本店\"}]}"
+            : registering
             ? "{\"success\":true,\"device_token\":\"test-secret-token\"}"
-            : "{\"is_member\":true,\"profile\":{\"name\":\"Native Member\"}}"
+            : "{\"is_member\":true,\"profile\":{\"name\":\"Native Member\"},\"store_id\":\"\(request.value(forHTTPHeaderField: "X-Store-Id") ?? "")\"}"
         client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(body.utf8))
         client?.urlProtocolDidFinishLoading(self)
@@ -19,6 +25,27 @@ private final class DeviceAuthenticationProtocol: URLProtocol, @unchecked Sendab
 }
 
 final class DeviceAuthenticationTests: XCTestCase {
+    func testStoredStoreIsProjectScopedAndDoesNotBlockBootstrapOrStoreDiscovery() async throws {
+        let baseURL = "https://auth.example"
+        let project = UUID().uuidString
+        MobileSelectedProjectStore.selectStore(999, baseURL: baseURL, projectKey: project)
+        defer { MobileSelectedProjectStore.selectStore(nil, baseURL: baseURL, projectKey: project) }
+        XCTAssertEqual(MobileSelectedProjectStore.selectedStoreID(baseURL: baseURL + "/", projectKey: project), 999)
+        XCTAssertNil(MobileSelectedProjectStore.selectedStoreID(baseURL: baseURL, projectKey: project + "-other"))
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [DeviceAuthenticationProtocol.self]
+        let device = UUID().uuidString
+        defer { UserDefaults.standard.removeObject(forKey: "device-token:\(baseURL):\(project):\(device)") }
+        let client = ReggitAPIClient(baseURL: baseURL, projectKey: project, deviceIdentifier: device, session: URLSession(configuration: configuration))
+        try await client.registerDevice(platform: "ios", pushToken: nil, osVersion: nil, appVersion: nil)
+        let stores = try await client.fetchStores()
+        XCTAssertEqual(stores, [BusinessStore(id: 12, name: "本店")])
+        XCTAssertEqual(client.selectedStoreID, 999)
+        let data = try await client.fetchAnnouncementImage(id: 42)
+        let response = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(response["store_id"] as? String, "999")
+    }
+
     func testPrivateAnnouncementImageUsesDeviceCredential() async throws {
         let device = UUID().uuidString
         let configuration = URLSessionConfiguration.ephemeral

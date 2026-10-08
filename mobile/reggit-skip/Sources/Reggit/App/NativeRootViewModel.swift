@@ -7,6 +7,7 @@ import SkipFuse
 final class NativeRootViewModel: PushNotificationHandling {
     enum Phase: Equatable {
         case loading
+        case needsStoreSelection
         case needsRegistration
         case ready
         case failed(String)
@@ -20,6 +21,8 @@ final class NativeRootViewModel: PushNotificationHandling {
     var hamburgerItems: [AppTabItem] = []
     var announcementCount = 0
     var selectedTab: String = "home"
+    var businessStores: [BusinessStore] = []
+    var selectedStoreName: String?
     var currentProjectKey = ""
     var projectName: String = "Reggit"
     var primaryColorHex: String = "#173F35"
@@ -119,13 +122,27 @@ final class NativeRootViewModel: PushNotificationHandling {
                 registrationListPayload = [:]
                 registrationFieldErrors = [:]
                 announcementCount = 0
-                SecondaryScreenCache.announcements = nil
+                SecondaryScreenCache.reset()
                 pendingLotteryCount = 0
                 lastStampsTotal = nil
             }
             let client = try await bootstrap.registerDevice()
             apiClient = client
-            let config = await loadAppConfig(client: client)
+            businessStores = try await client.fetchStores()
+            let selectedID = MobileSelectedProjectStore.selectedStoreID(baseURL: client.baseURL, projectKey: currentProjectKey)
+            if !businessStores.isEmpty && !businessStores.contains(where: { $0.id == selectedID }) {
+                if businessStores.count == 1, let store = businessStores.first {
+                    MobileSelectedProjectStore.selectStore(store.id, baseURL: client.baseURL, projectKey: currentProjectKey)
+                    SecondaryScreenCache.reset()
+                } else {
+                    MobileSelectedProjectStore.selectStore(nil, baseURL: client.baseURL, projectKey: currentProjectKey)
+                    phase = .needsStoreSelection
+                    return
+                }
+            }
+            let activeID = MobileSelectedProjectStore.selectedStoreID(baseURL: client.baseURL, projectKey: currentProjectKey)
+            selectedStoreName = businessStores.first(where: { $0.id == activeID })?.name
+            let config = await loadAppConfig()
             let filtered = Self.filterNativeTabs(
                 Self.uniqueItems(config.tabs + config.headerItems + config.footerItems + config.hamburgerItems)
             )
@@ -194,6 +211,21 @@ final class NativeRootViewModel: PushNotificationHandling {
             if !hadReadyScreen { phase = .failed(error.localizedDescription) }
             logger.error("Native bootstrap failed: \(error.localizedDescription)")
         }
+    }
+
+    func selectBusinessStore(_ store: BusinessStore) {
+        guard let client = apiClient, businessStores.contains(store) else { return }
+        MobileSelectedProjectStore.selectStore(store.id, baseURL: client.baseURL, projectKey: currentProjectKey)
+        SecondaryScreenCache.reset()
+        membership = nil
+        phase = .loading
+        Task { await start() }
+    }
+
+    func showStoreSelection() {
+        walletRealtime.stop()
+        cancelWalletRefresh()
+        phase = .needsStoreSelection
     }
 
     func submitRegistration(values: [String: String], listValues: [String: [String]]) async {
@@ -571,7 +603,7 @@ final class NativeRootViewModel: PushNotificationHandling {
         return member
     }
 
-    private func loadAppConfig(client _: any ReggitAPIServing) async -> AppConfig {
+    private func loadAppConfig() async -> AppConfig {
         if let cached = SecondaryScreenCache.appConfig {
             return cached
         }
