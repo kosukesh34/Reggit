@@ -2,8 +2,13 @@
 
 namespace Tests\Unit\Services;
 
+use App\Enums\CouponDeliveryStatus;
+use App\Enums\CouponDeliveryType;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\Coupon;
+use App\Models\CouponDelivery;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use App\Models\MemberRankHistory;
 use App\Models\Project;
 use App\Models\User;
@@ -25,6 +30,40 @@ class MemberRankHistoryTest extends TestCase
     {
         AdminContext::setCurrentProject(null);
         parent::tearDown();
+    }
+
+    public function test_failed_rank_coupon_rolls_back_rank_and_allows_retry(): void
+    {
+        $project = Project::factory()->create();
+        AdminContext::setCurrentProject($project);
+        ShopSettingStore::setMemberRankSettings([
+            ['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'order' => 1, 'is_active' => true],
+            ['key' => 'gold', 'label' => 'Gold', 'min_points' => 100, 'order' => 2, 'is_active' => true],
+        ], $project->id);
+        $member = Member::factory()->create(['project_id' => $project->id, 'rank' => 'bronze', 'points' => 0]);
+        $this->grantMemberPoints($member, 150, 'Rank test');
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'end_at' => now()->subDay()]);
+        CouponDelivery::create([
+            'project_id' => $project->id, 'coupon_id' => $coupon->id,
+            'delivery_type' => CouponDeliveryType::EVENT_RANK_UP_ARRIVAL,
+            'status' => CouponDeliveryStatus::ACTIVE, 'segment_criteria' => ['rank' => 'gold'],
+            'send_notification' => false,
+        ]);
+        $service = app(MemberRankSyncService::class);
+        try {
+            $service->sync($member);
+            $this->fail('Expired coupon must reject the rank transition');
+        } catch (\InvalidArgumentException) {
+            $this->assertSame('bronze', $member->fresh()->rank);
+            $this->assertDatabaseCount('member_rank_histories', 0);
+            $this->assertDatabaseCount('member_coupons', 0);
+        }
+        $coupon->update(['end_at' => now()->addDay()]);
+        $this->assertTrue($service->sync($member));
+        $this->assertFalse($service->sync($member));
+        $this->assertSame('gold', $member->fresh()->rank);
+        $this->assertDatabaseCount('member_rank_histories', 1);
+        $this->assertSame(1, MemberCoupon::where('member_id', $member->id)->count());
     }
 
     public function test_sync_member_rankでランク変更時に履歴が記録されること(): void

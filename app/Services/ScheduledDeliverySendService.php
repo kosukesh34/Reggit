@@ -132,7 +132,14 @@ class ScheduledDeliverySendService
             return false;
         }
         if ($announcement !== null) {
-            (new SendAnnouncementNotificationJob((int) $announcement->id))->handle($this->announcementNotificationService);
+            DB::afterCommit(function () use ($announcement): void {
+                try {
+                    (new SendAnnouncementNotificationJob((int) $announcement->id))->handle($this->announcementNotificationService);
+                } catch (\Throwable $exception) {
+                    // The persisted pending notification is retried by the scheduler.
+                    report($exception);
+                }
+            });
         }
 
         LogHelper::info('[ScheduledDelivery] sent', [
