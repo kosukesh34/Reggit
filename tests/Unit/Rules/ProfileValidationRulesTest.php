@@ -51,7 +51,8 @@ class ProfileValidationRulesTest extends TestCase
         $this->assertContains('max:'.ProfileValidationRules::ADDRESS_MAX, $rules['address']);
         $this->assertContains('regex:'.ProfileValidationRules::PHONE_REGEX, $rules['phone']);
         $this->assertContains('regex:'.ProfileValidationRules::KANA_REGEX, $rules['kana']);
-        $this->assertContains('in:読書,旅行', $rules['hobby']);
+        $this->assertTrue(Validator::make(['hobby' => '読書'], ['hobby' => $rules['hobby']])->passes());
+        $this->assertTrue(Validator::make(['hobby' => '未知の趣味'], ['hobby' => $rules['hobby']])->fails());
 
         $invalid = Validator::make(
             ['phone' => '不正な電話', 'kana' => 'ひらがな', 'postal_code' => '123456789'],

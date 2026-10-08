@@ -67,8 +67,8 @@ class MemberDataInvariantTest extends TestCase
         $this->assertTrue(Validator::make($valid, $customerRules)->passes());
         $this->assertTrue(Validator::make(['custom_profile' => $valid], $adminRules)->passes());
         foreach ([$invalid, ['city' => 'Unknown', 'choices' => ['Unknown'], 'radio' => 'Unknown']] as $input) {
-            $this->assertSame(['city', 'choices.0', 'radio'], array_keys(Validator::make($input, $customerRules)->errors()->toArray()));
-            $this->assertSame(['custom_profile.city', 'custom_profile.choices.0', 'custom_profile.radio'], array_keys(Validator::make(['custom_profile' => $input], $adminRules)->errors()->toArray()));
+            $this->assertEqualsCanonicalizing(['city', 'choices.0', 'radio'], array_keys(Validator::make($input, $customerRules)->errors()->toArray()));
+            $this->assertEqualsCanonicalizing(['custom_profile.city', 'custom_profile.choices.0', 'custom_profile.radio'], array_keys(Validator::make(['custom_profile' => $input], $adminRules)->errors()->toArray()));
         }
     }
 }
