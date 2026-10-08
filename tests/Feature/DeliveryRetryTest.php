@@ -106,12 +106,7 @@ class DeliveryRetryTest extends TestCase
             $mock->shouldReceive('send')->once()->andThrow(new \RuntimeException('Provider unavailable'));
         });
         $service = app(ScheduledDeliverySendService::class);
-        try {
-            $service->sendToMember($delivery, $member);
-            $this->fail('Notification failure must remain recoverable.');
-        } catch (\RuntimeException $exception) {
-            $this->assertSame('Provider unavailable', $exception->getMessage());
-        }
+        $this->assertTrue($service->sendToMember($delivery, $member));
         $announcement = Announcement::where('project_id', $project->id)->sole();
         $this->assertTrue($announcement->notification_pending);
         $this->assertFalse($service->sendToMember($delivery, $member));
