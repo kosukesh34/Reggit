@@ -184,7 +184,11 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
       return;
     }
     const payload: PersistedCustomizations = { version: 3, experienceVersion, byStore: customizations };
-    window.localStorage.setItem(customizationStorageKey, JSON.stringify(payload));
+    try {
+      window.localStorage.setItem(customizationStorageKey, JSON.stringify(payload));
+    } catch {
+      // Browser storage may be denied or full; keep the current customization.
+    }
   }, [customizations, isDesignerEmbedPreview]);
 
   useEffect(() => {

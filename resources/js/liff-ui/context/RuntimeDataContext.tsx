@@ -51,7 +51,8 @@ const RuntimeDataContext = createContext<RuntimeDataContextValue | null>(null);
 
 function loadLocalState(): LocalState {
   try {
-    return JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as LocalState;
+    const saved: unknown = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}");
+    return saved !== null && typeof saved === "object" && !Array.isArray(saved) ? saved as LocalState : {};
   } catch {
     return {};
   }
@@ -188,7 +189,11 @@ export function RuntimeDataProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(localState));
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(localState));
+    } catch {
+      // Optional persistence must not prevent in-memory operations.
+    }
   }, [localState]);
 
   useEffect(() => {
