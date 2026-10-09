@@ -11,8 +11,10 @@ use App\Enums\ProfileCustomFieldInputType;
 use App\Enums\SmaregiWebhookAction;
 use App\Models\Member;
 use App\Models\MemberRegistrationAttempt;
+use App\Models\Scopes\ProjectScope;
 use App\Models\Store;
 use App\Services\MemberRankSyncService;
+use App\Util\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -32,6 +34,7 @@ class SmaregiCustomerPointsInboundSyncService
         private DomainEventDispatcher $domainEvents,
         private SmaregiContractProjectResolver $projectResolver,
         private MemberRankSyncService $memberRankSyncService,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     /**
@@ -66,7 +69,7 @@ class SmaregiCustomerPointsInboundSyncService
             $this->requestUnsyncedOrderPointsSync($member);
         }
 
-        $this->syncOneCustomer($contractId, $smaregiCustomerId);
+        $this->syncOneCustomer($contractId, $smaregiCustomerId, memberId: (int) $member->id);
 
         return true;
     }
@@ -134,7 +137,7 @@ class SmaregiCustomerPointsInboundSyncService
         }
     }
 
-    private function syncOneCustomer(string $contractId, string $smaregiCustomerId, ?int $pointsHint = null): void
+    private function syncOneCustomer(string $contractId, string $smaregiCustomerId, ?int $pointsHint = null, ?int $memberId = null): void
     {
         $projectIds = $this->projectResolver->projectIdsForContract($contractId);
         if ($projectIds === []) {
@@ -146,7 +149,9 @@ class SmaregiCustomerPointsInboundSyncService
             return;
         }
 
-        $members = Member::query()
+        $members = Member::withoutGlobalScope(ProjectScope::class)
+            ->with('project')->whereHas('project')
+            ->when($memberId !== null, fn ($query) => $query->whereKey($memberId))
             ->whereIn('project_id', $projectIds)
             ->where('smaregi_customer_id', $smaregiCustomerId)
             ->get();
@@ -198,26 +203,32 @@ class SmaregiCustomerPointsInboundSyncService
         }
 
         foreach ($members as $member) {
-            if ($remoteCustomer !== null) {
-                $this->applyRemoteProfileForMember($member, $remoteCustomer);
+            $project = $member->project;
+            if ($project === null) {
+                continue;
             }
-            if ($remotePoints !== null) {
-                if ($this->pointsSync->hasOutboundPending((int) $member->id)) {
-                    Log::info('[Smaregi] Inbound point sync skipped: outbound pending（ローカル先行の巻き戻し防止）', [
-                        'member_id' => (int) $member->id,
-                        'project_id' => (int) $member->project_id,
-                        'smaregi_customer_id' => $smaregiCustomerId,
-                        'remote_points' => $remotePoints,
-                    ]);
-                } else {
-                    $this->applyRemotePointsForMember($member, $remotePoints);
-                    $fresh = $member->fresh();
-                    if ($fresh !== null) {
-                        $this->memberRankSyncService->sync($fresh);
+            $this->tenantContext->runForProject($project, function () use ($member, $remoteCustomer, $remotePoints, $smaregiCustomerId): void {
+                if ($remoteCustomer !== null) {
+                    $this->applyRemoteProfileForMember($member, $remoteCustomer);
+                }
+                if ($remotePoints !== null) {
+                    if ($this->pointsSync->hasOutboundPending((int) $member->id)) {
+                        Log::info('[Smaregi] Inbound point sync skipped: outbound pending（ローカル先行の巻き戻し防止）', [
+                            'member_id' => (int) $member->id,
+                            'project_id' => (int) $member->project_id,
+                            'smaregi_customer_id' => $smaregiCustomerId,
+                            'remote_points' => $remotePoints,
+                        ]);
+                    } else {
+                        $this->applyRemotePointsForMember($member, $remotePoints);
+                        $fresh = $member->fresh();
+                        if ($fresh !== null) {
+                            $this->memberRankSyncService->sync($fresh);
+                        }
                     }
                 }
-            }
-            $this->requestUnsyncedOrderPointsSync($member);
+                $this->requestUnsyncedOrderPointsSync($member);
+            });
         }
     }
 

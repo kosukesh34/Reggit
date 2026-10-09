@@ -12,6 +12,7 @@ use App\Models\Scopes\ProjectScope;
 use App\Models\Store;
 use App\Services\MemberRankSyncService;
 use App\Util\StoreContext;
+use App\Util\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -31,6 +32,7 @@ class SmaregiTransactionInboundSyncService
         private OrderRepository $orderRepository,
         private MemberRankSyncService $memberRankSyncService,
         private readonly StoreContext $storeContext,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     /**
@@ -123,33 +125,39 @@ class SmaregiTransactionInboundSyncService
         }
 
         foreach ($members as $member) {
-            if ($this->isReggitOriginated((int) $member->project_id, $headId, $transaction)) {
-                $this->linkOutboundHeadIdIfNeeded((int) $member->project_id, $headId, $transaction);
-                Log::info('[Smaregi] Inbound transaction sync skipped: Reggit-originated', [
-                    'project_id' => (int) $member->project_id,
-                    'transaction_head_id' => $headId,
-                ]);
-
+            $project = $member->project;
+            if ($project === null) {
                 continue;
             }
+            $this->tenantContext->runForProject($project, function () use ($member, $headId, $transaction, $inbound, $visitedAt): void {
+                if ($this->isReggitOriginated((int) $member->project_id, $headId, $transaction)) {
+                    $this->linkOutboundHeadIdIfNeeded((int) $member->project_id, $headId, $transaction);
+                    Log::info('[Smaregi] Inbound transaction sync skipped: Reggit-originated', [
+                        'project_id' => (int) $member->project_id,
+                        'transaction_head_id' => $headId,
+                    ]);
 
-            $stores = Store::where('project_id', $member->project_id)->where('is_active', true)->get();
-            $externalStoreId = (string) ($transaction['storeId'] ?? '');
-            $store = $externalStoreId !== '' ? $stores->firstWhere('smaregi_store_id', $externalStoreId) : null;
-            if ($store === null && $stores->count() === 1) {
-                $store = $stores->first();
-            }
-            if ($store === null) {
-                Log::warning('[Smaregi] 店舗マッピングが未設定のため取引同期を保留しました。', ['project_id' => $member->project_id, 'transaction_head_id' => $headId, 'store_id' => $externalStoreId]);
-
-                continue;
-            }
-            $this->storeContext->runForStore($store, function () use ($inbound, $member, $headId, $visitedAt) {
-                if ($inbound->isReturn()) {
-                    $this->applyReturn($member, $headId, $inbound, $visitedAt);
-                } else {
-                    $this->applySale($member, $headId, $inbound, $visitedAt);
+                    return;
                 }
+
+                $stores = Store::where('project_id', $member->project_id)->where('is_active', true)->get();
+                $externalStoreId = (string) ($transaction['storeId'] ?? '');
+                $store = $externalStoreId !== '' ? $stores->firstWhere('smaregi_store_id', $externalStoreId) : null;
+                if ($store === null && $stores->count() === 1) {
+                    $store = $stores->first();
+                }
+                if ($store === null) {
+                    Log::warning('[Smaregi] 店舗マッピングが未設定のため取引同期を保留しました。', ['project_id' => $member->project_id, 'transaction_head_id' => $headId, 'store_id' => $externalStoreId]);
+
+                    return;
+                }
+                $this->storeContext->runForStore($store, function () use ($inbound, $member, $headId, $visitedAt) {
+                    if ($inbound->isReturn()) {
+                        $this->applyReturn($member, $headId, $inbound, $visitedAt);
+                    } else {
+                        $this->applySale($member, $headId, $inbound, $visitedAt);
+                    }
+                });
             });
         }
     }
@@ -174,27 +182,33 @@ class SmaregiTransactionInboundSyncService
         }
 
         foreach ($members as $member) {
-            if ($this->orderRepository->existsBySmaregiTransactionHeadId((int) $member->project_id, $headId)) {
-                $order = Order::query()
-                    ->withoutGlobalScope(ProjectScope::class)
-                    ->where('project_id', $member->project_id)
-                    ->where('smaregi_transaction_head_id', $headId)
-                    ->first();
-                if ($order !== null && $order->order_type !== OrderType::POS) {
-                    // Reggit outbound 取引の取消はアプリ側注文を触らない
-                    continue;
-                }
+            $project = $member->project;
+            if ($project === null) {
+                continue;
             }
+            $this->tenantContext->runForProject($project, function () use ($member, $headId): void {
+                if ($this->orderRepository->existsBySmaregiTransactionHeadId((int) $member->project_id, $headId)) {
+                    $order = Order::query()
+                        ->withoutGlobalScope(ProjectScope::class)
+                        ->where('project_id', $member->project_id)
+                        ->where('smaregi_transaction_head_id', $headId)
+                        ->first();
+                    if ($order !== null && $order->order_type !== OrderType::POS) {
+                        // Reggit outbound 取引の取消はアプリ側注文を触らない
+                        return;
+                    }
+                }
 
-            $this->awardApplier->reverseForCancel($member, $headId);
-            $this->visitRecorder->deleteForTransaction($member, $headId);
-            $this->orderRecorder->cancelByTransactionHeadId((int) $member->project_id, $headId);
-            $this->syncMemberRank($member);
-            Log::info('[Smaregi] Inbound transaction cancel reversed', [
-                'member_id' => (int) $member->id,
-                'project_id' => (int) $member->project_id,
-                'transaction_head_id' => $headId,
-            ]);
+                $this->awardApplier->reverseForCancel($member, $headId);
+                $this->visitRecorder->deleteForTransaction($member, $headId);
+                $this->orderRecorder->cancelByTransactionHeadId((int) $member->project_id, $headId);
+                $this->syncMemberRank($member);
+                Log::info('[Smaregi] Inbound transaction cancel reversed', [
+                    'member_id' => (int) $member->id,
+                    'project_id' => (int) $member->project_id,
+                    'transaction_head_id' => $headId,
+                ]);
+            });
         }
     }
 
@@ -327,7 +341,8 @@ class SmaregiTransactionInboundSyncService
             return [];
         }
 
-        return Member::query()
+        return Member::withoutGlobalScope(ProjectScope::class)
+            ->with('project')->whereHas('project')
             ->whereIn('project_id', $projectIds)
             ->where('smaregi_customer_id', $smaregiCustomerId)
             ->get()

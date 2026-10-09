@@ -16,6 +16,17 @@ class TenantContext
         $this->project = $project;
     }
 
+    public function runForProject(Project $project, \Closure $operation): mixed
+    {
+        $previous = $this->project;
+        $this->project = $project;
+        try {
+            return $operation();
+        } finally {
+            $this->project = $previous;
+        }
+    }
+
     public function project(): ?Project
     {
         return $this->project;
