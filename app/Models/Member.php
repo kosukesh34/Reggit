@@ -185,11 +185,15 @@ class Member extends Model
     }
 
     /** @return array{balance: int, expires_at: ?\DateTimeImmutable, points_expiring: int, has_transactions: bool} */
-    public function getPointBalance(): array
+    public function getPointBalance(bool $forUpdate = false): array
     {
-        $transactions = $this->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
+        $query = $this->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
             ->withoutGlobalScope(ProjectScope::class)
-            ->orderBy('created_at')->orderBy('id')
+            ->orderBy('created_at')->orderBy('id');
+        if ($forUpdate) {
+            $query->lockForUpdate();
+        }
+        $transactions = $query
             ->get(['type', 'points', 'expires_at', 'order_id', 'created_at'])
             ->map(fn (PointTransaction $transaction): array => [
                 'type' => $transaction->type,
@@ -202,9 +206,9 @@ class Member extends Model
         return app(PointLedgerBalanceCalculator::class)->calculate($transactions, now());
     }
 
-    public function getTotalPointsFromTransactions(): int
+    public function getTotalPointsFromTransactions(bool $forUpdate = false): int
     {
-        return $this->getPointBalance()['balance'];
+        return $this->getPointBalance($forUpdate)['balance'];
     }
 
     public const POINTS_LEDGER_BACKFILL_DESCRIPTION = 'ポイント残高の整合';
@@ -212,15 +216,20 @@ class Member extends Model
     /** Backfill only members with no ledger, never resurrect spent or expired points. */
     public function syncPointsLedger(): void
     {
-        $balance = $this->getPointBalance();
-        if (! $balance['has_transactions'] && (int) $this->points > 0) {
-            $this->backfillEarnedPoints((int) $this->points);
-
-            return;
-        }
-        if ((int) $this->points !== $balance['balance']) {
-            $this->update(['points' => $balance['balance']]);
-        }
+        DB::transaction(function (): void {
+            $member = $this->newQuery()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', $this->project_id)->whereKey($this->id)
+                ->lockForUpdate()->firstOrFail();
+            // Current reads also see a competing backfill committed after an outer transaction's snapshot.
+            $balance = $member->getPointBalance(true);
+            if (! $balance['has_transactions'] && (int) $member->points > 0) {
+                $member->backfillEarnedPoints((int) $member->points);
+            } elseif ((int) $member->points !== $balance['balance']) {
+                $member->update(['points' => $balance['balance']]);
+            }
+            $this->points = $member->points;
+            $this->syncOriginalAttribute('points');
+        }, 3);
     }
 
     private function backfillEarnedPoints(int $points): void
@@ -238,7 +247,7 @@ class Member extends Model
             'order_id' => null,
             'expires_at' => now()->addDays(app(OrderSettings::class)->getPointsValidDays((int) $this->project_id)),
         ]);
-        $this->recalcPointsFromTransactions();
+        $this->update(['points' => $this->getTotalPointsFromTransactions(true)]);
     }
 
     /** 表示・判定用。既存データに台帳がない場合はカラム値を使い、読み取り時には更新しない。 */
@@ -251,7 +260,7 @@ class Member extends Model
 
     public function recalcPointsFromTransactions(): void
     {
-        $this->update(['points' => $this->getTotalPointsFromTransactions()]);
+        $this->update(['points' => $this->getTotalPointsFromTransactions(true)]);
     }
 
     /**
