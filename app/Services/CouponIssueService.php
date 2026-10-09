@@ -181,23 +181,28 @@ class CouponIssueService
     /** @param Collection<int, Coupon> $coupons */
     private function issueCouponsToMember(Member $member, $coupons): void
     {
-        $now = now();
-        foreach ($coupons as $coupon) {
-            $alreadyIssued = $this->memberCouponRepository->hasIssued(
-                (int) $member->id,
-                (int) $coupon->id,
-                (int) $member->project_id,
-            );
-            if ($this->couponIssuePolicy->canIssueOnce(
-                $alreadyIssued,
-                $coupon->start_at,
-                $coupon->end_at,
-                $now,
-            ) === false) {
-                continue;
+        DB::transaction(function () use ($member, $coupons): void {
+            $member = $member->newQuery()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', (int) $member->project_id)->whereKey($member->id)
+                ->lockForUpdate()->firstOrFail();
+            $now = now();
+            foreach ($coupons as $coupon) {
+                $alreadyIssued = $this->memberCouponRepository->hasIssued(
+                    (int) $member->id,
+                    (int) $coupon->id,
+                    (int) $member->project_id,
+                );
+                if ($this->couponIssuePolicy->canIssueOnce(
+                    $alreadyIssued,
+                    $coupon->start_at,
+                    $coupon->end_at,
+                    $now,
+                ) === false) {
+                    continue;
+                }
+                $this->createMemberCoupon($member, $coupon, $now);
             }
-            $this->createMemberCoupon($member, $coupon, $now);
-        }
+        }, 3);
     }
 
     private function createMemberCoupon(

@@ -12,9 +12,10 @@ use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
-class BirthdayCouponConsistencyTest extends TestCase
+class CouponIssuanceConsistencyTest extends TestCase
 {
     use DatabaseTruncation;
 
@@ -24,13 +25,14 @@ class BirthdayCouponConsistencyTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_concurrent_birthday_runs_issue_only_one_coupon(): void
+    #[DataProvider('issuanceMethods')]
+    public function test_concurrent_runs_issue_only_one_coupon(string $method, string $trigger): void
     {
         if (DB::getDriverName() !== 'mysql' || ! function_exists('pcntl_fork')) {
             $this->markTestSkipped('Requires MySQL and pcntl for independent concurrent connections.');
         }
 
-        $member = $this->birthdayMember();
+        $member = $this->memberWithCoupon($trigger);
         $directory = sys_get_temp_dir().'/birthday-coupon-'.bin2hex(random_bytes(8));
         mkdir($directory, 0700);
         DB::disconnect();
@@ -57,7 +59,7 @@ class BirthdayCouponConsistencyTest extends TestCase
                             }
                         });
                         file_put_contents($directory.'/connection-'.$index, (string) DB::selectOne('SELECT CONNECTION_ID() AS id')->id);
-                        app(CouponIssueService::class)->issueForBirthday($member);
+                        app(CouponIssueService::class)->{$method}($member);
                         file_put_contents($directory.'/result-'.$index, 'ok');
                         exit(0);
                     } catch (\Throwable $e) {
@@ -107,12 +109,13 @@ class BirthdayCouponConsistencyTest extends TestCase
         }
     }
 
-    public function test_birthday_issuance_sees_a_coupon_committed_after_an_outer_snapshot(): void
+    #[DataProvider('issuanceMethods')]
+    public function test_issuance_sees_a_coupon_committed_after_an_outer_snapshot(string $method, string $trigger): void
     {
         if (DB::getDriverName() !== 'mysql') {
             $this->markTestSkipped('Requires MySQL repeatable-read snapshots.');
         }
-        $member = $this->birthdayMember();
+        $member = $this->memberWithCoupon($trigger);
         $coupon = Coupon::where('project_id', $member->project_id)->firstOrFail();
         $default = DB::getDefaultConnection();
         config(['database.connections.birthday_writer' => config('database.connections.'.$default)]);
@@ -126,7 +129,7 @@ class BirthdayCouponConsistencyTest extends TestCase
                 'coupon_id' => $coupon->id, 'status' => MemberCoupon::STATUS_UNUSED,
                 'issued_at' => now(), 'created_at' => now(), 'updated_at' => now(),
             ]);
-            app(CouponIssueService::class)->issueForBirthday($member);
+            app(CouponIssueService::class)->{$method}($member);
             DB::commit();
             $this->assertSame(1, MemberCoupon::where('member_id', $member->id)->count());
         } finally {
@@ -137,12 +140,13 @@ class BirthdayCouponConsistencyTest extends TestCase
         }
     }
 
-    public function test_all_birthday_coupons_roll_back_when_an_issue_fails(): void
+    #[DataProvider('issuanceMethods')]
+    public function test_all_coupons_roll_back_when_an_issue_fails(string $method, string $trigger): void
     {
-        $member = $this->birthdayMember();
+        $member = $this->memberWithCoupon($trigger);
         Coupon::factory()->create([
             'project_id' => $member->project_id, 'is_active' => true,
-            'issue_trigger' => Coupon::ISSUE_TRIGGER_BIRTHDAY,
+            'issue_trigger' => $trigger,
             'start_at' => null, 'end_at' => null,
         ]);
         $active = true;
@@ -154,7 +158,7 @@ class BirthdayCouponConsistencyTest extends TestCase
         });
         try {
             try {
-                app(CouponIssueService::class)->issueForBirthday($member);
+                app(CouponIssueService::class)->{$method}($member);
                 $this->fail('The persistence error must propagate.');
             } catch (\RuntimeException $e) {
                 $this->assertSame('Simulated coupon issue failure', $e->getMessage());
@@ -165,14 +169,22 @@ class BirthdayCouponConsistencyTest extends TestCase
         }
     }
 
-    private function birthdayMember(): Member
+    public static function issuanceMethods(): array
+    {
+        return [
+            'birthday' => ['issueForBirthday', Coupon::ISSUE_TRIGGER_BIRTHDAY],
+            'registration' => ['issueForFirstRegistration', Coupon::ISSUE_TRIGGER_FIRST_REGISTRATION],
+        ];
+    }
+
+    private function memberWithCoupon(string $trigger): Member
     {
         Queue::fake();
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
         Coupon::factory()->create([
             'project_id' => $project->id, 'is_active' => true,
-            'issue_trigger' => Coupon::ISSUE_TRIGGER_BIRTHDAY,
+            'issue_trigger' => $trigger,
             'start_at' => null, 'end_at' => null,
         ]);
 
@@ -184,7 +196,7 @@ class BirthdayCouponConsistencyTest extends TestCase
         $deadline = microtime(true) + 5;
         while (! $ready()) {
             if (microtime(true) >= $deadline) {
-                throw new \RuntimeException('Timed out waiting for lottery worker.');
+                throw new \RuntimeException('Timed out waiting for coupon worker.');
             }
             usleep(10000);
         }
