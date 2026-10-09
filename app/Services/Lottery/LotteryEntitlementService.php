@@ -9,6 +9,7 @@ use App\Models\CouponRedemption;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberLotteryEntitlement;
+use App\Models\Scopes\ProjectScope;
 use App\Models\Settings\ProjectLotterySetting;
 use App\Util\LogHelper;
 use Illuminate\Support\Carbon;
@@ -22,21 +23,26 @@ class LotteryEntitlementService
         string $sourceType,
         string $sourceId,
     ): void {
-        $projectId = (int) $member->project_id;
-        $settings = ProjectLotterySetting::query()->firstOrCreate(
-            ['project_id' => $projectId],
-            ProjectLotterySetting::getDefaultAttributes()
-        );
+        DB::transaction(function () use ($member, $amount, $sourceType, $sourceId): void {
+            $projectId = (int) $member->project_id;
+            $member = $member->newQuery()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', $projectId)->whereKey($member->id)
+                ->lockForUpdate()->firstOrFail();
+            $settings = ProjectLotterySetting::query()->firstOrCreate(
+                ['project_id' => $projectId],
+                ProjectLotterySetting::getDefaultAttributes()
+            );
 
-        foreach (LotteryRewardType::keys() as $rewardType) {
-            if (! $this->isRewardEnabled($settings, $rewardType)) {
-                continue;
+            foreach (LotteryRewardType::keys() as $rewardType) {
+                if (! $this->isRewardEnabled($settings, $rewardType)) {
+                    continue;
+                }
+                if (! $this->passesGrantTrigger($settings, $member, $rewardType, $amount)) {
+                    continue;
+                }
+                $this->createIfMissing($member, $rewardType, $sourceType, $sourceId, $settings);
             }
-            if (! $this->passesGrantTrigger($settings, $member, $rewardType, $amount)) {
-                continue;
-            }
-            $this->createIfMissing($member, $rewardType, $sourceType, $sourceId, $settings);
-        }
+        }, 3);
     }
 
     public function grantForStamp(Member $member, int $stampCardId, int $stampCount, int $cycleIndex = 0): void
@@ -154,14 +160,14 @@ class LotteryEntitlementService
         }
         if ($trigger === LotteryGrantTrigger::ONCE_PER_DAY) {
             $start = Carbon::today();
-            $exists = MemberLotteryEntitlement::query()
+            $existing = MemberLotteryEntitlement::query()
                 ->where('project_id', (int) $member->project_id)
                 ->where('member_id', (int) $member->id)
                 ->where('reward_type', $rewardType)
                 ->where('created_at', '>=', $start)
-                ->exists();
+                ->lockForUpdate()->first(['id']);
 
-            return $exists === false;
+            return $existing === null;
         }
 
         return true;
@@ -174,13 +180,13 @@ class LotteryEntitlementService
         string $sourceId,
         ProjectLotterySetting $settings,
     ): void {
-        $exists = MemberLotteryEntitlement::query()
+        $existing = MemberLotteryEntitlement::query()
             ->where('project_id', (int) $member->project_id)
             ->where('source_type', $sourceType)
             ->where('source_id', $sourceId)
             ->where('reward_type', $rewardType)
-            ->exists();
-        if ($exists) {
+            ->lockForUpdate()->first(['id']);
+        if ($existing !== null) {
             return;
         }
 
