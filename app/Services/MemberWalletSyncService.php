@@ -38,12 +38,6 @@ class MemberWalletSyncService
             return;
         }
 
-        $ledgerPoints = $member->getTotalPointsFromTransactions();
-        if ((int) $member->points !== $ledgerPoints) {
-            $member->update(['points' => $ledgerPoints]);
-            $member->refresh();
-        }
-
         try {
             if ($appleCanSync) {
                 $this->walletPassSyncService->markMemberUpdated($member);

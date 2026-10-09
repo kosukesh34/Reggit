@@ -41,7 +41,7 @@ class MemberWalletSummaryService
             ->count();
 
         return [
-            'points' => (int) $member->points,
+            'points' => $member->getDisplayPoints(),
             'stamps_total' => $stampsTotal,
             'pending_lottery_count' => $pendingLotteryCount,
             'updated_at' => now()->toIso8601String(),
