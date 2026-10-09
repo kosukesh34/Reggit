@@ -16,7 +16,7 @@ class PointTransactionObserver implements ShouldHandleEventsAfterCommit
 
     public function created(PointTransaction $pointTransaction): void
     {
-        $this->applyLifetimeGrantedDelta($pointTransaction, 1);
+        $this->recalcLifetimeGrantedForMember($pointTransaction);
         $this->syncWallets($pointTransaction);
     }
 
@@ -28,36 +28,15 @@ class PointTransactionObserver implements ShouldHandleEventsAfterCommit
 
     public function deleted(PointTransaction $pointTransaction): void
     {
-        $this->applyLifetimeGrantedDelta($pointTransaction, -1);
+        $this->recalcLifetimeGrantedForMember($pointTransaction);
         $this->syncWallets($pointTransaction);
-    }
-
-    private function applyLifetimeGrantedDelta(PointTransaction $pointTransaction, int $sign): void
-    {
-        $delta = Member::lifetimeGrantedDelta(
-            (string) $pointTransaction->type,
-            (int) $pointTransaction->points,
-        );
-        if ($delta === 0 || $sign === 0) {
-            return;
-        }
-
-        $member = Member::query()
-            ->withoutGlobalScope(ProjectScope::class)
-            ->whereKey($pointTransaction->member_id)
-            ->first();
-        if ($member === null) {
-            return;
-        }
-
-        $next = max(0, (int) $member->lifetime_granted_points + ($delta * $sign));
-        $member->update(['lifetime_granted_points' => $next]);
     }
 
     private function recalcLifetimeGrantedForMember(PointTransaction $pointTransaction): void
     {
         $member = Member::query()
             ->withoutGlobalScope(ProjectScope::class)
+            ->where('project_id', $pointTransaction->project_id)
             ->whereKey($pointTransaction->member_id)
             ->first();
         if ($member === null) {
