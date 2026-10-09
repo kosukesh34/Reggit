@@ -8,6 +8,7 @@ use App\Domain\Coupon\ValueObjects\PendingIssuedCoupon;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Models\Scopes\ProjectScope;
 use App\Util\LogHelper;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -62,32 +63,40 @@ class CouponIssueService
         if ($member->birthday === null) {
             return;
         }
-        $now = now();
-        $birthMonth = (int) $member->birthday->format('n');
-        if ($birthMonth !== (int) $now->format('n')) {
-            return;
-        }
-        $coupons = Coupon::where('project_id', $member->project_id)
-            ->where('is_active', true)
-            ->where('issue_trigger', Coupon::ISSUE_TRIGGER_BIRTHDAY)
-            ->get();
-        foreach ($coupons as $coupon) {
-            $alreadyThisYear = $this->memberCouponRepository->hasIssuedInYear(
-                (int) $member->id,
-                (int) $coupon->id,
-                (int) $now->year,
-                (int) $member->project_id,
-            );
-            if ($this->couponIssuePolicy->canIssueBirthdayThisYear(
-                $alreadyThisYear,
-                $coupon->start_at,
-                $coupon->end_at,
-                $now,
-            ) === false) {
-                continue;
+        DB::transaction(function () use ($member): void {
+            $member = $member->newQuery()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', (int) $member->project_id)->whereKey($member->id)
+                ->lockForUpdate()->firstOrFail();
+            if ($member->birthday === null) {
+                return;
             }
-            $this->createMemberCoupon($member, $coupon, $now);
-        }
+            $now = now();
+            $birthMonth = (int) $member->birthday->format('n');
+            if ($birthMonth !== (int) $now->format('n')) {
+                return;
+            }
+            $coupons = Coupon::where('project_id', $member->project_id)
+                ->where('is_active', true)
+                ->where('issue_trigger', Coupon::ISSUE_TRIGGER_BIRTHDAY)
+                ->get();
+            foreach ($coupons as $coupon) {
+                $alreadyThisYear = $this->memberCouponRepository->hasIssuedInYear(
+                    (int) $member->id,
+                    (int) $coupon->id,
+                    (int) $now->year,
+                    (int) $member->project_id,
+                );
+                if ($this->couponIssuePolicy->canIssueBirthdayThisYear(
+                    $alreadyThisYear,
+                    $coupon->start_at,
+                    $coupon->end_at,
+                    $now,
+                ) === false) {
+                    continue;
+                }
+                $this->createMemberCoupon($member, $coupon, $now);
+            }
+        }, 3);
     }
 
     public function issueIfEligible(Member $member, Coupon $coupon): void
