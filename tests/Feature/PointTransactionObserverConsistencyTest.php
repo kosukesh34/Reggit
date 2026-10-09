@@ -84,6 +84,9 @@ class PointTransactionObserverConsistencyTest extends TestCase
         }
 
         $member = $this->memberWithLedger();
+        if ($recalculateFirst) {
+            $member->update(['lifetime_granted_points' => 50]);
+        }
         $directory = sys_get_temp_dir().'/point-observer-'.bin2hex(random_bytes(8));
         mkdir($directory, 0700);
         DB::disconnect();
