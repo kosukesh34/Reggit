@@ -74,7 +74,8 @@ class EloquentMemberCouponRepository implements MemberCouponRepository
             ->where('project_id', $projectId)
             ->where('member_id', $memberId)
             ->where('coupon_id', $couponId)
-            ->exists();
+            ->lockForUpdate()
+            ->first(['id']) !== null;
     }
 
     public function hasIssuedInYear(int $memberId, int $couponId, int $year, int $projectId): bool
