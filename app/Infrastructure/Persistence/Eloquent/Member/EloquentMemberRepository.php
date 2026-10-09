@@ -38,7 +38,7 @@ class EloquentMemberRepository implements MemberRepository
             return null;
         }
 
-        return $this->loadAsDomain($model);
+        return MemberMapper::toDomain($model, true);
     }
 
     public function findByUserId(int $userId, int $projectId): ?MemberAggregate
