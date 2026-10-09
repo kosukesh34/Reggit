@@ -40,7 +40,7 @@ class LotteryEntitlementService
                 if (! $this->passesGrantTrigger($settings, $member, $rewardType, $amount)) {
                     continue;
                 }
-                $this->createIfMissing($member, $rewardType, $sourceType, $sourceId, $settings);
+                $this->createIfMissing($member, $rewardType, $sourceType, $sourceId, $settings, true);
             }
         }, 3);
     }
@@ -179,13 +179,17 @@ class LotteryEntitlementService
         string $sourceType,
         string $sourceId,
         ProjectLotterySetting $settings,
+        bool $forUpdate = false,
     ): void {
-        $existing = MemberLotteryEntitlement::query()
+        $query = MemberLotteryEntitlement::query()
             ->where('project_id', (int) $member->project_id)
             ->where('source_type', $sourceType)
             ->where('source_id', $sourceId)
-            ->where('reward_type', $rewardType)
-            ->lockForUpdate()->first(['id']);
+            ->where('reward_type', $rewardType);
+        if ($forUpdate) {
+            $query->lockForUpdate();
+        }
+        $existing = $query->first(['id']);
         if ($existing !== null) {
             return;
         }
