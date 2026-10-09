@@ -85,7 +85,8 @@ class EloquentMemberCouponRepository implements MemberCouponRepository
             ->where('member_id', $memberId)
             ->where('coupon_id', $couponId)
             ->whereYear('issued_at', $year)
-            ->exists();
+            ->lockForUpdate()
+            ->first(['id']) !== null;
     }
 
     public function hasUnusedValid(int $memberId, int $couponId, \DateTimeInterface $now, int $projectId): bool
