@@ -7,6 +7,7 @@ use App\Models\Coupon;
 use App\Models\LotteryPrize;
 use App\Models\Member;
 use App\Models\MemberLotteryEntitlement;
+use App\Models\Scopes\ProjectScope;
 use App\Models\Settings\ProjectLotterySetting;
 use App\Services\CouponIssueService;
 use Illuminate\Support\Collection;
@@ -83,6 +84,10 @@ class LotteryPlayService
     public function play(Member $member, int $entitlementId): array
     {
         return DB::transaction(function () use ($member, $entitlementId) {
+            // Purchase grants use the same member-before-entitlement lock order.
+            $member = $member->newQuery()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', (int) $member->project_id)->whereKey($member->id)
+                ->lockForUpdate()->firstOrFail();
             /** @var MemberLotteryEntitlement|null $entitlement */
             $entitlement = MemberLotteryEntitlement::query()
                 ->where('project_id', (int) $member->project_id)
