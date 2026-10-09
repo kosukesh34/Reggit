@@ -282,11 +282,20 @@ class Member extends Model
     /** 台帳から累計付与ポイントを再計算して保存する */
     public function recalcLifetimeGrantedPoints(): void
     {
-        $total = (int) $this->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
-            ->withoutGlobalScope(ProjectScope::class)
-            ->get(['type', 'points'])
-            ->sum(fn (PointTransaction $tx) => self::lifetimeGrantedDelta((string) $tx->type, (int) $tx->points));
-
-        $this->update(['lifetime_granted_points' => max(0, $total)]);
+        DB::transaction(function (): void {
+            $member = $this->newQuery()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', $this->project_id)->whereKey($this->id)
+                ->lockForUpdate()->first();
+            if ($member === null) {
+                return;
+            }
+            $total = (int) $member->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
+                ->withoutGlobalScope(ProjectScope::class)
+                ->lockForUpdate()->get(['type', 'points'])
+                ->sum(fn (PointTransaction $tx) => self::lifetimeGrantedDelta((string) $tx->type, (int) $tx->points));
+            $member->update(['lifetime_granted_points' => max(0, $total)]);
+            $this->lifetime_granted_points = $member->lifetime_granted_points;
+            $this->syncOriginalAttribute('lifetime_granted_points');
+        }, 3);
     }
 }
