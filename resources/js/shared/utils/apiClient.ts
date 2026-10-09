@@ -11,16 +11,28 @@ type ApiFailure = { success: false; error: string; fieldErrors?: Record<string, 
 export type ApiResult<T = unknown> = ApiSuccess<T> | ApiFailure;
 
 export class ApiClient {
+    private static deviceTokens = new Map<string, string>();
+
     static getDeviceToken(deviceIdentifier: string): string {
+        const key = `device-token:${window.__PROJECT_KEY__ || ''}:${deviceIdentifier}`;
+        const fallback = ApiClient.deviceTokens.get(key);
+        if (fallback !== undefined) return fallback;
         try {
-            return localStorage.getItem(`device-token:${window.__PROJECT_KEY__ || ''}:${deviceIdentifier}`) || '';
+            return window.localStorage.getItem(key) || '';
         } catch {
             return '';
         }
     }
 
     static saveDeviceToken(deviceIdentifier: string, token: string): void {
-        localStorage.setItem(`device-token:${window.__PROJECT_KEY__ || ''}:${deviceIdentifier}`, token);
+        const key = `device-token:${window.__PROJECT_KEY__ || ''}:${deviceIdentifier}`;
+        try {
+            window.localStorage.setItem(key, token);
+            ApiClient.deviceTokens.delete(key);
+        } catch {
+            // A failed write must not fall back to an older persisted token.
+            ApiClient.deviceTokens.set(key, token);
+        }
     }
 
     baseHeaders: Record<string, string>;
@@ -132,7 +144,7 @@ export class ApiClient {
     }
 
     persistLineUserId(lineUserId: string): void {
-        if (typeof window === 'undefined' || !window.localStorage) {
+        if (typeof window === 'undefined') {
             return;
         }
         const normalized = String(lineUserId || '').trim();
@@ -148,7 +160,7 @@ export class ApiClient {
     }
 
     clearPersistedLineUserId(): void {
-        if (typeof window === 'undefined' || !window.localStorage) {
+        if (typeof window === 'undefined') {
             return;
         }
         try {
@@ -160,7 +172,7 @@ export class ApiClient {
     }
 
     getPersistedLineUserId(): string | null {
-        if (typeof window === 'undefined' || !window.localStorage) {
+        if (typeof window === 'undefined') {
             return null;
         }
         try {
