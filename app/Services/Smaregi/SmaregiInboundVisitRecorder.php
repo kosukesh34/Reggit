@@ -7,9 +7,11 @@ use App\Models\Member;
 use App\Models\MemberVisit;
 use App\Models\MemberVisitItem;
 use App\Models\Product;
+use App\Models\Scopes\ProjectScope;
 use App\Services\Admin\MemberAdminService;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -31,45 +33,50 @@ class SmaregiInboundVisitRecorder
         float $amount,
         array $details,
     ): ?MemberVisit {
-        $visit = MemberVisit::withoutGlobalScopes()
-            ->where('project_id', $member->project_id)
-            ->where('smaregi_transaction_head_id', $headId)
-            ->first();
+        return DB::transaction(function () use ($member, $headId, $visitedAt, $amount, $details): ?MemberVisit {
+            $member = $member->newQuery()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', (int) $member->project_id)->whereKey($member->id)
+                ->lockForUpdate()->firstOrFail();
+            $visit = MemberVisit::withoutGlobalScopes()
+                ->where('project_id', $member->project_id)
+                ->where('smaregi_transaction_head_id', $headId)
+                ->lockForUpdate()->first();
 
-        if ($visit === null) {
-            try {
-                $visit = $this->memberAdminService->recordVisit(
-                    $member,
-                    $visitedAt,
-                    MemberVisitSource::SMAREGI,
-                    null,
-                    'スマレジ取引 #'.$headId,
-                    $amount,
-                    $headId,
-                );
-                Log::info('[Smaregi] Inbound transaction sync recorded', [
-                    'member_id' => (int) $member->id,
-                    'project_id' => (int) $member->project_id,
-                    'transaction_head_id' => $headId,
-                    'amount' => $amount,
-                    'visited_at' => $visitedAt->toIso8601String(),
-                ]);
-            } catch (UniqueConstraintViolationException $e) {
-                $visit = MemberVisit::withoutGlobalScopes()
-                    ->where('project_id', $member->project_id)
-                    ->where('smaregi_transaction_head_id', $headId)
-                    ->first();
-                if ($visit === null) {
-                    throw $e;
+            if ($visit === null) {
+                try {
+                    $visit = $this->memberAdminService->recordVisit(
+                        $member,
+                        $visitedAt,
+                        MemberVisitSource::SMAREGI,
+                        null,
+                        'スマレジ取引 #'.$headId,
+                        $amount,
+                        $headId,
+                    );
+                    Log::info('[Smaregi] Inbound transaction sync recorded', [
+                        'member_id' => (int) $member->id,
+                        'project_id' => (int) $member->project_id,
+                        'transaction_head_id' => $headId,
+                        'amount' => $amount,
+                        'visited_at' => $visitedAt->toIso8601String(),
+                    ]);
+                } catch (UniqueConstraintViolationException $e) {
+                    $visit = MemberVisit::withoutGlobalScopes()
+                        ->where('project_id', $member->project_id)
+                        ->where('smaregi_transaction_head_id', $headId)
+                        ->lockForUpdate()->first();
+                    if ($visit === null) {
+                        throw $e;
+                    }
                 }
             }
-        }
 
-        if ($visit !== null && ! $visit->items()->exists()) {
-            $this->saveVisitItems($visit, $details);
-        }
+            if ($visit !== null) {
+                $this->saveVisitItems($visit, $details);
+            }
 
-        return $visit;
+            return $visit;
+        }, 3);
     }
 
     public function attachOrder(MemberVisit $visit, int $orderId): void
@@ -110,14 +117,28 @@ class SmaregiInboundVisitRecorder
             ->pluck('id', 'smaregi_product_id')
             ->all();
 
-        $sortOrder = 0;
+        $rows = [];
         foreach ($details as $detail) {
-            $row = $this->buildVisitItemRow($visit, $detail, $productIdBySmaregi, $sortOrder);
-            if ($row === null) {
-                continue;
+            $row = $this->buildVisitItemRow($visit, $detail, $productIdBySmaregi, count($rows));
+            if ($row !== null) {
+                $rows[] = $row;
             }
+        }
+        if ($rows === []) {
+            return;
+        }
+
+        $columns = array_keys($rows[0]);
+        $existing = $visit->items()->lockForUpdate()->get()
+            ->map(fn (MemberVisitItem $item) => $item->only($columns))->all();
+        if ($existing == $rows) {
+            return;
+        }
+
+        // A retry also repairs details left partially saved by the legacy writer.
+        $visit->items()->delete();
+        foreach ($rows as $row) {
             MemberVisitItem::create($row);
-            $sortOrder++;
         }
     }
 
@@ -157,8 +178,8 @@ class SmaregiInboundVisitRecorder
             'smaregi_product_id' => $smaregiProductId !== '' ? $smaregiProductId : null,
             'product_name' => $productName,
             'quantity' => $quantity,
-            'unit_price' => $unitPrice,
-            'amount' => $lineAmount,
+            'unit_price' => round($unitPrice, 2),
+            'amount' => round($lineAmount, 2),
             'sort_order' => $sortOrder,
         ];
     }
