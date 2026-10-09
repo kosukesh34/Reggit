@@ -57,3 +57,11 @@ afterCommit callbackにはプロセス停止後の永続的再試行を追加し
 修正後の関連22 tests / 70 assertions、Pint全1,645 filesが成功しました。独立レビューで小数精度の問題を指摘・修正し、最終レビューで阻害指摘はありません。会員ロックだけを除くmutationは来店ロックが保護するため4 testsが成功し、この変更単独の必須性を示す結果としては扱いません。
 
 transactionを除くmutationは途中失敗後に来店1件が残り、正しい0件を期待するテストが失敗しました。PHPStanも成功しました。
+
+[#303](https://github.com/kosukesh34/Reggit/pull/303)のローカルcoreは1,389 tests / 6,098 assertions成功。最新HEADのtest・lint・main成功後にmerge scriptでマージしました。[#304](https://github.com/kosukesh34/Reggit/pull/304)のローカルcoreは1,393 tests / 6,112 assertions成功（322.58秒）。
+
+## 追加レビュー: スマレジ注文の採番復旧
+
+注文・明細をcommitした後の採番が失敗すると、通常の再試行もUNIQUE競合からの復帰も既存注文をそのまま返し、注文番号がNULLのまま残ることを再現しました。既存注文を返す2経路も既存のassignIfMissingを通します。採番自体の並行設計の変更はこの修正に含めません。
+
+修正前は2経路とも番号NULLで失敗。修正後の関連19 tests / 70 assertionsとPint全1,646 filesが成功し、独立レビューに阻害指摘はありません。注文数・明細ID・既存番号は再試行で維持します。
