@@ -38,6 +38,8 @@ class SmaregiInboundOrderRecorder
         $projectId = (int) $member->project_id;
         $existingId = $this->orderRepository->findIdBySmaregiTransactionHeadId($projectId, $headId);
         if ($existingId !== null) {
+            $this->orderNumberAssigner->assignIfMissing($existingId, $projectId);
+
             return Order::query()
                 ->withoutGlobalScope(ProjectScope::class)
                 ->whereKey($existingId)
@@ -81,6 +83,8 @@ class SmaregiInboundOrderRecorder
             if ($existingId === null) {
                 throw $e;
             }
+
+            $this->orderNumberAssigner->assignIfMissing($existingId, $projectId);
 
             return Order::query()
                 ->withoutGlobalScope(ProjectScope::class)
