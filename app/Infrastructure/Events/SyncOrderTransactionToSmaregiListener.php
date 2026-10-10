@@ -5,6 +5,7 @@ namespace App\Infrastructure\Events;
 use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventListener;
 use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
+use Illuminate\Support\Facades\DB;
 
 /**
  * 注文をスマレジ取引として登録する。
@@ -22,10 +23,10 @@ class SyncOrderTransactionToSmaregiListener implements DomainEventListener
             return;
         }
 
-        $this->transactionSync->syncOrderTransactionWithRetry(
-            $event->orderId,
-            $event->projectId,
-            $event->userId,
-        );
+        DB::afterCommit(function () use ($event): void {
+            $this->transactionSync->syncOrderTransactionWithRetry(
+                $event->orderId, $event->projectId, $event->userId,
+            );
+        });
     }
 }
