@@ -15,6 +15,23 @@ class SmaregiCustomerRankSyncServiceTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_sync_failed_catalog_fetch_does_not_modify_remote_ranks(): void
+    {
+        $smaregiApi = Mockery::mock(SmaregiApiService::class);
+        $smaregiApi->shouldReceive('getContractIdForProject')->once()->with(1)->andReturn('contract_1');
+        $smaregiApi->shouldReceive('getCustomerRanks')->once()->with('contract_1', ['limit' => 200])->andReturn(null);
+        $smaregiApi->shouldReceive('createCustomerRank')->never();
+        $smaregiApi->shouldReceive('updateCustomerRank')->never();
+        $smaregiApi->shouldReceive('deleteCustomerRank')->never();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('スマレジの会員ランク一覧取得に失敗しました');
+
+        (new SmaregiCustomerRankSyncService($smaregiApi))->sync(1, [
+            ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true],
+        ]);
+    }
+
     public function test_sync_新規ランクはnameとポイント付与率で登録しrankは送らないこと(): void
     {
         $smaregiApi = Mockery::mock(SmaregiApiService::class);

@@ -191,7 +191,7 @@ class SmaregiCustomerRankSyncService
     {
         $result = $this->smaregiApi->getCustomerRanks($contractId, ['limit' => self::FETCH_RANKS_LIMIT]);
         if ($result === null) {
-            return [];
+            throw new \RuntimeException('スマレジの会員ランク一覧取得に失敗しました。ランクの変更を中止しました。');
         }
         $list = $this->extractList($result, self::RESPONSE_KEY_RANKS);
         $out = [];
