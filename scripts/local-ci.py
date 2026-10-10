@@ -33,7 +33,7 @@ def main():
         run('tar', '-xf', str(archive), '-C', str(source))
         archive.unlink()
         (source / '.env.testing').write_text(
-            'APP_ENV=testing\nAPP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n'
+            'APP_ENV=testing\nAPP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n'
             'DB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_DATABASE=reggit_test\n'
             'DB_USERNAME=root\nDB_PASSWORD=review\nCACHE_STORE=array\n'
             'SESSION_DRIVER=array\nQUEUE_CONNECTION=sync\nLOG_CHANNEL=stderr\n'
