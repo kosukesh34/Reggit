@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Queue;
 
+use App\Domain\Queue\Aggregates\QueueEntry as QueueEntryAggregate;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Services\Admin\QueueAdminService;
 use App\UseCases\Queue\Data\QueueEntry;
@@ -18,13 +19,15 @@ class QueueCallNextUseCase
 
     public function handle(int $projectId): ?QueueEntry
     {
-        $aggregate = $this->queueEntryRepository->findNextWaiting($projectId, now());
+        $aggregate = $this->queueEntryRepository->updateNextWaiting($projectId, now(),
+            function (QueueEntryAggregate $aggregate): void {
+                $aggregate->markAsCalled(now());
+            },
+        );
         if ($aggregate === null) {
             return null;
         }
 
-        $aggregate->markAsCalled(now());
-        $this->queueEntryRepository->save($aggregate);
         $this->queueAdminService->notifyCalled($aggregate->id()->value());
 
         $entry = $this->entryFactory->findModel($aggregate->id()->value(), $projectId);
