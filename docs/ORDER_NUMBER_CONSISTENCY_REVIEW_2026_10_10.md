@@ -39,3 +39,7 @@ counterの行ロックがproject/day内の採番を直列化します。大規�
 実際に適用したスキル: i-have-adhd、ponytail full、code-review-and-quality、improve-codebase-architecture、codebase-design、laravel-best-practices、security-audit（レビュー・隔離検証指針）。
 
 元のallocatorへ戻す検証では日初の片方がUNIQUE違反となり、現行barrierも退行を検出しました。bootstrapのcurrent readを外すmutationでは、snapshot後にcommitされた番号9を読み落とし、次の番号10ではなく1を選んで失敗しました。
+
+統合後のローカルcoreは1,409 tests / 6,220 assertions成功（外部API実接続群を除外）、Pint全1,648 files、PHPStan成功。PR307の初回CIでは並行テスト6件のbarrierが20秒で期限切れとなった。両workerの接続・外側注文作成を完了してから採番競合を開始する二段階barrierへ変更し、有限の待機上限を60秒とした。採番の実処理と競合のLOCK WAIT確認は維持する。
+
+二段階barrierのローカル検証で、counter行の排他ロック待ちがperformance_schema.data_lock_waitsに存在する一方、同じconnectionのinnodb_trx.trx_stateはRUNNINGを返す状態を観測した。親の監視をdata_lock_waitsとthreadsのconnection ID照合へ変更し、待機を見落とさず確認する。

@@ -65,7 +65,7 @@ class OrderNumberConsistencyTest extends TestCase
                     try {
                         DB::purge();
                         DB::statement('SET SESSION TRANSACTION ISOLATION LEVEL '.$isolation);
-                        DB::statement('SET SESSION innodb_lock_wait_timeout = 20');
+                        DB::statement('SET SESSION innodb_lock_wait_timeout = 60');
                         file_put_contents($directory.'/connection-'.$index, (string) DB::selectOne('SELECT CONNECTION_ID() AS id')->id);
                         DB::connection()->beforeExecuting(function ($sql) use ($directory, $index): void {
                             file_put_contents($directory.'/progress-'.$index, $sql);
@@ -82,9 +82,11 @@ class OrderNumberConsistencyTest extends TestCase
                             file_put_contents($directory.'/ready-'.$index, 'ready');
                             $this->waitUntil(fn () => is_file($directory.'/release'));
                         });
-                        DB::transaction(function () use ($order, $project, $user): void {
+                        DB::transaction(function () use ($order, $project, $user, $directory, $index): void {
                             // Simulate an outer order transaction already holding a project FK lock.
                             Order::create(['project_id' => $project->id, 'user_id' => $user->id, 'order_number' => null, 'total_amount' => 100, 'status' => 'pending']);
+                            file_put_contents($directory.'/initialized-'.$index, 'ready');
+                            $this->waitUntil(fn () => is_file($directory.'/start-'.$index));
                             app(OrderNumberAssigner::class)->assignIfMissing((int) $order->id, (int) $project->id);
                         });
                         file_put_contents($directory.'/result-'.$index, 'ok');
@@ -95,10 +97,17 @@ class OrderNumberConsistencyTest extends TestCase
                     }
                 }
                 $workers[] = $pid;
-                if ($index === 0) {
-                    $this->waitUntil(fn () => is_file($directory.'/ready-0'));
-                }
+
             }
+            // Reconnect the parent only after both forks, then finish all setup
+            // before pausing worker 0 while it holds the counter lock.
+            DB::selectOne('SELECT 1');
+            foreach ([0, 1] as $index) {
+                $this->waitUntil(fn () => is_file($directory.'/initialized-'.$index));
+            }
+            file_put_contents($directory.'/start-0', 'start');
+            $this->waitUntil(fn () => is_file($directory.'/ready-0'));
+            file_put_contents($directory.'/start-1', 'start');
             $second = 1;
             $this->waitUntil(fn () => is_file($directory.'/connection-'.$second));
             $connectionId = (int) file_get_contents($directory.'/connection-'.$second);
@@ -108,8 +117,8 @@ class OrderNumberConsistencyTest extends TestCase
                 }
 
                 return is_file($directory.'/ready-'.$second) || DB::selectOne(
-                    'SELECT COUNT(*) AS waiting FROM information_schema.innodb_trx WHERE trx_mysql_thread_id = ? AND trx_state = ?',
-                    [$connectionId, 'LOCK WAIT'],
+                    'SELECT COUNT(*) AS waiting FROM performance_schema.data_lock_waits AS waits JOIN performance_schema.threads AS threads ON threads.THREAD_ID = waits.REQUESTING_THREAD_ID WHERE threads.PROCESSLIST_ID = ?',
+                    [$connectionId],
                 )->waiting > 0;
             });
             file_put_contents($directory.'/release', 'release');
@@ -204,7 +213,8 @@ class OrderNumberConsistencyTest extends TestCase
 
     private function waitUntil(callable $condition): void
     {
-        $deadline = hrtime(true) + 20_000_000_000;
+        // Bound worker setup as well as the lock barriers on slower CI hosts.
+        $deadline = hrtime(true) + 60_000_000_000;
         while (! $condition()) {
             if (hrtime(true) > $deadline) {
                 throw new \RuntimeException('Timed out waiting for concurrent numbering barrier.');
