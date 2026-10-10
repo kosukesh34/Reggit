@@ -24,9 +24,10 @@ class ScheduledDeliverySendService
         private MemberBenefitService $memberBenefitService,
     ) {}
 
-    public function processDue(Carbon $now): int
+    /** @return array{sent: int, failed: int} */
+    public function processDue(Carbon $now): array
     {
-        $sent = 0;
+        $result = ['sent' => 0, 'failed' => 0];
         $deliveries = AfterRegistrationDelivery::withoutGlobalScopes()
             ->where('is_active', true)
             ->get();
@@ -39,10 +40,17 @@ class ScheduledDeliverySendService
                 && ! $this->matchesClock($delivery, $now)) {
                 continue;
             }
-            $sent += $this->sendToMatchingMembers($delivery, $now);
+            try {
+                $deliveryResult = $this->sendToMatchingMembers($delivery, $now);
+                $result['sent'] += $deliveryResult['sent'];
+                $result['failed'] += $deliveryResult['failed'];
+            } catch (\Throwable $exception) {
+                report($exception);
+                $result['failed']++;
+            }
         }
 
-        return $sent;
+        return $result;
     }
 
     public function sendRankUpArrival(Member $member, string $newRank): int
@@ -69,23 +77,26 @@ class ScheduledDeliverySendService
         return $count;
     }
 
-    public function sendToMatchingMembers(AfterRegistrationDelivery $delivery, Carbon $now): int
+    /** @return array{sent: int, failed: int} */
+    public function sendToMatchingMembers(AfterRegistrationDelivery $delivery, Carbon $now): array
     {
         $memberIds = $this->targetService->memberIds($delivery, $now);
-        $count = 0;
+        $result = ['sent' => 0, 'failed' => 0];
         foreach ($memberIds as $memberId) {
-            $member = Member::query()
-                ->where('project_id', $delivery->project_id)
-                ->find($memberId);
-            if ($member === null) {
-                continue;
-            }
-            if ($this->sendToMember($delivery, $member, $now)) {
-                $count++;
+            try {
+                $member = Member::query()
+                    ->where('project_id', $delivery->project_id)
+                    ->find($memberId);
+                if ($member !== null && $this->sendToMember($delivery, $member, $now)) {
+                    $result['sent']++;
+                }
+            } catch (\Throwable $exception) {
+                report($exception);
+                $result['failed']++;
             }
         }
 
-        return $count;
+        return $result;
     }
 
     public function sendToMember(AfterRegistrationDelivery $delivery, Member $member, ?Carbon $now = null): bool

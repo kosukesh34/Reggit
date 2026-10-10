@@ -21,8 +21,15 @@ class SendScheduledDeliveriesCommand extends Command
             return self::SUCCESS;
         }
 
-        $sent = $sendService->processDue(now());
+        $result = $sendService->processDue(now());
+        $sent = $result['sent'];
         $this->info($sent === 0 ? '対象のスケジュール配信はありません' : "スケジュール配信を実行しました（送信: {$sent} 件）");
+
+        if ($result['failed'] > 0) {
+            $this->error("スケジュール配信に失敗しました（失敗: {$result['failed']} 件）");
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }
