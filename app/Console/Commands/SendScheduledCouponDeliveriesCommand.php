@@ -6,6 +6,7 @@ use App\Enums\CouponDeliveryStatus;
 use App\Jobs\SendScheduledCouponDeliveryJob;
 use App\Models\CouponDelivery;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Bus;
 
 class SendScheduledCouponDeliveriesCommand extends Command
 {
@@ -32,6 +33,7 @@ class SendScheduledCouponDeliveriesCommand extends Command
             return self::SUCCESS;
         }
 
+        $hasFailures = false;
         foreach ($deliveries as $delivery) {
             $scheduledAt = $delivery->scheduled_at !== null
                 ? $delivery->scheduled_at->format('Y-m-d H:i')
@@ -40,13 +42,22 @@ class SendScheduledCouponDeliveriesCommand extends Command
             if ($isDryRun) {
                 continue;
             }
-            SendScheduledCouponDeliveryJob::dispatchSync($delivery->id);
+            try {
+                Bus::dispatchNow(new SendScheduledCouponDeliveryJob($delivery->id));
+            } catch (\Throwable $exception) {
+                if ($exception instanceof \InvalidArgumentException) {
+                    (new SendScheduledCouponDeliveryJob($delivery->id))->failed($exception);
+                }
+                report($exception);
+                $this->error("配信 {$delivery->id} に失敗しました: {$exception->getMessage()}");
+                $hasFailures = true;
+            }
         }
 
         $this->info($isDryRun
             ? "対象: {$deliveries->count()} 件（--dry-run のため実行していません）"
             : "予約配信を実行しました（対象: {$deliveries->count()} 件）");
 
-        return self::SUCCESS;
+        return $hasFailures ? self::FAILURE : self::SUCCESS;
     }
 }

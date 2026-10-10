@@ -70,7 +70,7 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
                 $targetService->buildResolveParamsFromDelivery($delivery)
             );
             if ($resolved['error'] !== null) {
-                throw new \RuntimeException($resolved['error']);
+                throw new \InvalidArgumentException($resolved['error']);
             }
             $memberIds = $resolved['member_ids'];
         }
