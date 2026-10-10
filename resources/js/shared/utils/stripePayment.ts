@@ -14,6 +14,8 @@ export class StripePayment {
     clientSecret: string | null;
     apiClient: ApiClient;
     private initPromise: Promise<void> | null;
+    private formVersion = 0;
+    private paymentOrderId: string | null = null;
 
     constructor() {
         this.stripe = null;
@@ -84,14 +86,14 @@ export class StripePayment {
         }
         const data = result.data as { clientSecret?: string; publishableKey?: string; error?: string };
         if (data.clientSecret) {
-            if (data.publishableKey && typeof Stripe === 'function') this.stripe = Stripe(data.publishableKey);
-            this.clientSecret = data.clientSecret;
             return data;
         }
         throw new Error(data.error || 'Payment intent creation failed');
     }
 
     destroyPaymentForm(): void {
+        this.formVersion += 1;
+        this.paymentOrderId = null;
         try {
             if (this.paymentElement !== null && typeof this.paymentElement.destroy === 'function') {
                 this.paymentElement.destroy();
@@ -104,22 +106,34 @@ export class StripePayment {
         this.clientSecret = null;
     }
 
-    async setupPaymentForm(containerId: string, _amount: number, orderId: number | string): Promise<void> {
-        await this.init();
+    async setupPaymentForm(containerId: string, _amount: number, orderId: number | string): Promise<boolean> {
         this.destroyPaymentForm();
-        const { clientSecret } = await this.createPaymentIntent(orderId);
-        if (this.stripe === null) {
-            throw new Error('Stripe の初期化に失敗しました。決済設定を確認してください');
+        const version = this.formVersion;
+        try {
+            await this.init();
+            if (version !== this.formVersion) return false;
+            const { clientSecret, publishableKey } = await this.createPaymentIntent(orderId);
+            if (version !== this.formVersion) return false;
+            if (publishableKey && typeof Stripe === 'function') this.stripe = Stripe(publishableKey);
+            if (this.stripe === null) {
+                throw new Error('Stripe の初期化に失敗しました。決済設定を確認してください');
+            }
+            this.clientSecret = clientSecret;
+            this.elements = this.stripe.elements();
+            this.paymentElement = this.elements.create('card', { hidePostalCode: true });
+            const mountNode = document.getElementById(containerId);
+            if (mountNode === null) {
+                throw new Error('決済フォームの表示領域が見つかりません');
+            }
+            mountNode.replaceChildren();
+            this.paymentElement.mount(`#${containerId}`);
+            this.paymentOrderId = String(orderId);
+            return true;
+        } catch (error) {
+            if (version !== this.formVersion) return false;
+            this.destroyPaymentForm();
+            throw error;
         }
-        this.clientSecret = clientSecret;
-        this.elements = this.stripe.elements();
-        this.paymentElement = this.elements.create('card', { hidePostalCode: true });
-        const mountNode = document.getElementById(containerId);
-        if (mountNode === null) {
-            throw new Error('決済フォームの表示領域が見つかりません');
-        }
-        mountNode.replaceChildren();
-        this.paymentElement.mount(`#${containerId}`);
     }
 
     buildReturnUrl(orderId: number | string): string {
@@ -129,7 +143,7 @@ export class StripePayment {
     }
 
     async confirmPayment(orderId: number | string): Promise<any> {
-        if (!this.stripe || !this.clientSecret || !this.elements) {
+        if (!this.stripe || !this.clientSecret || !this.elements || this.paymentOrderId !== String(orderId)) {
             throw new Error('Stripe not initialized');
         }
         const { error, paymentIntent } = await this.stripe.confirmCardPayment(this.clientSecret, {

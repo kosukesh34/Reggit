@@ -179,10 +179,11 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         return $query->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
     }
 
-    public function findIdsByLastVisited(int $projectId, string $mode, int $days): array
+    public function findIdsByLastVisited(int $projectId, string $mode, int $days, ?\DateTimeInterface $referenceDate = null): array
     {
         $days = max(1, $days);
-        $boundary = Carbon::today()->subDays($days)->startOfDay();
+        $boundary = ($referenceDate === null ? Carbon::today() : Carbon::instance($referenceDate)->copy())
+            ->subDays($days)->startOfDay();
 
         $query = Member::query()->where('project_id', $projectId);
 
@@ -195,7 +196,7 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             $query->whereNotNull('last_visited_at')
                 ->where('last_visited_at', '>=', $boundary->format('Y-m-d'));
         } elseif ($mode === 'days_after') {
-            $targetDate = Carbon::today()->subDays($days)->format('Y-m-d');
+            $targetDate = $boundary->format('Y-m-d');
             $query->whereNotNull('last_visited_at')
                 ->whereDate('last_visited_at', $targetDate);
         } else {

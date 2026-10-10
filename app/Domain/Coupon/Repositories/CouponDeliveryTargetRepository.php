@@ -58,7 +58,7 @@ interface CouponDeliveryTargetRepository
      * @param  string  $mode  inactive_days|visited_within_days|days_after
      * @return list<int>
      */
-    public function findIdsByLastVisited(int $projectId, string $mode, int $days): array;
+    public function findIdsByLastVisited(int $projectId, string $mode, int $days, ?\DateTimeInterface $referenceDate = null): array;
 
     /** @return list<int> */
     public function findIdsBySex(int $projectId, string $sex): array;

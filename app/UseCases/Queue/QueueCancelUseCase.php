@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Queue;
 
+use App\Domain\Queue\Aggregates\QueueEntry;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Enums\QueueStatus;
 use App\UseCases\Queue\Data\QueueCancelOutput;
@@ -16,18 +17,21 @@ class QueueCancelUseCase
 
     public function handle(int $id, int $projectId): QueueCancelOutput
     {
-        $aggregate = $this->queueEntryRepository->findById($id, $projectId);
+        $conflict = false;
+        $aggregate = $this->queueEntryRepository->update($id, $projectId,
+            function (QueueEntry $aggregate) use (&$conflict): void {
+                if ($aggregate->status() !== QueueStatus::CANCELLED && ! $aggregate->canCancel()) {
+                    $conflict = true;
+
+                    return;
+                }
+                $aggregate->cancel();
+            },
+        );
         if ($aggregate === null) {
             return new QueueCancelOutput(null, false);
         }
 
-        if ($aggregate->status() !== QueueStatus::CANCELLED && $aggregate->canCancel() === false) {
-            return new QueueCancelOutput($this->entryFactory->findModel($id, $projectId), true);
-        }
-
-        $aggregate->cancel();
-        $this->queueEntryRepository->save($aggregate);
-
-        return new QueueCancelOutput($this->entryFactory->findModel($id, $projectId), false);
+        return new QueueCancelOutput($this->entryFactory->findModel($id, $projectId), $conflict);
     }
 }

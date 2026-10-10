@@ -55,16 +55,27 @@ class CouponNotificationService
         $projectKey = Project::query()->where('id', $projectId)->value('project_key');
         $projectKey = is_string($projectKey) ? trim($projectKey) : '';
 
-        $this->sendNativePush($member, $projectId, $title, $body, $memberCoupon);
+        $failure = null;
+        try {
+            $this->sendNativePush($member, $projectId, $title, $body, $memberCoupon);
+        } catch (\Throwable $exception) {
+            $failure = $exception;
+        }
         if ($projectKey === '') {
             LogHelper::error('[Coupon] LINE push skipped (project_key missing)', [
                 'member_id' => $member->id,
                 'project_id' => $projectId,
             ]);
-
-            return;
+        } else {
+            try {
+                $this->sendLinePush($member, $projectId, $projectKey, $coupon, $couponName);
+            } catch (\Throwable $exception) {
+                $failure ??= $exception;
+            }
         }
-        $this->sendLinePush($member, $projectId, $projectKey, $coupon, $couponName);
+        if ($failure !== null) {
+            throw $failure;
+        }
     }
 
     /**
@@ -115,6 +126,9 @@ class CouponNotificationService
             ]
         );
 
+        if (($result['failed'] ?? 0) > 0) {
+            throw new \RuntimeException('Coupon native notification delivery is incomplete.');
+        }
         if (($result['sent'] ?? 0) === 0 && ($result['target_tokens'] ?? 0) === 0) {
             LogHelper::info('[Coupon] native push skipped (no device tokens)', [
                 'member_id' => $member->id,
@@ -173,6 +187,7 @@ class CouponNotificationService
                 'line_user_id' => $lineUserId,
                 'error' => $e->getMessage(),
             ]);
+            throw $e;
         }
     }
 

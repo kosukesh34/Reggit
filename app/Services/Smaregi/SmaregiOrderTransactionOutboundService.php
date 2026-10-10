@@ -11,7 +11,6 @@ use App\Enums\PaymentMethod;
 use App\Enums\SmaregiCancelDivision;
 use App\Enums\SmaregiTransactionDetailDivision;
 use App\Enums\SmaregiTransactionHeadDivision;
-use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Scopes\ProjectScope;
@@ -55,7 +54,7 @@ class SmaregiOrderTransactionOutboundService
         if ($order === null) {
             return true;
         }
-        if ($order->order_type === OrderType::POS) {
+        if ($order->order_type === OrderType::POS || $order->status === OrderStatus::CANCELLED) {
             return true;
         }
         if ($this->isCashOrder($order) && $this->orderRepository->hasSmaregiLayaway($orderId, $projectId)) {
@@ -76,27 +75,33 @@ class SmaregiOrderTransactionOutboundService
 
     public function syncOrderTransactionWithRetry(int $orderId, int $projectId, int $userId): bool
     {
-        try {
-            $succeeded = $this->syncOrderTransaction($orderId, $projectId, $userId);
-            if ($succeeded) {
-                return true;
-            }
-
-            if ($this->isCreatePhaseDone($orderId, $projectId, $this->loadOrder($orderId, $projectId))) {
-                return true;
-            }
-        } catch (\Throwable $e) {
-            LogHelper::error('[Smaregi] order transaction sync threw', [
-                'order_id' => $orderId,
-                'project_id' => $projectId,
-                'error' => $e->getMessage(),
-            ]);
+        $pending = Order::withoutGlobalScopes()->whereKey($orderId)->where('project_id', $projectId)
+            ->where('smaregi_create_pending', true);
+        $lease = now()->addMinutes(5);
+        if ((clone $pending)->where('smaregi_create_retry_at', '<=', now())
+            ->where(fn ($query) => $query->whereNull('smaregi_create_leased_until')->orWhere('smaregi_create_leased_until', '<=', now()))
+            ->update(['smaregi_create_leased_until' => $lease]) === 0) {
+            return $this->isCreatePhaseDone($orderId, $projectId, $this->loadOrder($orderId, $projectId));
         }
+        try {
+            $order = $this->loadOrder($orderId, $projectId);
+            $configured = trim((string) $this->smaregiApi->getContractIdForProject($projectId)) !== '';
+            $succeeded = $order === null || $order->status === OrderStatus::CANCELLED
+                || $order->order_type === OrderType::POS
+                || $this->isCreatePhaseDone($orderId, $projectId, $order)
+                || ($configured && $this->syncOrderTransaction($orderId, $projectId, $userId));
+            (clone $pending)->where('smaregi_create_leased_until', $lease)->update($succeeded ? [
+                'smaregi_create_pending' => false, 'smaregi_create_retry_at' => null, 'smaregi_create_leased_until' => null,
+            ] : ['smaregi_create_leased_until' => null, 'smaregi_create_retry_at' => $configured ? now()->addMinute() : now()->addHour()]);
 
-        SyncOrderTransactionToSmaregiJob::dispatch($orderId, $projectId, $userId)
-            ->delay(now()->addSeconds(30));
+            return $succeeded;
+        } catch (\Throwable $exception) {
+            (clone $pending)->where('smaregi_create_leased_until', $lease)
+                ->update(['smaregi_create_leased_until' => null, 'smaregi_create_retry_at' => now()->addMinute()]);
+            report($exception);
 
-        return false;
+            return false;
+        }
     }
 
     /**
@@ -135,19 +140,34 @@ class SmaregiOrderTransactionOutboundService
 
     public function finalizeCashLayawayWithRetry(int $orderId, int $projectId, int $userId): bool
     {
-        $succeeded = $this->finalizeCashLayaway($orderId, $projectId, $userId);
-        if ($succeeded) {
-            return true;
+        // The order transition saved this request atomically. Claim it before any API call.
+        $pending = Order::withoutGlobalScopes()->whereKey($orderId)->where('project_id', $projectId)
+            ->where('smaregi_pickup_pending', true);
+        $lease = now()->addMinutes(5);
+        if ((clone $pending)->where('smaregi_pickup_retry_at', '<=', now())
+            ->update(['smaregi_pickup_retry_at' => $lease]) === 0) {
+            return $this->orderRepository->isSmaregiTransactionSynced($orderId, $projectId);
         }
 
-        if ($this->orderRepository->isSmaregiTransactionSynced($orderId, $projectId)) {
-            return true;
+        try {
+            // Keep unconfigured optional integrations pending without sending requests.
+            $configured = trim((string) $this->smaregiApi->getContractIdForProject($projectId)) !== '';
+            $succeeded = $this->orderRepository->isSmaregiTransactionSynced($orderId, $projectId)
+                || ($configured && $this->finalizeCashLayaway($orderId, $projectId, $userId));
+            (clone $pending)->where('smaregi_pickup_retry_at', $lease)->update($succeeded ? [
+                'smaregi_pickup_pending' => false, 'smaregi_pickup_retry_at' => null,
+            ] : [
+                'smaregi_pickup_retry_at' => $configured ? now()->addMinute() : now()->addHour(),
+            ]);
+
+            return $succeeded;
+        } catch (\Throwable $exception) {
+            (clone $pending)->where('smaregi_pickup_retry_at', $lease)
+                ->update(['smaregi_pickup_retry_at' => now()->addMinute()]);
+            report($exception);
+
+            return false;
         }
-
-        SyncOrderTransactionToSmaregiJob::dispatch($orderId, $projectId, $userId, finalize: true)
-            ->delay(now()->addSeconds(30));
-
-        return false;
     }
 
     public static function terminalTranIdForOrder(int $orderId): string

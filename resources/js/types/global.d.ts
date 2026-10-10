@@ -31,7 +31,7 @@ type QRCodeCtor = new (
 };
 
 type StripePaymentCtor = new () => {
-    setupPaymentForm: (elementId: string, amount: number, orderId: number | string) => Promise<void>;
+    setupPaymentForm: (elementId: string, amount: number, orderId: number | string) => Promise<boolean>;
     confirmPayment: (orderId: number | string) => Promise<{ success?: boolean; message?: string } | null>;
 };
 

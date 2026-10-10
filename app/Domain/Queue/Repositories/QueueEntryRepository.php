@@ -6,9 +6,9 @@ use App\Domain\Queue\Aggregates\QueueEntry;
 
 interface QueueEntryRepository
 {
-    public function findById(int $id, int $projectId): ?QueueEntry;
+    /** @param callable(QueueEntry): void $change */
+    public function update(int $id, int $projectId, callable $change): ?QueueEntry;
 
-    public function findNextWaiting(int $projectId, \DateTimeInterface $day): ?QueueEntry;
-
-    public function save(QueueEntry $entry): void;
+    /** @param callable(QueueEntry): void $change */
+    public function updateNextWaiting(int $projectId, \DateTimeInterface $day, callable $change): ?QueueEntry;
 }

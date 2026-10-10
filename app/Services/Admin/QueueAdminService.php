@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Domain\Queue\Aggregates\QueueEntry as QueueEntryAggregate;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Domain\Settings\Repositories\QueueAdminSettings;
 use App\Enums\QueueStatus;
@@ -79,13 +80,14 @@ class QueueAdminService
             return;
         }
 
-        $aggregate = $this->queueEntryRepository->findById((int) $entry->id, (int) $entry->project_id);
+        $aggregate = $this->queueEntryRepository->update((int) $entry->id, (int) $entry->project_id,
+            function (QueueEntryAggregate $aggregate) use ($status): void {
+                $aggregate->applyAdminStatus($status, now());
+            },
+        );
         if ($aggregate === null) {
             return;
         }
-
-        $aggregate->applyAdminStatus($status, now());
-        $this->queueEntryRepository->save($aggregate);
 
         if ($status === QueueStatus::CALLED) {
             $this->notifyCalled((int) $entry->id);

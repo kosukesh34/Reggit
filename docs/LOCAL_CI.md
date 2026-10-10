@@ -18,10 +18,11 @@ scripts/merge-pr.sh <PR番号>
 
 マージスクリプトは PR の最新 HEAD・main の取り込みを確認し、必ず CI を再実行する。
 CI 完了後も checkout と main を再確認し、GitHub では `--match-head-commit` で同じ HEAD のみマージする。
+worktree で別 checkout が main を使用していてもマージできるよう、マージ時にブランチの自動削除・main への切替は行わない。不要になった作業ブランチ・worktree は作業完了後に別途整理する。
 複数人が同時に main を変更する運用では GitHub 側の branch protection / merge queue も必要。
 ローカルスクリプトは GitHub UI からの直接マージを防止するものではない。
 
-チェック: マージゲートの契約テスト（3メソッド・10ケース）、Pint、PHPStan、PHP コアテスト、TypeScript、ESLint、フロントエンド単体テスト、Vite ビルド。
+チェック: マージゲートの契約テスト（4メソッド・11ケース）、Pint、PHPStan、PHP コアテスト、TypeScript、ESLint、フロントエンド単体テスト、Vite ビルド。
 実接続専用 smaregi-integration は除外し、外部連携の検証完了とは扱わない。
 E2E は変更に応じて別途ローカルで実行する。Actions では実行しない。
 

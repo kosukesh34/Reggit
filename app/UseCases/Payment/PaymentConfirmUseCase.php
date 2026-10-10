@@ -100,6 +100,15 @@ class PaymentConfirmUseCase
 
             // フロント決済完了経路では即時スマレジ同期（Webhook 遅延より先に送る）
             if ($aggregate->shouldSyncToSmaregi()) {
+                if ($order->smaregi_transaction_synced_at === null) {
+                    $order->smaregi_create_pending = true;
+                    // Frontend completion may advance the webhook's delayed request.
+                    if ($order->smaregi_create_leased_until === null
+                        && ($order->smaregi_create_retry_at === null || $order->smaregi_create_retry_at->isFuture())) {
+                        $order->smaregi_create_retry_at = now();
+                    }
+                    $order->save();
+                }
                 $pointsSyncEvent = new OrderPointsSyncRequested(
                     $aggregate->id()->value(),
                     $aggregate->projectId(),
