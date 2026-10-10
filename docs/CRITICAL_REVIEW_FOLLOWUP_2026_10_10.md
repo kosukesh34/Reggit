@@ -11,3 +11,10 @@
 専用MySQL、外部ネットワーク遮断、read-only依存、資源上限でローカル検証する。ブラウザーE2E・実外部API・本番負荷は未検証。ActionsでE2Eを実行しない。
 
 適用: i-have-adhd、Ponytail full、code-review-and-quality、improve-codebase-architecture、codebase-design、laravel-best-practices。
+
+## 即時クーポン一括配布の原子性
+
+- 2人目の発行後・全発行後の配信履歴保存前に例外を注入すると、いずれも発行2件が残り、履歴が欠落することを再現。
+- 即時発行とCouponDelivery保存を同じtransactionにまとめる。既存afterCommit通知を利用し、途中失敗は全体rollbackにする。
+- CouponBulkIssueAtomicityTestの2failurepointsで、発行と履歴の両方が0件になることを確認する。RefreshDatabaseの外側transactionがあるため、このテスト単独は通知rollbackの証明ではない。
+- 並行重複と古いsnapshotの問題は、共通一括発行処理の別PRで修正する。

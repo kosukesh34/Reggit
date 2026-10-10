@@ -9,6 +9,7 @@ use App\Models\CouponDelivery;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberBenefitService;
 use App\Util\DateUtil;
+use Illuminate\Support\Facades\DB;
 
 class AdminCouponBulkIssueUseCase
 {
@@ -99,33 +100,35 @@ class AdminCouponBulkIssueUseCase
             throw new \InvalidArgumentException('配布対象の会員がいません');
         }
 
-        $result = $this->memberBenefitService->issueCouponToMembers(
-            $projectId,
-            $couponId,
-            $memberIds,
-            null,
-            null,
-            $sendNotification,
-        );
+        return DB::transaction(function () use ($projectId, $couponId, $memberIds, $sendNotification, $deliveryType, $resolved): array {
+            $result = $this->memberBenefitService->issueCouponToMembers(
+                $projectId,
+                $couponId,
+                $memberIds,
+                null,
+                null,
+                $sendNotification,
+            );
 
-        CouponDelivery::create([
-            'project_id' => $projectId,
-            'coupon_id' => $couponId,
-            'delivery_type' => $deliveryType,
-            'status' => CouponDeliveryStatus::SENT,
-            'sent_at' => now(),
-            'target_member_ids' => $this->normalizeMemberIds($memberIds),
-            'issued_member_ids' => $this->normalizeMemberIds($result['member_ids']),
-            'segment_criteria' => $resolved['segment_criteria'],
-            'issued_count' => $result['count'],
-            'send_notification' => $sendNotification,
-        ]);
+            CouponDelivery::create([
+                'project_id' => $projectId,
+                'coupon_id' => $couponId,
+                'delivery_type' => $deliveryType,
+                'status' => CouponDeliveryStatus::SENT,
+                'sent_at' => now(),
+                'target_member_ids' => $this->normalizeMemberIds($memberIds),
+                'issued_member_ids' => $this->normalizeMemberIds($result['member_ids']),
+                'segment_criteria' => $resolved['segment_criteria'],
+                'issued_count' => $result['count'],
+                'send_notification' => $sendNotification,
+            ]);
 
-        return [
-            'issued' => $result['count'],
-            'scheduled' => false,
-            'message' => "{$result['count']}件の会員にクーポンを配布しました",
-        ];
+            return [
+                'issued' => $result['count'],
+                'scheduled' => false,
+                'message' => "{$result['count']}件の会員にクーポンを配布しました",
+            ];
+        });
     }
 
     /**

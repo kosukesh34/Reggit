@@ -1,6 +1,7 @@
 # 必須ローカル CI（2026-10-10 暫定運用）
 
 ユーザー指示により GitHub Actions の CI workflow は `disabled_manually` に変更した。
+Repository Actions permissions も `enabled=false` とし、全workflowを停止した。
 YAML は再開用に残す。課金制限で実行前に失敗した既存チェックは、この期間のマージ判断に使わない。
 
 ## 実行
@@ -33,5 +34,7 @@ Node の依存取得のみネットワークを使用し、npm lifecycle scripts
 
 ## 再開
 
-ユーザーの再開指示後に `gh workflow enable ci.yml` を実行し、AGENTS.md と
+ユーザーの再開指示後に
+`gh api --method PUT repos/{owner}/{repo}/actions/permissions -F enabled=true` と
+`gh workflow enable ci.yml` を実行し、AGENTS.md と
 merge-pr.sh を最新 HEAD の Actions `test`・`lint`・`main` 成功必須へ戻す。
