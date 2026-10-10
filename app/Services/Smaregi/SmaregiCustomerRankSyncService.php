@@ -146,6 +146,7 @@ class SmaregiCustomerRankSyncService
                     'project_id' => $projectId,
                     'rank' => $rankId,
                 ]);
+                throw new \RuntimeException('スマレジの会員ランク削除に失敗しました（'.$rankId.'）。');
             }
         }
     }

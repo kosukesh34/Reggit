@@ -27,7 +27,7 @@ class RanksController extends AdminBaseController
         $projectId = $this->resolveAdminProjectId();
 
         try {
-            $this->updateRankSettingsUseCase->handle($request->toInput($projectId));
+            $synced = $this->updateRankSettingsUseCase->handle($request->toInput($projectId));
         } catch (\InvalidArgumentException $e) {
             return redirect()->back()->withInput()->withErrors(['ranks' => $e->getMessage()]);
         } catch (\RuntimeException $e) {
@@ -35,6 +35,8 @@ class RanksController extends AdminBaseController
         }
 
         return redirect()->route('admin.settings.ranks', $this->buildAdminRouteParams())
-            ->with('success', 'ランク・ポイント・スタンプを更新しました');
+            ->with('success', $synced
+                ? 'ランク・ポイント・スタンプを更新しました'
+                : 'ランク・ポイント・スタンプを保存しました。スマレジへの反映は自動再送します。');
     }
 }

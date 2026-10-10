@@ -4,22 +4,39 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\RankAggregationType;
-use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
+use App\Models\Project;
+use App\Models\Settings\ProjectMemberRankSetting;
 use App\Services\Smaregi\SmaregiCustomerRankSyncService;
+use App\Services\Smaregi\SmaregiRankSettingsSyncService;
 use App\UseCases\Admin\Settings\Data\UpdateRankSettingsInput;
 use App\Util\StrHelper;
+use Illuminate\Support\Facades\DB;
 
 class UpdateRankSettingsUseCase
 {
     public function __construct(
         private SmaregiCustomerRankSyncService $smaregiRankSync,
-        private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
+        private SmaregiRankSettingsSyncService $pendingSync,
         private RankSettings $shopSettingRepository,
     ) {}
 
-    public function handle(UpdateRankSettingsInput $input): void
+    public function handle(UpdateRankSettingsInput $input): bool
+    {
+        DB::transaction(function () use ($input): void {
+            Project::findOrFail($input->projectId);
+            $this->save($input);
+        }, 3);
+
+        return ! $this->pendingSync->hasPending($input->projectId);
+    }
+
+    private function save(UpdateRankSettingsInput $input): void
     {
         $projectId = $input->projectId;
+        // Upsert first: the request row serializes settings writers and worker mapping saves.
+        if ($this->smaregiRankSync->hasSmaregiContract($projectId) || $this->pendingSync->hasPending($projectId)) {
+            $this->pendingSync->requestSync($projectId);
+        }
         $defaultPointEarnRate = (int) $input->pointEarnRate;
         $defaultStampEarnPerAmount = (int) $input->stampEarnPerAmount;
         $existingByKey = $this->existingRankMetaByKey($projectId);
@@ -81,18 +98,6 @@ class UpdateRankSettingsUseCase
         $this->shopSettingRepository->setValue('points_valid_days', (int) $input->pointsValidDays, 'integer', $projectId);
         $this->shopSettingRepository->setValue('points_per_order', (int) $input->pointsPerOrder, 'integer', $projectId);
         $this->shopSettingRepository->setValue('stamp_earn_per_amount', (int) $input->stampEarnPerAmount, 'integer', $projectId);
-
-        if ($this->smaregiRankSync->hasSmaregiContract($projectId) && $rows !== []) {
-            $rankIdsByKey = $this->smaregiRankSync->sync($projectId, $rows);
-            foreach ($rows as $index => $row) {
-                $key = $row['key'];
-                if (isset($rankIdsByKey[$key]) && $rankIdsByKey[$key] !== '') {
-                    $rows[$index]['smaregi_rank_id'] = $rankIdsByKey[$key];
-                }
-            }
-            $this->shopSettingRepository->setMemberRankSettings($rows, $projectId);
-            $this->smaregiCustomerRankAssignmentService->syncPointRatesForProject($projectId);
-        }
     }
 
     /**
@@ -101,7 +106,9 @@ class UpdateRankSettingsUseCase
     private function existingRankMetaByKey(int $projectId): array
     {
         $meta = [];
-        foreach ($this->shopSettingRepository->getMemberRankSettings($projectId) as $rank) {
+        // A locking read sees mapping committed while the request upsert was waiting.
+        $settings = ProjectMemberRankSetting::whereKey($projectId)->lockForUpdate()->first();
+        foreach (($settings?->member_rank_settings ?? []) as $rank) {
             $key = isset($rank['key']) ? (string) $rank['key'] : '';
             if ($key === '') {
                 continue;

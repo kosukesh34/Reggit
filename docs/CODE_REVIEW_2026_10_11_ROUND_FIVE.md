@@ -1,0 +1,33 @@
+# Critical review — 2026-10-11 / round five
+
+## P2: ランクマスタ一覧の取得失敗を空一覧と扱う
+
+SmaregiCustomerRankSyncService::fetchExistingRanks は getCustomerRanks の null（失敗）を []（正常な空一覧）へ変換していた。既存rank IDを確認できないままcreateを進め、重複ランクを作り得る。外部変更前に例外で停止する。正常な [] は引き続き新規登録できる。削除失敗も成功として返さず例外とし、再送要求を維持する。
+
+## P2: 設定保存後の外部マスタ／会員バッチの途中停止に復旧経路がない
+
+UpdateRankSettingsUseCase はローカル設定を保存してから外部マスタを同期し、その後に会員更新を順番に実行していた。マスタ同期失敗や途中停止で、未走査の会員に再送要求が作られない。新規ランクの外部IDも未保存になり、会員単位の再送だけでは復旧できない。
+
+project単位の smaregi_rank_settings_syncs 要求を、設定保存と同じtransactionの先頭でupsertする。既存要求行が設定writerとworkerのmapping保存を直列化する。外部通信はcommit後に既存master adapterで実行し、要求UUID／lease UUIDが一致した場合だけ、mapping・全連携会員の再送要求・project ACKを一括commitする。途中停止やDB失敗ではこの一括処理をrollbackし、次回は最新の保存済み設定から再開する。会員要求の保存は既存assignment moduleの記録処理を再利用し、HTTP callbackを登録しない。バッチ記録では会員の最新ランクをロックして再読込する。
+
+毎分scannerがdueな最大20projectを処理する。API失敗は1分後、契約未設定は1時間後。DB leaseとscheduler mutexは5分。空設定に変わった場合も古い要求を置換し、旧workerによる設定の復元を防ぐ。管理画面はローカル保存済みで外部反映が未完了の場合、自動再送することを表示する。
+
+## P1: lease期限後の旧HTTP完了が新worker成功後に外部状態を戻す
+
+独立レビューで発見。ACKのtoken確認だけでは外部の遅延更新を止められない。新workerが最新設定を反映して要求を削除した後、旧workerのHTTPが完了すると、再送要求が存在しないまま外部値が古くなり得る。会員・project双方で、外部処理を実行したが要求をACK／延期できなかった場合、insertOrIgnoreで最新状態への再調整要求を残す。既存要求とactive leaseは上書きしない。会員側はPR #328へ追加し、マージ前にゲートを停止して最新HEADで全CIを再実行した。
+
+## P2: MySQLの古いsnapshotから同期済みmappingを消す
+
+独立レビューで発見。request行のupsertで待機しても、それより前に開始したREPEATABLE READ snapshotは新mappingを見ない。UseCaseの既存mapping取得をProjectMemberRankSettingのcurrent locking readに変更する。独立したMySQL接続がsnapshot後にIDを保存する回帰テストで、label変更時も最新IDを保持してcreate/deleteを避けることを確認する。
+
+Project全体の排他ロックは使わない。要求行→設定→会員の順序とし、Member→同期要求INSERTのproject FK共有ロックとの逆順を避ける。
+
+## 検証と範囲
+
+関連30 tests / 163 assertions成功。必須全ローカルCIはcommit済みの最新HEADで実行し、mutationの確定結果・対象HEAD・ログと併せてPRに記録する。独立ソースレビューで残存ブロッキング指摘なし。安全性、正しさ、設計、可読性、性能を確認した。React/ブラウザーE2Eの変更はなく、外部スマレジ実接続と本番migrationは実行していない。
+
+新テーブルはデプロイ時のmigrationが必要。処理途中でHTTPが成功して応答／ACKが失敗した場合は同じ更新を再実行する。外部APIにfencing／冪等キーがないため、実行中の旧値の一時反映や同じ更新の再送を許し、最新設定への収束を目指す。既に失われた過去の設定同期要求はbackfillしない。外部masterの既存照合／削除ポリシーは維持し、別アプリのランク所有権設計やページング方式は今回変更しない。数分以内のscanner再試行を設けるが、backlog・API停止・処理時間によって完了が遅れる。
+
+追加の独立読み取り確認: API tokenとURL projectの一致、管理者のprojectアクセス、店舗端末のproject/store拘束、Stripe confirm/Webhookの所有者・金額・決済account確認、注文ロック、取消時のStripe停止確認とポイント返却、QR付与quota・重複防止、Smaregiポイント対象の決済状態を確認した。今回の範囲で再現経路を示せる新たなP1/P2はなかった。全routeや全認可分岐、同時決済の実接続検証、過去データ照合を網羅したものではない。
+
+適用: i-have-adhd、Ponytail full、code-review-and-quality、improve-codebase-architecture、codebase-design、laravel-best-practices、security-audit（tenant整合性の部分確認）。全面セキュリティ監査や全コード無欠陥を主張しない。

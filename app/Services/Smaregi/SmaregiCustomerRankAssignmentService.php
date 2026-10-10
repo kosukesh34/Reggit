@@ -27,20 +27,34 @@ class SmaregiCustomerRankAssignmentService
 
     public function assignRankToCustomer(Member $member, string $rankKey): void
     {
-        DB::transaction(function () use ($member, $rankKey): void {
+        $this->requestRank($member, $rankKey, true);
+    }
+
+    private function requestRank(Member $member, ?string $rankKey, bool $immediate, bool $replace = true): void
+    {
+        DB::transaction(function () use ($member, $rankKey, $immediate, $replace): void {
             $current = Member::withoutGlobalScopes()->whereKey($member->id)
                 ->where('project_id', $member->project_id)->whereNull('deleted_at')
                 ->lockForUpdate()->first();
             if ($current === null || trim((string) $current->smaregi_customer_id) === ''
-                || $rankKey === '' || (string) $current->rank !== $rankKey) {
+                || trim((string) $current->rank) === ''
+                || ($rankKey !== null && (string) $current->rank !== $rankKey)) {
                 return;
             }
-            SmaregiMemberRankSync::upsert([[
+            $row = [
                 'member_id' => $current->id,
                 'project_id' => $current->project_id,
                 'request_token' => (string) Str::uuid(),
                 'retry_at' => now(),
-            ]], ['member_id'], ['project_id', 'request_token', 'retry_at']);
+            ];
+            if ($replace) {
+                SmaregiMemberRankSync::upsert([$row], ['member_id'], ['project_id', 'request_token', 'retry_at']);
+            } else {
+                SmaregiMemberRankSync::insertOrIgnore($row);
+            }
+            if (! $immediate) {
+                return;
+            }
             DB::afterCommit(function () use ($current): void {
                 try {
                     $this->retryPending((int) $current->id);
@@ -71,6 +85,8 @@ class SmaregiCustomerRankAssignmentService
         $owned = fn () => SmaregiMemberRankSync::whereKey($memberId)
             ->where('request_token', $request->request_token)->where('lease_token', $leaseToken);
         $previousProject = AdminContext::getCurrentProject();
+        $attempted = false;
+        $settled = false;
         try {
             AdminContext::setCurrentProject(Project::findOrFail($request->project_id));
             $member = Member::withoutGlobalScopes()->whereKey($memberId)
@@ -90,6 +106,7 @@ class SmaregiCustomerRankAssignmentService
                 return true;
             }
             $this->smaregiApi->clearLastErrorDetail();
+            $attempted = true;
             $result = $this->smaregiApi->updateCustomer($contractId, (string) $member->smaregi_customer_id, $body);
             if ($result === null) {
                 LogHelper::warning('[Member] smaregi customer rank sync failed', [
@@ -98,21 +115,25 @@ class SmaregiCustomerRankAssignmentService
                     'rank_key' => $rankKey,
                     'detail' => $this->smaregiApi->getLastErrorDetail(),
                 ]);
-                $owned()->update(['retry_at' => now()->addMinute()]);
+                $settled = $owned()->update(['retry_at' => now()->addMinute()]) > 0;
 
                 return false;
             } else {
-                $owned()->delete();
+                $settled = $owned()->delete() > 0;
             }
         } catch (\Throwable $exception) {
             report($exception);
-            $owned()->update(['retry_at' => now()->addMinute()]);
+            $settled = $owned()->update(['retry_at' => now()->addMinute()]) > 0;
 
             return false;
         } finally {
             AdminContext::setCurrentProject($previousProject);
             SmaregiMemberRankSync::whereKey($memberId)->where('lease_token', $leaseToken)
                 ->update(['leased_until' => null, 'lease_token' => null]);
+            if ($attempted && ! $settled) {
+                // A newer worker may have completed before this stale HTTP call returned.
+                $this->requestRank($member, null, false, false);
+            }
         }
 
         return true;
@@ -142,6 +163,18 @@ class SmaregiCustomerRankAssignmentService
                         continue;
                     }
                     $this->assignRankToCustomer($member, $rankKey);
+                }
+            });
+    }
+
+    /** Record the whole batch inside the caller's transaction, without external requests. */
+    public function requestPointRatesForProject(int $projectId): void
+    {
+        Member::withoutGlobalScope(ProjectScope::class)->where('project_id', $projectId)
+            ->whereNotNull('smaregi_customer_id')->where('smaregi_customer_id', '!=', '')
+            ->orderBy('id')->chunkById(self::MEMBER_SYNC_CHUNK_SIZE, function ($members): void {
+                foreach ($members as $member) {
+                    $this->requestRank($member, null, false);
                 }
             });
     }

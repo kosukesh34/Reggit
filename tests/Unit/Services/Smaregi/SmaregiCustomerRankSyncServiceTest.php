@@ -15,6 +15,17 @@ class SmaregiCustomerRankSyncServiceTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_failed_rank_deletion_is_not_reported_as_success(): void
+    {
+        $api = Mockery::mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->once()->andReturn('contract_1');
+        $api->shouldReceive('getCustomerRanks')->once()->andReturn([['rank' => '8', 'name' => 'Old']]);
+        $api->shouldReceive('deleteCustomerRank')->once()->with('contract_1', '8')->andReturn(null);
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('スマレジの会員ランク削除に失敗しました');
+        (new SmaregiCustomerRankSyncService($api))->sync(1, []);
+    }
+
     public function test_sync_failed_catalog_fetch_does_not_modify_remote_ranks(): void
     {
         $smaregiApi = Mockery::mock(SmaregiApiService::class);
