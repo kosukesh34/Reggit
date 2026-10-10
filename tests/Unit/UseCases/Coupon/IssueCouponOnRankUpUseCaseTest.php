@@ -13,6 +13,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\UseCases\Coupon\IssueCouponOnRankUpUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class IssueCouponOnRankUpUseCaseTest extends TestCase
@@ -222,5 +223,43 @@ class IssueCouponOnRankUpUseCaseTest extends TestCase
         app(IssueCouponOnRankUpUseCase::class)->handle($member, 'gold', 'legacy');
 
         $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
+    }
+
+    public function test_interleaved_rank_up_preserves_both_delivery_recipients(): void
+    {
+        $project = Project::firstOrCreate(['project_key' => 'default'], ['name' => 'Default Project', 'is_active' => true]);
+        ShopSettingStore::setMemberRankSettings([
+            ['key' => 'bronze', 'min_points' => 0, 'is_active' => true],
+            ['key' => 'gold', 'min_points' => 100, 'is_active' => true],
+        ], $project->id);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $delivery = CouponDelivery::create([
+            'project_id' => $project->id, 'coupon_id' => $coupon->id,
+            'delivery_type' => CouponDeliveryType::EVENT_RANK_UP_ARRIVAL,
+            'status' => CouponDeliveryStatus::ACTIVE, 'segment_criteria' => ['rank' => 'gold'],
+            'issued_count' => 0, 'send_notification' => false,
+        ]);
+        $members = collect([0, 1])->map(fn () => Member::factory()->create([
+            'project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+            'rank' => 'bronze',
+        ]));
+        $useCase = app(IssueCouponOnRankUpUseCase::class);
+        $interleaved = false;
+        DB::listen(function ($query) use ($useCase, $members, &$interleaved): void {
+            if (! $interleaved && str_starts_with($query->sql, 'select') && str_contains($query->sql, 'from `coupon_deliveries`')) {
+                // Another member completes after this SELECT fetched its old history.
+                $interleaved = true;
+                $useCase->handle($members[1], 'bronze', 'gold');
+            }
+        });
+        $useCase->handle($members[0], 'bronze', 'gold');
+
+        $this->assertTrue($interleaved);
+        $this->assertSame(2, MemberCoupon::where('coupon_id', $coupon->id)->count());
+        $this->assertSame(2, $delivery->fresh()->issued_count);
+        $this->assertEqualsCanonicalizing($members->pluck('id')->all(), $delivery->fresh()->issued_member_ids);
+        $useCase->handle($members[0], 'bronze', 'gold');
+        $this->assertSame(2, $delivery->fresh()->issued_count);
+        $this->assertSame(2, MemberCoupon::where('coupon_id', $coupon->id)->count());
     }
 }
