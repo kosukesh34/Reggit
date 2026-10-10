@@ -79,6 +79,12 @@ class OrderService
                 throw new OrderOperationException('このプロジェクトの決済設定を登録してください');
             }
             $pointsUsed = (int) ($orderData['points_used'] ?? 0);
+            if ($pointsUsed > $totalAmount) {
+                throw new OrderOperationException('ポイント利用額は注文金額以下にしてください');
+            }
+            if ($pointsUsed > 0 && ! $this->shopSettingRepository->getUsePoints($projectId)) {
+                throw new OrderOperationException('ポイントは現在利用できません');
+            }
             $finalAmount = max(0, $totalAmount - $pointsUsed);
             if ($paymentMethod === PaymentMethod::STRIPE && $finalAmount < 1) {
                 throw new OrderOperationException('オンライン決済の金額は1円以上必要です。ポイント利用額を減らしてください');
