@@ -9,7 +9,7 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('smaregi:retry-member-ranks')->everyMinute()->withoutOverlapping();
+        $schedule->command('smaregi:retry-member-ranks')->everyMinute()->withoutOverlapping(5);
         $schedule->command('coupons:retry-notifications')->everyMinute()->withoutOverlapping();
         $schedule->command('announcements:retry-notifications')->everyMinute()->withoutOverlapping();
         $schedule->command('smaregi:retry-order-transactions')->everyMinute()->withoutOverlapping();

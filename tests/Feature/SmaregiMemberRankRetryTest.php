@@ -52,6 +52,31 @@ class SmaregiMemberRankRetryTest extends TestCase
         return $api;
     }
 
+    public function test_stale_remote_completion_after_new_worker_success_keeps_reconciliation(): void
+    {
+        $member = $this->member('gold');
+        $api = $this->api();
+        $calls = 0;
+        $api->shouldReceive('updateCustomer')->times(3)->andReturnUsing(function ($contract, $customer, $body) use ($member, &$calls): array {
+            if (++$calls === 1) {
+                $this->assertSame('2', $body['rank']);
+                SmaregiMemberRankSync::whereKey($member->id)->update(['leased_until' => now()->subMinute()]);
+                $member->update(['rank' => 'bronze']);
+                app(SmaregiCustomerRankAssignmentService::class)->assignRankToCustomer($member, 'bronze');
+                $this->assertDatabaseCount('smaregi_member_rank_syncs', 0);
+                // The old request completes its external write after the newer one has succeeded.
+            } else {
+                $this->assertSame('1', $body['rank']);
+            }
+
+            return ['customerId' => $customer];
+        });
+        app(SmaregiCustomerRankAssignmentService::class)->assignRankToCustomer($member, 'gold');
+        $this->assertDatabaseCount('smaregi_member_rank_syncs', 1);
+        $this->artisan('smaregi:retry-member-ranks')->assertSuccessful();
+        $this->assertDatabaseCount('smaregi_member_rank_syncs', 0);
+    }
+
     public function test_failed_transition_recovers_without_another_rank_change(): void
     {
         $member = $this->member('bronze');
