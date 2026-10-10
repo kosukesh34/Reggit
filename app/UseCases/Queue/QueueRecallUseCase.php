@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Queue;
 
+use App\Domain\Queue\Aggregates\QueueEntry as QueueEntryAggregate;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Services\Admin\QueueAdminService;
 use App\UseCases\Queue\Data\QueueEntry;
@@ -19,13 +20,15 @@ class QueueRecallUseCase
 
     public function handle(int $entryId, int $projectId): ?QueueEntry
     {
-        $aggregate = $this->queueEntryRepository->findById($entryId, $projectId);
+        $aggregate = $this->queueEntryRepository->update($entryId, $projectId,
+            function (QueueEntryAggregate $aggregate): void {
+                $aggregate->recall(now());
+            },
+        );
         if ($aggregate === null) {
             return null;
         }
 
-        $aggregate->recall(now());
-        $this->queueEntryRepository->save($aggregate);
         $this->queueAdminService->notifyCalled($aggregate->id()->value());
 
         $entry = $this->entryFactory->findModel($entryId, $projectId);
