@@ -4,8 +4,13 @@ namespace App\Services\Smaregi;
 
 use App\Domain\Settings\Repositories\RankSettings;
 use App\Models\Member;
+use App\Models\Project;
 use App\Models\Scopes\ProjectScope;
+use App\Models\SmaregiMemberRankSync;
+use App\Util\AdminContext;
 use App\Util\LogHelper;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * 会員ランクとランク別ポイント付与率をスマレジ顧客へ反映する。
@@ -22,31 +27,95 @@ class SmaregiCustomerRankAssignmentService
 
     public function assignRankToCustomer(Member $member, string $rankKey): void
     {
-        $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
-        if ($smaregiCustomerId === '') {
-            return;
+        DB::transaction(function () use ($member, $rankKey): void {
+            $current = Member::withoutGlobalScopes()->whereKey($member->id)
+                ->where('project_id', $member->project_id)->whereNull('deleted_at')
+                ->lockForUpdate()->first();
+            if ($current === null || trim((string) $current->smaregi_customer_id) === ''
+                || $rankKey === '' || (string) $current->rank !== $rankKey) {
+                return;
+            }
+            SmaregiMemberRankSync::upsert([[
+                'member_id' => $current->id,
+                'project_id' => $current->project_id,
+                'request_token' => (string) Str::uuid(),
+                'retry_at' => now(),
+            ]], ['member_id'], ['project_id', 'request_token', 'retry_at']);
+            DB::afterCommit(function () use ($current): void {
+                try {
+                    $this->retryPending((int) $current->id);
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            });
+        });
+    }
+
+    public function retryPending(int $memberId): bool
+    {
+        $leaseToken = (string) Str::uuid();
+        $request = DB::transaction(function () use ($memberId, $leaseToken): ?SmaregiMemberRankSync {
+            $request = SmaregiMemberRankSync::whereKey($memberId)->where('retry_at', '<=', now())
+                ->where(fn ($query) => $query->whereNull('leased_until')->orWhere('leased_until', '<=', now()))
+                ->lockForUpdate()->first();
+            if ($request === null) {
+                return null;
+            }
+            $request->update(['leased_until' => now()->addMinutes(5), 'lease_token' => $leaseToken]);
+
+            return $request;
+        });
+        if ($request === null) {
+            return true;
         }
-        $body = $this->buildCustomerRankBody((int) $member->project_id, $rankKey);
-        if ($body === []) {
-            return;
-        }
-        $contractId = $this->smaregiApi->getContractIdForProject((int) $member->project_id);
-        $contractId = is_string($contractId) ? trim($contractId) : '';
-        if ($contractId === '') {
-            return;
+        $owned = fn () => SmaregiMemberRankSync::whereKey($memberId)
+            ->where('request_token', $request->request_token)->where('lease_token', $leaseToken);
+        $previousProject = AdminContext::getCurrentProject();
+        try {
+            AdminContext::setCurrentProject(Project::findOrFail($request->project_id));
+            $member = Member::withoutGlobalScopes()->whereKey($memberId)
+                ->where('project_id', $request->project_id)->whereNull('deleted_at')->first();
+            if ($member === null || trim((string) $member->smaregi_customer_id) === '') {
+                $owned()->delete();
+
+                return true;
+            }
+            // Read current desired rank so an older request cannot restore an obsolete rank.
+            $rankKey = (string) $member->rank;
+            $body = $this->buildCustomerRankBody((int) $member->project_id, $rankKey);
+            $contractId = trim((string) $this->smaregiApi->getContractIdForProject((int) $member->project_id));
+            if ($body === [] || $contractId === '') {
+                $owned()->update(['retry_at' => now()->addHour()]);
+
+                return true;
+            }
+            $this->smaregiApi->clearLastErrorDetail();
+            $result = $this->smaregiApi->updateCustomer($contractId, (string) $member->smaregi_customer_id, $body);
+            if ($result === null) {
+                LogHelper::warning('[Member] smaregi customer rank sync failed', [
+                    'project_id' => (int) $member->project_id,
+                    'member_id' => $memberId,
+                    'rank_key' => $rankKey,
+                    'detail' => $this->smaregiApi->getLastErrorDetail(),
+                ]);
+                $owned()->update(['retry_at' => now()->addMinute()]);
+
+                return false;
+            } else {
+                $owned()->delete();
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+            $owned()->update(['retry_at' => now()->addMinute()]);
+
+            return false;
+        } finally {
+            AdminContext::setCurrentProject($previousProject);
+            SmaregiMemberRankSync::whereKey($memberId)->where('lease_token', $leaseToken)
+                ->update(['leased_until' => null, 'lease_token' => null]);
         }
 
-        $this->smaregiApi->clearLastErrorDetail();
-        $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
-        if ($result === null) {
-            LogHelper::warning('[Member] smaregi customer rank sync failed', [
-                'project_id' => (int) $member->project_id,
-                'member_id' => (int) $member->id,
-                'rank_key' => $rankKey,
-                'smaregi_rank_id' => $body['rank'] ?? null,
-                'detail' => $this->smaregiApi->getLastErrorDetail(),
-            ]);
-        }
+        return true;
     }
 
     /**
