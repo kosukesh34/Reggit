@@ -23,6 +23,7 @@ use App\Support\AdminMemberIdentifier;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class MemberAdminService
 {
@@ -329,26 +330,31 @@ class MemberAdminService
             static fn ($value, string $key): bool => $key === 'profile_extra' || $key === 'mail_receive_flag' || $key === 'customer_store_id' || $value !== null,
             ARRAY_FILTER_USE_BOTH
         );
-        $previousRank = (string) ($member->rank ?? '');
         if ($updateMember !== []) {
-            $member->offsetUnset('rank_label');
-            $member->offsetUnset('points_expiry');
-            $member->update($updateMember);
-            $member->refresh();
-            if (array_key_exists('rank', $updateMember)) {
-                $newRank = (string) $updateMember['rank'];
-                if ($newRank !== '' && $newRank !== $previousRank) {
-                    $options = $this->getRankOptionsForSelect((int) $member->project_id);
-                    $this->recordRankHistory(
-                        $member,
-                        $previousRank,
-                        $newRank,
-                        $previousRank !== '' ? ($options[$previousRank] ?? $previousRank) : null,
-                        $options[$newRank] ?? $newRank,
-                    );
-                    $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
+            DB::transaction(function () use ($member, $updateMember): void {
+                $member = Member::query()->where('project_id', $member->project_id)
+                    ->lockForUpdate()->findOrFail($member->id);
+                $previousRank = (string) ($member->rank ?? '');
+                $member->offsetUnset('rank_label');
+                $member->offsetUnset('points_expiry');
+                $member->update($updateMember);
+                $member->refresh();
+                if (array_key_exists('rank', $updateMember)) {
+                    $newRank = (string) $updateMember['rank'];
+                    if ($newRank !== '' && $newRank !== $previousRank) {
+                        $options = $this->getRankOptionsForSelect((int) $member->project_id);
+                        $this->recordRankHistory(
+                            $member,
+                            $previousRank,
+                            $newRank,
+                            $previousRank !== '' ? ($options[$previousRank] ?? $previousRank) : null,
+                            $options[$newRank] ?? $newRank,
+                        );
+                        $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
+                    }
                 }
-            }
+            });
+            $member->refresh();
         }
 
         $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));

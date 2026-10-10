@@ -20,7 +20,7 @@ class MemberRankSyncService
 
     public function sync(Member $member): bool
     {
-        $changed = DB::transaction(function () use ($member): ?array {
+        return DB::transaction(function () use ($member): bool {
             $locked = Member::query()
                 ->withoutGlobalScopes()
                 ->whereKey($member->id)
@@ -28,14 +28,14 @@ class MemberRankSyncService
                 ->lockForUpdate()
                 ->first();
             if ($locked === null) {
-                return null;
+                return false;
             }
 
             $previousRank = (string) ($locked->rank ?? '');
             $rankInfo = $this->rankCalculator->getRankInfo($locked);
             $newRank = (string) ($rankInfo['current_rank'] ?? '');
             if ($newRank === '' || $newRank === $previousRank) {
-                return null;
+                return false;
             }
 
             $locked->update(['rank' => $newRank]);
@@ -54,18 +54,10 @@ class MemberRankSyncService
             );
             $this->scheduledDeliverySendService->sendRankUpArrival($locked, $newRank);
 
-            return [
-                'member' => $locked->fresh() ?? $locked,
-                'newRank' => $newRank,
-            ];
+            $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($locked, $newRank);
+
+            return true;
         });
-        if ($changed === null) {
-            return false;
-        }
-
-        DB::afterCommit(fn () => $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($changed['member'], $changed['newRank']));
-
-        return true;
     }
 
     private function recordRankHistory(

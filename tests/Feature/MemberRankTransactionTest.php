@@ -60,8 +60,10 @@ class MemberRankTransactionTest extends TestCase
         });
         $this->mock(SmaregiCustomerRankAssignmentService::class, function ($mock) use (&$synced): void {
             $mock->shouldReceive('assignRankToCustomer')->andReturnUsing(function () use (&$synced): void {
-                $this->assertSame(0, DB::transactionLevel());
-                $synced++;
+                DB::afterCommit(function () use (&$synced): void {
+                    $this->assertSame(0, DB::transactionLevel());
+                    $synced++;
+                });
             });
         });
         $service = app(MemberRankSyncService::class);
