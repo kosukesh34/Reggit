@@ -32,6 +32,7 @@ def main():
         run('git', 'archive', '--output', str(archive), head)
         run('tar', '-xf', str(archive), '-C', str(source))
         archive.unlink()
+        run(sys.executable, '-B', str(source / 'scripts/tests/test_merge_pr.py'), timeout=60)
         (source / '.env.testing').write_text(
             'APP_ENV=testing\nAPP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n'
             'DB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_DATABASE=reggit_test\n'

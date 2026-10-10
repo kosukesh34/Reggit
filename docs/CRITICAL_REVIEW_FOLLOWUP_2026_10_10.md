@@ -31,3 +31,8 @@
 - 最初の配信で例外が出ると同じ実行の後続が停止する。Laravel SyncQueueはfailed()を呼ぶため、一時障害も初回でFAILEDになる。SCHEDULEDのまま毎分失敗する、という初期推測は実装とテストで否定した。
 - Bus::dispatchNowで同期handlerを実行し、配信単位で例外を報告して継続する。既知の入力不備はFAILED、一時障害はtransaction rollbackでSCHEDULEDを保ち次回に再試行する。失敗時の終了コードは1。
 - 期限切れ・不正な保存条件・一時障害からの次回回復と重複防止を含む関連15 tests / 75 assertions成功。恒久エラーと一時障害の分類は既存InvalidArgumentExceptionに合わせる。
+
+## マージゲートの最適化時の判定消失
+
+- Python assertによるOPEN/main確認がPYTHONOPTIMIZE=1で消失することを、実GitHub操作をしないfixtureで再現。明示的なif/sys.exitで拒否する。
+- 最新HEAD/main・clean checkout・Actions停止・CI成功・検証中の変更拒否を含む3テストメソッド/10ケースを、コミット済みarchiveから必須CIで実行する。
