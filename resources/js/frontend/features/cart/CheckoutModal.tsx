@@ -13,7 +13,7 @@ type OrderLike = {
 
 type CheckoutManagerLike = {
     stripePayment: {
-        setupPaymentForm: (elementId: string, amount: number, orderId: number | string) => Promise<void>;
+        setupPaymentForm: (elementId: string, amount: number, orderId: number | string) => Promise<boolean>;
         confirmPayment: (orderId: number | string) => Promise<{
             success?: boolean;
             message?: string;
@@ -176,8 +176,8 @@ export function CheckoutModal(): JSX.Element | null {
         }
         void cm.stripePayment
             .setupPaymentForm(PAYMENT_ELEMENT_ID, Number(order.total_amount || 0), order.id)
-            .then(() => {
-                if (setupToken.current === token) {
+            .then((ready) => {
+                if (ready && setupToken.current === token) {
                     setIsReady(true);
                 }
             })
