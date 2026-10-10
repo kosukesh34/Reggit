@@ -37,6 +37,9 @@ class Order extends Model
     /** @var array<string, string> */
     protected $casts = [
         'payment_session' => 'encrypted:array',
+        'smaregi_create_pending' => 'boolean',
+        'smaregi_create_retry_at' => 'datetime',
+        'smaregi_create_leased_until' => 'datetime',
         'smaregi_pickup_pending' => 'boolean',
         'smaregi_pickup_retry_at' => 'datetime',
         'total_amount' => 'decimal:2',
