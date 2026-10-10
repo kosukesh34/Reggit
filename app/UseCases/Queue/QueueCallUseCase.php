@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Queue;
 
+use App\Domain\Queue\Aggregates\QueueEntry as QueueEntryAggregate;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Enums\QueueStatus;
 use App\Services\Admin\QueueAdminService;
@@ -20,16 +21,18 @@ class QueueCallUseCase
 
     public function handle(int $entryId, int $projectId): ?QueueEntry
     {
-        $aggregate = $this->queueEntryRepository->findById($entryId, $projectId);
+        $aggregate = $this->queueEntryRepository->update($entryId, $projectId,
+            function (QueueEntryAggregate $aggregate): void {
+                if ($aggregate->status() !== QueueStatus::WAITING) {
+                    throw new \InvalidArgumentException('待機中の受付のみ呼び出しできます');
+                }
+                $aggregate->markAsCalled(now());
+            },
+        );
         if ($aggregate === null) {
             return null;
         }
-        if ($aggregate->status() !== QueueStatus::WAITING) {
-            throw new \InvalidArgumentException('待機中の受付のみ呼び出しできます');
-        }
 
-        $aggregate->markAsCalled(now());
-        $this->queueEntryRepository->save($aggregate);
         $this->queueAdminService->notifyCalled($aggregate->id()->value());
 
         $entry = $this->entryFactory->findModel($entryId, $projectId);

@@ -7,53 +7,48 @@ use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Enums\QueueStatus;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Util\DateUtil;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class EloquentQueueEntryRepository implements QueueEntryRepository
 {
-    public function findById(int $id, int $projectId): ?QueueEntryAggregate
+    public function update(int $id, int $projectId, callable $change): ?QueueEntryAggregate
     {
-        $model = QueueEntryModel::query()
-            ->where('project_id', $projectId)
-            ->whereKey($id)
-            ->first();
-
-        if ($model === null) {
-            return null;
-        }
-
-        return QueueEntryMapper::toDomain($model);
+        return $this->change(QueueEntryModel::query()->where('project_id', $projectId)->whereKey($id), $change);
     }
 
-    public function findNextWaiting(int $projectId, \DateTimeInterface $day): ?QueueEntryAggregate
+    public function updateNextWaiting(int $projectId, \DateTimeInterface $day, callable $change): ?QueueEntryAggregate
     {
-        $model = QueueEntryModel::query()
+        return $this->change(QueueEntryModel::query()
             ->where('project_id', $projectId)
             ->whereDate('created_at', DateUtil::nullableCarbon($day)?->toDateString() ?? $day->format('Y-m-d'))
             ->where('status', QueueStatus::WAITING)
-            ->orderBy('queue_number')
-            ->first();
-
-        if ($model === null) {
-            return null;
-        }
-
-        return QueueEntryMapper::toDomain($model);
+            ->orderBy('queue_number'), $change);
     }
 
-    public function save(QueueEntryAggregate $entry): void
+    /**
+     * @param  Builder<QueueEntryModel>  $query
+     * @param  callable(QueueEntryAggregate): void  $change
+     */
+    private function change(Builder $query, callable $change): ?QueueEntryAggregate
     {
-        $model = QueueEntryModel::query()
-            ->whereKey($entry->id()->value())
-            ->where('project_id', $entry->projectId())
-            ->first();
-        if ($model === null) {
-            throw new \RuntimeException('QueueEntry not found for save: '.$entry->id()->value());
-        }
+        return DB::transaction(function () use ($query, $change): ?QueueEntryAggregate {
+            $model = $query->lockForUpdate()->first();
+            if ($model === null) {
+                return null;
+            }
+            $entry = QueueEntryMapper::toDomain($model);
+            $change($entry);
+            $model->fill([
+                'status' => $entry->status(),
+                'called_at' => $entry->calledAt(),
+                'entered_at' => $entry->enteredAt(),
+            ]);
+            if ($model->isDirty()) {
+                $model->save();
+            }
 
-        $model->update([
-            'status' => $entry->status(),
-            'called_at' => $entry->calledAt(),
-            'entered_at' => $entry->enteredAt(),
-        ]);
+            return $entry;
+        });
     }
 }

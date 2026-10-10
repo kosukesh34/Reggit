@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Queue;
 
+use App\Domain\Queue\Aggregates\QueueEntry as QueueEntryAggregate;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Enums\QueueStatus;
 use App\UseCases\Queue\Data\QueueEntry;
@@ -18,17 +19,17 @@ class QueueEnterUseCase
 
     public function handle(int $entryId, int $projectId): ?QueueEntry
     {
-        $aggregate = $this->queueEntryRepository->findById($entryId, $projectId);
+        $aggregate = $this->queueEntryRepository->update($entryId, $projectId,
+            function (QueueEntryAggregate $aggregate): void {
+                if (! in_array($aggregate->status(), [QueueStatus::WAITING, QueueStatus::CALLED], true)) {
+                    throw new \InvalidArgumentException('入店にできない受付です');
+                }
+                $aggregate->markAsEntered(now());
+            },
+        );
         if ($aggregate === null) {
             return null;
         }
-
-        if (! in_array($aggregate->status(), [QueueStatus::WAITING, QueueStatus::CALLED], true)) {
-            throw new \InvalidArgumentException('入店にできない受付です');
-        }
-
-        $aggregate->markAsEntered(now());
-        $this->queueEntryRepository->save($aggregate);
 
         $entry = $this->entryFactory->findModel($entryId, $projectId);
         if ($entry === null) {
