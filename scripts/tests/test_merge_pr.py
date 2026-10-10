@@ -30,7 +30,12 @@ esac
 case "$*" in
   'pr view '*) printf '{"headRefOid":"%s","state":"%s","baseRefName":"%s"}\\n' "$REGGIT_TEST_HEAD" "$REGGIT_TEST_STATE" "$REGGIT_TEST_BASE";;
   'api '*) if [[ "$REGGIT_TEST_CASE" == workflow_enabled ]]; then echo active; else echo disabled_manually; fi;;
-  'pr merge '*) printf '%s' "$*" > "$REGGIT_TEST_ROOT/merged";;
+  'pr merge '*)
+    printf '%s' "$*" > "$REGGIT_TEST_ROOT/merged"
+    if [[ "$REGGIT_TEST_CASE" == worktree && "$*" == *--delete-branch* ]]; then
+      echo "fatal: main is already used by another worktree" >&2
+      exit 1
+    fi;;
   *) exit 99;;
 esac
 ''',
@@ -77,6 +82,12 @@ echo 'Fake local CI success'
                 result, merged = self.execute(scenario)
                 self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
                 self.assertIsNone(merged)
+
+    def test_worktree_merge_does_not_switch_to_an_occupied_main(self):
+        result, merged = self.execute(scenario='worktree')
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn('--match-head-commit ' + HEAD, merged)
+        self.assertNotIn('--delete-branch', merged)
 
     def test_successful_validation_merges_only_the_checked_head(self):
         result, merged = self.execute()
