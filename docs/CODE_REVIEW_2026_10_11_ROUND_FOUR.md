@@ -1,0 +1,33 @@
+# Critical code and architecture review — round four
+
+最新main 5367718a5を基準に、会員Walletとスマレジの会員ランク同期をレビューした。開始時点のcheckoutは最新mainより古く、クーポン削除と定期配信の既存修正を重複して検出した。最新mainを取り込み、重複PR #326を閉じた。未修正の問題だけを以下に記録する。
+
+## P2: Apple Walletの障害がGoogle Wallet更新を止める
+
+MemberWalletSyncServiceは独立した2チャネルを同一tryで順番に実行していた。Appleの通信例外でGoogleの残高更新が実行されない。PR #327でAppleの例外処理を分離し、Google更新を継続する。新しいmoduleやinterfaceは追加しない。
+
+検証: 修正前ソースで回帰テスト失敗（Google呼出し0回）、修正後に関連4 tests / 18 assertions成功。独立レビュー済み。HEAD 9601840888cec348ecfd30f0f3c0b7f445b6e920の全ローカルCIでPHP1470 tests / 6537 assertions、frontend64 tests、Pint/PHPStan/TypeScript/ESLint/build、merge gate 4契約tests成功。指定merge-pr.shでマージ。merge commit 5367718a548862c7574b2b0dbf7358acbe967bc1。結果とログはPRに記録した。
+
+## P2: ローカルランク確定後の外部更新が再試行されない
+
+MemberRankSyncServiceのafterCommit callbackだけにスマレジ更新要求があり、失敗時はログのみ。次回のランク再計算は同じランクで早期returnするため、外部のランクとポイント付与率が古いままになる。
+
+ユーザーは日次照合より数分以内の再送を選択した。既存のassignment moduleのinterfaceを維持し、会員単位の未完了要求を保存する。自動・管理画面のランク変更、ランク履歴、同期要求を同じtransactionで確定する。外部実行は外側commit後。設定変更による一括反映も個々のassignment要求を保存する。
+
+新しいsmaregi_member_rank_syncsテーブルにmember/project、要求UUID、次回時刻、5分leaseとlease UUIDを保存する。原子的upsertで実行中leaseを維持し、最新要求に置換する。ACKには要求UUIDとlease UUIDの両方を照合し、古い処理が新要求や新workerの失敗を消さない。停止workerはlease期限後に再開する。毎分scannerはdueな最大100件を処理し、個々の失敗を分離する。scheduler mutexも5分で期限切れとし、停止プロセスの既定24時間lockによる再送停止を防ぐ。API失敗は1分後、未設定の連携・ランク対応付けは1時間後に延期する。
+
+再送時は最新の会員ランク・顧客ID・ランク設定を読み、保存projectへcontextをbindして復元する。未連携・退会会員への要求は外部送信せず処理する。HTTP更新は既存adapterを使い、追加のqueueや汎用outbox frameworkは作らない。
+
+## P2: 管理画面の古い会員modelが同期要求を抑止する
+
+独立レビューで発見。渡されたmodelがgoldでも、DBが既にbronzeへ変わっている場合、gold保存を変更なしと判断し、履歴・同期要求を作らない。transaction内で会員をロックして最新ランクを取得し、bronze→goldの履歴と要求を保存する。新規テストは外部失敗後のpendingも確認する。
+
+## 検証と設計評価
+
+関連47 tests / 309 assertions、Pint成功。PHPStanを含む全ローカルCIは最新HEADで実行する。外側rollback、ランク不変での再送、失敗会員の分離、実行中の新ランク、期限切れworkerのACK、最新付与率、別project context復元、未設定延期、stale modelを確認した。要求UUID照合を除いたtemp-source mutationでは新要求保全テストが失敗。独立再レビューでブロッキング指摘なし。全ローカルCIの対象HEAD・結果・ログはPRへ記録する。
+
+保存完了と外部完了を同じmoduleのinterfaceに収めることでlocalityとleverageを改善した。MemberRankSyncServiceの不要になった返却配列と再取得を削除した。既存の配信予定（GLOSSARY.md）と同様、保存された要求は外部配送成功とは区別する。
+
+未解決の別scope: ランク設定の一括変更そのものは、外部ランクマスタ同期後に会員要求を順番に作る。処理全体が途中停止した場合、未走査の会員に要求がない。今回の修正が保証するのは保存された個々のassignment要求であり、一括設定処理全体の復旧ではない。次のレビュー・修正候補として継続する。
+
+実際に適用したスキル: i-have-adhd、Ponytail full、code-review-and-quality、improve-codebase-architecture、codebase-design、laravel-best-practices、security-audit（認証・tenant整合性の部分確認）。React/Playwrightの修正は今回行っていない。全コードの無欠陥は保証していない。外部実接続・本番migration・ブラウザーE2Eは未実行。新テーブルはデプロイ時にmigrationが必要。既存の外部不整合を自動backfillしない。外部更新成功後のローカルACK失敗では同じ更新を再送する。期限切れ旧workerが新workerの成功・要求削除後に戻った場合も、最新状態への要求をinsertOrIgnoreで残す。既存要求とactive leaseは上書きしない。実行中に新しいランクへ変わると、旧値の一時反映後に最新要求で収束する。scannerの処理時間とbacklogにより復旧時刻は遅れる場合がある。

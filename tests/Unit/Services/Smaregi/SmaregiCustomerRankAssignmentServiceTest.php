@@ -30,7 +30,7 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
         $member = Member::factory()->create([
             'user_id' => $user->id,
             'project_id' => $project->id,
-            'rank' => 'bronze',
+            'rank' => 'silver',
             'smaregi_customer_id' => 'cust-100',
         ]);
 
