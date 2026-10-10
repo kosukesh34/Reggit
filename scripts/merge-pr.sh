@@ -5,7 +5,11 @@ pr=${1:?Usage: scripts/merge-pr.sh PR_NUMBER}
 cd "$(git rev-parse --show-toplevel)"
 [[ -z "$(git status --porcelain)" ]] || { echo 'Merge requires a clean checkout' >&2; exit 1; }
 snapshot=$(gh pr view "$pr" --json headRefOid,state,baseRefName)
-head_sha=$(python3 -c 'import json,sys; p=json.load(sys.stdin); assert p["state"] == "OPEN" and p["baseRefName"] == "main", "PR must be open and target main"; print(p["headRefOid"])' <<< "$snapshot")
+head_sha=$(python3 -c 'import json,sys
+p=json.load(sys.stdin)
+if p["state"] != "OPEN" or p["baseRefName"] != "main":
+    sys.exit("PR must be open and target main")
+print(p["headRefOid"])' <<< "$snapshot")
 [[ "$(git rev-parse HEAD)" == "$head_sha" ]] || { echo 'Checkout must match the latest PR HEAD' >&2; exit 1; }
 git fetch origin main
 git merge-base --is-ancestor origin/main HEAD || { echo 'Merge latest origin/main into this PR first' >&2; exit 1; }

@@ -50,7 +50,7 @@
 - E2E・ブラウザーテストはローカルで実行する。GitHub Actions への追加・実行は禁止。必要なアプリ・DB は既存の実行に干渉しないローカル環境を使用し、実行結果を PR に記載する。
 - 2026-10-10 のユーザー指示により GitHub Actions は一時停止し、ローカル CI を必須にする。既存の Actions 成功必須・無効化禁止ルールはこの期間適用しない。
 - マージには `scripts/merge-pr.sh <PR番号>` を使用する。最新 PR HEAD と checkout の一致、最新 main の取り込み、clean な作業ツリーを確認し、そのコミットに `scripts/local-ci.py` の全チェックを実行する。失敗・タイムアウト・未実行ならマージしない。過去の検証結果は流用しない。
-- ローカル CI は隔離 Docker 環境で Pint・PHPStan・PHP コアテスト・TypeScript・ESLint・フロントエンド単体テスト・ビルドを実行する。実接続専用 `smaregi-integration` は対象外。E2E は変更内容に応じて別途ローカルで実行する。
+- ローカル CI はコミット済みソースからマージゲートのローカル契約テストを実行し、隔離 Docker 環境で Pint・PHPStan・PHP コアテスト・TypeScript・ESLint・フロントエンド単体テスト・ビルドを実行する。実接続専用 `smaregi-integration` は対象外。E2E は変更内容に応じて別途ローカルで実行する。
 - ユーザーのマージ承認は会話内の明示的な承認を引き継ぐ。`--admin` 等の迂回は禁止。結果・対象 HEAD・ログを PR に記載する。
 - Actions の再開はユーザー指示後に行い、マージゲートとこのルールを同時に更新する。手順・制約は `docs/LOCAL_CI.md` を参照する。
 

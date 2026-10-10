@@ -21,9 +21,11 @@ CI 完了後も checkout と main を再確認し、GitHub では `--match-head-
 複数人が同時に main を変更する運用では GitHub 側の branch protection / merge queue も必要。
 ローカルスクリプトは GitHub UI からの直接マージを防止するものではない。
 
-チェック: Pint、PHPStan、PHP コアテスト、TypeScript、ESLint、フロントエンド単体テスト、Vite ビルド。
+チェック: マージゲートの契約テスト（3メソッド・10ケース）、Pint、PHPStan、PHP コアテスト、TypeScript、ESLint、フロントエンド単体テスト、Vite ビルド。
 実接続専用 smaregi-integration は除外し、外部連携の検証完了とは扱わない。
 E2E は変更に応じて別途ローカルで実行する。Actions では実行しない。
+
+マージゲートのテストはコミット済みソースを使い、Git・GitHub・アプリCIをローカルfixtureに置換してホストのPython標準ライブラリで実行する。実際のマージや外部接続は行わない。
 
 DB は毎回専用の一時コンテナを作成し、既存 DB・アプリ・`.env` にアクセスしない。
 PHP は読み取り専用ソースと vendor、ネットワークなしの専用 DB のみを使用する。
