@@ -6,12 +6,12 @@ use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\Coupon;
 use App\Models\LotteryPrize;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use App\Models\MemberLotteryEntitlement;
 use App\Models\Scopes\ProjectScope;
 use App\Models\Settings\ProjectLotterySetting;
 use App\Services\CouponIssueService;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -180,12 +180,28 @@ class LotteryPlayService
             return;
         }
 
-        $cacheKey = 'lottery_win_notified:'.(int) $entitlement->id;
-        if (! Cache::add($cacheKey, 1, now()->addDay())) {
+        $requested = MemberCoupon::query()
+            ->where('project_id', (int) $member->project_id)
+            ->where('member_id', (int) $member->id)
+            ->whereKey((int) $entitlement->member_coupon_id)
+            ->whereNull('notification_requested_at')
+            ->update([
+                'notification_requested_at' => now(),
+                'notification_pending' => true,
+                'notification_retry_at' => now(),
+            ]);
+
+        if ($requested === 0) {
             return;
         }
 
-        SendCouponIssuedNotificationJob::dispatch((int) $entitlement->member_coupon_id);
+        DB::afterCommit(function () use ($entitlement): void {
+            try {
+                SendCouponIssuedNotificationJob::dispatch((int) $entitlement->member_coupon_id);
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        });
     }
 
     private function drawPrize(int $projectId, string $rewardType): LotteryPrize
