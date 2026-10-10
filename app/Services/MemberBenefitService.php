@@ -194,16 +194,19 @@ class MemberBenefitService
      */
     public function deleteMemberCoupon(Member $member, int $memberCouponId): void
     {
-        $memberCoupon = MemberCoupon::query()
-            ->where('project_id', $member->project_id)
-            ->where('member_id', $member->id)
-            ->whereKey($memberCouponId)
-            ->firstOrFail();
+        DB::transaction(function () use ($member, $memberCouponId): void {
+            $memberCoupon = MemberCoupon::query()
+                ->where('project_id', $member->project_id)
+                ->where('member_id', $member->id)
+                ->whereKey($memberCouponId)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($memberCoupon->isUsed()) {
-            throw new \RuntimeException('使用済みクーポンは削除できません');
-        }
+            if ($memberCoupon->isUsed()) {
+                throw new \RuntimeException('使用済みクーポンは削除できません');
+            }
 
-        $memberCoupon->delete();
+            $memberCoupon->delete();
+        });
     }
 }
