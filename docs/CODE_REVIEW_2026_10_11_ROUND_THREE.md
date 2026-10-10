@@ -1,0 +1,29 @@
+# Critical code and architecture review — round three
+
+ユーザーが現金注文作成・Stripe frontend確定・Webhookの3経路の永続化と検証後のMR/mergeを具体的に承認。最新main10981fc0eを隔離checkoutでレビューした。
+
+## P2: 取引作成要求の欠落
+
+OrderServiceのcash注文、PaymentConfirmUseCase、PaymentWebhookUseCaseは保存後のevent/Jobだけに配送要求を持つ。sync driverの失敗return、enqueue障害、commit直後停止でPOS取置き/販売が欠落する。既存通知outboxはこのeventを記録しない。
+
+修正はordersのpending/dueを各保存transactionへ追加し、既存WithRetryを期限付きclaim/条件ACKへ変更する。DI・Domain event登録は維持する。listenerはafterCommit、Webhookは20秒後のdueを保存して毎分scannerが回復する。実行は通常20〜80秒後になる。frontendは未leaseだけ前倒しする。dueとleaseを別カラムにして実行中workerを妨げない。重複Webhookはdueを延長しない。保存project/storeへbindして復元、設定なしは1時間後、設定済みfalse/例外は1分後再試行。既存取置き/同期済みはACK、取消/POSは送信しない。
+
+検証: 関連42 tests / 206 assertions成功。Webhook遅延/重複/前倒し/実行中lease、外側rollback、停止worker、旧workerACK防止、context復元、設定なし・同期済みを確認。独立reviewとdiff check済み。修正前・mutation・全local CI結果はPRに記録する。外部API送信・本番migration・browser E2Eは未実行。
+
+## P2: 取消・未決済注文のポイントを再送する
+
+SmaregiCustomerPointsInboundSyncService.requestUnsyncedOrderPointsSyncがEloquentOrderRepository.findUnsyncedSmaregiPointsOrdersForUserを呼ぶ。検索はstatus無条件で、取消済みとPENDING Stripeも対象。SmaregiPointsSyncService.runOrderNetPointsSyncも状態を確認しない。
+
+例: 未決済Stripe注文で100pt使用→取消で100pt返却→会員画面または顧客Webhookで未同期注文再送→POSへ−100pt→次のinboundでlocalも減額。返却ポイントを再び失う。未決済のまま外部利用を確定することもある。
+
+別PRで検索と送信直前の両方に対象状態を追加する。Cash PENDINGは作成時に特典/ポイント適用済みなので維持。Stripe PENDINGは送信せず同期済みにもせず、決済後の再要求を許可する。取消は再送しない。
+
+## 設計評価
+
+配送moduleは保存完了と外部完了を分離する必要がある。既存adapter/注文claimは再利用できる。pending、due、lease、ACKが同じmoduleにあるとlocalityが改善し、少ないinterfaceから停止・再実行まで検証できるleverageがある。一方、各配送方式の統合は現時点では不要。包括frameworkやRepository増設は行わない。将来共通化するときもInterfaceの契約(状態、時刻、error、context)を先に揃える。
+
+ポイント要求にもsyncqueue時の永続再試行欠落がある。ただし会員取得時に未同期注文を再送する既存fallbackはあり、「一切再送されない」とは評価しない。対象状態の誤りを先に修正し、定期回復の設計は別検証にする。
+
+## 適用スキルと限界
+
+i-have-adhd、Ponytail full、code-review-and-quality、improve-codebase-architecture、codebase-design、laravel-best-practices(queue/error/migration)を適用。独立agentの静的review、隔離DBテスト、mutationを実施。導入済みReact/Playwright/security auditを今回使用したとは扱わない。全コードが無欠陥とは証明していない。既存データbackfillなし。rollbackはpending情報を失うためmigration先行と運用確認が必要。

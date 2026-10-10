@@ -129,6 +129,12 @@ class OrderService
                 }
             }
 
+            if ($paymentMethod !== PaymentMethod::STRIPE && $orderType !== OrderType::POS) {
+                $order->smaregi_create_pending = true;
+                $order->smaregi_create_retry_at = now();
+                $order->save();
+            }
+
             return [$order, $projectId, $paymentMethod];
         });
 

@@ -135,6 +135,7 @@ class LotteryOrderGrantTimingTest extends TestCase
             'order_type' => OrderType::IN_STORE,
         ], $user);
 
+        $this->assertTrue($order->refresh()->smaregi_create_pending);
         $this->assertSame(0, MemberLotteryEntitlement::query()
             ->where('member_id', $member->id)
             ->where('source_type', LotterySourceType::ORDER)
