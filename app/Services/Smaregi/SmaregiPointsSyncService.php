@@ -4,6 +4,8 @@ namespace App\Services\Smaregi;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Order\Repositories\OrderRepository;
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Jobs\SyncOrderPointsToSmaregiJob;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\Cache;
@@ -120,6 +122,12 @@ class SmaregiPointsSyncService
 
         $order = $this->orderRepository->findById($orderId, $projectId);
         if ($order === null) {
+            return true;
+        }
+
+        // Unpaid online points may still be refunded; leave them eligible after payment.
+        if ($order->isCancelled() || ($order->status() === OrderStatus::PENDING
+            && $order->paymentMethod() === PaymentMethod::STRIPE)) {
             return true;
         }
 

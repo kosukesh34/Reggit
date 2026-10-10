@@ -7,6 +7,7 @@ use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Order\ValueObjects\OrderLineItem;
 use App\Domain\Order\ValueObjects\PendingOrder;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Order as OrderModel;
 use App\Models\OrderItem;
 use App\Models\Scopes\ProjectScope;
@@ -196,6 +197,9 @@ class EloquentOrderRepository implements OrderRepository
             ->where('user_id', $userId)
             ->where('project_id', $projectId)
             ->whereNull('smaregi_points_synced_at')
+            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->where(fn ($query) => $query->where('payment_method', '!=', PaymentMethod::STRIPE)
+                ->orWhere('status', '!=', OrderStatus::PENDING))
             ->where(function ($query): void {
                 $query->where('points_used', '>', 0)
                     ->orWhere('points_earned', '>', 0);
