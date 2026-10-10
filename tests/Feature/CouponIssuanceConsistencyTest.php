@@ -7,6 +7,7 @@ use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
 use App\Services\CouponIssueService;
+use App\Services\MemberBenefitService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -59,10 +60,10 @@ class CouponIssuanceConsistencyTest extends TestCase
                             }
                         });
                         file_put_contents($directory.'/connection-'.$index, (string) DB::selectOne('SELECT CONNECTION_ID() AS id')->id);
-                        $service = app(CouponIssueService::class);
+                        $service = app(str_starts_with($method, 'bulk') ? MemberBenefitService::class : CouponIssueService::class);
                         file_put_contents($directory.'/initialized-'.$index, 'ready');
                         $this->waitUntil(fn () => is_file($directory.'/start-'.$index));
-                        $service->{$method}($member);
+                        $this->issueCoupons($service, $method, $member);
                         file_put_contents($directory.'/result-'.$index, 'ok');
                         exit(0);
                     } catch (\Throwable $e) {
@@ -146,8 +147,9 @@ class CouponIssuanceConsistencyTest extends TestCase
                 'project_id' => $member->project_id, 'member_id' => $member->id,
                 'coupon_id' => $coupon->id, 'status' => MemberCoupon::STATUS_UNUSED,
                 'issued_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+                'issue_grant_key' => $method === 'bulk_grant' ? implode(':', ['bulk', 'test', $coupon->id, $member->id]) : null,
             ]);
-            app(CouponIssueService::class)->{$method}($member);
+            $this->issueCoupons(app(str_starts_with($method, 'bulk') ? MemberBenefitService::class : CouponIssueService::class), $method, $member);
             DB::commit();
             $this->assertSame(1, MemberCoupon::where('member_id', $member->id)->count());
         } finally {
@@ -167,6 +169,9 @@ class CouponIssuanceConsistencyTest extends TestCase
             'issue_trigger' => $trigger,
             'start_at' => null, 'end_at' => null,
         ]);
+        if (str_starts_with($method, 'bulk')) {
+            Member::factory()->create(['project_id' => $member->project_id]);
+        }
         $active = true;
         $created = 0;
         MemberCoupon::creating(function (MemberCoupon $issued) use (&$active, &$created): void {
@@ -176,12 +181,12 @@ class CouponIssuanceConsistencyTest extends TestCase
         });
         try {
             try {
-                app(CouponIssueService::class)->{$method}($member);
+                $this->issueCoupons(app(str_starts_with($method, 'bulk') ? MemberBenefitService::class : CouponIssueService::class), $method, $member);
                 $this->fail('The persistence error must propagate.');
             } catch (\RuntimeException $e) {
                 $this->assertSame('Simulated coupon issue failure', $e->getMessage());
             }
-            $this->assertSame(0, MemberCoupon::where('member_id', $member->id)->count());
+            $this->assertSame(0, MemberCoupon::where('project_id', $member->project_id)->count());
         } finally {
             $active = false;
         }
@@ -190,9 +195,23 @@ class CouponIssuanceConsistencyTest extends TestCase
     public static function issuanceMethods(): array
     {
         return [
+            'bulk_grant' => ['bulk_grant', Coupon::ISSUE_TRIGGER_MANUAL],
+            'bulk' => ['bulk', Coupon::ISSUE_TRIGGER_MANUAL],
             'birthday' => ['issueForBirthday', Coupon::ISSUE_TRIGGER_BIRTHDAY],
             'registration' => ['issueForFirstRegistration', Coupon::ISSUE_TRIGGER_FIRST_REGISTRATION],
         ];
+    }
+
+    private function issueCoupons(CouponIssueService|MemberBenefitService $service, string $method, Member $member): void
+    {
+        if ($service instanceof MemberBenefitService) {
+            $coupon = Coupon::where('project_id', $member->project_id)->firstOrFail();
+            $service->issueCouponToMembers((int) $member->project_id, (int) $coupon->id, [], $method === 'bulk_grant' ? 'bulk' : null, $method === 'bulk_grant' ? 'test' : null, true);
+
+            return;
+        }
+
+        $service->{$method}($member);
     }
 
     private function memberWithCoupon(string $trigger): Member
