@@ -5,11 +5,13 @@ namespace Tests\Feature;
 use App\Enums\MemberVisitSource;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class OrderApiTest extends TestCase
@@ -150,5 +152,72 @@ class OrderApiTest extends TestCase
         $this->assertSame(10, $product->fresh()->stock);
         $this->assertSame($pointsBefore, $member->fresh()->getDisplayPoints());
         $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id, 'type' => 'used']);
+    }
+
+    /** @return array<string, array{string, string, bool, int, int, string}> */
+    public static function invalidPointOrders(): array
+    {
+        return [
+            'mobile cash exceeds total' => [OrderType::MOBILE, PaymentMethod::CASH, true, 100, 500, 'ポイント利用額は注文金額以下にしてください'],
+            'in store cash exceeds total' => [OrderType::IN_STORE, PaymentMethod::CASH, true, 100, 500, 'ポイント利用額は注文金額以下にしてください'],
+            'cash points disabled' => [OrderType::MOBILE, PaymentMethod::CASH, false, 1000, 100, 'ポイントは現在利用できません'],
+            'stripe points disabled' => [OrderType::MOBILE, PaymentMethod::STRIPE, false, 1000, 100, 'ポイントは現在利用できません'],
+        ];
+    }
+
+    #[DataProvider('invalidPointOrders')]
+    public function test_invalid_point_usage_does_not_create_order_or_change_balance_or_stock(
+        string $orderType, string $paymentMethod, bool $enabled, int $price, int $pointsUsed, string $error,
+    ): void {
+        $project = $this->createProject();
+        ShopSettingStore::setValue('use_points', $enabled, 'boolean', $project->id);
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_1, 'project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id, 'points' => 500]);
+        $product = Product::factory()->create(['project_id' => $project->id, 'price' => $price, 'stock' => 10]);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_1])->postJson('/api/orders?project_key=default', [
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+            'payment_method' => $paymentMethod, 'points_used' => $pointsUsed, 'order_type' => $orderType,
+        ])->assertStatus(400)->assertJson(['error' => $error]);
+
+        $this->assertDatabaseMissing('orders', ['user_id' => $user->id]);
+        $this->assertSame(10, $product->fresh()->stock);
+        $this->assertSame(500, $member->fresh()->getDisplayPoints());
+        $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id, 'type' => 'used']);
+    }
+
+    /** @return array<string, array{string, bool, int, int}> */
+    public static function validPointOrders(): array
+    {
+        return [
+            'cash exact total' => [PaymentMethod::CASH, true, 100, 100],
+            'stripe partial payment' => [PaymentMethod::STRIPE, true, 1000, 100],
+            'cash with points disabled and no points used' => [PaymentMethod::CASH, false, 100, 0],
+        ];
+    }
+
+    #[DataProvider('validPointOrders')]
+    public function test_valid_point_usage_preserves_requested_payment(
+        string $paymentMethod, bool $enabled, int $price, int $pointsUsed,
+    ): void {
+        $project = $this->createProject();
+        ShopSettingStore::setValue('use_points', $enabled, 'boolean', $project->id);
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_1, 'project_id' => $project->id]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id, 'points' => 500]);
+        $product = Product::factory()->create(['project_id' => $project->id, 'price' => $price, 'stock' => 10]);
+
+        $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_1])->postJson('/api/orders?project_key=default', [
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+            'payment_method' => $paymentMethod, 'points_used' => $pointsUsed, 'order_type' => OrderType::MOBILE,
+        ])->assertStatus(201);
+
+        $this->assertDatabaseHas('orders', ['id' => $response->json('order.id'), 'total_amount' => $price - $pointsUsed, 'points_used' => $pointsUsed]);
+        $this->assertSame(500 - $pointsUsed, $member->fresh()->getDisplayPoints());
+        $this->assertSame(9, $product->fresh()->stock);
+        if ($pointsUsed > 0) {
+            $this->assertDatabaseHas('point_transactions', ['member_id' => $member->id, 'type' => 'used', 'points' => -$pointsUsed]);
+        } else {
+            $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id, 'type' => 'used']);
+        }
     }
 }
