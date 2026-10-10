@@ -9,6 +9,7 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
+        $schedule->command('coupons:retry-notifications')->everyMinute()->withoutOverlapping();
         $schedule->command('announcements:retry-notifications')->everyMinute()->withoutOverlapping();
         $schedule->command('orders:send-notifications')->everyMinute()->withoutOverlapping();
         $schedule->command('coupons:send-scheduled')->everyMinute()->withoutOverlapping();
