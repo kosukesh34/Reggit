@@ -76,3 +76,11 @@ API応答の失敗件数を無視して完了扱いにはしない。
 
 旧コードも追加カラムのあるDBで動作するため、スキーマを先に反映できる。
 この変更は既存のお知らせの通知結果を推測して再送するものではない。
+
+## Cash pickup retry
+
+現金注文をCOMPLETEDにするトランザクションで `orders.smaregi_pickup_pending` と `smaregi_pickup_retry_at` を保存します。既存の即時引取確定をafterCommitに限定し、外側トランザクションのrollback時はPOSへ送信しません。例外・不完了を成功扱いにせず、保存した要求を `smaregi:retry-cash-pickups` が毎分100件まで再試行します。同期キューやenqueue成功に依存しません。5分のclaim期限と条件付き完了更新により停止workerを回復し、旧workerが新claimを消すことを防ぎます。保存したproject/storeで実行し、呼び出し元contextを復元します。
+
+契約ID未設定時は外部要求を送らず1時間後に再確認します。後で設定した場合は保留中の完了注文を同期します。設定済みの不完了は1分後に再試行します。既存注文へのbackfillは行いません。既存APIのterminalTranIdと注文単位claimを再利用しますが、外部成功後のDB保存失敗時の完全な重複防止はスマレジ側の重複扱いにも依存します。
+
+今回の範囲は現金引取確定です。注文作成・Stripe決済後の取引作成やポイント同期の永続化は含みません。migrationを先に適用してください。rollbackすると保留要求の状態は失われます。本番migration・実API送信はこの検証では行っていません。

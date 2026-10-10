@@ -51,6 +51,11 @@ class OrderStatusService
                 default => null,
             };
             if ($status === OrderStatus::COMPLETED) {
+                if ($order->payment_method === PaymentMethod::CASH && $order->user_id !== null) {
+                    $order->smaregi_pickup_pending = true;
+                    $order->smaregi_pickup_retry_at = now();
+                    $order->save();
+                }
                 $this->rewards->applyCashOrderLotteryIfNeeded($order);
                 $member = $order->user?->member;
                 if ($member !== null) {
@@ -75,7 +80,14 @@ class OrderStatusService
         }
         if ($order !== null && $status === OrderStatus::COMPLETED
             && $order->payment_method === PaymentMethod::CASH && $order->user_id !== null) {
-            $this->smaregi->finalizeCashLayawayWithRetry($id, $projectId, (int) $order->user_id);
+            DB::afterCommit(function () use ($id, $projectId, $order): void {
+                try {
+                    $this->smaregi->finalizeCashLayawayWithRetry($id, $projectId, (int) $order->user_id);
+                } catch (\Throwable $exception) {
+                    // The persisted request remains available to the recovery scanner.
+                    report($exception);
+                }
+            });
         }
     }
 }
