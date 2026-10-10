@@ -18,3 +18,10 @@
 - 即時発行とCouponDelivery保存を同じtransactionにまとめる。既存afterCommit通知を利用し、途中失敗は全体rollbackにする。
 - CouponBulkIssueAtomicityTestの2failurepointsで、発行と履歴の両方が0件になることを確認する。RefreshDatabaseの外側transactionがあるため、このテスト単独は通知rollbackの証明ではない。
 - 並行重複と古いsnapshotの問題は、共通一括発行処理の別PRで修正する。
+
+## 共通一括発行の並行制御
+
+- 通常発行/grant key付き発行の双方で、並行実行・古いREPEATABLE READ snapshot・2人目発行失敗の6ケースを再現。通常発行は重複、grant key付きはunique制約例外、途中失敗は先行発行が残る。
+- issueCouponToMembersをtransactionで保護し、対象会員をID順にlockForUpdate。hasUnusedValidとhasIssuedGrantKeyはlocking current readにする。
+- 既存並行barrierへ2providerを追加し、独立DB接続で検証する。予約/即時/ランクアップ/お知らせ添付が共通修正を利用する。手動単件配布は変更しない。
+- 大規模な配布では会員更新の待機が増える。負荷上限は未測定。
