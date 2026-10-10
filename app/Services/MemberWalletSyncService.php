@@ -38,12 +38,22 @@ class MemberWalletSyncService
             return;
         }
 
-        try {
-            if ($appleCanSync) {
+        $appleSynced = false;
+        if ($appleCanSync) {
+            try {
                 $this->walletPassSyncService->markMemberUpdated($member);
                 $this->appleWalletPushService->notifyMemberUpdated($member);
+                $appleSynced = true;
+            } catch (\Throwable $e) {
+                LogHelper::warning('[MemberWallet] Apple sync failed', [
+                    'member_id' => (int) $member->id,
+                    'reason' => $reason,
+                    'error' => $e->getMessage(),
+                ]);
             }
+        }
 
+        try {
             $googleSynced = false;
             if ($googleCanSync) {
                 $googleSynced = $this->googleWalletPassService->syncLoyaltyObjectForMember($member);
@@ -54,7 +64,7 @@ class MemberWalletSyncService
                 'project_id' => (int) $member->project_id,
                 'reason' => $reason,
                 'member_points' => $member->getDisplayPoints(),
-                'apple_wallet_sync' => $appleCanSync,
+                'apple_wallet_sync' => $appleSynced,
                 'google_wallet_synced' => $googleSynced,
             ]);
         } catch (\Throwable $e) {

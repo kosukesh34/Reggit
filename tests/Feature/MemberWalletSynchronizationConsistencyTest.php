@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\AppleWalletPushService;
 use App\Services\GoogleWalletPassService;
 use App\Services\MemberLiffWalletNotifier;
 use App\Services\MemberWalletSummaryService;
 use App\Services\MemberWalletSyncService;
+use App\Services\WalletPassSyncService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -90,6 +92,25 @@ class MemberWalletSynchronizationConsistencyTest extends TestCase
 
         $this->assertSame(20, $summary['points']);
         $this->assertSame(160, (int) $member->fresh()->points);
+    }
+
+    public function test_apple_push_failure_does_not_block_google_wallet_sync(): void
+    {
+        $member = $this->memberWithCachedPoints(70);
+        $this->mockNotifications();
+        config([
+            'wallet_pass.type_id' => 'pass.example.member',
+            'wallet_pass.web_service_url' => 'https://wallet.example.test',
+        ]);
+        $this->mock(WalletPassSyncService::class, function ($mock): void {
+            $mock->shouldReceive('markMemberUpdated')->once();
+        });
+        $this->mock(AppleWalletPushService::class, function ($mock): void {
+            $mock->shouldReceive('notifyMemberUpdated')->once()
+                ->andThrow(new \RuntimeException('Apple connection failed'));
+        });
+
+        app(MemberWalletSyncService::class)->syncAfterMemberChanged($member);
     }
 
     private function mockNotifications(): void
