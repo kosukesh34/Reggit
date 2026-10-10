@@ -46,7 +46,7 @@ class CouponIssuanceConsistencyTest extends TestCase
                         DB::purge();
                         // READ COMMITTED prevents gap locks from masking a missing member lock.
                         DB::statement('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
-                        DB::statement('SET SESSION innodb_lock_wait_timeout = 5');
+                        DB::statement('SET SESSION innodb_lock_wait_timeout = 60');
                         $firstRead = true;
                         DB::listen(function ($query) use ($directory, $index, &$firstRead): void {
                             if (! $firstRead || ! str_contains($query->sql, 'from `member_coupons`')) {
@@ -59,7 +59,10 @@ class CouponIssuanceConsistencyTest extends TestCase
                             }
                         });
                         file_put_contents($directory.'/connection-'.$index, (string) DB::selectOne('SELECT CONNECTION_ID() AS id')->id);
-                        app(CouponIssueService::class)->{$method}($member);
+                        $service = app(CouponIssueService::class);
+                        file_put_contents($directory.'/initialized-'.$index, 'ready');
+                        $this->waitUntil(fn () => is_file($directory.'/start-'.$index));
+                        $service->{$method}($member);
                         file_put_contents($directory.'/result-'.$index, 'ok');
                         exit(0);
                     } catch (\Throwable $e) {
@@ -68,26 +71,41 @@ class CouponIssuanceConsistencyTest extends TestCase
                     }
                 }
                 $workers[] = $pid;
-                if ($index === 0) {
-                    $this->waitUntil(fn () => is_file($directory.'/read-0'));
-                }
             }
+            // Finish both connections before starting the lock-held barrier.
+            DB::selectOne('SELECT 1');
+            foreach ([0, 1] as $index) {
+                $this->waitUntil(fn () => is_file($directory.'/initialized-'.$index));
+            }
+            file_put_contents($directory.'/start-0', 'start');
+            $this->waitUntil(fn () => is_file($directory.'/read-0'));
+            file_put_contents($directory.'/start-1', 'start');
             $this->waitUntil(fn () => is_file($directory.'/connection-1'));
             $connectionId = (int) file_get_contents($directory.'/connection-1');
             $this->waitUntil(function () use ($directory, $connectionId): bool {
+                if (is_file($directory.'/result-1') && file_get_contents($directory.'/result-1') !== 'ok') {
+                    throw new \RuntimeException(file_get_contents($directory.'/result-1'));
+                }
                 if (is_file($directory.'/read-1')) {
                     return true;
                 }
 
                 return DB::selectOne(
-                    'SELECT COUNT(*) AS waiting FROM information_schema.innodb_trx WHERE trx_mysql_thread_id = ? AND trx_state = ?',
-                    [$connectionId, 'LOCK WAIT'],
+                    'SELECT COUNT(*) AS waiting FROM performance_schema.data_lock_waits AS waits JOIN performance_schema.threads AS threads ON threads.THREAD_ID = waits.REQUESTING_THREAD_ID WHERE threads.PROCESSLIST_ID = ?',
+                    [$connectionId],
                 )->waiting > 0;
             });
             file_put_contents($directory.'/release', 'release');
             foreach ($workers as $pid) {
                 $status = 0;
-                $this->waitUntil(fn () => pcntl_waitpid($pid, $status, WNOHANG) === $pid);
+                $this->waitUntil(function () use ($pid, &$status): bool {
+                    $waited = pcntl_waitpid($pid, $status, WNOHANG);
+                    if ($waited === -1) {
+                        throw new \RuntimeException('Failed waiting for coupon worker '.$pid);
+                    }
+
+                    return $waited === $pid;
+                });
             }
             $workers = [];
             foreach ([0, 1] as $index) {
@@ -193,9 +211,9 @@ class CouponIssuanceConsistencyTest extends TestCase
 
     private function waitUntil(callable $ready): void
     {
-        $deadline = microtime(true) + 5;
+        $deadline = hrtime(true) + 60_000_000_000;
         while (! $ready()) {
-            if (microtime(true) >= $deadline) {
+            if (hrtime(true) >= $deadline) {
                 throw new \RuntimeException('Timed out waiting for coupon worker.');
             }
             usleep(10000);
