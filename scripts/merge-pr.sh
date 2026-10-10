@@ -21,4 +21,4 @@ python3 scripts/local-ci.py 2>&1 | tee "$log"
 [[ "$(git rev-parse HEAD)" == "$head_sha" && -z "$(git status --porcelain)" ]] || { echo 'Checkout changed after validation' >&2; exit 1; }
 git fetch origin main
 git merge-base --is-ancestor origin/main HEAD || { echo 'Base changed during CI; update and rerun' >&2; exit 1; }
-gh pr merge "$pr" --squash --delete-branch --match-head-commit "$head_sha"
+gh pr merge "$pr" --squash --match-head-commit "$head_sha"
