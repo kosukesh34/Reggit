@@ -15,7 +15,10 @@ use App\Models\UserDevice;
 use App\Services\CouponNotificationService;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
+use App\Util\AdminContext;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Tests\TestCase;
@@ -340,5 +343,109 @@ class CouponNotificationTest extends TestCase
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
+    }
+
+    private function issuedForRetry(): MemberCoupon
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat('e', 32)]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'image_url' => null]);
+
+        return MemberCoupon::withoutEvents(fn () => MemberCoupon::factory()->create([
+            'project_id' => $project->id, 'member_id' => $member->id, 'coupon_id' => $coupon->id,
+        ]));
+    }
+
+    public function test_failed_native_delivery_is_reported_after_line_is_attempted(): void
+    {
+        $issued = $this->issuedForRetry();
+        $push = Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->once()->andReturn(['target_tokens' => 2, 'sent' => 1, 'failed' => 1, 'skipped' => 0]);
+        $line = Mockery::mock(LineService::class);
+        $line->shouldReceive('pushMessage')->once()->andReturn([]);
+        $this->expectException(\RuntimeException::class);
+        (new CouponNotificationService($push, $line, app(CouponNotificationSettings::class)))->notifyIssued($issued);
+    }
+
+    public function test_failed_line_delivery_is_reported_for_retry(): void
+    {
+        $issued = $this->issuedForRetry();
+        $push = Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->once()->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
+        $line = Mockery::mock(LineService::class);
+        $line->shouldReceive('pushMessage')->once()->andThrow(new \RuntimeException('Temporary LINE outage'));
+        $this->expectException(\RuntimeException::class);
+        (new CouponNotificationService($push, $line, app(CouponNotificationSettings::class)))->notifyIssued($issued);
+    }
+
+    public function test_pending_notification_survives_failure_and_recovers_in_its_saved_project(): void
+    {
+        $issued = $this->issuedForRetry();
+        $issued->forceFill(['notification_pending' => true, 'notification_retry_at' => now()])->save();
+        $previous = Project::factory()->create();
+        AdminContext::setCurrentProject($previous);
+        $calls = 0;
+        $notifications = $this->mock(CouponNotificationService::class, function ($mock) use ($issued, &$calls): void {
+            $mock->shouldReceive('notifyIssued')->twice()->andReturnUsing(function ($coupon) use ($issued, &$calls): void {
+                $this->assertSame((int) $issued->project_id, AdminContext::requireCurrentProjectId());
+                if (++$calls === 1) {
+                    throw new \RuntimeException('Temporary transport failure');
+                }
+            });
+        });
+        try {
+            $job = new SendCouponIssuedNotificationJob((int) $issued->id);
+            try {
+                $job->handle($notifications);
+                $this->fail('A worker must see the delivery failure.');
+            } catch (\RuntimeException $exception) {
+                $this->assertSame('Temporary transport failure', $exception->getMessage());
+            }
+            $this->assertSame((int) $previous->id, AdminContext::requireCurrentProjectId());
+            $this->assertDatabaseHas('member_coupons', ['id' => $issued->id, 'notification_pending' => true]);
+            Queue::fake();
+            $this->artisan('coupons:retry-notifications')->assertSuccessful();
+            Queue::assertNotPushed(SendCouponIssuedNotificationJob::class);
+            $this->travel(1)->minutes();
+            $this->artisan('coupons:retry-notifications')->assertSuccessful();
+            Queue::assertPushed(SendCouponIssuedNotificationJob::class, fn ($job) => $job->memberCouponId === (int) $issued->id);
+            $job->handle($notifications);
+            $this->assertDatabaseHas('member_coupons', ['id' => $issued->id, 'notification_pending' => false, 'notification_retry_at' => null]);
+            $this->assertSame((int) $previous->id, AdminContext::requireCurrentProjectId());
+        } finally {
+            AdminContext::setCurrentProject(null);
+        }
+    }
+
+    public function test_old_worker_cannot_clear_a_new_notification_lease(): void
+    {
+        $issued = $this->issuedForRetry();
+        $issued->forceFill(['notification_pending' => true, 'notification_retry_at' => now()])->save();
+        $notifications = $this->mock(CouponNotificationService::class, function ($mock) use ($issued): void {
+            $mock->shouldReceive('notifyIssued')->once()->andReturnUsing(function () use ($issued): void {
+                $issued->forceFill(['notification_retry_at' => now()->addMinutes(6)])->save();
+            });
+        });
+        (new SendCouponIssuedNotificationJob((int) $issued->id))->handle($notifications);
+        $this->assertDatabaseHas('member_coupons', ['id' => $issued->id, 'notification_pending' => true]);
+        (new SendCouponIssuedNotificationJob((int) $issued->id))->handle($notifications);
+    }
+
+    public function test_enqueue_failure_cannot_undo_coupon_issuance_and_keeps_pending_work(): void
+    {
+        $template = $this->issuedForRetry();
+        $this->mock(Dispatcher::class, function ($mock): void {
+            $mock->shouldReceive('dispatch')->once()->andThrow(new \RuntimeException('Queue unavailable'));
+        });
+        $id = DB::transaction(function () use ($template): int {
+            $issued = $template->replicate();
+            $issued->save();
+
+            return (int) $issued->id;
+        });
+        $this->assertDatabaseHas('member_coupons', ['id' => $id, 'notification_pending' => true]);
+        $this->assertDatabaseCount('member_coupons', 2);
     }
 }

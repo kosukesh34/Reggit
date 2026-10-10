@@ -30,6 +30,9 @@ class MemberCoupon extends Model
 
     /** @var array<string, string> */
     protected $casts = [
+        'notification_requested_at' => 'datetime',
+        'notification_pending' => 'boolean',
+        'notification_retry_at' => 'datetime',
         'issued_at' => 'datetime',
         'valid_from' => 'datetime',
         'valid_until' => 'datetime',

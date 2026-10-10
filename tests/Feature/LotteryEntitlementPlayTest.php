@@ -14,6 +14,7 @@ use App\Models\MemberLotteryEntitlement;
 use App\Models\Project;
 use App\Models\Settings\ProjectLotterySetting;
 use App\Models\User;
+use App\Services\CouponNotificationService;
 use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\Lottery\LotteryPlayService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -258,6 +259,17 @@ class LotteryEntitlementPlayTest extends TestCase
         Queue::assertPushed(SendCouponIssuedNotificationJob::class, function (SendCouponIssuedNotificationJob $job) use ($entitlement) {
             return $job->memberCouponId === (int) $entitlement->member_coupon_id;
         });
+        $issued = MemberCoupon::findOrFail($entitlement->member_coupon_id);
+        $this->assertTrue($issued->notification_pending);
+        $this->assertNotNull($issued->notification_requested_at);
+        $notifications = $this->mock(CouponNotificationService::class);
+        $notifications->shouldReceive('notifyIssued')->once();
+        (new SendCouponIssuedNotificationJob((int) $issued->id))->handle($notifications);
+        $this->assertFalse($issued->refresh()->notification_pending);
+
+        resolve(LotteryPlayService::class)->notifyWin($member, (int) $entitlement->id);
+        Queue::assertPushed(SendCouponIssuedNotificationJob::class, 1);
+        $this->assertFalse($issued->refresh()->notification_pending);
     }
 
     public function test_play_ハズレはクーポン発行せずis_win_falseになること(): void
