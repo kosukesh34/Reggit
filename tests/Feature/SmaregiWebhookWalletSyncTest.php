@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Member\Repositories\MemberRepository;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
 use App\Models\Member;
@@ -13,6 +14,7 @@ use App\Services\GoogleWalletPassService;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Util\AdminContext;
+use App\Util\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Mockery;
@@ -163,6 +165,86 @@ class SmaregiWebhookWalletSyncTest extends TestCase
             'member_id' => $member->id,
             'pass_type_identifier' => 'pass.IDNect',
         ]);
+    }
+
+    public function test_inline_webhook_updates_contract_members_and_leaves_other_contract_unchanged(): void
+    {
+        config(['wallet_pass.enabled' => false, 'google_wallet.enabled' => false, 'smaregi.webhook_run_sync_inline' => true]);
+        $first = $this->createLinkedMember(10, '77');
+        $second = $this->createLinkedMember(11, '77');
+        $other = $this->createLinkedMember(12, '77');
+        ShopSettingStore::setValue('smaregi_contract_id', 'other-contract', 'string', (int) $other->project_id);
+        $this->fakeSmaregiHttpSingleCustomer(['customerId' => '77', 'point' => '25']);
+        $this->postJson('/api/smaregi/webhook', [
+            'contractId' => self::CONTRACT_ID,
+            'event' => 'pos:customers',
+            'action' => 'edited',
+            'customerIds' => ['77'],
+        ], ['smaregi-event' => 'pos:customers', 'smaregi-contract-id' => self::CONTRACT_ID])->assertOk();
+        $this->assertSame(25, $first->fresh()->points);
+        $this->assertSame(25, $second->fresh()->points);
+        $this->assertSame(12, $other->fresh()->points);
+    }
+
+    public function test_inline_webhook_skips_deleted_project_and_continues_active_project(): void
+    {
+        config(['wallet_pass.enabled' => false, 'google_wallet.enabled' => false, 'smaregi.webhook_run_sync_inline' => true]);
+        $deleted = $this->createLinkedMember(10, '77');
+        $active = $this->createLinkedMember(11, '77');
+        $deleted->project->delete();
+        $this->fakeSmaregiHttpSingleCustomer(['customerId' => '77', 'point' => '25']);
+        $this->postJson('/api/smaregi/webhook', [
+            'contractId' => self::CONTRACT_ID,
+            'event' => 'pos:customers',
+            'action' => 'edited',
+            'customerIds' => ['77'],
+        ], ['smaregi-event' => 'pos:customers', 'smaregi-contract-id' => self::CONTRACT_ID])->assertOk();
+        $this->assertSame(25, $active->fresh()->points);
+        $this->assertSame(10, $deleted->fresh()->points);
+    }
+
+    public function test_member_fetch_sync_updates_only_requested_member(): void
+    {
+        $first = $this->createLinkedMember(10, '77');
+        $second = $this->createLinkedMember(11, '77');
+        $this->fakeSmaregiHttpSingleCustomer(['customerId' => '77', 'point' => '25']);
+        AdminContext::setCurrentProject($first->project);
+        app(TenantContext::class)->requireProject(true);
+        try {
+            $this->assertTrue(app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($first));
+            $this->assertSame(25, $first->fresh()->points);
+            $this->assertSame((int) $first->project_id, AdminContext::getCurrentProjectId());
+            $this->assertTrue(app(TenantContext::class)->requiresProject());
+        } finally {
+            AdminContext::setCurrentProject(null);
+            app(TenantContext::class)->requireProject(false);
+        }
+        $this->assertSame(11, $second->fresh()->points);
+    }
+
+    public function test_inbound_sync_failure_restores_previous_project_and_requirement(): void
+    {
+        $this->createLinkedMember(10, '77');
+        $previous = Project::factory()->create();
+        $this->fakeSmaregiHttpSingleCustomer(['customerId' => '77', 'point' => '25']);
+        $repository = Mockery::mock(MemberRepository::class);
+        $repository->shouldReceive('syncPointsLedger')->once()->andThrow(new \RuntimeException('Simulated ledger failure'));
+        $this->app->instance(MemberRepository::class, $repository);
+        AdminContext::setCurrentProject($previous);
+        app(TenantContext::class)->requireProject(true);
+        try {
+            try {
+                app(SmaregiCustomerPointsInboundSyncService::class)->syncByCustomerIds(self::CONTRACT_ID, ['77'], 'edited');
+                $this->fail('The ledger failure must propagate.');
+            } catch (\RuntimeException $e) {
+                $this->assertSame('Simulated ledger failure', $e->getMessage());
+            }
+            $this->assertSame((int) $previous->id, AdminContext::getCurrentProjectId());
+            $this->assertTrue(app(TenantContext::class)->requiresProject());
+        } finally {
+            AdminContext::setCurrentProject(null);
+            app(TenantContext::class)->requireProject(false);
+        }
     }
 
     private function createLinkedMember(int $initialPoints, string $smaregiCustomerId): Member
