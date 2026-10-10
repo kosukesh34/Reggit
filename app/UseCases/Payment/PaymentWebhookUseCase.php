@@ -5,7 +5,6 @@ namespace App\UseCases\Payment;
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Jobs\SyncOrderPointsToSmaregiJob;
-use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\Store;
@@ -163,6 +162,11 @@ class PaymentWebhookUseCase
                 $syncOrderId = $aggregate->id()->value();
                 $syncProjectId = $aggregate->projectId();
                 $syncUserId = $aggregate->userId();
+                if ($order !== null && $order->smaregi_transaction_synced_at === null && ! $order->smaregi_create_pending) {
+                    $order->smaregi_create_pending = true;
+                    $order->smaregi_create_retry_at = now()->addSeconds(self::SMAREGI_SYNC_DELAY_SECONDS);
+                    $order->save();
+                }
             }
         });
 
@@ -171,8 +175,6 @@ class PaymentWebhookUseCase
         }
         if ($shouldDelaySmaregiSync) {
             SyncOrderPointsToSmaregiJob::dispatch($syncOrderId, $syncProjectId, $syncUserId)
-                ->delay(now()->addSeconds(self::SMAREGI_SYNC_DELAY_SECONDS));
-            SyncOrderTransactionToSmaregiJob::dispatch($syncOrderId, $syncProjectId, $syncUserId)
                 ->delay(now()->addSeconds(self::SMAREGI_SYNC_DELAY_SECONDS));
         }
 

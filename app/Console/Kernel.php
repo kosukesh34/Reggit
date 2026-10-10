@@ -11,6 +11,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('coupons:retry-notifications')->everyMinute()->withoutOverlapping();
         $schedule->command('announcements:retry-notifications')->everyMinute()->withoutOverlapping();
+        $schedule->command('smaregi:retry-order-transactions')->everyMinute()->withoutOverlapping();
         $schedule->command('smaregi:retry-cash-pickups')->everyMinute()->withoutOverlapping();
         $schedule->command('orders:send-notifications')->everyMinute()->withoutOverlapping();
         $schedule->command('coupons:send-scheduled')->everyMinute()->withoutOverlapping();

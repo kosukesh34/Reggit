@@ -81,6 +81,7 @@ class PaymentConfirmUseCaseTest extends TestCase
         $fresh = $order->fresh();
         $this->assertSame(OrderStatus::CONFIRMED, $fresh->status);
         $this->assertSame(PaymentMethod::STRIPE, $fresh->payment_method);
+        $this->assertTrue($fresh->smaregi_create_pending);
         $expectedNumber = DailySequenceNumber::build(1);
         $this->assertSame($expectedNumber, $fresh->order_number);
         $this->assertSame(

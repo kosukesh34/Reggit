@@ -294,7 +294,7 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         ));
     }
 
-    public function test_失敗時はリトライジョブを積むこと(): void
+    public function test_失敗時は永続的な再試行要求を残すこと(): void
     {
         Queue::fake();
 
@@ -340,12 +340,15 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             app(SmaregiSettings::class),
         );
 
+        $order->forceFill(['smaregi_create_pending' => true, 'smaregi_create_retry_at' => now()])->save();
         $this->assertFalse($service->syncOrderTransactionWithRetry(
             (int) $order->id,
             (int) $project->id,
             (int) $user->id,
         ));
-        Queue::assertPushed(SyncOrderTransactionToSmaregiJob::class);
+        Queue::assertNotPushed(SyncOrderTransactionToSmaregiJob::class);
+        $this->assertTrue($order->refresh()->smaregi_create_pending);
+        $this->assertTrue($order->smaregi_create_retry_at->isFuture());
     }
 
     public function test_stripe未決済は取引登録しないこと(): void
