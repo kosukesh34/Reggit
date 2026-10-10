@@ -9,6 +9,7 @@ use App\Enums\MemberCouponSource;
 use App\Models\CouponDelivery;
 use App\Models\Member;
 use App\Services\Admin\MemberBenefitService;
+use Illuminate\Support\Facades\DB;
 
 class IssueCouponOnRankUpService
 {
@@ -52,14 +53,23 @@ class IssueCouponOnRankUpService
                 continue;
             }
 
-            $issuedIds = is_array($delivery->issued_member_ids) ? $delivery->issued_member_ids : [];
-            $issuedIds[] = (int) $member->id;
-            $issuedIds = array_values(array_unique(array_map('intval', $issuedIds)));
+            DB::transaction(function () use ($delivery, $member): void {
+                $current = CouponDelivery::query()
+                    ->where('project_id', $delivery->project_id)
+                    ->whereKey($delivery->id)
+                    ->lockForUpdate()->first();
+                if ($current === null) {
+                    return;
+                }
+                $issuedIds = is_array($current->issued_member_ids) ? $current->issued_member_ids : [];
+                $issuedIds[] = (int) $member->id;
+                $issuedIds = array_values(array_unique(array_map('intval', $issuedIds)));
 
-            $delivery->update([
-                'issued_member_ids' => $issuedIds,
-                'issued_count' => count($issuedIds),
-            ]);
+                $current->update([
+                    'issued_member_ids' => $issuedIds,
+                    'issued_count' => count($issuedIds),
+                ]);
+            });
         }
     }
 
