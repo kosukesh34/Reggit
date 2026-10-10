@@ -213,11 +213,12 @@ export class CheckoutManager {
         const confirmBtn = document.getElementById('mobileOrderConfirmBtn') as HTMLButtonElement | null;
 
         try {
-            await this.stripePayment.setupPaymentForm(
+            const ready = await this.stripePayment.setupPaymentForm(
                 'mobileOrderPaymentElement',
                 Number(order.total_amount || 0),
                 order.id,
             );
+            if (!ready) return;
             if (confirmBtn) {
                 confirmBtn.disabled = false;
             }
