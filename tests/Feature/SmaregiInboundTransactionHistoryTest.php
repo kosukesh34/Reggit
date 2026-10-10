@@ -30,6 +30,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SmaregiInboundTransactionHistoryTest extends TestCase
@@ -78,7 +79,14 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         });
     }
 
-    public function test_通常販売取引が来店履歴と購入額として取り込まれること(): void
+    /** @return array<string, array{bool}> */
+    public static function executionModes(): array
+    {
+        return ['after response' => [false], 'inline webhook' => [true]];
+    }
+
+    #[DataProvider('executionModes')]
+    public function test_通常販売取引が来店履歴と購入額として取り込まれること(bool $inline): void
     {
         $project = Project::factory()->create();
         ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
@@ -112,8 +120,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             ]],
         ]);
 
-        app(SmaregiTransactionInboundSyncService::class)
-            ->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+        $this->syncTransaction('39', $inline);
 
         $this->assertDatabaseHas('member_visits', [
             'member_id' => $member->id,
@@ -407,7 +414,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $this->assertSame(0, MemberVisit::query()->count());
     }
 
-    public function test_取消取引で来店とポイントとスタンプが巻き戻されること(): void
+    #[DataProvider('executionModes')]
+    public function test_取消取引で来店とポイントとスタンプが巻き戻されること(bool $inline): void
     {
         $project = Project::factory()->create();
         ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
@@ -445,8 +453,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $cancelled = $sale;
         $cancelled['cancelDivision'] = SmaregiCancelDivision::CANCELLED;
         $this->fakeTransactionHttp($cancelled);
-        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
-        $service->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
+        $this->syncTransaction('39', $inline);
+        $this->syncTransaction('39', $inline);
 
         $this->assertSame(0, MemberVisit::query()->where('smaregi_transaction_head_id', '39')->count());
         $this->assertSame(0, (int) $member->fresh()->points);
@@ -794,6 +802,25 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
             ->syncByTransactionHeadIds(self::CONTRACT_ID, ['39']);
 
         $this->assertSame('gold', $member->fresh()->rank);
+    }
+
+    private function syncTransaction(string $headId, bool $inline): void
+    {
+        if (! $inline) {
+            app(SmaregiTransactionInboundSyncService::class)->syncByTransactionHeadIds(self::CONTRACT_ID, [$headId]);
+
+            return;
+        }
+        config(['smaregi.webhook_run_sync_inline' => true]);
+        $this->postJson('/api/smaregi/webhook', [
+            'contractId' => self::CONTRACT_ID,
+            'event' => SmaregiEvent::POS_TRANSACTIONS,
+            'action' => SmaregiWebhookAction::CREATED,
+            'transactionHeadIds' => [$headId],
+        ], [
+            'smaregi-event' => SmaregiEvent::POS_TRANSACTIONS,
+            'smaregi-contract-id' => self::CONTRACT_ID,
+        ])->assertOk();
     }
 
     /**
