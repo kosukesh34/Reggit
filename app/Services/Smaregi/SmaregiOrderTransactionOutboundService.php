@@ -135,19 +135,34 @@ class SmaregiOrderTransactionOutboundService
 
     public function finalizeCashLayawayWithRetry(int $orderId, int $projectId, int $userId): bool
     {
-        $succeeded = $this->finalizeCashLayaway($orderId, $projectId, $userId);
-        if ($succeeded) {
-            return true;
+        // The order transition saved this request atomically. Claim it before any API call.
+        $pending = Order::withoutGlobalScopes()->whereKey($orderId)->where('project_id', $projectId)
+            ->where('smaregi_pickup_pending', true);
+        $lease = now()->addMinutes(5);
+        if ((clone $pending)->where('smaregi_pickup_retry_at', '<=', now())
+            ->update(['smaregi_pickup_retry_at' => $lease]) === 0) {
+            return $this->orderRepository->isSmaregiTransactionSynced($orderId, $projectId);
         }
 
-        if ($this->orderRepository->isSmaregiTransactionSynced($orderId, $projectId)) {
-            return true;
+        try {
+            // Keep unconfigured optional integrations pending without sending requests.
+            $configured = trim((string) $this->smaregiApi->getContractIdForProject($projectId)) !== '';
+            $succeeded = $this->orderRepository->isSmaregiTransactionSynced($orderId, $projectId)
+                || ($configured && $this->finalizeCashLayaway($orderId, $projectId, $userId));
+            (clone $pending)->where('smaregi_pickup_retry_at', $lease)->update($succeeded ? [
+                'smaregi_pickup_pending' => false, 'smaregi_pickup_retry_at' => null,
+            ] : [
+                'smaregi_pickup_retry_at' => $configured ? now()->addMinute() : now()->addHour(),
+            ]);
+
+            return $succeeded;
+        } catch (\Throwable $exception) {
+            (clone $pending)->where('smaregi_pickup_retry_at', $lease)
+                ->update(['smaregi_pickup_retry_at' => now()->addMinute()]);
+            report($exception);
+
+            return false;
         }
-
-        SyncOrderTransactionToSmaregiJob::dispatch($orderId, $projectId, $userId, finalize: true)
-            ->delay(now()->addSeconds(30));
-
-        return false;
     }
 
     public static function terminalTranIdForOrder(int $orderId): string

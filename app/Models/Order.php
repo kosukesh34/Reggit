@@ -37,6 +37,8 @@ class Order extends Model
     /** @var array<string, string> */
     protected $casts = [
         'payment_session' => 'encrypted:array',
+        'smaregi_pickup_pending' => 'boolean',
+        'smaregi_pickup_retry_at' => 'datetime',
         'total_amount' => 'decimal:2',
         'points_used' => 'integer',
         'points_earned' => 'integer',
