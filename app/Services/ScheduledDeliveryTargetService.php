@@ -32,6 +32,7 @@ class ScheduledDeliveryTargetService
                 $projectId,
                 'days_after',
                 $delivery->intParam('delay_days', 7),
+                $now,
             ),
             ScheduledDeliveryType::VISIT_MILESTONE => $this->visitMilestone($projectId, $delivery, $now),
             ScheduledDeliveryType::RANK_UP_ARRIVAL => $this->targetRepository->findIdsByRank(

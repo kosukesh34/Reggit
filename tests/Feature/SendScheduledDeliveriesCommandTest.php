@@ -65,7 +65,7 @@ class SendScheduledDeliveriesCommandTest extends TestCase
         $coupon = Coupon::factory()->create(['project_id' => $project->id, 'end_at' => null]);
         $delivery = $this->delivery($project, $coupon);
         $this->mock(ScheduledDeliveryTargetService::class, function ($mock) use ($members): void {
-            $mock->shouldReceive('memberIds')->twice()->andReturn($members->modelKeys());
+            $mock->shouldReceive('memberIds')->once()->andReturn($members->modelKeys());
         });
         $benefits = app(MemberBenefitService::class);
         $failed = false;
@@ -90,6 +90,7 @@ class SendScheduledDeliveriesCommandTest extends TestCase
             'after_registration_delivery_id' => $delivery->id, 'member_id' => $members[1]->id,
         ]);
 
+        $this->travel(1)->minutes();
         $this->artisan('deliveries:send-scheduled')->assertSuccessful();
         $this->assertDatabaseCount('scheduled_delivery_sends', 2);
         foreach ($members as $member) {

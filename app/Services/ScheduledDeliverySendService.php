@@ -9,6 +9,7 @@ use App\Models\AfterRegistrationDelivery;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Models\ScheduledDeliveryAttempt;
 use App\Models\ScheduledDeliverySend;
 use App\Services\Admin\MemberBenefitService;
 use App\Util\LogHelper;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
 
 class ScheduledDeliverySendService
 {
+    private const MAX_ATTEMPTS = 5;
+
     public function __construct(
         private ScheduledDeliveryTargetService $targetService,
         private AnnouncementNotificationService $announcementNotificationService,
@@ -41,9 +44,83 @@ class ScheduledDeliverySendService
                 continue;
             }
             try {
-                $deliveryResult = $this->sendToMatchingMembers($delivery, $now);
-                $result['sent'] += $deliveryResult['sent'];
-                $result['failed'] += $deliveryResult['failed'];
+                ScheduledDeliveryAttempt::firstOrCreate([
+                    'after_registration_delivery_id' => $delivery->id,
+                    'occurrence_key' => $now->toDateString(),
+                ], [
+                    'scheduled_at' => $now,
+                    'next_attempt_at' => $now,
+                    'delivery_snapshot' => $delivery->getAttributes(),
+                ]);
+            } catch (\Throwable $exception) {
+                report($exception);
+                $result['failed']++;
+            }
+        }
+
+        $attempts = ScheduledDeliveryAttempt::whereNull('failed_at')
+            ->where('next_attempt_at', '<=', $now)->orderBy('id')->limit(100)->get();
+        foreach ($attempts as $attempt) {
+            try {
+                $claimed = DB::transaction(function () use ($attempt, $now, &$result): ?ScheduledDeliveryAttempt {
+                    $current = ScheduledDeliveryAttempt::whereKey($attempt->id)->lockForUpdate()->first();
+                    if ($current === null || $current->failed_at !== null || $current->next_attempt_at->gt($now)) {
+                        return null;
+                    }
+                    if ($current->attempts >= self::MAX_ATTEMPTS) {
+                        $current->update(['failed_at' => $now]);
+                        $result['failed']++;
+
+                        return null;
+                    }
+                    $current->update(['attempts' => $current->attempts + 1, 'next_attempt_at' => $now->copy()->addMinutes(5)]);
+
+                    return $current;
+                });
+            } catch (\Throwable $exception) {
+                report($exception);
+                $result['failed']++;
+
+                continue;
+            }
+            if ($claimed === null) {
+                continue;
+            }
+            $owned = fn () => ScheduledDeliveryAttempt::whereKey($claimed->id)->where('attempts', $claimed->attempts);
+            try {
+                $currentDelivery = AfterRegistrationDelivery::withoutGlobalScopes()->find($claimed->after_registration_delivery_id);
+                if ($currentDelivery === null || ! $currentDelivery->is_active) {
+                    $owned()->delete();
+
+                    continue;
+                }
+                $delivery = new AfterRegistrationDelivery;
+                $delivery->setRawAttributes($claimed->delivery_snapshot, true);
+                $delivery->exists = true;
+                $memberIds = $claimed->target_member_ids;
+                if ($memberIds === null) {
+                    $memberIds = $this->targetService->memberIds($delivery, $claimed->scheduled_at);
+                    if ($owned()->update(['target_member_ids' => $memberIds]) === 0) {
+                        continue;
+                    }
+                }
+                $deliveryResult = $this->sendToMemberIds($delivery, $claimed->scheduled_at, $memberIds);
+            } catch (\Throwable $exception) {
+                report($exception);
+                $deliveryResult = ['sent' => 0, 'failed' => 1];
+            }
+            $result['sent'] += $deliveryResult['sent'];
+            $result['failed'] += $deliveryResult['failed'];
+            try {
+                if ($deliveryResult['failed'] === 0) {
+                    $owned()->delete();
+                } else {
+                    $delay = [1, 5, 15, 60][$claimed->attempts - 1] ?? 60;
+                    $owned()->update([
+                        'next_attempt_at' => $now->copy()->addMinutes($delay),
+                        'failed_at' => $claimed->attempts >= self::MAX_ATTEMPTS ? $now : null,
+                    ]);
+                }
             } catch (\Throwable $exception) {
                 report($exception);
                 $result['failed']++;
@@ -80,7 +157,15 @@ class ScheduledDeliverySendService
     /** @return array{sent: int, failed: int} */
     public function sendToMatchingMembers(AfterRegistrationDelivery $delivery, Carbon $now): array
     {
-        $memberIds = $this->targetService->memberIds($delivery, $now);
+        return $this->sendToMemberIds($delivery, $now, $this->targetService->memberIds($delivery, $now));
+    }
+
+    /**
+     * @param  list<int>  $memberIds
+     * @return array{sent: int, failed: int}
+     */
+    private function sendToMemberIds(AfterRegistrationDelivery $delivery, Carbon $now, array $memberIds): array
+    {
         $result = ['sent' => 0, 'failed' => 0];
         foreach ($memberIds as $memberId) {
             try {
@@ -122,7 +207,7 @@ class ScheduledDeliverySendService
                     'after_registration_delivery_id' => $delivery->id,
                     'member_id' => $member->id,
                     'send_key' => $sendKey,
-                    'sent_at' => $now,
+                    'sent_at' => now(),
                 ]);
                 if ($delivery->isCouponOnly()) {
                     $this->issueCoupon($delivery, $member, $now, $delivery->shouldSendNotification());
