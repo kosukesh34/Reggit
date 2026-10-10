@@ -10,6 +10,7 @@ use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
 use App\Models\StampCard;
 use App\Services\Stamp\StampBalanceService;
+use Illuminate\Support\Facades\DB;
 
 class MemberBenefitService
 {
@@ -70,63 +71,65 @@ class MemberBenefitService
         ?string $issueSourceId = null,
         bool $shouldNotify = true,
     ): array {
-        $coupon = Coupon::where('project_id', $projectId)->findOrFail($couponId);
-        $query = Member::where('project_id', $projectId);
-        if ($memberIds !== []) {
-            $query->whereIn('id', $memberIds);
-        }
-        $members = $query->get();
-        if ($coupon->end_at !== null && $coupon->end_at->lt(now())) {
-            throw new \InvalidArgumentException('このクーポンは期限切れです');
-        }
-        $validUntil = $coupon->end_at;
-        $now = now();
-        $issuedMemberIds = [];
-        foreach ($members as $member) {
-            $grantKey = null;
-            if ($issueSourceType !== null && $issueSourceId !== null) {
-                $grantKey = implode(':', [$issueSourceType, $issueSourceId, $couponId, (int) $member->id]);
-                if ($this->memberCouponRepository->hasIssuedGrantKey((int) $member->id, $grantKey, $projectId)) {
+        return DB::transaction(function () use ($projectId, $couponId, $memberIds, $issueSourceType, $issueSourceId, $shouldNotify): array {
+            $coupon = Coupon::where('project_id', $projectId)->findOrFail($couponId);
+            $query = Member::where('project_id', $projectId);
+            if ($memberIds !== []) {
+                $query->whereIn('id', $memberIds);
+            }
+            $members = $query->orderBy('id')->lockForUpdate()->get();
+            if ($coupon->end_at !== null && $coupon->end_at->lt(now())) {
+                throw new \InvalidArgumentException('このクーポンは期限切れです');
+            }
+            $validUntil = $coupon->end_at;
+            $now = now();
+            $issuedMemberIds = [];
+            foreach ($members as $member) {
+                $grantKey = null;
+                if ($issueSourceType !== null && $issueSourceId !== null) {
+                    $grantKey = implode(':', [$issueSourceType, $issueSourceId, $couponId, (int) $member->id]);
+                    if ($this->memberCouponRepository->hasIssuedGrantKey((int) $member->id, $grantKey, $projectId)) {
+                        continue;
+                    }
+                } elseif ($this->memberCouponRepository->hasUnusedValid(
+                    (int) $member->id,
+                    $couponId,
+                    $now,
+                    $projectId,
+                )) {
                     continue;
                 }
-            } elseif ($this->memberCouponRepository->hasUnusedValid(
-                (int) $member->id,
-                $couponId,
-                $now,
-                $projectId,
-            )) {
-                continue;
-            }
-            $issue = function () use (
-                $member,
-                $couponId,
-                $validUntil,
-                $issueSourceType,
-                $issueSourceId,
-                $grantKey,
-            ): void {
-                $this->issueCouponToMember(
+                $issue = function () use (
                     $member,
                     $couponId,
-                    null,
                     $validUntil,
                     $issueSourceType,
                     $issueSourceId,
                     $grantKey,
-                );
-            };
-            if ($shouldNotify) {
-                $issue();
-            } else {
-                MemberCoupon::withoutEvents($issue);
+                ): void {
+                    $this->issueCouponToMember(
+                        $member,
+                        $couponId,
+                        null,
+                        $validUntil,
+                        $issueSourceType,
+                        $issueSourceId,
+                        $grantKey,
+                    );
+                };
+                if ($shouldNotify) {
+                    $issue();
+                } else {
+                    MemberCoupon::withoutEvents($issue);
+                }
+                $issuedMemberIds[] = (int) $member->id;
             }
-            $issuedMemberIds[] = (int) $member->id;
-        }
 
-        return [
-            'count' => count($issuedMemberIds),
-            'member_ids' => $issuedMemberIds,
-        ];
+            return [
+                'count' => count($issuedMemberIds),
+                'member_ids' => $issuedMemberIds,
+            ];
+        });
     }
 
     /** 会員のスタンプカードにスタンプを追加（注文・管理画面からの付与） */

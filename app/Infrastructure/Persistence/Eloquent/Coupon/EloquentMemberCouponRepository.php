@@ -101,7 +101,8 @@ class EloquentMemberCouponRepository implements MemberCouponRepository
             ->where(function ($q) use ($now) {
                 $q->whereNull('valid_until')->orWhere('valid_until', '>=', $now);
             })
-            ->exists();
+            ->lockForUpdate()
+            ->first(['id']) !== null;
     }
 
     public function issue(PendingIssuedCoupon $pending): void
@@ -128,7 +129,8 @@ class EloquentMemberCouponRepository implements MemberCouponRepository
             ->where('project_id', $projectId)
             ->where('member_id', $memberId)
             ->where('issue_grant_key', $grantKey)
-            ->exists();
+            ->lockForUpdate()
+            ->first(['id']) !== null;
     }
 
     public function deleteUnusedForSource(int $projectId, int $memberId, string $sourceType, string $sourceId): int
