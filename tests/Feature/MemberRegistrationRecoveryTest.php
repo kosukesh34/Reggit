@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Mockery;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class MemberRegistrationRecoveryTest extends TestCase
@@ -233,5 +234,84 @@ class MemberRegistrationRecoveryTest extends TestCase
 
         $this->assertNull($member->fresh()->smaregi_customer_id);
         $this->assertDatabaseHas('member_registration_attempts', ['id' => $attempt->id, 'contract_id' => 'contract']);
+    }
+
+    #[TestWith([true])]
+    #[TestWith([false])]
+    public function test_contract_change_during_registration_creation_does_not_link_old_contract(bool $requireSmaregi): void
+    {
+        $user = $this->user();
+        $api = $this->api();
+        $contract = 'contract';
+        $api->shouldReceive('getContractIdForProject')->andReturnUsing(function () use (&$contract): string {
+            return $contract;
+        });
+        $api->shouldReceive('getCustomerByCode')->once()->andReturnNull();
+        $api->shouldReceive('createCustomer')->once()->andReturnUsing(function () use (&$contract): array {
+            $this->assertSame(0, DB::transactionLevel());
+            $contract = 'new-contract';
+
+            return ['customerId' => 'old-contract-customer'];
+        });
+        $rejected = false;
+        try {
+            app(MemberService::class)->registerMember($user, ['name' => 'Changed'], $requireSmaregi);
+        } catch (\RuntimeException) {
+            $rejected = true;
+        }
+
+        $this->assertTrue($rejected);
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
+        $this->assertDatabaseHas('member_registration_attempts', ['user_id' => $user->id, 'contract_id' => 'contract']);
+        $this->assertNotSame('Changed', $user->fresh()->name);
+    }
+
+    public function test_attempt_replaced_during_registration_creation_is_not_consumed_by_old_response(): void
+    {
+        $user = $this->user();
+        $api = $this->api();
+        $newKey = (string) Str::uuid();
+        $api->shouldReceive('getCustomerByCode')->once()->andReturnNull();
+        $api->shouldReceive('createCustomer')->once()->andReturnUsing(function () use ($user, $newKey): array {
+            $this->assertSame(0, DB::transactionLevel());
+            MemberRegistrationAttempt::where('project_id', $user->project_id)->where('user_id', $user->id)
+                ->update(['registration_key' => $newKey]);
+
+            return ['customerId' => 'old-attempt-customer'];
+        });
+        $rejected = false;
+        try {
+            app(MemberService::class)->registerMember($user, ['name' => 'Changed']);
+        } catch (\RuntimeException) {
+            $rejected = true;
+        }
+
+        $this->assertTrue($rejected);
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
+        $this->assertDatabaseHas('member_registration_attempts', ['user_id' => $user->id, 'registration_key' => $newKey]);
+        $this->assertNotSame('Changed', $user->fresh()->name);
+    }
+
+    public function test_user_deleted_during_registration_creation_does_not_create_member(): void
+    {
+        $user = $this->user();
+        $api = $this->api();
+        $api->shouldReceive('getCustomerByCode')->once()->andReturnNull();
+        $api->shouldReceive('createCustomer')->once()->andReturnUsing(function () use ($user): array {
+            $this->assertSame(0, DB::transactionLevel());
+            User::whereKey($user->id)->delete();
+
+            return ['customerId' => 'deleted-user-customer'];
+        });
+        $rejected = false;
+        try {
+            app(MemberService::class)->registerMember($user, ['name' => 'Changed']);
+        } catch (\RuntimeException) {
+            $rejected = true;
+        }
+
+        $this->assertTrue($rejected);
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
+        $this->assertDatabaseHas('member_registration_attempts', ['user_id' => $user->id]);
     }
 }
