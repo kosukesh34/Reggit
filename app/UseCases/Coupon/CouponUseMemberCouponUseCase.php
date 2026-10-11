@@ -3,6 +3,7 @@
 namespace App\UseCases\Coupon;
 
 use App\Domain\Coupon\Repositories\MemberCouponRepository;
+use App\Models\Member;
 use App\Models\User;
 use App\UseCases\Coupon\Data\CouponUseMemberCouponOutput;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,14 @@ class CouponUseMemberCouponUseCase
             ]);
         }
 
-        return DB::transaction(function () use ($projectId, $member, $memberCouponId) {
+        return DB::transaction(function () use ($user, $projectId, $member, $memberCouponId) {
+            $member = Member::query()->whereKey($member->id)
+                ->where('project_id', $projectId)
+                ->where('user_id', (int) $user->id)->lockForUpdate()->first();
+            if ($member === null) {
+                throw ValidationException::withMessages(['member' => ['会員登録が必要です']]);
+            }
+
             $aggregate = $this->memberCouponRepository->findByIdForMemberForUpdate(
                 $memberCouponId,
                 (int) $member->id,
