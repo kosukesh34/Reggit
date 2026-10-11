@@ -171,6 +171,85 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $this->assertSame(0, $member->pointTransactions()->where('description', 'スマレジPOSからの同期')->count());
     }
 
+    public function test_order_ack_during_remote_fetch_cannot_apply_the_old_point_balance(): void
+    {
+        $this->assertRemoteFetchCannotUndoOrderAcknowledgedDuringFetch(true);
+    }
+
+    public function test_order_created_and_acknowledged_during_remote_fetch_cannot_apply_the_old_point_balance(): void
+    {
+        $this->assertRemoteFetchCannotUndoOrderAcknowledgedDuringFetch(false);
+    }
+
+    public function test_customer_relinked_during_fetch_keeps_local_profile_and_points(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        AdminContext::setCurrentProject($project);
+        $user = User::factory()->create(['project_id' => $project->id, 'name' => 'Local']);
+        $member = Member::factory()->create([
+            'project_id' => $project->id, 'user_id' => $user->id, 'smaregi_customer_id' => '42', 'points' => 0,
+        ]);
+        $this->grantMemberPoints($member, 100);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn(self::CONTRACT_ID);
+        $api->shouldReceive('getCustomer')->once()->andReturn(['customerId' => '42', 'lastName' => 'Old remote', 'firstName' => '']);
+        $api->shouldReceive('getCustomerPoint')->once()->andReturnUsing(function () use ($member): array {
+            $member->fresh()->update(['smaregi_customer_id' => '43']);
+
+            return ['point' => 55];
+        });
+        $this->mock(DomainEventDispatcher::class)->shouldNotReceive('dispatch');
+
+        app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($member);
+
+        $this->assertSame('43', $member->fresh()->smaregi_customer_id);
+        $this->assertSame('Local', $user->fresh()->name);
+        $this->assertSame(100, $member->fresh()->getTotalPointsFromTransactions());
+        $this->assertSame(0, $member->pointTransactions()->where('description', 'スマレジPOSからの同期')->count());
+    }
+
+    private function assertRemoteFetchCannotUndoOrderAcknowledgedDuringFetch(bool $existingOrder): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        AdminContext::setCurrentProject($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id, 'user_id' => $user->id, 'smaregi_customer_id' => '42', 'points' => 0,
+        ]);
+        $createOrder = function () use ($project, $user, $member): Order {
+            $this->grantMemberPoints($member, 100);
+
+            return Order::create([
+                'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 1000,
+                'status' => OrderStatus::CONFIRMED, 'payment_method' => PaymentMethod::CASH,
+                'points_earned' => 100, 'points_used' => 0, 'order_type' => 'mobile',
+            ]);
+        };
+        $order = $existingOrder ? $createOrder() : null;
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn(self::CONTRACT_ID);
+        $api->shouldReceive('syncCustomerPointsForProject')->once()->with((int) $project->id, '42', 100)->andReturn([]);
+        $api->shouldReceive('getCustomer')->andReturn(['customerId' => '42']);
+        $synced = false;
+        $api->shouldReceive('getCustomerPoint')->once()->andReturnUsing(function () use (&$order, &$synced, $createOrder, $project, $user): array {
+            $order ??= $createOrder();
+            $synced = app(SmaregiPointsSyncService::class)->syncOrderNetPoints((int) $order->id, (int) $project->id, (int) $user->id);
+
+            // This response was fetched before the outbound +100 completed.
+            return ['point' => 0];
+        });
+        $this->mock(DomainEventDispatcher::class)->shouldNotReceive('dispatch');
+
+        app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($member);
+
+        $this->assertTrue($synced);
+        $this->assertNotNull($order?->fresh()->smaregi_points_synced_at);
+        $this->assertSame(100, $member->fresh()->getTotalPointsFromTransactions());
+        $this->assertSame(0, $member->pointTransactions()->where('description', 'スマレジPOSからの同期')->count());
+    }
+
     public function test_pending_points_in_another_store_survive_cache_eviction(): void
     {
         $project = Project::factory()->create();
