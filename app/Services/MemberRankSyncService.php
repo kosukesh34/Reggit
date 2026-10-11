@@ -25,6 +25,7 @@ class MemberRankSyncService
                 ->withoutGlobalScopes()
                 ->whereKey($member->id)
                 ->where('project_id', $member->project_id)
+                ->whereNull('deleted_at')
                 ->lockForUpdate()
                 ->first();
             if ($locked === null) {
