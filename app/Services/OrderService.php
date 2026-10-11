@@ -23,6 +23,7 @@ use App\Models\Order;
 use App\Models\Project;
 use App\Models\Settings\ProjectPaymentSetting;
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\Util\AdminContext;
 use App\Util\StoreContext;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,7 @@ class OrderService
         private ProductAvailabilityPolicy $productAvailabilityPolicy,
         private ProductOptionSelectionPolicy $productOptionSelectionPolicy,
         private OrderNumberAssigner $orderNumberAssigner,
+        private CurrentMemberPrincipal $principals,
     ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
@@ -52,6 +54,10 @@ class OrderService
     {
         [$order, $projectId, $paymentMethod] = DB::transaction(function () use ($orderData, $user): array {
             $projectId = (int) (AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null));
+            $user = $this->principals->lock($user, $projectId);
+            if ($user === null) {
+                throw new OrderOperationException('ログインし直してください');
+            }
             $orderType = (string) ($orderData['order_type'] ?? OrderType::MOBILE);
             $paymentMethod = (string) ($orderData['payment_method'] ?? '');
 
