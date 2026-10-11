@@ -36,6 +36,8 @@ class StampBalanceService
         ?string $issueSourceId = null,
     ): MemberStamp {
         return DB::transaction(function () use ($member, $stampCard, $delta, $description, $orderId, $visitedCardIds, $issueSourceType, $issueSourceId) {
+            $member = Member::query()->whereKey($member->id)->where('project_id', $member->project_id)
+                ->lockForUpdate()->firstOrFail();
             $this->issueSourceType = $issueSourceType;
             $this->issueSourceId = $issueSourceId;
             $memberStamp = $this->ensureMemberStamp($member, $stampCard);
