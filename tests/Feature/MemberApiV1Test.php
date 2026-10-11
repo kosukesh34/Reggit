@@ -8,6 +8,8 @@ use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\MemberService;
+use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -159,5 +161,71 @@ class MemberApiV1Test extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('data.points', 30);
+    }
+
+    public function test_cached_member_does_not_expose_another_owners_profile(): void
+    {
+        config(['smaregi.inbound_sync_on_member_fetch' => false]);
+        $user = User::factory()->create(['project_id' => 1]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $user->load('member');
+        $other = User::factory()->create(['project_id' => 1, 'name' => 'Private new owner']);
+        $member->update(['user_id' => $other->id]);
+
+        $data = app(MemberService::class)->getMemberData($user, syncFromSmaregi: false);
+
+        $this->assertFalse($data['is_member']);
+        $this->assertArrayNotHasKey('member', $data);
+        $this->assertSame([], $data['profile']);
+    }
+
+    public function test_cached_deleted_member_is_not_returned_as_an_active_member(): void
+    {
+        config(['smaregi.inbound_sync_on_member_fetch' => false]);
+        $user = User::factory()->create(['project_id' => 1]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $user->load('member');
+        $member->delete();
+
+        $data = app(MemberService::class)->getMemberData($user, syncFromSmaregi: false);
+
+        $this->assertFalse($data['is_member']);
+        $this->assertArrayNotHasKey('member', $data);
+    }
+
+    public function test_member_transferred_during_fetch_sync_is_not_returned(): void
+    {
+        $this->assertMemberRemovedDuringSyncIsNotReturned(true);
+    }
+
+    public function test_member_deleted_during_fetch_sync_is_not_returned(): void
+    {
+        $this->assertMemberRemovedDuringSyncIsNotReturned(false);
+    }
+
+    private function assertMemberRemovedDuringSyncIsNotReturned(bool $transfer): void
+    {
+        config(['smaregi.inbound_sync_on_member_fetch' => true, 'smaregi.inbound_sync_on_member_fetch_ttl_seconds' => 0]);
+        $user = User::factory()->create(['project_id' => 1]);
+        $member = Member::factory()->create([
+            'user_id' => $user->id, 'project_id' => 1, 'smaregi_customer_id' => 'existing',
+        ]);
+        $other = User::factory()->create(['project_id' => 1, 'name' => 'Private new owner']);
+        $this->mock(SmaregiCustomerPointsInboundSyncService::class)
+            ->shouldReceive('syncMemberFromSmaregi')->once()->andReturnUsing(function () use ($member, $other, $transfer): bool {
+                if ($transfer) {
+                    $member->update(['user_id' => $other->id]);
+                } else {
+                    $member->delete();
+                }
+
+                return true;
+            });
+
+        $data = app(MemberService::class)->getMemberData($user);
+
+        $this->assertFalse($data['is_member']);
+        $this->assertArrayNotHasKey('member', $data);
+        $this->assertSame([], $data['profile']);
     }
 }
