@@ -142,7 +142,7 @@ class SmaregiCustomerRankAssignmentService
     /**
      * プロジェクト内のスマレジ連携済み会員へ、現行ランクの付与率を一括反映する。
      */
-    public function syncPointRatesForProject(int $projectId): void
+    public function syncPointRatesForProject(int $projectId, bool $immediate = true): void
     {
         $contractId = $this->smaregiApi->getContractIdForProject($projectId);
         $contractId = is_string($contractId) ? trim($contractId) : '';
@@ -156,13 +156,13 @@ class SmaregiCustomerRankAssignmentService
             ->whereNotNull('smaregi_customer_id')
             ->where('smaregi_customer_id', '!=', '')
             ->orderBy('id')
-            ->chunkById(self::MEMBER_SYNC_CHUNK_SIZE, function ($members): void {
+            ->chunkById(self::MEMBER_SYNC_CHUNK_SIZE, function ($members) use ($immediate): void {
                 foreach ($members as $member) {
                     $rankKey = trim((string) ($member->rank ?? ''));
                     if ($rankKey === '') {
                         continue;
                     }
-                    $this->assignRankToCustomer($member, $rankKey);
+                    $this->requestRank($member, $rankKey, $immediate);
                 }
             });
     }
