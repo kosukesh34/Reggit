@@ -10,8 +10,11 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiApiService;
+use App\UseCases\Member\ConfirmExistingMemberLinkUseCase;
+use App\UseCases\Member\RequestExistingMemberLinkUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use InvalidArgumentException;
 use Mockery;
 use Tests\TestCase;
 
@@ -199,6 +202,39 @@ class ExistingMemberLinkTest extends TestCase
         $this->withHeaders(['X-Line-User-Id' => $user->line_user_id])
             ->postJson($endpoint.'default', ['token' => $pending->token])->assertOk()->assertJsonPath('data.linked', true);
         $this->assertDatabaseHas('members', ['project_id' => $project->id, 'user_id' => $user->id, 'smaregi_customer_id' => '9001']);
+    }
+
+    public function test_older_pending_confirmation_cannot_replace_an_already_confirmed_link(): void
+    {
+        Mail::fake();
+        $project = $this->createProject();
+        $this->enable($project, ['customer_code']);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $older = $this->customer();
+        $newer = array_replace($older, ['customerId' => '9002', 'customerCode' => 'C200', 'point' => 50]);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract-1');
+        $api->shouldReceive('getCustomers')->twice()->andReturn(['customers' => [$older]], ['customers' => [$newer]]);
+        $api->shouldReceive('getCustomer')->with('contract-1', '9002')->once()->andReturn($newer);
+        $api->shouldReceive('getCustomer')->with('contract-1', '9001')->andReturn($older);
+        $requests = app(RequestExistingMemberLinkUseCase::class);
+        $requests->handle((int) $project->id, $user->fresh(), ['customer_code' => 'C100']);
+        $requests->handle((int) $project->id, $user->fresh(), ['customer_code' => 'C200']);
+        $olderRequest = ExistingMemberLinkRequest::where('smaregi_customer_id', '9001')->firstOrFail();
+        $newerRequest = ExistingMemberLinkRequest::where('smaregi_customer_id', '9002')->firstOrFail();
+        $confirm = app(ConfirmExistingMemberLinkUseCase::class);
+        $confirm->handle($newerRequest->token, $user->fresh());
+        $this->assertSame('9002', $user->fresh()->member->smaregi_customer_id);
+        $rejected = false;
+        try {
+            $confirm->handle($olderRequest->token, $user->fresh());
+        } catch (InvalidArgumentException $exception) {
+            $rejected = true;
+        }
+        $this->assertSame('9002', $user->fresh()->member->smaregi_customer_id);
+        $this->assertSame(50, $user->fresh()->member->points);
+        $this->assertNull($olderRequest->fresh()->confirmed_at);
+        $this->assertTrue($rejected);
     }
 
     private function createProject(): Project
