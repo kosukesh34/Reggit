@@ -183,4 +183,55 @@ class MemberRegistrationRecoveryTest extends TestCase
         $this->assertNull($member->fresh()->smaregi_customer_id);
         $this->assertDatabaseHas('member_registration_attempts', ['user_id' => $user->id]);
     }
+
+    public function test_owner_transfer_during_recovery_lookup_does_not_link_previous_owner_customer(): void
+    {
+        $user = $this->user();
+        $member = Member::factory()->create(['project_id' => $user->project_id, 'user_id' => $user->id, 'member_number' => 'reserved', 'smaregi_customer_id' => null]);
+        $attempt = MemberRegistrationAttempt::create([
+            'project_id' => $user->project_id, 'user_id' => $user->id,
+            'member_number' => 'reserved', 'contract_id' => 'contract',
+            'registration_key' => (string) Str::uuid(),
+        ]);
+        $newOwner = User::factory()->create(['project_id' => $user->project_id]);
+        $api = $this->api();
+        $api->shouldReceive('getCustomerByCode')->once()->andReturnUsing(function () use ($member, $newOwner, $attempt): array {
+            $this->assertSame(0, DB::transactionLevel());
+            Member::whereKey($member->id)->update(['user_id' => $newOwner->id]);
+
+            return ['customerId' => 'previous-owner-customer', 'customerCode' => 'reserved', 'note2' => 'reggit-registration:'.$attempt->registration_key];
+        });
+
+        app(MemberRegistrationRecovery::class)->recoverForMember($member);
+
+        $this->assertNull($member->fresh()->smaregi_customer_id);
+        $this->assertDatabaseHas('member_registration_attempts', ['id' => $attempt->id]);
+    }
+
+    public function test_contract_change_during_recovery_lookup_keeps_pending_attempt(): void
+    {
+        $user = $this->user();
+        $member = Member::factory()->create(['project_id' => $user->project_id, 'user_id' => $user->id, 'member_number' => 'reserved', 'smaregi_customer_id' => null]);
+        $attempt = MemberRegistrationAttempt::create([
+            'project_id' => $user->project_id, 'user_id' => $user->id,
+            'member_number' => 'reserved', 'contract_id' => 'contract',
+            'registration_key' => (string) Str::uuid(),
+        ]);
+        $contract = 'contract';
+        $api = $this->api();
+        $api->shouldReceive('getContractIdForProject')->andReturnUsing(function () use (&$contract): string {
+            return $contract;
+        });
+        $api->shouldReceive('getCustomerByCode')->once()->andReturnUsing(function () use ($attempt, &$contract): array {
+            $this->assertSame(0, DB::transactionLevel());
+            $contract = 'new-contract';
+
+            return ['customerId' => 'old-contract-customer', 'customerCode' => 'reserved', 'note2' => 'reggit-registration:'.$attempt->registration_key];
+        });
+
+        app(MemberRegistrationRecovery::class)->recoverForMember($member);
+
+        $this->assertNull($member->fresh()->smaregi_customer_id);
+        $this->assertDatabaseHas('member_registration_attempts', ['id' => $attempt->id, 'contract_id' => 'contract']);
+    }
 }

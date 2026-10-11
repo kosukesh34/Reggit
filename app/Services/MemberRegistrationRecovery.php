@@ -31,8 +31,10 @@ class MemberRegistrationRecovery
         if ((string) $member->smaregi_customer_id !== '') {
             return;
         }
-        $attempt = MemberRegistrationAttempt::where('project_id', $member->project_id)
-            ->where('user_id', $member->user_id)->first();
+        $projectId = (int) $member->project_id;
+        $userId = (int) $member->user_id;
+        $attempt = MemberRegistrationAttempt::where('project_id', $projectId)
+            ->where('user_id', $userId)->first();
         if ($attempt === null || $attempt->member_number !== $member->member_number
             || $attempt->contract_id !== $this->smaregi->getContractIdForProject((int) $member->project_id)) {
             return;
@@ -42,16 +44,27 @@ class MemberRegistrationRecovery
         if ($id === null || (string) $id === '') {
             return;
         }
-        DB::transaction(function () use ($member, $attempt, $id): void {
-            User::query()->whereKey($member->user_id)->lockForUpdate()->firstOrFail();
-            $locked = Member::query()->whereKey($member->id)->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($member, $attempt, $id, $projectId, $userId): void {
+            $user = User::query()->whereKey($userId)->where('project_id', $projectId)->lockForUpdate()->first();
+            if ($user === null) {
+                return;
+            }
+            $locked = Member::query()->whereKey($member->id)->where('project_id', $projectId)
+                ->where('user_id', $userId)->lockForUpdate()->first();
+            if ($locked === null) {
+                return;
+            }
             $currentAttempt = MemberRegistrationAttempt::whereKey($attempt->id)->lockForUpdate()->first();
-            if ($currentAttempt === null || $currentAttempt->registration_key !== $attempt->registration_key) {
+            if ($currentAttempt === null || $currentAttempt->registration_key !== $attempt->registration_key
+                || (int) $currentAttempt->project_id !== $projectId || (int) $currentAttempt->user_id !== $userId
+                || $currentAttempt->member_number !== $attempt->member_number
+                || $currentAttempt->contract_id !== $attempt->contract_id
+                || $attempt->contract_id !== $this->smaregi->getContractIdForProject($projectId)) {
                 return;
             }
             if ((string) $locked->smaregi_customer_id === '' && $locked->member_number === $attempt->member_number) {
                 $locked->update(['smaregi_customer_id' => (string) $id]);
-                $attempt->delete();
+                $currentAttempt->delete();
             }
         });
     }
