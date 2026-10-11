@@ -12,6 +12,8 @@ interface MemberRepository
 
     public function findByUserId(int $userId, int $projectId): ?Member;
 
+    public function findByUserIdForUpdate(int $userId, int $projectId): ?Member;
+
     public function save(Member $member): void;
 
     public function hasPointTransactionForOrder(int $orderId, string $type, ?string $description = null): bool;

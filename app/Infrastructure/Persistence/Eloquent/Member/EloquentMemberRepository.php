@@ -56,6 +56,18 @@ class EloquentMemberRepository implements MemberRepository
         return $this->loadAsDomain($model);
     }
 
+    public function findByUserIdForUpdate(int $userId, int $projectId): ?MemberAggregate
+    {
+        $model = MemberModel::query()
+            ->withoutGlobalScope(ProjectScope::class)
+            ->where('user_id', $userId)
+            ->where('project_id', $projectId)
+            ->lockForUpdate()
+            ->first();
+
+        return $model !== null ? MemberMapper::toDomain($model, true) : null;
+    }
+
     public function save(MemberAggregate $member): void
     {
         $model = MemberModel::query()
