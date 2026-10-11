@@ -18,21 +18,14 @@ class MemberMutationController extends AdminBaseController
 
     public function update(MemberUpdateRequest $request, string $projectKey, int $id): RedirectResponse
     {
-        $memberData = [
-            'member_number' => $request->input('member_number'),
-            'status' => $request->input('status'),
-            'rank' => $request->input('rank') ?: null,
-            'birthday' => $request->input('birthday') ?: null,
-            'address' => $request->input('address'),
-            'postal_code' => $request->input('postal_code'),
-            'sex' => $request->input('sex') ?: null,
-            'mail_receive_flag' => $request->input('mail_receive_flag') !== null && $request->input('mail_receive_flag') !== ''
-                ? (string) $request->input('mail_receive_flag')
-                : null,
-            'notification_preference' => (string) $request->input('notification_preference'),
-        ];
-        if ($request->has('customer_store_id')) {
-            $memberData['customer_store_id'] = $request->input('customer_store_id') ?: null;
+        $memberData = $request->only([
+            'member_number', 'status', 'rank', 'birthday', 'address', 'postal_code',
+            'sex', 'mail_receive_flag', 'notification_preference', 'customer_store_id',
+        ]);
+        foreach (['rank', 'birthday', 'sex', 'mail_receive_flag', 'customer_store_id'] as $key) {
+            if (array_key_exists($key, $memberData) && $memberData[$key] === '') {
+                $memberData[$key] = null;
+            }
         }
         $profileExtra = $request->getProfileExtraArray();
         if ($profileExtra !== null) {
@@ -42,14 +35,10 @@ class MemberMutationController extends AdminBaseController
         $this->updateUseCase->handle(new AdminMemberUpdateInput(
             $this->resolveAdminProjectId(),
             $id,
-            [
-                'name' => $request->input('name'),
-                'kana' => $request->input('kana'),
-                'email' => $request->input('email'),
-                'phone' => $request->input('phone'),
-            ],
+            $request->only(['name', 'kana', 'email', 'phone']),
             $memberData,
             $request->getPointAdjustment(),
+            $request->has('custom_profile') || $request->boolean('custom_profile_form'),
         ));
 
         return redirect()->route('admin.members.detail', array_merge(['id' => $id], $this->buildAdminRouteParams()))

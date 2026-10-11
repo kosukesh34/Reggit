@@ -175,6 +175,7 @@
                 $profileExtra = is_array($view->member->profile_extra) ? $view->member->profile_extra : [];
             @endphp
             @if($view->customProfileFields !== [])
+            <input type="hidden" name="custom_profile_form" value="1">
             <section class="form-section mb-4">
                 <h4 class="form-section-title">追加プロフィール項目</h4>
                 <p class="text-muted small mb-3">プロフィール設定で追加した項目です。スマレジの会員自由項目と連携します。</p>

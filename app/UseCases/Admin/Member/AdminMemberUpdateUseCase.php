@@ -25,7 +25,7 @@ class AdminMemberUpdateUseCase
     {
         $member = $this->memberAdminService->findForWrite($input->memberId, $input->projectId);
 
-        $this->memberAdminService->updateMemberProfile($member, $input->userData, $input->memberData);
+        $this->memberAdminService->updateMemberProfile($member, $input->userData, $input->memberData, $input->profileExtraIsPatch);
 
         $this->memberRepository->syncPointsLedger($input->memberId, $input->projectId);
 

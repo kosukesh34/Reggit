@@ -78,6 +78,7 @@ class MemberUpdateRequest extends FormRequest
 
             'profile_extra' => ['nullable', 'string', 'max:2000'],
             'custom_profile' => ['nullable', 'array'],
+            'custom_profile_form' => ['sometimes', 'boolean'],
         ];
 
         foreach ($this->customProfileFieldDefinitions() as $cf) {
@@ -193,10 +194,7 @@ class MemberUpdateRequest extends FormRequest
             return is_array($decoded) ? $decoded : null;
         }
 
-        $member = Member::query()
-            ->withoutGlobalScope(ProjectScope::class)
-            ->find((int) $this->route('id'));
-        $extra = is_array($member?->profile_extra ?? null) ? $member->profile_extra : [];
+        $extra = [];
         $customInput = $this->input('custom_profile', []);
         if (! is_array($customInput)) {
             $customInput = [];
@@ -204,6 +202,9 @@ class MemberUpdateRequest extends FormRequest
         foreach ($definitions as $cf) {
             $key = (string) ($cf['key'] ?? '');
             if ($key === '') {
+                continue;
+            }
+            if (! array_key_exists($key, $customInput) && ! $this->boolean('custom_profile_form')) {
                 continue;
             }
             $inputType = (string) ($cf['input_type'] ?? ProfileCustomFieldInputType::TEXT);
@@ -222,6 +223,6 @@ class MemberUpdateRequest extends FormRequest
             $extra[$key] = is_string($value) && $value === '' ? null : $value;
         }
 
-        return $extra;
+        return $extra === [] ? null : $extra;
     }
 }
