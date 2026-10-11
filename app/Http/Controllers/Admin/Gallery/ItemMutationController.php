@@ -10,6 +10,7 @@ use App\UseCases\Admin\Gallery\GalleryItemUpdateUseCase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\Rule;
 
 class ItemMutationController extends AdminBaseController
 {
@@ -28,7 +29,7 @@ class ItemMutationController extends AdminBaseController
         return $this->redirectToIndex()->with('success', '画像を追加しました');
     }
 
-    public function update(Request $request, int $id, GalleryItemUpdateUseCase $useCase): RedirectResponse
+    public function update(Request $request, string $projectKey, int $id, GalleryItemUpdateUseCase $useCase): RedirectResponse
     {
         $validated = $request->validate($this->rules(imageRequired: false));
         $imageFile = $request->file('image');
@@ -40,18 +41,18 @@ class ItemMutationController extends AdminBaseController
         return $this->redirectToIndex()->with('success', '画像を更新しました');
     }
 
-    public function destroy(int $id, GalleryItemDestroyUseCase $useCase): RedirectResponse
+    public function destroy(string $projectKey, int $id, GalleryItemDestroyUseCase $useCase): RedirectResponse
     {
         $useCase->handle($id);
 
         return $this->redirectToIndex()->with('success', '画像を削除しました');
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, mixed> */
     private function rules(bool $imageRequired): array
     {
         return [
-            'category_id' => 'nullable|exists:gallery_categories,id',
+            'category_id' => ['nullable', 'integer', Rule::exists('gallery_categories', 'id')->where('project_id', $this->resolveAdminProjectId())],
             'title' => 'nullable|string|max:150',
             'image' => ($imageRequired ? 'required' : 'nullable').'|image|mimes:png,jpg,jpeg,gif,webp|max:2048',
             'image_url' => 'nullable|url|max:2048',
