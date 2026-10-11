@@ -5,17 +5,17 @@ namespace App\Services;
 use App\Domain\Coupon\Policies\CouponIssuePolicy;
 use App\Models\Coupon;
 use App\Models\CouponDeviceIssue;
-use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\User;
 use App\Models\UserDevice;
+use App\Services\Member\CurrentMemberPrincipal;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class DeviceOnceCouponService
 {
-    public function __construct(private CouponIssuePolicy $couponIssuePolicy) {}
+    public function __construct(private CouponIssuePolicy $couponIssuePolicy, private CurrentMemberPrincipal $principals) {}
 
     /** @return list<array<string, mixed>> */
     public function available(User $user, string $deviceIdentifier): array
@@ -63,13 +63,11 @@ class DeviceOnceCouponService
         try {
             return DB::transaction(function () use ($user, $member, $coupon, $deviceIdentifier): MemberCoupon {
                 $projectId = (int) $user->project_id;
-                $owner = User::query()->where('project_id', $projectId)->whereKey($user->id)->lockForUpdate()->first();
-                if ($owner === null || (int) $owner->authentication_version !== (int) $user->authentication_version) {
+                $owner = $this->principals->lock($user, $projectId);
+                if ($owner === null) {
                     throw ValidationException::withMessages(['member' => 'ログインし直してください']);
                 }
-                $member = Member::query()->whereKey($member->id)
-                    ->where('project_id', (int) $member->project_id)
-                    ->where('user_id', (int) $user->id)->lockForUpdate()->first();
+                $member = $owner->member;
                 if ($member === null) {
                     throw ValidationException::withMessages(['member' => '会員登録が必要です']);
                 }
