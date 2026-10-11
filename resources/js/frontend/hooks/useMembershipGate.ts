@@ -24,7 +24,13 @@ export function useMembershipGate(
     onSettledRef.current = onSettled;
 
     useEffect(() => {
+        let cancelled = false;
+        let settled = false;
         const settle = (): void => {
+            if (cancelled || settled) {
+                return;
+            }
+            settled = true;
             onSettledRef.current?.();
         };
         if (handledRef.current) {
@@ -37,27 +43,34 @@ export function useMembershipGate(
             return;
         }
 
-        let cancelled = false;
+        let running = false;
+        let waitTimer: number | undefined;
+        let finishWait: ((app: NonNullable<Window['app']> | null) => void) | undefined;
 
         const emitLoginPopup = (forced: boolean): void => {
             document.dispatchEvent(new CustomEvent('liff-member-open-login-popup', { detail: { forced } }));
         };
 
         const run = async (): Promise<void> => {
-            const waitApp = (): Promise<NonNullable<Window['app']>> =>
+            const waitApp = (): Promise<NonNullable<Window['app']> | null> =>
                 new Promise((resolve) => {
+                    finishWait = resolve;
                     const tick = (): void => {
+                        if (cancelled) {
+                            resolve(null);
+                            return;
+                        }
                         if (window.app !== undefined && window.app !== null) {
                             resolve(window.app);
                             return;
                         }
-                        window.setTimeout(tick, 50);
+                        waitTimer = window.setTimeout(tick, 50);
                     };
                     tick();
                 });
 
             const app = await waitApp();
-            if (cancelled) {
+            if (cancelled || app === null) {
                 return;
             }
             const mm = getMemberManager();
@@ -69,6 +82,9 @@ export function useMembershipGate(
             try {
                 if (typeof mm.ensureIdentityReady === 'function') {
                     await mm.ensureIdentityReady(1500);
+                }
+                if (cancelled) {
+                    return;
                 }
                 if (window.__IS_LIFF__ === true && !window.__LINE_USER_ID__ && !shouldAutoCreateMember()) {
                     const mode = getMemberRegistrationMode();
@@ -83,6 +99,9 @@ export function useMembershipGate(
                     await mm.fetchMemberContext({});
                 }
             } catch {
+                if (cancelled) {
+                    return;
+                }
                 if (window.__IS_LIFF__ === true && !window.__LINE_USER_ID__ && !shouldAutoCreateMember()) {
                     const mode = getMemberRegistrationMode();
                     if (mode === 'popup' || mode === 'prompt' || mode === 'force') {
@@ -105,6 +124,9 @@ export function useMembershipGate(
             }
             if (shouldAutoCreateMember() && typeof mm.canAutoRegister === 'function' && mm.canAutoRegister() === true && typeof mm.autoRegister === 'function') {
                 await mm.autoRegister();
+                if (cancelled) {
+                    return;
+                }
                 handledRef.current = true;
                 settle();
                 return;
@@ -126,21 +148,35 @@ export function useMembershipGate(
             if (switched !== false && typeof app.loadMemberTab === 'function') {
                 await app.loadMemberTab();
             }
+            if (cancelled) {
+                return;
+            }
             openRegister(forced);
             if (!cancelled) {
                 settle();
             }
         };
 
-        void run();
         const onReady = (): void => {
-            if (!handledRef.current && !cancelled) {
-                void run();
+            if (running || handledRef.current || cancelled) {
+                return;
             }
+            running = true;
+            void run().catch(() => {
+                if (!cancelled) {
+                    handledRef.current = true;
+                    settle();
+                }
+            }).finally(() => {
+                running = false;
+            });
         };
+        onReady();
         document.addEventListener('liff-ready', onReady);
         return () => {
             cancelled = true;
+            window.clearTimeout(waitTimer);
+            finishWait?.(null);
             document.removeEventListener('liff-ready', onReady);
         };
     }, []);
