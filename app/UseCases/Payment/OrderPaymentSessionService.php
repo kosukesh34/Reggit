@@ -7,6 +7,9 @@ use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
+use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -16,15 +19,22 @@ class OrderPaymentSessionService
 {
     private const LEASE_SECONDS = 120;
 
-    public function __construct(private PaymentGateway $gateway) {}
+    public function __construct(
+        private PaymentGateway $gateway,
+        private CurrentMemberPrincipal $principals,
+    ) {}
 
     /** @return array<string, string> */
-    public function create(int $orderId, int $projectId, int $userId, string $channel): array
+    public function create(int $orderId, int $projectId, User $user, string $channel): array
     {
         $lease = bin2hex(random_bytes(16));
-        $reservation = DB::transaction(function () use ($orderId, $projectId, $userId, $channel, $lease) {
+        $reservation = DB::transaction(function () use ($orderId, $projectId, $user, $channel, $lease) {
             $order = Order::where('project_id', $projectId)->lockForUpdate()->findOrFail($orderId);
-            $this->validateOrder($order, $userId);
+            $current = $this->principals->lock($user, $projectId);
+            if ($current === null) {
+                throw new AuthenticationException('ログインし直してください');
+            }
+            $this->validateOrder($order, (int) $current->id);
             if (in_array($channel, ['intent', 'card'], true) && ($order->payment_brand ?? 'card') !== 'card') {
                 throw new InvalidArgumentException('選択したブランドの決済画面をご利用ください');
             }
@@ -65,17 +75,25 @@ class OrderPaymentSessionService
             throw $e;
         }
 
-        return DB::transaction(function () use ($orderId, $projectId, $lease, $channel, $result) {
-            $order = Order::where('project_id', $projectId)->lockForUpdate()->findOrFail($orderId);
-            $saved = $order->payment_session;
-            if (($saved['lease'] ?? null) !== $lease || $order->status !== OrderStatus::PENDING) {
-                throw new RuntimeException('決済の状態が変更されました');
-            }
-            $order->payment_session = ['channel' => $channel, 'result' => $result];
-            $order->save();
+        try {
+            return DB::transaction(function () use ($orderId, $projectId, $user, $lease, $channel, $result) {
+                $order = Order::where('project_id', $projectId)->lockForUpdate()->findOrFail($orderId);
+                if ($this->principals->lock($user, $projectId) === null) {
+                    throw new AuthenticationException('ログインし直してください');
+                }
+                $saved = $order->payment_session;
+                if (($saved['lease'] ?? null) !== $lease || $order->status !== OrderStatus::PENDING) {
+                    throw new RuntimeException('決済の状態が変更されました');
+                }
+                $order->payment_session = ['channel' => $channel, 'result' => $result];
+                $order->save();
 
-            return $result;
-        });
+                return $result;
+            });
+        } catch (AuthenticationException $exception) {
+            $this->clearReservation($orderId, $projectId, $lease);
+            throw $exception;
+        }
     }
 
     private function validateOrder(Order $order, int $userId): void
