@@ -7,17 +7,21 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderService;
+use App\UseCases\Announcement\AnnouncementMarkReadUseCase;
+use App\UseCases\Announcement\Data\AnnouncementMarkReadInput;
 use App\UseCases\Order\OrderCancelUnpaidUseCase;
 use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\QueueStoreUseCase;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
@@ -31,6 +35,8 @@ class RequestPrincipalWriteTest extends TestCase
     #[TestWith(['order_create', 'deleted'])]
     #[TestWith(['order_cancel', 'deleted'])]
     #[TestWith(['queue', 'deleted'])]
+    #[TestWith(['read', 'revoked'])]
+    #[TestWith(['read', 'deleted'])]
     public function test_stale_request_cannot_mutate_orders_or_create_queue_entries(string $action, string $change): void
     {
         $project = Project::factory()->create();
@@ -51,7 +57,16 @@ class RequestPrincipalWriteTest extends TestCase
         } else {
             $user->fresh()->delete();
         }
-        if ($action === 'queue') {
+        if ($action === 'read') {
+            $announcement = Announcement::factory()->create(['project_id' => $project->id, 'visibility' => 'public']);
+            try {
+                app(AnnouncementMarkReadUseCase::class)->handle(new AnnouncementMarkReadInput($user, (int) $announcement->id));
+                $this->fail('Stale principal must not mark announcements as read.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('user', $exception->errors());
+            }
+            $this->assertDatabaseCount('announcement_reads', 0);
+        } elseif ($action === 'queue') {
             $result = app(QueueStoreUseCase::class)->handle(new QueueStoreInput($user, 1, null, null, null, null));
             $this->assertTrue($result->requiresMembership);
             $this->assertNull($result->entry);
