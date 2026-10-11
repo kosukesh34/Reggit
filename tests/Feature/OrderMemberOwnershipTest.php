@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Order;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\MemberBenefitService;
 use App\Services\OrderRewardService;
+use App\Services\OrderService;
 use App\Services\Stamp\MemberCurrentStampCardResolver;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -96,5 +98,56 @@ class OrderMemberOwnershipTest extends TestCase
         $rewards->awardLotteryEntitlements($user, $order, 1000);
 
         $this->assertDatabaseMissing('member_visits', ['member_id' => $member->id, 'order_id' => $order->id]);
+    }
+
+    public function test_transfer_before_point_lock_rejects_consumption_without_changing_ledger(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'points' => 100]);
+        $order = Order::create(['project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 100, 'status' => 'pending']);
+        $newOwner = User::factory()->create(['project_id' => $project->id]);
+        $changed = false;
+        DB::connection()->beforeExecuting(function (string $sql) use ($member, $newOwner, &$changed): void {
+            if (! $changed && str_contains($sql, 'from `members`') && str_contains($sql, 'for update')) {
+                $changed = true;
+                $member->update(['user_id' => $newOwner->id]);
+            }
+        });
+        $rejected = false;
+        DB::transaction(function () use ($user, $order, &$rejected): void {
+            try {
+                app(OrderRewardService::class)->consumePointsForOrder($user, $order, 30);
+            } catch (OrderOperationException) {
+                $rejected = true;
+            }
+        });
+
+        $this->assertTrue($changed);
+        $this->assertTrue($rejected);
+        $this->assertSame(100, $member->fresh()->points);
+        $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id]);
+    }
+
+    public function test_transfer_before_cancellation_point_lock_does_not_refund_another_owner(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'points' => 0]);
+        $order = Order::create(['project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 100, 'status' => 'cancelled', 'points_used' => 30, 'points_earned' => 0, 'payment_method' => 'stripe']);
+        $newOwner = User::factory()->create(['project_id' => $project->id]);
+        $changed = false;
+        DB::connection()->beforeExecuting(function (string $sql) use ($member, $newOwner, &$changed): void {
+            if (! $changed && str_contains($sql, 'from `members`') && str_contains($sql, 'for update')) {
+                $changed = true;
+                $member->update(['user_id' => $newOwner->id]);
+            }
+        });
+
+        app(OrderService::class)->handleOrderCancellation($order);
+
+        $this->assertTrue($changed);
+        $this->assertSame(0, $member->fresh()->points);
+        $this->assertDatabaseMissing('point_transactions', ['order_id' => $order->id]);
     }
 }
