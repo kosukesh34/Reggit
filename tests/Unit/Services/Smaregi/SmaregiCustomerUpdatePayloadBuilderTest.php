@@ -83,6 +83,23 @@ class SmaregiCustomerUpdatePayloadBuilderTest extends TestCase
         ], $body['customFields']);
     }
 
+    public function test_partial_profile_updates_do_not_send_unrelated_custom_fields(): void
+    {
+        $definitions = [['key' => 'nickname', 'smaregi_no' => 1], ['key' => 'company', 'smaregi_no' => 2]];
+        $body = $this->builder->buildFromProfileData(['nickname' => 'Changed'], $definitions);
+        $this->assertSame([['no' => 1, 'value' => 'Changed']], $body['customFields']);
+        $emailOnly = $this->builder->buildFromProfileData(['email' => 'user@example.com'], $definitions);
+        $this->assertArrayNotHasKey('customFields', $emailOnly);
+    }
+
+    public function test_explicit_null_custom_field_is_still_sent_for_clearing(): void
+    {
+        $body = $this->builder->buildFromProfileData(['nickname' => null], [['key' => 'nickname', 'smaregi_no' => 1]]);
+        $this->assertSame([['no' => 1, 'value' => null]], $body['customFields']);
+        $nested = $this->builder->buildFromProfileData(['profile_extra' => ['nickname' => null]], [['key' => 'nickname', 'smaregi_no' => 1]]);
+        $this->assertSame($body['customFields'], $nested['customFields']);
+    }
+
     public function test_profile_extraの任意項目もスマレジ自由項目として送ること(): void
     {
         $body = $this->builder->buildFromAdminMemberData(
