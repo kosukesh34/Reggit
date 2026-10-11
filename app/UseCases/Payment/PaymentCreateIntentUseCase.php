@@ -3,8 +3,8 @@
 namespace App\UseCases\Payment;
 
 use App\Models\Order;
-use App\Models\User;
 use App\Models\Settings\ProjectPaymentSetting;
+use App\Models\User;
 use App\UseCases\Payment\Data\PaymentIntentOutput;
 
 class PaymentCreateIntentUseCase

@@ -48,6 +48,7 @@ class PaymentPrincipalTest extends TestCase
         if ($phase === 'gateway') {
             $gateway->shouldReceive('createPaymentIntent')->once()->andReturnUsing(function () use ($invalidate): array {
                 $invalidate();
+
                 return ['id' => 'pi_external', 'client_secret' => 'external_secret'];
             });
         } else {

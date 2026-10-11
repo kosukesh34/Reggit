@@ -77,18 +77,18 @@ class OrderPaymentSessionService
 
         try {
             return DB::transaction(function () use ($orderId, $projectId, $user, $lease, $channel, $result) {
-            $order = Order::where('project_id', $projectId)->lockForUpdate()->findOrFail($orderId);
-            if ($this->principals->lock($user, $projectId) === null) {
-                throw new AuthenticationException('ログインし直してください');
-            }
-            $saved = $order->payment_session;
-            if (($saved['lease'] ?? null) !== $lease || $order->status !== OrderStatus::PENDING) {
-                throw new RuntimeException('決済の状態が変更されました');
-            }
-            $order->payment_session = ['channel' => $channel, 'result' => $result];
-            $order->save();
+                $order = Order::where('project_id', $projectId)->lockForUpdate()->findOrFail($orderId);
+                if ($this->principals->lock($user, $projectId) === null) {
+                    throw new AuthenticationException('ログインし直してください');
+                }
+                $saved = $order->payment_session;
+                if (($saved['lease'] ?? null) !== $lease || $order->status !== OrderStatus::PENDING) {
+                    throw new RuntimeException('決済の状態が変更されました');
+                }
+                $order->payment_session = ['channel' => $channel, 'result' => $result];
+                $order->save();
 
-            return $result;
+                return $result;
             });
         } catch (AuthenticationException $exception) {
             $this->clearReservation($orderId, $projectId, $lease);
