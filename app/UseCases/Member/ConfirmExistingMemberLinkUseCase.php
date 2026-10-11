@@ -56,8 +56,11 @@ class ConfirmExistingMemberLinkUseCase
             if (Member::query()->where('project_id', $request->project_id)->where('smaregi_customer_id', $request->smaregi_customer_id)->exists()) {
                 throw new InvalidArgumentException('この会員はすでに連携されています');
             }
-            $contractId = trim((string) $this->smaregiApi->getContractIdForProject((int) $request->project_id));
-            $customer = $contractId === '' ? null : $this->smaregiApi->getCustomer($contractId, $request->smaregi_customer_id);
+            $contractId = trim((string) $request->contract_id);
+            if ($contractId === '' || $contractId !== trim((string) $this->smaregiApi->getContractIdForProject((int) $request->project_id))) {
+                throw new InvalidArgumentException('スマレジの契約が変更されたか、確認リンクの契約を特定できません。連携を再申請してください。');
+            }
+            $customer = $this->smaregiApi->getCustomer($contractId, $request->smaregi_customer_id);
             if (! is_array($customer)) {
                 throw new InvalidArgumentException('スマレジの会員を取得できませんでした');
             }
