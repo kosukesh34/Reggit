@@ -41,7 +41,7 @@ class BindAdminProject
             app(StoreContext::class)->useDefaultForOperation();
         }
         if (app(StoreContext::class)->projectStoreCount > 1 && ! $request->isMethod('GET') && ! $admin->isSystemAdmin() && ! $admin->isProjectAdmin()) {
-            $path = $request->path();
+            $path = (string) $request->route()?->uri();
             $commonSettings = $request->routeIs('admin.rfm.settings.update')
                 || ($request->routeIs('admin.settings.*')
                     && ! $request->routeIs('admin.settings.basic.*', 'admin.settings.reservations.*', 'admin.settings.queue.*', 'admin.settings.store-app-credential.*', 'admin.settings.staff.*'));

@@ -92,6 +92,16 @@ class MultiStoreTest extends TestCase
         $this->assertDatabaseCount('existing_member_link_requests', 0);
     }
 
+    public function test_project_key_does_not_turn_store_settings_into_common_routes(): void
+    {
+        $this->project->update(['project_key' => 'products']);
+        $this->actingAs($this->admin(), 'admin')
+            ->post('/admin/products/settings/basic', [
+                'business_hours_start' => '09:00', 'business_hours_end' => '18:00', 'order_mode' => 'both',
+            ])->assertRedirect()->assertSessionHas('success');
+        $this->post('/admin/products/settings/profile')->assertForbidden();
+    }
+
     public function test_headquarters_and_single_store_admin_can_modify_common_settings(): void
     {
         $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin')
