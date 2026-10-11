@@ -7,9 +7,9 @@ use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampGrantCode;
 use App\Models\StampGrantRedemption;
-use App\Models\User;
 use App\Services\Admin\MemberBenefitService;
 use App\Services\MemberRankSyncService;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\UseCases\Stamp\Data\StampGrantByCodeInput;
 use App\UseCases\Stamp\Data\StampGrantOutput;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +21,7 @@ class StampGrantByCodeUseCase
         private StampGrantOutcomeMapper $outcomeMapper,
         private StampSettings $shopSettingRepository,
         private MemberRankSyncService $memberRankSyncService,
+        private CurrentMemberPrincipal $principals,
     ) {}
 
     public function handle(StampGrantByCodeInput $input): StampGrantOutput
@@ -45,11 +46,11 @@ class StampGrantByCodeUseCase
     private function grant(StampGrantByCodeInput $input): StampGrantOutput
     {
         $projectId = (int) $input->user->project_id;
-        $owner = User::query()->where('project_id', $projectId)->whereKey($input->user->id)->lockForUpdate()->first();
-        if ($owner === null || (int) $owner->authentication_version !== (int) $input->user->authentication_version) {
+        $owner = $this->principals->lock($input->user, $projectId);
+        if ($owner === null) {
             return new StampGrantOutput(false, 403, 'ログインし直してください');
         }
-        $member = $owner->member()->where('project_id', $projectId)->lockForUpdate()->first();
+        $member = $owner->member;
         if ($member === null) {
             return new StampGrantOutput(false, 403, 'スタンプの付与には会員登録が必要です');
         }
