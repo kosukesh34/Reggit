@@ -74,6 +74,60 @@ class MultiStoreTest extends TestCase
         $this->assertDatabaseCount('member_tags', 1);
     }
 
+    public function test_branch_cannot_modify_project_common_settings(): void
+    {
+        $this->project->update(['plan' => 'premium']);
+        $this->actingAs($this->admin(), 'admin');
+        foreach (['profile', 'ranks', 'existing-member-link', 'existing-member-link/connect',
+            'liff-connection', 'liff-designer', 'advanced', 'menu', 'home', 'app-design/branding',
+            'admin-design', 'app-design/member-card', 'features', 'coupons', 'lottery',
+            'announcements', 'member-code', 'wallet', 'payments'] as $setting) {
+            $this->post('/admin/brand/settings/'.$setting)->assertForbidden();
+        }
+        $this->put('/admin/brand/rfm/settings', [
+            'recency_active_days' => 10, 'recency_sleeping_days' => 20,
+            'frequency_high' => 2, 'monetary_high' => 1000,
+        ])->assertForbidden();
+        $this->assertDatabaseCount('project_rfm_settings', 0);
+        $this->assertDatabaseCount('existing_member_link_requests', 0);
+    }
+
+    public function test_project_key_does_not_turn_store_settings_into_common_routes(): void
+    {
+        $this->project->update(['project_key' => 'products']);
+        $this->actingAs($this->admin(), 'admin')
+            ->post('/admin/products/settings/basic', [
+                'business_hours_start' => '09:00', 'business_hours_end' => '18:00', 'order_mode' => 'both',
+            ])->assertRedirect()->assertSessionHas('success');
+        $this->post('/admin/products/settings/profile')->assertForbidden();
+    }
+
+    public function test_headquarters_and_single_store_admin_can_modify_common_settings(): void
+    {
+        $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin')
+            ->post('/admin/brand/settings/existing-member-link', [
+                'is_enabled' => '1', 'identifier_fields' => ['customer_code'],
+            ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('existing_member_link_settings', [
+            'project_id' => $this->project->id, 'is_enabled' => true,
+        ]);
+        $this->put('/admin/brand/rfm/settings', [
+            'recency_active_days' => 10, 'recency_sleeping_days' => 20,
+            'frequency_high' => 2, 'monetary_high' => 1000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('project_rfm_settings', [
+            'project_id' => $this->project->id, 'recency_active_days' => 10,
+        ]);
+        $this->b->delete();
+        $this->actingAs($this->admin(), 'admin')
+            ->post('/admin/brand/settings/existing-member-link', [
+                'is_enabled' => '0', 'identifier_fields' => ['customer_code'],
+            ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('existing_member_link_settings', [
+            'project_id' => $this->project->id, 'is_enabled' => false,
+        ]);
+    }
+
     public function test_headquarters_deletes_the_route_tag_for_numeric_and_text_project_keys(): void
     {
         $admin = $this->admin(AdminUser::ROLE_PROJECT_ADMIN);
