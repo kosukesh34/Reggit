@@ -11,13 +11,12 @@ use App\Models\MemberVisit;
 use App\Models\Order;
 use App\Models\Scopes\ProjectScope;
 use App\Models\User;
-use App\Services\CustomerStoreProfile;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Services\MemberVisitRecorder;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
-use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
+use App\Services\Smaregi\SmaregiMemberProfileSyncService;
 use App\Services\UserService;
 use App\Support\AdminMemberIdentifier;
 use App\Util\LogHelper;
@@ -31,8 +30,7 @@ class MemberAdminService
 
     public function __construct(
         private SmaregiApiService $smaregiApi,
-        private SmaregiCustomerUpdatePayloadBuilder $smaregiCustomerUpdatePayloadBuilder,
-        private CustomerStoreProfile $customerStoreProfile,
+        private SmaregiMemberProfileSyncService $profileSync,
         private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator,
@@ -303,7 +301,6 @@ class MemberAdminService
      */
     public function updateMemberProfile(Member $member, array $userData, array $memberData): void
     {
-        $user = $member->user;
         $allowedUser = ['name', 'kana', 'email', 'phone'];
         $updateUser = array_intersect_key($userData, array_flip($allowedUser));
         foreach (['name', 'kana', 'phone'] as $key) {
@@ -337,72 +334,41 @@ class MemberAdminService
             if ($user !== null && $updateUser !== []) {
                 $user->update($updateUser);
             }
-            if ($updateMember === []) {
-                return;
+            if ($updateMember !== []) {
+                $previousRank = (string) ($member->rank ?? '');
+                $member->offsetUnset('rank_label');
+                $member->offsetUnset('points_expiry');
+                $member->update($updateMember);
+                $member->refresh();
+                if (array_key_exists('rank', $updateMember)) {
+                    $newRank = (string) $updateMember['rank'];
+                    if ($newRank !== '' && $newRank !== $previousRank) {
+                        $options = $this->getRankOptionsForSelect((int) $member->project_id);
+                        $this->recordRankHistory(
+                            $member,
+                            $previousRank,
+                            $newRank,
+                            $previousRank !== '' ? ($options[$previousRank] ?? $previousRank) : null,
+                            $options[$newRank] ?? $newRank,
+                        );
+                        $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
+                    }
+                }
             }
-            $previousRank = (string) ($member->rank ?? '');
-            $member->offsetUnset('rank_label');
-            $member->offsetUnset('points_expiry');
-            $member->update($updateMember);
-            $member->refresh();
-            if (array_key_exists('rank', $updateMember)) {
-                $newRank = (string) $updateMember['rank'];
-                if ($newRank !== '' && $newRank !== $previousRank) {
-                    $options = $this->getRankOptionsForSelect((int) $member->project_id);
-                    $this->recordRankHistory(
-                        $member,
-                        $previousRank,
-                        $newRank,
-                        $previousRank !== '' ? ($options[$previousRank] ?? $previousRank) : null,
-                        $options[$newRank] ?? $newRank,
-                    );
-                    $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
+            if ($user !== null) {
+                $keys = array_values(array_intersect(array_merge(array_keys($updateUser), array_keys($updateMember)), [
+                    'name', 'kana', 'email', 'phone', 'member_number', 'birthday', 'address', 'postal_code',
+                    'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'customer_store_id',
+                ]));
+                if (is_array($updateMember['profile_extra'] ?? null)) {
+                    $keys = array_values(array_unique(array_merge($keys, array_keys($updateMember['profile_extra']))));
+                }
+                if ($keys !== []) {
+                    $this->profileSync->record($member, $user, $keys);
                 }
             }
         });
         $member->refresh();
-        $user?->refresh();
-
-        $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
-        $contractId = $this->smaregiApi->getContractIdForProject($member->project_id);
-        $contractId = is_string($contractId) ? trim($contractId) : '';
-        if ($contractId === '' || $smaregiCustomerId === '' || $user === null) {
-            return;
-        }
-
-        $clientId = config('smaregi.client_id');
-        $clientSecret = config('smaregi.client_secret');
-        if (! is_string($clientId) || $clientId === '' || ! is_string($clientSecret) || $clientSecret === '') {
-            LogHelper::warning('[AdminMember] smaregi profile sync skipped: credentials missing', [
-                'member_id' => (int) $member->id,
-                'project_id' => (int) $member->project_id,
-            ]);
-
-            return;
-        }
-
-        $mergedUser = array_merge($user->only(['name', 'kana', 'email', 'phone']), $updateUser);
-        $customFieldDefs = $this->shopSettingRepository->getProfileFieldSettings((int) $member->project_id)['custom_fields'] ?? [];
-        $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromAdminMemberData($mergedUser, $this->customerStoreProfile->forSmaregi(array_merge(
-            $member->only([
-                'member_number', 'birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'customer_store_id',
-            ]),
-            ['profile_extra' => $member->profile_extra],
-        ), (int) $member->project_id), $customFieldDefs);
-        if ($body === []) {
-            return;
-        }
-
-        $this->smaregiApi->clearLastErrorDetail();
-        $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
-        if ($result === null) {
-            LogHelper::warning('[AdminMember] smaregi profile sync failed after local update', [
-                'member_id' => (int) $member->id,
-                'project_id' => (int) $member->project_id,
-                'smaregi_customer_id' => $smaregiCustomerId,
-                'detail' => $this->smaregiApi->getLastErrorDetail(),
-            ]);
-        }
     }
 
     /**

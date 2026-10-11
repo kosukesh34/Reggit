@@ -7,6 +7,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\SmaregiMemberProfileSync;
 use App\Models\User;
+use App\Services\Admin\MemberAdminService;
 use App\Services\MemberService;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
@@ -37,6 +38,94 @@ class MemberProfileRecoveryTest extends TestCase
             'smaregi_customer_id' => 'external-member', 'points' => 0]);
 
         return $user->fresh(['member']);
+    }
+
+    public function test_admin_failed_patch_keeps_local_name_and_member_number_on_inbound(): void
+    {
+        $user = $this->user();
+        config(['smaregi.client_id' => 'test', 'smaregi.client_secret' => 'test']);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail')->once();
+        $api->shouldReceive('updateCustomer')->once()->andReturnNull();
+        $api->shouldReceive('getLastErrorDetail')->andReturn('offline');
+        $api->shouldReceive('getCustomer')->andReturn(['lastName' => 'Original', 'firstName' => '', 'customerCode' => 'OLD']);
+        $api->shouldReceive('getCustomerPoint')->andReturn(['point' => 0]);
+        app(MemberAdminService::class)->updateMemberProfile($user->member, ['name' => 'Changed'], ['member_number' => 'NEW']);
+
+        app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($user->member->fresh());
+
+        $this->assertSame('Changed', $user->fresh()->name);
+        $this->assertSame('NEW', $user->member->fresh()->member_number);
+        $this->assertNull(SmaregiMemberProfileSync::findOrFail($user->member->id)->delivered_at);
+    }
+
+    public function test_admin_external_exception_does_not_fail_committed_local_save(): void
+    {
+        $user = $this->user();
+        config(['smaregi.client_id' => 'test', 'smaregi.client_secret' => 'test']);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail')->once();
+        $api->shouldReceive('updateCustomer')->once()->andThrow(new \RuntimeException('offline'));
+
+        app(MemberAdminService::class)->updateMemberProfile($user->member, ['name' => 'Changed'], []);
+
+        $this->assertSame('Changed', $user->fresh()->name);
+        $this->assertNull(SmaregiMemberProfileSync::findOrFail($user->member->id)->delivered_at);
+    }
+
+    public function test_admin_outer_rollback_discards_profile_request_without_sending(): void
+    {
+        $user = $this->user();
+        config(['smaregi.client_id' => 'test', 'smaregi.client_secret' => 'test']);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail')->zeroOrMoreTimes();
+        $sent = 0;
+        $api->shouldReceive('updateCustomer')->andReturnUsing(function () use (&$sent): array {
+            $sent++;
+
+            return [];
+        });
+        DB::beginTransaction();
+        try {
+            app(MemberAdminService::class)->updateMemberProfile($user->member, ['name' => 'Changed'], []);
+            $recorded = SmaregiMemberProfileSync::find($user->member->id);
+        } finally {
+            DB::rollBack();
+        }
+
+        $this->assertSame(0, $sent);
+        $this->assertNotNull($recorded);
+        $this->assertSame('Original', $user->fresh()->name);
+        $this->assertNull(SmaregiMemberProfileSync::find($user->member->id));
+    }
+
+    public function test_admin_scanner_retries_member_number_with_name_without_unrelated_fields(): void
+    {
+        $user = $this->user();
+        config(['smaregi.client_id' => 'test', 'smaregi.client_secret' => 'test']);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail')->twice();
+        $api->shouldReceive('getLastErrorDetail')->andReturn('offline');
+        $api->shouldReceive('updateCustomer')->once()->andReturnNull();
+        $observedLevel = null;
+        $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', [
+            'lastName' => 'Changed', 'firstName' => '', 'customerCode' => 'NEW',
+        ])->andReturnUsing(function () use (&$observedLevel): array {
+            $observedLevel = DB::transactionLevel();
+
+            return [];
+        });
+        app(MemberAdminService::class)->updateMemberProfile($user->member, ['name' => 'Changed'], ['member_number' => 'NEW']);
+        $this->travel(2)->minutes();
+
+        $this->artisan('smaregi:retry-member-profiles')->assertSuccessful();
+
+        $this->assertSame(0, $observedLevel);
+        $this->assertNotNull(SmaregiMemberProfileSync::findOrFail($user->member->id)->delivered_at);
     }
 
     public function test_next_fetch_preserves_local_profile_after_failed_patch(): void

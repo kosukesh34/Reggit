@@ -109,6 +109,19 @@ class StoreContext
         }
     }
 
+    /** Run deferred work with its captured selection, including headquarters or unbound views. */
+    public function runWithContext(self $context, \Closure $operation): mixed
+    {
+        $previous = [$this->projectId, $this->store, $this->visibleStoreIds, $this->admin, $this->bound, $this->projectStoreCount];
+        [$this->projectId, $this->store, $this->visibleStoreIds, $this->admin, $this->bound, $this->projectStoreCount] =
+            [$context->projectId, $context->store, $context->visibleStoreIds, $context->admin, $context->bound, $context->projectStoreCount];
+        try {
+            return $operation();
+        } finally {
+            [$this->projectId, $this->store, $this->visibleStoreIds, $this->admin, $this->bound, $this->projectStoreCount] = $previous;
+        }
+    }
+
     public function resolveForWrite(int $projectId): int
     {
         if ($this->bound) {

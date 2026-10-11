@@ -34,7 +34,7 @@ class SmaregiMemberProfileSyncService
         $keys = array_values(array_unique(array_merge($changedKeys,
             $previous !== null && $previous->delivered_at === null ? $previous->field_keys : [])));
         $data = array_merge($user->only(['name', 'kana', 'email', 'phone']), $member->only([
-            'birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex',
+            'member_number', 'birthday', 'address', 'postal_code', 'prefecture', 'city', 'street', 'sex',
             'mail_receive_flag', 'customer_store_id',
         ]), $member->profile_extra ?? []);
         if (array_intersect($keys, ['address', 'prefecture', 'city', 'street']) !== []) {
@@ -46,7 +46,7 @@ class SmaregiMemberProfileSyncService
             }
         }
         $data = array_intersect_key($data, array_flip($keys));
-        $body = $this->payloads->buildFromProfileData($this->stores->forSmaregi($data, $projectId),
+        $body = $this->payloads->buildFromAdminMemberData([], $this->stores->forSmaregi($data, $projectId),
             $this->settings->getProfileFieldSettings($projectId)['custom_fields'] ?? []);
         SmaregiMemberProfileSync::upsert([[
             'member_id' => $member->id, 'project_id' => $projectId, 'customer_id' => $customerId,
