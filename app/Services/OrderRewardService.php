@@ -18,6 +18,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\Stamp\MemberCurrentStampCardResolver;
+use Illuminate\Support\Facades\DB;
 
 class OrderRewardService
 {
@@ -179,65 +180,71 @@ class OrderRewardService
 
     public function recordMemberVisit(User $user, Order $order): void
     {
-        $member = $user->member;
-        if ($member === null) {
-            return;
-        }
+        DB::transaction(function () use ($user, $order): void {
+            $member = $user->member()->where('project_id', (int) $order->project_id)->lockForUpdate()->first();
+            if ($member === null) {
+                return;
+            }
 
-        $this->memberVisitRecorder->record(
-            $member,
-            $order->created_at ?? now(),
-            MemberVisitSource::ORDER,
-            (int) $order->id
-        );
+            $this->memberVisitRecorder->record(
+                $member,
+                $order->created_at ?? now(),
+                MemberVisitSource::ORDER,
+                (int) $order->id
+            );
+        }, 3);
     }
 
     public function awardStamps(User $user, Order $order, float $finalAmount): void
     {
-        $member = $user->member;
-        if ($member === null || $finalAmount <= 0) {
-            return;
-        }
+        DB::transaction(function () use ($user, $order, $finalAmount): void {
+            $member = $user->member()->where('project_id', (int) $order->project_id)->lockForUpdate()->first();
+            if ($member === null || $finalAmount <= 0) {
+                return;
+            }
 
-        $projectId = (int) $order->project_id;
-        if ($this->shopSettingRepository->getUseStamps($projectId) !== true) {
-            return;
-        }
-        $stampCard = $this->memberCurrentStampCardResolver->resolve($member);
-        $rankKey = is_string($member->rank) ? $member->rank : null;
-        $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmountForRank($projectId, $rankKey);
+            $projectId = (int) $order->project_id;
+            if ($this->shopSettingRepository->getUseStamps($projectId) !== true) {
+                return;
+            }
+            $stampCard = $this->memberCurrentStampCardResolver->resolve($member);
+            $rankKey = is_string($member->rank) ? $member->rank : null;
+            $stampEarnPerAmount = $this->shopSettingRepository->getStampEarnPerAmountForRank($projectId, $rankKey);
 
-        if ($stampCard === null || $stampEarnPerAmount <= 0) {
-            return;
-        }
+            if ($stampCard === null || $stampEarnPerAmount <= 0) {
+                return;
+            }
 
-        $stampCount = $this->stampEarnPolicy->calculateCount($finalAmount, $stampEarnPerAmount);
-        if ($stampCount > 0) {
-            $this->memberBenefitService->addStampsToMember(
-                $member,
-                (int) $stampCard->id,
-                $stampCount,
-                '注文によるスタンプ付与',
-                (int) $order->id,
-                MemberCouponSource::ORDER,
-                (string) $order->id,
-            );
-        }
+            $stampCount = $this->stampEarnPolicy->calculateCount($finalAmount, $stampEarnPerAmount);
+            if ($stampCount > 0) {
+                $this->memberBenefitService->addStampsToMember(
+                    $member,
+                    (int) $stampCard->id,
+                    $stampCount,
+                    '注文によるスタンプ付与',
+                    (int) $order->id,
+                    MemberCouponSource::ORDER,
+                    (string) $order->id,
+                );
+            }
+        }, 3);
     }
 
     public function awardLotteryEntitlements(User $user, Order $order, float $finalAmount): void
     {
-        $member = $user->member;
-        if ($member === null || $finalAmount <= 0) {
-            return;
-        }
+        DB::transaction(function () use ($user, $order, $finalAmount): void {
+            $member = $user->member()->where('project_id', (int) $order->project_id)->lockForUpdate()->first();
+            if ($member === null || $finalAmount <= 0) {
+                return;
+            }
 
-        $this->lotteryEntitlementService->grantForPurchase(
-            $member,
-            $finalAmount,
-            LotterySourceType::ORDER,
-            (string) $order->id,
-        );
+            $this->lotteryEntitlementService->grantForPurchase(
+                $member,
+                $finalAmount,
+                LotterySourceType::ORDER,
+                (string) $order->id,
+            );
+        }, 3);
     }
 
     private function getPointsEarnRate(int $projectId, ?string $rankKey = null): int
