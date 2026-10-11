@@ -17,10 +17,12 @@ use App\Services\Smaregi\SmaregiTransactionCustomerResolver;
 use App\UseCases\Member\ConfirmExistingMemberLinkUseCase;
 use App\UseCases\Member\RequestExistingMemberLinkUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 use Mockery;
 use PHPUnit\Framework\Attributes\TestWith;
+use RuntimeException;
 use Tests\TestCase;
 
 class ExistingMemberLinkTest extends TestCase
@@ -304,6 +306,55 @@ class ExistingMemberLinkTest extends TestCase
         $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
         $this->assertNull($pending->fresh()->confirmed_at);
         $this->assertTrue($rejected);
+    }
+
+    public function test_immediate_guest_link_rejects_a_contract_changed_during_lookup(): void
+    {
+        $project = $this->createProject();
+        $this->enable($project, ['customer_code']);
+        $settings = ShopSettingStore::class;
+        $settings::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        $customer = $this->customer();
+        $api = Mockery::mock(SmaregiApiService::class, [
+            app(SmaregiApiClient::class),
+            app(SmaregiTransactionCustomerResolver::class),
+            app(SmaregiSettings::class),
+        ])->makePartial();
+        $api->shouldReceive('getCustomers')->with('contract-1', Mockery::type('array'))->once()->andReturnUsing(function () use ($settings, $project, $customer): array {
+            $settings::setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
+
+            return ['customers' => [$customer]];
+        });
+        $this->app->instance(SmaregiApiService::class, $api);
+        $rejected = false;
+        try {
+            app(RequestExistingMemberLinkUseCase::class)->handle((int) $project->id, null, ['customer_code' => 'C100']);
+        } catch (InvalidArgumentException $exception) {
+            $rejected = true;
+        }
+        $this->assertDatabaseMissing('members', ['project_id' => $project->id, 'smaregi_customer_id' => '9001']);
+        $this->assertDatabaseMissing('users', ['project_id' => $project->id, 'email' => 'a@example.com']);
+        $this->assertTrue($rejected);
+    }
+
+    public function test_immediate_guest_link_rolls_back_user_when_member_creation_fails(): void
+    {
+        $project = $this->createProject();
+        $this->enable($project, ['customer_code']);
+        $this->mockCustomers([$this->customer()]);
+        Event::listen('eloquent.creating: '.Member::class, function (): void {
+            throw new RuntimeException('member persistence failed');
+        });
+        $failed = false;
+        try {
+            app(RequestExistingMemberLinkUseCase::class)->handle((int) $project->id, null, ['customer_code' => 'C100']);
+        } catch (RuntimeException $exception) {
+            $this->assertSame('member persistence failed', $exception->getMessage());
+            $failed = true;
+        }
+        $this->assertTrue($failed);
+        $this->assertDatabaseMissing('members', ['project_id' => $project->id, 'smaregi_customer_id' => '9001']);
+        $this->assertDatabaseMissing('users', ['project_id' => $project->id, 'email' => 'a@example.com']);
     }
 
     private function createProject(): Project

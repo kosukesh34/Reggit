@@ -12,6 +12,7 @@ use App\Services\ExistingMemberLinkMatcher;
 use App\Services\ExistingMemberLinkWriter;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Util\LogHelper;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -61,7 +62,13 @@ class RequestExistingMemberLinkUseCase
             return $this->sendMail($projectId, null, $contractId, $customerId, (string) ($input[ExistingMemberLinkField::EMAIL] ?? ''));
         }
 
-        $this->writer->link($projectId, null, $customer);
+        DB::transaction(function () use ($projectId, $contractId, $customer): void {
+            if ($contractId !== trim((string) $this->smaregiApi->getContractIdForProject($projectId))) {
+                throw new InvalidArgumentException('スマレジの連携設定が変更されています。再度申請してください');
+            }
+
+            $this->writer->link($projectId, null, $customer);
+        });
 
         return ['linked' => true, 'message' => '既存会員を連携しました'];
     }
