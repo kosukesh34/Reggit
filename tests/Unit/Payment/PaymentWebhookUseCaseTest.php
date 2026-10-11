@@ -47,7 +47,7 @@ class PaymentWebhookUseCaseTest extends TestCase
 
         $gateway = new FakePaymentGateway;
         $gateway->event = [
-            'type' => 'payment_intent.succeeded',
+            'type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id],
             'amount' => 1000,
         ];
@@ -96,7 +96,7 @@ class PaymentWebhookUseCaseTest extends TestCase
 
         $gateway = new FakePaymentGateway;
         $gateway->event = [
-            'type' => 'payment_intent.succeeded',
+            'type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id],
             'amount' => 1000,
         ];
@@ -139,7 +139,7 @@ class PaymentWebhookUseCaseTest extends TestCase
 
         $gateway = new FakePaymentGateway;
         $gateway->event = [
-            'type' => 'payment_intent.succeeded',
+            'type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id],
             'amount' => 1000,
         ];
@@ -188,7 +188,7 @@ class PaymentWebhookUseCaseTest extends TestCase
 
         $gateway = new FakePaymentGateway;
         $gateway->event = [
-            'type' => 'payment_intent.succeeded',
+            'type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id],
             'amount' => 1000,
         ];
@@ -229,7 +229,7 @@ class PaymentWebhookUseCaseTest extends TestCase
 
         $gateway = new FakePaymentGateway;
         $gateway->event = [
-            'type' => 'payment_intent.succeeded',
+            'type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id],
             'amount' => 1000,
         ];
