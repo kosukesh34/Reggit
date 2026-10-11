@@ -94,6 +94,41 @@ class MemberWalletSynchronizationConsistencyTest extends TestCase
         $this->assertSame(160, (int) $member->fresh()->points);
     }
 
+    public function test_previous_owner_cannot_read_wallet_summary_from_cached_member(): void
+    {
+        $member = $this->memberWithCachedPoints(160);
+        $this->insertLedger($member, 'earned', 100, now()->addYear());
+        $user = $member->user->load('member');
+        $newOwner = User::factory()->create(['project_id' => $member->project_id]);
+        $member->update(['user_id' => $newOwner->id]);
+
+        try {
+            app(MemberWalletSummaryService::class)->summarize($user);
+            $this->fail('Expected the previous owner to be rejected');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame(401, $exception->getCode());
+        }
+
+        $this->assertSame(160, (int) $member->fresh()->points);
+    }
+
+    public function test_deleted_cached_member_cannot_read_wallet_summary(): void
+    {
+        $member = $this->memberWithCachedPoints(160);
+        $this->insertLedger($member, 'earned', 100, now()->addYear());
+        $user = $member->user->load('member');
+        $member->delete();
+
+        try {
+            app(MemberWalletSummaryService::class)->summarize($user);
+            $this->fail('Expected the deleted member to be rejected');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame(401, $exception->getCode());
+        }
+
+        $this->assertSame(160, (int) Member::withTrashed()->findOrFail($member->id)->points);
+    }
+
     public function test_apple_push_failure_does_not_block_google_wallet_sync(): void
     {
         $member = $this->memberWithCachedPoints(70);
