@@ -3,11 +3,13 @@
 namespace App\UseCases\Member;
 
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\UserService;
 use App\UseCases\Member\Exceptions\MemberWithdrawalException;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\DB;
 
 class MemberWithdrawUseCase
@@ -15,6 +17,7 @@ class MemberWithdrawUseCase
     public function __construct(
         private SmaregiApiService $smaregiApi,
         private UserService $userService,
+        private CurrentMemberPrincipal $principals,
     ) {}
 
     /**
@@ -26,20 +29,26 @@ class MemberWithdrawUseCase
     {
         $projectId = AdminContext::getCurrentProjectId() ?? (int) $user->project_id;
 
-        $member = $user->member;
-        if ($member !== null) {
-            $smaregiCustomerId = $member->smaregi_customer_id ?? '';
-            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-            $contractId = is_string($contractId) ? trim($contractId) : '';
-            if ($contractId !== '' && $smaregiCustomerId !== null && $smaregiCustomerId !== '') {
-                $result = $this->smaregiApi->deleteCustomer($contractId, $smaregiCustomerId);
-                if ($result === null) {
-                    throw new MemberWithdrawalException('外部会員連携の解除に失敗しました。しばらくしてから再度お試しください。');
+        DB::transaction(function () use ($projectId, $user): void {
+            $owner = $this->principals->lock($user, $projectId);
+            if ($owner === null) {
+                throw new AuthenticationException('ユーザーを特定できません。ログインし直してください。');
+            }
+            $user = $owner;
+            $member = $owner->member;
+            // Keep ownership locked until external deletion and local withdrawal finish.
+            if ($member !== null) {
+                $smaregiCustomerId = $member->smaregi_customer_id ?? '';
+                $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+                $contractId = is_string($contractId) ? trim($contractId) : '';
+                if ($contractId !== '' && $smaregiCustomerId !== null && $smaregiCustomerId !== '') {
+                    $result = $this->smaregiApi->deleteCustomer($contractId, $smaregiCustomerId);
+                    if ($result === null) {
+                        throw new MemberWithdrawalException('外部会員連携の解除に失敗しました。しばらくしてから再度お試しください。');
+                    }
                 }
             }
-        }
 
-        DB::transaction(function () use ($member, $projectId, $user): void {
             if ($member !== null) {
                 $member->delete();
             }

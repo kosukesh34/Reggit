@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Scopes\ProjectScope;
 use App\Models\User;
 use App\Services\ExistingMemberLinkWriter;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -19,6 +20,7 @@ class ConfirmExistingMemberLinkUseCase
     public function __construct(
         private SmaregiApiService $smaregiApi,
         private ExistingMemberLinkWriter $writer,
+        private CurrentMemberPrincipal $principals,
     ) {}
 
     public function pendingRequest(string $token): ExistingMemberLinkRequest
@@ -58,14 +60,14 @@ class ConfirmExistingMemberLinkUseCase
                 throw new InvalidArgumentException('確認リンクが無効か、期限切れです');
             }
             $this->validateConfirmation($request, $authenticatedUser);
-            $user = $request->user_id !== null
-                ? User::query()->whereKey($request->user_id)->where('project_id', $request->project_id)->lockForUpdate()->first()
+            $user = $request->user_id !== null && $authenticatedUser !== null
+                ? $this->principals->lock($authenticatedUser, (int) $request->project_id)
                 : null;
             if ($request->user_id !== null && $user === null) {
                 throw new InvalidArgumentException('確認リンクが無効か、期限切れです');
             }
             if ($user !== null) {
-                $member = $user->member()->where('project_id', $request->project_id)->lockForUpdate()->first();
+                $member = $user->member;
                 if ($member !== null && trim((string) $member->smaregi_customer_id) !== '') {
                     throw new InvalidArgumentException('すでに既存会員連携済みです');
                 }
