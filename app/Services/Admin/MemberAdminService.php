@@ -299,7 +299,7 @@ class MemberAdminService
      * 会員のユーザー情報・会員情報を一括更新する。
      * ローカルを先に保存し、スマレジ連携はベストエフォート（失敗してもローカル更新は維持）。
      */
-    public function updateMemberProfile(Member $member, array $userData, array $memberData): void
+    public function updateMemberProfile(Member $member, array $userData, array $memberData, bool $profileExtraIsPatch = false): void
     {
         $allowedUser = ['name', 'kana', 'email', 'phone'];
         $updateUser = array_intersect_key($userData, array_flip($allowedUser));
@@ -319,10 +319,10 @@ class MemberAdminService
         $updateMember = array_intersect_key($memberData, array_flip($allowedMember));
         $updateMember = array_filter(
             $updateMember,
-            static fn ($value, string $key): bool => $key === 'profile_extra' || $key === 'mail_receive_flag' || $key === 'customer_store_id' || $value !== null,
+            static fn ($value, string $key): bool => ! in_array($key, ['member_number', 'status', 'rank', 'notification_preference'], true) || $value !== null,
             ARRAY_FILTER_USE_BOTH
         );
-        DB::transaction(function () use ($member, $updateUser, $updateMember): void {
+        DB::transaction(function () use ($member, $updateUser, $updateMember, $profileExtraIsPatch): void {
             $expectedUserId = (int) $member->user_id;
             $user = User::query()->whereKey($expectedUserId)->where('project_id', $member->project_id)
                 ->lockForUpdate()->first();
@@ -333,6 +333,10 @@ class MemberAdminService
             }
             if ($user !== null && $updateUser !== []) {
                 $user->update($updateUser);
+            }
+            $extraKeys = is_array($updateMember['profile_extra'] ?? null) ? array_keys($updateMember['profile_extra']) : [];
+            if ($profileExtraIsPatch && is_array($updateMember['profile_extra'] ?? null)) {
+                $updateMember['profile_extra'] = array_replace($member->profile_extra ?? [], $updateMember['profile_extra']);
             }
             if ($updateMember !== []) {
                 $previousRank = (string) ($member->rank ?? '');
@@ -360,8 +364,8 @@ class MemberAdminService
                     'name', 'kana', 'email', 'phone', 'member_number', 'birthday', 'address', 'postal_code',
                     'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'customer_store_id',
                 ]));
-                if (is_array($updateMember['profile_extra'] ?? null)) {
-                    $keys = array_values(array_unique(array_merge($keys, array_keys($updateMember['profile_extra']))));
+                if ($extraKeys !== []) {
+                    $keys = array_values(array_unique(array_merge($keys, $extraKeys)));
                 }
                 if ($keys !== []) {
                     $this->profileSync->record($member, $user, $keys);
