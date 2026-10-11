@@ -8,8 +8,10 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\MemberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class MemberProfileConsistencyTest extends TestCase
@@ -56,6 +58,79 @@ class MemberProfileConsistencyTest extends TestCase
         app(MemberService::class)->updateProfile($user, ['choice' => 'Osaka']);
         app(MemberService::class)->updateProfile($staleUser, ['checks' => ['C']]);
         $this->assertEquals(['choice' => 'Osaka', 'checks' => ['C']], $user->member->fresh()->profile_extra);
+    }
+
+    public function test_transferred_cached_member_cannot_be_updated_by_previous_owner(): void
+    {
+        $user = $this->user()->load('member');
+        $member = $user->member;
+        $member->update(['smaregi_customer_id' => 'customer']);
+        $newOwner = User::factory()->create(['project_id' => $user->project_id]);
+        $member->update(['user_id' => $newOwner->id]);
+
+        try {
+            app(MemberService::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
+            $this->fail('Expected the previous owner to be rejected');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('member', $exception->errors());
+        }
+
+        $this->assertSame('Original', $user->fresh()->name);
+        $this->assertSame('Original', $member->fresh()->city);
+        $this->assertDatabaseMissing('smaregi_member_profile_syncs', ['member_id' => $member->id]);
+    }
+
+    public function test_member_transferred_after_lookup_cannot_be_updated(): void
+    {
+        $user = $this->user()->load('member');
+        $member = $user->member;
+        $member->update(['smaregi_customer_id' => 'customer']);
+        $newOwner = User::factory()->create(['project_id' => $user->project_id]);
+        $transferred = false;
+        DB::connection()->beforeExecuting(function (string $query) use ($member, $newOwner, &$transferred): void {
+            if (! $transferred && str_contains($query, '`users`') && str_contains($query, 'for update')) {
+                $transferred = true;
+                $member->update(['user_id' => $newOwner->id]);
+            }
+        });
+
+        try {
+            app(MemberService::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
+            $this->fail('Expected the transferred member to be rejected');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('member', $exception->errors());
+        }
+
+        $this->assertTrue($transferred);
+        $this->assertSame('Original', $user->fresh()->name);
+        $this->assertSame('Original', $member->fresh()->city);
+        $this->assertDatabaseMissing('smaregi_member_profile_syncs', ['member_id' => $member->id]);
+    }
+
+    public function test_member_deleted_after_lookup_cannot_be_updated(): void
+    {
+        $user = $this->user()->load('member');
+        $member = $user->member;
+        $member->update(['smaregi_customer_id' => 'customer']);
+        $deleted = false;
+        DB::connection()->beforeExecuting(function (string $query) use ($member, &$deleted): void {
+            if (! $deleted && str_contains($query, '`users`') && str_contains($query, 'for update')) {
+                $deleted = true;
+                $member->delete();
+            }
+        });
+
+        try {
+            app(MemberService::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
+            $this->fail('Expected the deleted member to be rejected');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('member', $exception->errors());
+        }
+
+        $this->assertTrue($deleted);
+        $this->assertSame('Original', $user->fresh()->name);
+        $this->assertSame('Original', Member::withTrashed()->findOrFail($member->id)->city);
+        $this->assertDatabaseMissing('smaregi_member_profile_syncs', ['member_id' => $member->id]);
     }
 
     public function test_choices_with_commas_are_validated_as_complete_values(): void

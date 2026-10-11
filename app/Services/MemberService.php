@@ -371,12 +371,12 @@ class MemberService
 
     public function updateProfile(User $user, array $data): array
     {
-        $member = $user->member;
+        $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+        $member = $user->member()->where('project_id', $projectId)->first();
         if ($member === null) {
             throw ValidationException::withMessages(['member' => '会員登録が必要です']);
         }
 
-        $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
         $settings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
 
         $userUpdates = [];
@@ -422,9 +422,15 @@ class MemberService
             }
         }
 
-        DB::transaction(function () use ($user, $member, $userUpdates, $memberUpdates, $extraUpdates): void {
-            $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
-            $lockedMember = Member::query()->whereKey($member->id)->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($user, $member, $projectId, $userUpdates, $memberUpdates, $extraUpdates): void {
+            $lockedUser = User::query()->whereKey($user->id)->where('project_id', $projectId)->lockForUpdate()->first();
+            if ($lockedUser === null) {
+                throw ValidationException::withMessages(['member' => '会員登録が必要です']);
+            }
+            $lockedMember = $lockedUser->member()->whereKey($member->id)->where('project_id', $projectId)->lockForUpdate()->first();
+            if ($lockedMember === null) {
+                throw ValidationException::withMessages(['member' => '会員登録が必要です']);
+            }
             if ($userUpdates !== []) {
                 $lockedUser->update($userUpdates);
             }
