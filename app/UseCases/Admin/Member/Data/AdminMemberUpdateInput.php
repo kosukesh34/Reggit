@@ -16,6 +16,7 @@ class AdminMemberUpdateInput
         public int $memberId,
         public array $userData,
         public array $memberData,
-        public ?array $pointAdjustment
+        public ?array $pointAdjustment,
+        public bool $profileExtraIsPatch = false,
     ) {}
 }
