@@ -327,16 +327,21 @@ class LotteryEntitlementConsistencyTest extends TestCase
                         DB::purge();
                         DB::statement('SET SESSION innodb_lock_wait_timeout = 5');
                         $firstRead = true;
+                        if ($index === 1) {
+                            // Signal the attempt because the stamp worker already holds the member lock.
+                            DB::connection()->beforeExecuting(function ($query) use ($directory): void {
+                                if (str_contains($query, 'from `members`') && str_contains($query, 'for update')) {
+                                    file_put_contents($directory.'/read-1', 'ready');
+                                }
+                            });
+                        }
                         DB::listen(function ($query) use ($directory, $index, &$firstRead): void {
-                            $table = $index === 0 ? 'member_lottery_entitlements' : 'members';
-                            if (! $firstRead || ! str_contains($query->sql, 'from `'.$table.'`')) {
+                            if ($index !== 0 || ! $firstRead || ! str_contains($query->sql, 'from `member_lottery_entitlements`')) {
                                 return;
                             }
                             $firstRead = false;
-                            file_put_contents($directory.'/read-'.$index, 'ready');
-                            if ($index === 0) {
-                                $this->waitUntil(fn () => is_file($directory.'/release'));
-                            }
+                            file_put_contents($directory.'/read-0', 'ready');
+                            $this->waitUntil(fn () => is_file($directory.'/release'));
                         });
                         if ($index === 0) {
                             app(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 1);
