@@ -42,8 +42,9 @@ class BindAdminProject
         }
         if (app(StoreContext::class)->projectStoreCount > 1 && ! $request->isMethod('GET') && ! $admin->isSystemAdmin() && ! $admin->isProjectAdmin()) {
             $path = $request->path();
-            $commonSettings = $request->routeIs('admin.settings.*')
-                && ! $request->routeIs('admin.settings.basic.*', 'admin.settings.reservations.*', 'admin.settings.queue.*', 'admin.settings.store-app-credential.*', 'admin.settings.staff.*');
+            $commonSettings = $request->routeIs('admin.rfm.settings.update')
+                || ($request->routeIs('admin.settings.*')
+                    && ! $request->routeIs('admin.settings.basic.*', 'admin.settings.reservations.*', 'admin.settings.queue.*', 'admin.settings.store-app-credential.*', 'admin.settings.staff.*'));
             if ($commonSettings || preg_match('~/(products|gallery|coupons|stamps|accounts|member-tags|analysis-deliveries|after-registration-deliveries|coupon-deliveries)(/|$)~', $path) || preg_match('~/members/[^/]+$|/members/[^/]+/(tags|transfer-code)(/|$)~', $path)) {
                 abort(403, 'プロジェクト共通情報は本部管理者が変更してください。');
             }

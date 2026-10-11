@@ -84,6 +84,11 @@ class MultiStoreTest extends TestCase
             'announcements', 'member-code', 'wallet', 'payments'] as $setting) {
             $this->post('/admin/brand/settings/'.$setting)->assertForbidden();
         }
+        $this->put('/admin/brand/rfm/settings', [
+            'recency_active_days' => 10, 'recency_sleeping_days' => 20,
+            'frequency_high' => 2, 'monetary_high' => 1000,
+        ])->assertForbidden();
+        $this->assertDatabaseCount('project_rfm_settings', 0);
         $this->assertDatabaseCount('existing_member_link_requests', 0);
     }
 
@@ -95,6 +100,13 @@ class MultiStoreTest extends TestCase
             ])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertDatabaseHas('existing_member_link_settings', [
             'project_id' => $this->project->id, 'is_enabled' => true,
+        ]);
+        $this->put('/admin/brand/rfm/settings', [
+            'recency_active_days' => 10, 'recency_sleeping_days' => 20,
+            'frequency_high' => 2, 'monetary_high' => 1000,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('project_rfm_settings', [
+            'project_id' => $this->project->id, 'recency_active_days' => 10,
         ]);
         $this->b->delete();
         $this->actingAs($this->admin(), 'admin')
