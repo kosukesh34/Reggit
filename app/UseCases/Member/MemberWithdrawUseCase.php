@@ -3,6 +3,7 @@
 namespace App\UseCases\Member;
 
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\UserService;
 use App\UseCases\Member\Exceptions\MemberWithdrawalException;
@@ -16,6 +17,7 @@ class MemberWithdrawUseCase
     public function __construct(
         private SmaregiApiService $smaregiApi,
         private UserService $userService,
+        private CurrentMemberPrincipal $principals,
     ) {}
 
     /**
@@ -28,12 +30,12 @@ class MemberWithdrawUseCase
         $projectId = AdminContext::getCurrentProjectId() ?? (int) $user->project_id;
 
         DB::transaction(function () use ($projectId, $user): void {
-            $owner = User::query()->where('project_id', $projectId)->whereKey($user->id)->lockForUpdate()->first();
-            if ($owner === null || (int) $owner->authentication_version !== (int) $user->authentication_version) {
+            $owner = $this->principals->lock($user, $projectId);
+            if ($owner === null) {
                 throw new AuthenticationException('ユーザーを特定できません。ログインし直してください。');
             }
             $user = $owner;
-            $member = $owner->member()->where('project_id', $projectId)->lockForUpdate()->first();
+            $member = $owner->member;
             // Keep ownership locked until external deletion and local withdrawal finish.
             if ($member !== null) {
                 $smaregiCustomerId = $member->smaregi_customer_id ?? '';
