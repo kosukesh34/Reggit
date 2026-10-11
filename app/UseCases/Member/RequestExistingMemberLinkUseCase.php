@@ -122,9 +122,6 @@ class RequestExistingMemberLinkUseCase
                     throw new InvalidArgumentException('すでに既存会員連携済みです');
                 }
             }
-            if ($contractId !== trim((string) $this->smaregiApi->getContractIdForProject($projectId))) {
-                throw new InvalidArgumentException('スマレジの連携設定が変更されています。再度申請してください');
-            }
             ExistingMemberLinkRequest::query()->create([
                 'project_id' => $projectId,
                 'user_id' => $user?->id,
