@@ -3,7 +3,6 @@
 namespace App\Services\Smaregi;
 
 use App\Util\StrHelper;
-use Illuminate\Support\Facades\Log;
 
 class SmaregiCustomerRankSyncService
 {
@@ -142,10 +141,7 @@ class SmaregiCustomerRankSyncService
             }
             $res = $this->smaregiApi->deleteCustomerRank($contractId, (string) $rankId);
             if ($res === null) {
-                Log::warning('[Smaregi] customer_rank delete failed or skipped', [
-                    'project_id' => $projectId,
-                    'rank' => $rankId,
-                ]);
+                throw new \RuntimeException('スマレジの会員ランク削除に失敗しました（'.$rankId.'）。');
             }
         }
     }
@@ -191,7 +187,7 @@ class SmaregiCustomerRankSyncService
     {
         $result = $this->smaregiApi->getCustomerRanks($contractId, ['limit' => self::FETCH_RANKS_LIMIT]);
         if ($result === null) {
-            return [];
+            throw new \RuntimeException('スマレジの会員ランク一覧取得に失敗しました。');
         }
         $list = $this->extractList($result, self::RESPONSE_KEY_RANKS);
         $out = [];

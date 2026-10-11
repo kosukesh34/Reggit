@@ -9,6 +9,28 @@ use Tests\TestCase;
 
 class SmaregiCustomerRankSyncServiceTest extends TestCase
 {
+    public function test_failed_rank_fetch_does_not_create_replacement_ranks(): void
+    {
+        $api = Mockery::mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->once()->andReturn('contract');
+        $api->shouldReceive('getCustomerRanks')->once()->andReturnNull();
+        $api->shouldReceive('createCustomerRank')->never();
+        $this->expectException(\RuntimeException::class);
+
+        (new SmaregiCustomerRankSyncService($api))->sync(1, [['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]]);
+    }
+
+    public function test_failed_rank_delete_does_not_complete_empty_settings_sync(): void
+    {
+        $api = Mockery::mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->once()->andReturn('contract');
+        $api->shouldReceive('getCustomerRanks')->once()->andReturn(['customer_ranks' => [['rank' => 'old', 'name' => 'Old']]]);
+        $api->shouldReceive('deleteCustomerRank')->once()->with('contract', 'old')->andReturnNull();
+        $this->expectException(\RuntimeException::class);
+
+        (new SmaregiCustomerRankSyncService($api))->sync(1, []);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
