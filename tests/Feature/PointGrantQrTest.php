@@ -9,8 +9,10 @@ use App\Models\PointGrantCode;
 use App\Models\Project;
 use App\Models\Settings\ProjectLineLiffSetting;
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\Services\Member\PointQrRedeemer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\TestWith;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -66,6 +68,19 @@ class PointGrantQrTest extends TestCase
         $this->assertDatabaseCount('point_grant_redemptions', 0);
         $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id]);
         $this->assertSame(0, (int) $member->fresh()->points);
+    }
+
+    public function test_current_principal_preserves_guest_access_and_rejects_wrong_project_snapshot(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $principal = DB::transaction(fn () => app(CurrentMemberPrincipal::class)->lock($user, (int) $project->id));
+        $this->assertNotNull($principal);
+        $this->assertNull($principal->member);
+        $other = Project::factory()->create();
+        $user->project_id = $other->id;
+        $rejected = DB::transaction(fn () => app(CurrentMemberPrincipal::class)->lock($user, (int) $project->id));
+        $this->assertNull($rejected);
     }
 
     public function test_会員がポイントを受け取り重複や上限超過は付与されない(): void
