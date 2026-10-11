@@ -343,28 +343,54 @@ class MemberService
 
     public function saveProfileImage(User $user, UploadedFile $image): array
     {
-        $this->assertProfileImageAvailable($user);
-        $oldPath = $user->profile_image_path;
-        $path = $image->store('member-profile-images/'.(int) $user->project_id, 'public');
-        if ($path === false) {
-            throw new \RuntimeException('Failed to store image');
-        }
-        $user->update(['profile_image_path' => $path]);
-        if ($oldPath !== null && $oldPath !== '' && $oldPath !== $path) {
-            Storage::disk('public')->delete($oldPath);
-        }
-
-        return $this->getMemberData($user->fresh(['member']));
+        return $this->writeProfileImage($user, $image);
     }
 
     public function deleteProfileImage(User $user): array
     {
-        $this->assertProfileImageAvailable($user);
-        $oldPath = $user->profile_image_path;
-        $user->update(['profile_image_path' => null]);
-        if ($oldPath !== null && $oldPath !== '') {
-            Storage::disk('public')->delete($oldPath);
-        }
+        return $this->writeProfileImage($user, null);
+    }
+
+    private function writeProfileImage(User $user, ?UploadedFile $image): array
+    {
+        $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+        DB::transaction(function () use ($user, $image, $projectId): void {
+            $owner = User::query()->where('project_id', $projectId)->whereKey($user->id)->lockForUpdate()->first();
+            if ($owner === null || (int) $owner->authentication_version !== (int) $user->authentication_version) {
+                throw ValidationException::withMessages(['image' => '会員登録が必要です']);
+            }
+            $member = $owner->member()->where('project_id', $projectId)->lockForUpdate()->first();
+            $owner->setRelation('member', $member);
+            $this->assertProfileImageAvailable($owner);
+            $oldPath = $owner->profile_image_path;
+            $path = null;
+            try {
+                if ($image !== null) {
+                    $stored = $image->store('member-profile-images/'.$projectId, 'public');
+                    if ($stored === false) {
+                        throw new \RuntimeException('Failed to store image');
+                    }
+                    $path = $stored;
+                }
+                $owner->update(['profile_image_path' => $path]);
+            } catch (\Throwable $exception) {
+                if ($path !== null) {
+                    Storage::disk('public')->delete($path);
+                }
+                throw $exception;
+            }
+            if ($oldPath !== null && $oldPath !== '' && $oldPath !== $path) {
+                DB::afterCommit(function () use ($oldPath): void {
+                    try {
+                        Storage::disk('public')->delete($oldPath);
+                    } catch (\Throwable $exception) {
+                        LogHelper::warning('[Member] old profile image cleanup failed', [
+                            'error' => $exception->getMessage(),
+                        ]);
+                    }
+                });
+            }
+        }, 3);
 
         return $this->getMemberData($user->fresh(['member']));
     }

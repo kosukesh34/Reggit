@@ -117,6 +117,7 @@ class PaymentWebhookUseCaseTest extends TestCase
 
     public function test_handle_既に確定済みなら遅延同期ジョブを積むこと(): void
     {
+        $this->freezeTime();
         Queue::fake();
 
         Project::firstOrCreate(
