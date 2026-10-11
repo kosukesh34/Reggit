@@ -6,8 +6,14 @@ use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\UserService;
+use App\UseCases\Member\MemberWithdrawUseCase;
+use App\Util\AdminContext;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class MemberWithdrawTest extends TestCase
@@ -24,6 +30,51 @@ class MemberWithdrawTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
+    }
+
+    #[TestWith(['revoked'])]
+    #[TestWith(['deleted'])]
+    public function test_stale_user_cannot_withdraw_or_delete_external_member(string $change): void
+    {
+        $project = $this->createProject();
+        AdminContext::setCurrentProject($project);
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'smaregi_customer_id' => 'current-customer']);
+        $user->load('member');
+        if ($change === 'revoked') {
+            $user->fresh()->increment('authentication_version');
+        } else {
+            $user->fresh()->delete();
+        }
+        Http::fake();
+        $rejected = false;
+        try {
+            app(MemberWithdrawUseCase::class)->handle($user);
+        } catch (AuthenticationException $exception) {
+            $rejected = true;
+        }
+        $this->assertTrue($rejected);
+        $this->assertFalse($member->fresh()->trashed());
+        Http::assertNothingSent();
+    }
+
+    #[TestWith(['legacy'])]
+    #[TestWith(['v1'])]
+    public function test_withdraw_controller_returns_unauthorized_for_revoked_user(string $endpoint): void
+    {
+        $project = $this->createProject();
+        AdminContext::setCurrentProject($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $user->fresh()->increment('authentication_version');
+        $this->mock(UserService::class)->shouldReceive('findUser')->once()->andReturn($user);
+        $controller = $endpoint === 'legacy'
+            ? app(\App\Http\Controllers\Member\MemberWithdrawController::class)
+            : app(\App\Http\Controllers\Api\V1\Member\MemberWithdrawController::class);
+        $response = $controller(Request::create('/withdraw', 'POST'));
+        $this->assertSame(401, $response->getStatusCode());
+        $this->assertFalse($user->fresh()->trashed());
     }
 
     public function test_withdraw_スマレジ会員が既に無い404でも退会できること(): void
