@@ -11,6 +11,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Order as OrderModel;
 use App\Models\OrderItem;
 use App\Models\Scopes\ProjectScope;
+use App\Models\Scopes\StoreAccessScope;
 use Illuminate\Database\Eloquent\Builder;
 
 class EloquentOrderRepository implements OrderRepository
@@ -193,6 +194,27 @@ class EloquentOrderRepository implements OrderRepository
 
     public function findUnsyncedSmaregiPointsOrdersForUser(int $userId, int $projectId): array
     {
+        return $this->unsyncedSmaregiPointsOrdersForUser($userId, $projectId)
+            ->get(['id', 'project_id', 'user_id'])
+            ->map(static fn (OrderModel $order): array => [
+                'orderId' => (int) $order->id,
+                'projectId' => (int) $order->project_id,
+                'userId' => (int) $order->user_id,
+            ])
+            ->all();
+    }
+
+    public function hasUnsyncedSmaregiPointsForUser(int $userId, int $projectId): bool
+    {
+        // Member balances span stores; explicit user/project filters retain tenant isolation.
+        return $this->unsyncedSmaregiPointsOrdersForUser($userId, $projectId)
+            ->withoutGlobalScope(StoreAccessScope::class)
+            ->whereColumn('points_earned', '!=', 'points_used')
+            ->exists();
+    }
+
+    private function unsyncedSmaregiPointsOrdersForUser(int $userId, int $projectId): Builder
+    {
         return $this->newQuery()
             ->where('user_id', $userId)
             ->where('project_id', $projectId)
@@ -203,14 +225,7 @@ class EloquentOrderRepository implements OrderRepository
             ->where(function ($query): void {
                 $query->where('points_used', '>', 0)
                     ->orWhere('points_earned', '>', 0);
-            })
-            ->get(['id', 'project_id', 'user_id'])
-            ->map(static fn (OrderModel $order): array => [
-                'orderId' => (int) $order->id,
-                'projectId' => (int) $order->project_id,
-                'userId' => (int) $order->user_id,
-            ])
-            ->all();
+            });
     }
 
     public function isSmaregiTransactionSynced(int $orderId, int $projectId): bool
