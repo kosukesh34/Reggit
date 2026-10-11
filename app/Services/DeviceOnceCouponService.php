@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Coupon\Policies\CouponIssuePolicy;
 use App\Models\Coupon;
 use App\Models\CouponDeviceIssue;
+use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\User;
 use App\Models\UserDevice;
@@ -74,7 +75,14 @@ class DeviceOnceCouponService
         }
 
         try {
-            return DB::transaction(function () use ($member, $coupon, $deviceIdentifier): MemberCoupon {
+            return DB::transaction(function () use ($user, $member, $coupon, $deviceIdentifier): MemberCoupon {
+                $member = Member::query()->whereKey($member->id)
+                    ->where('project_id', (int) $member->project_id)
+                    ->where('user_id', (int) $user->id)->lockForUpdate()->first();
+                if ($member === null) {
+                    throw ValidationException::withMessages(['member' => '会員登録が必要です']);
+                }
+
                 $now = now();
                 $deviceIssue = CouponDeviceIssue::create([
                     'project_id' => (int) $member->project_id,
