@@ -38,9 +38,11 @@ Existing uncommitted landing-registration changes were preserved and excluded fr
 5. **High: branch admins could update project-common settings in multi-store projects.**
    The headquarters restriction omitted `/settings/*`, while branch ROLE_ADMIN users
    retain settings permissions. Profile definitions, ranks, linking, LINE/brand and
-   payment settings could therefore bypass the documented headquarters boundary. Fix:
+   payment settings, plus shared RFM criteria, could therefore bypass the documented headquarters boundary. Fix:
    classify settings mutations by route name, deny common settings to branch admins,
-   and explicitly retain store-owned Basic/Reservations/Queue, device enrollment and
+   use route URI templates for existing path classification so project keys such as
+   `products` do not cause false denials, and retain store-owned Basic/Reservations/Queue,
+   device enrollment and
    separately authorized staff routes. Headquarters and single-store behavior remain.
 
 ## Architecture decisions
