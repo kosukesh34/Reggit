@@ -7,6 +7,8 @@ benefit grants, withdrawal, existing-member linking and payment-session issuance
 The architecture exploration covered registration, membership and Apple Pass packaging.
 A final static sweep also covered admin tenant/store authorization and representative
 frontend state, API/CSRF and DOM output boundaries.
+A second pass covered reservation-course authorization, legacy payment settlement and
+order-notification retries after state changes.
 This is a focused critical review, not proof that every application path is defect-free.
 Existing uncommitted landing-registration changes were preserved and excluded from patches.
 
@@ -45,6 +47,24 @@ Existing uncommitted landing-registration changes were preserved and excluded fr
    device enrollment and
    separately authorized staff routes. Headquarters and single-store behavior remain.
 
+6. **High: shared reservation courses were exempted as store-owned settings.**
+   Branch admins could create, reprice or deactivate courses used by every store.
+   Fix: exempt only the exact operational reservation-settings update route; course
+   mutations require headquarters in multi-store projects. Regression tests retain
+   branch slot updates, headquarters course management and single-store behavior.
+7. **Medium: legacy payment settlement did not validate currency.** Frontend confirmation
+   and the global webhook could confirm a JPY order using a succeeded payment with the
+   same numerical amount in another currency. Fix: require explicit JPY in both legacy
+   and project-account paths. Tests reject USD and missing currency before rewards,
+   order numbering, outbox recording or queue dispatch. No public-input exploit was demonstrated.
+8. **Medium: notification retries could send obsolete order instructions.** A failed
+   confirmation/ready notification retried after cancellation could tell the customer
+   to collect an order or tell the kitchen to prepare it. Fix: check current order
+   state before delivery, finish obsolete rows and suppress kitchen new-order notices
+   once the order is ready. Failure → cancellation/completion → retry tests verify no
+   provider call and no endless retry. This does not make a concurrent cancellation
+   and an external provider request atomic.
+
 ## Architecture decisions
 
 **Implemented:** encapsulate current principal lookup, tenant scope, generation validation
@@ -52,6 +72,12 @@ and User → Member lock ordering in one small module. Callers own their transac
 business policy; the module does not send external requests, create members or commit.
 Existing Order → User → Member and LinkRequest → User → Member sequences stay intact.
 Avoid changing all use cases into a single generic service or replacing Laravel's container.
+
+**Implemented in the second pass:** retain the existing module interfaces and correct
+three invariants at their current seams: route-based common/store authorization,
+settlement currency validation and actionable outbox delivery. This improves locality
+without adding new adapters or moving complexity between callers. Both settlement
+entry points require JPY; outbox retry policy lives in the delivery module.
 
 **Worth exploring, not a confirmed defect:** membership registration spans validation,
 remote-customer acquisition and local persistence. A clearer acquisition/persistence seam
