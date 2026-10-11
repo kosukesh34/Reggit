@@ -8,7 +8,9 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
+use App\Services\DeviceOnceCouponService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class DeviceOnceCouponTest extends TestCase
@@ -80,5 +82,52 @@ class DeviceOnceCouponTest extends TestCase
             ])
             ->post("/api/v1/device-coupons/{$coupon->id}/claim")
             ->assertStatus(422);
+    }
+
+    public function test_cached_deleted_member_cannot_claim_a_device_coupon(): void
+    {
+        [$user, $member, $coupon] = $this->deviceCouponFixture();
+        $user->load('member');
+        $member->delete();
+
+        $this->assertClaimRejected($user, $coupon);
+    }
+
+    public function test_cached_member_transferred_to_another_user_cannot_claim_a_device_coupon(): void
+    {
+        [$user, $member, $coupon] = $this->deviceCouponFixture();
+        $user->load('member');
+        $other = User::factory()->create(['project_id' => $user->project_id]);
+        $member->update(['user_id' => $other->id]);
+
+        $this->assertClaimRejected($user, $coupon);
+    }
+
+    private function deviceCouponFixture(): array
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        UserDevice::query()->create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'platform' => 'ios', 'device_identifier' => 'lifecycle-device',
+        ]);
+        $coupon = Coupon::factory()->create([
+            'project_id' => $project->id, 'is_active' => true, 'device_once_enabled' => true,
+        ]);
+
+        return [$user, $member, $coupon];
+    }
+
+    private function assertClaimRejected(User $user, Coupon $coupon): void
+    {
+        try {
+            app(DeviceOnceCouponService::class)->claim($user, $coupon, 'lifecycle-device');
+            $this->fail('A stale member must not receive a device coupon.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('member', $exception->errors());
+        }
+        $this->assertDatabaseCount('coupon_device_issues', 0);
+        $this->assertDatabaseCount('member_coupons', 0);
     }
 }
