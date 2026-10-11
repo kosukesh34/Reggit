@@ -15,6 +15,19 @@ class SmaregiCustomerUpdatePayloadBuilderTest extends TestCase
         $this->builder = new SmaregiCustomerUpdatePayloadBuilder;
     }
 
+    public function test_patch_preserves_explicit_optional_clears_and_omits_missing_fields(): void
+    {
+        $data = ['name' => null, 'kana' => '', 'email' => null, 'phone' => '', 'postal_code' => null, 'birthday' => null, 'address' => null, 'sex' => null];
+        $this->assertSame([], $this->builder->buildFromProfileData($data));
+        $this->assertSame([
+            'mailAddress' => null, 'phoneNumber' => null, 'postCode' => null, 'birthDate' => null,
+            'lastName' => null, 'firstName' => null, 'lastKana' => null, 'firstKana' => null,
+            'address' => null, 'sex' => '0',
+        ], $this->builder->buildFromProfilePatchData($data));
+        $this->assertSame(['phoneNumber' => '09012345678'], $this->builder->buildFromProfilePatchData(['phone' => '09012345678']));
+        $this->assertSame(['address' => null], $this->builder->buildFromProfilePatchData(['prefecture' => null, 'city' => '', 'street' => null]));
+    }
+
     public function test_不正なメールアドレスはスマレジに送らないこと(): void
     {
         $body = $this->builder->buildFromProfileData([

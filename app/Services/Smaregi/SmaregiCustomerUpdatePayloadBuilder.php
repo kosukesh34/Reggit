@@ -122,6 +122,39 @@ class SmaregiCustomerUpdatePayloadBuilder
     }
 
     /**
+     * PATCH keeps explicit clears; creation keeps omitting blank optional values.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  list<array{key?: string, smaregi_no?: int|null}>  $customFieldDefs
+     * @return array<string, string|null|list<array{no: int, value: string|null}>>
+     */
+    public function buildFromProfilePatchData(array $data, array $customFieldDefs = []): array
+    {
+        $body = $this->buildFromAdminMemberData([], $data, $customFieldDefs);
+        foreach (['email' => 'mailAddress', 'phone' => 'phoneNumber', 'postal_code' => 'postCode', 'birthday' => 'birthDate'] as $key => $remoteKey) {
+            if (array_key_exists($key, $data) && ($data[$key] === null || (is_string($data[$key]) && trim($data[$key]) === ''))) {
+                $body[$remoteKey] = null;
+            }
+        }
+        foreach (['name' => ['lastName', 'firstName'], 'kana' => ['lastKana', 'firstKana']] as $key => $remoteKeys) {
+            if (array_key_exists($key, $data) && trim((string) $data[$key]) === '') {
+                foreach ($remoteKeys as $remoteKey) {
+                    $body[$remoteKey] = null;
+                }
+            }
+        }
+        if (array_intersect(array_keys($data), ['address', 'prefecture', 'city', 'street']) !== []
+            && $this->composeAddress($data) === '') {
+            $body['address'] = null;
+        }
+        if (array_key_exists('sex', $data) && trim((string) $data['sex']) === '') {
+            $body['sex'] = '0';
+        }
+
+        return $body;
+    }
+
+    /**
      * 会員新規登録時用。氏名・カナが空のときスマレジ必須対策のプレースホルダを補う。
      *
      * @param  array<string, string|list<array{no: int, value: string|null}>>  $body

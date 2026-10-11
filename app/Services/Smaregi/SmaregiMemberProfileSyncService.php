@@ -46,7 +46,7 @@ class SmaregiMemberProfileSyncService
             }
         }
         $data = array_intersect_key($data, array_flip($keys));
-        $body = $this->payloads->buildFromAdminMemberData([], $this->stores->forSmaregi($data, $projectId),
+        $body = $this->payloads->buildFromProfilePatchData($this->stores->forSmaregi($data, $projectId),
             $this->settings->getProfileFieldSettings($projectId)['custom_fields'] ?? []);
         SmaregiMemberProfileSync::upsert([[
             'member_id' => $member->id, 'project_id' => $projectId, 'customer_id' => $customerId,
