@@ -164,13 +164,13 @@ class OrderRewardService
 
     private function loadMemberForPointUpdate(User $user, int $projectId): MemberAggregate
     {
-        $member = $this->memberRepository->findByUserId((int) $user->id, $projectId);
+        $member = $this->memberRepository->findByUserIdForUpdate((int) $user->id, $projectId);
         if ($member === null) {
             throw new OrderOperationException('会員登録が必要です');
         }
 
         $this->memberRepository->syncPointsLedger($member->id()->value(), $projectId);
-        $locked = $this->memberRepository->findByIdForUpdate($member->id()->value(), $projectId);
+        $locked = $this->memberRepository->findByUserIdForUpdate((int) $user->id, $projectId);
         if ($locked === null) {
             throw new OrderOperationException('会員登録が必要です');
         }

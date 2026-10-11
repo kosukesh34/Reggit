@@ -257,10 +257,7 @@ class OrderService
 
         DB::transaction(function () use ($order, $projectId): void {
             if ($order->user !== null) {
-                $member = $this->memberRepository->findByUserId((int) $order->user_id, $projectId);
-                if ($member !== null) {
-                    $member = $this->memberRepository->findByIdForUpdate($member->id()->value(), $projectId);
-                }
+                $member = $this->memberRepository->findByUserIdForUpdate((int) $order->user_id, $projectId);
                 if ($member !== null) {
                     $this->refundPointsUsed($order, $member);
                     $this->reversePointsEarned($order, $member);
