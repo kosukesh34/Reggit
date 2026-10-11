@@ -3,6 +3,7 @@
 namespace App\UseCases\Reservation;
 
 use App\Models\Store;
+use App\Models\User;
 use App\Services\ReservationService;
 use App\UseCases\Reservation\Data\ReservationActionOutput;
 use App\UseCases\Reservation\Data\ReservationStoreInput;
@@ -20,10 +21,6 @@ class ReservationStoreUseCase
 
     public function handle(ReservationStoreInput $input): ReservationActionOutput
     {
-        if ($input->user->member === null) {
-            return new ReservationActionOutput(true, null, null);
-        }
-
         $reservationPayload = $input->reservationPayload;
         $reservedAt = DateUtil::nullableCarbon($reservationPayload['reserved_at'])
             ?->setTimezone(config('app.timezone'));
@@ -33,6 +30,13 @@ class ReservationStoreUseCase
 
         return DB::transaction(function () use ($input, $reservedAt, $reservationPayload): ReservationActionOutput {
             $projectId = AdminContext::requireCurrentProjectId();
+            $user = User::query()->where('project_id', $projectId)->whereKey($input->user->id)
+                ->lockForUpdate()->first();
+            if ($user === null
+                || (int) $user->authentication_version !== (int) $input->user->authentication_version
+                || $user->member()->where('project_id', $projectId)->lockForUpdate()->first() === null) {
+                return new ReservationActionOutput(true, null, null);
+            }
             $storeId = app(StoreContext::class)->resolveForWrite($projectId);
             // An existing store row serializes capacity checks, including empty slots.
             Store::where('project_id', $projectId)->whereKey($storeId)->lockForUpdate()->firstOrFail();
@@ -43,7 +47,7 @@ class ReservationStoreUseCase
             }
 
             $reservationPayload['reserved_at'] = $reservedAt->format('Y-m-d H:i:s');
-            $reservation = $this->reservationService->createReservation($input->user, $reservationPayload);
+            $reservation = $this->reservationService->createReservation($user, $reservationPayload);
 
             return new ReservationActionOutput(false, $reservation, null);
         }, 3);
