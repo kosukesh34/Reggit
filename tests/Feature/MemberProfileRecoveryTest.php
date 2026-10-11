@@ -15,16 +15,24 @@ use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\AfterClass;
+use PHPUnit\Framework\Attributes\BeforeClass;
 use Tests\TestCase;
 
 class MemberProfileRecoveryTest extends TestCase
 {
     use DatabaseTruncation;
 
-    protected function tearDown(): void
+    #[BeforeClass]
+    public static function resetMigrationBeforeClass(): void
     {
         RefreshDatabaseState::$migrated = false;
-        parent::tearDown();
+    }
+
+    #[AfterClass]
+    public static function resetMigrationAfterClass(): void
+    {
+        RefreshDatabaseState::$migrated = false;
     }
 
     private function user(): User

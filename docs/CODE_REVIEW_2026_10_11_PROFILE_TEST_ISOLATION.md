@@ -1,0 +1,11 @@
+# プロフィールcommitテストのDB隔離
+
+MemberProfileExternalSyncTestとMemberProfileRecoveryTestはDatabaseTruncationを使いますが、毎tearDownでRefreshDatabaseState::$migratedをfalseにし、次のテストで全migrationを再実行していました。クラス内にschema変更はなく、各fixtureは独自のProject・会員を作成するため、毎回のschema再作成は不要です。
+
+PHPUnitのBeforeClass・AfterClassでmigration stateをresetします。クラス最初はmigrate:fresh、クラス内は標準truncate、クラス終了後は次のRefreshDatabaseテストが初期データを復元します。transactionで全体を包まないため、最終commit・外側rollback・配送後の状態という検証契約を保ちます。テスト本体・assertions・skip条件・900秒制限・検証項目は変更しません。
+
+関連36テスト178 assertions成功（75.24秒）。直前の全体検証ログでは対象2クラスの27テスト合計451.03秒、変更後の関連実行では52.66秒でした。実行条件が異なるため厳密な比較benchmarkではありませんが、毎テストのmigration再実行を排除したことはコードと実行結果で確認できます。独立5軸レビューでブロッカーなし。隔離ローカルDocker、実外部API・本番DBは対象外。
+
+最新HEADの全ローカル検証を指定merge-pr.shで新規実行し、成功時のみマージします。GitHub Actions結果は使用しません。
+
+後続RefreshDatabaseクラスを含む遷移検証も41テスト190 assertions成功（28.29秒）。クラス終了後の通常会員登録・rollback検証を確認。
