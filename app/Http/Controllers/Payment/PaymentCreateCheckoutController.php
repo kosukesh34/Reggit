@@ -9,6 +9,7 @@ use App\UseCases\Payment\PaymentSessionInProgressException;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\Request;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 
@@ -35,9 +36,11 @@ class PaymentCreateCheckoutController extends Controller
             return response()->json($this->useCase->handle(
                 (int) $request->order_id,
                 $projectId,
-                (int) $user->id,
+                $user,
                 (string) $request->input('surface', 'native'),
             )->toArray());
+        } catch (AuthenticationException $e) {
+            return response()->json(['error' => $e->getMessage()], 401);
         } catch (PaymentSessionInProgressException $e) {
             return response()->json(['error' => $e->getMessage()], 409);
         } catch (InvalidArgumentException $e) {

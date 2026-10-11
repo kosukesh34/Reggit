@@ -125,11 +125,11 @@ class SecurityBoundaryTest extends TestCase
             'points_used' => 0, 'points_earned' => 0, 'order_type' => 'mobile',
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateIntentUseCase(new OrderPaymentSessionService($gateway));
+        $useCase = new PaymentCreateIntentUseCase(new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
 
         $this->expectException(\InvalidArgumentException::class);
         try {
-            $useCase->handle($order->id, $this->project->id, $user->id);
+            $useCase->handle($order->id, $this->project->id, $user);
         } finally {
             $this->assertSame([], $gateway->created);
         }
@@ -206,13 +206,13 @@ class SecurityBoundaryTest extends TestCase
         $gateway = \Mockery::mock(PaymentGateway::class);
         $gateway->shouldReceive('createPaymentIntent')->once()->with(1200, $order->id)
             ->andReturn(['id' => 'pi_once', 'client_secret' => 'secret_once']);
-        $sessions = new OrderPaymentSessionService($gateway);
-        $first = $sessions->create($order->id, $this->project->id, $user->id, 'intent');
-        $this->assertSame($first, $sessions->create($order->id, $this->project->id, $user->id, 'intent'));
+        $sessions = new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class));
+        $first = $sessions->create($order->id, $this->project->id, $user, 'intent');
+        $this->assertSame($first, $sessions->create($order->id, $this->project->id, $user, 'intent'));
         $this->assertArrayNotHasKey('payment_session', $order->fresh()->toArray());
         $this->assertStringNotContainsString('secret_once', $order->fresh()->getRawOriginal('payment_session'));
         $this->expectException(\InvalidArgumentException::class);
-        $sessions->create($order->id, $this->project->id, $user->id, 'checkout');
+        $sessions->create($order->id, $this->project->id, $user, 'checkout');
     }
 
     public function test_payment_gateway_runs_after_the_order_reservation_transaction(): void
@@ -233,9 +233,9 @@ class SecurityBoundaryTest extends TestCase
             return ['id' => 'pi_reserved', 'client_secret' => 'secret_reserved'];
         });
 
-        $sessions = new OrderPaymentSessionService($gateway);
-        $this->assertSame('pi_reserved', $sessions->create($order->id, $this->project->id, $user->id, 'intent')['id']);
-        $this->assertSame('pi_reserved', $sessions->create($order->id, $this->project->id, $user->id, 'intent')['id']);
+        $sessions = new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class));
+        $this->assertSame('pi_reserved', $sessions->create($order->id, $this->project->id, $user, 'intent')['id']);
+        $this->assertSame('pi_reserved', $sessions->create($order->id, $this->project->id, $user, 'intent')['id']);
     }
 
     public function test_payment_reservation_blocks_concurrent_creation_and_can_be_retried_after_failure(): void
@@ -250,8 +250,8 @@ class SecurityBoundaryTest extends TestCase
         $gateway = \Mockery::mock(PaymentGateway::class);
         $gateway->shouldReceive('createPaymentIntent')->once()->andReturnUsing(function () use ($order, $user) {
             try {
-                (new OrderPaymentSessionService(\Mockery::mock(PaymentGateway::class)))
-                    ->create($order->id, $this->project->id, $user->id, 'intent');
+                (new OrderPaymentSessionService(\Mockery::mock(PaymentGateway::class), app(\App\Services\Member\CurrentMemberPrincipal::class)))
+                    ->create($order->id, $this->project->id, $user, 'intent');
                 $this->fail('A second gateway call should be blocked');
             } catch (PaymentSessionInProgressException) {
                 // The first reservation is still active.
@@ -259,9 +259,9 @@ class SecurityBoundaryTest extends TestCase
 
             throw new \RuntimeException('gateway unavailable');
         });
-        $sessions = new OrderPaymentSessionService($gateway);
+        $sessions = new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class));
         try {
-            $sessions->create($order->id, $this->project->id, $user->id, 'intent');
+            $sessions->create($order->id, $this->project->id, $user, 'intent');
             $this->fail('The gateway error should propagate');
         } catch (\RuntimeException $e) {
             $this->assertSame('gateway unavailable', $e->getMessage());
@@ -275,8 +275,8 @@ class SecurityBoundaryTest extends TestCase
         $retryGateway = \Mockery::mock(PaymentGateway::class);
         $retryGateway->shouldReceive('createPaymentIntent')->once()
             ->andReturn(['id' => 'pi_retry', 'client_secret' => 'retry_secret']);
-        $this->assertSame('pi_retry', (new OrderPaymentSessionService($retryGateway))
-            ->create($order->id, $this->project->id, $user->id, 'intent')['id']);
+        $this->assertSame('pi_retry', (new OrderPaymentSessionService($retryGateway, app(\App\Services\Member\CurrentMemberPrincipal::class)))
+            ->create($order->id, $this->project->id, $user, 'intent')['id']);
     }
 
     public function test_expired_payment_reservation_can_be_recovered(): void
@@ -296,8 +296,8 @@ class SecurityBoundaryTest extends TestCase
         $gateway->shouldReceive('createPaymentIntent')->once()
             ->andReturn(['id' => 'pi_recovered', 'client_secret' => 'secret_recovered']);
 
-        $result = (new OrderPaymentSessionService($gateway))
-            ->create($order->id, $this->project->id, $user->id, 'intent');
+        $result = (new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)))
+            ->create($order->id, $this->project->id, $user, 'intent');
 
         $this->assertSame('pi_recovered', $result['id']);
         $this->assertSame($result, $order->fresh()->payment_session['result']);

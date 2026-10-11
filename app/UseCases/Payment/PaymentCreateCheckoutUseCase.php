@@ -3,6 +3,7 @@
 namespace App\UseCases\Payment;
 
 use App\Models\Order;
+use App\Models\User;
 use App\Models\Project;
 use App\UseCases\Payment\Data\PaymentCheckoutOutput;
 use Illuminate\Support\Facades\URL;
@@ -13,7 +14,7 @@ class PaymentCreateCheckoutUseCase
         private OrderPaymentSessionService $sessions,
     ) {}
 
-    public function handle(int $orderId, int $projectId, int $userId, string $surface = 'native'): PaymentCheckoutOutput
+    public function handle(int $orderId, int $projectId, User $user, string $surface = 'native'): PaymentCheckoutOutput
     {
         $order = Order::where('project_id', $projectId)->findOrFail($orderId);
         $savedChannel = $order->payment_session['channel'] ?? null;
@@ -22,7 +23,7 @@ class PaymentCreateCheckoutUseCase
         }
         $channel = $savedChannel ?? ($order->payment_setting_id !== null || $surface === 'web'
             ? ($surface === 'web' ? 'checkout_web' : 'checkout') : 'card');
-        $result = $this->sessions->create($orderId, $projectId, $userId, $channel);
+        $result = $this->sessions->create($orderId, $projectId, $user, $channel);
         if (in_array($channel, ['checkout', 'checkout_web'], true)) {
             return new PaymentCheckoutOutput($result['url'], $result['id']);
         }

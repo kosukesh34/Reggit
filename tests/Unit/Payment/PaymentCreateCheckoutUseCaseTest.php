@@ -38,9 +38,9 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
 
-        $output = $useCase->handle((int) $order->id, (int) $project->id, (int) $user->id);
+        $output = $useCase->handle((int) $order->id, (int) $project->id, $user);
 
         $this->assertStringContainsString('/mobile/payment/card/'.$order->id, $output->checkoutUrl);
         $this->assertStringContainsString('signature=', $output->checkoutUrl);
@@ -49,7 +49,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
         $this->assertEmpty($gateway->checkoutCreated);
         $this->assertSame('card', $order->fresh()->payment_session['channel']);
         $this->travel(2)->days();
-        $again = $useCase->handle((int) $order->id, (int) $project->id, (int) $user->id);
+        $again = $useCase->handle((int) $order->id, (int) $project->id, $user);
         $this->assertSame($output->sessionId, $again->sessionId);
         $this->assertNotSame($output->checkoutUrl, $again->checkoutUrl);
         $this->travelBack();
@@ -70,9 +70,9 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
         ]];
         $order->save();
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
 
-        $output = $useCase->handle((int) $order->id, (int) $project->id, (int) $user->id);
+        $output = $useCase->handle((int) $order->id, (int) $project->id, $user);
 
         $this->assertSame('https://checkout.stripe.test/existing', $output->checkoutUrl);
         $this->assertSame('cs_existing', $output->sessionId);
@@ -95,11 +95,11 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('未決済の注文のみ決済できます');
 
-        $useCase->handle((int) $order->id, (int) $project->id, (int) $user->id);
+        $useCase->handle((int) $order->id, (int) $project->id, $user);
     }
 }

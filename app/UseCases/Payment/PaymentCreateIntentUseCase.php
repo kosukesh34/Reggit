@@ -3,6 +3,7 @@
 namespace App\UseCases\Payment;
 
 use App\Models\Order;
+use App\Models\User;
 use App\Models\Settings\ProjectPaymentSetting;
 use App\UseCases\Payment\Data\PaymentIntentOutput;
 
@@ -12,9 +13,9 @@ class PaymentCreateIntentUseCase
         private OrderPaymentSessionService $sessions,
     ) {}
 
-    public function handle(int $orderId, int $projectId, int $userId): PaymentIntentOutput
+    public function handle(int $orderId, int $projectId, User $user): PaymentIntentOutput
     {
-        $result = $this->sessions->create($orderId, $projectId, $userId, 'intent');
+        $result = $this->sessions->create($orderId, $projectId, $user, 'intent');
 
         $order = Order::where('project_id', $projectId)->findOrFail($orderId);
         $key = $order->payment_setting_id === null ? config('services.stripe.key')
