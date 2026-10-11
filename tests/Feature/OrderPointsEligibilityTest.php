@@ -32,6 +32,7 @@ class OrderPointsEligibilityTest extends TestCase
     {
         $order = $this->order($status, $payment);
         $repository = app(OrderRepository::class);
+        $this->assertFalse($repository->hasUnsyncedSmaregiPointsForUser((int) $order->user_id, (int) $order->project_id));
         $this->assertSame([], $repository->findUnsyncedSmaregiPointsOrdersForUser(
             (int) $order->user_id, (int) $order->project_id,
         ));
@@ -58,9 +59,21 @@ class OrderPointsEligibilityTest extends TestCase
         $stripe->save();
         $repository = app(OrderRepository::class);
         foreach ([$cash, $stripe] as $order) {
+            $this->assertTrue($repository->hasUnsyncedSmaregiPointsForUser((int) $order->user_id, (int) $order->project_id));
             $found = $repository->findUnsyncedSmaregiPointsOrdersForUser((int) $order->user_id, (int) $order->project_id);
             $this->assertSame((int) $order->id, $found[0]['orderId']);
         }
+    }
+
+    public function test_net_zero_orders_do_not_block_inbound_and_synced_orders_release_the_guard(): void
+    {
+        $order = $this->order(OrderStatus::CONFIRMED, PaymentMethod::CASH);
+        $repository = app(OrderRepository::class);
+        $this->assertTrue($repository->hasUnsyncedSmaregiPointsForUser((int) $order->user_id, (int) $order->project_id));
+        $order->update(['points_earned' => 100]);
+        $this->assertFalse($repository->hasUnsyncedSmaregiPointsForUser((int) $order->user_id, (int) $order->project_id));
+        $order->update(['points_earned' => 0, 'smaregi_points_synced_at' => now()]);
+        $this->assertFalse($repository->hasUnsyncedSmaregiPointsForUser((int) $order->user_id, (int) $order->project_id));
     }
 
     private function order(string $status, string $payment): Order
