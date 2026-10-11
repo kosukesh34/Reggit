@@ -4,7 +4,6 @@ namespace App\Services\Member;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Settings\Repositories\OrderSettings;
-use App\Models\Member;
 use App\Models\PointGrantCode;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -25,10 +24,15 @@ class PointQrRedeemer
     private function grant(User $user, string $token): array
     {
         $projectId = (int) $user->project_id;
+        $owner = User::query()->where('project_id', $projectId)->whereKey($user->id)->lockForUpdate()->first();
+        abort_if($owner === null || (int) $owner->authentication_version !== (int) $user->authentication_version,
+            403, 'ログインし直してください。');
+        $memberModel = $owner->member()->where('project_id', $projectId)->lockForUpdate()->first();
+        abort_if($memberModel === null, 403, 'ポイントの受け取りには会員登録が必要です。');
+
         $code = PointGrantCode::query()->where('project_id', $projectId)->where('token', $token)->lockForUpdate()->firstOrFail();
         $this->assertAvailable($projectId, $code);
-        $memberId = Member::query()->where('project_id', $projectId)->where('user_id', $user->id)->value('id');
-        abort_if($memberId === null, 403, 'ポイントの受け取りには会員登録が必要です。');
+        $memberId = (int) $memberModel->id;
         $this->assertCanRedeem($projectId, $code, (int) $memberId);
         $this->members->syncPointsLedger((int) $memberId, $projectId);
         $member = $this->members->findByIdForUpdate((int) $memberId, $projectId);
