@@ -12,11 +12,13 @@ use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\OrderNotificationService;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
+use App\Services\Smaregi\SmaregiPointsSyncService;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use App\Util\AdminContext;
@@ -174,6 +176,8 @@ class OrderTransactionRetryTest extends TestCase
             'metadata' => ['order_id' => $order->id]];
         $sync = $this->mock(SmaregiOrderTransactionOutboundService::class);
         $sync->shouldNotReceive('syncOrderTransactionWithRetry');
+        $this->mock(SmaregiPointsSyncService::class)->shouldNotReceive('syncOrderNetPointsWithRetry');
+        $this->mock(OrderNotificationService::class)->shouldNotReceive('notifyConfirmed');
         $confirm = new PaymentConfirmUseCase($gateway, app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class),
             app(OrderService::class));
@@ -184,6 +188,30 @@ class OrderTransactionRetryTest extends TestCase
         } finally {
             DB::rollBack();
         }
+        $this->assertSame(OrderStatus::PENDING, $order->refresh()->status);
+        $this->assertFalse($order->smaregi_create_pending);
+    }
+
+    public function test_webhook_fallback_job_is_discarded_with_an_outer_rollback(): void
+    {
+        Queue::fake();
+        $order = $this->order();
+        $order->forceFill(['payment_method' => PaymentMethod::STRIPE, 'status' => OrderStatus::PENDING])->save();
+        $gateway = new FakePaymentGateway;
+        $gateway->event = ['type' => 'payment_intent.succeeded',
+            'metadata' => ['order_id' => $order->id], 'amount' => 1000];
+        $this->mock(OrderNotificationService::class)->shouldNotReceive('notifyConfirmed');
+        $webhook = new PaymentWebhookUseCase($gateway, app(OrderRepository::class),
+            app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class), app(OrderService::class));
+        DB::beginTransaction();
+        try {
+            $this->assertTrue($webhook->handle('{}', 'sig', 'secret'));
+            $this->assertTrue($order->refresh()->smaregi_create_pending);
+            Queue::assertNothingPushed();
+        } finally {
+            DB::rollBack();
+        }
+        Queue::assertNothingPushed();
         $this->assertSame(OrderStatus::PENDING, $order->refresh()->status);
         $this->assertFalse($order->smaregi_create_pending);
     }

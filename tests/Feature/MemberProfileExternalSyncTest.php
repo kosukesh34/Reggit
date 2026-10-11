@@ -97,7 +97,7 @@ class MemberProfileExternalSyncTest extends TestCase
         $store->update(['smaregi_store_id' => 'external-store']);
         $other = Project::factory()->create();
         $api = $this->mock(SmaregiApiService::class);
-        $api->shouldReceive('getContractIdForProject')->once()->with((int) $user->project_id)
+        $api->shouldReceive('getContractIdForProject')->twice()->with((int) $user->project_id)
             ->andReturnUsing(function () use ($user): string {
                 $this->assertSame((int) $user->project_id, AdminContext::getCurrentProject()->id);
 
