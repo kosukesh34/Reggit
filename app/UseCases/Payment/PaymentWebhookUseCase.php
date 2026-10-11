@@ -174,8 +174,20 @@ class PaymentWebhookUseCase
             $this->postCommitEvents->dispatch($confirmedEvent);
         }
         if ($shouldDelaySmaregiSync) {
-            SyncOrderPointsToSmaregiJob::dispatch($syncOrderId, $syncProjectId, $syncUserId)
-                ->delay(now()->addSeconds(self::SMAREGI_SYNC_DELAY_SECONDS));
+            $syncAt = now()->addSeconds(self::SMAREGI_SYNC_DELAY_SECONDS);
+            $project = AdminContext::getCurrentProject();
+            $storeContext = clone app(StoreContext::class);
+            DB::afterCommit(function () use ($syncOrderId, $syncProjectId, $syncUserId, $syncAt, $project, $storeContext): void {
+                $previousProject = AdminContext::getCurrentProject();
+                AdminContext::setCurrentProject($project);
+                try {
+                    app(StoreContext::class)->runWithContext($storeContext, function () use ($syncOrderId, $syncProjectId, $syncUserId, $syncAt): void {
+                        SyncOrderPointsToSmaregiJob::dispatch($syncOrderId, $syncProjectId, $syncUserId)->delay($syncAt);
+                    });
+                } finally {
+                    AdminContext::setCurrentProject($previousProject);
+                }
+            });
         }
 
         return true;
