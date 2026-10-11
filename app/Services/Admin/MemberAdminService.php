@@ -322,6 +322,10 @@ class MemberAdminService
             static fn ($value, string $key): bool => ! in_array($key, ['member_number', 'status', 'rank', 'notification_preference'], true) || $value !== null,
             ARRAY_FILTER_USE_BOTH
         );
+        if (array_key_exists('address', $memberData) && ($memberData['address'] === null || $memberData['address'] === '')
+            && array_intersect(array_keys($memberData), ['prefecture', 'city', 'street']) === []) {
+            $updateMember = array_merge($updateMember, ['address' => null, 'prefecture' => null, 'city' => null, 'street' => null]);
+        }
         DB::transaction(function () use ($member, $updateUser, $updateMember, $profileExtraIsPatch): void {
             $expectedUserId = (int) $member->user_id;
             $user = User::query()->whereKey($expectedUserId)->where('project_id', $member->project_id)

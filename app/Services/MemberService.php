@@ -395,6 +395,11 @@ class MemberService
             }
         }
 
+        if (array_key_exists('address', $memberUpdates) && $memberUpdates['address'] === null
+            && array_intersect(array_keys($data), ['prefecture', 'city', 'street']) === []) {
+            $memberUpdates = array_merge($memberUpdates, ['prefecture' => null, 'city' => null, 'street' => null]);
+        }
+
         $customKeys = array_column($settings['custom_fields'] ?? [], 'key');
         foreach ($customKeys as $key) {
             if (array_key_exists($key, $data)) {
