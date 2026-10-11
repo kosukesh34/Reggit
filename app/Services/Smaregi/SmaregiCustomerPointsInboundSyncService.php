@@ -13,6 +13,7 @@ use App\Models\Member;
 use App\Models\MemberRegistrationAttempt;
 use App\Models\Scopes\ProjectScope;
 use App\Models\Store;
+use App\Models\User;
 use App\Services\MemberRankSyncService;
 use App\Util\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,7 @@ class SmaregiCustomerPointsInboundSyncService
         private SmaregiContractProjectResolver $projectResolver,
         private MemberRankSyncService $memberRankSyncService,
         private readonly TenantContext $tenantContext,
+        private SmaregiMemberProfileSyncService $profiles,
     ) {}
 
     /**
@@ -166,6 +168,10 @@ class SmaregiCustomerPointsInboundSyncService
             return;
         }
 
+        $profileSnapshots = [];
+        foreach ($members as $member) {
+            $profileSnapshots[(int) $member->id] = $this->profiles->snapshot((int) $member->id);
+        }
         $remoteCustomer = $this->smaregiApi->getCustomer($contractId, $smaregiCustomerId);
         if ($remoteCustomer === null) {
             Log::warning('[Smaregi] Inbound customer sync: getCustomer failed', [
@@ -207,9 +213,9 @@ class SmaregiCustomerPointsInboundSyncService
             if ($project === null) {
                 continue;
             }
-            $this->tenantContext->runForProject($project, function () use ($member, $remoteCustomer, $remotePoints, $smaregiCustomerId): void {
+            $this->tenantContext->runForProject($project, function () use ($member, $remoteCustomer, $remotePoints, $smaregiCustomerId, $profileSnapshots): void {
                 if ($remoteCustomer !== null) {
-                    $this->applyRemoteProfileForMember($member, $remoteCustomer);
+                    $this->applyRemoteProfileForMember($member, $remoteCustomer, $profileSnapshots[(int) $member->id]);
                 }
                 if ($remotePoints !== null) {
                     if ($this->pointsSync->hasOutboundPending((int) $member->id)
@@ -253,14 +259,22 @@ class SmaregiCustomerPointsInboundSyncService
 
     /**
      * @param  array<string, string|int|float|bool|array<string, string|int|float|bool|null>|null>  $remoteCustomer
+     * @param  array{token: string, delivered: string|null}|null  $snapshot
      */
-    private function applyRemoteProfileForMember(Member $member, array $remoteCustomer): void
+    private function applyRemoteProfileForMember(Member $member, array $remoteCustomer, ?array $snapshot): void
     {
-        DB::transaction(function () use ($member, $remoteCustomer): void {
+        DB::transaction(function () use ($member, $remoteCustomer, $snapshot): void {
+            $user = User::withoutGlobalScopes()->whereKey($member->user_id)->where('project_id', $member->project_id)
+                ->lockForUpdate()->first();
             $locked = Member::query()->with('user')->whereKey($member->id)->lockForUpdate()->first();
             if ($locked === null) {
                 return;
             }
+            if ((int) $locked->user_id !== (int) ($user?->id ?? 0)
+                || ! $this->profiles->canApplyInbound((int) $locked->id, $snapshot)) {
+                return;
+            }
+            $locked->setRelation('user', $user);
             $this->applyProfileForMember($locked, $remoteCustomer);
         });
     }
