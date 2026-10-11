@@ -10,7 +10,9 @@ use App\Models\User;
 use App\Models\UserDevice;
 use App\Services\DeviceOnceCouponService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class DeviceOnceCouponTest extends TestCase
@@ -101,6 +103,53 @@ class DeviceOnceCouponTest extends TestCase
         $member->update(['user_id' => $other->id]);
 
         $this->assertClaimRejected($user, $coupon);
+    }
+
+    #[TestWith(['revoked', 'member'])]
+    #[TestWith(['deleted', 'member'])]
+    #[TestWith(['device_deleted', 'device_identifier'])]
+    #[TestWith(['coupon_disabled', 'coupon'])]
+    #[TestWith(['coupon_expired', 'coupon'])]
+    public function test_claim_revalidates_current_principal_and_issue_conditions(string $change, string $error): void
+    {
+        [$user, $member, $coupon] = $this->deviceCouponFixture();
+        $user->load('member');
+        if ($change === 'revoked') {
+            $user->fresh()->increment('authentication_version');
+        } elseif ($change === 'deleted') {
+            $user->fresh()->delete();
+        } elseif ($change === 'device_deleted') {
+            UserDevice::query()->where('user_id', $user->id)->delete();
+        } elseif ($change === 'coupon_disabled') {
+            $coupon->fresh()->update(['is_active' => false]);
+        } else {
+            $coupon->fresh()->update(['end_at' => now()->subMinute()]);
+        }
+        try {
+            app(DeviceOnceCouponService::class)->claim($user, $coupon, 'lifecycle-device');
+            $this->fail('Stale issue conditions must not issue a coupon.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey($error, $exception->errors());
+        }
+        $this->assertDatabaseCount('coupon_device_issues', 0);
+        $this->assertDatabaseCount('member_coupons', 0);
+    }
+
+    public function test_device_removed_after_member_lookup_cannot_receive_a_coupon(): void
+    {
+        [$user, , $coupon] = $this->deviceCouponFixture();
+        $user->load('member');
+        Event::listen('eloquent.retrieved: '.Member::class, function () use ($user): void {
+            UserDevice::query()->where('user_id', $user->id)->delete();
+        });
+        try {
+            app(DeviceOnceCouponService::class)->claim($user, $coupon, 'lifecycle-device');
+            $this->fail('Device registration must be checked inside the issuing transaction.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('device_identifier', $exception->errors());
+        }
+        $this->assertDatabaseCount('coupon_device_issues', 0);
+        $this->assertDatabaseCount('member_coupons', 0);
     }
 
     private function deviceCouponFixture(): array
