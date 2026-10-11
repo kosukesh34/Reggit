@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class PointQrRedeemer
 {
-    public function __construct(private readonly MemberRepository $members, private readonly OrderSettings $settings) {}
+    public function __construct(private readonly MemberRepository $members, private readonly OrderSettings $settings, private readonly CurrentMemberPrincipal $principals) {}
 
     /** @return array{member_id: int, granted_points: int, points: int} */
     public function redeem(User $user, string $token): array
@@ -24,10 +24,9 @@ class PointQrRedeemer
     private function grant(User $user, string $token): array
     {
         $projectId = (int) $user->project_id;
-        $owner = User::query()->where('project_id', $projectId)->whereKey($user->id)->lockForUpdate()->first();
-        abort_if($owner === null || (int) $owner->authentication_version !== (int) $user->authentication_version,
-            403, 'ログインし直してください。');
-        $memberModel = $owner->member()->where('project_id', $projectId)->lockForUpdate()->first();
+        $owner = $this->principals->lock($user, $projectId);
+        abort_if($owner === null, 403, 'ログインし直してください。');
+        $memberModel = $owner->member;
         abort_if($memberModel === null, 403, 'ポイントの受け取りには会員登録が必要です。');
 
         $code = PointGrantCode::query()->where('project_id', $projectId)->where('token', $token)->lockForUpdate()->firstOrFail();
