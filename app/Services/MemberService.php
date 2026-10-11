@@ -45,7 +45,7 @@ class MemberService
         private MemberRegistrationRecovery $registrationRecovery,
     ) {}
 
-    public function getMemberData(User $user): array
+    public function getMemberData(User $user, bool $syncFromSmaregi = true): array
     {
         $member = $user->member;
 
@@ -74,7 +74,9 @@ class MemberService
                 LogHelper::warning('[Member] registration recovery unavailable', ['member_id' => $member->id]);
             }
         }
-        $this->maybeSyncMemberPointsFromSmaregi($member);
+        if ($syncFromSmaregi) {
+            $this->maybeSyncMemberPointsFromSmaregi($member);
+        }
         $member->refresh();
         $member->syncPointsLedger();
         $member->refresh();
@@ -412,32 +414,46 @@ class MemberService
             }
         });
 
-        $smaregiCustomerId = $member->smaregi_customer_id ?? '';
-        if ($smaregiCustomerId !== '') {
-            $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-            $contractId = is_string($contractId) ? trim($contractId) : '';
-            if ($contractId !== '') {
-                $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData(
-                    $this->customerStoreProfile->forSmaregi($data, $projectId),
-                    $settings['custom_fields'] ?? [],
-                );
-                if ($body !== []) {
+        $project = Project::find($projectId);
+        if ($project !== null && (string) $member->smaregi_customer_id !== '') {
+            DB::afterCommit(function () use ($member, $project, $projectId, $data, $settings): void {
+                $previous = AdminContext::getCurrentProject();
+                try {
+                    AdminContext::setCurrentProject($project);
+                    $contractId = trim((string) $this->smaregiApi->getContractIdForProject($projectId));
+                    if ($contractId === '') {
+                        return;
+                    }
+                    $body = $this->smaregiCustomerUpdatePayloadBuilder->buildFromProfileData(
+                        $this->customerStoreProfile->forSmaregi($data, $projectId),
+                        $settings['custom_fields'] ?? [],
+                    );
+                    if ($body === []) {
+                        return;
+                    }
                     $this->smaregiApi->clearLastErrorDetail();
-                    $result = $this->smaregiApi->updateCustomer($contractId, $smaregiCustomerId, $body);
+                    $result = $this->smaregiApi->updateCustomer($contractId, (string) $member->smaregi_customer_id, $body);
                     if ($result === null) {
-                        $detail = $this->smaregiApi->getLastErrorDetail();
                         LogHelper::warning('[Member] smaregi profile sync failed after local update', [
                             'member_id' => (int) $member->id,
                             'project_id' => $projectId,
-                            'smaregi_customer_id' => $smaregiCustomerId,
-                            'detail' => $detail,
+                            'detail' => $this->smaregiApi->getLastErrorDetail(),
                         ]);
                     }
+                } catch (\Throwable $exception) {
+                    LogHelper::warning('[Member] smaregi profile sync threw after local update', [
+                        'member_id' => (int) $member->id,
+                        'project_id' => $projectId,
+                        'error' => $exception->getMessage(),
+                    ]);
+                } finally {
+                    AdminContext::setCurrentProject($previous);
                 }
-            }
+            });
         }
 
-        return $this->getMemberData($user->fresh(['member']));
+        // The remote profile may still be stale while outbound synchronization is pending.
+        return $this->getMemberData($user->fresh(['member']), syncFromSmaregi: false);
     }
 
     /** 登録データから任意項目のみ抽出 */
