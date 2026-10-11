@@ -169,10 +169,12 @@ class SmaregiCustomerUpdatePayloadBuilder
     public function buildSmaregiCustomFields(array $data, array $customFieldDefs): array
     {
         $fields = [];
+        $extra = $data['profile_extra'] ?? [];
         foreach ($customFieldDefs as $cf) {
             $no = (int) ($cf['smaregi_no'] ?? 0);
             $key = (string) ($cf['key'] ?? '');
-            if ($no < 1 || $key === '') {
+            if ($no < 1 || $key === ''
+                || (! array_key_exists($key, $data) && (! is_array($extra) || ! array_key_exists($key, $extra)))) {
                 continue;
             }
             $fields[] = [
