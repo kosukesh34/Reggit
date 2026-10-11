@@ -378,10 +378,7 @@ class MemberAdminService
     public function delete(int $memberId, int $projectId): void
     {
         $member = $this->findForWrite($memberId, $projectId);
-        $user = User::query()
-            ->withoutGlobalScope(ProjectScope::class)
-            ->whereKey((int) $member->user_id)
-            ->first();
+        $expectedUserId = (int) $member->user_id;
 
         $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
         $contractId = $this->smaregiApi->getContractIdForProject($projectId);
@@ -395,22 +392,34 @@ class MemberAdminService
             }
         }
 
-        $member->delete();
-
-        if ($user !== null) {
-            try {
-                if (method_exists($user, 'tokens')) {
-                    $user->tokens()->delete();
-                }
-            } catch (\Throwable $e) {
-                LogHelper::warning('[AdminMember] token cleanup skipped', [
-                    'user_id' => (int) $user->id,
-                    'message' => $e->getMessage(),
-                ]);
+        $user = DB::transaction(function () use ($memberId, $projectId, $expectedUserId, $smaregiCustomerId): ?User {
+            $user = User::query()->withoutGlobalScope(ProjectScope::class)
+                ->whereKey($expectedUserId)->where('project_id', $projectId)->lockForUpdate()->first();
+            $member = Member::query()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', $projectId)->lockForUpdate()->findOrFail($memberId);
+            if ((int) $member->user_id !== $expectedUserId
+                || trim((string) $member->smaregi_customer_id) !== $smaregiCustomerId) {
+                throw new \RuntimeException('会員の連携情報が変更されました。再読み込みしてから削除してください。');
             }
-            $this->userService->releaseLineUserIdForWithdraw($user);
-            $user->delete();
-        }
+
+            $member->delete();
+            if ($user !== null) {
+                try {
+                    if (method_exists($user, 'tokens')) {
+                        $user->tokens()->delete();
+                    }
+                } catch (\Throwable $e) {
+                    LogHelper::warning('[AdminMember] token cleanup skipped', [
+                        'user_id' => (int) $user->id,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+                $this->userService->releaseLineUserIdForWithdraw($user);
+                $user->delete();
+            }
+
+            return $user;
+        });
 
         LogHelper::info('[AdminMember] member deleted', [
             'project_id' => $projectId,
