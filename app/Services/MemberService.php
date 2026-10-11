@@ -522,10 +522,24 @@ class MemberService
             }
         }
 
-        return DB::transaction(function () use ($user, $data, $attempt, $defaultRankKey, $smaregiCustomerId): Member {
-            User::query()->whereKey($user->id)->lockForUpdate()->first();
-
-            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+        return DB::transaction(function () use ($user, $data, $attempt, $defaultRankKey, $smaregiCustomerId, $projectId): Member {
+            $user = User::query()->whereKey($user->id)->where('project_id', $projectId)->lockForUpdate()->first();
+            if ($user === null) {
+                throw new \RuntimeException('会員登録の状態が変更されました。再度お試しください。');
+            }
+            $currentAttempt = null;
+            if ($attempt !== null) {
+                $currentAttempt = MemberRegistrationAttempt::whereKey($attempt->id)
+                    ->where('project_id', $projectId)->where('user_id', $user->id)->lockForUpdate()->first();
+                if ($currentAttempt === null || $currentAttempt->registration_key !== $attempt->registration_key
+                    || $currentAttempt->member_number !== $attempt->member_number
+                    || $currentAttempt->contract_id !== $attempt->contract_id) {
+                    throw new \RuntimeException('会員登録の状態が変更されました。再度お試しください。');
+                }
+                if ($currentAttempt->contract_id !== trim((string) $this->smaregiApi->getContractIdForProject($projectId))) {
+                    throw new \RuntimeException('登録途中にスマレジ契約が変更されました。管理者にご確認ください。');
+                }
+            }
             // Reserved codes already belong to this attempt; only unreserved allocation needs the project lock.
             if ($attempt === null) {
                 Project::query()->whereKey($projectId)->lockForUpdate()->firstOrFail();
@@ -587,8 +601,8 @@ class MemberService
                 $user->update($userUpdates);
             }
 
-            if ($attempt !== null && $smaregiCustomerId !== null) {
-                $attempt->delete();
+            if ($currentAttempt !== null && $smaregiCustomerId !== null) {
+                $currentAttempt->delete();
             }
 
             return $member->load('user');
