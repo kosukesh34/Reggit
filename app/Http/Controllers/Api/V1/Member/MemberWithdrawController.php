@@ -7,6 +7,7 @@ use App\Services\UserService;
 use App\UseCases\Member\Exceptions\MemberWithdrawalException;
 use App\UseCases\Member\MemberWithdrawUseCase;
 use App\Util\LogHelper;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -32,6 +33,8 @@ class MemberWithdrawController extends BaseApiController
             $this->userService->clearUserSession($request);
 
             return $this->success([], '退会が完了しました。');
+        } catch (AuthenticationException $e) {
+            return $this->error($e->getMessage(), 401);
         } catch (MemberWithdrawalException $e) {
             LogHelper::error('[Member] withdraw failed (Smaregi or business)', [
                 'error' => $e->getMessage(),
