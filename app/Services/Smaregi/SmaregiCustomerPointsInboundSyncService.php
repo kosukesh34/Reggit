@@ -218,7 +218,8 @@ class SmaregiCustomerPointsInboundSyncService
                     $this->applyRemoteProfileForMember($member, $remoteCustomer, $profileSnapshots[(int) $member->id]);
                 }
                 if ($remotePoints !== null) {
-                    if ($this->pointsSync->hasOutboundPending((int) $member->id)) {
+                    if ($this->pointsSync->hasOutboundPending((int) $member->id)
+                        || $this->orderRepository->hasUnsyncedSmaregiPointsForUser((int) $member->user_id, (int) $member->project_id)) {
                         Log::info('[Smaregi] Inbound point sync skipped: outbound pending（ローカル先行の巻き戻し防止）', [
                             'member_id' => (int) $member->id,
                             'project_id' => (int) $member->project_id,
