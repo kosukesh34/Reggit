@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\StampCycleMode;
+use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberStamp;
 use App\Models\MemberStampTransaction;
@@ -10,6 +11,7 @@ use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\User;
 use App\Services\Admin\MemberBenefitService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,6 +20,37 @@ class StampCycleTest extends TestCase
     use RefreshDatabase;
 
     private const LINE_USER_ID = 'U1234567890abcdef1234567890abcdef';
+
+    public function test_deleted_member_cannot_receive_a_coupon_from_a_stale_reference(): void
+    {
+        [$member] = $this->createCard(StampCycleMode::REPEAT, 5);
+        $coupon = Coupon::factory()->create(['project_id' => $member->project_id, 'end_at' => null]);
+        $member->delete();
+        $rejected = false;
+        try {
+            resolve(MemberBenefitService::class)->issueCouponToMember($member, (int) $coupon->id);
+        } catch (ModelNotFoundException) {
+            $rejected = true;
+        }
+        $this->assertTrue($rejected);
+        $this->assertDatabaseCount('member_coupons', 0);
+    }
+
+    public function test_deleted_member_cannot_receive_stamps_from_a_stale_reference(): void
+    {
+        [$member, $card] = $this->createCard(StampCycleMode::REPEAT, 5);
+        $member->delete();
+        $rejected = false;
+        try {
+            resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 7);
+        } catch (ModelNotFoundException) {
+            $rejected = true;
+        }
+        $this->assertTrue($rejected);
+        $this->assertDatabaseCount('member_stamps', 0);
+        $this->assertDatabaseCount('member_stamp_transactions', 0);
+        $this->assertDatabaseCount('member_coupons', 0);
+    }
 
     public function test_1周で終了するカードは必要数で止まり追加できないこと(): void
     {

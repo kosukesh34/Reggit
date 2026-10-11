@@ -29,32 +29,36 @@ class MemberBenefitService
         ?string $issueSourceId = null,
         ?string $issueGrantKey = null,
     ): MemberCoupon {
-        $coupon = Coupon::where('project_id', $member->project_id)->findOrFail($couponId);
-        $now = now();
-        if ($coupon->end_at !== null && $coupon->end_at->lt($now)) {
-            throw new \InvalidArgumentException('このクーポンは期限切れです');
-        }
-        $validFrom = $validFrom ?? $coupon->start_at ?? $now;
-        $validUntil = $validUntil ?? $coupon->end_at;
+        return DB::transaction(function () use ($member, $couponId, $validFrom, $validUntil, $issueSourceType, $issueSourceId, $issueGrantKey): MemberCoupon {
+            $member = Member::query()->whereKey($member->id)->where('project_id', $member->project_id)
+                ->lockForUpdate()->firstOrFail();
+            $coupon = Coupon::where('project_id', $member->project_id)->findOrFail($couponId);
+            $now = now();
+            if ($coupon->end_at !== null && $coupon->end_at->lt($now)) {
+                throw new \InvalidArgumentException('このクーポンは期限切れです');
+            }
+            $validFrom = $validFrom ?? $coupon->start_at ?? $now;
+            $validUntil = $validUntil ?? $coupon->end_at;
 
-        $this->memberCouponRepository->issue(new PendingIssuedCoupon(
-            (int) $member->project_id,
-            (int) $member->id,
-            (int) $coupon->id,
-            (string) $coupon->name,
-            $now,
-            $validFrom,
-            $validUntil instanceof \DateTimeInterface ? $validUntil : null,
-            $issueSourceType,
-            $issueSourceId,
-            $issueGrantKey,
-        ));
+            $this->memberCouponRepository->issue(new PendingIssuedCoupon(
+                (int) $member->project_id,
+                (int) $member->id,
+                (int) $coupon->id,
+                (string) $coupon->name,
+                $now,
+                $validFrom,
+                $validUntil instanceof \DateTimeInterface ? $validUntil : null,
+                $issueSourceType,
+                $issueSourceId,
+                $issueGrantKey,
+            ));
 
-        return MemberCoupon::query()
-            ->where('member_id', $member->id)
-            ->where('coupon_id', $coupon->id)
-            ->orderByDesc('id')
-            ->firstOrFail();
+            return MemberCoupon::query()
+                ->where('member_id', $member->id)
+                ->where('coupon_id', $coupon->id)
+                ->orderByDesc('id')
+                ->firstOrFail();
+        });
     }
 
     /**
