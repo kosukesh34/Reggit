@@ -17,8 +17,12 @@ use App\Models\User;
 use App\Services\CouponNotificationService;
 use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\Lottery\LotteryPlayService;
+use App\UseCases\Lottery\NotifyLotteryWinUseCase;
+use App\UseCases\Lottery\PlayLotteryEntitlementUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use PHPUnit\Framework\Attributes\TestWith;
+use RuntimeException;
 use Tests\TestCase;
 
 class LotteryEntitlementPlayTest extends TestCase
@@ -55,6 +59,33 @@ class LotteryEntitlementPlayTest extends TestCase
             'sort_order' => 0,
             'is_active' => true,
         ]);
+    }
+
+    #[TestWith(['play', 'revoked'])]
+    #[TestWith(['notify', 'revoked'])]
+    #[TestWith(['play', 'deleted'])]
+    #[TestWith(['notify', 'deleted'])]
+    public function test_stale_principal_cannot_play_or_request_notification(string $action, string $change): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $user->load('member');
+        if ($change === 'revoked') {
+            $user->fresh()->increment('authentication_version');
+        } else {
+            $user->fresh()->delete();
+        }
+        $service = $this->mock(LotteryPlayService::class);
+        $service->shouldNotReceive('play');
+        $service->shouldNotReceive('notifyWin');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(401);
+        if ($action === 'play') {
+            app(PlayLotteryEntitlementUseCase::class)->handle($user, 1);
+        } else {
+            app(NotifyLotteryWinUseCase::class)->handle($user, 1);
+        }
     }
 
     public function test_grant_every_purchaseで権利が作成されること(): void
