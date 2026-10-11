@@ -13,6 +13,7 @@ use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\Services\OrderService;
 use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\UnpaidOrderCancellationService;
@@ -101,7 +102,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $order = $this->pendingOrder($user, null);
         $gateway = Mockery::mock(PaymentGateway::class);
         $gateway->shouldReceive('createCheckoutSession')->once()->andThrow(new \RuntimeException('Network timeout'));
-        $sessions = new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class));
+        $sessions = new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class));
         try {
             $sessions->create($order->id, $order->project_id, $user, 'checkout_web');
             $this->fail('Expected timeout');
@@ -118,7 +119,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
             $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
         }
         $fake = new FakePaymentGateway;
-        (new OrderPaymentSessionService($fake, app(\App\Services\Member\CurrentMemberPrincipal::class)))->create($order->id, $order->project_id, $user, 'checkout_web');
+        (new OrderPaymentSessionService($fake, app(CurrentMemberPrincipal::class)))->create($order->id, $order->project_id, $user, 'checkout_web');
         $this->assertSame('cs_test_123', $order->fresh()->payment_session['result']['id']);
     }
 

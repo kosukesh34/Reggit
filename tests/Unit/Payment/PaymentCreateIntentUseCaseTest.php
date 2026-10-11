@@ -8,6 +8,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\UseCases\Payment\OrderPaymentSessionService;
 use App\UseCases\Payment\PaymentCreateIntentUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,7 +39,7 @@ class PaymentCreateIntentUseCaseTest extends TestCase
         ]);
 
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateIntentUseCase(new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
+        $useCase = new PaymentCreateIntentUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class)));
 
         $dto = $useCase->handle((int) $order->id, (int) $order->project_id, $user);
 
@@ -67,7 +68,7 @@ class PaymentCreateIntentUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
 
-        $useCase = new PaymentCreateIntentUseCase(new OrderPaymentSessionService(new FakePaymentGateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
+        $useCase = new PaymentCreateIntentUseCase(new OrderPaymentSessionService(new FakePaymentGateway, app(CurrentMemberPrincipal::class)));
 
         $this->expectException(InvalidArgumentException::class);
         $useCase->handle((int) $order->id, (int) $order->project_id, $other);

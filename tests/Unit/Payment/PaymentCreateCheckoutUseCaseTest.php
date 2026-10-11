@@ -8,6 +8,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\UseCases\Payment\OrderPaymentSessionService;
 use App\UseCases\Payment\PaymentCreateCheckoutUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,7 +39,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class)));
 
         $output = $useCase->handle((int) $order->id, (int) $project->id, $user);
 
@@ -70,7 +71,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
         ]];
         $order->save();
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class)));
 
         $output = $useCase->handle((int) $order->id, (int) $project->id, $user);
 
@@ -95,7 +96,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(\App\Services\Member\CurrentMemberPrincipal::class)));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class)));
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('未決済の注文のみ決済できます');
