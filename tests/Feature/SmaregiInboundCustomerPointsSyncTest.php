@@ -8,6 +8,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
+use App\Models\ExistingMemberLinkRequest;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\Project;
@@ -17,6 +18,7 @@ use App\Services\MemberService;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiPointsSyncService;
+use App\UseCases\Member\ConfirmExistingMemberLinkUseCase;
 use App\Util\AdminContext;
 use App\Util\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -806,5 +808,43 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
             return Http::response([], 404);
         });
+    }
+
+    public function test_old_code_lookup_does_not_overwrite_confirmed_existing_member_link(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'member_number' => 'UNLINKED', 'smaregi_customer_id' => null, 'points' => 0,
+        ]);
+        $request = ExistingMemberLinkRequest::create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'smaregi_customer_id' => 'confirmed-customer', 'email' => $user->email,
+            'token' => 'confirmation-token', 'expires_at' => now()->addHour(),
+        ]);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn(self::CONTRACT_ID);
+        $api->shouldReceive('getCustomer')->with(self::CONTRACT_ID, 'confirmed-customer')->once()->andReturn([
+            'customerId' => 'confirmed-customer', 'customerCode' => 'EXISTING', 'point' => 50,
+        ]);
+        $api->shouldReceive('getCustomer')->with(self::CONTRACT_ID, 'old-code-customer')->andReturn([
+            'customerId' => 'old-code-customer', 'customerCode' => 'UNLINKED',
+        ]);
+        $api->shouldReceive('getCustomerPoint')->andReturn(['point' => 7]);
+        $api->shouldReceive('getCustomerByCode')->with(self::CONTRACT_ID, 'UNLINKED')->once()->andReturnUsing(function () use ($member, $request, $user): array {
+            app(ConfirmExistingMemberLinkUseCase::class)->handle($request->token, $user->fresh());
+            $this->assertSame('confirmed-customer', $member->fresh()->smaregi_customer_id);
+            $this->assertNotNull($request->fresh()->confirmed_at);
+
+            return ['customerId' => 'old-code-customer', 'customerCode' => 'UNLINKED'];
+        });
+
+        $result = app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($member);
+
+        $this->assertSame('confirmed-customer', $member->fresh()->smaregi_customer_id);
+        $this->assertSame(50, $member->fresh()->points);
+        $this->assertFalse($result);
     }
 }

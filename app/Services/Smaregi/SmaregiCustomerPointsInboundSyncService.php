@@ -67,7 +67,35 @@ class SmaregiCustomerPointsInboundSyncService
 
                 return false;
             }
-            $member->forceFill(['smaregi_customer_id' => $smaregiCustomerId])->save();
+            $member = DB::transaction(function () use ($member, $contractId, $smaregiCustomerId): ?Member {
+                $user = User::query()->whereKey($member->user_id)
+                    ->where('project_id', $member->project_id)->lockForUpdate()->first();
+                if ($user === null) {
+                    return null;
+                }
+                $currentMember = Member::query()->whereKey($member->id)
+                    ->where('project_id', $member->project_id)->where('user_id', $member->user_id)
+                    ->lockForUpdate()->first();
+                if ($currentMember === null
+                    || trim((string) $currentMember->smaregi_customer_id) !== ''
+                    || $currentMember->member_number !== $member->member_number
+                    || $contractId !== trim((string) $this->smaregiApi->getContractIdForProject((int) $member->project_id))
+                    || MemberRegistrationAttempt::where('project_id', $member->project_id)->where('user_id', $member->user_id)->exists()) {
+                    return null;
+                }
+
+                $currentMember->forceFill(['smaregi_customer_id' => $smaregiCustomerId])->save();
+
+                return $currentMember;
+            }, 3);
+            if ($member === null) {
+                return false;
+            }
+            Log::info('[Smaregi] Linked smaregi_customer_id from member_number', [
+                'member_id' => (int) $member->id,
+                'member_number' => (string) $member->member_number,
+                'smaregi_customer_id' => $smaregiCustomerId,
+            ]);
             $this->requestUnsyncedOrderPointsSync($member);
         }
 
@@ -95,12 +123,6 @@ class SmaregiCustomerPointsInboundSyncService
         if ($customerId === null || (is_string($customerId) && trim($customerId) === '')) {
             return '';
         }
-
-        Log::info('[Smaregi] Linked smaregi_customer_id from member_number', [
-            'member_id' => (int) $member->id,
-            'member_number' => $memberNumber,
-            'smaregi_customer_id' => (string) $customerId,
-        ]);
 
         return (string) $customerId;
     }
