@@ -5,6 +5,8 @@
 Reviewed member-facing write paths, their authorization and transaction boundaries,
 benefit grants, withdrawal, existing-member linking and payment-session issuance.
 The architecture exploration covered registration, membership and Apple Pass packaging.
+A final static sweep also covered admin tenant/store authorization and representative
+frontend state, API/CSRF and DOM output boundaries.
 This is a focused critical review, not proof that every application path is defect-free.
 Existing uncommitted landing-registration changes were preserved and excluded from patches.
 
@@ -33,6 +35,14 @@ Existing uncommitted landing-registration changes were preserved and excluded fr
    rank synchronization after commit. A regression test injects an outcome-mapper failure
    and proves the same QR nonce can be retried successfully.
 
+5. **High: branch admins could update project-common settings in multi-store projects.**
+   The headquarters restriction omitted `/settings/*`, while branch ROLE_ADMIN users
+   retain settings permissions. Profile definitions, ranks, linking, LINE/brand and
+   payment settings could therefore bypass the documented headquarters boundary. Fix:
+   classify settings mutations by route name, deny common settings to branch admins,
+   and explicitly retain store-owned Basic/Reservations/Queue, device enrollment and
+   separately authorized staff routes. Headquarters and single-store behavior remain.
+
 ## Architecture decisions
 
 **Implemented:** encapsulate current principal lookup, tenant scope, generation validation
@@ -49,6 +59,10 @@ change needs that seam; do not refactor merely to reduce file count.
 **Worth exploring, not a confirmed defect:** Apple Pass packaging has filesystem, signing
 and archive concerns that could be hidden behind a package-builder boundary. No packaging
 failure was demonstrated during this review, so no speculative rewrite was made.
+
+Large announcement delivery UI and ShopSettingStore implementations remain optional
+seam candidates. File size alone does not demonstrate a defect. The inspected frontend
+paths yielded no additional confirmed bugs.
 
 ## Limits and follow-up risks
 
