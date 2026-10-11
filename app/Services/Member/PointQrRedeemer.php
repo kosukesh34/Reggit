@@ -4,7 +4,6 @@ namespace App\Services\Member;
 
 use App\Domain\Member\Repositories\MemberRepository;
 use App\Domain\Settings\Repositories\OrderSettings;
-use App\Models\Member;
 use App\Models\PointGrantCode;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -13,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class PointQrRedeemer
 {
-    public function __construct(private readonly MemberRepository $members, private readonly OrderSettings $settings) {}
+    public function __construct(private readonly MemberRepository $members, private readonly OrderSettings $settings, private readonly CurrentMemberPrincipal $principals) {}
 
     /** @return array{member_id: int, granted_points: int, points: int} */
     public function redeem(User $user, string $token): array
@@ -25,10 +24,14 @@ class PointQrRedeemer
     private function grant(User $user, string $token): array
     {
         $projectId = (int) $user->project_id;
+        $owner = $this->principals->lock($user, $projectId);
+        abort_if($owner === null, 403, 'ログインし直してください。');
+        $memberModel = $owner->member;
+        abort_if($memberModel === null, 403, 'ポイントの受け取りには会員登録が必要です。');
+
         $code = PointGrantCode::query()->where('project_id', $projectId)->where('token', $token)->lockForUpdate()->firstOrFail();
         $this->assertAvailable($projectId, $code);
-        $memberId = Member::query()->where('project_id', $projectId)->where('user_id', $user->id)->value('id');
-        abort_if($memberId === null, 403, 'ポイントの受け取りには会員登録が必要です。');
+        $memberId = (int) $memberModel->id;
         $this->assertCanRedeem($projectId, $code, (int) $memberId);
         $this->members->syncPointsLedger((int) $memberId, $projectId);
         $member = $this->members->findByIdForUpdate((int) $memberId, $projectId);
