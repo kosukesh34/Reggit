@@ -7,6 +7,7 @@ use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampGrantCode;
 use App\Models\StampGrantRedemption;
+use App\Models\User;
 use App\Services\Admin\MemberBenefitService;
 use App\Services\MemberRankSyncService;
 use App\UseCases\Stamp\Data\StampGrantByCodeInput;
@@ -43,7 +44,16 @@ class StampGrantByCodeUseCase
 
     private function grant(StampGrantByCodeInput $input): StampGrantOutput
     {
-        $code = StampGrantCode::query()->where('token', $input->token)->lockForUpdate()->first();
+        $projectId = (int) $input->user->project_id;
+        $owner = User::query()->where('project_id', $projectId)->whereKey($input->user->id)->lockForUpdate()->first();
+        if ($owner === null || (int) $owner->authentication_version !== (int) $input->user->authentication_version) {
+            return new StampGrantOutput(false, 403, 'ログインし直してください');
+        }
+        $member = $owner->member()->where('project_id', $projectId)->lockForUpdate()->first();
+        if ($member === null) {
+            return new StampGrantOutput(false, 403, 'スタンプの付与には会員登録が必要です');
+        }
+        $code = StampGrantCode::query()->where('project_id', $projectId)->where('token', $input->token)->lockForUpdate()->first();
         if ($code === null) {
             return new StampGrantOutput(false, 404, '付与QRが見つかりません');
         }
@@ -57,11 +67,6 @@ class StampGrantByCodeUseCase
         }
         if ($this->shopSettingRepository->getUseStamps((int) $code->project_id) !== true) {
             return new StampGrantOutput(false, 403, 'スタンプ機能は利用できません');
-        }
-
-        $member = $input->user->member()->where('project_id', $code->project_id)->first();
-        if ($member === null) {
-            return new StampGrantOutput(false, 403, 'スタンプの付与には会員登録が必要です');
         }
 
         $limit = StampGrantLimit::normalize($code->usage_limit);

@@ -6,12 +6,14 @@ use App\Domain\Settings\Repositories\StampSettings;
 use App\Enums\StampCycleMode;
 use App\Enums\StampGrantLimit;
 use App\Models\StampCard;
+use App\Models\User;
 use App\Services\Admin\MemberBenefitService;
 use App\Services\MemberRankSyncService;
 use App\UseCases\Stamp\Data\StampGrantInput;
 use App\UseCases\Stamp\Data\StampGrantOutput;
 use App\Util\DateUtil;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class StampGrantUseCase
 {
@@ -24,6 +26,37 @@ class StampGrantUseCase
 
     public function handle(StampGrantInput $input): StampGrantOutput
     {
+        $reservedSlot = [];
+        $committed = false;
+        try {
+            $result = DB::transaction(function () use ($input, &$reservedSlot, &$committed): StampGrantOutput {
+                DB::afterCommit(function () use (&$committed): void {
+                    $committed = true;
+                });
+
+                return $this->grant($input, $reservedSlot);
+            });
+        } catch (\Throwable $e) {
+            if (! $committed && $reservedSlot !== []) {
+                $this->releaseSlot(...$reservedSlot);
+            }
+            report($e);
+
+            return new StampGrantOutput(false, 500, 'スタンプを追加できませんでした');
+        }
+        if ($result->isSuccess) {
+            $member = $input->user->member()->where('project_id', $input->projectId)->first();
+            if ($member !== null) {
+                $this->memberRankSyncService->sync($member);
+            }
+        }
+
+        return $result;
+    }
+
+    /** @param array{?string, ?string, ?string}|array{} $reservedSlot */
+    private function grant(StampGrantInput $input, array &$reservedSlot): StampGrantOutput
+    {
         if ($this->shopSettingRepository->getUseStamps($input->projectId) !== true) {
             return new StampGrantOutput(false, 403, 'スタンプ機能は利用できません');
         }
@@ -35,7 +68,11 @@ class StampGrantUseCase
             return new StampGrantOutput(false, 404, '有効なスタンプカードが見つかりません');
         }
 
-        $member = $input->user->member()->where('project_id', $input->projectId)->first();
+        $owner = User::query()->where('project_id', $input->projectId)->whereKey($input->user->id)->lockForUpdate()->first();
+        if ($owner === null || (int) $owner->authentication_version !== (int) $input->user->authentication_version) {
+            return new StampGrantOutput(false, 403, 'ログインし直してください');
+        }
+        $member = $owner->member()->where('project_id', $input->projectId)->lockForUpdate()->first();
         if ($member === null) {
             return new StampGrantOutput(false, 403, 'スタンプの付与には会員登録が必要です');
         }
@@ -69,21 +106,13 @@ class StampGrantUseCase
             return new StampGrantOutput(false, 409, $blocked);
         }
 
-        try {
-            $memberStamp = $this->memberBenefitService->addStampsToMember(
-                $member,
-                (int) $card->id,
-                $amount,
-                '店舗QRから付与'
-            );
-        } catch (\Throwable $e) {
-            $this->releaseSlot($redemptionKey, $onceMemberKey, $onceCountKey);
-            report($e);
-
-            return new StampGrantOutput(false, 500, 'スタンプを追加できませんでした');
-        }
-
-        $this->memberRankSyncService->sync($member);
+        $reservedSlot = [$redemptionKey, $onceMemberKey, $onceCountKey];
+        $memberStamp = $this->memberBenefitService->addStampsToMember(
+            $member,
+            (int) $card->id,
+            $amount,
+            '店舗QRから付与'
+        );
 
         return $this->outcomeMapper->success($card, $memberStamp, $amount, $existing);
     }

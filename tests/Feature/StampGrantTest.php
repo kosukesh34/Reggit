@@ -9,10 +9,17 @@ use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\StampGrantCode;
 use App\Models\User;
+use App\UseCases\Stamp\Data\StampGrantByCodeInput;
+use App\UseCases\Stamp\Data\StampGrantInput;
+use App\UseCases\Stamp\StampGrantByCodeUseCase;
+use App\UseCases\Stamp\StampGrantOutcomeMapper;
+use App\UseCases\Stamp\StampGrantUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
+use Mockery;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class StampGrantTest extends TestCase
@@ -510,6 +517,52 @@ class StampGrantTest extends TestCase
     }
 
     /** @return array{0: Project, 1: Member, 2: StampCard} */
+    #[TestWith(['signed', 'revoked'])]
+    #[TestWith(['code', 'revoked'])]
+    #[TestWith(['signed', 'deleted'])]
+    #[TestWith(['code', 'deleted'])]
+    #[TestWith(['signed', 'member_deleted'])]
+    #[TestWith(['code', 'member_deleted'])]
+    public function test_stale_principal_cannot_receive_stamps(string $kind, string $change): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $user = $member->user;
+        $user->load('member');
+        $code = $this->createGrantCode($project, $card);
+        if ($change === 'revoked') {
+            $user->fresh()->increment('authentication_version');
+        } elseif ($change === 'deleted') {
+            $user->fresh()->delete();
+        } else {
+            $member->delete();
+        }
+        $result = $kind === 'signed'
+            ? app(StampGrantUseCase::class)->handle(new StampGrantInput($user, (int) $project->id, (int) $card->id, 'stale-nonce'))
+            : app(StampGrantByCodeUseCase::class)->handle(new StampGrantByCodeInput($user, $code->token));
+        $this->assertFalse($result->isSuccess);
+        $this->assertSame(403, $result->status);
+        $this->assertDatabaseMissing('member_stamps', ['member_id' => $member->id]);
+        $this->assertDatabaseCount('stamp_grant_redemptions', 0);
+    }
+
+    public function test_signed_qr_rollback_releases_reserved_quota_for_retry(): void
+    {
+        [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
+        $user = $member->user;
+        $input = new StampGrantInput($user, (int) $project->id, (int) $card->id, 'rollback-nonce', 1, StampGrantLimit::ONCE);
+        $mapper = Mockery::mock(StampGrantOutcomeMapper::class)->makePartial();
+        $mapper->shouldReceive('success')->once()->andThrow(new \RuntimeException('Result lookup failed'));
+        $this->app->instance(StampGrantOutcomeMapper::class, $mapper);
+        $result = app(StampGrantUseCase::class)->handle($input);
+        $this->assertFalse($result->isSuccess);
+        $this->assertSame(500, $result->status);
+        $this->assertDatabaseMissing('member_stamps', ['member_id' => $member->id]);
+        $this->app->forgetInstance(StampGrantOutcomeMapper::class);
+        $retry = app(StampGrantUseCase::class)->handle($input);
+        $this->assertTrue($retry->isSuccess);
+        $this->assertSame(1, $retry->currentStamps);
+    }
+
     private function createGrantFixtures(string $lineUserId): array
     {
         $project = Project::factory()->create(['project_key' => 'stamp-shop']);
