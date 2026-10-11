@@ -40,6 +40,7 @@ class CategoryController extends AdminBaseController
 
     public function update(
         Request $request,
+        string $projectKey,
         int $id,
         GalleryCategoryUpdateUseCase $useCase
     ): RedirectResponse {
@@ -58,6 +59,7 @@ class CategoryController extends AdminBaseController
     }
 
     public function delete(
+        string $projectKey,
         int $id,
         GalleryCategoryDestroyUseCase $useCase
     ): RedirectResponse {
