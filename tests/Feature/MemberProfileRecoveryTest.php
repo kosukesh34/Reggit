@@ -311,19 +311,100 @@ class MemberProfileRecoveryTest extends TestCase
         $user = $this->user();
         $api = $this->mock(SmaregiApiService::class);
         $api->shouldReceive('getContractIdForProject')->andReturn('contract');
-        $api->shouldReceive('clearLastErrorDetail')->once();
+        $api->shouldReceive('clearLastErrorDetail')->times(3);
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', [
             'mailAddress' => 'old@example.com',
         ])->andReturnNull();
+        $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['mailAddress' => null])->andReturnNull();
+        $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['mailAddress' => null])->andReturn([]);
         app(MemberService::class)->updateProfile($user, ['email' => 'old@example.com']);
         $token = SmaregiMemberProfileSync::findOrFail($user->member->id)->request_token;
         app(MemberService::class)->updateProfile($user->fresh(['member']), ['email' => null]);
         $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
         $this->assertNotSame($token, $row->request_token);
-        $this->assertSame([], $row->body);
+        $this->assertSame(['mailAddress' => null], $row->body);
+        $this->assertNull($row->delivered_at);
         $this->travel(2)->minutes();
         $this->artisan('smaregi:retry-member-profiles')->assertSuccessful();
+        $this->assertNotNull($row->fresh()->delivered_at);
         $this->assertNull($user->fresh()->email);
+    }
+
+    public function test_failed_email_clear_stays_pending_and_does_not_restore_remote_email(): void
+    {
+        $user = $this->user();
+        $user->update(['email' => 'old@example.com']);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail')->once();
+        $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['mailAddress' => null])->andReturnNull();
+        $api->shouldReceive('getCustomer')->andReturn(['mailAddress' => 'old@example.com']);
+        $api->shouldReceive('getCustomerPoint')->andReturn(['point' => 0]);
+
+        app(MemberService::class)->updateProfile($user, ['email' => null]);
+        app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($user->member->fresh());
+
+        $this->assertNull($user->fresh()->email);
+        $this->assertSame(['mailAddress' => null], SmaregiMemberProfileSync::findOrFail($user->member->id)->body);
+        $this->assertNull(SmaregiMemberProfileSync::findOrFail($user->member->id)->delivered_at);
+    }
+
+    public function test_explicit_address_clear_does_not_reuse_old_structured_parts(): void
+    {
+        $user = $this->user();
+        $user->member->update(['address' => 'Old formatted', 'prefecture' => 'Tokyo', 'city' => 'Old', 'street' => '1']);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail')->twice();
+        $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['address' => null])->andReturnNull();
+        $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', [
+            'address' => null, 'phoneNumber' => '09012345678',
+        ])->andReturn([]);
+
+        app(MemberService::class)->updateProfile($user, ['address' => null]);
+        app(MemberService::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
+
+        $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
+        $this->assertNull($row->body['address']);
+        $this->assertNotNull($row->delivered_at);
+        $fresh = $user->member->fresh();
+        $this->assertNull($fresh->prefecture);
+        $this->assertNull($fresh->city);
+        $this->assertNull($fresh->street);
+        $this->assertSame('', $fresh->displayAddress());
+    }
+
+    public function test_admin_address_clear_removes_local_structured_parts_and_remote_address(): void
+    {
+        $user = $this->user();
+        $user->member->update(['address' => 'Old formatted', 'prefecture' => 'Tokyo', 'city' => 'Old', 'street' => '1']);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail')->once();
+        $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['address' => null])->andReturn([]);
+
+        app(MemberAdminService::class)->updateMemberProfile($user->member, [], ['address' => null]);
+
+        $fresh = $user->member->fresh();
+        $this->assertNull($fresh->address);
+        $this->assertNull($fresh->prefecture);
+        $this->assertNull($fresh->city);
+        $this->assertNull($fresh->street);
+        $this->assertSame('', $fresh->displayAddress());
+    }
+
+    public function test_clearing_raw_address_with_a_structured_edit_uses_current_parts(): void
+    {
+        $user = $this->user();
+        $user->member->update(['address' => 'Old formatted', 'prefecture' => 'Tokyo', 'city' => 'Old', 'street' => '1']);
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail')->once();
+        $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['address' => 'TokyoNew1'])->andReturn([]);
+
+        app(MemberService::class)->updateProfile($user, ['address' => null, 'city' => 'New']);
+
+        $this->assertSame('TokyoNew1', $user->member->fresh()->displayAddress());
     }
 
     public function test_structured_address_edit_uses_current_parts_instead_of_old_formatted_address(): void
