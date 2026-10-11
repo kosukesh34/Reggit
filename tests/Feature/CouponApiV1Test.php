@@ -60,15 +60,20 @@ class CouponApiV1Test extends TestCase
 
     public function test_cached_deleted_member_cannot_use_a_coupon(): void
     {
-        $this->assertStaleMemberCannotUseCoupon(false);
+        $this->assertStaleMemberCannotUseCoupon('delete');
     }
 
     public function test_cached_transferred_member_cannot_use_a_coupon(): void
     {
-        $this->assertStaleMemberCannotUseCoupon(true);
+        $this->assertStaleMemberCannotUseCoupon('transfer');
     }
 
-    private function assertStaleMemberCannotUseCoupon(bool $transfer): void
+    public function test_revoked_user_cannot_use_a_coupon(): void
+    {
+        $this->assertStaleMemberCannotUseCoupon('revoked');
+    }
+
+    private function assertStaleMemberCannotUseCoupon(string $change): void
     {
         $user = User::factory()->create(['project_id' => 1]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
@@ -78,7 +83,9 @@ class CouponApiV1Test extends TestCase
             'status' => MemberCoupon::STATUS_UNUSED, 'used_at' => null,
         ]);
         $user->load('member');
-        if ($transfer) {
+        if ($change === 'revoked') {
+            $user->fresh()->increment('authentication_version');
+        } elseif ($change === 'transfer') {
             $other = User::factory()->create(['project_id' => 1]);
             $member->update(['user_id' => $other->id]);
         } else {

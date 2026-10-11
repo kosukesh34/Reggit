@@ -9,7 +9,12 @@ use App\Models\PointGrantCode;
 use App\Models\Project;
 use App\Models\Settings\ProjectLineLiffSetting;
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
+use App\Services\Member\PointQrRedeemer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\TestWith;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class PointGrantQrTest extends TestCase
@@ -31,6 +36,51 @@ class PointGrantQrTest extends TestCase
     private function endpoint(Project $project, PointGrantCode $code): string
     {
         return route('api.points.grant-code', ['token' => $code->token, 'project_key' => $project->project_key]);
+    }
+
+    #[TestWith(['revoked'])]
+    #[TestWith(['deleted'])]
+    #[TestWith(['member_deleted'])]
+    #[TestWith(['member_moved'])]
+    public function test_stale_principal_cannot_redeem_points(string $change): void
+    {
+        [$project, $user, $member, $code] = $this->fixture();
+        $user->load('member');
+        if ($change === 'revoked') {
+            $user->fresh()->increment('authentication_version');
+        } elseif ($change === 'deleted') {
+            $user->fresh()->delete();
+        } elseif ($change === 'member_deleted') {
+            $member->delete();
+        } else {
+            $other = User::factory()->create(['project_id' => $project->id]);
+            $member->update(['user_id' => $other->id]);
+        }
+
+        $rejected = false;
+        try {
+            app(PointQrRedeemer::class)->redeem($user, $code->token);
+        } catch (HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
+            $rejected = true;
+        }
+        $this->assertTrue($rejected);
+        $this->assertDatabaseCount('point_grant_redemptions', 0);
+        $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id]);
+        $this->assertSame(0, (int) $member->fresh()->points);
+    }
+
+    public function test_current_principal_preserves_guest_access_and_rejects_wrong_project_snapshot(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $principal = DB::transaction(fn () => app(CurrentMemberPrincipal::class)->lock($user, (int) $project->id));
+        $this->assertNotNull($principal);
+        $this->assertNull($principal->member);
+        $other = Project::factory()->create();
+        $user->project_id = $other->id;
+        $rejected = DB::transaction(fn () => app(CurrentMemberPrincipal::class)->lock($user, (int) $project->id));
+        $this->assertNull($rejected);
     }
 
     public function test_会員がポイントを受け取り重複や上限超過は付与されない(): void

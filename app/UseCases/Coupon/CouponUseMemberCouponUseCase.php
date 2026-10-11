@@ -3,8 +3,8 @@
 namespace App\UseCases\Coupon;
 
 use App\Domain\Coupon\Repositories\MemberCouponRepository;
-use App\Models\Member;
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\UseCases\Coupon\Data\CouponUseMemberCouponOutput;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -13,6 +13,7 @@ class CouponUseMemberCouponUseCase
 {
     public function __construct(
         private MemberCouponRepository $memberCouponRepository,
+        private CurrentMemberPrincipal $principals,
     ) {}
 
     public function handle(User $user, int $memberCouponId): CouponUseMemberCouponOutput
@@ -33,9 +34,7 @@ class CouponUseMemberCouponUseCase
         }
 
         return DB::transaction(function () use ($user, $projectId, $member, $memberCouponId) {
-            $member = Member::query()->whereKey($member->id)
-                ->where('project_id', $projectId)
-                ->where('user_id', (int) $user->id)->lockForUpdate()->first();
+            $member = $this->principals->lock($user, $projectId)?->member;
             if ($member === null) {
                 throw ValidationException::withMessages(['member' => ['会員登録が必要です']]);
             }

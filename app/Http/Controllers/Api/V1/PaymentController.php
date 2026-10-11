@@ -8,6 +8,7 @@ use App\UseCases\Payment\PaymentCreateIntentUseCase;
 use App\UseCases\Payment\PaymentSessionInProgressException;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
@@ -40,10 +41,12 @@ class PaymentController extends BaseApiController
             $dto = $this->createIntentUseCase->handle(
                 (int) $request->order_id,
                 $projectId,
-                (int) $user->id,
+                $user,
             );
 
             return $this->success($dto->toArray());
+        } catch (AuthenticationException $e) {
+            return response()->json(['error' => $e->getMessage()], 401);
         } catch (PaymentSessionInProgressException $e) {
             return $this->error($e->getMessage(), 409);
         } catch (InvalidArgumentException $e) {

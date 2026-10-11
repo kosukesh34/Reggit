@@ -7,6 +7,7 @@ use App\Enums\QueueStatus;
 use App\Models\Member;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\User;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\Support\DailySequenceNumber;
 use App\Support\LineIdentityPolicy;
 use App\Support\MemberChannel;
@@ -29,6 +30,7 @@ class QueueStoreUseCase
         private QueueStatsService $statsService,
         private QueueEntryFactory $entryFactory,
         private QueueSettings $shopSettingRepository,
+        private CurrentMemberPrincipal $principals,
     ) {}
 
     public function handle(QueueStoreInput $input): QueueStoreOutput
@@ -39,9 +41,11 @@ class QueueStoreUseCase
         for ($attempt = 0; $attempt < self::MAX_CREATE_ATTEMPTS; $attempt++) {
             try {
                 $entry = DB::transaction(function () use ($input, $projectId): ?QueueEntryModel {
-                    $user = User::query()->where('project_id', $projectId)->whereKey($input->user->id)
-                        ->lockForUpdate()->firstOrFail();
-                    $member = $user->member()->where('project_id', $projectId)->lockForUpdate()->first();
+                    $user = $this->principals->lock($input->user, $projectId);
+                    if ($user === null) {
+                        return null;
+                    }
+                    $member = $user->member;
                     $effectiveLineUserId = $this->resolveLineUserId($input->lineUserId, $user->line_user_id);
 
                     if (
