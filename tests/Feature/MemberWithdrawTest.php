@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Member\MemberWithdrawController;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -10,8 +11,8 @@ use App\Services\UserService;
 use App\UseCases\Member\MemberWithdrawUseCase;
 use App\Util\AdminContext;
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Http\Request;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
@@ -70,7 +71,7 @@ class MemberWithdrawTest extends TestCase
         $user->fresh()->increment('authentication_version');
         $this->mock(UserService::class)->shouldReceive('findUser')->once()->andReturn($user);
         $controller = $endpoint === 'legacy'
-            ? app(\App\Http\Controllers\Member\MemberWithdrawController::class)
+            ? app(MemberWithdrawController::class)
             : app(\App\Http\Controllers\Api\V1\Member\MemberWithdrawController::class);
         $response = $controller(Request::create('/withdraw', 'POST'));
         $this->assertSame(401, $response->getStatusCode());
