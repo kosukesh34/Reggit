@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Settings\Repositories\SmaregiSettings;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Mail\ExistingMemberLinkMail;
 use App\Models\AdminUser;
 use App\Models\ExistingMemberLinkRequest;
@@ -9,13 +11,16 @@ use App\Models\ExistingMemberLinkSetting;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Smaregi\SmaregiApiClient;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Services\Smaregi\SmaregiTransactionCustomerResolver;
 use App\UseCases\Member\ConfirmExistingMemberLinkUseCase;
 use App\UseCases\Member\RequestExistingMemberLinkUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 use Mockery;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class ExistingMemberLinkTest extends TestCase
@@ -148,7 +153,7 @@ class ExistingMemberLinkTest extends TestCase
         $other = User::factory()->create(['project_id' => $project->id]);
         $pending = ExistingMemberLinkRequest::create([
             'project_id' => $project->id, 'user_id' => $requester->id,
-            'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+            'contract_id' => 'contract-1', 'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
             'token' => str_repeat('a', 48), 'expires_at' => now()->addMinutes(30),
         ]);
         $api = $this->mockCustomers([$this->customer()]);
@@ -173,7 +178,7 @@ class ExistingMemberLinkTest extends TestCase
         $user = User::factory()->create(['project_id' => $project->id]);
         $pending = ExistingMemberLinkRequest::create([
             'project_id' => $project->id, 'user_id' => $user->id,
-            'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+            'contract_id' => 'contract-1', 'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
             'token' => str_repeat('b', 48), 'expires_at' => now()->subMinute(),
         ]);
         $this->withSession(['mobile_order_user_id_'.$project->id => $user->id])
@@ -189,7 +194,7 @@ class ExistingMemberLinkTest extends TestCase
         $other = User::factory()->create(['project_id' => $otherProject->id, 'line_user_id' => 'U00000000000000000000000000000036']);
         $pending = ExistingMemberLinkRequest::create([
             'project_id' => $project->id, 'user_id' => $user->id,
-            'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+            'contract_id' => 'contract-1', 'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
             'token' => str_repeat('c', 48), 'expires_at' => now()->addMinutes(30),
         ]);
         $api = $this->mockCustomers([$this->customer()]);
@@ -234,6 +239,70 @@ class ExistingMemberLinkTest extends TestCase
         $this->assertSame('9002', $user->fresh()->member->smaregi_customer_id);
         $this->assertSame(50, $user->fresh()->member->points);
         $this->assertNull($olderRequest->fresh()->confirmed_at);
+        $this->assertTrue($rejected);
+    }
+
+    #[TestWith([false])]
+    #[TestWith([true])]
+    public function test_pending_confirmation_does_not_follow_a_changed_smaregi_contract(bool $changeDuringLookup): void
+    {
+        Mail::fake();
+        $project = $this->createProject();
+        $this->enable($project, ['customer_code']);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $original = $this->customer();
+        $otherContractCustomer = array_replace($original, ['mailAddress' => 'other@example.com', 'point' => 999]);
+        $settings = ShopSettingStore::class;
+        $settings::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        $api = Mockery::mock(SmaregiApiService::class, [
+            app(SmaregiApiClient::class),
+            app(SmaregiTransactionCustomerResolver::class),
+            app(SmaregiSettings::class),
+        ])->makePartial();
+        $api->shouldReceive('getCustomers')->with('contract-1', Mockery::type('array'))->once()->andReturnUsing(function () use ($changeDuringLookup, $settings, $project, $original): array {
+            if ($changeDuringLookup) {
+                $settings::setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
+            }
+
+            return ['customers' => [$original]];
+        });
+        $api->shouldReceive('getCustomer')->with('contract-2', '9001')->andReturn($otherContractCustomer);
+        $this->app->instance(SmaregiApiService::class, $api);
+        app(RequestExistingMemberLinkUseCase::class)->handle((int) $project->id, $user, ['customer_code' => 'C100']);
+        $pending = ExistingMemberLinkRequest::where('user_id', $user->id)->firstOrFail();
+        $this->assertSame('a@example.com', $pending->email);
+        $this->assertSame('contract-1', $pending->contract_id);
+        $settings::setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
+        $rejected = false;
+        try {
+            app(ConfirmExistingMemberLinkUseCase::class)->handle($pending->token, $user->fresh());
+        } catch (InvalidArgumentException $exception) {
+            $rejected = true;
+        }
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id, 'smaregi_customer_id' => '9001']);
+        $this->assertNull($pending->fresh()->confirmed_at);
+        $this->assertTrue($rejected);
+    }
+
+    public function test_legacy_pending_confirmation_without_contract_requires_a_new_request(): void
+    {
+        $project = $this->createProject();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $pending = ExistingMemberLinkRequest::create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+            'token' => str_repeat('l', 48), 'expires_at' => now()->addMinutes(30),
+        ]);
+        $api = $this->mockCustomers([$this->customer()]);
+        $api->shouldReceive('getCustomer')->andReturn($this->customer());
+        $rejected = false;
+        try {
+            app(ConfirmExistingMemberLinkUseCase::class)->handle($pending->token, $user);
+        } catch (InvalidArgumentException $exception) {
+            $rejected = true;
+        }
+        $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
+        $this->assertNull($pending->fresh()->confirmed_at);
         $this->assertTrue($rejected);
     }
 

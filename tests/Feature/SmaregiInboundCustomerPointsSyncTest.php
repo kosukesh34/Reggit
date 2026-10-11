@@ -821,7 +821,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         ]);
         $request = ExistingMemberLinkRequest::create([
             'project_id' => $project->id, 'user_id' => $user->id,
-            'smaregi_customer_id' => 'confirmed-customer', 'email' => $user->email,
+            'contract_id' => self::CONTRACT_ID, 'smaregi_customer_id' => 'confirmed-customer', 'email' => $user->email,
             'token' => 'confirmation-token', 'expires_at' => now()->addHour(),
         ]);
         $api = $this->mock(SmaregiApiService::class);
