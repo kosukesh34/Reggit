@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\QueueStatus;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
+use App\Models\QueueEntry;
 use App\Models\StoreAppCredential;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class StoreAppAuthenticationTest extends TestCase
@@ -80,6 +83,76 @@ class StoreAppAuthenticationTest extends TestCase
             ->postJson("/api/store-app/waiting/{$project->project_key}/queue", ['party_size' => 1])->assertCreated();
         $this->assertDatabaseCount('queue_entries', 1);
         $this->assertDatabaseHas('queue_entries', ['project_id' => $project->id, 'member_id' => null]);
+    }
+
+    #[TestWith(['status', false])]
+    #[TestWith(['call', false])]
+    #[TestWith(['recall', false])]
+    #[TestWith(['enter', false])]
+    #[TestWith(['cancel', false])]
+    #[TestWith(['status', true])]
+    #[TestWith(['call', true])]
+    #[TestWith(['recall', true])]
+    #[TestWith(['enter', true])]
+    #[TestWith(['cancel', true])]
+    #[TestWith(['status', false, true])]
+    #[TestWith(['call', false, true])]
+    #[TestWith(['recall', false, true])]
+    #[TestWith(['enter', false, true])]
+    #[TestWith(['cancel', false, true])]
+    public function test_waiting_device_actions_target_the_route_entry(string $action, bool $legacy, bool $numericKey = false): void
+    {
+        [$project] = $this->createEnrollment('waiting', 'WAITING-ACTIONS');
+        if ($numericKey) {
+            $project->update(['project_key' => '1']);
+        }
+        $token = $this->postJson('/api/store-app/login', [
+            'enrollment_token' => 'WAITING-ACTIONS', 'app' => 'waiting',
+            'device_key' => str_repeat('g', 32),
+        ])->assertOk()->json('token');
+        $initialStatus = in_array($action, ['recall', 'enter'], true) ? QueueStatus::CALLED : QueueStatus::WAITING;
+        $other = QueueEntry::factory()->create(['project_id' => $project->id, 'status' => QueueStatus::WAITING]);
+        $entry = QueueEntry::factory()->create(['project_id' => $project->id, 'status' => $initialStatus, 'qr_token' => 'entry-access-token']);
+        $base = $legacy ? '/api/queue' : "/api/store-app/waiting/{$project->project_key}/queue";
+        $url = $base.'/'.$entry->id.($action === 'status' ? '' : '/'.$action);
+        if ($legacy) {
+            $url .= '?project_key='.$project->project_key;
+            if (in_array($action, ['status', 'cancel'], true)) {
+                $url .= '&queue_token='.$entry->qr_token;
+            }
+        }
+        $this->withToken($token)->withHeader('X-Device-Key', str_repeat('g', 32));
+        $response = $action === 'status' ? $this->getJson($url) : $this->postJson($url);
+        $response->assertOk()->assertJsonPath('queue_entry.id', $entry->id);
+        $expected = match ($action) {
+            'call', 'recall' => QueueStatus::CALLED,
+            'enter' => QueueStatus::ENTERED,
+            'cancel' => QueueStatus::CANCELLED,
+            default => $initialStatus,
+        };
+        $this->assertSame($expected, $entry->fresh()->status);
+        $this->assertSame(QueueStatus::WAITING, $other->fresh()->status);
+    }
+
+    #[TestWith(['status'])]
+    #[TestWith(['call'])]
+    #[TestWith(['recall'])]
+    #[TestWith(['enter'])]
+    #[TestWith(['cancel'])]
+    public function test_waiting_device_actions_cannot_target_another_project(string $action): void
+    {
+        [$project] = $this->createEnrollment('waiting', 'WAITING-BOUNDARY');
+        $token = $this->postJson('/api/store-app/login', [
+            'enrollment_token' => 'WAITING-BOUNDARY', 'app' => 'waiting',
+            'device_key' => str_repeat('h', 32),
+        ])->assertOk()->json('token');
+        $other = Project::factory()->create();
+        $entry = QueueEntry::factory()->create(['project_id' => $other->id, 'status' => QueueStatus::WAITING]);
+        $url = "/api/store-app/waiting/{$project->project_key}/queue/{$entry->id}".($action === 'status' ? '' : '/'.$action);
+        $this->withToken($token)->withHeader('X-Device-Key', str_repeat('h', 32));
+        $response = $action === 'status' ? $this->getJson($url) : $this->postJson($url);
+        $response->assertNotFound();
+        $this->assertSame(QueueStatus::WAITING, $entry->fresh()->status);
     }
 
     private function createEnrollment(string $app, string $plainToken): array

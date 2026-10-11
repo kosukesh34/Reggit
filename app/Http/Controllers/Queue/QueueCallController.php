@@ -7,13 +7,15 @@ use App\UseCases\Queue\QueueCallUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class QueueCallController extends Controller
 {
     public function __construct(private QueueCallUseCase $callUseCase) {}
 
-    public function __invoke(int $id): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
+        $id = (int) $request->route('id');
         try {
             $dto = $this->callUseCase->handle($id, AdminContext::requireCurrentProjectId());
             if ($dto === null) {

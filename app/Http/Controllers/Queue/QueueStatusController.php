@@ -14,8 +14,9 @@ class QueueStatusController extends Controller
         private QueueStatusUseCase $queueStatusUseCase
     ) {}
 
-    public function __invoke(Request $request, int $id)
+    public function __invoke(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $projectId = AdminContext::requireCurrentProjectId();
             $dto = $this->queueStatusUseCase->handle($projectId, $id);
