@@ -299,7 +299,7 @@ class MemberAdminService
      * 会員のユーザー情報・会員情報を一括更新する。
      * ローカルを先に保存し、スマレジ連携はベストエフォート（失敗してもローカル更新は維持）。
      */
-    public function updateMemberProfile(Member $member, array $userData, array $memberData): void
+    public function updateMemberProfile(Member $member, array $userData, array $memberData, bool $profileExtraIsPatch = false): void
     {
         $allowedUser = ['name', 'kana', 'email', 'phone'];
         $updateUser = array_intersect_key($userData, array_flip($allowedUser));
@@ -319,14 +319,14 @@ class MemberAdminService
         $updateMember = array_intersect_key($memberData, array_flip($allowedMember));
         $updateMember = array_filter(
             $updateMember,
-            static fn ($value, string $key): bool => $key === 'profile_extra' || $key === 'mail_receive_flag' || $key === 'customer_store_id' || $value !== null,
+            static fn ($value, string $key): bool => ! in_array($key, ['member_number', 'status', 'rank', 'notification_preference'], true) || $value !== null,
             ARRAY_FILTER_USE_BOTH
         );
         if (array_key_exists('address', $memberData) && ($memberData['address'] === null || $memberData['address'] === '')
             && array_intersect(array_keys($memberData), ['prefecture', 'city', 'street']) === []) {
             $updateMember = array_merge($updateMember, ['address' => null, 'prefecture' => null, 'city' => null, 'street' => null]);
         }
-        DB::transaction(function () use ($member, $updateUser, $updateMember): void {
+        DB::transaction(function () use ($member, $updateUser, $updateMember, $profileExtraIsPatch): void {
             $expectedUserId = (int) $member->user_id;
             $user = User::query()->whereKey($expectedUserId)->where('project_id', $member->project_id)
                 ->lockForUpdate()->first();
@@ -337,6 +337,10 @@ class MemberAdminService
             }
             if ($user !== null && $updateUser !== []) {
                 $user->update($updateUser);
+            }
+            $extraKeys = is_array($updateMember['profile_extra'] ?? null) ? array_keys($updateMember['profile_extra']) : [];
+            if ($profileExtraIsPatch && is_array($updateMember['profile_extra'] ?? null)) {
+                $updateMember['profile_extra'] = array_replace($member->profile_extra ?? [], $updateMember['profile_extra']);
             }
             if ($updateMember !== []) {
                 $previousRank = (string) ($member->rank ?? '');
@@ -364,8 +368,8 @@ class MemberAdminService
                     'name', 'kana', 'email', 'phone', 'member_number', 'birthday', 'address', 'postal_code',
                     'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'customer_store_id',
                 ]));
-                if (is_array($updateMember['profile_extra'] ?? null)) {
-                    $keys = array_values(array_unique(array_merge($keys, array_keys($updateMember['profile_extra']))));
+                if ($extraKeys !== []) {
+                    $keys = array_values(array_unique(array_merge($keys, $extraKeys)));
                 }
                 if ($keys !== []) {
                     $this->profileSync->record($member, $user, $keys);
@@ -382,10 +386,7 @@ class MemberAdminService
     public function delete(int $memberId, int $projectId): void
     {
         $member = $this->findForWrite($memberId, $projectId);
-        $user = User::query()
-            ->withoutGlobalScope(ProjectScope::class)
-            ->whereKey((int) $member->user_id)
-            ->first();
+        $expectedUserId = (int) $member->user_id;
 
         $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
         $contractId = $this->smaregiApi->getContractIdForProject($projectId);
@@ -399,22 +400,34 @@ class MemberAdminService
             }
         }
 
-        $member->delete();
-
-        if ($user !== null) {
-            try {
-                if (method_exists($user, 'tokens')) {
-                    $user->tokens()->delete();
-                }
-            } catch (\Throwable $e) {
-                LogHelper::warning('[AdminMember] token cleanup skipped', [
-                    'user_id' => (int) $user->id,
-                    'message' => $e->getMessage(),
-                ]);
+        $user = DB::transaction(function () use ($memberId, $projectId, $expectedUserId, $smaregiCustomerId): ?User {
+            $user = User::query()->withoutGlobalScope(ProjectScope::class)
+                ->whereKey($expectedUserId)->where('project_id', $projectId)->lockForUpdate()->first();
+            $member = Member::query()->withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', $projectId)->lockForUpdate()->findOrFail($memberId);
+            if ((int) $member->user_id !== $expectedUserId
+                || trim((string) $member->smaregi_customer_id) !== $smaregiCustomerId) {
+                throw new \RuntimeException('会員の連携情報が変更されました。再読み込みしてから削除してください。');
             }
-            $this->userService->releaseLineUserIdForWithdraw($user);
-            $user->delete();
-        }
+
+            $member->delete();
+            if ($user !== null) {
+                try {
+                    if (method_exists($user, 'tokens')) {
+                        $user->tokens()->delete();
+                    }
+                } catch (\Throwable $e) {
+                    LogHelper::warning('[AdminMember] token cleanup skipped', [
+                        'user_id' => (int) $user->id,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+                $this->userService->releaseLineUserIdForWithdraw($user);
+                $user->delete();
+            }
+
+            return $user;
+        });
 
         LogHelper::info('[AdminMember] member deleted', [
             'project_id' => $projectId,
