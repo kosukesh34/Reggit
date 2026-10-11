@@ -44,7 +44,7 @@ class BindAdminProject
             $path = (string) $request->route()?->uri();
             $commonSettings = $request->routeIs('admin.rfm.settings.update')
                 || ($request->routeIs('admin.settings.*')
-                    && ! $request->routeIs('admin.settings.basic.*', 'admin.settings.reservations.*', 'admin.settings.queue.*', 'admin.settings.store-app-credential.*', 'admin.settings.staff.*'));
+                    && ! $request->routeIs('admin.settings.basic.*', 'admin.settings.reservations.update', 'admin.settings.queue.*', 'admin.settings.store-app-credential.*', 'admin.settings.staff.*'));
             if ($commonSettings || preg_match('~/(products|gallery|coupons|stamps|accounts|member-tags|analysis-deliveries|after-registration-deliveries|coupon-deliveries)(/|$)~', $path) || preg_match('~/members/[^/]+$|/members/[^/]+/(tags|transfer-code)(/|$)~', $path)) {
                 abort(403, 'プロジェクト共通情報は本部管理者が変更してください。');
             }
