@@ -61,9 +61,18 @@ class ConfirmExistingMemberLinkUseCase
             if (! is_array($customer)) {
                 throw new InvalidArgumentException('スマレジの会員を取得できませんでした');
             }
-            $user = $request->user_id !== null ? User::query()->find($request->user_id) : null;
+            $user = $request->user_id !== null
+                ? User::query()->whereKey($request->user_id)->where('project_id', $request->project_id)->lockForUpdate()->first()
+                : null;
             if ($request->user_id !== null && $user === null) {
                 throw new InvalidArgumentException('確認リンクが無効か、期限切れです');
+            }
+            if ($user !== null) {
+                $member = $user->member()->where('project_id', $request->project_id)->lockForUpdate()->first();
+                if ($member !== null && trim((string) $member->smaregi_customer_id) !== '') {
+                    throw new InvalidArgumentException('すでに既存会員連携済みです');
+                }
+                $user->setRelation('member', $member);
             }
             $this->writer->link((int) $request->project_id, $user, $customer);
             $request->forceFill(['confirmed_at' => now()])->save();
