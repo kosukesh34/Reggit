@@ -32,6 +32,30 @@ class MemberRankTransactionTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_deleted_member_is_not_ranked_or_sent_arrival_benefits_from_a_stale_reference(): void
+    {
+        $project = Project::factory()->create();
+        AdminContext::setCurrentProject($project);
+        $member = Member::factory()->create(['project_id' => $project->id, 'rank' => 'bronze']);
+        $this->mock(MemberRankCalculator::class, function ($mock): void {
+            $mock->shouldReceive('getRankInfo')->andReturn(['current_rank' => 'gold', 'current_rank_label' => 'Gold']);
+        });
+        $this->mock(SmaregiCustomerRankAssignmentService::class, function ($mock): void {
+            $mock->shouldReceive('assignRankToCustomer')->andReturnNull();
+        });
+        AfterRegistrationDelivery::create([
+            'project_id' => $project->id, 'schedule_type' => ScheduledDeliveryType::RANK_UP_ARRIVAL,
+            'params' => ['reach_rank' => 'gold'], 'title' => 'Gold welcome', 'is_active' => true,
+        ]);
+        $member->delete();
+
+        $this->assertFalse(app(MemberRankSyncService::class)->sync($member));
+        $this->assertSame('bronze', Member::withTrashed()->findOrFail($member->id)->rank);
+        $this->assertDatabaseCount('member_rank_histories', 0);
+        $this->assertDatabaseCount('scheduled_delivery_sends', 0);
+        $this->assertDatabaseCount('announcements', 0);
+    }
+
     public function test_rank_delivery_waits_for_outer_commit_and_rollback_discards_it(): void
     {
         $project = Project::factory()->create();
