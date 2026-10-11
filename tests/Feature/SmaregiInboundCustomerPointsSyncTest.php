@@ -2,16 +2,23 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Order\Events\OrderPointsSyncRequested;
+use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
 use App\Models\Member;
+use App\Models\Order;
 use App\Models\Project;
+use App\Models\Store;
 use App\Models\User;
 use App\Services\MemberService;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiPointsSyncService;
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Cache;
@@ -122,6 +129,73 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         $member->refresh();
         $this->assertSame(100, $member->points);
         $this->assertSame(100, $member->getTotalPointsFromTransactions());
+    }
+
+    public function test_another_successful_order_cannot_expose_pending_points_to_inbound(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        AdminContext::setCurrentProject($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id, 'user_id' => $user->id, 'smaregi_customer_id' => '42', 'points' => 0,
+        ]);
+        $this->grantMemberPoints($member, 150);
+        $orders = [];
+        foreach ([100, 50] as $points) {
+            $orders[] = Order::create([
+                'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 1000,
+                'status' => OrderStatus::CONFIRMED, 'payment_method' => PaymentMethod::CASH,
+                'points_earned' => $points, 'points_used' => 0, 'order_type' => 'mobile',
+            ]);
+        }
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn(self::CONTRACT_ID);
+        $api->shouldReceive('syncCustomerPointsForProject')->once()->with((int) $project->id, '42', 100)->andReturnNull();
+        $api->shouldReceive('syncCustomerPointsForProject')->once()->with((int) $project->id, '42', 50)->andReturn([]);
+        $api->shouldReceive('getCustomer')->andReturn(['customerId' => '42']);
+        $api->shouldReceive('getCustomerPoint')->andReturn(['point' => 50]);
+        $events = $this->mock(DomainEventDispatcher::class);
+        $events->shouldReceive('dispatch')->once()->withArgs(fn ($event) => $event instanceof OrderPointsSyncRequested
+            && $event->orderId === (int) $orders[0]->id);
+        $sync = app(SmaregiPointsSyncService::class);
+        $this->assertFalse($sync->syncOrderNetPoints((int) $orders[0]->id, (int) $project->id, (int) $user->id));
+        $this->assertTrue($sync->syncOrderNetPoints((int) $orders[1]->id, (int) $project->id, (int) $user->id));
+        $this->assertNull($orders[0]->fresh()->smaregi_points_synced_at);
+        $this->assertNotNull($orders[1]->fresh()->smaregi_points_synced_at);
+        $this->assertFalse($sync->hasOutboundPending((int) $member->id));
+
+        app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($member);
+
+        $this->assertSame(150, $member->fresh()->getTotalPointsFromTransactions());
+        $this->assertSame(0, $member->pointTransactions()->where('description', 'スマレジPOSからの同期')->count());
+    }
+
+    public function test_pending_points_in_another_store_survive_cache_eviction(): void
+    {
+        $project = Project::factory()->create();
+        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        AdminContext::setCurrentProject($project);
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id, 'user_id' => $user->id, 'smaregi_customer_id' => '42', 'points' => 0,
+        ]);
+        $this->grantMemberPoints($member, 100);
+        $first = $project->stores()->firstOrFail();
+        $second = Store::create(['project_id' => $project->id, 'store_key' => 'second', 'name' => 'Second', 'is_active' => true]);
+        Order::create([
+            'project_id' => $project->id, 'store_id' => $second->id, 'user_id' => $user->id, 'total_amount' => 1000,
+            'status' => OrderStatus::CONFIRMED, 'payment_method' => PaymentMethod::CASH,
+            'points_earned' => 100, 'points_used' => 0, 'order_type' => 'mobile',
+        ]);
+        Cache::flush();
+        $this->fakeSmaregiHttpSingleCustomer(['customerId' => '42', 'point' => 0]);
+        $this->mock(DomainEventDispatcher::class)->shouldNotReceive('dispatch');
+
+        app(StoreContext::class)->runForStore($first, fn () => app(SmaregiCustomerPointsInboundSyncService::class)
+            ->syncMemberFromSmaregi($member));
+
+        $this->assertSame(100, $member->fresh()->getTotalPointsFromTransactions());
     }
 
     public function test_pos_customersの同期でスマレジの会員情報がローカルに反映されること(): void

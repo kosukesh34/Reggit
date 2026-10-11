@@ -40,6 +40,8 @@ interface OrderRepository
     /** 自分の claim 時刻と一致するときだけ解放する（他プロセスの claim を消さない） */
     public function releaseSmaregiPointsSyncClaim(int $orderId, int $projectId, string $claimedAt): void;
 
+    public function hasUnsyncedSmaregiPointsForUser(int $userId, int $projectId): bool;
+
     /**
      * スマレジポイント未同期の注文を返す（Cash 失敗・未連携後の再送用）。
      *
