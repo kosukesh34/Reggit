@@ -7,7 +7,9 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\User;
+use App\UseCases\Coupon\CouponUseMemberCouponUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class CouponApiV1Test extends TestCase
@@ -54,5 +56,43 @@ class CouponApiV1Test extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.code', 'APP300')
             ->assertJsonPath('data.status', 'used');
+    }
+
+    public function test_cached_deleted_member_cannot_use_a_coupon(): void
+    {
+        $this->assertStaleMemberCannotUseCoupon(false);
+    }
+
+    public function test_cached_transferred_member_cannot_use_a_coupon(): void
+    {
+        $this->assertStaleMemberCannotUseCoupon(true);
+    }
+
+    private function assertStaleMemberCannotUseCoupon(bool $transfer): void
+    {
+        $user = User::factory()->create(['project_id' => 1]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $coupon = Coupon::factory()->create(['project_id' => 1, 'used_count' => 0]);
+        $issued = MemberCoupon::factory()->create([
+            'member_id' => $member->id, 'project_id' => 1, 'coupon_id' => $coupon->id,
+            'status' => MemberCoupon::STATUS_UNUSED, 'used_at' => null,
+        ]);
+        $user->load('member');
+        if ($transfer) {
+            $other = User::factory()->create(['project_id' => 1]);
+            $member->update(['user_id' => $other->id]);
+        } else {
+            $member->delete();
+        }
+        try {
+            app(CouponUseMemberCouponUseCase::class)->handle($user, (int) $issued->id);
+            $this->fail('A stale member must not redeem a coupon.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('member', $exception->errors());
+        }
+        $this->assertSame(MemberCoupon::STATUS_UNUSED, $issued->fresh()->status);
+        $this->assertNull($issued->fresh()->used_at);
+        $this->assertDatabaseCount('coupon_redemptions', 0);
+        $this->assertSame(0, (int) $coupon->fresh()->used_count);
     }
 }
