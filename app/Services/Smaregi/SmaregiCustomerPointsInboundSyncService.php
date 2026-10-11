@@ -169,8 +169,14 @@ class SmaregiCustomerPointsInboundSyncService
         }
 
         $profileSnapshots = [];
+        $pointSnapshots = [];
         foreach ($members as $member) {
             $profileSnapshots[(int) $member->id] = $this->profiles->snapshot((int) $member->id);
+            $pointSnapshots[(int) $member->id] = [
+                'points' => $member->getDisplayPoints(),
+                'pending' => $this->pointsSync->hasOutboundPending((int) $member->id)
+                    || $this->orderRepository->hasUnsyncedSmaregiPointsForUser((int) $member->user_id, (int) $member->project_id),
+            ];
         }
         $remoteCustomer = $this->smaregiApi->getCustomer($contractId, $smaregiCustomerId);
         if ($remoteCustomer === null) {
@@ -213,7 +219,7 @@ class SmaregiCustomerPointsInboundSyncService
             if ($project === null) {
                 continue;
             }
-            $this->tenantContext->runForProject($project, function () use ($member, $remoteCustomer, $remotePoints, $smaregiCustomerId, $profileSnapshots): void {
+            $this->tenantContext->runForProject($project, function () use ($member, $remoteCustomer, $remotePoints, $smaregiCustomerId, $profileSnapshots, $pointSnapshots): void {
                 if ($remoteCustomer !== null) {
                     $this->applyRemoteProfileForMember($member, $remoteCustomer, $profileSnapshots[(int) $member->id]);
                 }
@@ -227,7 +233,7 @@ class SmaregiCustomerPointsInboundSyncService
                             'remote_points' => $remotePoints,
                         ]);
                     } else {
-                        $this->applyRemotePointsForMember($member, $remotePoints);
+                        $this->applyRemotePointsForMember($member, $remotePoints, $pointSnapshots[(int) $member->id]);
                         $fresh = $member->fresh();
                         if ($fresh !== null) {
                             $this->memberRankSyncService->sync($fresh);
@@ -271,6 +277,7 @@ class SmaregiCustomerPointsInboundSyncService
                 return;
             }
             if ((int) $locked->user_id !== (int) ($user?->id ?? 0)
+                || (string) $locked->smaregi_customer_id !== (string) $member->smaregi_customer_id
                 || ! $this->profiles->canApplyInbound((int) $locked->id, $snapshot)) {
                 return;
             }
@@ -279,9 +286,10 @@ class SmaregiCustomerPointsInboundSyncService
         });
     }
 
-    private function applyRemotePointsForMember(Member $member, int $remotePoints): void
+    /** @param array{points: int, pending: bool} $snapshot */
+    private function applyRemotePointsForMember(Member $member, int $remotePoints, array $snapshot): void
     {
-        DB::transaction(function () use ($member, $remotePoints): void {
+        DB::transaction(function () use ($member, $remotePoints, $snapshot): void {
             $memberId = (int) $member->id;
             $projectId = (int) $member->project_id;
 
@@ -293,6 +301,16 @@ class SmaregiCustomerPointsInboundSyncService
             }
 
             $localSum = $aggregate->displayPoints();
+            if ($snapshot['pending'] || $localSum !== $snapshot['points']
+                || $aggregate->smaregiCustomerId() !== (string) $member->smaregi_customer_id
+                || $this->pointsSync->hasOutboundPending($memberId)
+                || $this->orderRepository->hasUnsyncedSmaregiPointsForUser((int) $member->user_id, $projectId)) {
+                Log::info('[Smaregi] Inbound point sync skipped: local state changed during remote fetch', [
+                    'member_id' => $memberId, 'project_id' => $projectId,
+                ]);
+
+                return;
+            }
             $delta = $remotePoints - $localSum;
             if ($delta === 0) {
                 Log::info('[Smaregi] Inbound customer sync: ポイントはスマレジとローカル一致のため更新なし', [
