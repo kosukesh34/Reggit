@@ -424,7 +424,8 @@ class MemberService
 
         DB::transaction(function () use ($user, $member, $projectId, $userUpdates, $memberUpdates, $extraUpdates): void {
             $lockedUser = User::query()->whereKey($user->id)->where('project_id', $projectId)->lockForUpdate()->first();
-            if ($lockedUser === null) {
+            if ($lockedUser === null
+                || (int) $lockedUser->authentication_version !== (int) $user->authentication_version) {
                 throw ValidationException::withMessages(['member' => '会員登録が必要です']);
             }
             $lockedMember = $lockedUser->member()->whereKey($member->id)->where('project_id', $projectId)->lockForUpdate()->first();
