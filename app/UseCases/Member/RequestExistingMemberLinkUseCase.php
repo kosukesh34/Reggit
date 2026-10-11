@@ -10,6 +10,7 @@ use App\Models\Member;
 use App\Models\User;
 use App\Services\ExistingMemberLinkMatcher;
 use App\Services\ExistingMemberLinkWriter;
+use App\Services\Member\CurrentMemberPrincipal;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,7 @@ class RequestExistingMemberLinkUseCase
         private SmaregiApiService $smaregiApi,
         private ExistingMemberLinkMatcher $matcher,
         private ExistingMemberLinkWriter $writer,
+        private CurrentMemberPrincipal $principals,
     ) {}
 
     /**
@@ -110,15 +112,29 @@ class RequestExistingMemberLinkUseCase
             throw new InvalidArgumentException('メールアドレスを入力してください');
         }
         $token = Str::random(48);
-        ExistingMemberLinkRequest::query()->create([
-            'project_id' => $projectId,
-            'user_id' => $user?->id,
-            'smaregi_customer_id' => $customerId,
-            'contract_id' => $contractId,
-            'email' => $email,
-            'token' => $token,
-            'expires_at' => now()->addMinutes(30),
-        ]);
+        DB::transaction(function () use ($projectId, $user, $contractId, $customerId, $email, $token): void {
+            if ($user !== null) {
+                $current = $this->principals->lock($user, $projectId);
+                if ($current === null) {
+                    throw new InvalidArgumentException('ログインし直してください');
+                }
+                if ($current->member !== null && trim((string) $current->member->smaregi_customer_id) !== '') {
+                    throw new InvalidArgumentException('すでに既存会員連携済みです');
+                }
+            }
+            if ($contractId !== trim((string) $this->smaregiApi->getContractIdForProject($projectId))) {
+                throw new InvalidArgumentException('スマレジの連携設定が変更されています。再度申請してください');
+            }
+            ExistingMemberLinkRequest::query()->create([
+                'project_id' => $projectId,
+                'user_id' => $user?->id,
+                'smaregi_customer_id' => $customerId,
+                'contract_id' => $contractId,
+                'email' => $email,
+                'token' => $token,
+                'expires_at' => now()->addMinutes(30),
+            ]);
+        });
         Mail::to($email)->send(new ExistingMemberLinkMail(url('/existing-member-link/'.$token)));
         LogHelper::info('[Member] existing link mail sent', [
             'project_id' => $projectId,

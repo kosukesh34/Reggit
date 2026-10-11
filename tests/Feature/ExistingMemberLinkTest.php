@@ -357,6 +357,50 @@ class ExistingMemberLinkTest extends TestCase
         $this->assertDatabaseMissing('users', ['project_id' => $project->id, 'email' => 'a@example.com']);
     }
 
+    #[TestWith(['request', 'revoked'])]
+    #[TestWith(['request', 'deleted'])]
+    #[TestWith(['confirm', 'revoked'])]
+    #[TestWith(['confirm', 'deleted'])]
+    public function test_stale_principal_cannot_request_or_confirm_link(string $action, string $change): void
+    {
+        Mail::fake();
+        $project = $this->createProject();
+        $this->enable($project, ['customer_code']);
+        $api = $this->mockCustomers([$this->customer()]);
+        $api->shouldReceive('getCustomer')->andReturn($this->customer());
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $pending = null;
+        if ($action === 'confirm') {
+            $pending = ExistingMemberLinkRequest::create([
+                'project_id' => $project->id, 'user_id' => $user->id,
+                'contract_id' => 'contract-1', 'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+                'token' => str_repeat('z', 48), 'expires_at' => now()->addMinutes(30),
+            ]);
+        }
+        if ($change === 'revoked') {
+            User::query()->whereKey($user->id)->increment('authentication_version');
+        } else {
+            $user->delete();
+        }
+        $rejected = false;
+        try {
+            if ($pending !== null) {
+                app(ConfirmExistingMemberLinkUseCase::class)->handle($pending->token, $user);
+            } else {
+                app(RequestExistingMemberLinkUseCase::class)->handle((int) $project->id, $user, ['customer_code' => 'C100']);
+            }
+        } catch (InvalidArgumentException $exception) {
+            $rejected = true;
+        }
+        $this->assertTrue($rejected);
+        Mail::assertNothingSent();
+        $this->assertDatabaseCount('existing_member_link_requests', $pending === null ? 0 : 1);
+        $this->assertDatabaseMissing('members', ['smaregi_customer_id' => '9001']);
+        if ($pending !== null) {
+            $this->assertNull($pending->fresh()->confirmed_at);
+        }
+    }
+
     private function createProject(): Project
     {
         return Project::firstOrCreate(
