@@ -13,6 +13,7 @@ class ExistingMemberLinkRequest extends Model
         'project_id',
         'user_id',
         'smaregi_customer_id',
+        'contract_id',
         'email',
         'token',
         'expires_at',

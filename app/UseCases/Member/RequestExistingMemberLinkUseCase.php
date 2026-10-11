@@ -38,7 +38,7 @@ class RequestExistingMemberLinkUseCase
             throw new InvalidArgumentException('すでに既存会員連携済みです');
         }
 
-        $customer = $this->findCustomer($projectId, $setting->identifier_fields, $input);
+        ['contract_id' => $contractId, 'customer' => $customer] = $this->findCustomer($projectId, $setting->identifier_fields, $input);
         $customerId = trim((string) ($customer['customerId'] ?? ''));
         if ($customerId === '') {
             throw new InvalidArgumentException('一致する会員が見つかりません');
@@ -53,12 +53,12 @@ class RequestExistingMemberLinkUseCase
                 throw new InvalidArgumentException('確認先のメールアドレスが未登録です。店舗にお問い合わせください');
             }
 
-            return $this->sendMail($projectId, $user, $customerId, $email);
+            return $this->sendMail($projectId, $user, $contractId, $customerId, $email);
         }
 
         $fields = is_array($setting->identifier_fields) ? $setting->identifier_fields : [];
         if (in_array(ExistingMemberLinkField::EMAIL, $fields, true)) {
-            return $this->sendMail($projectId, null, $customerId, (string) ($input[ExistingMemberLinkField::EMAIL] ?? ''));
+            return $this->sendMail($projectId, null, $contractId, $customerId, (string) ($input[ExistingMemberLinkField::EMAIL] ?? ''));
         }
 
         $this->writer->link($projectId, null, $customer);
@@ -69,7 +69,7 @@ class RequestExistingMemberLinkUseCase
     /**
      * @param  list<string>  $fields
      * @param  array<string, string>  $input
-     * @return array<string, mixed>
+     * @return array{contract_id: string, customer: array<string, mixed>}
      */
     private function findCustomer(int $projectId, array $fields, array $input): array
     {
@@ -93,11 +93,11 @@ class RequestExistingMemberLinkUseCase
             throw new InvalidArgumentException('スマレジから会員を取得できませんでした');
         }
 
-        return $this->matcher->match(array_values(array_filter($list, 'is_array')), $fields, $input);
+        return ['contract_id' => $contractId, 'customer' => $this->matcher->match(array_values(array_filter($list, 'is_array')), $fields, $input)];
     }
 
     /** @return array{linked: bool, message: string} */
-    private function sendMail(int $projectId, ?User $user, string $customerId, string $email): array
+    private function sendMail(int $projectId, ?User $user, string $contractId, string $customerId, string $email): array
     {
         if ($email === '') {
             throw new InvalidArgumentException('メールアドレスを入力してください');
@@ -107,6 +107,7 @@ class RequestExistingMemberLinkUseCase
             'project_id' => $projectId,
             'user_id' => $user?->id,
             'smaregi_customer_id' => $customerId,
+            'contract_id' => $contractId,
             'email' => $email,
             'token' => $token,
             'expires_at' => now()->addMinutes(30),
