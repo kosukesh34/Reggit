@@ -315,11 +315,6 @@ class MemberAdminService
             $updateUser['email'] = null;
         }
 
-        if ($user !== null && $updateUser !== []) {
-            $user->update($updateUser);
-            $user->refresh();
-        }
-
         $allowedMember = [
             'member_number', 'status', 'rank', 'birthday', 'address',
             'postal_code', 'prefecture', 'city', 'street', 'sex', 'mail_receive_flag', 'customer_store_id', 'notification_preference', 'profile_extra',
@@ -330,32 +325,43 @@ class MemberAdminService
             static fn ($value, string $key): bool => $key === 'profile_extra' || $key === 'mail_receive_flag' || $key === 'customer_store_id' || $value !== null,
             ARRAY_FILTER_USE_BOTH
         );
-        if ($updateMember !== []) {
-            DB::transaction(function () use ($member, $updateMember): void {
-                $member = Member::query()->where('project_id', $member->project_id)
-                    ->lockForUpdate()->findOrFail($member->id);
-                $previousRank = (string) ($member->rank ?? '');
-                $member->offsetUnset('rank_label');
-                $member->offsetUnset('points_expiry');
-                $member->update($updateMember);
-                $member->refresh();
-                if (array_key_exists('rank', $updateMember)) {
-                    $newRank = (string) $updateMember['rank'];
-                    if ($newRank !== '' && $newRank !== $previousRank) {
-                        $options = $this->getRankOptionsForSelect((int) $member->project_id);
-                        $this->recordRankHistory(
-                            $member,
-                            $previousRank,
-                            $newRank,
-                            $previousRank !== '' ? ($options[$previousRank] ?? $previousRank) : null,
-                            $options[$newRank] ?? $newRank,
-                        );
-                        $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
-                    }
-                }
-            });
+        DB::transaction(function () use ($member, $updateUser, $updateMember): void {
+            $expectedUserId = (int) $member->user_id;
+            $user = User::query()->whereKey($expectedUserId)->where('project_id', $member->project_id)
+                ->lockForUpdate()->first();
+            $member = Member::query()->where('project_id', $member->project_id)
+                ->lockForUpdate()->findOrFail($member->id);
+            if ((int) $member->user_id !== $expectedUserId) {
+                throw new \RuntimeException('会員情報が変更されました。再読み込みしてから保存してください。');
+            }
+            if ($user !== null && $updateUser !== []) {
+                $user->update($updateUser);
+            }
+            if ($updateMember === []) {
+                return;
+            }
+            $previousRank = (string) ($member->rank ?? '');
+            $member->offsetUnset('rank_label');
+            $member->offsetUnset('points_expiry');
+            $member->update($updateMember);
             $member->refresh();
-        }
+            if (array_key_exists('rank', $updateMember)) {
+                $newRank = (string) $updateMember['rank'];
+                if ($newRank !== '' && $newRank !== $previousRank) {
+                    $options = $this->getRankOptionsForSelect((int) $member->project_id);
+                    $this->recordRankHistory(
+                        $member,
+                        $previousRank,
+                        $newRank,
+                        $previousRank !== '' ? ($options[$previousRank] ?? $previousRank) : null,
+                        $options[$newRank] ?? $newRank,
+                    );
+                    $this->smaregiCustomerRankAssignmentService->assignRankToCustomer($member, $newRank);
+                }
+            }
+        });
+        $member->refresh();
+        $user?->refresh();
 
         $smaregiCustomerId = trim((string) ($member->smaregi_customer_id ?? ''));
         $contractId = $this->smaregiApi->getContractIdForProject($member->project_id);
