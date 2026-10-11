@@ -14,8 +14,9 @@ class QueueEnterController extends Controller
         private QueueEnterUseCase $enterUseCase
     ) {}
 
-    public function __invoke(Request $request, int $id)
+    public function __invoke(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $dto = $this->enterUseCase->handle($id, AdminContext::requireCurrentProjectId());
             if ($dto === null) {

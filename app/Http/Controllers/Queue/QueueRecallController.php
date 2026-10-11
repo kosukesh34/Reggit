@@ -14,8 +14,9 @@ class QueueRecallController extends Controller
         private QueueRecallUseCase $recallUseCase
     ) {}
 
-    public function __invoke(Request $request, int $id)
+    public function __invoke(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $dto = $this->recallUseCase->handle($id, AdminContext::requireCurrentProjectId());
             if ($dto === null) {

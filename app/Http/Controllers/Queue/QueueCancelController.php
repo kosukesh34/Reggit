@@ -14,8 +14,9 @@ class QueueCancelController extends Controller
         private QueueCancelUseCase $cancelUseCase
     ) {}
 
-    public function __invoke(Request $request, int $id)
+    public function __invoke(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $result = $this->cancelUseCase->handle(
                 $id,
