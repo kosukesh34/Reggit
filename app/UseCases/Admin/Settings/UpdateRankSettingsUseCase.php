@@ -4,17 +4,17 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\RankAggregationType;
-use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
-use App\Services\Smaregi\SmaregiCustomerRankSyncService;
+use App\Models\Project;
+use App\Services\Smaregi\SmaregiRankSettingsRecoveryService;
 use App\UseCases\Admin\Settings\Data\UpdateRankSettingsInput;
 use App\Util\StrHelper;
+use Illuminate\Support\Facades\DB;
 
 class UpdateRankSettingsUseCase
 {
     public function __construct(
-        private SmaregiCustomerRankSyncService $smaregiRankSync,
-        private SmaregiCustomerRankAssignmentService $smaregiCustomerRankAssignmentService,
         private RankSettings $shopSettingRepository,
+        private SmaregiRankSettingsRecoveryService $recovery,
     ) {}
 
     public function handle(UpdateRankSettingsInput $input): void
@@ -66,33 +66,30 @@ class UpdateRankSettingsUseCase
             throw new \InvalidArgumentException('ランクキーが重複しています');
         }
 
-        $this->shopSettingRepository->setMemberRankSettings($rows, $projectId);
-        $this->shopSettingRepository->setValue('member_rank_basis', (string) $input->rankBasis, 'string', $projectId);
-        $this->shopSettingRepository->setValue(
-            'member_rank_aggregation_type',
-            RankAggregationType::normalize($input->aggregationType),
-            'string',
-            $projectId,
-        );
-        $periodDays = (int) $input->periodDays;
-        $this->shopSettingRepository->setValue('member_rank_period_days', $periodDays > 0 ? $periodDays : 365, 'integer', $projectId);
-        $this->shopSettingRepository->setValue('is_rank_down_enabled', (bool) $input->rankDownEnabled, 'boolean', $projectId);
-        $this->shopSettingRepository->setValue('point_earn_rate', $defaultPointEarnRate, 'integer', $projectId);
-        $this->shopSettingRepository->setValue('points_valid_days', (int) $input->pointsValidDays, 'integer', $projectId);
-        $this->shopSettingRepository->setValue('points_per_order', (int) $input->pointsPerOrder, 'integer', $projectId);
-        $this->shopSettingRepository->setValue('stamp_earn_per_amount', (int) $input->stampEarnPerAmount, 'integer', $projectId);
-
-        if ($this->smaregiRankSync->hasSmaregiContract($projectId) && $rows !== []) {
-            $rankIdsByKey = $this->smaregiRankSync->sync($projectId, $rows);
+        DB::transaction(function () use ($input, $projectId, $rows, $defaultPointEarnRate): void {
+            Project::whereKey($projectId)->lockForUpdate()->firstOrFail();
+            $currentMeta = $this->existingRankMetaByKey($projectId);
             foreach ($rows as $index => $row) {
-                $key = $row['key'];
-                if (isset($rankIdsByKey[$key]) && $rankIdsByKey[$key] !== '') {
-                    $rows[$index]['smaregi_rank_id'] = $rankIdsByKey[$key];
-                }
+                $rows[$index]['smaregi_rank_id'] = $currentMeta[$row['key']]['smaregi_rank_id'] ?? null;
             }
             $this->shopSettingRepository->setMemberRankSettings($rows, $projectId);
-            $this->smaregiCustomerRankAssignmentService->syncPointRatesForProject($projectId);
-        }
+            $this->shopSettingRepository->setValue('member_rank_basis', (string) $input->rankBasis, 'string', $projectId);
+            $this->shopSettingRepository->setValue(
+                'member_rank_aggregation_type',
+                RankAggregationType::normalize($input->aggregationType),
+                'string',
+                $projectId,
+            );
+            $periodDays = (int) $input->periodDays;
+            $this->shopSettingRepository->setValue('member_rank_period_days', $periodDays > 0 ? $periodDays : 365, 'integer', $projectId);
+            $this->shopSettingRepository->setValue('is_rank_down_enabled', (bool) $input->rankDownEnabled, 'boolean', $projectId);
+            $this->shopSettingRepository->setValue('point_earn_rate', $defaultPointEarnRate, 'integer', $projectId);
+            $this->shopSettingRepository->setValue('points_valid_days', (int) $input->pointsValidDays, 'integer', $projectId);
+            $this->shopSettingRepository->setValue('points_per_order', (int) $input->pointsPerOrder, 'integer', $projectId);
+            $this->shopSettingRepository->setValue('stamp_earn_per_amount', (int) $input->stampEarnPerAmount, 'integer', $projectId);
+            $this->recovery->record($projectId);
+            DB::afterCommit(fn () => $this->recovery->retryPending($projectId));
+        });
     }
 
     /**
