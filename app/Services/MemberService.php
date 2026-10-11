@@ -49,80 +49,95 @@ class MemberService
 
     public function getMemberData(User $user, bool $syncFromSmaregi = true): array
     {
-        $member = $user->member;
-
+        $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
+        $member = $user->member()->where('project_id', $projectId)->first();
         if ($member === null) {
-            $projectId = AdminContext::resolveProjectId($user->project_id !== null ? (int) $user->project_id : null);
-            $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
-            $profileFormFields = $this->buildProfileFormFields($profileSettings, $projectId);
-
-            return [
-                'is_member' => false,
-                'user_id' => (int) $user->id,
-                'message' => '会員登録がまだです',
-                'show_member_card_for_guest' => $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
-                'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
-                'profile_field_settings' => $profileFormFields,
-                'profile_image_enabled' => $this->profileImageEnabled($profileSettings),
-                'profile' => [],
-            ];
+            return $this->getGuestMemberData($user, $projectId);
         }
 
         if ((string) $member->smaregi_customer_id === '' && Cache::add('member_registration_recovery:'.$member->id, 1, 30)) {
             try {
                 $this->registrationRecovery->recoverForMember($member);
-                $member->refresh();
             } catch (\Throwable $exception) {
                 LogHelper::warning('[Member] registration recovery unavailable', ['member_id' => $member->id]);
             }
         }
+        $member = $user->member()->where('project_id', $projectId)->whereKey($member->id)->first();
+        if ($member === null) {
+            return $this->getGuestMemberData($user, $projectId);
+        }
         if ($syncFromSmaregi) {
             $this->maybeSyncMemberPointsFromSmaregi($member);
         }
-        $member->refresh();
-        $member->syncPointsLedger();
-        $member->refresh();
 
-        $rankInfo = $this->getRankInfo($member);
-        $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
+        return DB::transaction(function () use ($user, $projectId, $member): array {
+            $member = $user->member()->where('project_id', $projectId)->whereKey($member->id)
+                ->lockForUpdate()->first();
+            if ($member === null) {
+                return $this->getGuestMemberData($user, $projectId);
+            }
+            $member->refresh();
+            $member->syncPointsLedger();
+            $member->refresh();
 
-        $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
+            $rankInfo = $this->getRankInfo($member);
+            $expiryInfo = $this->expiryCalculator->getExpiryInfo($member);
+
+            $projectId = AdminContext::resolveProjectId($member->project_id !== null ? (int) $member->project_id : null);
+            $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
+            $profileFormFields = $this->buildProfileFormFields($profileSettings, $projectId);
+            $profileValues = $this->getProfileValues($member->user, $member);
+
+            return [
+                'is_member' => true,
+                'user_id' => (int) $user->id,
+                'member' => $member->load('user'),
+                'user' => $member->user,
+                'profile_field_settings' => $profileFormFields,
+                'profile_image_enabled' => $this->profileImageEnabled($profileSettings),
+                'profile' => $profileValues,
+                'points' => $member->getTotalPointsFromTransactions(),
+                'current_rank' => $rankInfo['current_rank'],
+                'current_rank_label' => $rankInfo['current_rank_label'],
+                'current_rank_icon' => $rankInfo['current_rank_icon'],
+                'current_rank_background' => $rankInfo['current_rank_background'],
+                'current_rank_color' => $rankInfo['current_rank_color'] ?? null,
+                'next_rank' => $rankInfo['next_rank'],
+                'next_rank_label' => $rankInfo['next_rank_label'],
+                'points_to_next_rank' => $rankInfo['points_to_next_rank'],
+                'rank_basis' => $rankInfo['rank_basis'],
+                'rank_metric' => $rankInfo['rank_metric'],
+                'points_expiry' => $expiryInfo,
+                'show_points_display' => $this->shopSettingRepository->getShowPointsDisplay($projectId)
+                    && $this->shopSettingRepository->getUsePoints($projectId),
+                'show_rank_progress' => $this->shopSettingRepository->getShowRankProgress($projectId),
+                'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
+                'member_card_design' => $this->shopSettingRepository->getMemberCardDesign($projectId),
+                'member_card_logo_url' => $this->shopSettingRepository->getFrontendLogoUrl($projectId),
+                'member_card_display_type' => $this->shopSettingRepository->getMemberCardDisplayType($projectId),
+                'member_card_code_type' => $this->shopSettingRepository->getMemberCardCodeType($projectId),
+                'rank_up_history' => $this->buildRankUpHistory($member),
+                'days_to_next_rank' => $rankInfo['days_to_next_rank'] ?? null,
+                'days_required_for_next_rank' => $rankInfo['days_required_for_next_rank'] ?? null,
+                'rank_aggregation_type' => $rankInfo['rank_aggregation_type'] ?? 'total',
+            ];
+        }, 3);
+    }
+
+    private function getGuestMemberData(User $user, int $projectId): array
+    {
         $profileSettings = $this->shopSettingRepository->getProfileFieldSettings($projectId);
         $profileFormFields = $this->buildProfileFormFields($profileSettings, $projectId);
-        $profileValues = $this->getProfileValues($member->user, $member);
 
         return [
-            'is_member' => true,
+            'is_member' => false,
             'user_id' => (int) $user->id,
-            'member' => $member->load('user'),
-            'user' => $member->user,
+            'message' => '会員登録がまだです',
+            'show_member_card_for_guest' => $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
+            'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
             'profile_field_settings' => $profileFormFields,
             'profile_image_enabled' => $this->profileImageEnabled($profileSettings),
-            'profile' => $profileValues,
-            'points' => $member->getTotalPointsFromTransactions(),
-            'current_rank' => $rankInfo['current_rank'],
-            'current_rank_label' => $rankInfo['current_rank_label'],
-            'current_rank_icon' => $rankInfo['current_rank_icon'],
-            'current_rank_background' => $rankInfo['current_rank_background'],
-            'current_rank_color' => $rankInfo['current_rank_color'] ?? null,
-            'next_rank' => $rankInfo['next_rank'],
-            'next_rank_label' => $rankInfo['next_rank_label'],
-            'points_to_next_rank' => $rankInfo['points_to_next_rank'],
-            'rank_basis' => $rankInfo['rank_basis'],
-            'rank_metric' => $rankInfo['rank_metric'],
-            'points_expiry' => $expiryInfo,
-            'show_points_display' => $this->shopSettingRepository->getShowPointsDisplay($projectId)
-                && $this->shopSettingRepository->getUsePoints($projectId),
-            'show_rank_progress' => $this->shopSettingRepository->getShowRankProgress($projectId),
-            'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
-            'member_card_design' => $this->shopSettingRepository->getMemberCardDesign($projectId),
-            'member_card_logo_url' => $this->shopSettingRepository->getFrontendLogoUrl($projectId),
-            'member_card_display_type' => $this->shopSettingRepository->getMemberCardDisplayType($projectId),
-            'member_card_code_type' => $this->shopSettingRepository->getMemberCardCodeType($projectId),
-            'rank_up_history' => $this->buildRankUpHistory($member),
-            'days_to_next_rank' => $rankInfo['days_to_next_rank'] ?? null,
-            'days_required_for_next_rank' => $rankInfo['days_required_for_next_rank'] ?? null,
-            'rank_aggregation_type' => $rankInfo['rank_aggregation_type'] ?? 'total',
+            'profile' => [],
         ];
     }
 
