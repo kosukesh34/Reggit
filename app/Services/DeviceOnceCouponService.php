@@ -5,17 +5,17 @@ namespace App\Services;
 use App\Domain\Coupon\Policies\CouponIssuePolicy;
 use App\Models\Coupon;
 use App\Models\CouponDeviceIssue;
-use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\User;
 use App\Models\UserDevice;
+use App\Services\Member\CurrentMemberPrincipal;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class DeviceOnceCouponService
 {
-    public function __construct(private CouponIssuePolicy $couponIssuePolicy) {}
+    public function __construct(private CouponIssuePolicy $couponIssuePolicy, private CurrentMemberPrincipal $principals) {}
 
     /** @return list<array<string, mixed>> */
     public function available(User $user, string $deviceIdentifier): array
@@ -59,28 +59,30 @@ class DeviceOnceCouponService
         if ($deviceIdentifier === '') {
             throw ValidationException::withMessages(['device_identifier' => '端末情報を確認できません']);
         }
-        $registered = UserDevice::query()
-            ->where('project_id', (int) $member->project_id)
-            ->where('user_id', (int) $user->id)
-            ->where('device_identifier', $deviceIdentifier)
-            ->exists();
-        if (! $registered) {
-            throw ValidationException::withMessages(['device_identifier' => 'この端末を先に登録してください']);
-        }
-        if ((int) $coupon->project_id !== (int) $member->project_id || ! $coupon->is_active || ! $coupon->device_once_enabled) {
-            throw ValidationException::withMessages(['coupon' => 'このクーポンは獲得できません']);
-        }
-        if (! $this->couponIssuePolicy->isWithinIssuePeriod($coupon->start_at, $coupon->end_at, now())) {
-            throw ValidationException::withMessages(['coupon' => 'このクーポンは発行期間外です']);
-        }
 
         try {
             return DB::transaction(function () use ($user, $member, $coupon, $deviceIdentifier): MemberCoupon {
-                $member = Member::query()->whereKey($member->id)
-                    ->where('project_id', (int) $member->project_id)
-                    ->where('user_id', (int) $user->id)->lockForUpdate()->first();
+                $projectId = (int) $user->project_id;
+                $owner = $this->principals->lock($user, $projectId);
+                if ($owner === null) {
+                    throw ValidationException::withMessages(['member' => 'ログインし直してください']);
+                }
+                $member = $owner->member;
                 if ($member === null) {
                     throw ValidationException::withMessages(['member' => '会員登録が必要です']);
+                }
+
+                $device = UserDevice::query()->where('project_id', $projectId)->where('user_id', $owner->id)
+                    ->where('device_identifier', $deviceIdentifier)->lockForUpdate()->first();
+                if ($device === null) {
+                    throw ValidationException::withMessages(['device_identifier' => 'この端末を先に登録してください']);
+                }
+                $coupon = Coupon::query()->where('project_id', $projectId)->whereKey($coupon->id)->lockForUpdate()->first();
+                if ($coupon === null || ! $coupon->is_active || ! $coupon->device_once_enabled) {
+                    throw ValidationException::withMessages(['coupon' => 'このクーポンは獲得できません']);
+                }
+                if (! $this->couponIssuePolicy->isWithinIssuePeriod($coupon->start_at, $coupon->end_at, now())) {
+                    throw ValidationException::withMessages(['coupon' => 'このクーポンは発行期間外です']);
                 }
 
                 $now = now();
