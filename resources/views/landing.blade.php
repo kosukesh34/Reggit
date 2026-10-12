@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="{{ asset('images/landing/app/actual-home.webp') }}">
+    <link rel="preload" as="image" href="{{ asset('images/landing/app/current-home.jpg') }}">
     <link rel="stylesheet" href="{{ asset('css/landing-home.css') }}?v=8">
 </head>
 <body class="lp">
@@ -58,11 +58,11 @@
                 </div>
                 <div id="screens" class="lp-product" aria-label="Reggitの実際の画面">
                     <figure class="lp-product__customer">
-                        <img src="{{ asset('images/landing/app/actual-home.webp') }}" alt="ReggitのLINEミニアプリ。会員証、注文、予約へアクセスできるホーム画面" width="780" height="1688" fetchpriority="high">
+                        <img src="{{ asset('images/landing/app/current-home.jpg') }}" alt="ReggitのLINEミニアプリ。会員証、注文、予約へアクセスできるホーム画面" width="390" height="844" fetchpriority="high">
                         <figcaption>お客様のLINE</figcaption>
                     </figure>
                     <figure class="lp-product__admin">
-                        <img src="{{ asset('images/landing/app/actual-admin.webp') }}" alt="Reggitの管理画面。注文、予約、順番待ち、会員情報を確認するダッシュボード" width="1512" height="982" fetchpriority="high">
+                        <img src="{{ asset('images/landing/app/current-admin.jpg') }}" alt="Reggitの管理画面。注文、予約、順番待ち、会員情報を確認するダッシュボード" width="1280" height="720" fetchpriority="high">
                         <figcaption>店舗の管理画面</figcaption>
                     </figure>
                     <p class="lp-product__note">画面はデモデータを使用しています。</p>
@@ -82,21 +82,21 @@
                     'id' => 'member',
                     'title' => '会員証・特典',
                     'body' => 'スマホで会員証を提示。ポイントやスタンプ、クーポンも同じアプリで確認できます。',
-                    'screen' => 'actual-member.webp',
+                    'screen' => 'current-member.jpg',
                     'screen_alt' => '会員番号、ランク、ポイントを表示するReggitの会員証',
                 ],
                 [
                     'id' => 'order',
                     'title' => 'モバイルオーダー',
                     'body' => '商品を選んでスマホから注文。店舗は注文を受け付け、準備から受け渡しまで管理できます。',
-                    'screen' => 'actual-order.webp',
+                    'screen' => 'current-order.jpg',
                     'screen_alt' => '商品を選んで注文できるReggitの商品一覧',
                 ],
                 [
                     'id' => 'queue',
                     'title' => '予約・順番待ち',
                     'body' => '予約や当日の受付もスマホから。お客様は待ち状況を、店舗は予約と受付の一覧を確認できます。',
-                    'screen' => 'actual-queue.webp',
+                    'screen' => 'current-queue.jpg',
                     'screen_alt' => '受付番号と待ち状況を確認できるReggitの順番待ち画面',
                 ],
             ];
@@ -115,7 +115,7 @@
                                 <p>{{ $feature['body'] }}</p>
                             </div>
                             <figure class="lp-feature__screen">
-                                <img src="{{ asset('images/landing/app/'.$feature['screen']) }}" alt="{{ $feature['screen_alt'] }}" width="780" height="1688" loading="lazy">
+                                <img src="{{ asset('images/landing/app/'.$feature['screen']) }}" alt="{{ $feature['screen_alt'] }}" width="390" height="844" loading="lazy">
                             </figure>
                         </article>
                     @endforeach
@@ -135,8 +135,8 @@
                     </ul>
                 </div>
                 <div class="lp-benefits__screens">
-                    <figure><img src="{{ asset('images/landing/app/actual-point.webp') }}" alt="Reggitのポイント残高と履歴の画面" width="780" height="1688" loading="lazy"><figcaption>ポイント</figcaption></figure>
-                    <figure><img src="{{ asset('images/landing/app/actual-coupon.webp') }}" alt="Reggitで受け取ったクーポンの一覧" width="780" height="1688" loading="lazy"><figcaption>クーポン</figcaption></figure>
+                    <figure><img src="{{ asset('images/landing/app/current-member.jpg') }}" alt="ポイント残高と履歴を確認できる現在のReggit会員証画面" width="390" height="844" loading="lazy"><figcaption>会員証・ポイント</figcaption></figure>
+                    <figure><img src="{{ asset('images/landing/app/current-coupon.jpg') }}" alt="Reggitで受け取ったクーポンの一覧" width="390" height="844" loading="lazy"><figcaption>クーポン</figcaption></figure>
                 </div>
             </div>
         </section>
@@ -144,13 +144,13 @@
         <section class="lp-options" aria-labelledby="options-title">
             <div class="lp-container lp-options__grid">
                 <div>
-                    <h2 id="options-title">LINEから始めて、<br>お店の運用に合わせる。</h2>
-                    <p>飲食店の注文・受付にも、物販店の会員証にも。<br>業態やブランドに合わせて使えます。</p>
+                    <h2 id="options-title">お店に合う、<br>2つのプラン。</h2>
+                    <p>LINEで手軽に始めるか、専用アプリも用意するか。<br>お客様への届け方に合わせて選べます。</p>
                 </div>
                 <dl class="lp-options__list">
-                    <div><dt>LINEミニアプリ</dt><dd>お客様はLINEから利用。専用アプリのインストールは必要ありません。</dd></div>
+                    <div><dt>LINEプラン</dt><dd>お客様はLINEから利用。専用アプリのインストールは必要ありません。</dd></div>
+                    <div><dt>ネイティブアプリプラン</dt><dd>LINEミニアプリに加えて、店舗・ブランド専用のiOS / Androidアプリを利用できます。公開には設定・審査などの準備が必要です。</dd></div>
                     <div><dt>スマレジ連携</dt><dd>必要に応じて、POSの会員・購買情報と連携できます。</dd></div>
-                    <div><dt>iOS / Android</dt><dd>店舗・ブランドの専用アプリにも対応します。</dd></div>
                     <div><dt>画面のカスタマイズ</dt><dd>ロゴや配色、メニューを店舗に合わせて設定できます。</dd></div>
                 </dl>
             </div>
