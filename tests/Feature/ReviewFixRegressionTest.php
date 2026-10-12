@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Order\Events\OrderConfirmed;
+use App\Domain\Order\Events\OrderReady;
 use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
@@ -22,6 +23,7 @@ use App\Util\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class ReviewFixRegressionTest extends TestCase
@@ -151,6 +153,56 @@ class ReviewFixRegressionTest extends TestCase
         $this->assertDatabaseCount('order_notification_outbox', 3);
         $this->assertSame(3, DB::table('order_notification_outbox')->whereNotNull('delivered_at')->count());
         $this->assertSame($other->id, AdminContext::getCurrentProjectId());
+    }
+
+    #[TestWith(['confirmed', 'cancelled'])]
+    #[TestWith(['confirmed', 'completed'])]
+    #[TestWith(['ready', 'cancelled'])]
+    #[TestWith(['ready', 'completed'])]
+    public function test_outbox_finishes_obsolete_instructions_after_a_failed_delivery(string $eventName, string $finalStatus): void
+    {
+        $order = $this->order($eventName);
+        $notifications = \Mockery::mock(OrderNotificationService::class);
+        $method = $eventName === 'ready' ? 'notifyReady' : 'notifyConfirmed';
+        foreach (['native', 'line'] as $channel) {
+            $notifications->shouldReceive($method)->once()->with($order->id, $order->project_id, $channel)
+                ->andThrow(new \RuntimeException('Provider unavailable'));
+        }
+        $kitchen = \Mockery::mock(KitchenPushService::class);
+        if ($eventName === 'confirmed') {
+            $kitchen->shouldReceive('notifyNewOrder')->once()->andThrow(new \RuntimeException('Provider unavailable'));
+        } else {
+            $kitchen->shouldNotReceive('notifyNewOrder');
+        }
+        $outbox = new OrderNotificationOutbox($notifications, $kitchen, app(StoreContext::class));
+        $event = $eventName === 'ready'
+            ? new OrderReady($order->id, $order->project_id, $order->user_id)
+            : new OrderConfirmed($order->id, $order->project_id, $order->user_id);
+        $outbox->record($event);
+        $outbox->deliverEvent($event);
+        $rows = $eventName === 'ready' ? 2 : 3;
+        $this->assertSame($rows, DB::table('order_notification_outbox')->whereNull('delivered_at')->count());
+
+        $order->update(['status' => $finalStatus]);
+        $this->travel(61)->seconds();
+        $this->assertSame($rows, $outbox->drain());
+        $this->assertSame($rows, DB::table('order_notification_outbox')->whereNotNull('delivered_at')->whereNull('last_error')->count());
+        $this->assertSame(0, $outbox->drain());
+    }
+
+    public function test_outbox_does_not_send_new_kitchen_order_after_it_is_ready(): void
+    {
+        $order = $this->order('ready');
+        $notifications = \Mockery::mock(OrderNotificationService::class);
+        $notifications->shouldReceive('notifyConfirmed')->twice();
+        $notifications->shouldReceive('notifyReady')->twice();
+        $kitchen = \Mockery::mock(KitchenPushService::class);
+        $kitchen->shouldNotReceive('notifyNewOrder');
+        $outbox = new OrderNotificationOutbox($notifications, $kitchen, app(StoreContext::class));
+        $outbox->record(new OrderConfirmed($order->id, $order->project_id, $order->user_id));
+        $outbox->record(new OrderReady($order->id, $order->project_id, $order->user_id));
+        $this->assertSame(5, $outbox->drain());
+        $this->assertSame(5, DB::table('order_notification_outbox')->whereNotNull('delivered_at')->count());
     }
 
     public function test_outbox_skips_active_leases_and_recovers_expired_worker_leases(): void

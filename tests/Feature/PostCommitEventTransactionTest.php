@@ -158,7 +158,7 @@ class PostCommitEventTransactionTest extends TestCase
                 return true;
             });
         $gateway = new FakePaymentGateway;
-        $gateway->event = ['type' => 'payment_intent.succeeded',
+        $gateway->event = ['type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id], 'amount' => 1000];
         $webhook = new PaymentWebhookUseCase($gateway, app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class), app(OrderService::class));

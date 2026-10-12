@@ -63,6 +63,9 @@ class PaymentWebhookUseCase
 
     private function matchesPaymentAccount(Order $order, array $event, ?int $projectId, ?int $settingId): bool
     {
+        if (($event['currency'] ?? '') !== 'jpy') {
+            return false;
+        }
         if ($projectId === null) {
             return $order->payment_setting_id === null;
         }
@@ -70,8 +73,7 @@ class PaymentWebhookUseCase
         return (int) $order->project_id === $projectId
             && (int) $order->payment_setting_id === $settingId
             && (int) ($event['metadata']['project_id'] ?? 0) === $projectId
-            && (int) ($event['metadata']['payment_setting_id'] ?? 0) === $settingId
-            && ($event['currency'] ?? '') === 'jpy';
+            && (int) ($event['metadata']['payment_setting_id'] ?? 0) === $settingId;
     }
 
     private function processEvent(array $event, ?int $projectId, ?int $settingId): bool
