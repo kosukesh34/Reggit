@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理画面 - @yield('title', 'Reggit')</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     {{-- Blade 管理画面の CSS は Vite（LIFF Designer 用）より後で読み、上書きされないようにする --}}
@@ -361,9 +361,14 @@
                 </div>
             @endif
             <div class="content-body">
+                @php($backLink = \App\Support\WebNavigation::adminBack(request()))
+                @if($backLink !== null)
+                    <nav class="web-page-navigation" aria-label="ページの移動">
+                        <x-back-link :href="$backLink['href']" :label="$backLink['label']" />
+                    </nav>
+                @endif
                 @if((request()->routeIs('admin.settings.*') || request()->routeIs('admin.stores.*')) && !request()->routeIs('admin.settings.index') && !request()->routeIs('admin.settings.liff-designer*'))
                     <div class="settings-page-content">
-                        <a href="{{ admin_route('admin.settings.index') }}" class="settings-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 設定一覧</a>
                 @yield('content')
                     </div>
                 @else

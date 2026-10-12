@@ -121,9 +121,7 @@
             <button type="submit" class="btn btn-success">
                 <i class="fas fa-save"></i> 保存
             </button>
-            <a href="{{ admin_route('admin.products') }}" class="btn btn-secondary">
-                <i class="fas fa-times"></i> キャンセル
-            </a>
+            <x-back-link :href="admin_route('admin.products')" label="キャンセル" />
         </div>
     </form>
 </div>

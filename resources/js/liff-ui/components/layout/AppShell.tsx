@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, type PropsWithChildren } from "reac
 import { useLocation } from "react-router-dom";
 import { useRuntimeData } from "../../context/RuntimeDataContext";
 import { useNativeConfig } from "../../native/nativeConfig";
+import { ScreenBack } from "./ScreenBack";
 import { Header } from "./Header";
 import { BottomNavigation } from "./BottomNavigation";
 
@@ -53,7 +54,7 @@ export function AppShell({ children, gateSettled = true }: PropsWithChildren<{ g
       <div className="app-shell__backdrop" />
       <div className="app-shell__frame">
         <Header />
-        <main className="app-shell__main" ref={mainRef}>{children}</main>
+        <main className="app-shell__main" ref={mainRef}><ScreenBack />{children}</main>
         <BottomNavigation />
       </div>
     </div>

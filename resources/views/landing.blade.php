@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="{{ asset('images/landing/app/current-home.jpg') }}">
     <link rel="stylesheet" href="{{ asset('css/landing-home.css') }}?v=9">
+    <link rel="stylesheet" href="{{ asset('css/web-ui.css') }}?v=1">
 </head>
 <body class="lp">
     <a class="lp-skip" href="#main">本文へ移動</a>

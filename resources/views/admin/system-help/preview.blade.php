@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="publishing-header">
-    <a href="{{ route('system-admin.help-articles.index') }}">一覧へ戻る</a>
+
     <a class="btn btn-primary" href="{{ route('system-admin.help-articles.edit', ['id' => $article->id]) }}">この記事を編集</a>
 </div>
 <p class="form-text">{{ $article->is_published ? '公開中' : '下書き' }}の記事です。店舗ヘルプと同じ表示で確認できます。</p>

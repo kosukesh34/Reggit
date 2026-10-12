@@ -38,9 +38,9 @@ class AdminSettingsTest extends TestCase
             ->get(route('admin.settings.basic', ['project_key' => $project->project_key]));
 
         $response->assertStatus(200);
-        $response->assertSee('settings-back-link', false);
+        $response->assertSee('class="web-back"', false);
         $response->assertDontSee('settings-workspace-nav', false);
-        $response->assertSee('設定一覧', false);
+        $response->assertSee('設定一覧へ戻る', false);
     }
 
     public function test_settings_店舗管理者が一度きりの端末登録コードを発行できること(): void

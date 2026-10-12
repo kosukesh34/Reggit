@@ -20,7 +20,7 @@
         <p class="page-header-desc">{{ $view->couponName }}（{{ $view->couponCode }}）</p>
     </div>
     <div class="page-header-actions">
-        <a href="{{ admin_route('admin.coupons.bulk-issue') }}" class="btn btn-secondary">配布画面へ戻る</a>
+
     </div>
 </div>
 

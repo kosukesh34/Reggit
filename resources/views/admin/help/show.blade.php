@@ -5,7 +5,7 @@
 
 @section('content')
 <article class="help-manual">
-    <p class="help-back"><a href="{{ admin_route('admin.help') }}">手順一覧へ戻る</a></p>
+
     <h1>{{ $article['title'] }}</h1>
     <p class="help-lead">{{ $article['summary'] }}</p>
     @if($html !== '')

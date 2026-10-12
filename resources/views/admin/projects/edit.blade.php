@@ -16,7 +16,7 @@
     @include('admin.projects._form')
     <div class="form-actions mt-3">
         <button type="submit" class="btn btn-primary">設定を更新</button>
-        <a href="{{ route('system-admin.projects.index') }}" class="btn btn-secondary">キャンセル</a>
+        <x-back-link :href="route('system-admin.projects.index')" label="キャンセル" />
     </div>
 </form>
 <form class="card mt-3" action="{{ route('system-admin.projects.app-links.update', $view->project->id) }}" method="POST">

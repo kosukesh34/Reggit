@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { NativeSegments } from "../native/NativeResource";
@@ -82,7 +81,6 @@ export function TransferPage() {
       </>}
       {error ? <div className="form-error" role="alert">{error}</div> : null}
       {message ? <p>{message}</p> : null}
-      <Link to="/more">戻る</Link>
     </div>
   );
 }

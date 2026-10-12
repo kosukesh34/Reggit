@@ -171,7 +171,7 @@
 
                 <div class="form-actions stamp-form-actions">
                     <button type="submit" class="btn btn-primary">追加</button>
-                    <a href="{{ admin_route('admin.stamps') }}" class="btn btn-secondary">キャンセル</a>
+                    <x-back-link :href="admin_route('admin.stamps')" label="キャンセル" />
                 </div>
             </form>
         </div>

@@ -99,9 +99,5 @@
     </table>
 </div>
 
-<div class="form-actions">
-    <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> 会員詳細へ戻る
-    </a>
-</div>
+
 @endsection

@@ -41,9 +41,11 @@
             cursor: pointer;
         }
     </style>
+<link rel="stylesheet" href="{{ asset('css/web-ui.css') }}?v=1">
 </head>
 <body>
     <div class="card">
+        <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="route('help.index')" label="ヘルプへ" /></nav>
         <h1>Google Wallet を開いています…</h1>
         <p>自動的に移動しない場合は、下のボタンをタップしてください。</p>
         <button type="button" class="btn" id="googleWalletOpenButton">Google Wallet に追加</button>

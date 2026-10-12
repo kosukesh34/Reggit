@@ -253,7 +253,7 @@
 
         <div class="ad-delivery-actions">
             <div class="ad-form-footer">
-                <a href="{{ admin_route('admin.after-registration-deliveries.index') }}" class="btn btn-secondary">一覧に戻る</a>
+
                 <button type="submit" class="btn btn-primary">
                     @if($delivery)
                         <i class="fas fa-save" aria-hidden="true"></i> 更新する

@@ -1,7 +1,6 @@
 import QRCode from "qrcode";
 import { Check, Copy, ExternalLink, QrCode, RefreshCcw, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { useAppConfig } from "../context/AppConfigContext";
@@ -41,7 +40,6 @@ export function StampIssuePage() {
           <p>実店舗用のQRは、スタッフ権限のある管理画面から発行してください。</p>
           <a className="button button--solid button--lg" href={adminUrl}>スタンプ管理を開く <ExternalLink size={17} /></a>
         </Card>
-        <Link className="stamp-issue-back" to="/stamp">スタンプ画面へ戻る</Link>
       </div>
     );
   }
@@ -65,7 +63,6 @@ export function StampIssuePage() {
       </Card>
       <div className="stamp-issue-actions">
         <Button variant="soft" onClick={() => setCode(createDemoStampCode())}><RefreshCcw size={17} />新しいQRを作成</Button>
-        <Link className="button button--outline button--md" to="/stamp">スタンプ画面へ戻る</Link>
       </div>
     </div>
   );
