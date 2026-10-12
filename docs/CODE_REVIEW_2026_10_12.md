@@ -8,7 +8,8 @@ The architecture exploration covered registration, membership and Apple Pass pac
 A final static sweep also covered admin tenant/store authorization and representative
 frontend state, API/CSRF and DOM output boundaries.
 A second pass covered reservation-course authorization, legacy payment settlement and
-order-notification retries after state changes.
+order-notification retries after state changes. A third pass covered Apple/Google Wallet
+HTTP authentication, update cursors, project branding and signing temporary files.
 This is a focused critical review, not proof that every application path is defect-free.
 Existing uncommitted landing-registration changes were preserved and excluded from patches.
 
@@ -65,6 +66,32 @@ Existing uncommitted landing-registration changes were preserved and excluded fr
    provider call and no endless retry. This does not make a concurrent cancellation
    and an external provider request atomic.
 
+9. **High: PassKit HTTP requests had no tenant binding but used tenant-scoped authentication reads.**
+   Global HTTP middleware requires a project, while the four Apple Wallet endpoints
+   receive no project header. Valid pass tokens were rejected by the fail-closed Member
+   scope. Fix: explicitly bypass only ProjectScope for token-authorized lookups, retain
+   SoftDeletes and match registration project IDs. After token verification, generate
+   in the member's project context and restore the caller's context on exceptions.
+   HTTP tests cover all four routes for two projects and reject another member's token
+   and deleted members. Generic member API tenant requirements are unchanged.
+10. **High: second-resolution Wallet tags lost same-second updates.** Timestamp overwrite
+    plus a strict greater-than filter hid a later update in the same second; empty lists
+    could also advance beyond unseen work. Fix: a per-pass-type durable revision counter
+    and marker committed together, with a reader cursor limited to one observed snapshot.
+    Legacy tags resync once, revision-zero rows survive migration, and unchanged passes
+    return HTTP 204. See [Wallet rollout and invariants](WALLET_UPDATES.md).
+11. **Medium: DER conversion leaked temporary files after a later signing failure.**
+    Cleanup only followed successful conversion of certificate, key and WWDR. Fix:
+    finally cleanup from the first conversion, private tempnam files outside certificate
+    directories and explicit export failures. Tests generate real temporary certificates,
+    sign/package successfully and inject an invalid key without leaving conversions.
+12. **Medium: Google Wallet brand classes were shared across projects.** A project reused
+    the first project's class name and logo. New issuance and sync now share project-specific
+    class/object IDs. Legacy objects receive point/profile PATCHes without changing their
+    IDs/classes; 404 means absent, while HTTP/connection failures remain failures even if
+    the new object is updated. Existing passes need re-adding for corrected brand artwork;
+    no production reclassification was attempted or assumed safe.
+
 ## Architecture decisions
 
 **Implemented:** encapsulate current principal lookup, tenant scope, generation validation
@@ -84,9 +111,9 @@ remote-customer acquisition and local persistence. A clearer acquisition/persist
 could improve independent testing. Retain existing behavior and interfaces until a concrete
 change needs that seam; do not refactor merely to reduce file count.
 
-**Worth exploring, not a confirmed defect:** Apple Pass packaging has filesystem, signing
-and archive concerns that could be hidden behind a package-builder boundary. No packaging
-failure was demonstrated during this review, so no speculative rewrite was made.
+**Third-pass correction:** Apple Pass packaging did reveal a conversion cleanup failure.
+Fix the resource lifetime in the existing signing implementation; do not add a broad
+package-builder abstraction solely to move filesystem code between files.
 
 Large announcement delivery UI and ShopSettingStore implementations remain optional
 seam candidates. File size alone does not demonstrate a defect. The inspected frontend
@@ -122,3 +149,41 @@ Targeted validation: reservation authorization 31 tests / 151 assertions; paymen
 settlement 49 / 275; outbox regressions 13 / 65. In isolated copies, restoring the old
 implementation failed all four new currency cases and all five new obsolete-notification
 cases. Full merge-gate results and final HEADs are recorded on each PR.
+
+## Wallet review validation and design
+
+Applied `i-have-adhd`, `ponytail` full, `code-review-and-quality`,
+`improve-codebase-architecture`, `codebase-design` and `laravel-best-practices`.
+An independent read-only reviewer checked the lock order, tenant authentication,
+legacy compatibility and cleanup. No frontend/React code was changed in this pass.
+
+Targeted results: Wallet integration 20 tests / 72 assertions; final cursor/snapshot/HTTP
+response regressions 9 / 28; signing 2 / 8; PassKit HTTP/context regressions 3 / 34.
+Google branding had 17 related tests / 46 assertions, then the new connection-failure
+case and payload assertions were independently rerun. Final full-gate counts and HEADs
+are recorded on each PR. Old implementations reproduce same-second loss, conversion
+leaks and shared Google IDs in isolated copies.
+
+Revision allocation is internal to the existing Wallet update module. Callers retain
+its interface; the counter adapter makes commit order and cursor locality explicit.
+Google ID generation is shared by issuance and sync instead of duplicated literals.
+Legacy/new object handling is an actual compatibility seam, not a hypothetical adapter.
+See [Apple update tags](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/PassKit_PG/Updating.html)
+and [Google loyalty object fields](https://developers.google.com/wallet/reference/rest/v1/loyaltyobject).
+
+New Wallet schema must precede coordinated application/worker rollout. Counter history
+must be retained in production. API fakes and local certificates verify our code, not
+Apple/Google production compatibility. No external API calls or browser E2E were run.
+
+## 13. Wallet authentication accepted predictable tokens without keys (P2)
+
+With both the Wallet secret and application key absent, token creation used an empty
+secret or a known fallback constant. Refuse issuance and reject verification in this
+misconfigured state. Configured custom/application keys preserve existing tokens.
+This does not establish an authentication bypass in environments with a valid key.
+
+Five isolated regression tests / 16 assertions pass; the old implementation fails
+three missing-key cases while its two configured-key compatibility cases pass.
+`security-audit` guidance mode was applied to the trust boundary and secret handling;
+no production credentials or external integrations were used. PassKit plus layer
+dependency regression checks also pass: 21 tests / 434 assertions.

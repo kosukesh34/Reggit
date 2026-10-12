@@ -41,8 +41,9 @@ class CouponController extends BaseApiController
         }
     }
 
-    public function use(Request $request, int $id)
+    public function use(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $result = $this->useMemberCouponUseCase->handle($this->userService->getOrCreateUser($request), $id);
 

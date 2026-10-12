@@ -39,8 +39,9 @@ class MemberLotteryController extends Controller
         }
     }
 
-    public function play(Request $request, int $id)
+    public function play(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $data = $this->playUseCase->handle($this->userService->getOrCreateUser($request), $id);
 
@@ -65,8 +66,9 @@ class MemberLotteryController extends Controller
         }
     }
 
-    public function notifyWin(Request $request, int $id)
+    public function notifyWin(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $this->notifyWinUseCase->handle($this->userService->getOrCreateUser($request), $id);
 

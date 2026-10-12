@@ -10,8 +10,10 @@ class WalletPassAuthTokenService
     {
         $secret = (string) config('wallet_pass.auth_token_secret', '');
         if ($secret === '') {
-            // secret 未設定でも pass 自体は発行できるよう固定fallbackで生成
-            $secret = (string) config('app.key', 'wallet-pass-default-secret');
+            $secret = (string) config('app.key', '');
+        }
+        if ($secret === '') {
+            throw new \RuntimeException('Wallet pass authentication secret is not configured.');
         }
 
         $payload = sprintf(
@@ -26,6 +28,10 @@ class WalletPassAuthTokenService
 
     public function verify(Member $member, string $token): bool
     {
+        if ((string) config('wallet_pass.auth_token_secret', '') === ''
+            && (string) config('app.key', '') === '') {
+            return false;
+        }
         $expected = $this->createForMember($member);
 
         return hash_equals($expected, trim($token));
