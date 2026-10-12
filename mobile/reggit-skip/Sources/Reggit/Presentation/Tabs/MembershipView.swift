@@ -165,8 +165,8 @@ final class MembershipViewModel {
         walletMessage = nil
         defer { isAddingWallet = false }
         do {
-            NativeWalletBridge.addAppleWalletPass?(try await apiClient.fetchWalletPassDownloadURL())
-            walletMessage = "Apple Wallet に追加します"
+            let passURL = try await apiClient.fetchWalletPassDownloadURL()
+            try await NativeWalletBridge.addAppleWalletPass?(passURL)
         } catch {
             walletError = error.localizedDescription
         }

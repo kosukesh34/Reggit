@@ -34,19 +34,14 @@
             var target = @json($view->walletUrl);
             if (!target) return;
 
-            var opened = false;
             function openWalletOnce() {
-                if (opened) return;
-                opened = true;
                 try {
                     var parsed = new URL(target);
                     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-                        opened = false;
                         return;
                     }
                     window.location.assign(parsed.href);
                 } catch (e) {
-                    opened = false;
                     console.warn('wallet-add redirect skipped: invalid url', e);
                 }
             }

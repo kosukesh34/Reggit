@@ -28,6 +28,11 @@ class PaymentReturnController extends Controller
             ])->header('Cache-Control', 'private, no-store');
         }
 
-        return redirect()->away("reggit://payment?status={$status}&order_id={$orderId}");
+        abort_if($orderId < 1, 400, '注文番号が不正です。');
+
+        return response()->view('payment.return', [
+            'returnUrl' => "reggit://payment?status={$status}&order_id={$orderId}",
+            'status' => $status,
+        ])->header('Cache-Control', 'private, no-store');
     }
 }

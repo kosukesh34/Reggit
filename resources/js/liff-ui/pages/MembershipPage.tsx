@@ -6,7 +6,7 @@ import { NativeState, nativeRequest, nativeDate, useNativeResource } from "../na
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { BottomSheet } from "../components/ui/BottomSheet";
 import { MemberRegisterHost } from "../../frontend/features/member/MemberRegisterHost";
-import { startLineLogin, shouldShowAppleWallet, shouldShowGoogleWallet, walletPassUrl } from "../../frontend/features/member/api";
+import { startLineLogin, shouldShowAppleWallet, shouldShowGoogleWallet, walletPassUrl, setupWalletButtons } from "../../frontend/features/member/api";
 import { isDemoDataMode } from "../../frontend/demo/demoMode";
 
 type MemberData = {
@@ -54,6 +54,9 @@ export function MembershipPage() {
   }
   const [enlarged, setEnlarged] = useState(false);
   const data = resource.data;
+  useEffect(() => {
+    if (!resource.loading && data.is_member && !isDemoDataMode()) setupWalletButtons();
+  }, [resource.loading, data.is_member]);
   const name = data.profile?.name ?? data.user?.name ?? data.member?.user?.name ?? runtime.member.name;
   const number = data.member?.member_number ?? runtime.member.number;
   const points = Number(data.points ?? data.member?.points ?? runtime.member.points);
@@ -95,7 +98,7 @@ export function MembershipPage() {
       </article>
       </>}
       <Link className="native-profile-link" to="/profile"><i className="fa-solid fa-user" /><div><strong>プロフィール編集</strong><small>登録情報を確認・編集</small></div><i className="fa-solid fa-chevron-right" /></Link>
-      {(shouldShowAppleWallet() || shouldShowGoogleWallet()) && !isDemoDataMode() ? <div className="native-wallet">{shouldShowAppleWallet() ? <a className="native-button native-button--ink" href={walletPassUrl()}>Apple Walletに追加</a> : <button className="native-button native-button--ink" disabled={walletBusy} onClick={() => void openGoogleWallet()}>Google Walletに追加</button>}{walletError ? <p role="alert">{walletError}</p> : null}<p>会員証をWalletに保存して、すぐに提示。</p></div> : null}
+      {(shouldShowAppleWallet() || shouldShowGoogleWallet()) && !isDemoDataMode() ? <div className="native-wallet">{shouldShowAppleWallet() ? <button type="button" className="native-button native-button--ink member-card-add-to-wallet-btn" data-wallet-pass-url={walletPassUrl()}>Apple Walletに追加</button> : <button className="native-button native-button--ink" disabled={walletBusy} onClick={() => void openGoogleWallet()}>Google Walletに追加</button>}{walletError ? <p role="alert">{walletError}</p> : null}<p>会員証をWalletに保存して、すぐに提示。</p></div> : null}
       {memberScreen?.show_rank_progress !== false && data.show_rank_progress !== false && data.points_to_next_rank !== undefined && data.next_rank_label ? <section className="native-rank-progress"><small>次のランクまで</small><strong>あと {data.points_to_next_rank.toLocaleString()}ポイントで{data.next_rank_label}</strong><progress max={points + data.points_to_next_rank} value={points} /></section> : null}
       {memberScreen?.show_point_history !== false ? <section><h2>ポイント履歴</h2>{history.data.transactions?.length ? history.data.transactions.slice(0, 10).map((item, index) => <div className="native-history-row" key={index}><div><strong>{item.description}</strong><small>{nativeDate(item.created_at)}</small></div><b>{Number(item.points) >= 0 ? "+" : ""}{item.points} pt</b></div>) : <p className="native-secondary">ポイントの付与・利用履歴はまだありません</p>}</section> : null}
       {memberScreen?.show_coupon_activity !== false ? <section><h2>最近獲得したクーポン</h2>{runtime.coupons.length ? runtime.coupons.slice(0, 3).map((coupon) => <Link className="native-history-row" to="/coupon" key={coupon.id}><strong>{coupon.title}</strong><i className="fa-solid fa-chevron-right" /></Link>) : <p className="native-secondary">獲得したクーポンはまだありません</p>}</section> : null}
