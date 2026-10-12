@@ -4,7 +4,12 @@
 
 @section('content')
     <section class="lp-container lp-inquiry" aria-labelledby="email-title">
-        <p class="lp-eyebrow">導入登録 · 1 / 2</p>
+        <p class="lp-eyebrow">導入登録</p>
+        <ol class="lp-progress">
+            <li aria-current="step">1. メール認証</li>
+            <li>2. 店舗情報</li>
+            <li>3. 発行</li>
+        </ol>
         <h1 id="email-title">メールアドレスの認証</h1>
         <p>メールアドレスを入力してください。認証メールのリンクからメールアドレスを確認し、店舗情報の入力へ進みます。</p>
 
@@ -17,7 +22,7 @@
             @csrf
             <label class="lp-field" for="registration-email">
                 <span>メールアドレス</span>
-                <input id="registration-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required maxlength="255" placeholder="name@company.jp" @if($errors->has('email')) aria-invalid="true" aria-describedby="registration-email-error" @endif>
+                <input id="registration-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" required maxlength="255" placeholder="name@company.jp" inputmode="email" spellcheck="false" @if($errors->has('email')) aria-invalid="true" aria-describedby="registration-email-error" @endif>
             </label>
             @error('email')
                 <p id="registration-email-error" class="lp-alert lp-alert--error" role="alert">{{ $message }}</p>

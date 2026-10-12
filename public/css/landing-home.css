@@ -285,5 +285,8 @@ body.lp { margin: 0; background: var(--lp-white); color: var(--lp-text); font-fa
 
 .lp-brand, .lp-brand img { width: 72px; height: 72px; }
 .lp-brand img { object-fit: contain; }
+.lp-register__form form { display: grid; gap: 12px; }
+.lp-register__form label { font-size: 14px; font-weight: 600; }
+.lp-register__form input { width: 100%; min-width: 0; min-height: 48px; padding: 12px; border: 1px solid var(--lp-line); border-radius: 4px; background: #fff; color: var(--lp-ink); font: inherit; }
 .lp-footer__main > div img { width: 96px; height: 96px; object-fit: contain; }
 @media (max-width: 560px) { .lp-brand, .lp-brand img { width: 60px; height: 60px; } }

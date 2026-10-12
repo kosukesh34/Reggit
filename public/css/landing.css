@@ -462,3 +462,16 @@ body.lp-sub {
 @media (max-width: 580px) { .lp-sub .lp-inquiry { margin-block: 24px; padding: 20px; } }
 
 .lp-sub .lp-brand img { width: 72px; height: 72px; object-fit: contain; }
+.lp-sub .lp-progress { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0 0 24px; padding: 0; list-style: none; color: var(--muted); font-size: 13px; }
+.lp-sub .lp-progress [aria-current="step"] { color: var(--forest-deep); font-weight: 700; }
+.lp-sub fieldset.lp-field { min-width: 0; margin: 0; padding: 0; border: 0; }
+.lp-sub .lp-field legend { margin-bottom: 8px; font-size: 13px; font-weight: 700; }
+.lp-sub .lp-plan-choices { display: grid; gap: 10px; }
+.lp-sub .lp-plan-choices label { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; }
+.lp-sub .lp-plan-choices label:has(input:checked) { border-color: var(--forest); background: #f0f8fc; }
+.lp-sub .lp-plan-choices input { flex: 0 0 20px; width: 20px; height: 20px; margin-top: 3px; padding: 0; accent-color: var(--forest-deep); }
+.lp-sub .lp-plan-choices strong, .lp-sub .lp-plan-choices small { display: block; }
+.lp-sub .lp-plan-choices small { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.lp-sub .lp-ready__next { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+.lp-sub .lp-ready__next h2 { margin-bottom: 12px; font-size: 18px; }
+.lp-sub .lp-ready__next ol { padding-left: 24px; line-height: 1.8; }

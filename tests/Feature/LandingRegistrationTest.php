@@ -34,13 +34,29 @@ class LandingRegistrationTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee(route('landing.register.email.show'), false)
-            ->assertDontSee('name="email"', false)
+            ->assertSee('name="email"', false)
             ->assertSee('導入登録');
 
         $this->get(route('landing.register.email.show'))
             ->assertOk()
             ->assertSee('認証メールを送る')
             ->assertSee('name="email"', false);
+    }
+
+    public function test_トップのメール入力でも認証メールが送られること(): void
+    {
+        Mail::fake();
+
+        $this->from('/')
+            ->post(route('landing.register.email'), ['email' => 'Shop@Example.com'])
+            ->assertRedirect(route('landing.register.email.show'))
+            ->assertSessionHas('status');
+
+        $this->assertDatabaseHas('landing_registrations', [
+            'email' => 'shop@example.com',
+            'email_verified_at' => null,
+        ]);
+        Mail::assertSent(LandingVerificationMail::class);
     }
 
     public function test_メール入力で認証メールが送られること(): void
@@ -81,10 +97,12 @@ class LandingRegistrationTest extends TestCase
             'registration' => $registration->id,
         ]);
 
-        $this->get($verifyUrl)
+        $this->followingRedirects()
+            ->get($verifyUrl)
             ->assertOk()
-            ->assertSee('認証が完了しました')
-            ->assertSee('入力フォームへ進む');
+            ->assertSee('入力フォーム')
+            ->assertSee('shop@example.com')
+            ->assertSee('認証が完了しました');
 
         $registration->refresh();
         $this->assertNotNull($registration->email_verified_at);
@@ -117,7 +135,9 @@ class LandingRegistrationTest extends TestCase
         $this->get($formUrl)
             ->assertOk()
             ->assertSee('入力フォーム')
-            ->assertSee('shop@example.com');
+            ->assertSee('shop@example.com')
+            ->assertSee('type="radio"', false)
+            ->assertSee('LINEミニアプリで会員証・注文・予約・順番待ちを利用します。');
 
         $this->from($formUrl)
             ->post($submitUrl, [
@@ -131,9 +151,12 @@ class LandingRegistrationTest extends TestCase
             ->assertSee('店舗の準備ができました')
             ->assertSee('店舗アプリ（LIFF）')
             ->assertSee('管理画面');
+        $this->assertAuthenticated('admin');
 
         $registration->refresh();
         $this->assertNotNull($registration->submitted_at);
+        $this->assertSame($registration->admin_login_id, auth('admin')->user()?->login_id);
+        $this->get('/admin/'.$registration->project->project_key.'/stores')->assertOk();
         $this->assertSame('テスト店舗', $registration->store_name);
         $this->assertSame(LandingInquiryPlan::LINE, $registration->plan);
         $this->assertNotNull($registration->project_id);
@@ -161,6 +184,30 @@ class LandingRegistrationTest extends TestCase
             'password' => $password,
         ])->assertRedirect();
         $this->assertAuthenticated('admin');
+    }
+
+    public function test_送信済みフォームの再送信では自動ログインしないこと(): void
+    {
+        Mail::fake();
+        $registration = LandingRegistration::query()->create([
+            'email' => 'repeat@example.com',
+            'email_verified_at' => now(),
+        ]);
+        $payload = [
+            'store_name' => '再送信店舗',
+            'contact_name' => '担当者',
+            'phone' => '03-1234-5678',
+            'plan' => LandingInquiryPlan::LINE,
+        ];
+        app(SubmitLandingRegistrationUseCase::class)->handle(new LandingRegistrationFormInput($registration, $payload));
+        $submitUrl = URL::temporarySignedRoute('landing.register.form.submit', now()->addDay(), [
+            'registration' => $registration->id,
+        ]);
+
+        $this->post($submitUrl, $payload)->assertOk();
+
+        $this->assertGuest('admin');
+        Mail::assertSent(LandingReadyMail::class, 1);
     }
 
     public function test_stale_registration_submission_does_not_issue_another_project(): void
