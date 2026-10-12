@@ -28,8 +28,9 @@ class ProductController extends BaseApiController
         return $this->success(['products' => $result->products]);
     }
 
-    public function show(int $id)
+    public function show(Request $request)
     {
+        $id = (int) $request->route('id');
         $product = $this->showUseCase->handle($id);
 
         return $this->success(['product' => $product]);
