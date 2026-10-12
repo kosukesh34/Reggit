@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\QueueEntry;
+use App\Models\ReservationCourse;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Admin\MemberTagAdminService;
@@ -90,6 +91,43 @@ class MultiStoreTest extends TestCase
         ])->assertForbidden();
         $this->assertDatabaseCount('project_rfm_settings', 0);
         $this->assertDatabaseCount('existing_member_link_requests', 0);
+    }
+
+    public function test_branch_cannot_modify_shared_reservation_courses_but_can_update_its_slots(): void
+    {
+        $course = ReservationCourse::create([
+            'project_id' => $this->project->id, 'name' => '共通コース', 'price' => 2500, 'is_active' => true,
+        ]);
+        $this->actingAs($this->admin(), 'admin');
+        $this->post('/admin/brand/settings/reservations/courses', [
+            'name' => '無断追加', 'price' => 100,
+        ])->assertForbidden();
+        $this->put('/admin/brand/settings/reservations/courses/'.$course->id, [
+            'name' => '無断変更', 'price' => 100, 'is_active' => false,
+        ])->assertForbidden();
+        $this->assertDatabaseCount('reservation_courses', 1);
+        $this->assertDatabaseHas('reservation_courses', [
+            'id' => $course->id, 'name' => '共通コース', 'price' => 2500, 'is_active' => true,
+        ]);
+        $this->post('/admin/brand/settings/reservations', [
+            'reservation_time_slots' => ['10:00'], 'advance_booking_days' => 20,
+            'reservation_capacity_per_slot' => 5,
+        ])->assertRedirect()->assertSessionHasNoErrors()->assertSessionHas('success');
+    }
+
+    public function test_headquarters_can_create_and_update_shared_reservation_courses(): void
+    {
+        $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin');
+        $this->post('/admin/brand/settings/reservations/courses', [
+            'name' => '共通コース', 'price' => 2500,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $course = ReservationCourse::where('project_id', $this->project->id)->firstOrFail();
+        $this->put('/admin/brand/settings/reservations/courses/'.$course->id, [
+            'name' => '更新コース', 'price' => 5000, 'is_active' => false,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('reservation_courses', [
+            'id' => $course->id, 'name' => '更新コース', 'price' => 5000, 'is_active' => false,
+        ]);
     }
 
     public function test_project_key_does_not_turn_store_settings_into_common_routes(): void
