@@ -44,24 +44,26 @@ class AppleWalletPasskitTenantTest extends TestCase
 
     public function test_all_passkit_http_operations_work_without_a_tenant_header_for_each_project(): void
     {
+        $expected = [];
+        $this->mock(WalletPassService::class)->shouldReceive('generateForMember')->twice()
+            ->andReturnUsing(function (Member $resolved) use (&$expected): string {
+                [$projectId, $name] = $expected[$resolved->id];
+                $this->assertSame($projectId, AdminContext::requireCurrentProjectId());
+                $fresh = $resolved->fresh(['user', 'project']);
+                $this->assertSame($name, $fresh->user->name);
+                $this->assertSame($projectId, (int) $fresh->project->id);
+
+                return 'pass-'.$name;
+            });
         foreach (['Brand A', 'Brand B'] as $name) {
             $project = Project::factory()->create(['name' => $name]);
             $member = $this->member($project);
+            $expected[$member->id] = [(int) $project->id, $name];
             $serial = 'member-'.$member->id;
             $headers = $this->token($member);
             $path = $this->devicePath($member);
             $this->postJson($path.'/'.$serial, ['pushToken' => 'push'], $headers)->assertCreated();
             $this->getJson($path, $headers)->assertOk()->assertJsonPath('serialNumbers', [$serial]);
-            $this->mock(WalletPassService::class)->shouldReceive('generateForMember')->once()
-                ->andReturnUsing(function (Member $resolved) use ($member, $project): string {
-                    $this->assertSame((int) $project->id, AdminContext::requireCurrentProjectId());
-                    $fresh = $resolved->fresh(['user', 'project']);
-                    $this->assertSame((int) $member->id, (int) $fresh->id);
-                    $this->assertSame($project->name, $fresh->user->name);
-                    $this->assertSame((int) $project->id, (int) $fresh->project->id);
-
-                    return 'pass-'.$project->name;
-                });
             $this->get('/api/apple-wallet/v1/passes/'.self::TYPE.'/'.$serial, $headers)
                 ->assertOk()->assertContent('pass-'.$name);
             $this->assertNull(AdminContext::getCurrentProject());
