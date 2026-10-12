@@ -14,6 +14,17 @@ class WalletPassAuthTokenServiceTest extends TestCase
         return (new Member)->forceFill(['id' => 42, 'project_id' => 7, 'member_number' => 'member-42']);
     }
 
+    public function test_missing_application_key_configuration_rejects_the_legacy_default(): void
+    {
+        config(['wallet_pass.auth_token_secret' => '']);
+        config()->offsetUnset('app.key');
+        $service = app(WalletPassAuthTokenService::class);
+        $forged = hash_hmac('sha256', 'wallet-pass:7:42:member-42', 'wallet-pass-default-secret');
+        $this->assertFalse($service->verify($this->member(), $forged));
+        $this->expectException(\RuntimeException::class);
+        $service->createForMember($this->member());
+    }
+
     #[TestWith([null])]
     #[TestWith([''])]
     public function test_missing_keys_reject_predictable_tokens_and_refuse_issuance(?string $appKey): void
