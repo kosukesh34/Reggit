@@ -11,10 +11,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="{{ asset('images/landing/app/current-home.jpg') }}">
-    <link rel="stylesheet" href="{{ asset('css/landing-home.css') }}?v=8">
+    <link rel="stylesheet" href="{{ asset('css/landing-home.css') }}?v=9">
 </head>
 <body class="lp">
     <a class="lp-skip" href="#main">本文へ移動</a>
+    <p class="lp-demo-notice">このアプリはデモです</p>
     <header class="lp-header">
         <div class="lp-container lp-header__inner">
             <a class="lp-brand" href="/" aria-label="Reggit トップへ">
@@ -150,7 +151,7 @@
                 <dl class="lp-options__list">
                     <div><dt>LINEプラン</dt><dd>お客様はLINEから利用。専用アプリのインストールは必要ありません。</dd></div>
                     <div><dt>ネイティブアプリプラン</dt><dd>LINEミニアプリに加えて、店舗・ブランド専用のiOS / Androidアプリを利用できます。公開には設定・審査などの準備が必要です。</dd></div>
-                    <div><dt>スマレジ連携</dt><dd>必要に応じて、POSの会員・購買情報と連携できます。</dd></div>
+                    <div><dt>スマレジ連携</dt><dd>スマレジとの連携が必須です。POSの会員・購買情報と連携して利用します。</dd></div>
                     <div><dt>画面のカスタマイズ</dt><dd>ロゴや配色、メニューを店舗に合わせて設定できます。</dd></div>
                 </dl>
             </div>
@@ -173,7 +174,7 @@
                 <div class="lp-faq__items">
                     <details><summary>飲食店以外でも使えますか？<span aria-hidden="true"></span></summary><p>はい。物販店などでも、会員証、ポイント、スタンプ、クーポンを利用できます。注文・予約・順番待ちは、必要な機能を選んで使えます。</p></details>
                     <details><summary>お客様はアプリのインストールが必要ですか？<span aria-hidden="true"></span></summary><p>LINEミニアプリはインストール不要です。店舗の運用に合わせて、iOS・Androidの専用アプリにも対応しています。</p></details>
-                    <details><summary>スマレジとの連携は必須ですか？<span aria-hidden="true"></span></summary><p>必須ではありません。利用する機能や店舗の運用に合わせて設定できます。</p></details>
+                    <details><summary>スマレジとの連携は必須ですか？<span aria-hidden="true"></span></summary><p>はい、スマレジとの連携は必須です。</p></details>
                     <details><summary>導入登録後、すぐに契約が発生しますか？<span aria-hidden="true"></span></summary><p>メールアドレスの登録と店舗情報の入力だけで、すぐに契約が発生することはありません。</p></details>
                     <details><summary>専用アプリも登録後すぐに公開されますか？<span aria-hidden="true"></span></summary><p>専用アプリの公開には、別途設定や準備が必要です。導入登録では、まず店舗の管理画面とアプリURLを発行します。</p></details>
                 </div>
