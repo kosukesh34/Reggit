@@ -29,6 +29,9 @@ Existing uncommitted landing UI changes are preserved outside these patches.
    false. Fix: use the existing TenantContext::runForProject interface around notification
    execution. Tests query scoped members during delivery, assert completion, and verify
    caller-context restoration and pending retention after a provider failure.
+   The same saved-project execution seam also surrounds scheduled announcement audience
+   resolution/coupon issuance and scheduled coupon delivery. Their real audience and
+   issuance operations are tested under another project context.
 
 ## Architecture assessment
 
