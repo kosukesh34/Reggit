@@ -78,6 +78,7 @@ type MemberManagerLike = {
     saveProfileEdit?: (e: Event) => void | Promise<void>;
     saveProfileImage?: (file: File) => Promise<MemberPayload>;
     deleteProfileImage?: () => Promise<MemberPayload>;
+    _setupAddToWallet?: () => void;
     _setupPostalCodeLookup?: (container: HTMLElement) => void;
     _syncMemberScreenOverlay?: () => void;
     bindMemberCardEffects?: (container: HTMLElement, data: MemberPayload, codeId: string, isQR: boolean, isSheet: boolean) => void;
@@ -381,4 +382,9 @@ export function walletPassUrl(): string {
 export function pendingLotteryCount(): number {
     const mm = getMemberManager();
     return mm?._walletSummaryLast?.pending_lottery_count ?? 0;
+}
+
+/** Reuse the authenticated, prefetched LINE/native Wallet flow for the React card. */
+export function setupWalletButtons(): void {
+    getMemberManager()?._setupAddToWallet?.();
 }

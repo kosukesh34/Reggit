@@ -60,7 +60,34 @@ class PaymentCheckoutApiTest extends TestCase
     public function test_payment_return_redirects_to_native_app(): void
     {
         $this->get('/mobile/payment/return?status=success&order_id=42')
-            ->assertRedirect('reggit://payment?status=success&order_id=42');
+            ->assertOk()
+            ->assertViewHas('returnUrl', 'reggit://payment?status=success&order_id=42')
+            ->assertSee('window.location.replace', false)
+            ->assertSee('注文画面へ戻る')
+            ->assertHeader('Cache-Control', 'no-store, private');
+    }
+
+    public function test_invalid_native_return_does_not_open_an_empty_order(): void
+    {
+        $this->get('/mobile/payment/return?status=success&order_id=0')->assertStatus(400);
+    }
+
+    public function test_web_return_restores_the_same_project_and_order(): void
+    {
+        $project = Project::factory()->create();
+        $user = User::factory()->create(['project_id' => $project->id]);
+        $order = Order::create([
+            'project_id' => $project->id, 'user_id' => $user->id,
+            'total_amount' => 980, 'status' => OrderStatus::PENDING,
+            'payment_method' => PaymentMethod::STRIPE,
+            'points_used' => 0, 'points_earned' => 0, 'order_type' => OrderType::MOBILE,
+        ]);
+        $this->get('/mobile/payment/return?'.http_build_query([
+            'surface' => 'web', 'project_key' => $project->project_key,
+            'order_id' => $order->id, 'status' => 'success',
+        ]))->assertOk()
+            ->assertViewHas('returnUrl', url('/liff/'.$project->project_key).'?payment_order_id='.$order->id.'&payment_status=success#/menu')
+            ->assertSee('window.location.replace', false);
     }
 
     public static function paymentChannels(): array

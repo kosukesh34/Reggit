@@ -50,7 +50,7 @@ struct AppMain: App {
             .onAppear {
                 #if canImport(UIKit)
                 NativeWalletBridge.addAppleWalletPass = { url in
-                    AppleWalletPassAddHelper.shared.addPass(from: url)
+                    try await AppleWalletPassAddHelper.shared.addPass(from: url)
                 }
                 #endif
                 #if canImport(UserNotifications)
