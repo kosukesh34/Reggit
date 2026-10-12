@@ -17,7 +17,9 @@ class WalletPassAuthTokenServiceTest extends TestCase
     public function test_missing_application_key_configuration_rejects_the_legacy_default(): void
     {
         config(['wallet_pass.auth_token_secret' => '']);
-        config()->offsetUnset('app.key');
+        $appConfig = config('app');
+        unset($appConfig['key']);
+        config(['app' => $appConfig]);
         $service = app(WalletPassAuthTokenService::class);
         $forged = hash_hmac('sha256', 'wallet-pass:7:42:member-42', 'wallet-pass-default-secret');
         $this->assertFalse($service->verify($this->member(), $forged));
