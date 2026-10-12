@@ -44,7 +44,9 @@ class ConfirmExistingMemberLinkUseCase
         $snapshot = $this->pendingRequest($token);
         $contractId = $this->validateConfirmation($snapshot, $authenticatedUser);
         $customer = $this->smaregiApi->getCustomer($contractId, $snapshot->smaregi_customer_id);
-        if (! is_array($customer)) {
+        if (! is_array($customer)
+            || (! is_string($customer['customerId'] ?? null) && ! is_int($customer['customerId'] ?? null))
+            || (string) $customer['customerId'] !== $snapshot->smaregi_customer_id) {
             throw new InvalidArgumentException('スマレジの会員を取得できませんでした');
         }
 

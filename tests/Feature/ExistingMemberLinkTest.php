@@ -401,6 +401,46 @@ class ExistingMemberLinkTest extends TestCase
         }
     }
 
+    #[TestWith(['9002', false])]
+    #[TestWith([null, false])]
+    #[TestWith(['', false])]
+    #[TestWith([['9001'], false])]
+    #[TestWith(['9002', true])]
+    public function test_confirmation_rejects_response_customer_identity_mismatch(mixed $customerId, bool $guest): void
+    {
+        $project = $this->createProject();
+        $user = $guest ? null : User::factory()->create(['project_id' => $project->id]);
+        $owner = User::factory()->create(['project_id' => $project->id]);
+        $member = Member::factory()->create([
+            'project_id' => $project->id, 'user_id' => $owner->id,
+            'smaregi_customer_id' => '9002', 'points' => 42,
+        ]);
+        $pending = ExistingMemberLinkRequest::create([
+            'project_id' => $project->id, 'user_id' => $user?->id,
+            'contract_id' => 'contract-1', 'smaregi_customer_id' => '9001', 'email' => 'a@example.com',
+            'token' => str_repeat('d', 48), 'expires_at' => now()->addMinutes(30),
+        ]);
+        $customer = $this->customer();
+        if ($customerId === null) {
+            unset($customer['customerId']);
+        } else {
+            $customer['customerId'] = $customerId;
+        }
+        $api = $this->mockCustomers([]);
+        $api->shouldReceive('getCustomer')->with('contract-1', '9001')->once()->andReturn($customer);
+        try {
+            app(ConfirmExistingMemberLinkUseCase::class)->handle($pending->token, $user);
+            $this->fail('A response for another customer must not be linked.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame('スマレジの会員を取得できませんでした', $exception->getMessage());
+        }
+        $this->assertNull($pending->fresh()->confirmed_at);
+        $this->assertDatabaseCount('members', 1);
+        $this->assertDatabaseCount('users', $guest ? 1 : 2);
+        $this->assertSame(42, $member->fresh()->points);
+        $this->assertDatabaseMissing('members', ['smaregi_customer_id' => '9001']);
+    }
+
     private function createProject(): Project
     {
         return Project::firstOrCreate(
