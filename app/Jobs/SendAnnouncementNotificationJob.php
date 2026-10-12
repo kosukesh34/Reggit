@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\Announcement;
+use App\Models\Project;
 use App\Services\AnnouncementNotificationService;
+use App\Util\TenantContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -44,7 +46,11 @@ class SendAnnouncementNotificationJob implements ShouldQueue
         }
 
         try {
-            $result = $notifications->send($announcement);
+            $project = Project::query()->findOrFail($announcement->project_id);
+            $result = app(TenantContext::class)->runForProject(
+                $project,
+                fn (): array => $notifications->send($announcement),
+            );
             if (($result['failed'] ?? 0) > 0 || ($result['line_failed'] ?? 0) > 0) {
                 throw new \RuntimeException('Announcement notification delivery is incomplete.');
             }
