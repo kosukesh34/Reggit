@@ -35,18 +35,22 @@ for (const width of [1280, 390]) {
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test(`会員アプリの全画面から安全に戻れる ${width}px`, async ({ page }) => {
+  test(`会員アプリのタブでは戻るを非表示にし、詳細・フォームから戻れる ${width}px`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 844 });
-    const screens = ['membership', 'profile', 'more', 'more/link', 'more/transfer', 'more/withdraw', 'stamp', 'stamp/issue', 'coupon', 'queue', 'reservation', 'menu', 'mobileOrder', 'dineInOrder', 'orderHistory', 'gallery', 'news', 'storeSearch', 'terms', 'privacy', 'designlab', 'link_1'];
+    const screens = ['home', 'membership', 'profile', 'more', 'more/link', 'more/transfer', 'more/withdraw', 'stamp', 'stamp/issue', 'coupon', 'queue', 'reservation', 'menu', 'mobileOrder', 'dineInOrder', 'orderHistory', 'gallery', 'news', 'storeSearch', 'terms', 'privacy', 'designlab', 'link_1', 'link_2', 'link_3'];
     for (const screen of screens) {
       await page.goto(`/demo/liff#/${screen}`);
       const back = page.getByRole('navigation', { name: 'ページの移動' }).locator('.web-back');
-      await checkBack(back);
+      const isChild = screen.startsWith('more/') || ['stamp/issue', 'terms', 'privacy'].includes(screen);
+      await expect(page.locator('body')).toHaveClass(/liff-ui-ready/);
       await expect(page.getByText('画面を読み込んでいます...', { exact: true })).toBeHidden();
+      if (isChild) await checkBack(back);
+      else await expect(back).toHaveCount(0);
       if (screen === 'designlab') await page.getByRole('dialog', { name: '購入特典' }).getByRole('button', { name: '閉じて注文に戻る' }).click();
+      if (!isChild) continue;
       await back.click();
-      const parent = screen.startsWith('more/') || ['terms', 'privacy'].includes(screen) ? 'more' : screen === 'profile' ? 'membership' : screen === 'stamp/issue' ? 'stamp' : 'home';
+      const parent = screen.startsWith('more/') || ['terms', 'privacy'].includes(screen) ? 'more' : screen === 'stamp/issue' ? 'stamp' : 'home';
       await expect(page).toHaveURL(new RegExp(`#/${parent}$`));
     }
     // Returning from a form must close it before leaving its feature.
@@ -57,6 +61,15 @@ for (const width of [1280, 390]) {
     await back.click();
     await expect(page.getByRole('button', { name: '新しく予約する' })).toBeVisible();
     await expect(page).toHaveURL(/#\/reservation$/);
+    await expect(back).toHaveCount(0);
+    const tabs = page.getByRole('navigation', { name: '主要ナビゲーション' });
+    const tabLinks = await tabs.getByRole('link').evaluateAll(links => links.map(link => link.getAttribute('href')).filter((href): href is string => !!href && href.startsWith('#/')));
+    expect(tabLinks.length).toBeGreaterThan(1);
+    for (const href of tabLinks) {
+      await tabs.locator(`a[href="${href}"]`).click();
+      await expect(page).toHaveURL(new RegExp(`${href}$`));
+      await expect(page.getByRole('navigation', { name: 'ページの移動' })).toHaveCount(0);
+    }
   });
 }
 
