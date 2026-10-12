@@ -8,7 +8,7 @@ class LandingInquiryPlan extends EnumBase
 {
     protected static array $values = [
         self::LINE => 'LINEプラン',
-        self::NATIVE => 'ネイティブプラン',
+        self::NATIVE => 'ネイティブアプリプラン',
         self::UNDECIDED => 'まだ決めていない',
     ];
 
