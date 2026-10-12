@@ -29,7 +29,10 @@ enum NativeAppURLHandler {
         if url.host == "addAppleWalletPass" {
             guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                   let passUrlString = components.queryItems?.first(where: { $0.name == "url" })?.value else { return false }
-            AppleWalletPassAddHelper.shared.addPass(from: passUrlString)
+            Task {
+                do { try await AppleWalletPassAddHelper.shared.addPass(from: passUrlString) }
+                catch { AppleWalletPassAddHelper.shared.showError(error) }
+            }
             return true
         }
         #endif

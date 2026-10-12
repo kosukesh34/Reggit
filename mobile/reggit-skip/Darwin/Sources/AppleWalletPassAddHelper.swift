@@ -4,25 +4,28 @@ import Reggit
 import UIKit
 
 @MainActor
-final class AppleWalletPassAddHelper {
+final class AppleWalletPassAddHelper: NSObject, @preconcurrency PKAddPassesViewControllerDelegate {
     static let shared = AppleWalletPassAddHelper()
 
-    private init() {}
+    private override init() { super.init() }
 
-    func addPass(from urlString: String) {
+    func addPass(from urlString: String) async throws {
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmed) else {
-            print("[AppleWallet] invalid pass URL: \(urlString.prefix(80))")
-            return
+        guard let url = URL(string: trimmed), ["https", "http"].contains(url.scheme?.lowercased() ?? "") else {
+            throw URLError(.badURL)
         }
-        Task {
-            do {
-                let data = try await downloadPassData(from: url)
-                try await presentAddPass(data: data)
-            } catch {
-                print("[AppleWallet] download/present error: \(error.localizedDescription)")
-            }
-        }
+        let data = try await downloadPassData(from: url)
+        try presentAddPass(data: data)
+    }
+
+    func addPassesViewControllerDidFinish(_ controller: PKAddPassesViewController) {
+        controller.dismiss(animated: true)
+    }
+
+    func showError(_ error: Error) {
+        let alert = UIAlertController(title: "Apple Wallet に追加できませんでした", message: error.localizedDescription, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "閉じる", style: .default))
+        topViewController()?.present(alert, animated: true)
     }
 
     private func downloadPassData(from url: URL) async throws -> Data {
@@ -48,20 +51,18 @@ final class AppleWalletPassAddHelper {
         return data
     }
 
-    private func presentAddPass(data: Data) async throws {
+    private func presentAddPass(data: Data) throws {
         let pass = try PKPass(data: data)
         guard PKAddPassesViewController.canAddPasses() else {
-            print("[AppleWallet] cannot add passes on this device")
-            return
+            throw URLError(.unsupportedURL)
         }
         guard let addVC = PKAddPassesViewController(pass: pass) else {
-            print("[AppleWallet] PKAddPassesViewController init failed")
-            return
+            throw URLError(.cannotDecodeContentData)
         }
         guard let presenter = topViewController() else {
-            print("[AppleWallet] no presenter view controller")
-            return
+            throw URLError(.unknown)
         }
+        addVC.delegate = self
         addVC.modalPresentationStyle = .formSheet
         presenter.present(addVC, animated: true)
     }
