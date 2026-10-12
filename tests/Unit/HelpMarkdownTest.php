@@ -9,6 +9,15 @@ use Tests\TestCase;
 
 class HelpMarkdownTest extends TestCase
 {
+    public function test_public_guides_link_to_public_help_and_customer_demos(): void
+    {
+        $html = (new HelpMarkdown)->toHtml("[一覧](/admin/{project_key}/help)\n[関連記事](/admin/{project_key}/help/existing-member-link)\n[アプリ](/liff/{project_key}#/more/link)", public: true);
+        $this->assertStringContainsString('href="/help"', $html);
+        $this->assertStringContainsString('href="/help/existing-member-link"', $html);
+        $this->assertStringContainsString('href="/demo/liff#/more/link"', $html);
+        $this->assertStringNotContainsString('{project_key}', $html);
+    }
+
     public function test_numbered_steps_are_rendered_as_an_ordered_list(): void
     {
         $html = (new HelpMarkdown)->toHtml("1. 画面を開く\n2. 保存する\n\n- 注意");

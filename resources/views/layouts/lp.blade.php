@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=60">
+    @stack('styles')
 </head>
 <body class="lp lp-sub">
     <header class="lp-header">
@@ -31,6 +32,7 @@
         <div class="lp-container lp-footer__inner">
             <a class="lp-brand" href="/" aria-label="Reggit トップへ"><img src="{{ asset('images/reggit-logo.png') }}" alt="Reggit" width="72" height="72"></a>
             <p>店舗アプリを、LINEでも、専用アプリでも。</p>
+            <a href="{{ route('help.index') }}">ヘルプ・使い方</a>
             <p>&copy; {{ date('Y') }} Reggit</p>
         </div>
     </footer>

@@ -1,0 +1,21 @@
+.public-help { margin: 0 auto; padding-top: 48px; padding-bottom: 64px; }
+.public-help h1 { margin-top: 20px; overflow-wrap: anywhere; }
+.public-help h2 { margin-top: 32px; }
+.public-help a { color: #12658b; text-underline-offset: 3px; }
+.public-help .help-list { padding: 0; list-style: none; }
+.public-help .help-list a { color: #14211d; }
+.public-help .help-list li { margin-bottom: 12px; }
+.public-help .help-list span { display: block; margin-top: 6px; }
+.public-help .help-search { flex-wrap: wrap; margin: 28px 0; }
+.public-help .help-search input { min-width: 0; }
+.public-help .help-markdown ol { padding-left: 24px; }
+.public-help .help-markdown li { margin-bottom: 12px; }
+.public-help-note { padding: 12px 16px; background: #edf4f6; border-radius: 8px; color: #4b5563; font-size: 14px; }
+.public-help .help-shot { margin: 20px 0; }
+.public-help .help-shot__frame { border: 1px solid #dbe3e8; border-radius: 8px; padding: 12px; }
+.public-help .help-shot img { margin-inline: auto; }
+@media (max-width: 640px) {
+    .public-help { padding-top: 24px; padding-bottom: 40px; }
+    .public-help .help-search input { flex-basis: 100%; }
+    .public-help .help-shot__frame { padding: 6px; }
+}
