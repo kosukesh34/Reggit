@@ -482,40 +482,45 @@ class WalletPassService
             throw new \RuntimeException('WWDR 証明書が見つかりません: '.$wwdrPath);
         }
 
-        $certPem = $this->ensurePemCertificate($certPath);
-        $keyPem = $this->ensurePemKey($keyPath);
-        $wwdrPem = $this->ensurePemCertificate($wwdrPath);
+        $certPem = $certPath;
+        $keyPem = $keyPath;
+        $wwdrPem = $wwdrPath;
+        try {
+            $certPem = $this->ensurePemCertificate($certPath);
+            $keyPem = $this->ensurePemKey($keyPath);
+            $wwdrPem = $this->ensurePemCertificate($wwdrPath);
 
-        $manifestPath = $dir.'/manifest.json';
-        $signaturePath = $dir.'/signature';
+            $manifestPath = $dir.'/manifest.json';
+            $signaturePath = $dir.'/signature';
 
-        $keyPassphrase = config('wallet_pass.key_passphrase', '');
-        $keyUri = 'file://'.str_replace('\\', '/', $keyPem);
-        $keyForSign = $keyPassphrase !== '' ? [$keyUri, $keyPassphrase] : $keyUri;
+            $keyPassphrase = config('wallet_pass.key_passphrase', '');
+            $keyUri = 'file://'.str_replace('\\', '/', $keyPem);
+            $keyForSign = $keyPassphrase !== '' ? [$keyUri, $keyPassphrase] : $keyUri;
 
-        $headers = [
-            'signing-time' => (new \DateTime)->format('Y-m-d H:i:s'),
-        ];
+            $headers = [
+                'signing-time' => (new \DateTime)->format('Y-m-d H:i:s'),
+            ];
 
-        $certUri = 'file://'.str_replace('\\', '/', $certPem);
-        $ok = @openssl_pkcs7_sign(
-            $manifestPath,
-            $signaturePath,
-            $certUri,
-            $keyForSign,
-            $headers,
-            PKCS7_BINARY | PKCS7_DETACHED,
-            $wwdrPem
-        );
-
-        if ($certPem !== $certPath) {
-            @unlink($certPem);
-        }
-        if ($keyPem !== $keyPath) {
-            @unlink($keyPem);
-        }
-        if ($wwdrPem !== $wwdrPath) {
-            @unlink($wwdrPem);
+            $certUri = 'file://'.str_replace('\\', '/', $certPem);
+            $ok = @openssl_pkcs7_sign(
+                $manifestPath,
+                $signaturePath,
+                $certUri,
+                $keyForSign,
+                $headers,
+                PKCS7_BINARY | PKCS7_DETACHED,
+                $wwdrPem
+            );
+        } finally {
+            if ($certPem !== $certPath) {
+                @unlink($certPem);
+            }
+            if ($keyPem !== $keyPath) {
+                @unlink($keyPem);
+            }
+            if ($wwdrPem !== $wwdrPath) {
+                @unlink($wwdrPem);
+            }
         }
 
         if ($ok === false) {
@@ -561,8 +566,14 @@ class WalletPassService
         if ($cert === false) {
             throw new \RuntimeException('証明書の読み込みに失敗しました。PEM 形式か DER 形式の証明書を配置してください: '.$path);
         }
-        $tmp = $path.'.pem.'.uniqid();
-        openssl_x509_export_to_file($cert, $tmp);
+        $tmp = tempnam(sys_get_temp_dir(), 'wallet-pass-');
+        if ($tmp === false) {
+            throw new \RuntimeException('Wallet certificate temporary file could not be created.');
+        }
+        if (! openssl_x509_export_to_file($cert, $tmp)) {
+            @unlink($tmp);
+            throw new \RuntimeException('Wallet certificate conversion failed.');
+        }
         openssl_x509_free($cert);
 
         return $tmp;
@@ -578,8 +589,14 @@ class WalletPassService
         if ($key === false) {
             throw new \RuntimeException('秘密鍵の読み込みに失敗しました。PEM 形式の鍵を配置してください: '.$path);
         }
-        $tmp = $path.'.pem.'.uniqid();
-        openssl_pkey_export_to_file($key, $tmp);
+        $tmp = tempnam(sys_get_temp_dir(), 'wallet-pass-');
+        if ($tmp === false) {
+            throw new \RuntimeException('Wallet key temporary file could not be created.');
+        }
+        if (! openssl_pkey_export_to_file($key, $tmp)) {
+            @unlink($tmp);
+            throw new \RuntimeException('Wallet key conversion failed.');
+        }
         openssl_pkey_free($key);
 
         return $tmp;
