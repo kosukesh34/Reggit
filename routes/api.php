@@ -150,22 +150,22 @@ Route::post('/points/grant-code/{token}', PointGrantCodeController::class)->wher
 // API v1（Bearer トークン認証・モバイルアプリ用）※従来: トークンの project でコンテキスト設定
 Route::prefix('v1')->middleware([AuthenticateApiToken::class, 'bind.project'])->group(function () {
     Route::get('/products', [ApiV1ProductController::class, 'index']);
-    Route::get('/products/{id}', [ApiV1ProductController::class, 'show']);
+    Route::get('/products/{id}', [ApiV1ProductController::class, 'show'])->whereNumber('id');
     Route::post('/orders', [ApiV1OrderController::class, 'store']);
-    Route::post('/orders/{id}/cancel-unpaid', [ApiV1OrderController::class, 'cancelUnpaid']);
+    Route::post('/orders/{id}/cancel-unpaid', [ApiV1OrderController::class, 'cancelUnpaid'])->whereNumber('id');
     Route::get('/orders', [ApiV1OrderController::class, 'index']);
-    Route::get('/orders/{id}', [ApiV1OrderController::class, 'show']);
+    Route::get('/orders/{id}', [ApiV1OrderController::class, 'show'])->whereNumber('id');
     Route::get('/member-profile', [ApiV1MemberMeController::class, '__invoke']);
     Route::put('/member-profile', ApiV1MemberUpdateController::class);
     Route::post('/member-profile/image', [MemberProfileImageController::class, 'store']);
     Route::delete('/member-profile/image', [MemberProfileImageController::class, 'destroy']);
     Route::get('/member-coupons', [ApiV1CouponController::class, 'myCoupons']);
-    Route::post('/member-coupons/{id}/redeem', [ApiV1CouponController::class, 'use']);
+    Route::post('/member-coupons/{id}/redeem', [ApiV1CouponController::class, 'use'])->whereNumber('id');
     Route::get('/device-coupons', [DeviceOnceCouponController::class, 'index']);
-    Route::post('/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim']);
+    Route::post('/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim'])->whereNumber('coupon');
     Route::get('/member-lottery', [MemberLotteryController::class, 'index']);
-    Route::post('/member-lottery/{id}/play', [MemberLotteryController::class, 'play']);
-    Route::post('/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
+    Route::post('/member-lottery/{id}/play', [MemberLotteryController::class, 'play'])->whereNumber('id');
+    Route::post('/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin'])->whereNumber('id');
     Route::get('/member-wallet/summary', MemberWalletSummaryController::class);
     Route::get('/queue/current', ApiV1QueueMeController::class);
     // Legacy aliases kept for existing LIFF and older mobile builds.
@@ -179,14 +179,14 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, 'bind.project'])->
     Route::get('/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
     Route::post('/members/withdraw', [ApiV1MemberWithdrawController::class, '__invoke']);
     Route::get('/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
-    Route::post('/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
+    Route::post('/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use'])->whereNumber('id');
     Route::get('/members/me/lottery', [MemberLotteryController::class, 'index']);
-    Route::post('/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
-    Route::post('/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
+    Route::post('/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play'])->whereNumber('id');
+    Route::post('/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin'])->whereNumber('id');
     Route::get('/members/me/wallet-summary', MemberWalletSummaryController::class);
     Route::get('/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/announcements', [ApiV1AnnouncementController::class, 'index']);
-    Route::post('/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
+    Route::post('/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead'])->whereNumber('id');
     Route::get('/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
     Route::post('/queue', ApiV1QueueStoreController::class);
     Route::get('/queue/me', ApiV1QueueMeController::class);
@@ -199,22 +199,22 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, 'bind.project'])->
 // API v1（SaaS: URL に project_key を含む）api/v1/{project_key}/...
 Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::class])->group(function () {
     Route::get('/{project_key}/products', [ApiV1ProductController::class, 'index']);
-    Route::get('/{project_key}/products/{id}', [ApiV1ProductController::class, 'show']);
+    Route::get('/{project_key}/products/{id}', [ApiV1ProductController::class, 'show'])->whereNumber('id');
     Route::post('/{project_key}/orders', [ApiV1OrderController::class, 'store']);
-    Route::post('/{project_key}/orders/{id}/cancel-unpaid', [ApiV1OrderController::class, 'cancelUnpaid']);
+    Route::post('/{project_key}/orders/{id}/cancel-unpaid', [ApiV1OrderController::class, 'cancelUnpaid'])->whereNumber('id');
     Route::get('/{project_key}/orders', [ApiV1OrderController::class, 'index']);
-    Route::get('/{project_key}/orders/{id}', [ApiV1OrderController::class, 'show']);
+    Route::get('/{project_key}/orders/{id}', [ApiV1OrderController::class, 'show'])->whereNumber('id');
     Route::get('/{project_key}/member-profile', [ApiV1MemberMeController::class, '__invoke']);
     Route::put('/{project_key}/member-profile', ApiV1MemberUpdateController::class);
     Route::post('/{project_key}/member-profile/image', [MemberProfileImageController::class, 'store']);
     Route::delete('/{project_key}/member-profile/image', [MemberProfileImageController::class, 'destroy']);
     Route::get('/{project_key}/member-coupons', [ApiV1CouponController::class, 'myCoupons']);
-    Route::post('/{project_key}/member-coupons/{id}/redeem', [ApiV1CouponController::class, 'use']);
+    Route::post('/{project_key}/member-coupons/{id}/redeem', [ApiV1CouponController::class, 'use'])->whereNumber('id');
     Route::get('/{project_key}/device-coupons', [DeviceOnceCouponController::class, 'index']);
-    Route::post('/{project_key}/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim']);
+    Route::post('/{project_key}/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim'])->whereNumber('coupon');
     Route::get('/{project_key}/member-lottery', [MemberLotteryController::class, 'index']);
-    Route::post('/{project_key}/member-lottery/{id}/play', [MemberLotteryController::class, 'play']);
-    Route::post('/{project_key}/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
+    Route::post('/{project_key}/member-lottery/{id}/play', [MemberLotteryController::class, 'play'])->whereNumber('id');
+    Route::post('/{project_key}/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin'])->whereNumber('id');
     Route::get('/{project_key}/member-wallet/summary', MemberWalletSummaryController::class);
     Route::get('/{project_key}/queue/current', ApiV1QueueMeController::class);
     // Legacy aliases kept for existing API clients.
@@ -228,15 +228,15 @@ Route::prefix('v1')->middleware([AuthenticateApiToken::class, CheckApiProject::c
     Route::get('/{project_key}/members/points/history', [ApiV1MemberPointHistoryController::class, '__invoke']);
     Route::post('/{project_key}/members/withdraw', [ApiV1MemberWithdrawController::class, '__invoke']);
     Route::get('/{project_key}/members/me/coupons', [ApiV1CouponController::class, 'myCoupons']);
-    Route::post('/{project_key}/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use']);
+    Route::post('/{project_key}/members/me/coupons/{id}/use', [ApiV1CouponController::class, 'use'])->whereNumber('id');
     Route::get('/{project_key}/members/me/lottery', [MemberLotteryController::class, 'index']);
-    Route::post('/{project_key}/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
-    Route::post('/{project_key}/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
+    Route::post('/{project_key}/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play'])->whereNumber('id');
+    Route::post('/{project_key}/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin'])->whereNumber('id');
     Route::get('/{project_key}/members/me/wallet-summary', MemberWalletSummaryController::class);
     Route::get('/{project_key}/stamps', [ApiV1StampController::class, 'index']);
     Route::get('/{project_key}/announcements', [ApiV1AnnouncementController::class, 'index']);
     Route::get('/{project_key}/announcements/cancelled-ids', [ApiV1AnnouncementController::class, 'cancelledIds']);
-    Route::post('/{project_key}/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead']);
+    Route::post('/{project_key}/announcements/{id}/read', [ApiV1AnnouncementController::class, 'markRead'])->whereNumber('id');
     Route::get('/{project_key}/reservations', [ApiV1ReservationIndexController::class, '__invoke']);
     Route::post('/{project_key}/queue', ApiV1QueueStoreController::class);
     Route::get('/{project_key}/queue/me', ApiV1QueueMeController::class);
@@ -258,7 +258,7 @@ Route::get('/v1/announcements/cancelled-ids', ApiV1AnnouncementCancelledIdsContr
 
 Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/device-coupons', [DeviceOnceCouponController::class, 'index']);
-    Route::post('/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim']);
+    Route::post('/device-coupons/{coupon}/claim', [DeviceOnceCouponController::class, 'claim'])->whereNumber('coupon');
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
 
@@ -278,8 +278,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/member-coupons', [CouponController::class, 'myCoupons']);
     Route::post('/member-coupons/{id}/redeem', [CouponController::class, 'use']);
     Route::get('/member-lottery', [MemberLotteryController::class, 'index']);
-    Route::post('/member-lottery/{id}/play', [MemberLotteryController::class, 'play']);
-    Route::post('/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
+    Route::post('/member-lottery/{id}/play', [MemberLotteryController::class, 'play'])->whereNumber('id');
+    Route::post('/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin'])->whereNumber('id');
     Route::get('/queue/current', [QueueMeController::class, '__invoke']);
     // Legacy aliases kept so deployed LIFF clients continue to work.
     Route::get('/members/me', [MemberMeController::class, '__invoke']);
@@ -306,8 +306,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/members/me/coupons', [CouponController::class, 'myCoupons']);
     Route::post('/members/me/coupons/{id}/use', [CouponController::class, 'use']);
     Route::get('/members/me/lottery', [MemberLotteryController::class, 'index']);
-    Route::post('/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play']);
-    Route::post('/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin']);
+    Route::post('/members/me/lottery/{id}/play', [MemberLotteryController::class, 'play'])->whereNumber('id');
+    Route::post('/members/me/lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin'])->whereNumber('id');
     Route::get('/members/me/wallet-summary', MemberWalletSummaryController::class);
 
     Route::get('/payment/methods', PaymentMethodsController::class);
