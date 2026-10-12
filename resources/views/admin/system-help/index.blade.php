@@ -5,7 +5,7 @@
 
 @section('content')
 <div class="publishing-header">
-    <p class="form-text">店舗管理者向けの操作ガイドやよくある質問を作成します。<br>公開した記事は各店舗のヘルプに表示されます。</p>
+    <p class="form-text">操作ガイドやよくある質問を作成します。<br>公開した記事は店舗管理画面とLPのヘルプに表示され、LPではログインなしで閲覧できます。</p>
     <a href="{{ route('system-admin.help-articles.create') }}" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> ヘルプ記事を書く</a>
 </div>
 <div class="card">

@@ -95,6 +95,7 @@ use App\Http\Controllers\Onboarding\OnboardingPageController;
 use App\Http\Controllers\Payment\PaymentCardController;
 use App\Http\Controllers\Payment\PaymentReturnController;
 use App\Http\Controllers\PointGrantOpenController;
+use App\Http\Controllers\PublicHelpController;
 use App\Http\Controllers\Queue\QueueOpenController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
@@ -104,6 +105,8 @@ use Illuminate\Support\Facades\Route;
 
 // ========== 公開 ==========
 Route::get('/', LandingController::class);
+Route::get('/help', [PublicHelpController::class, 'index'])->name('help.index');
+Route::get('/help/{slug}', [PublicHelpController::class, 'show'])->name('help.show');
 Route::view('/demo/liff', 'demo.liff')->name('demo.liff');
 
 Route::view('/lp/register/email', 'landing.email')->name('landing.register.email.show');
