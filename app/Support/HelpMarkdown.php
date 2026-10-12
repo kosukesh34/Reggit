@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Util\AdminContext;
+
 /** ヘルプ本文用の最小Markdown。HTMLは出さない。 */
 final class HelpMarkdown
 {
@@ -14,7 +16,7 @@ final class HelpMarkdown
         }
 
         $html = '';
-        $list = false;
+        $list = '';
         $sectionOpen = false;
         $headingIndex = 0;
         $toc = [];
@@ -56,12 +58,13 @@ final class HelpMarkdown
 
                 continue;
             }
-            if (preg_match('/^- (.+)$/', $line, $matches) === 1) {
-                if ($list === false) {
-                    $html .= '<ul>';
-                    $list = true;
+            if (preg_match('/^(-|\d+\.) (.+)$/', $line, $matches) === 1) {
+                $tag = $matches[1] === '-' ? 'ul' : 'ol';
+                if ($list !== $tag) {
+                    $html .= $this->closeList($list).'<'.$tag.'>';
+                    $list = $tag;
                 }
-                $html .= '<li>'.$this->inline($matches[1]).'</li>';
+                $html .= '<li>'.$this->inline($matches[2]).'</li>';
 
                 continue;
             }
@@ -71,20 +74,37 @@ final class HelpMarkdown
         return $html.$this->closeList($list).($sectionOpen ? '</section>' : '');
     }
 
-    private function closeList(bool &$list): string
+    private function closeList(string &$list): string
     {
-        if ($list === false) {
+        if ($list === '') {
             return '';
         }
-        $list = false;
+        $closing = '</'.$list.'>';
+        $list = '';
 
-        return '</ul>';
+        return $closing;
     }
 
     private function inline(string $text): string
     {
         $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', $text) ?? $text;
 
-        return preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $text) ?? $text;
+        $text = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $text) ?? $text;
+
+        return preg_replace_callback('~(?<!!)\[([^\]\n]+)\]\(([^)\s]+)\)~', function (array $matches): string {
+            $url = html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if (preg_match('~^/(?!/)[a-zA-Z0-9/_?&=.%#{}+\~-]*$~D', $url) !== 1) {
+                return $matches[0];
+            }
+            if (str_contains($url, '{project_key}')) {
+                $projectKey = request()->route('project_key') ?? AdminContext::getCurrentProject()?->project_key;
+                // A system preview has no selected brand; use the project selection entry.
+                $url = is_string($projectKey) && $projectKey !== ''
+                    ? str_replace('{project_key}', rawurlencode($projectKey), $url)
+                    : '/admin';
+            }
+
+            return '<a href="'.htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'">'.$matches[1].'</a>';
+        }, $text) ?? $text;
     }
 }

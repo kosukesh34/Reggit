@@ -1,0 +1,252 @@
+{
+  "transfer": [
+    "1215fa2199e2b86584d59fb76c12010bd44813a291354327edb385f816cb9561",
+    "ef9df4d0c51fae3ab545d2b881d9f02fadfe827a9802e30273d11894c96e4cfa"
+  ],
+  "coupon": [
+    "fcd7228b7be1790c2b24108e2306c8947465232ae637e3374c2233908214a7e3",
+    "f77ca690bf66bf1c17c87304d24ef7e47ceb0b9bbf461da8cae3cbb6a9f9d3b1"
+  ],
+  "analytics": [
+    "e0e5cf90bd38686aacf8ecf47f5af1f92fc8da81f429155d5812aa690861d5b0",
+    "92a29cb7b4d220bcbe2e05e9cc3ce007ca0a0e7b4e273e67ed612541d1003945"
+  ],
+  "home": [
+    "894f450ab0b4f9234324b55306614f9bc70650e72e20ad2c94dd345a48373935",
+    "b14e9272cff6804c8104ddfb0919c47f703d277705d68feaa06095b42f9e7761"
+  ],
+  "withdraw": [
+    "4b924b9fcf9310dbc1384ded9d67e186b3f88fadd7507ddf024e592d9e190f5e",
+    "8009fc2386b0debee9bf8eacf367760dbde6ecb64ca9736a1eb607c016d93b88"
+  ],
+  "delivery-cancel": [
+    "66241f417fbcfe311b603a00825e3b6cc1b389aed78044dbf003dbb2a48907f9",
+    "593afe15d53824322d678dfaee1e986790badf7429870021bb528d2897d4d171"
+  ],
+  "delivery-immediate-error": [
+    "1f89beed213c968ff18613e9446f62b2b13673145049381564e4670e68443597",
+    "e0edf3f0c7c62e5c91aa6c121d1dbcdb165a69fc69840b24eaf8dedd7ebb0b89"
+  ],
+  "delivery-scheduled-error": [
+    "0bb7cd58914f426a1555d8ff90865838bcb2e5082679fad3d54a475baca05b02",
+    "1e0781c847febd7ff71cf2877bd8e6540f06a51f575b17a29a5f8430d766050c"
+  ],
+  "delivery-sent-no-undo": [
+    "fb20eb09362e3a8cf67036414e198e2c4eb7dfa83125805f54248c1ba8d77504",
+    "3470c68fd0e97f6b33b44de031dc16da31e4f97748d157b167c5c1a70f48cc33"
+  ],
+  "existing-link-rejected": [
+    "4cad73dcac5f5e4057bf4155cda615c3292f1ddb47f4541ce0851c5c91dd4e7c",
+    "950d7cf4368ea9da0f5e97be7d3014bf3cb9ad510ce8fd24cde634aff8253f3e"
+  ],
+  "feature-overview": [
+    "399c333829468477ef8d0fd8c300bf411e5c02f5ed19c4f558e0f0e57764c014"
+  ],
+  "admin-login": [
+    "827c5a9fee7b14c6d8589bbb79dac3e427edec30dc1243245e07d80a4982ceb8"
+  ],
+  "dashboard-guide": [
+    "4067fcb160516ab7ab509fbf575d5810eef1a7dafb654741960b84bce6ed8b87"
+  ],
+  "stores-guide": [
+    "a57e8c3b1d6bcbeec9fccf3ae50df632d41efe9491c48d0726b2db45e0d1f789"
+  ],
+  "features-guide": [
+    "35c71bc6b56393e01965ddbdf80e3526efef7407101b62770ffa231b9dccb168"
+  ],
+  "member-registration": [
+    "07b769777af6f6f4010aca713712641050c39dbaa8535a3bc0866766b78669cf"
+  ],
+  "member-registration-settings": [
+    "b6d5c290dc4158b48f7203bd113be9f5da086c521dbd7bd0c93d3353e07a0b6d"
+  ],
+  "member-profile": [
+    "1bb8afeba3283689c424a545d16427e25a53b5aa7ea637e123a40529a8f4c68e"
+  ],
+  "member-management": [
+    "9c348733bcadbf470c0794cf4f7cdcfa5489e9f3b3250a773194951eb829b692"
+  ],
+  "member-history": [
+    "46ba5ec568824c4b12bcae1e3d7124b4056605cb1c7e50866956fdd237f63655"
+  ],
+  "member-tags-memos": [
+    "b1598a6fd80e59a23cdb4f740620e882eae5acb44ae8045781b0a0cc447b68c2"
+  ],
+  "points-guide": [
+    "97a10031dcd185605b82ddfb6d5a6b4d7e56f994d4320a852fb00da5c88d4217"
+  ],
+  "point-qr": [
+    "9115e8b72bba8415adfe7356d98414a52b13f3cbab4415a23639e42437685b0a"
+  ],
+  "ranks-guide": [
+    "335489f6e468d74b1ed79943bdf6c5815c2866ee448b72eb2b6cda6a7e9e5ccc"
+  ],
+  "existing-member-link": [
+    "9835a6b086206b2c70bef4353d65ad54b42a2c0aac2132fb0158ff2c155998a4"
+  ],
+  "existing-member-store": [
+    "8a923d261d20610acabd4c6fdd57d7d9fe38bb84e81e006af140272cf96b49fb"
+  ],
+  "member-transfer-guide": [
+    "5e89a5220aab67f7ffe77ca4d48acd23ed48c14a5c2901065a87c6462872623e"
+  ],
+  "withdrawal-guide": [
+    "7fa2864eb1bc55f4c2aaa403bf2e6b230186c5de383a813f95217f9e56e6c1c4"
+  ],
+  "products-guide": [
+    "d31f4750cacc822572470e2f6d239c2fa91ed0ea22464784f5909691205c1acf"
+  ],
+  "orders-customer": [
+    "4d57f56c782fe63061996806aa3bed28e7a0df5bfdd5e6574986d925da338085"
+  ],
+  "orders-staff": [
+    "991e0b803bf8d7c4c49db3dbf7b095412daaa0783d88bfc3c758c7e30d0fe152"
+  ],
+  "order-payment-timing": [
+    "595256645050c00da33b2c334f5d7e488ea56c5adc49b5eee48f1f148be56446"
+  ],
+  "unpaid-cancel": [
+    "2dc5347e8899ece5e6b743a94d4206307f06426e0d7d2b8fa9afe082016f4385"
+  ],
+  "payments-settings": [
+    "cf3e676a67927e315bfcfd40dbf1329295d07c028939ed56bd81bce466a1f09a"
+  ],
+  "reservations-customer": [
+    "fa9f1fdcb749fb0887bef44e3392460406752407a64bae33e3d70affa2a01ce9"
+  ],
+  "reservations-staff": [
+    "b21db17adc7d6c750f8c01505c69f3aa7f2a50f4e65f978c191453074e2f6cde"
+  ],
+  "reservations-settings": [
+    "7027fe86990696458d15bdf3b8b7f6adb5ff823be6d65640d2bd060f72f75806"
+  ],
+  "queue-customer": [
+    "0c9c7429def6266b00e9d26b296dc005fb000a670378493ecc0c8be2dd1c0538"
+  ],
+  "queue-staff": [
+    "b5bed2b39c5df0610a87cf77ab9fc06d918eebf507d830e59f9a03f51436f54f"
+  ],
+  "queue-settings": [
+    "9e65893e835b2410f4ac6448b9e40d1e33f246b8fc541dbfe392418513978383"
+  ],
+  "store-devices": [
+    "6e82804816d86022ac50c7012db487898e58f925964fcabcad0f767506bcf1ec"
+  ],
+  "stamps-guide": [
+    "1b6810f8262cbb72c982c2d24a1bad8b60f618ec20cbc8c9d05f22c7818f95df"
+  ],
+  "stamp-grant": [
+    "6939900da85d0d48a4c212cd0460aaa7f403727f64ae6cdf7e430a1280aa502b"
+  ],
+  "coupons-definition": [
+    "645e75454ef5819d1da1965ff47d5fce83cfd0e3bb551ad9d66cbe6437cd03df"
+  ],
+  "coupons-use": [
+    "3713e9a69c9214319a5f2efa5300b5d07891749a1247aedbf206c26db797313f"
+  ],
+  "coupons-bulk": [
+    "f0a3ac896031d2257d62cacc09f775fe372e43af10b854a58609eb85874e6e80"
+  ],
+  "device-coupons": [
+    "a492c8e75e926738065c782fe1428c3e2a4d85d49d5032be3ba506ed4399dec8"
+  ],
+  "coupon-smaregi": [
+    "d806adb61e9e1d395ef4971e1665af337947325339bfe1eb440f88a259fbed7e"
+  ],
+  "lottery-guide": [
+    "0c0bf2105392f35fb8b50582ddb4e8ca082195cedd089a35aebeea3544e2d2ea"
+  ],
+  "rewards-cancellation": [
+    "676e48e422e99a809d6315a983b63adb5c6774fcaebcbc541957fda630393517"
+  ],
+  "announcements-guide": [
+    "b7cbada6b6e5222cb45dfb0bd00a43a947edc25dfa5190ac0a1a5e08892e87e2"
+  ],
+  "announcement-delivery": [
+    "f77497e8eed675643e00076b0ee5df1fee8afe9f6b330b7d184f32fea443d06a"
+  ],
+  "audience-groups": [
+    "84300a3938af756243274fab47e8d12a15270c75632e7334b0b11ec69eadbbf4"
+  ],
+  "after-registration-guide": [
+    "1bbdd3884566f9e24a66bc254abd594dfb5aa4f6c26fb00d11ef809d13c2b0c9"
+  ],
+  "delivery-recovery": [
+    "731c51100f43976c6bc125f9826bb4fdad6cbfc030e92f2bf3f2a8f2c6c44343"
+  ],
+  "notifications-guide": [
+    "f9f28d0697986e273b98603dbc59c4d1183dd237e82452995d68992c9d14ab3f"
+  ],
+  "analytics-guide": [
+    "c440804bb8794cbe1f71a4e0f51a0331871eff0c25759df933100a9ace7c5f6e"
+  ],
+  "rfm-guide": [
+    "c85d570f9f66a7abaf657b327120f334802afe1fad25699347fba7b5a0e99765"
+  ],
+  "analysis-api": [
+    "ce84dec23797e7f4ab74499e247bf38f4e656a313b6dda8101466eb767d69bc8"
+  ],
+  "home-design-guide": [
+    "0172c5b858d05bfd0bbdcf64e934dddbef7230829a2f59216e03cc74269f07e7"
+  ],
+  "branding-guide": [
+    "392a5a623b241bf9abde1b1c6df8302c597f934962c9bdcc0acaec76cbfda1c8"
+  ],
+  "member-card-design": [
+    "2dcdd1f10858dbe0ce03b8b3e93da68a5b912a8d310e8cbb07f5816bd4d4df4a"
+  ],
+  "liff-designer-guide": [
+    "ae69d5ee8414ca08fbf0787b7b510bba7d413cbf2dff5ce8aab69b74b302e1e7"
+  ],
+  "admin-design-guide": [
+    "efa2018b4a528fab54cddababca6fa36b306d779dc69aee7b465bcfb9e596865"
+  ],
+  "wallet-guide": [
+    "13023de52241e2ae2c020a7755ad154d064efb14610adb26e4c76968f2d66c18"
+  ],
+  "line-connection-guide": [
+    "81e727c916ec8537cd5239bdf8bc5caf4df99a76fc2a4fed31cf327eaa967ccc"
+  ],
+  "smaregi-guide": [
+    "634bf03fbedaabea9f2c117420b14a1923b7a382287645732bc77c6f454b2bc5"
+  ],
+  "store-operation-settings": [
+    "6059788498ebcfb35ce562ccd741bf83fb6cf71736c9c9591562b5707a9031f6"
+  ],
+  "staff-permissions": [
+    "7ffacfe15a2c2f0d2d63bbb699343019b6907fd10ca66fe44c1b5c3b12b39630"
+  ],
+  "audit-log-guide": [
+    "589f82e7707ea61116ac5bc33f01d816a73ec43adfaedfd47a00292b7bf111e1"
+  ],
+  "gallery-guide": [
+    "ed8c349cb3f2c79efd85ffe6840046b7f7d45275f3683b6c40529a382889130c"
+  ],
+  "contact-guide": [
+    "d2f24caf1c3c68da0f55a541e128744a77fc69607bcf1e0b65d88805cab83687"
+  ],
+  "legal-guide": [
+    "024f59a55cd8aa6b7694274e22bf4c74c92dfe7869e0a0b02b67e71d0449ecaa"
+  ],
+  "help-management": [
+    "6075eb9a1c2aa8607d75f548e3ad4ba42c5518abbe34b324d7745ddfc27b8e07"
+  ],
+  "onboarding-guide": [
+    "e3d54db62fea3955e7966e35456255d3c54496d95f43520233fd2479e560919f"
+  ],
+  "system-projects": [
+    "6bb190b6ff958766a9a0bd48b6e2aa7d0ad0a0ba2a4883924c3df18bfd8d7407"
+  ],
+  "system-accounts": [
+    "8925ca6517c5165aef73ef9d6ec0f667d42e0302cb6f1eef1ce93802eec390b6"
+  ],
+  "system-notices": [
+    "74086f94ded1219de643d1e723d6ce40148152e45897760fb05ed440293801ba"
+  ],
+  "native-session": [
+    "4ed411fe2da1a09e7819bf08386cd7832ab3afd69f8631b70d8f9c82a40c1627"
+  ],
+  "entry-qr-guide": [
+    "218652e67c8ec66aee08676678d8b9f365c3a90f42c372375a2d6fe0e64a5ba9"
+  ]
+}
