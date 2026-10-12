@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Member;
+use App\Models\Scopes\ProjectScope;
 use App\Models\WalletPassRegistration;
 use App\Models\WalletPassUpdate;
+use App\Util\TenantContext;
 
 class AppleWalletPasskitService
 {
@@ -12,6 +14,7 @@ class AppleWalletPasskitService
         private WalletPassAuthTokenService $authTokenService,
         private WalletPassService $walletPassService,
         private WalletPassSyncService $walletPassSyncService,
+        private TenantContext $tenantContext,
     ) {}
 
     public function parseAuthToken(string $authorizationHeader): ?string
@@ -39,7 +42,8 @@ class AppleWalletPasskitService
             return null;
         }
 
-        return Member::query()->with(['user', 'project'])->find($memberId);
+        // PassKit has no tenant header; the member-specific token authorizes this lookup.
+        return Member::withoutGlobalScope(ProjectScope::class)->with('project')->find($memberId);
     }
 
     public function isAuthorizedForMember(Member $member, string $authToken): bool
@@ -55,10 +59,11 @@ class AppleWalletPasskitService
         $registrations = WalletPassRegistration::query()
             ->where('device_library_identifier', $deviceLibraryIdentifier)
             ->where('pass_type_identifier', $passTypeIdentifier)
-            ->get(['member_id']);
+            ->get(['member_id', 'project_id']);
 
         foreach ($registrations as $registration) {
-            $member = Member::find((int) $registration->member_id);
+            $member = Member::withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', $registration->project_id)->find((int) $registration->member_id);
             if ($member !== null && $this->authTokenService->verify($member, $authToken)) {
                 return true;
             }
@@ -110,7 +115,7 @@ class AppleWalletPasskitService
         string $passTypeIdentifier,
         ?string $passesUpdatedSince,
     ): array {
-        $query = WalletPassUpdate::query()
+        $rows = WalletPassUpdate::query()
             ->join('wallet_pass_registrations as r', function ($join) use ($deviceLibraryIdentifier, $passTypeIdentifier) {
                 $join->on('wallet_pass_updates.serial_number', '=', 'r.serial_number')
                     ->on('wallet_pass_updates.pass_type_identifier', '=', 'r.pass_type_identifier')
@@ -118,24 +123,29 @@ class AppleWalletPasskitService
                     ->where('r.pass_type_identifier', '=', $passTypeIdentifier);
             })
             ->where('wallet_pass_updates.pass_type_identifier', $passTypeIdentifier)
-            ->select('wallet_pass_updates.serial_number', 'wallet_pass_updates.updated_at')
-            ->orderBy('wallet_pass_updates.updated_at');
-
-        if ($passesUpdatedSince !== null && $passesUpdatedSince !== '') {
-            $query->where('wallet_pass_updates.updated_at', '>', $passesUpdatedSince);
-        }
-
-        $rows = $query->get();
-        $lastUpdated = $rows->max('updated_at');
+            ->select('wallet_pass_updates.serial_number', 'wallet_pass_updates.revision')
+            ->orderBy('wallet_pass_updates.revision')->orderBy('wallet_pass_updates.id')->get();
+        $cursor = $passesUpdatedSince !== null && str_starts_with($passesUpdatedSince, 'v2:')
+            ? filter_var(substr($passesUpdatedSince, 3), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]])
+            : false;
+        // Legacy timestamp tags resync once. Never advance beyond this single snapshot.
+        $lastUpdated = max($cursor === false ? 0 : $cursor, (int) ($rows->max('revision') ?? 0));
+        $changed = $cursor === false ? $rows : $rows->filter(fn ($row) => (int) $row->revision > $cursor);
 
         return [
-            'serialNumbers' => $rows->pluck('serial_number')->unique()->values()->all(),
-            'lastUpdated' => $lastUpdated ? (string) $lastUpdated : now()->toIso8601String(),
+            'serialNumbers' => $changed->pluck('serial_number')->unique()->values()->all(),
+            'lastUpdated' => 'v2:'.$lastUpdated,
         ];
     }
 
     public function generatePassContent(Member $member): ?string
     {
-        return $this->walletPassService->generateForMember($member);
+        $project = $member->project;
+        if ($project === null) {
+            return null;
+        }
+
+        return $this->tenantContext->runForProject($project,
+            fn () => $this->walletPassService->generateForMember($member));
     }
 }
