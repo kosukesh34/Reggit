@@ -4,10 +4,12 @@ import { screenBack } from './screenBack.ts';
 
 test('直接開いた画面でもアプリ内の親画面へ戻る', () => {
   for (const page of ['/more/link', '/more/transfer', '/more/withdraw']) assert.equal(screenBack(page).to, '/more');
-  assert.equal(screenBack('/profile').to, '/membership');
   assert.equal(screenBack('/stamp/issue').to, '/stamp');
   for (const page of ['/terms', '/privacy']) assert.equal(screenBack(page).to, '/more');
-  for (const page of ['/coupon', '/menu', '/news', '/link_1', '/queue', '/reservation', '/orderHistory', '/more', '/membership']) assert.equal(screenBack(page).to, '/home');
-  assert.equal(screenBack('/home'), null);
-  assert.equal(screenBack('/'), null);
+});
+
+test('タブのルート画面では戻るボタンを表示しない', () => {
+  for (const page of ['/', '/home', '/membership', '/profile', '/more', '/stamp', '/coupon', '/queue', '/reservation', '/menu', '/mobileOrder', '/dineInOrder', '/orderHistory', '/gallery', '/news', '/storeSearch', '/designlab', '/link_1', '/link_2', '/link_3']) {
+    assert.equal(screenBack(page), null, page);
+  }
 });
