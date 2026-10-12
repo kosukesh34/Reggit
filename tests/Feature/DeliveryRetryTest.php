@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AnnouncementAudienceResolveMode;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Jobs\SendAnnouncementNotificationJob;
@@ -20,6 +21,7 @@ use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberBenefitService;
 use App\Services\AnnouncementNotificationService;
 use App\Services\ScheduledDeliverySendService;
+use App\Util\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Queue;
@@ -75,6 +77,102 @@ class DeliveryRetryTest extends TestCase
         $this->assertFalse($announcement->notification_pending);
         $this->assertNull($announcement->notification_retry_at);
         $this->assertSame($publishedAt, $announcement->published_at->toDateTimeString());
+    }
+
+    public function test_notification_uses_saved_project_and_restores_callers_context(): void
+    {
+        $announcement = $this->announcement();
+        $member = Member::factory()->create(['project_id' => $announcement->project_id]);
+        $caller = Project::factory()->create();
+        $context = app(TenantContext::class);
+        $context->setProject($caller);
+        $notifications = Mockery::mock(AnnouncementNotificationService::class);
+        $notifications->shouldReceive('send')->once()->andReturnUsing(function (Announcement $target) use ($member): array {
+            $this->assertSame($member->id, Member::query()->where('project_id', $target->project_id)->sole()->id);
+
+            return ['failed' => 0, 'line_failed' => 0];
+        });
+
+        (new SendAnnouncementNotificationJob($announcement->id))->handle($notifications);
+
+        $this->assertSame($caller->id, $context->projectId());
+        $this->assertFalse(Announcement::withoutGlobalScopes()->findOrFail($announcement->id)->notification_pending);
+    }
+
+    public function test_notification_failure_restores_callers_project_and_retains_retry(): void
+    {
+        $announcement = $this->announcement();
+        $caller = Project::factory()->create();
+        $context = app(TenantContext::class);
+        $context->setProject($caller);
+        $notifications = Mockery::mock(AnnouncementNotificationService::class);
+        $notifications->shouldReceive('send')->once()->andReturnUsing(function (Announcement $target) use ($context): never {
+            $this->assertSame((int) $target->project_id, $context->projectId());
+            throw new \RuntimeException('Provider unavailable');
+        });
+
+        try {
+            (new SendAnnouncementNotificationJob($announcement->id))->handle($notifications);
+            $this->fail('Provider failures must reach the worker.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Provider unavailable', $exception->getMessage());
+        }
+
+        $this->assertSame($caller->id, $context->projectId());
+        $this->assertTrue(Announcement::withoutGlobalScopes()->findOrFail($announcement->id)->notification_pending);
+    }
+
+    public function test_scheduled_coupon_issues_in_saved_project_and_restores_context(): void
+    {
+        Queue::fake();
+        $project = Project::factory()->create();
+        $member = Member::factory()->create(['project_id' => $project->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $delivery = CouponDelivery::create([
+            'project_id' => $project->id,
+            'coupon_id' => $coupon->id,
+            'delivery_type' => CouponDeliveryType::SCHEDULED_ALL,
+            'status' => CouponDeliveryStatus::SCHEDULED,
+            'send_notification' => false,
+        ]);
+        $caller = Project::factory()->create();
+        $context = app(TenantContext::class);
+        $context->setProject($caller);
+
+        (new SendScheduledCouponDeliveryJob($delivery->id))->handle(
+            app(MemberBenefitService::class), app(CouponDeliveryTargetService::class),
+        );
+
+        $this->assertSame($caller->id, $context->projectId());
+        $this->assertDatabaseHas('member_coupons', ['project_id' => $project->id, 'member_id' => $member->id, 'coupon_id' => $coupon->id]);
+        $this->assertSame(CouponDeliveryStatus::SENT, CouponDelivery::withoutGlobalScopes()->findOrFail($delivery->id)->status);
+    }
+
+    public function test_scheduled_announcement_resolves_audience_in_saved_project(): void
+    {
+        $announcement = $this->announcement([
+            'delivery_status' => Announcement::DELIVERY_STATUS_SCHEDULED,
+            'notification_pending' => false,
+            'send_notification' => false,
+            'delivery_type' => Announcement::DELIVERY_TYPE_SCHEDULED,
+            'audience_resolve_mode' => AnnouncementAudienceResolveMode::AT_SEND,
+            'target_member_ids' => null,
+        ]);
+        $member = Member::factory()->create(['project_id' => $announcement->project_id]);
+        $caller = Project::factory()->create();
+        $context = app(TenantContext::class);
+        $context->setProject($caller);
+        $notifications = Mockery::mock(AnnouncementNotificationService::class);
+        $notifications->shouldNotReceive('send');
+
+        (new SendScheduledAnnouncementJob($announcement->id))->handle(
+            $notifications, app(AnnouncementAdminService::class),
+        );
+
+        $this->assertSame($caller->id, $context->projectId());
+        $saved = Announcement::withoutGlobalScopes()->findOrFail($announcement->id);
+        $this->assertSame(Announcement::DELIVERY_STATUS_SENT, $saved->delivery_status);
+        $this->assertSame([$member->id], $saved->target_member_ids);
     }
 
     public function test_partial_provider_failure_does_not_complete_notification(): void
