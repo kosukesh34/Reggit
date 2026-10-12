@@ -136,17 +136,11 @@ class GoogleWalletPassService
         $rankLabel = (string) ($appearance['rank_label'] ?? $member->rank ?? '');
         $accountName = (string) ($user->name ?? '');
 
-        $issuerId = config('google_wallet.issuer_id');
-        $classSuffix = config('google_wallet.class_suffix', 'membership');
-        $classId = $issuerId.'.'.$classSuffix;
-        $objectId = $issuerId.'.'.$objectSuffix;
+        $classId = $this->classIdForProject($projectId);
+        $objectId = $this->objectIdForProject($objectSuffix, $projectId);
 
         $programLogoUri = $this->resolveProgramLogoUri($projectId > 0 ? $projectId : null);
         $heroImageUri = $this->resolveHeroImageUri($projectId > 0 ? $projectId : null);
-
-        if (! $this->ensureLoyaltyClassExists($classId, $organizationName, $programLogoUri)) {
-            return false;
-        }
 
         $maxLen = GoogleWalletApi::MAX_DISPLAY_LENGTH;
         $payloadParams = [
@@ -171,6 +165,19 @@ class GoogleWalletPassService
             return false;
         }
 
+        // Saved legacy passes keep their class; only new passes use tenant-specific IDs.
+        $legacyPayload = $walletObject;
+        unset($legacyPayload['id'], $legacyPayload['classId']);
+        $legacyId = config('google_wallet.issuer_id').'.'.$objectSuffix;
+        $legacy = Http::withToken($token)->patch(self::WALLET_OBJECTS_BASE.'/loyaltyObject/'.$legacyId, $legacyPayload);
+        $legacySucceeded = $legacy->successful() || $legacy->status() === 404;
+        if (! $legacySucceeded) {
+            Log::warning('google-wallet legacy object update failed', ['objectId' => $legacyId, 'status' => $legacy->status()]);
+        }
+        if (! $this->ensureLoyaltyClassExists($classId, $organizationName, $programLogoUri)) {
+            return false;
+        }
+
         $endpoint = self::WALLET_OBJECTS_BASE.'/loyaltyObject/'.$objectId;
         $update = Http::withToken($token)
             ->withHeaders(['Content-Type' => 'application/json'])
@@ -183,7 +190,7 @@ class GoogleWalletPassService
                 'points' => $points,
             ]);
 
-            return true;
+            return $legacySucceeded;
         }
 
         if ($update->status() !== 404) {
@@ -216,7 +223,7 @@ class GoogleWalletPassService
             'points' => $points,
         ]);
 
-        return true;
+        return $legacySucceeded;
     }
 
     /**
@@ -276,10 +283,8 @@ class GoogleWalletPassService
             return null;
         }
 
-        $issuerId = config('google_wallet.issuer_id');
-        $classSuffix = config('google_wallet.class_suffix', 'membership');
-        $classId = $issuerId.'.'.$classSuffix;
-        $objectId = $issuerId.'.'.$objectSuffix;
+        $classId = $this->classIdForProject($projectId);
+        $objectId = $this->objectIdForProject($objectSuffix, $projectId);
         $maxLen = GoogleWalletApi::MAX_DISPLAY_LENGTH;
 
         $programName = $this->payloadBuilder->truncateForWallet(
@@ -456,6 +461,18 @@ class GoogleWalletPassService
         }
 
         return $reasons;
+    }
+
+    private function classIdForProject(?int $projectId): string
+    {
+        return config('google_wallet.issuer_id').'.'.config('google_wallet.class_suffix', 'membership')
+            .($projectId !== null && $projectId > 0 ? '-project-'.$projectId : '');
+    }
+
+    private function objectIdForProject(string $suffix, ?int $projectId): string
+    {
+        return config('google_wallet.issuer_id').'.'.$suffix
+            .($projectId !== null && $projectId > 0 ? '-p'.$projectId : '');
     }
 
     private function loyaltyClassExistsOnServer(string $classId): bool
