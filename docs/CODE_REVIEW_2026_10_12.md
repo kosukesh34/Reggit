@@ -105,3 +105,20 @@ External integrations and production behavior were not exercised. Browser E2E is
 for these backend-only changes; the local contract and regression tests cover their outputs.
 Every PR must independently pass the repository's complete local merge gate on its final
 committed HEAD. A timeout or failed run is not accepted as validation.
+
+## Skills actually applied in the second pass
+
+- `i-have-adhd` and `ponytail` full: concise progress, smallest complete fixes.
+- `code-review-and-quality`: correctness, readability, architecture, authorization and
+  performance review of all three diffs, including an independent read-only reviewer.
+- `improve-codebase-architecture` and `codebase-design`: identify concrete friction,
+  retain existing interfaces and adapters, document before/after structure in a temp HTML report.
+- `laravel-best-practices`: existing route authorization, transaction and Eloquent patterns;
+  targeted regression tests, formatting and static analysis.
+- `vercel-react-best-practices`: limited static review of membership-hook cleanup and
+  realtime subscription lifecycle. No confirmed frontend issue or React change in this pass.
+
+Targeted validation: reservation authorization 31 tests / 151 assertions; payment
+settlement 49 / 275; outbox regressions 13 / 65. In isolated copies, restoring the old
+implementation failed all four new currency cases and all five new obsolete-notification
+cases. Full merge-gate results and final HEADs are recorded on each PR.
