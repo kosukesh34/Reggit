@@ -26,6 +26,7 @@
                 <a href="#features">できること</a>
                 <a href="#flow">導入の流れ</a>
                 <a href="#faq">よくある質問</a>
+                <a href="{{ route('help.index') }}">ヘルプ</a>
             </nav>
             <div class="lp-header__actions">
                 <a class="lp-login" href="{{ route('admin.login') }}">管理画面ログイン</a>
@@ -37,6 +38,7 @@
                     <a href="#features">できること</a>
                     <a href="#flow">導入の流れ</a>
                     <a href="#faq">よくある質問</a>
+                    <a href="{{ route('help.index') }}">ヘルプ</a>
                     <a href="{{ route('landing.register.email.show') }}">導入登録</a>
                     <a href="{{ route('admin.login') }}">管理画面ログイン</a>
                 </nav>
@@ -202,7 +204,7 @@
     <footer class="lp-footer">
         <div class="lp-container lp-footer__main">
             <div><a class="lp-brand" href="/" aria-label="Reggit トップへ"><img src="{{ asset('images/reggit-logo.png') }}" alt="" width="40" height="40"><span>Reggit</span></a><p>お店のためのLINEミニアプリ・管理システム</p></div>
-            <nav aria-label="フッターナビゲーション"><a href="#features">できること</a><a href="#flow">導入の流れ</a><a href="{{ route('demo.liff') }}">デモを体験する</a><a href="{{ route('admin.login') }}">管理画面ログイン</a></nav>
+            <nav aria-label="フッターナビゲーション"><a href="#features">できること</a><a href="#flow">導入の流れ</a><a href="{{ route('help.index') }}">ヘルプ・使い方</a><a href="{{ route('demo.liff') }}">デモを体験する</a><a href="{{ route('admin.login') }}">管理画面ログイン</a></nav>
         </div>
         <div class="lp-container lp-footer__bottom"><small>&copy; {{ date('Y') }} Reggit</small></div>
     </footer>
