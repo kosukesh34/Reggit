@@ -27,13 +27,16 @@ class SubmitLandingRegistrationUseCase
 
     public function handle(LandingRegistrationFormInput $input): LandingRegistrationCompleteView|LandingRegistrationStatusView
     {
-        $registration = $input->registration;
-        if ($registration->submitted_at !== null) {
-            return $this->completeBuilder->fromRegistration($registration, null);
-        }
+        $password = null;
+        $registration = DB::transaction(function () use ($input, &$password): LandingRegistration {
+            $registration = LandingRegistration::query()->lockForUpdate()->findOrFail($input->registration->id);
+            if ($registration->submitted_at === null) {
+                $password = Str::random(12);
+                $this->provision($registration, $input, $password);
+            }
 
-        $password = Str::random(12);
-        $this->provision($registration, $input, $password);
+            return $registration;
+        });
         $view = $this->completeBuilder->fromRegistration($registration, $password);
         $this->sendReadyMail($registration->email, $view);
 
@@ -50,31 +53,29 @@ class SubmitLandingRegistrationUseCase
         $storeName = $input->formPayload['store_name'];
         $liffUrl = url('/liff/'.$projectKey);
 
-        DB::transaction(function () use ($registration, $input, $password, $projectKey, $loginId, $storeName, $liffUrl): void {
-            $this->projectProvisioningService->createWithConfig(
-                [
-                    'project_key' => $projectKey,
-                    'name' => $storeName,
-                    'is_active' => true,
-                    'plan' => $input->formPayload['plan'] === LandingInquiryPlan::NATIVE
-                        ? ProjectPlan::PREMIUM
-                        : ProjectPlan::NORMAL,
-                ],
-                $this->settingsPayload($storeName, $liffUrl),
-                [
-                    'login_id' => $loginId,
-                    'email' => $registration->email,
-                    'password' => $password,
-                    'name' => $input->formPayload['contact_name'],
-                ],
-            );
-            $project = Project::query()->where('project_key', $projectKey)->firstOrFail();
-            $registration->fill($input->formPayload);
-            $registration->project_id = $project->id;
-            $registration->admin_login_id = $loginId;
-            $registration->submitted_at = now();
-            $registration->save();
-        });
+        $this->projectProvisioningService->createWithConfig(
+            [
+                'project_key' => $projectKey,
+                'name' => $storeName,
+                'is_active' => true,
+                'plan' => $input->formPayload['plan'] === LandingInquiryPlan::NATIVE
+                    ? ProjectPlan::PREMIUM
+                    : ProjectPlan::NORMAL,
+            ],
+            $this->settingsPayload($storeName, $liffUrl),
+            [
+                'login_id' => $loginId,
+                'email' => $registration->email,
+                'password' => $password,
+                'name' => $input->formPayload['contact_name'],
+            ],
+        );
+        $project = Project::query()->where('project_key', $projectKey)->firstOrFail();
+        $registration->fill($input->formPayload);
+        $registration->project_id = $project->id;
+        $registration->admin_login_id = $loginId;
+        $registration->submitted_at = now();
+        $registration->save();
     }
 
     /**

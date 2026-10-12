@@ -10,6 +10,9 @@ use App\Mail\LandingVerificationMail;
 use App\Models\AdminUser;
 use App\Models\LandingRegistration;
 use App\Models\Project;
+use App\UseCases\Landing\Data\LandingRegistrationCompleteView;
+use App\UseCases\Landing\Data\LandingRegistrationFormInput;
+use App\UseCases\Landing\SubmitLandingRegistrationUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Mail;
@@ -158,6 +161,36 @@ class LandingRegistrationTest extends TestCase
             'password' => $password,
         ])->assertRedirect();
         $this->assertAuthenticated('admin');
+    }
+
+    public function test_stale_registration_submission_does_not_issue_another_project(): void
+    {
+        Mail::fake();
+        $registration = LandingRegistration::query()->create([
+            'email' => 'once@example.com',
+            'email_verified_at' => now(),
+        ]);
+        $stale = LandingRegistration::query()->findOrFail($registration->id);
+        $payload = [
+            'store_name' => 'One shop',
+            'contact_name' => 'Owner',
+            'phone' => '03-1234-5678',
+            'plan' => LandingInquiryPlan::LINE,
+        ];
+        $useCase = app(SubmitLandingRegistrationUseCase::class);
+        $first = $useCase->handle(new LandingRegistrationFormInput($registration, $payload));
+        $projectCount = Project::query()->count();
+        $adminCount = AdminUser::query()->count();
+        $second = $useCase->handle(new LandingRegistrationFormInput($stale, $payload));
+
+        $this->assertInstanceOf(LandingRegistrationCompleteView::class, $first);
+        $this->assertInstanceOf(LandingRegistrationCompleteView::class, $second);
+        $this->assertNotNull($first->password);
+        $this->assertNull($second->password);
+        $this->assertSame($first->loginId, $second->loginId);
+        $this->assertSame($projectCount, Project::query()->count());
+        $this->assertSame($adminCount, AdminUser::query()->count());
+        Mail::assertSent(LandingReadyMail::class, 1);
     }
 
     public function test_ネイティブ希望ならプレミアムプランで発行すること(): void
