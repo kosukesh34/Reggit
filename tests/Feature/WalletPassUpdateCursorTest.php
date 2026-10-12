@@ -7,7 +7,10 @@ use App\Models\Project;
 use App\Models\WalletPassRegistration;
 use App\Models\WalletPassUpdate;
 use App\Services\AppleWalletPasskitService;
+use App\Services\WalletPassAuthTokenService;
 use App\Services\WalletPassSyncService;
+use App\UseCases\Member\WalletPass\Data\PasskitListUpdatedSerialsInput;
+use App\UseCases\Member\WalletPass\PasskitListUpdatedSerialsUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\TestWith;
@@ -97,6 +100,26 @@ class WalletPassUpdateCursorTest extends TestCase
         $this->assertSame(['member-'.$member->id], $result['serialNumbers']);
         $this->assertSame('v2:0', $result['lastUpdated']);
         $this->assertSame([], $this->updates($result['lastUpdated'])['serialNumbers']);
+    }
+
+    public function test_unchanged_passes_return_no_content_and_later_updates_return_serials(): void
+    {
+        $member = $this->member();
+        $sync = app(WalletPassSyncService::class);
+        $sync->markMemberUpdated($member);
+        $token = app(WalletPassAuthTokenService::class)->createForMember($member);
+        $useCase = app(PasskitListUpdatedSerialsUseCase::class);
+        $request = fn (?string $cursor) => new PasskitListUpdatedSerialsInput('ApplePass '.$token, 'device', self::TYPE, $cursor);
+        $first = $useCase->handle($request(null));
+        $this->assertSame(200, $first->status);
+        $cursor = $first->json['lastUpdated'];
+        $unchanged = $useCase->handle($request($cursor));
+        $this->assertSame(204, $unchanged->status);
+        $this->assertNull($unchanged->json);
+        $sync->markMemberUpdated($member);
+        $updated = $useCase->handle($request($cursor));
+        $this->assertSame(200, $updated->status);
+        $this->assertSame(['member-'.$member->id], $updated->json['serialNumbers']);
     }
 
     public function test_rollback_preserves_marker_and_counter(): void
