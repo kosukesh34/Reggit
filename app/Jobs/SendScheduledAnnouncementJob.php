@@ -3,9 +3,11 @@
 namespace App\Jobs;
 
 use App\Models\Announcement;
+use App\Models\Project;
 use App\Services\Admin\AnnouncementAdminService;
 use App\Services\AnnouncementNotificationService;
 use App\Services\AnnouncementStoreAudience;
+use App\Util\TenantContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -35,25 +37,30 @@ class SendScheduledAnnouncementJob implements ShouldQueue
                 return null;
             }
 
-            if (! app(AnnouncementStoreAudience::class)->authorizedForSend($locked)) {
-                $locked->update(['delivery_status' => 'held']);
-                Log::warning('配信を保留しました。作成者の店舗権限を確認してください。', ['announcement_id' => $locked->id]);
+            return app(TenantContext::class)->runForProject(
+                Project::query()->findOrFail($locked->project_id),
+                function () use ($locked, $announcementAdminService): ?Announcement {
+                    if (! app(AnnouncementStoreAudience::class)->authorizedForSend($locked)) {
+                        $locked->update(['delivery_status' => 'held']);
+                        Log::warning('配信を保留しました。作成者の店舗権限を確認してください。', ['announcement_id' => $locked->id]);
 
-                return null;
-            }
-            $announcementAdminService->finalizeAudienceForSend($locked);
-            $locked = $locked->fresh() ?? $locked;
-            $announcementAdminService->issueDeliveryCouponIfSet($locked);
-            $shouldNotify = $locked->send_notification !== false;
-            $locked->update([
-                'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
-                'published_at' => $locked->published_at ?? now(),
-                'sent_at' => now(),
-                'notification_pending' => $shouldNotify,
-                'notification_retry_at' => $shouldNotify ? now() : null,
-            ]);
+                        return null;
+                    }
+                    $announcementAdminService->finalizeAudienceForSend($locked);
+                    $locked = $locked->fresh() ?? $locked;
+                    $announcementAdminService->issueDeliveryCouponIfSet($locked);
+                    $shouldNotify = $locked->send_notification !== false;
+                    $locked->update([
+                        'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+                        'published_at' => $locked->published_at ?? now(),
+                        'sent_at' => now(),
+                        'notification_pending' => $shouldNotify,
+                        'notification_retry_at' => $shouldNotify ? now() : null,
+                    ]);
 
-            return $locked->fresh() ?? $locked;
+                    return $locked->fresh() ?? $locked;
+                },
+            );
         });
         if ($announcement === null || ! $announcement->notification_pending) {
             return;

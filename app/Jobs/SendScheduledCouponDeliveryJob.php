@@ -5,8 +5,10 @@ namespace App\Jobs;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
+use App\Models\Project;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberBenefitService;
+use App\Util\TenantContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -39,7 +41,10 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
                 return;
             }
 
-            $this->send($delivery, $memberBenefitService, $targetService);
+            app(TenantContext::class)->runForProject(
+                Project::query()->findOrFail($delivery->project_id),
+                fn () => $this->send($delivery, $memberBenefitService, $targetService),
+            );
         });
     }
 
