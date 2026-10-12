@@ -15,7 +15,7 @@ class CouponFactory extends Factory
     {
         return [
             'project_id' => 1,
-            'code' => strtoupper($this->faker->bothify('CPN###')),
+            'code' => $this->faker->unique()->bothify('CPN##########'),
             'name' => $this->faker->words(3, true),
             'image_url' => $this->faker->optional()->imageUrl(640, 480),
             'image_fit' => Coupon::IMAGE_FIT_COVER,

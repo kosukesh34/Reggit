@@ -36,7 +36,8 @@ class RootRouteTest extends TestCase
         $response->assertSee('iOS / Android');
         $response->assertSee('スタンプ');
         $response->assertSee('画面はデモデータを使用しています');
-        $response->assertSee('メール認証へ進む');
+        $response->assertSee('認証メールを送る');
+        $response->assertSee('name="email"', false);
     }
 
     public function test_root_ログイン済みもランディングページを表示すること(): void

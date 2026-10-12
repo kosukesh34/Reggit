@@ -35,6 +35,10 @@ class LandingRegistrationVerifyController extends Controller
             ]);
         }
 
+        if ($view->actionUrl !== null) {
+            return redirect()->to($view->actionUrl)->with('status', $view->title);
+        }
+
         return view('landing.status', ['view' => $view]);
     }
 }

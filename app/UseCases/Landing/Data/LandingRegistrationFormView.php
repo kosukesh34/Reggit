@@ -6,7 +6,7 @@ namespace App\UseCases\Landing\Data;
 class LandingRegistrationFormView
 {
     /**
-     * @param  list<array{value: string, label: string}>  $planOptions
+     * @param  list<array{value: string, label: string, description: string}>  $planOptions
      */
     public function __construct(
         public readonly string $formAction,
