@@ -39,8 +39,9 @@ class OrderController extends BaseApiController
         }
     }
 
-    public function show(Request $request, int $id)
+    public function show(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $order = $this->handler->show($request, $id);
 
@@ -77,8 +78,9 @@ class OrderController extends BaseApiController
         }
     }
 
-    public function cancelUnpaid(Request $request, int $id)
+    public function cancelUnpaid(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $order = $this->handler->cancelUnpaid($request, $id);
 

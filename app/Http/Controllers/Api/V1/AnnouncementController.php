@@ -37,8 +37,9 @@ class AnnouncementController extends BaseApiController
         }
     }
 
-    public function markRead(Request $request, int $id)
+    public function markRead(Request $request)
     {
+        $id = (int) $request->route('id');
         try {
             $result = $this->markReadUseCase->handle(new AnnouncementMarkReadInput(
                 $this->userService->getOrCreateUser($request),
