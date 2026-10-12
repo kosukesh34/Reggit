@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Http\Support\OrderRequestHandler;
 use App\Models\ApiToken;
+use App\Models\Coupon;
+use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Order;
 use App\Models\Project;
@@ -17,6 +19,7 @@ use App\UseCases\Lottery\PlayLotteryEntitlementUseCase;
 use App\UseCases\Product\ProductShowUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class CustomerApiRouteTargetTest extends TestCase
@@ -32,7 +35,38 @@ class CustomerApiRouteTargetTest extends TestCase
             }
         }
 
+        foreach (['device', 'play', 'play-alias', 'notify', 'notify-alias'] as $operation) {
+            $cases[$operation.'-liff'] = [$operation, 'liff'];
+        }
+
         return $cases;
+    }
+
+    #[TestWith(['shop-alpha'])]
+    #[TestWith(['71'])]
+    #[TestWith([null])]
+    public function test_coupon_redemption_changes_only_the_requested_coupon(?string $key): void
+    {
+        $project = Project::factory()->create(['project_key' => $key ?? 'legacy-shop']);
+        $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U00000000000000000000000000000071']);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'used_count' => 0]);
+        $issued = MemberCoupon::withoutEvents(fn () => MemberCoupon::factory()->create([
+            'id' => 501, 'project_id' => $project->id, 'member_id' => $member->id,
+            'coupon_id' => $coupon->id, 'status' => MemberCoupon::STATUS_UNUSED, 'used_at' => null,
+        ]));
+        $decoy = MemberCoupon::withoutEvents(fn () => MemberCoupon::factory()->create([
+            'id' => 71, 'project_id' => $project->id, 'member_id' => $member->id,
+            'coupon_id' => $coupon->id, 'status' => MemberCoupon::STATUS_UNUSED, 'used_at' => null,
+        ]));
+        $token = ApiToken::issue($project, 'route-test');
+        $this->withHeaders(['Authorization' => 'Bearer '.$token['plain'], 'X-Line-User-Id' => $user->line_user_id])
+            ->postJson('/api/v1'.($key === null ? '' : '/'.$key).'/member-coupons/501/redeem')
+            ->assertOk()->assertJsonPath('data.id', 501);
+        $this->assertSame(MemberCoupon::STATUS_USED, $issued->fresh()->status);
+        $this->assertSame(MemberCoupon::STATUS_UNUSED, $decoy->fresh()->status);
+        $this->assertNull($decoy->fresh()->used_at);
+        $this->assertSame(1, $coupon->fresh()->used_count);
     }
 
     #[DataProvider('routes')]
@@ -61,7 +95,7 @@ class CustomerApiRouteTargetTest extends TestCase
         }
         $this->mock(DeviceOnceCouponService::class, fn ($mock) => $mock->shouldNotReceive('claimById'));
         $method = in_array($operation, ['product', 'order'], true) ? 'GET' : 'POST';
-        $this->json($method, '/api/v1'.($key === null ? '' : '/'.$key).$paths[$operation])->assertNotFound();
+        $this->json($method, ($key === 'liff' ? '/api' : '/api/v1'.($key === null ? '' : '/'.$key)).$paths[$operation])->assertNotFound();
     }
 
     #[DataProvider('routes')]
@@ -70,7 +104,7 @@ class CustomerApiRouteTargetTest extends TestCase
         $project = Project::factory()->create(['project_key' => $key ?? 'legacy-shop']);
         $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U00000000000000000000000000000071']);
         $token = ApiToken::issue($project, 'route-test');
-        $this->withHeaders(['Authorization' => 'Bearer '.$token['plain'], 'X-Line-User-Id' => $user->line_user_id]);
+        $this->withHeaders(['Authorization' => 'Bearer '.$token['plain'], 'X-Line-User-Id' => $user->line_user_id, 'X-Project-Key' => $project->project_key]);
         $id = 501;
         $method = 'post';
         switch ($operation) {
@@ -108,7 +142,7 @@ class CustomerApiRouteTargetTest extends TestCase
                 $path = ($operation === 'notify' ? '/member-lottery/' : '/members/me/lottery/').$id.'/notify-win';
                 $this->mock(NotifyLotteryWinUseCase::class, fn ($mock) => $mock->shouldReceive('handle')->once()->with(\Mockery::on(fn ($actual) => $actual->id === $user->id), $id)->andReturnNull());
         }
-        $response = $this->json(strtoupper($method), '/api/v1'.($key === null ? '' : '/'.$key).$path);
+        $response = $this->json(strtoupper($method), ($key === 'liff' ? '/api' : '/api/v1'.($key === null ? '' : '/'.$key)).$path);
         $response->assertOk()->assertJsonPath('success', true);
     }
 }
