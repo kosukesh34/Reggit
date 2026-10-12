@@ -65,7 +65,7 @@ class FakePaymentGateway implements PaymentGateway
     public function constructWebhookEvent(string $payload, string $sigHeader, string $secret): array
     {
         return $this->event ?: [
-            'type' => 'payment_intent.succeeded',
+            'type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => [],
             'status' => 'succeeded',
             'amount' => 0,

@@ -142,7 +142,7 @@ class OrderTransactionRetryTest extends TestCase
         $order = $this->order();
         $order->forceFill(['payment_method' => PaymentMethod::STRIPE, 'status' => OrderStatus::PENDING])->save();
         $gateway = new FakePaymentGateway;
-        $gateway->event = ['type' => 'payment_intent.succeeded',
+        $gateway->event = ['type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id], 'amount' => 1000];
         $gateway->intent = ['status' => 'succeeded', 'amount' => 1000, 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id]];
@@ -198,7 +198,7 @@ class OrderTransactionRetryTest extends TestCase
         $order = $this->order();
         $order->forceFill(['payment_method' => PaymentMethod::STRIPE, 'status' => OrderStatus::PENDING])->save();
         $gateway = new FakePaymentGateway;
-        $gateway->event = ['type' => 'payment_intent.succeeded',
+        $gateway->event = ['type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id], 'amount' => 1000];
         $this->mock(OrderNotificationService::class)->shouldNotReceive('notifyConfirmed');
         $webhook = new PaymentWebhookUseCase($gateway, app(OrderRepository::class),
