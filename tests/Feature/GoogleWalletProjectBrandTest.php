@@ -88,7 +88,8 @@ class GoogleWalletProjectBrandTest extends TestCase
         });
         $this->assertSame($legacyStatus !== 503, app(GoogleWalletPassService::class)->syncLoyaltyObjectForMember($member));
         Http::assertSent(fn (Request $request) => $request->method() === 'PATCH'
-            && str_ends_with($request->url(), '/'.$legacyId) && ! isset($request['classId']) && ! isset($request['id']));
+            && str_ends_with($request->url(), '/'.$legacyId) && ! isset($request['classId']) && ! isset($request['id'])
+            && isset($request['loyaltyPoints']['balance']['int']));
         Http::assertSent(fn (Request $request) => $request->method() === 'PUT'
             && str_ends_with($request->url(), '/'.$newId)
             && $request['classId'] === '123.membership-project-'.$project->id);
