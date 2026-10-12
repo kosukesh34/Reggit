@@ -32,16 +32,16 @@ class WalletPassSyncService
             DB::table('wallet_pass_update_counters')->where('pass_type_identifier', $passTypeId)
                 ->update(['revision' => $revision]);
             WalletPassUpdate::query()->updateOrCreate(
-            [
-                'member_id' => (int) $member->id,
-                'pass_type_identifier' => $passTypeId,
-            ],
-            [
-                'project_id' => (int) $member->project_id,
-                'serial_number' => $serial,
-                'updated_at' => now(),
-                'revision' => $revision,
-            ]
+                [
+                    'member_id' => (int) $member->id,
+                    'pass_type_identifier' => $passTypeId,
+                ],
+                [
+                    'project_id' => (int) $member->project_id,
+                    'serial_number' => $serial,
+                    'updated_at' => now(),
+                    'revision' => $revision,
+                ]
             );
         }, 3);
 
