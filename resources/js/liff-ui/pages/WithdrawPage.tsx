@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { reggitApi } from "../services/reggitApi";
 
@@ -27,7 +26,6 @@ export function WithdrawPage() {
       <Button className="native-button--danger" variant="solid" disabled={busy} onClick={() => void runWithdraw()}>
         {busy ? "処理中…" : "退会する"}
       </Button>
-      <Link to="/more">戻る</Link>
     </div>
   );
 }

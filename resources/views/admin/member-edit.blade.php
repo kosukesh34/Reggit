@@ -29,7 +29,7 @@
 <div class="card">
     <div class="card-header card-header-with-action">
         <h3 class="card-title"><i class="fas fa-user-edit"></i> 会員編集</h3>
-        <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> 詳細に戻る</a>
+
     </div>
     <div class="card-body">
         <div class="settings-category-tabs" role="tablist" aria-label="会員編集の項目" data-member-edit-tabs>
@@ -240,7 +240,7 @@
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>変更を保存</button>
-                <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}" class="btn btn-secondary">キャンセル</a>
+                <x-back-link :href="admin_route('admin.members.detail', ['id' => $view->member->id])" label="キャンセル" />
             </div>
             </div>
         </form>

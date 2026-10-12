@@ -83,7 +83,7 @@
                 </button>
             </form>
             @endif
-            
+
             <div class="quick-actions">
                 <h4><i class="fas fa-bolt"></i> クイックアクション</h4>
                 <div class="quick-action-buttons">
@@ -96,7 +96,7 @@
                         </button>
                     </form>
                     @endif
-                    
+
                     @if($order->status === 'confirmed')
                     <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
@@ -106,7 +106,7 @@
                         </button>
                     </form>
                     @endif
-                    
+
                     @if($order->status === 'preparing')
                     <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
@@ -116,7 +116,7 @@
                         </button>
                     </form>
                     @endif
-                    
+
                     @if($order->status === 'ready')
                     <form action="{{ admin_route('admin.orders.complete', ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
@@ -127,7 +127,7 @@
                     @endif
                 </div>
             </div>
-            
+
             <div class="status-selector">
                 <h4><i class="fas fa-cog"></i> ステータス変更</h4>
                 <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST">
@@ -183,9 +183,5 @@
     </table>
 </div>
 
-<div class="form-actions">
-    <a href="{{ admin_route('admin.orders') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> 戻る
-    </a>
-</div>
+
 @endsection

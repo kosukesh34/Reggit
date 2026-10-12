@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowLeft, Check, ExternalLink, RotateCcw, Save } from 'lucide-react';
+import { Check, ExternalLink, RotateCcw, Save } from 'lucide-react';
 import { AdminSidebar } from './components/AdminSidebar';
 import { exposeAdminLegacyGlobals } from '../shared/utils/exposeAdminLegacyGlobals';
 import { MemoryRouter } from 'react-router-dom';
@@ -27,7 +27,6 @@ type DesignerDomConfig = {
   tabSettings: Record<string, unknown>;
   customCss: string;
   menuItems: unknown[];
-  backUrl: string;
 };
 
 const memberCardDesignByTemplate: Record<AppCustomization['membership']['template'], string> = {
@@ -65,7 +64,6 @@ function readDesignerConfigFromDom(): DesignerDomConfig {
       tabSettings: {},
       customCss: '',
       menuItems: [],
-      backUrl: '',
     };
   }
   try {
@@ -78,7 +76,6 @@ function readDesignerConfigFromDom(): DesignerDomConfig {
       tabSettings: (parsed.tabSettings as Record<string, unknown>) ?? {},
       customCss: String(parsed.customCss ?? ''),
       menuItems: Array.isArray(parsed.menuItems) ? parsed.menuItems : [],
-      backUrl: String(parsed.backUrl ?? ''),
     };
   } catch {
     return {
@@ -89,7 +86,6 @@ function readDesignerConfigFromDom(): DesignerDomConfig {
       tabSettings: {},
       customCss: '',
       menuItems: [],
-      backUrl: '',
     };
   }
 }
@@ -271,7 +267,6 @@ function AdminCustomizeHost({ config }: { config: DesignerDomConfig }) {
     <div className="reggit-admin-liff-ui">
       <div className="reggit-admin-liff-ui__toolbar">
         <div className="reggit-admin-liff-ui__toolbar-title">
-          <a href={config.backUrl || '#'} aria-label="設定へ戻る"><ArrowLeft size={17} /></a>
           <div><span>LIFFデザイン</span><strong>{activeStore.storeName}</strong></div>
         </div>
         <div className="reggit-admin-liff-ui__toolbar-actions">

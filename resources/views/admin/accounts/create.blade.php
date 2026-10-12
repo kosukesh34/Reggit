@@ -5,7 +5,7 @@
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
-    <a href="{{ route("{$view->routePrefix}.accounts.index", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}">アカウント管理</a>
+    <a href="{{ route($view->routePrefix.'.accounts.index', $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}">アカウント管理</a>
     <span class="breadcrumb-sep">/</span>
     <span>新規作成</span>
 </nav>
@@ -66,7 +66,7 @@
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">作成</button>
-                <a href="{{ route("{$view->routePrefix}.accounts.index", $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : []) }}" class="btn btn-secondary">キャンセル</a>
+                <x-back-link :href="route($view->routePrefix.'.accounts.index', $view->routePrefix === 'admin' ? ['project_key' => request()->route('project_key')] : [])" label="キャンセル" />
             </div>
         </form>
     </div>

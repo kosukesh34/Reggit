@@ -1,0 +1,15 @@
+.main-content .content-header { border-bottom: 1px solid #e3eaf0; }
+.main-content .card { border-radius: 14px; border-color: #e0e7ec; box-shadow: 0 2px 8px #183d4b05; }
+.main-content .card-header { border-radius: 14px 14px 0 0; }
+.main-content .btn, .admin-login-page .btn { min-height: 44px; border-radius: 10px; }
+.main-content .btn-sm, .main-content .btn-action { min-height: 36px; }
+.main-content .form-control, .admin-login-page .form-control { border-radius: 10px; }
+.main-content :is(a, button, input, select, textarea):focus-visible, .admin-login-page :is(a, button, input):focus-visible { outline: 3px solid #2479a8; outline-offset: 3px; }
+.main-content .form-actions { flex-wrap: wrap; gap: 10px; }
+.admin-login-box > .web-page-navigation { margin-bottom: 24px; }
+.sidebar-toggle { width: 44px; height: 44px; border-radius: 12px; }
+.main-content .breadcrumb { color: #5e7581; font-size: 13px; line-height: 1.7; flex-wrap: wrap; }
+@media (max-width: 640px) {
+    .main-content .btn-sm, .main-content .btn-action { min-height: 44px; }
+    .main-content .content-header { align-items: flex-start; gap: 12px; }
+}

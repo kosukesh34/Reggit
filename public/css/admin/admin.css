@@ -1,6 +1,7 @@
+@import url('../web-ui.css?v=1');
 /* 管理画面スタイル：コンポーネントを @import で読み込み（各ファイル500行以内） */
 @import url('components/01-base-sidebar-nav.css');
-@import url('components/01b-alerts-cards-buttons.css');
+@import url('components/01b-alerts-cards-buttons.css?v=navigation1');
 @import url('components/02-main-tables.css');
 @import url('components/03-tables-forms-dashboard.css');
 @import url('components/04-forms-pages.css');
@@ -13,6 +14,7 @@
 @import url('components/11-member-detail.css?v=member-detail5');
 @import url('components/12-help-manual.css');
 @import url('components/13-smaregi-theme.css');
+@import url('components/15-navigation-polish.css?v=1');
 
 /* Store context stays in the global header; settings live in the settings navigation. */
 .admin-store-switcher { position: relative; font-size: 12px; color: inherit; }

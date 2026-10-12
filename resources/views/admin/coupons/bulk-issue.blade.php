@@ -104,7 +104,7 @@
             <div class="ad-delivery-actions" aria-label="最終確認へ進む">
                     <div id="deliveryFormError" class="ad-form-error" role="alert" hidden></div>
                     <div class="ad-form-footer">
-                        <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary">キャンセル</a>
+                        <x-back-link :href="admin_route('admin.coupons')" label="キャンセル" />
                         <button type="submit" class="btn btn-primary ad-submit no-loading">
                             <span><i class="fas fa-paper-plane" aria-hidden="true"></i> 配信内容を確認する</span>
                             <i class="fas fa-arrow-right" aria-hidden="true"></i>

@@ -2,6 +2,7 @@
 <html lang="ja">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>パスワード設定 - Reggit</title><link rel="stylesheet" href="{{ asset('css/admin/admin.css') }}"></head>
 <body class="admin-login-page"><main class="admin-login-box">
+<nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="$mode === 'change' ? route('admin.root') : route('admin.login')" :label="$mode === 'change' ? '管理画面へ戻る' : 'ログイン画面へ戻る'" /></nav>
 <h1>{{ $mode === 'change' ? 'パスワード変更' : 'パスワード再設定' }}</h1>
 @if(session('status'))<div class="alert alert-success">{{ session('status') }}</div>@endif
 @if($errors->any())<div class="alert alert-error">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
@@ -20,5 +21,5 @@
 @endif
 <button class="btn btn-primary" type="submit">{{ $mode === 'forgot' ? '再設定リンクを送信' : 'パスワードを変更' }}</button>
 </form>
-<p><a href="{{ route('admin.login') }}">管理画面に戻る</a></p>
+<p></p>
 </main></body></html>

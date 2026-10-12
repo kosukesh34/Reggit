@@ -13,7 +13,7 @@
 <div class="card card-mb-24">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-tags"></i> 新規カテゴリ</h3>
-        <a href="{{ admin_route('admin.gallery.items') }}" class="btn btn-secondary btn-sm"><i class="fas fa-images"></i> 画像一覧へ</a>
+
     </div>
     <div class="card-body">
         <form method="POST" action="{{ admin_route('admin.gallery.categories.store') }}" class="form-inline form-inline-flex">

@@ -65,9 +65,11 @@
     @if($view->mode === 'native' && $view->nativeSchemeUrl)
         <meta http-equiv="refresh" content="0;url={{ $view->nativeSchemeUrl }}">
     @endif
+<link rel="stylesheet" href="{{ asset('css/web-ui.css') }}?v=1">
 </head>
 <body>
     <div class="panel">
+        <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="route('help.index')" label="ヘルプへ" /></nav>
         @if($view->mode === 'error')
             <h1>開けませんでした</h1>
             <p class="error">{{ $view->errorMessage }}</p>

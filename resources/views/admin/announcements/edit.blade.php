@@ -64,7 +64,7 @@
     </div>
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">更新</button>
-        <a href="{{ admin_route('admin.announcements') }}" class="btn btn-secondary">キャンセル</a>
+        <x-back-link :href="admin_route('admin.announcements')" label="キャンセル" />
     </div>
 </form>
 @endsection

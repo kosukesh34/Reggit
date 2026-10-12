@@ -182,12 +182,14 @@
     background: rgba(15, 23, 42, 0.4);
     z-index: 999;
     opacity: 0;
+    pointer-events: none;
     transition: opacity var(--transition-slow);
     backdrop-filter: blur(2px);
 }
 
 .sidebar-overlay.is-visible {
     opacity: 1;
+    pointer-events: auto;
 }
 
 /* ===== レスポンシブ: タブレット ===== */

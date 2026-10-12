@@ -50,7 +50,7 @@
                 </label>
                 <small class="form-text text-muted">必須の場合、会員登録していないと順番待ちに登録できません。</small>
             </div>
-            <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button> <a href="{{ admin_route('admin.queue') }}" class="btn btn-secondary">順番待ち一覧へ</a></div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button> <x-back-link :href="admin_route('admin.queue')" label="順番待ち一覧へ戻る" /></div>
         </div>
     </div>
 </form>

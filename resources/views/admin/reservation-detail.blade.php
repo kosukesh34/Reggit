@@ -23,9 +23,7 @@
             <i class="fas fa-pen"></i> 編集
         </a>
         @endif
-        <a href="{{ admin_route('admin.reservations') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> 一覧に戻る
-        </a>
+
     </div>
 </div>
 

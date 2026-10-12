@@ -53,9 +53,7 @@
             <label class="form-label">変更項目</label>
             <div>{{ $log->getChangedFieldsLabel() }}</div>
         </div>
-        <div class="form-actions">
-            <a href="{{ $indexUrl }}" class="btn btn-secondary">戻る</a>
-        </div>
+
     </div>
 </div>
 @endsection

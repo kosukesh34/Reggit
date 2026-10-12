@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v=60">
+    <link rel="stylesheet" href="{{ asset('css/web-ui.css') }}?v=1">
     @stack('styles')
 </head>
 <body class="lp lp-sub">
@@ -26,6 +27,9 @@
         </div>
     </header>
     <main>
+        <nav @class(['lp-container web-page-navigation lp-page-navigation', 'lp-page-navigation--help' => request()->routeIs('help.*')]) aria-label="ページの移動">
+            <x-back-link :href="request()->routeIs('help.show') ? route('help.index') : url('/')" :label="request()->routeIs('help.show') ? 'ヘルプ一覧へ戻る' : 'Reggit トップへ戻る'" />
+        </nav>
         @yield('content')
     </main>
     <footer class="lp-footer">

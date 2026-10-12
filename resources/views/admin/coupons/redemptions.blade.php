@@ -18,7 +18,7 @@
         <p class="page-header-desc">{{ $view->coupon->name ?? $view->coupon->code }}</p>
     </div>
     <div class="page-header-actions">
-        <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary">一覧へ戻る</a>
+
     </div>
 </div>
 

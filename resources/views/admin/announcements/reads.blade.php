@@ -41,7 +41,7 @@
             </div>
         </div>
         <div class="page-header-actions">
-            <a href="{{ admin_route('admin.announcements') }}" class="btn btn-secondary">一覧へ戻る</a>
+
         </div>
     </div>
 

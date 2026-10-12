@@ -25,7 +25,7 @@
                 <input type="number" name="announcement_default_expiry_days" class="form-control" value="{{ old('announcement_default_expiry_days', $view->defaultExpiryDays) }}" min="0" max="365">
                 <small class="form-text text-muted">0 の場合は掲載終了日を設定しません。</small>
             </div>
-            <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button> <a href="{{ admin_route('admin.announcements') }}" class="btn btn-secondary">お知らせ一覧へ</a></div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button> <x-back-link :href="admin_route('admin.announcements')" label="お知らせ一覧へ戻る" /></div>
         </div>
     </div>
 </form>
