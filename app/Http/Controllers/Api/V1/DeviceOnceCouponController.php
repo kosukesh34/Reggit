@@ -24,8 +24,9 @@ class DeviceOnceCouponController extends BaseApiController
         ]);
     }
 
-    public function claim(Request $request, int $coupon): JsonResponse
+    public function claim(Request $request): JsonResponse
     {
+        $coupon = (int) $request->route('coupon');
         try {
             $issued = $this->service->claimById(
                 $this->userService->getOrCreateUser($request),
