@@ -14,6 +14,7 @@
 </head>
 <body class="admin-login-page">
     <div class="admin-login-box">
+        <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="route('admin.login')" label="プロジェクト選択へ戻る" /></nav>
         <h1><i class="fas fa-cog"></i> {{ $heading }}</h1>
         <p class="admin-login-lead">IDとパスワードでログインしてください</p>
 

@@ -12,9 +12,11 @@
         h1 { margin: 0 0 0.75rem; font-size: 1.25rem; }
         p { margin: 0; line-height: 1.7; }
     </style>
+<link rel="stylesheet" href="{{ asset('css/web-ui.css') }}?v=1">
 </head>
 <body>
     <main id="liff-placeholder" aria-labelledby="liff-placeholder-title">
+        <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="route('help.index')" label="ヘルプへ" /></nav>
         <h1 id="liff-placeholder-title">ただいま準備中です</h1>
         <p>新しいアプリ体験を準備しています。公開までしばらくお待ちください。</p>
     </main>

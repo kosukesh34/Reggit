@@ -10,6 +10,7 @@
 </head>
 <body class="admin-login-page onboarding-page">
     <div class="onboarding-shell">
+        <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="url('/')" label="Reggit トップへ戻る" /></nav>
         <header class="onboarding-header">
             <p class="onboarding-brand"><i class="fas fa-store"></i> Reggit</p>
             <h1 class="onboarding-title">プロジェクト入力ホーム</h1>

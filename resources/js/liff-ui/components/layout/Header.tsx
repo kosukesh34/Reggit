@@ -9,7 +9,6 @@ import {
   type NativeTab,
 } from "../../native/nativeConfig";
 
-import { useNativeNavigation } from "../../native/NativeNavigation";
 
 function validColor(value: string | undefined): string {
   return value !== undefined && /^#[0-9a-f]{6}$/i.test(value) ? value : "#ffffff";
@@ -36,7 +35,6 @@ function DrawerTab({ tab, onSelect }: { tab: NativeTab; onSelect: () => void }) 
 export function Header() {
   const { activeStore } = useAppConfig();
   const { member } = useRuntimeData();
-  const { back } = useNativeNavigation();
   const { config } = useNativeConfig();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -81,15 +79,15 @@ export function Header() {
   return (
     <>
       <header className="native-header" style={headerStyle}>
-        {back || drawerTabs.length ? <button
+        {drawerTabs.length ? <button
           className="native-header__action"
           type="button"
-          aria-label={back ? "戻る" : "メニューを開く"}
+          aria-label="メニューを開く"
           aria-controls="native-navigation-drawer"
           aria-expanded={drawerOpen}
-          onClick={back ?? (() => setDrawerOpen(true))}
+          onClick={() => setDrawerOpen(true)}
         >
-          <i className={`fa-solid ${back ? "fa-chevron-left" : "fa-bars"}`} aria-hidden="true" />
+          <i className="fa-solid fa-bars" aria-hidden="true" />
         </button> : <span className="native-header__action" />}
         <div className="native-header__brand">
           {config.header?.logo_url || config.header?.image_url ? <img src={config.header.image_url || config.header.logo_url} alt={projectName} /> : <span>{projectName}</span>}

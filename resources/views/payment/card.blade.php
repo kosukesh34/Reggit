@@ -16,13 +16,13 @@
         button { width: 100%; margin-top: 24px; padding: 14px; border: 0; border-radius: 8px; background: #17694c; color: white; font: inherit; font-weight: 700; cursor: pointer; }
         button:disabled { opacity: .5; cursor: wait; }
         #payment-error { color: #b42318; min-height: 26px; margin-top: 12px; }
-        .cancel { display: block; text-align: center; margin-top: 16px; color: #4b5563; }
         @media (max-width: 480px) { main { margin: 24px 16px; } }
     </style>
     @vite('resources/js/payment/card.ts')
-</head>
+<link rel="stylesheet" href="{{ asset('css/web-ui.css') }}?v=1"></head>
 <body>
 <main>
+    <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="$cancelUrl" label="アプリへ戻る" /></nav>
     <h1>カードでお支払い</h1>
     <p class="amount">¥{{ number_format($amount) }}</p>
     <form id="card-payment-form" data-client-secret="{{ $clientSecret }}" data-success-url="{{ $successUrl }}">
@@ -30,7 +30,6 @@
         <div id="payment-error" role="alert" aria-live="polite"></div>
         <button id="pay-button" type="submit" disabled>¥{{ number_format($amount) }} を支払う</button>
     </form>
-    <a class="cancel" href="{{ $cancelUrl }}">アプリに戻る</a>
 </main>
 </body>
 </html>

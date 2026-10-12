@@ -261,7 +261,7 @@ export function AdminCustomizePage({
       </header> : null}
 
       <aside className="admin-sidebar">
-        {showMemberAppLink ? <Link to="/more"><ArrowLeft size={17} />会員アプリへ戻る</Link> : null}
+        {showMemberAppLink ? <Link className="web-back" to="/more"><ArrowLeft size={18} aria-hidden="true" />会員アプリへ戻る</Link> : null}
         <nav aria-label="デザイン設定のセクション">
           {sectionLinks.map(({ id, label, icon: Icon }) => (
             <a href={`#${id}`} className={activeSection === id ? "is-active" : undefined} aria-current={activeSection === id ? "location" : undefined} onClick={() => setActiveSection(id)} key={id}>

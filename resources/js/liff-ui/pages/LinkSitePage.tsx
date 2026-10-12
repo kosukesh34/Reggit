@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useAppConfig } from "../context/AppConfigContext";
 import type { LinkTabType } from "../types/app";
 import { tabLabelMap } from "../config/navigation";
@@ -38,7 +37,6 @@ function resolveLinkUrl(tab: LinkTabType, storeUrl?: string, customizationUrl?: 
 }
 
 export function LinkSitePage({ tab }: { tab: LinkTabType }) {
-  const navigate = useNavigate();
   const { activeStore, customization } = useAppConfig();
   const storeTab = activeStore.tabs.find((item) => item.type === tab);
   const url = safeEmbedUrl(resolveLinkUrl(tab, storeTab?.url, customization.navigation.linkUrls?.[tab]));
@@ -50,9 +48,6 @@ export function LinkSitePage({ tab }: { tab: LinkTabType }) {
     <div className="page feature-page">
       <div className="tab-section tab-section--link-embed" data-tab={tab}>
         <div className="link-tab-chrome">
-          <button type="button" className="link-tab-chrome__back" aria-label="戻る" onClick={() => navigate(-1)}>
-            ‹
-          </button>
           <span className="link-tab-chrome__title">{title}</span>
         </div>
         {url !== null && external ? (

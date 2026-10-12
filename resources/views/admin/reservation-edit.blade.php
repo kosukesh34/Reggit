@@ -102,9 +102,7 @@
                 <button type="submit" class="btn btn-primary btn-large">
                     <i class="fas fa-save"></i> 更新する
                 </button>
-                <a href="{{ admin_route('admin.reservations.detail', ['id' => $reservation->id]) }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> 詳細に戻る
-                </a>
+                <x-back-link :href="admin_route('admin.reservations.detail', ['id' => $reservation->id])" label="予約詳細へ戻る" />
             </div>
         </form>
     </div>

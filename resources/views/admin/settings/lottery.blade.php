@@ -271,7 +271,7 @@
 
     <div class="form-actions">
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
-        <a href="{{ admin_route('admin.coupons') }}" class="btn btn-secondary">クーポン一覧へ</a>
+        <x-back-link :href="admin_route('admin.coupons')" label="クーポン一覧へ戻る" />
     </div>
 </form>
 

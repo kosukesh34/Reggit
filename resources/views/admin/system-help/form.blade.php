@@ -4,7 +4,7 @@
 @section('page-title', $article === null ? 'ヘルプ記事を書く' : 'ヘルプ記事を編集')
 
 @section('content')
-<p class="help-back"><a href="{{ route('system-admin.help-articles.index') }}">一覧へ戻る</a></p>
+
 <div class="card publishing-form">
     <div class="card-body">
         <form method="POST" action="{{ $article === null ? route('system-admin.help-articles.store') : route('system-admin.help-articles.update', ['id' => $article->id]) }}">

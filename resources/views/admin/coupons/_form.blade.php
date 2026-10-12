@@ -269,7 +269,7 @@
         <div class="cp-create-footer">
             <p><i class="fas fa-circle-info" aria-hidden="true"></i> 作成後も内容は編集できます</p>
             <div>
-                <a href="{{ $cancelUrl }}" class="btn btn-secondary cp-cancel">キャンセル</a>
+                <x-back-link :href="$cancelUrl" label="キャンセル" />
                 <button type="submit" class="btn btn-primary cp-submit"><span>{{ $submitLabel }}</span><i class="fas fa-arrow-right" aria-hidden="true"></i></button>
             </div>
         </div>

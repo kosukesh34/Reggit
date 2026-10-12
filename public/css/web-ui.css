@@ -1,0 +1,44 @@
+/* Shared navigation for public pages, administration and customer screens. */
+.web-back {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #d9e3e8;
+    border-radius: 12px;
+    background: #fff;
+    color: #294b5b;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .16s, border-color .16s, box-shadow .16s;
+}
+.web-back svg { flex: none; }
+.web-back:hover { background: #f1f6f8; border-color: #a8bec9; color: #163c4e; text-decoration: none; }
+.web-back:active { background: #e7f0f4; }
+.web-back:focus-visible { outline: 3px solid #2479a8; outline-offset: 3px; }
+.web-page-navigation { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.lp-sub .lp-page-navigation { max-width: 840px; padding-top: 24px; margin-bottom: 0; }
+.lp-sub .lp-page-navigation--help { max-width: 860px; }
+.lp-sub :is(.lp-inquiry, .lp-status, .lp-onboarding) { border-radius: 16px; margin-top: 24px; box-shadow: 0 4px 20px #163c4e06; }
+.lp .lp-button { border-radius: 10px; }
+.lp-sub .lp-button, .lp .lp-button--small { min-height: 44px; }
+.lp-sub .lp-field :is(input, select, textarea) { border-radius: 10px; }
+.lp .lp-button:focus-visible { outline: 3px solid #2479a8; outline-offset: 3px; }
+.web-standalone { margin: 0; padding: 24px 16px; min-height: 100vh; background: #f4f7f9; color: #243943; font: 16px/1.7 system-ui, sans-serif; }
+.web-standalone main { box-sizing: border-box; max-width: 600px; margin: 40px auto; padding: 28px; border: 1px solid #e0e7ec; border-radius: 20px; background: #fff; box-shadow: 0 8px 28px #163c4e08; }
+.web-standalone h1 { font-size: 24px; line-height: 1.4; }
+.web-standalone button[type="submit"] { min-height: 44px; padding: 12px 20px; border: 0; border-radius: 12px; background: #00344d; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.web-standalone button:focus-visible { outline: 3px solid #2479a8; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .web-back { transition: none; } }
+@media (max-width: 640px) {
+    .web-page-navigation { margin-bottom: 16px; }
+    .web-standalone main { margin: 16px auto; padding: 22px 18px; }
+}

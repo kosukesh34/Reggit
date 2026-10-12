@@ -76,9 +76,7 @@
                 <button type="submit" class="btn btn-primary btn-large">
                     <i class="fas fa-check"></i> 予約を作成
                 </button>
-                <a href="{{ admin_route('admin.reservations') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> 一覧に戻る
-                </a>
+
             </div>
         </form>
     </div>

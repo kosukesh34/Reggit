@@ -1,3 +1,5 @@
+@import "../../../../public/css/web-ui.css";
+
 /* Values and dimensions mirror Skip's AppDesign, NativeSharedHeader and tabs. */
 :root {
   --skip-canvas: #f2f5f7;
@@ -519,3 +521,11 @@ progress::-moz-progress-bar { background: var(--skip-accent); }
 .member-layout__ticket-info strong { font-size: 30px; font-variant-numeric: tabular-nums; }
 .member-layout__ticket-info > small { color: #66736d; }
 .member-layout--ticket .member-layout__code { border-top: 1px dashed #cfc6b7; }
+
+/* A single return control stays above the content on every screen. */
+.native-page-navigation { padding: 16px 20px 0; margin-bottom: 4px; }
+.native-page-navigation .web-back { background: var(--native-secondary-background, #fff); color: var(--native-secondary-text, #294b5b); }
+.native-header__action { border-radius: 12px; }
+.native-header__action:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+.native-header__action:focus-visible { outline: 3px solid currentColor; outline-offset: -3px; }
+.app-shell--profile .native-profile > form { min-height: auto; }

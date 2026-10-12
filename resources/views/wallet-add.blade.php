@@ -15,16 +15,17 @@
         .btn-primary { background: #000; color: #fff; }
         .btn-secondary { background: #e0e0e0; color: #333; margin-bottom: 0; }
     </style>
+<link rel="stylesheet" href="{{ asset('css/web-ui.css') }}?v=1">
 </head>
 <body>
     <div class="card">
+        @if($view->returnUrl)
+        <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="$view->returnUrl" :label="$view->returnBackLabel" /></nav>
+        @endif
         <h1>Walletに追加</h1>
         <p>下のボタンで会員証を{{ $view->typeLabel }}に追加してください。追加が完了したら「{{ $view->returnBackLabel }}」をタップしてください。</p>
         @if($view->walletUrl)
         <button type="button" class="btn btn-primary" id="walletAddButton">{{ $view->addButtonLabel }}</button>
-        @endif
-        @if($view->returnUrl)
-        <a href="{{ $view->returnUrl }}" class="btn btn-secondary">{{ $view->returnBackLabel }}</a>
         @endif
     </div>
     @if($view->walletUrl)

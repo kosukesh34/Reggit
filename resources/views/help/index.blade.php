@@ -4,7 +4,6 @@
 
 @section('content')
 <article class="lp-container public-help help-manual">
-    <a class="public-help-back" href="/">Reggit トップへ</a>
     <h1>ヘルプ・使い方</h1>
     <p class="help-lead">会員・注文・予約・特典などの操作を、画面画像と詳しい手順で確認できます。どなたでもログインなしで読めます。</p>
     <form class="help-search" method="GET" action="{{ route('help.index') }}" role="search">
@@ -32,5 +31,5 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/components/12-help-manual.css') }}">
-<link rel="stylesheet" href="{{ asset('css/help-public.css') }}">
+<link rel="stylesheet" href="{{ asset('css/help-public.css') }}?v=navigation1">
 @endpush

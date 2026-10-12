@@ -54,7 +54,7 @@
                 <label class="form-label">予約可能な日数（何日先まで）</label>
                 <input type="number" name="advance_booking_days" class="form-control" value="{{ $advanceDays }}" min="1" max="365" required>
             </div>
-            <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button> <a href="{{ admin_route('admin.reservations') }}" class="btn btn-secondary">予約一覧へ</a></div>
+            <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button> <x-back-link :href="admin_route('admin.reservations')" label="予約一覧へ戻る" /></div>
         </div>
     </div>
 </form>
