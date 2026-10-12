@@ -28,15 +28,25 @@ class HelpArticleSeeder extends Seeder
 
     public function run(): void
     {
+        $baselines = json_decode(file_get_contents(__DIR__.'/data/help-article-baselines.json'), true, 512, JSON_THROW_ON_ERROR);
         foreach ($this->articles() as $index => $article) {
-            HelpArticle::query()->firstOrCreate(['slug' => $article['slug']], [
+            $attributes = [
                 'title' => $article['title'],
                 'summary' => $article['summary'],
                 'category' => $article['category'] ?? 'guide',
                 'body' => $this->body($article),
                 'sort_order' => $index,
                 'is_published' => true,
-            ]);
+            ];
+            $stored = HelpArticle::query()->firstOrCreate(['slug' => $article['slug']], $attributes);
+            if (! $stored->wasRecentlyCreated) {
+                $fingerprint = hash('sha256', implode("\0", [$stored->title, $stored->summary, $stored->category, $stored->body]));
+                if (in_array($fingerprint, $baselines[$article['slug']] ?? [], true)) {
+                    // Preserve publication and manual ordering when upgrading untouched standard text.
+                    unset($attributes['is_published'], $attributes['sort_order']);
+                    $stored->update($attributes);
+                }
+            }
         }
     }
 }

@@ -1,0 +1,282 @@
+{
+  "feature-overview": {
+    "path": "/help",
+    "image": "help-index"
+  },
+  "admin-login": {
+    "path": "/admin/login",
+    "image": "admin-login"
+  },
+  "dashboard-guide": {
+    "path": "/dashboard",
+    "image": "dashboard"
+  },
+  "stores-guide": {
+    "path": "/stores",
+    "image": "stores"
+  },
+  "features-guide": {
+    "path": "/settings/features",
+    "image": "features"
+  },
+  "member-registration": {
+    "path": "app:/membership",
+    "image": "app-membership"
+  },
+  "member-registration-settings": {
+    "path": "/settings/profile",
+    "image": "profile-settings"
+  },
+  "member-profile": {
+    "path": "app:/profile",
+    "image": "app-profile"
+  },
+  "member-management": {
+    "path": "/members",
+    "image": "members"
+  },
+  "member-history": {
+    "path": "/members",
+    "image": "members"
+  },
+  "member-tags-memos": {
+    "path": "/member-tags",
+    "image": "member-tags"
+  },
+  "points-guide": {
+    "path": "/settings/ranks",
+    "image": "ranks"
+  },
+  "point-qr": {
+    "path": "/qr-codes",
+    "image": "qr-codes"
+  },
+  "ranks-guide": {
+    "path": "/settings/ranks",
+    "image": "ranks"
+  },
+  "existing-member-link": {
+    "path": "app:/more/link",
+    "image": "app-existing"
+  },
+  "existing-member-store": {
+    "path": "/settings/existing-member-link",
+    "image": "existing-settings"
+  },
+  "member-transfer-guide": {
+    "path": "app:/more/transfer",
+    "image": "app-transfer"
+  },
+  "withdrawal-guide": {
+    "path": "app:/more/withdraw",
+    "image": "app-withdraw"
+  },
+  "products-guide": {
+    "path": "/products",
+    "image": "products"
+  },
+  "orders-customer": {
+    "path": "app:/menu",
+    "image": "app-menu"
+  },
+  "orders-staff": {
+    "path": "/orders",
+    "image": "orders"
+  },
+  "order-payment-timing": {
+    "path": "/orders",
+    "image": "orders"
+  },
+  "unpaid-cancel": {
+    "path": "app:/orderHistory",
+    "image": "app-order-history"
+  },
+  "payments-settings": {
+    "path": "/settings/payments",
+    "image": "payments"
+  },
+  "reservations-customer": {
+    "path": "app:/reservation",
+    "image": "app-reservation"
+  },
+  "reservations-staff": {
+    "path": "/reservations",
+    "image": "reservations"
+  },
+  "reservations-settings": {
+    "path": "/settings/reservations",
+    "image": "reservation-settings"
+  },
+  "queue-customer": {
+    "path": "app:/queue",
+    "image": "app-queue"
+  },
+  "queue-staff": {
+    "path": "/queue",
+    "image": "queue"
+  },
+  "queue-settings": {
+    "path": "/settings/queue",
+    "image": "queue-settings"
+  },
+  "store-devices": {
+    "path": "/settings/basic",
+    "image": "basic-settings"
+  },
+  "stamps-guide": {
+    "path": "/stamps",
+    "image": "stamps"
+  },
+  "stamp-grant": {
+    "path": "/qr-codes",
+    "image": "qr-codes"
+  },
+  "coupons-definition": {
+    "path": "/coupons",
+    "image": "coupons"
+  },
+  "coupons-use": {
+    "path": "app:/coupon",
+    "image": "app-coupon"
+  },
+  "coupons-bulk": {
+    "path": "/coupons/bulk-issue",
+    "image": "coupon-bulk"
+  },
+  "device-coupons": {
+    "path": "app:/coupon",
+    "image": "app-coupon"
+  },
+  "coupon-smaregi": {
+    "path": "/coupons",
+    "image": "coupons"
+  },
+  "lottery-guide": {
+    "path": "/settings/lottery",
+    "image": "lottery-settings"
+  },
+  "rewards-cancellation": {
+    "path": "/members",
+    "image": "members"
+  },
+  "announcements-guide": {
+    "path": "/announcements",
+    "image": "announcements"
+  },
+  "announcement-delivery": {
+    "path": "/announcements/delivery",
+    "image": "announcement-delivery"
+  },
+  "audience-groups": {
+    "path": "/announcements/delivery",
+    "image": "announcement-delivery"
+  },
+  "after-registration-guide": {
+    "path": "/after-registration-deliveries",
+    "image": "registration-deliveries"
+  },
+  "delivery-recovery": {
+    "path": "/coupons",
+    "image": "coupons"
+  },
+  "notifications-guide": {
+    "path": "/settings/liff-connection",
+    "image": "line-settings"
+  },
+  "analytics-guide": {
+    "path": "/analytics",
+    "image": "analytics"
+  },
+  "rfm-guide": {
+    "path": "/rfm",
+    "image": "rfm"
+  },
+  "analysis-api": {
+    "path": "/analysis-deliveries",
+    "image": "analysis-deliveries"
+  },
+  "home-design-guide": {
+    "path": "/settings/home",
+    "image": "home-settings"
+  },
+  "branding-guide": {
+    "path": "/settings/app-design/branding",
+    "image": "branding"
+  },
+  "member-card-design": {
+    "path": "/settings/app-design/member-card",
+    "image": "member-card-settings"
+  },
+  "liff-designer-guide": {
+    "path": "/settings/liff-designer",
+    "image": "liff-designer"
+  },
+  "admin-design-guide": {
+    "path": "/settings/admin-design",
+    "image": "admin-design"
+  },
+  "wallet-guide": {
+    "path": "/settings/wallet",
+    "image": "wallet-settings"
+  },
+  "line-connection-guide": {
+    "path": "/settings/liff-connection",
+    "image": "line-settings"
+  },
+  "smaregi-guide": {
+    "path": "/stores",
+    "image": "stores"
+  },
+  "store-operation-settings": {
+    "path": "/settings/basic",
+    "image": "basic-settings"
+  },
+  "staff-permissions": {
+    "path": "/settings/staff",
+    "image": "staff-settings"
+  },
+  "audit-log-guide": {
+    "path": "/audit-logs",
+    "image": "audit-logs"
+  },
+  "gallery-guide": {
+    "path": "/gallery/items",
+    "image": "gallery"
+  },
+  "contact-guide": {
+    "path": "app:/contact",
+    "image": "app-contact"
+  },
+  "legal-guide": {
+    "path": "app:/more",
+    "image": "app-more"
+  },
+  "help-management": {
+    "path": "system:/help-articles",
+    "image": "system-help"
+  },
+  "onboarding-guide": {
+    "path": "/onboarding",
+    "image": "onboarding"
+  },
+  "system-projects": {
+    "path": "system:/projects",
+    "image": "system-projects"
+  },
+  "system-accounts": {
+    "path": "system:/accounts",
+    "image": "system-accounts"
+  },
+  "system-notices": {
+    "path": "system:/notices",
+    "image": "system-notices"
+  },
+  "native-session": {
+    "path": "app:/membership",
+    "image": "app-membership"
+  },
+  "entry-qr-guide": {
+    "path": "/qr-codes",
+    "image": "qr-codes"
+  }
+}

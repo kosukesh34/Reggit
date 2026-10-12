@@ -23,8 +23,9 @@ class SystemHelpArticleTest extends TestCase
             ->postJson(route('system-admin.help-articles.preview'), ['body' => $body])
             ->assertOk()
             ->assertJson(['html' => app(HelpMarkdown::class)->toHtml($body)]);
-        $this->assertDatabaseCount('help_articles', 10);
-        $this->get(route('system-admin.help-articles.index'))->assertOk()->assertSee('ヘルプ記事を書く')->assertDontSee('パスワード変更');
+        $this->assertDatabaseCount('help_articles', count((new HelpArticleSeeder)->articles()));
+        $this->get(route('system-admin.help-articles.index'))->assertOk()->assertSee('ヘルプ記事を書く')
+            ->assertDontSee('href="'.route('admin.password.edit').'"', false);
         $this->get(route('system-admin.help-articles.create'))->assertOk()->assertSee('プレビュー');
         $store = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN]);
         $this->actingAs($store, 'admin')->postJson(route('system-admin.help-articles.preview'), ['body' => $body])->assertForbidden();
@@ -81,7 +82,7 @@ class SystemHelpArticleTest extends TestCase
             ->assertRedirect(route('system-admin.help-articles.create'))
             ->assertSessionHasErrors('slug');
 
-        $this->assertSame(10, HelpArticle::query()->count());
+        $this->assertSame(count((new HelpArticleSeeder)->articles()), HelpArticle::query()->count());
     }
 
     public function test_非公開の記事は店舗ヘルプに出ないこと(): void
@@ -120,7 +121,7 @@ class SystemHelpArticleTest extends TestCase
         $this->assertSame('更新した本文', $article->body);
         $this->assertFalse($article->is_published);
         $this->assertNull(app(AdminHelpShowUseCase::class)->handle('transfer'));
-        $this->assertDatabaseCount('help_articles', 10);
+        $this->assertDatabaseCount('help_articles', count((new HelpArticleSeeder)->articles()));
     }
 
     public function test_system_admin_can_preview_drafts_with_images_without_publishing(): void
@@ -142,13 +143,59 @@ class SystemHelpArticleTest extends TestCase
     {
         $seeder = new HelpArticleSeeder;
         foreach ($seeder->articles() as $article) {
-            $this->assertNotEmpty($article['steps'], $article['slug']);
+            $this->assertNotEmpty($seeder->body($article), $article['slug']);
             foreach ($article['steps'] as $step) {
                 $this->assertFileExists(public_path($step['image']), $article['slug'].' / '.$step['title']);
             }
             $stored = HelpArticle::where('slug', $article['slug'])->firstOrFail();
-            $this->assertSame(count($article['steps']), substr_count($stored->body, '](/images/help/'));
+            $this->assertSame(substr_count($seeder->body($article), '](/images/help/'), substr_count($stored->body, '](/images/help/'));
         }
+    }
+
+    public function test_all_feature_guides_are_published_readable_and_searchable(): void
+    {
+        $project = Project::factory()->create(['project_key' => 'help-features', 'is_active' => true]);
+        $store = AdminUser::factory()->create([
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+        $store->projects()->sync([$project->id]);
+        $this->actingAs($store, 'admin');
+
+        foreach ((new HelpArticleSeeder)->articles() as $article) {
+            $this->get(route('admin.help.show', [
+                'project_key' => $project->project_key,
+                'slug' => $article['slug'],
+            ]))->assertOk()->assertSee($article['title']);
+            $this->assertStringContainsString('](/', (new HelpArticleSeeder)->body($article), $article['slug']);
+            $this->assertStringContainsString('](/images/help/', (new HelpArticleSeeder)->body($article), $article['slug']);
+
+            if ($article['steps'] === []) {
+                foreach (['操作手順', '処理の仕組み', '注意'] as $heading) {
+                    $this->assertStringContainsString('## '.$heading, $article['body'], $article['slug']);
+                }
+            }
+        }
+
+        $this->get(route('admin.help', [
+            'project_key' => $project->project_key,
+            'q' => '合算',
+        ]))->assertOk()->assertSee('スマレジの既存会員をアプリに連携する');
+    }
+
+    public function test_standard_upgrade_preserves_drafts_order_and_custom_titles(): void
+    {
+        $article = HelpArticle::where('slug', 'transfer')->firstOrFail();
+        $previous = json_decode(file_get_contents(database_path('seeders/data/help-articles-v1.json')), true);
+        $article->update(['body' => $previous['transfer'], 'is_published' => false, 'sort_order' => 999]);
+        $this->seed(HelpArticleSeeder::class);
+        $this->assertStringContainsString('](/admin/{project_key}/members)', $article->fresh()->body);
+        $this->assertFalse($article->fresh()->is_published);
+        $this->assertSame(999, $article->fresh()->sort_order);
+
+        $article->update(['title' => '独自の案内タイトル']);
+        $this->seed(HelpArticleSeeder::class);
+        $this->assertSame('独自の案内タイトル', $article->fresh()->title);
     }
 
     public function test_guide_upgrade_preserves_custom_articles_and_publication_status(): void
