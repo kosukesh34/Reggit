@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" href="{{ asset('images/landing/app/actual-admin.webp') }}">
-    <link rel="stylesheet" href="{{ asset('css/landing-home.css') }}?v=6">
+    <link rel="stylesheet" href="{{ asset('css/landing-home.css') }}?v=7">
 </head>
 <body class="lp">
     <a class="lp-skip" href="#main">本文へ移動</a>
@@ -234,7 +234,12 @@
                 <div class="lp-register__form">
                     <h3>導入登録を始める</h3>
                     <p>メールアドレスの認証後、店舗情報を入力していただきます。</p>
-                    <a class="lp-button" href="{{ route('landing.register.email.show') }}">メール認証へ進む</a>
+                    <form method="POST" action="{{ route('landing.register.email') }}">
+                        @csrf
+                        <label for="landing-registration-email">メールアドレス</label>
+                        <input id="landing-registration-email" type="email" name="email" value="{{ old('email') }}" autocomplete="email" inputmode="email" spellcheck="false" required maxlength="255" placeholder="name@company.jp">
+                        <button class="lp-button" type="submit">認証メールを送る</button>
+                    </form>
                     <small>登録後すぐに契約が発生することはありません。</small>
                 </div>
             </div>
