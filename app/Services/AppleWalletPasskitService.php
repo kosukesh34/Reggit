@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Member;
+use App\Models\Scopes\ProjectScope;
 use App\Models\WalletPassRegistration;
 use App\Models\WalletPassUpdate;
+use App\Util\TenantContext;
 
 class AppleWalletPasskitService
 {
@@ -12,6 +14,7 @@ class AppleWalletPasskitService
         private WalletPassAuthTokenService $authTokenService,
         private WalletPassService $walletPassService,
         private WalletPassSyncService $walletPassSyncService,
+        private TenantContext $tenantContext,
     ) {}
 
     public function parseAuthToken(string $authorizationHeader): ?string
@@ -39,7 +42,8 @@ class AppleWalletPasskitService
             return null;
         }
 
-        return Member::query()->with(['user', 'project'])->find($memberId);
+        // PassKit has no tenant header; the member-specific token authorizes this lookup.
+        return Member::withoutGlobalScope(ProjectScope::class)->with('project')->find($memberId);
     }
 
     public function isAuthorizedForMember(Member $member, string $authToken): bool
@@ -55,10 +59,11 @@ class AppleWalletPasskitService
         $registrations = WalletPassRegistration::query()
             ->where('device_library_identifier', $deviceLibraryIdentifier)
             ->where('pass_type_identifier', $passTypeIdentifier)
-            ->get(['member_id']);
+            ->get(['member_id', 'project_id']);
 
         foreach ($registrations as $registration) {
-            $member = Member::find((int) $registration->member_id);
+            $member = Member::withoutGlobalScope(ProjectScope::class)
+                ->where('project_id', $registration->project_id)->find((int) $registration->member_id);
             if ($member !== null && $this->authTokenService->verify($member, $authToken)) {
                 return true;
             }
@@ -135,6 +140,12 @@ class AppleWalletPasskitService
 
     public function generatePassContent(Member $member): ?string
     {
-        return $this->walletPassService->generateForMember($member);
+        $project = $member->project;
+        if ($project === null) {
+            return null;
+        }
+
+        return $this->tenantContext->runForProject($project,
+            fn () => $this->walletPassService->generateForMember($member));
     }
 }
