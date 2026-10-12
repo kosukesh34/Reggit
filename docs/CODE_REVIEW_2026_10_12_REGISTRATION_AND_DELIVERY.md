@@ -54,6 +54,13 @@ not solve it. File size alone is not a reason for broad rewrites.
 
 ## Verification and limits
 
+Targeted isolated validation: registration 1 test / 8 assertions; delivery 4 tests /
+16 assertions. Restoring the original implementations failed all five cases (the
+registration email constraint and the delivery tenant-context errors). A dedicated
+no-network MySQL fixture and read-only source/toolchain mounts were used; provider
+traffic was mocked. A resource-constrained exploratory repeat timed out and is not
+counted as successful validation.
+
 Each PR must pass scripts/merge-pr.sh on its final committed HEAD with latest main included.
 That gate runs local contract tests, Pint, PHPStan, core PHP tests, TypeScript, ESLint,
 frontend unit tests and build in isolated environments. Final HEADs and logs are recorded
