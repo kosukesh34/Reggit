@@ -174,3 +174,16 @@ and [Google loyalty object fields](https://developers.google.com/wallet/referenc
 New Wallet schema must precede coordinated application/worker rollout. Counter history
 must be retained in production. API fakes and local certificates verify our code, not
 Apple/Google production compatibility. No external API calls or browser E2E were run.
+
+## 13. Wallet authentication accepted predictable tokens without keys (P2)
+
+With both the Wallet secret and application key absent, token creation used an empty
+secret or a known fallback constant. Refuse issuance and reject verification in this
+misconfigured state. Configured custom/application keys preserve existing tokens.
+This does not establish an authentication bypass in environments with a valid key.
+
+Five isolated regression tests / 16 assertions pass; the old implementation fails
+three missing-key cases while its two configured-key compatibility cases pass.
+`security-audit` guidance mode was applied to the trust boundary and secret handling;
+no production credentials or external integrations were used. PassKit plus layer
+dependency regression checks also pass: 21 tests / 434 assertions.
