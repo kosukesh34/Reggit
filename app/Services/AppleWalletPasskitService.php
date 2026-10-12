@@ -14,6 +14,7 @@ class AppleWalletPasskitService
         private WalletPassAuthTokenService $authTokenService,
         private WalletPassService $walletPassService,
         private WalletPassSyncService $walletPassSyncService,
+        private TenantContext $tenantContext,
     ) {}
 
     public function parseAuthToken(string $authorizationHeader): ?string
@@ -145,7 +146,7 @@ class AppleWalletPasskitService
             return null;
         }
 
-        return app(TenantContext::class)->runForProject($project,
+        return $this->tenantContext->runForProject($project,
             fn () => $this->walletPassService->generateForMember($member));
     }
 }
