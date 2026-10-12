@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Services\GoogleWalletPassService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -70,7 +71,8 @@ class GoogleWalletProjectBrandTest extends TestCase
     #[TestWith([200])]
     #[TestWith([404])]
     #[TestWith([503])]
-    public function test_sync_preserves_existing_pass_class_and_updates_new_generation(int $legacyStatus): void
+    #[TestWith(['connection'])]
+    public function test_sync_preserves_existing_pass_class_and_updates_new_generation(int|string $legacyStatus): void
     {
         $project = Project::factory()->create();
         $member = Member::factory()->create(['project_id' => $project->id]);
@@ -81,12 +83,16 @@ class GoogleWalletProjectBrandTest extends TestCase
                 return Http::response(['access_token' => 'token']);
             }
             if ($request->method() === 'PATCH' && str_ends_with($request->url(), '/'.$legacyId)) {
+                if ($legacyStatus === 'connection') {
+                    throw new ConnectionException('Legacy endpoint unavailable');
+                }
+
                 return Http::response([], $legacyStatus);
             }
 
             return Http::response([]);
         });
-        $this->assertSame($legacyStatus !== 503, app(GoogleWalletPassService::class)->syncLoyaltyObjectForMember($member));
+        $this->assertSame(in_array($legacyStatus, [200, 404], true), app(GoogleWalletPassService::class)->syncLoyaltyObjectForMember($member));
         Http::assertSent(fn (Request $request) => $request->method() === 'PATCH'
             && str_ends_with($request->url(), '/'.$legacyId) && ! isset($request['classId']) && ! isset($request['id'])
             && isset($request['loyaltyPoints']['balance']['int']));

@@ -10,6 +10,7 @@ use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Util\AdminContext;
 use App\Util\StrHelper;
 use Firebase\JWT\JWT;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -169,10 +170,15 @@ class GoogleWalletPassService
         $legacyPayload = $walletObject;
         unset($legacyPayload['id'], $legacyPayload['classId']);
         $legacyId = config('google_wallet.issuer_id').'.'.$objectSuffix;
-        $legacy = Http::withToken($token)->patch(self::WALLET_OBJECTS_BASE.'/loyaltyObject/'.$legacyId, $legacyPayload);
-        $legacySucceeded = $legacy->successful() || $legacy->status() === 404;
-        if (! $legacySucceeded) {
-            Log::warning('google-wallet legacy object update failed', ['objectId' => $legacyId, 'status' => $legacy->status()]);
+        try {
+            $legacy = Http::withToken($token)->patch(self::WALLET_OBJECTS_BASE.'/loyaltyObject/'.$legacyId, $legacyPayload);
+            $legacySucceeded = $legacy->successful() || $legacy->status() === 404;
+            if (! $legacySucceeded) {
+                Log::warning('google-wallet legacy object update failed', ['objectId' => $legacyId, 'status' => $legacy->status()]);
+            }
+        } catch (ConnectionException $exception) {
+            $legacySucceeded = false;
+            Log::warning('google-wallet legacy object connection failed', ['objectId' => $legacyId]);
         }
         if (! $this->ensureLoyaltyClassExists($classId, $organizationName, $programLogoUri)) {
             return false;
