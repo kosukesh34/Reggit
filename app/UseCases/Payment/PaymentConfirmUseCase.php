@@ -30,10 +30,12 @@ class PaymentConfirmUseCase
         $paymentOrder = Order::where('project_id', $projectId)->where('user_id', $userId)->findOrFail($orderId);
         $gateway = app(ProjectPaymentGatewayResolver::class)->forOrder($paymentOrder, $this->gateway);
         $intent = $gateway->retrievePaymentIntent($paymentIntentId);
+        if (($intent['currency'] ?? '') !== 'jpy') {
+            return new PaymentConfirmOutput(false, '決済通貨が注文と一致しません', (string) ($intent['status'] ?? ''), null);
+        }
         if ($paymentOrder->payment_setting_id !== null
             && ((int) ($intent['metadata']['project_id'] ?? 0) !== $projectId
-                || (int) ($intent['metadata']['payment_setting_id'] ?? 0) !== (int) $paymentOrder->payment_setting_id
-                || ($intent['currency'] ?? '') !== 'jpy')) {
+                || (int) ($intent['metadata']['payment_setting_id'] ?? 0) !== (int) $paymentOrder->payment_setting_id)) {
             return new PaymentConfirmOutput(false, '決済情報とプロジェクトが一致しません', (string) ($intent['status'] ?? ''), null);
         }
         $status = $intent['status'] ?? null;

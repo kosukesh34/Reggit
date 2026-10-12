@@ -106,7 +106,7 @@ class MultiDeviceOrderFlowTest extends TestCase
 
         $gateway = new FakePaymentGateway;
         $gateway->event = [
-            'type' => 'payment_intent.succeeded',
+            'type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $orderId],
             'amount' => (int) $created->json('order.total_amount'),
         ];

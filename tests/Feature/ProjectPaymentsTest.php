@@ -248,7 +248,7 @@ class ProjectPaymentsTest extends TestCase
             'total_amount' => 1000, 'points_used' => 0, 'points_earned' => 0,
         ]);
         $gateway = new FakePaymentGateway;
-        $gateway->event = ['type' => 'payment_intent.succeeded', 'metadata' => ['order_id' => $order->id], 'amount' => 1000];
+        $gateway->event = ['type' => 'payment_intent.succeeded', 'currency' => 'jpy', 'metadata' => ['order_id' => $order->id], 'amount' => 1000];
         $this->app->instance(PaymentGateway::class, $gateway);
         config(['services.stripe.webhook_secret' => 'whsec_fixture']);
         ShopSettingStore::setValue('use_points', true, 'boolean', $project->id);
