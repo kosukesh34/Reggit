@@ -54,7 +54,7 @@
                 <label>
                     <input type="hidden" name="is_published" value="0">
                     <input type="checkbox" name="is_published" value="1" @checked($publishedValue === '1' || $publishedValue === 1 || $publishedValue === true)>
-                    店舗のヘルプに公開する
+                    ヘルプに公開する（LPでも表示）
                 </label>
             </div>
             <button type="submit" class="btn btn-primary">記事を保存</button>

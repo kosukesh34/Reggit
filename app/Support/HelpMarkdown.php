@@ -7,7 +7,7 @@ use App\Util\AdminContext;
 /** ヘルプ本文用の最小Markdown。HTMLは出さない。 */
 final class HelpMarkdown
 {
-    public function toHtml(string $markdown): string
+    public function toHtml(string $markdown, bool $public = false): string
     {
         $escaped = htmlspecialchars($markdown, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $lines = preg_split("/\r\n|\n|\r/", $escaped);
@@ -22,7 +22,7 @@ final class HelpMarkdown
         $toc = [];
         foreach ($lines as $line) {
             if (preg_match('/^## (.+)$/', $line, $heading) === 1) {
-                $toc[] = '<li><a href="#help-section-'.(count($toc) + 1).'">'.$this->inline($heading[1]).'</a></li>';
+                $toc[] = '<li><a href="#help-section-'.(count($toc) + 1).'">'.$this->inline($heading[1], $public).'</a></li>';
             }
         }
         if (count($toc) > 1) {
@@ -40,7 +40,7 @@ final class HelpMarkdown
                 continue;
             }
             if (preg_match('/^### (.+)$/', $line, $matches) === 1) {
-                $html .= $this->closeList($list).'<h3>'.$this->inline($matches[1]).'</h3>';
+                $html .= $this->closeList($list).'<h3>'.$this->inline($matches[1], $public).'</h3>';
 
                 continue;
             }
@@ -49,12 +49,12 @@ final class HelpMarkdown
                 $sectionOpen = true;
                 $headingIndex++;
                 $class = $matches[1] === '注意' ? 'help-guide-section help-guide-section--caution' : 'help-guide-section';
-                $html .= '<section class="'.$class.'" id="help-section-'.$headingIndex.'"><h2>'.$this->inline($matches[1]).'</h2>';
+                $html .= '<section class="'.$class.'" id="help-section-'.$headingIndex.'"><h2>'.$this->inline($matches[1], $public).'</h2>';
 
                 continue;
             }
             if (preg_match('/^# (.+)$/', $line, $matches) === 1) {
-                $html .= $this->closeList($list).'<h2>'.$this->inline($matches[1]).'</h2>';
+                $html .= $this->closeList($list).'<h2>'.$this->inline($matches[1], $public).'</h2>';
 
                 continue;
             }
@@ -64,11 +64,11 @@ final class HelpMarkdown
                     $html .= $this->closeList($list).'<'.$tag.'>';
                     $list = $tag;
                 }
-                $html .= '<li>'.$this->inline($matches[2]).'</li>';
+                $html .= '<li>'.$this->inline($matches[2], $public).'</li>';
 
                 continue;
             }
-            $html .= $this->closeList($list).'<p>'.$this->inline($line).'</p>';
+            $html .= $this->closeList($list).'<p>'.$this->inline($line, $public).'</p>';
         }
 
         return $html.$this->closeList($list).($sectionOpen ? '</section>' : '');
@@ -85,16 +85,22 @@ final class HelpMarkdown
         return $closing;
     }
 
-    private function inline(string $text): string
+    private function inline(string $text, bool $public): string
     {
         $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', $text) ?? $text;
 
         $text = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $text) ?? $text;
 
-        return preg_replace_callback('~(?<!!)\[([^\]\n]+)\]\(([^)\s]+)\)~', function (array $matches): string {
+        return preg_replace_callback('~(?<!!)\[([^\]\n]+)\]\(([^)\s]+)\)~', function (array $matches) use ($public): string {
             $url = html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             if (preg_match('~^/(?!/)[a-zA-Z0-9/_?&=.%#{}+\~-]*$~D', $url) !== 1) {
                 return $matches[0];
+            }
+            if ($public && preg_match('~^/admin/\{project_key\}/help(?:/([a-zA-Z0-9_-]+))?$~D', $url, $helpLink) === 1) {
+                $url = isset($helpLink[1]) ? '/help/'.$helpLink[1] : '/help';
+            }
+            if ($public && str_starts_with($url, '/liff/{project_key}')) {
+                $url = str_replace('/liff/{project_key}', '/demo/liff', $url);
             }
             if (str_contains($url, '{project_key}')) {
                 $projectKey = request()->route('project_key') ?? AdminContext::getCurrentProject()?->project_key;
