@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Order\Events\OrderCompleted;
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderReady;
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\Store;
@@ -99,6 +100,15 @@ class OrderNotificationOutbox
             AdminContext::setCurrentProject(Project::findOrFail($delivery->project_id));
             $store = Store::where('project_id', $delivery->project_id)->findOrFail($delivery->store_id);
             $this->storeContext->runForStore($store, function () use ($delivery): void {
+                $order = Order::where('project_id', $delivery->project_id)->find($delivery->order_id);
+                // Retried instructions must still describe an actionable order.
+                // Finish obsolete rows so a cancelled/completed order is not retried forever.
+                if ($order === null || $order->status === OrderStatus::CANCELLED
+                    || ($delivery->event !== 'completed' && $order->status === OrderStatus::COMPLETED)
+                    || ($delivery->event === 'ready' && $order->status !== OrderStatus::READY)
+                    || ($delivery->channel === 'kitchen' && ! in_array($order->status, [OrderStatus::CONFIRMED, OrderStatus::PREPARING], true))) {
+                    return;
+                }
                 if ($delivery->channel === 'kitchen') {
                     $this->kitchen->notifyNewOrder($delivery->order_id, $delivery->project_id);
 
