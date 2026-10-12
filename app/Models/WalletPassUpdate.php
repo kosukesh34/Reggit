@@ -15,6 +15,7 @@ class WalletPassUpdate extends Model
         'pass_type_identifier',
         'serial_number',
         'updated_at',
+        'revision',
     ];
 
     public $timestamps = false;
