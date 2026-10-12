@@ -17,21 +17,18 @@ class RootRouteTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('landing');
-        $response->assertSee('editorial/store-hero.webp', false);
-        $response->assertSee('editorial/member-retail.webp', false);
-        $response->assertSee('editorial/queue-family.webp', false);
-        $response->assertSee('editorial/kitchen-team.webp', false);
-        $response->assertSee('editorial/workshop-hands.webp', false);
-        $response->assertSee('editorial/table-conversation.webp', false);
-        $response->assertSee('editorial/storefront-detail.webp', false);
-        $response->assertSee('actual-home.webp', false);
-        $response->assertSee('actual-order.webp', false);
-        $response->assertSee('actual-member.webp', false);
-        $response->assertSee('actual-point.webp', false);
-        $response->assertSee('actual-coupon.webp', false);
-        $response->assertSee('actual-queue.webp', false);
-        $response->assertSee('actual-admin.webp', false);
+        $response->assertSee('current-home.jpg', false);
+        $response->assertSee('current-order.jpg', false);
+        $response->assertSee('current-member.jpg', false);
+        $response->assertSee('current-coupon.jpg', false);
+        $response->assertSee('current-queue.jpg', false);
+        $response->assertSee('current-admin.jpg', false);
         $response->assertSee('landing-home.css', false);
+        $response->assertSee(route('demo.liff'), false);
+        $response->assertSee('導入登録の流れ')
+            ->assertSee('LINEプラン')
+            ->assertSee('ネイティブアプリプラン');
+        $response->assertDontSee('架空企業');
         $response->assertSee('LINEミニアプリ');
         $response->assertSee('iOS / Android');
         $response->assertSee('スタンプ');
