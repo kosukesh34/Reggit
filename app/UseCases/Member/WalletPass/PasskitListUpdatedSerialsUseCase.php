@@ -33,6 +33,8 @@ class PasskitListUpdatedSerialsUseCase
             $input->passesUpdatedSince,
         );
 
-        return PasskitHttpOutput::json(200, $result);
+        return $result['serialNumbers'] === []
+            ? PasskitHttpOutput::empty(204)
+            : PasskitHttpOutput::json(200, $result);
     }
 }

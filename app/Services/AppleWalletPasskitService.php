@@ -115,7 +115,7 @@ class AppleWalletPasskitService
         string $passTypeIdentifier,
         ?string $passesUpdatedSince,
     ): array {
-        $query = WalletPassUpdate::query()
+        $rows = WalletPassUpdate::query()
             ->join('wallet_pass_registrations as r', function ($join) use ($deviceLibraryIdentifier, $passTypeIdentifier) {
                 $join->on('wallet_pass_updates.serial_number', '=', 'r.serial_number')
                     ->on('wallet_pass_updates.pass_type_identifier', '=', 'r.pass_type_identifier')
@@ -123,19 +123,18 @@ class AppleWalletPasskitService
                     ->where('r.pass_type_identifier', '=', $passTypeIdentifier);
             })
             ->where('wallet_pass_updates.pass_type_identifier', $passTypeIdentifier)
-            ->select('wallet_pass_updates.serial_number', 'wallet_pass_updates.updated_at')
-            ->orderBy('wallet_pass_updates.updated_at');
-
-        if ($passesUpdatedSince !== null && $passesUpdatedSince !== '') {
-            $query->where('wallet_pass_updates.updated_at', '>', $passesUpdatedSince);
-        }
-
-        $rows = $query->get();
-        $lastUpdated = $rows->max('updated_at');
+            ->select('wallet_pass_updates.serial_number', 'wallet_pass_updates.revision')
+            ->orderBy('wallet_pass_updates.revision')->orderBy('wallet_pass_updates.id')->get();
+        $cursor = $passesUpdatedSince !== null && str_starts_with($passesUpdatedSince, 'v2:')
+            ? filter_var(substr($passesUpdatedSince, 3), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]])
+            : false;
+        // Legacy timestamp tags resync once. Never advance beyond this single snapshot.
+        $lastUpdated = max($cursor === false ? 0 : $cursor, (int) ($rows->max('revision') ?? 0));
+        $changed = $cursor === false ? $rows : $rows->filter(fn ($row) => (int) $row->revision > $cursor);
 
         return [
-            'serialNumbers' => $rows->pluck('serial_number')->unique()->values()->all(),
-            'lastUpdated' => $lastUpdated ? (string) $lastUpdated : now()->toIso8601String(),
+            'serialNumbers' => $changed->pluck('serial_number')->unique()->values()->all(),
+            'lastUpdated' => 'v2:'.$lastUpdated,
         ];
     }
 
