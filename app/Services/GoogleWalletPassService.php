@@ -176,7 +176,7 @@ class GoogleWalletPassService
             if (! $legacySucceeded) {
                 Log::warning('google-wallet legacy object update failed', ['objectId' => $legacyId, 'status' => $legacy->status()]);
             }
-        } catch (ConnectionException $exception) {
+        } catch (ConnectionException) {
             $legacySucceeded = false;
             Log::warning('google-wallet legacy object connection failed', ['objectId' => $legacyId]);
         }

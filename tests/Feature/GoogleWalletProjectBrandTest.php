@@ -78,11 +78,16 @@ class GoogleWalletProjectBrandTest extends TestCase
         $member = Member::factory()->create(['project_id' => $project->id]);
         $legacyId = '123.member-'.$member->id.'-b';
         $newId = $legacyId.'-p'.$project->id;
-        Http::fake(function (Request $request) use ($legacyId, $legacyStatus) {
+        $legacyAttempted = false;
+        Http::fake(function (Request $request) use ($legacyId, $legacyStatus, &$legacyAttempted) {
             if (str_contains($request->url(), 'oauth2.googleapis.com')) {
                 return Http::response(['access_token' => 'token']);
             }
             if ($request->method() === 'PATCH' && str_ends_with($request->url(), '/'.$legacyId)) {
+                $legacyAttempted = true;
+                $this->assertArrayNotHasKey('classId', $request->data());
+                $this->assertArrayNotHasKey('id', $request->data());
+                $this->assertArrayHasKey('int', $request['loyaltyPoints']['balance']);
                 if ($legacyStatus === 'connection') {
                     throw new ConnectionException('Legacy endpoint unavailable');
                 }
@@ -93,9 +98,7 @@ class GoogleWalletProjectBrandTest extends TestCase
             return Http::response([]);
         });
         $this->assertSame(in_array($legacyStatus, [200, 404], true), app(GoogleWalletPassService::class)->syncLoyaltyObjectForMember($member));
-        Http::assertSent(fn (Request $request) => $request->method() === 'PATCH'
-            && str_ends_with($request->url(), '/'.$legacyId) && ! isset($request['classId']) && ! isset($request['id'])
-            && isset($request['loyaltyPoints']['balance']['int']));
+        $this->assertTrue($legacyAttempted);
         Http::assertSent(fn (Request $request) => $request->method() === 'PUT'
             && str_ends_with($request->url(), '/'.$newId)
             && $request['classId'] === '123.membership-project-'.$project->id);
