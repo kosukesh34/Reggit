@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\Store;
+use App\Support\AdminPasskeyGate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -101,9 +102,13 @@ class AdminStaffAccessTest extends TestCase
         $staff = AdminUser::factory()->create(['role' => 'staff', 'project_id' => $project->id, 'password' => 'StrongPass123']);
         $staff->syncPermissions(['orders.view']);
         $this->post(route('admin.project.login.submit', $project->project_key), ['login_id' => $staff->login_id, 'password' => 'StrongPass123'])
-            ->assertRedirect(route('admin.stores.index', $project->project_key));
+            ->assertRedirect(route('admin.passkey.enroll'));
         $this->assertAuthenticatedAs($staff, 'admin');
-        $this->get(route('admin.stores.index', $project->project_key))->assertOk();
+        $this->assertSame(route('admin.stores.index', $project->project_key), session('url.intended'));
+        $this->withSession([
+            AdminPasskeyGate::PASSWORD_AUTHENTICATED => true,
+            AdminPasskeyGate::PASSKEY_VERIFIED => true,
+        ])->get(route('admin.stores.index', $project->project_key))->assertOk();
     }
 
     public function test_new_staff_without_explicit_branch_assignment_has_no_branch_access(): void
