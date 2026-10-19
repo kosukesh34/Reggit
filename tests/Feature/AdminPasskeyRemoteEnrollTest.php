@@ -14,7 +14,7 @@ class AdminPasskeyRemoteEnrollTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_remoteEnroll_設定画面から遠隔登録リンクを発行できること(): void
+    public function test_remote_enroll_設定画面から遠隔登録リンクを発行できること(): void
     {
         [$admin] = $this->adminWithPasskey();
 
@@ -28,7 +28,7 @@ class AdminPasskeyRemoteEnrollTest extends TestCase
             ->assertSessionHas('remote_enroll_url');
     }
 
-    public function test_remoteEnroll_ゲストがリンク後パスワードログインで既存パスキーを消さず登録へ進むこと(): void
+    public function test_remote_enroll_ゲストがリンク後パスワードログインで既存パスキーを消さず登録へ進むこと(): void
     {
         [$admin, $passkey] = $this->adminWithPasskey([
             'login_id' => 'store_admin',
@@ -55,7 +55,7 @@ class AdminPasskeyRemoteEnrollTest extends TestCase
             ->assertSee('パスキー登録');
     }
 
-    public function test_remoteEnroll_確認済みセッションで自分のリンクから登録へ進むこと(): void
+    public function test_remote_enroll_確認済みセッションで自分のリンクから登録へ進むこと(): void
     {
         [$admin] = $this->adminWithPasskey();
         $url = URL::temporarySignedRoute(
@@ -77,7 +77,7 @@ class AdminPasskeyRemoteEnrollTest extends TestCase
             ->assertSee('パスキー登録');
     }
 
-    public function test_remoteEnroll_別管理者のリンクでは解除されないこと(): void
+    public function test_remote_enroll_別管理者のリンクでは解除されないこと(): void
     {
         [$admin] = $this->adminWithPasskey();
         $other = AdminUser::factory()->create([

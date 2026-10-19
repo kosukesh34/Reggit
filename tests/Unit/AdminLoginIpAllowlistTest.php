@@ -23,7 +23,7 @@ class AdminLoginIpAllowlistTest extends TestCase
         $this->assertFalse(AdminLoginIpAllowlist::allows(null, $entries));
     }
 
-    public function test_isValidEntry_エントリの妥当性を検証すること(): void
+    public function test_is_valid_entry_エントリの妥当性を検証すること(): void
     {
         $this->assertTrue(AdminLoginIpAllowlist::isValidEntry('203.0.113.10'));
         $this->assertTrue(AdminLoginIpAllowlist::isValidEntry('203.0.113.0/24'));

@@ -211,7 +211,7 @@ class AdminLoginSecurityTest extends TestCase
             ->assertSessionHasErrors('login_allowed_ips');
     }
 
-    public function test_currentIp_現在の接続ipを返すこと(): void
+    public function test_current_ip_現在の接続ipを返すこと(): void
     {
         $admin = AdminUser::factory()->create([
             'role' => AdminUser::ROLE_SYSTEM_ADMIN,
