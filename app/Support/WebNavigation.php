@@ -16,7 +16,9 @@ final class WebNavigation
         }
         $prefix = $system ? 'system-admin.' : 'admin.';
         $page = substr($name, strlen($prefix));
-        if (in_array($page, ['dashboard', 'project.home'], true) || str_starts_with($page, 'passkey')) {
+        if (in_array($page, ['dashboard', 'project.home'], true)
+            || str_starts_with($page, 'passkey')
+            || str_starts_with($page, 'login-security')) {
             return null;
         }
 

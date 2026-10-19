@@ -40,6 +40,7 @@ class WebNavigationTest extends TestCase
                 || ! preg_match('/^(admin|system-admin)\./', $name)
                 || str_starts_with($name, 'admin.password.')
                 || str_starts_with($name, 'admin.passkey.')
+                || str_starts_with($name, 'admin.login-security.')
                 || str_starts_with($name, 'passkey.')) {
                 continue;
             }
