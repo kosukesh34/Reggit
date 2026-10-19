@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Notifications\AdminPasswordReset;
+use App\Support\AdminPasskeyGate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -14,10 +15,17 @@ class AdminPasswordTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_staff_changes_own_password_with_current_password(): void
+    public function test_change_スタッフが現在のパスワードで変更できること(): void
     {
         $staff = AdminUser::factory()->create(['role' => 'staff', 'password' => 'OriginalPass123']);
-        $this->actingAs($staff, 'admin')->get(route('admin.password.edit'))->assertOk();
+        $this->actingAs($staff, 'admin')
+            ->get(route('admin.password.edit'))
+            ->assertRedirect(route('admin.passkey.settings'));
+        $this->actingAs($staff, 'admin')
+            ->get(route('admin.passkey.settings'))
+            ->assertOk()
+            ->assertSee('パスワード変更')
+            ->assertSee('ログイン設定');
         $data = ['current_password' => 'incorrect', 'password' => 'NewPassword123', 'password_confirmation' => 'NewPassword123'];
         $this->put(route('admin.password.change'), $data)->assertSessionHasErrors('current_password');
         $this->assertTrue(Hash::check('OriginalPass123', $staff->fresh()->password));
@@ -26,13 +34,13 @@ class AdminPasswordTest extends TestCase
         $this->assertTrue(Hash::check('NewPassword123', $staff->fresh()->password));
     }
 
-    public function test_guest_cannot_change_authenticated_password(): void
+    public function test_change_未ログインではパスワード変更できないこと(): void
     {
         $this->get(route('admin.password.edit'))->assertRedirect();
         $this->put(route('admin.password.change'), [])->assertRedirect();
     }
 
-    public function test_reset_email_contains_admin_link_and_unknown_email_is_not_disclosed(): void
+    public function test_email_リセットメールに管理画面リンクが含まれ不明メールは開示しないこと(): void
     {
         Notification::fake();
         $staff = AdminUser::factory()->create(['role' => 'staff']);
@@ -48,7 +56,7 @@ class AdminPasswordTest extends TestCase
         Notification::assertCount(1);
     }
 
-    public function test_valid_token_resets_password_once_and_rotates_remember_token(): void
+    public function test_reset_有効トークンで一度だけリセットしremember_tokenを更新すること(): void
     {
         $staff = AdminUser::factory()->create(['role' => 'staff', 'remember_token' => 'old-token']);
         $token = Password::broker('admins')->createToken($staff);
@@ -60,7 +68,7 @@ class AdminPasswordTest extends TestCase
         $this->post(route('admin.password.update'), $data)->assertSessionHasErrors('email');
     }
 
-    public function test_invalid_expired_or_other_users_token_cannot_reset_password(): void
+    public function test_reset_無効期限切れ他人トークンではリセットできないこと(): void
     {
         $staff = AdminUser::factory()->create(['password' => 'OriginalPass123']);
         $other = AdminUser::factory()->create();
@@ -73,20 +81,23 @@ class AdminPasswordTest extends TestCase
         $this->assertTrue(Hash::check('OriginalPass123', $staff->fresh()->password));
     }
 
-    public function test_password_change_rejects_other_sessions_and_keeps_current_session(): void
+    public function test_change_他セッションを拒否し現セッションは維持すること(): void
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN, 'password' => 'OriginalPass123']);
         $oldHash = auth('admin')->hashPasswordForCookie($admin->password);
         $this->post('/system-admin/login', ['login_id' => $admin->login_id, 'password' => 'OriginalPass123'])->assertRedirect();
-        $this->put(route('admin.password.change'), [
-            'current_password' => 'OriginalPass123', 'password' => 'NewPassword123', 'password_confirmation' => 'NewPassword123',
-        ])->assertRedirect();
-        $this->get('/system-admin')->assertRedirect(route('system-admin.dashboard'));
+        $this->withSession([AdminPasskeyGate::PASSKEY_VERIFIED => true])
+            ->put(route('admin.password.change'), [
+                'current_password' => 'OriginalPass123', 'password' => 'NewPassword123', 'password_confirmation' => 'NewPassword123',
+            ])->assertRedirect();
+        $this->withSession([AdminPasskeyGate::PASSKEY_VERIFIED => true])
+            ->get('/system-admin')
+            ->assertRedirect(route('system-admin.dashboard'));
         auth('admin')->forgetUser();
         $this->withSession(['password_hash_admin' => $oldHash])->getJson('/system-admin')->assertUnauthorized();
     }
 
-    public function test_password_reset_rejects_old_session_even_before_first_protected_request(): void
+    public function test_reset_保護リクエスト前でも旧セッションを拒否すること(): void
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN, 'password' => 'OriginalPass123']);
         $this->post('/system-admin/login', ['login_id' => $admin->login_id, 'password' => 'OriginalPass123'])->assertRedirect();
@@ -98,7 +109,7 @@ class AdminPasswordTest extends TestCase
         $this->getJson('/system-admin')->assertUnauthorized();
     }
 
-    public function test_legacy_admin_session_without_password_binding_is_rejected(): void
+    public function test_session_パスワードバインドなしの旧セッションを拒否すること(): void
     {
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_SYSTEM_ADMIN]);
         $this->actingAs($admin, 'admin');
@@ -106,7 +117,7 @@ class AdminPasswordTest extends TestCase
         $this->getJson('/system-admin')->assertUnauthorized();
     }
 
-    public function test_reset_password_requires_confirmation(): void
+    public function test_reset_確認入力が必須であること(): void
     {
         $staff = AdminUser::factory()->create();
         $token = Password::broker('admins')->createToken($staff);

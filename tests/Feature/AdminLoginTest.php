@@ -54,7 +54,7 @@ class AdminLoginTest extends TestCase
         $this->assertAuthenticated('admin');
     }
 
-    /** 共通「ID・パスワードでログイン」からシステム管理者でログインするとシステム管理画面へリダイレクトされる（拒否しない） */
+    /** 共通「ID・パスワードでログイン」からシステム管理者でログインできる（パスキーはバイパス） */
     public function test_login_共通ログイン画面からシステム管理者はシステム管理へリダイレクトされること(): void
     {
         Project::firstOrCreate(
@@ -77,7 +77,7 @@ class AdminLoginTest extends TestCase
         $this->assertAuthenticated('admin');
     }
 
-    /** システム管理者はプロジェクト指定ログイン（/admin/{project_key}/login）でログインでき、そのプロジェクトのダッシュボードへリダイレクトされる */
+    /** システム管理者はプロジェクト指定ログインで、パスキーなしでそのプロジェクトへ進む */
     public function test_login_システム管理者がプロジェクトログイン経由でログインできること(): void
     {
         $project = Project::firstOrCreate(
@@ -120,6 +120,7 @@ class AdminLoginTest extends TestCase
 
         $response->assertRedirect(route('system-admin.projects.index'));
         $this->assertAuthenticated('admin');
+        $this->assertSame(route('system-admin.projects.index'), session('url.intended'));
     }
 
     /** デモ用システム管理者（demo_sys / DemoSys#2026）でログインできること */
@@ -146,7 +147,7 @@ class AdminLoginTest extends TestCase
         $this->assertAuthenticated('admin');
     }
 
-    /** /admin/default/login からシステム管理者でログインすると default のダッシュボードへリダイレクトされること */
+    /** /admin/default/login からシステム管理者でログインすると default のダッシュボードへ進むこと */
     public function test_login_プロジェクトdefaultログインでシステム管理者がダッシュボードへ遷移できること(): void
     {
         $project = Project::firstOrCreate(

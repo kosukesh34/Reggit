@@ -13,9 +13,8 @@
 </head>
 <body class="admin-login-page admin-login-page--system">
     <div class="admin-login-box">
-        <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="url('/')" label="Reggit トップへ戻る" /></nav>
         <h1><i class="fas fa-cog"></i> {{ $heading }}</h1>
-        <p class="admin-login-lead">システム管理者のIDとパスワードでログインしてください。<br>全プロジェクトにアクセスできます。</p>
+        <p class="admin-login-lead">システム管理者のIDとパスワードでログインしたあと、パスキーで本人確認します。<br>全プロジェクトにアクセスできます。</p>
 
         @if ($errors->any())
             <div class="alert alert-error">

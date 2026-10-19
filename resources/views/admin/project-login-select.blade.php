@@ -9,7 +9,6 @@
 </head>
 <body class="admin-login-page">
     <div class="admin-login-box">
-        <nav class="web-page-navigation" aria-label="ページの移動"><x-back-link :href="url('/')" label="Reggit トップへ戻る" /></nav>
         <h1><i class="fas fa-store"></i> 店舗管理ログイン</h1>
         <p class="admin-login-lead">ログインするプロジェクト（店舗）を選んでください</p>
 

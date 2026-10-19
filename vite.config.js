@@ -36,6 +36,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/js/admin/main.tsx',
+                'resources/js/admin/passkeys.ts',
                 'resources/js/frontend/main.tsx',
                 'resources/js/liff-demo/main.tsx',
                 'resources/js/payment/card.ts',

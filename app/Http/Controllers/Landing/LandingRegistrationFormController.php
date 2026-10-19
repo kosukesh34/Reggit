@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Landing\LandingRegistrationFormRequest;
 use App\Models\AdminUser;
 use App\Models\LandingRegistration;
+use App\Support\AdminPasskeyGate;
 use App\UseCases\Landing\Data\LandingRegistrationCompleteView;
 use App\UseCases\Landing\Data\LandingRegistrationFormInput;
 use App\UseCases\Landing\Data\LandingRegistrationFormView;
@@ -13,6 +14,7 @@ use App\UseCases\Landing\Data\LandingRegistrationStatusView;
 use App\UseCases\Landing\ShowLandingRegistrationFormUseCase;
 use App\UseCases\Landing\SubmitLandingRegistrationUseCase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
 
 class LandingRegistrationFormController extends Controller
@@ -64,9 +66,9 @@ class LandingRegistrationFormController extends Controller
         $admin = AdminUser::query()->where('login_id', $result->loginId)->first();
         if ($admin !== null) {
             Auth::guard('admin')->login($admin);
-            session()->regenerate();
-            session()->put('admin_login_via', 'admin');
-            session()->put('password_hash_admin', Auth::guard('admin')->hashPasswordForCookie($admin->getAuthPassword()));
+            Session::put('admin_login_via', 'admin');
+            Session::put('password_hash_admin', Auth::guard('admin')->hashPasswordForCookie($admin->getAuthPassword()));
+            AdminPasskeyGate::markPasswordAuthenticated();
         }
     }
 
