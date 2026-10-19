@@ -1,7 +1,19 @@
 import { ConfirmDialog } from '../shared/utils/confirmDialog';
 import { ToastManager } from '../shared/utils/toast';
+import {
+    formsHaveUnsavedChanges,
+    serializeForm,
+    shouldTrackUnsavedForm,
+    UNSAVED_LEAVE_MESSAGE,
+} from './unsavedFormGuard';
 
 type TooltipHost = HTMLElement & { _tooltip?: HTMLElement | null };
+
+let isLeavingAdminPage = false;
+
+function markAdminPageLeaving(): void {
+    isLeavingAdminPage = true;
+}
 
 function preventZoom(): void {
     document.addEventListener('gesturestart', ((e: Event) => {
@@ -98,6 +110,14 @@ function showAdminSavingOverlay(): void {
     document.body.appendChild(overlay);
 }
 
+function resolveSubmitControl(form: HTMLFormElement, event: Event): HTMLButtonElement | HTMLInputElement | null {
+    const submitter = 'submitter' in event ? (event as SubmitEvent).submitter : null;
+    if (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) {
+        return submitter;
+    }
+    return form.querySelector('button[type="submit"], input[type="submit"]');
+}
+
 function initFormValidation(): void {
     document.querySelectorAll('form').forEach((formEl) => {
         const form = formEl as HTMLFormElement;
@@ -109,8 +129,14 @@ function initFormValidation(): void {
             if (e.defaultPrevented) {
                 return;
             }
-            const submitBtn = form.querySelector('button[type="submit"]:not(.no-loading), input[type="submit"]:not(.no-loading)') as HTMLButtonElement | null;
-            if (submitBtn && !form.checkValidity()) {
+            if (form.hasAttribute('data-no-loading')) {
+                return;
+            }
+            const submitBtn = resolveSubmitControl(form, e);
+            if (submitBtn?.classList.contains('no-loading')) {
+                return;
+            }
+            if (submitBtn !== null && !form.checkValidity()) {
                 e.preventDefault();
                 ToastManager.error('入力内容を確認してください');
                 form.reportValidity();
@@ -119,19 +145,101 @@ function initFormValidation(): void {
             // 確認画面など、後から登録された submit ハンドラーのキャンセルも確認する。
             setTimeout(() => {
                 if (e.defaultPrevented) return;
-                if (submitBtn && !submitBtn.disabled) {
+                markAdminPageLeaving();
+                if (submitBtn instanceof HTMLButtonElement && !submitBtn.disabled) {
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
-                    showAdminSavingOverlay();
+                } else if (submitBtn instanceof HTMLInputElement && !submitBtn.disabled) {
+                    submitBtn.disabled = true;
+                    submitBtn.value = '処理中...';
                 }
+                showAdminSavingOverlay();
             });
         });
     });
 }
 
-function initLoadingStates(): void {
-    // 送信ボタンの loading 表示は initFormValidation の submit 時に行う。
-    // click で disabled にするとブラウザがフォーム送信をキャンセルするため、ここには置かない。
+function initUnsavedChangesWarning(): void {
+    const forms = Array.from(document.querySelectorAll('form')).filter(
+        (form): form is HTMLFormElement => form instanceof HTMLFormElement && shouldTrackUnsavedForm(form),
+    );
+    if (forms.length === 0) {
+        return;
+    }
+
+    const savedSnapshots = forms.map((form) => serializeForm(form));
+    // IP行の追加など、inputイベント前のDOM変更も拾う
+    let isDirty = false;
+
+    const hasUnsavedChanges = (): boolean => (
+        isDirty || formsHaveUnsavedChanges(forms, savedSnapshots)
+    );
+
+    const syncDirtyFromForms = (): void => {
+        if (formsHaveUnsavedChanges(forms, savedSnapshots)) {
+            isDirty = true;
+        }
+    };
+
+    forms.forEach((form) => {
+        form.addEventListener('input', syncDirtyFromForms);
+        form.addEventListener('change', syncDirtyFromForms);
+        const observer = new MutationObserver(syncDirtyFromForms);
+        observer.observe(form, { childList: true, subtree: true });
+
+        form.addEventListener('submit', () => {
+            if (!form.checkValidity()) {
+                return;
+            }
+            markAdminPageLeaving();
+        });
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+        if (isLeavingAdminPage || !hasUnsavedChanges()) {
+            return;
+        }
+        event.preventDefault();
+        event.returnValue = '';
+    });
+
+    document.addEventListener('click', (event) => {
+        if (isLeavingAdminPage || event.button !== 0
+            || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+            return;
+        }
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+        const link = target.closest('a');
+        if (!(link instanceof HTMLAnchorElement) || link.target === '_blank' || link.href === '') {
+            return;
+        }
+        let nextUrl: URL;
+        try {
+            nextUrl = new URL(link.href);
+        } catch {
+            return;
+        }
+        if (nextUrl.origin !== window.location.origin
+            || (nextUrl.pathname === window.location.pathname && nextUrl.search === window.location.search)) {
+            return;
+        }
+        if (!hasUnsavedChanges()) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        void ConfirmDialog.show(UNSAVED_LEAVE_MESSAGE, '確認').then((confirmed) => {
+            if (!confirmed) {
+                return;
+            }
+            markAdminPageLeaving();
+            window.location.href = link.href;
+        });
+    }, true);
 }
 
 function initStoreSwitcher(): void {
@@ -301,7 +409,7 @@ export function bootstrapAdminCommon(): void {
         initDeleteConfirmations();
         initTooltips();
         initFormValidation();
-        initLoadingStates();
+        initUnsavedChangesWarning();
         initStoreSwitcher();
         initSidebarScrollRestore();
         initImageUploads();

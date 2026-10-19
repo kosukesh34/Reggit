@@ -50,6 +50,13 @@ class AdminAuditLog extends Model
             return match ((string) $payload['event']) {
                 'login_success' => 'ログイン',
                 'logout' => 'ログアウト',
+                'passkey_registered' => 'パスキーを登録',
+                'passkey_deleted' => 'パスキーを削除',
+                'passkey_verified' => 'パスキーで本人確認',
+                'passkey_recovery_email_sent' => 'パスキー再登録メールを送信',
+                'passkey_recovery_completed' => 'パスキーを再登録準備（既存を無効化）',
+                'passkey_remote_enroll_link_issued' => 'パスキー追加用リンクを発行',
+                'passkey_remote_enroll_started' => 'パスキー追加用リンクを開いた',
                 default => (string) $payload['event'],
             };
         }
@@ -134,6 +141,13 @@ class AdminAuditLog extends Model
         'admin.settings.home.update' => 'ホーム設定を更新',
         'admin.settings.menu.update' => 'メニュー設定を更新', // 廃止（ホームへリダイレクト。互換のためキーは残す）
         'admin.settings.features.update' => '機能・カスタマイズ設定を更新',
+        'passkey.store' => 'パスキーを登録',
+        'passkey.destroy' => 'パスキーを削除',
+        'passkey.confirm' => 'パスキーで本人確認',
+        'admin.passkey.recovery.email' => 'パスキー再登録メールを送信',
+        'admin.passkey.remote-enroll.create' => 'パスキー追加用リンクを発行',
+        'admin.password.change' => 'パスワードを変更',
+        'admin.login-security.update' => 'ログインセキュリティ設定を更新',
     ];
 
     private const RESOURCE_LABELS = [
@@ -149,6 +163,8 @@ class AdminAuditLog extends Model
         'coupons' => 'クーポン',
         'announcements' => 'お知らせ',
         'settings' => '設定',
+        'passkeys' => 'パスキー',
+        'passkey' => 'パスキー',
     ];
 
     /** A human-readable, PII-safe description of the affected area. */
@@ -165,12 +181,20 @@ class AdminAuditLog extends Model
             default => '',
         };
 
+        $payload = is_array($this->payload) ? $this->payload : [];
+        $passkeyName = $payload['passkey_name'] ?? null;
+        if (is_string($passkeyName) && $passkeyName !== '') {
+            return 'パスキー（'.$passkeyName.'）';
+        }
+        if (is_array($payload) && str_starts_with((string) ($payload['event'] ?? ''), 'passkey_')) {
+            return 'パスキー';
+        }
+
         if ($resourceLabel === '') {
             return $this->project?->name ?? '管理画面';
         }
 
-        $payload = is_array($this->payload) ? $this->payload : [];
-        $id = $payload['id'] ?? null;
+        $id = $payload['id'] ?? $payload['passkey_id'] ?? null;
         $params = request()->route()?->parameters() ?? [];
         $id ??= $params['id'] ?? null;
 
@@ -187,6 +211,7 @@ class AdminAuditLog extends Model
             'is_active' => '公開状態', 'role' => '権限', 'permissions' => '権限設定',
             'permission_ids' => '権限設定', 'sort_order' => '表示順',
             'display_order' => '表示順', 'type' => '種類',
+            'passkey_name' => '端末名', 'passkey_id' => 'パスキーID',
         ];
         $fields = array_values(array_unique(array_filter(array_map(
             fn ($key) => $labels[$key] ?? null,

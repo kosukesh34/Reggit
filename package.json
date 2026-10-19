@@ -15,6 +15,7 @@
     "test:e2e:ui": "playwright test --config=e2e/web/playwright.config.ts --ui"
   },
   "dependencies": {
+    "@laravel/passkeys": "^0.4.0",
     "date-fns": "^4.4.0",
     "jsbarcode": "^3.12.3",
     "jsqr": "^1.4.0",

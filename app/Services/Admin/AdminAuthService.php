@@ -4,6 +4,7 @@ namespace App\Services\Admin;
 
 use App\Models\AdminAuditLog;
 use App\Models\AdminUser;
+use App\Notifications\AdminLoginAlert;
 use App\Repositories\Contracts\AdminUserRepository;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Services\Admin\Data\AdminAuthAuditContext;
@@ -11,6 +12,7 @@ use App\Services\Admin\Data\AdminLoginInput;
 use App\Services\Admin\Data\AdminLogoutInput;
 use App\Services\Admin\Data\AdminRedirectResult;
 use App\Services\Admin\Data\SystemAdminLoginInput;
+use App\Support\AdminPasskeyGate;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -91,24 +93,31 @@ class AdminAuthService
             throw ValidationException::withMessages(['login_id' => ['このプロジェクトへのアクセス権がありません。']]);
         }
 
+        $this->assertLoginIpAllowed($user, $input->auditContext->ip);
+
         Log::info('[AdminLogin] success', ['login_id' => $user->login_id, 'project_key' => $input->projectKey]);
 
         Auth::guard('admin')->login($user, $input->remember);
         Session::regenerate();
         Session::put('admin_login_via', 'admin');
         Session::put('password_hash_admin', Auth::guard('admin')->hashPasswordForCookie($user->getAuthPassword()));
+        AdminPasskeyGate::markPasswordAuthenticated();
 
-        $this->writeLoginAuditLog($input->auditContext, $user->id, 'login_success', [
-            'login_id' => $input->loginId,
-            'remember' => $input->remember,
-            'project_key' => $input->projectKey,
-        ]);
-
-        if ($input->projectKey !== null && $input->projectKey !== '') {
-            return $this->projectLoginRedirect($user, $input->projectKey);
+        // システムAdminの店舗管理ログインは監査しない（システム管理ログインのみ記録）
+        if (! $user->isSystemAdmin()) {
+            $this->writeLoginAuditLog($input->auditContext, $user->id, 'login_success', [
+                'login_id' => $input->loginId,
+                'remember' => $input->remember,
+                'project_key' => $input->projectKey,
+            ]);
         }
+        $this->notifyLoginIfEnabled($user, $input->auditContext);
 
-        return $this->getAdminDashboardRedirect();
+        $intended = ($input->projectKey !== null && $input->projectKey !== '')
+            ? $this->projectLoginRedirect($user, $input->projectKey)
+            : $this->getAdminDashboardRedirect();
+
+        return $this->completeLoginGate($user, $intended);
     }
 
     private function projectLoginRedirect(AdminUser $admin, string $projectKey): AdminRedirectResult
@@ -135,22 +144,73 @@ class AdminAuthService
             ]);
         }
 
+        $this->assertLoginIpAllowed($user, $input->auditContext->ip);
+
         Auth::guard('admin')->login($user, $input->remember);
         Session::regenerate();
         Session::put('admin_login_via', 'system-admin');
         Session::put('password_hash_admin', Auth::guard('admin')->hashPasswordForCookie($user->getAuthPassword()));
+        AdminPasskeyGate::markPasswordAuthenticated();
 
         $this->writeLoginAuditLog($input->auditContext, $user->id, 'login_success', [
             'login_id' => $input->loginId,
             'remember' => $input->remember,
         ]);
+        $this->notifyLoginIfEnabled($user, $input->auditContext);
 
-        return $this->getSystemAdminDashboardRedirect();
+        // システムAdminはパスキー／IPをスキップ。ログイン後のプロジェクト移動でも再認証しない。
+        return $this->completeLoginGate($user, $this->getSystemAdminDashboardRedirect());
+    }
+
+    private function completeLoginGate(AdminUser $user, AdminRedirectResult $intended): AdminRedirectResult
+    {
+        AdminPasskeyGate::rememberIntended($intended);
+        if ($user->isSystemAdmin()) {
+            AdminPasskeyGate::markPasskeyVerified();
+
+            return $intended;
+        }
+
+        return AdminPasskeyGate::nextStep($user);
+    }
+
+    private function assertLoginIpAllowed(AdminUser $user, ?string $ip): void
+    {
+        if ($user->isSystemAdmin() || $user->allowsLoginFromIp($ip)) {
+            return;
+        }
+
+        Log::warning('[AdminLogin] ip denied', [
+            'login_id' => $user->login_id,
+            'ip' => $ip,
+        ]);
+        throw ValidationException::withMessages([
+            'login_id' => ['このIPアドレスからのログインは許可されていません。'],
+        ]);
+    }
+
+    private function notifyLoginIfEnabled(AdminUser $user, AdminAuthAuditContext $context): void
+    {
+        if ($user->login_notify_by_email !== true) {
+            return;
+        }
+        if ($user->email === null || $user->email === '') {
+            return;
+        }
+
+        $user->notify(new AdminLoginAlert(
+            ip: $context->ip,
+            userAgent: $context->userAgent !== '' ? $context->userAgent : '不明',
+            occurredAt: now()->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
+        ));
     }
 
     public function logout(AdminLogoutInput $input): AdminRedirectResult
     {
-        if ($input->adminUserId !== null) {
+        $admin = Auth::guard('admin')->user();
+        $isSystemAdmin = $admin instanceof AdminUser && $admin->isSystemAdmin();
+        // システム管理のログアウトは残す。店舗管理側のシステムAdminログアウトは残さない。
+        if ($input->adminUserId !== null && ($input->isSystemAdminLogout || ! $isSystemAdmin)) {
             $this->writeLoginAuditLog($input->auditContext, $input->adminUserId, 'logout', []);
         }
 

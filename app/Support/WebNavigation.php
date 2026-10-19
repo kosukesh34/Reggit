@@ -11,9 +11,14 @@ final class WebNavigation
     {
         $name = (string) $request->route()?->getName();
         $system = str_starts_with($name, 'system-admin.');
+        if (! $system && ! str_starts_with($name, 'admin.')) {
+            return null;
+        }
         $prefix = $system ? 'system-admin.' : 'admin.';
         $page = substr($name, strlen($prefix));
-        if (in_array($page, ['dashboard', 'project.home'], true)) {
+        if (in_array($page, ['dashboard', 'project.home'], true)
+            || str_starts_with($page, 'passkey')
+            || str_starts_with($page, 'login-security')) {
             return null;
         }
 

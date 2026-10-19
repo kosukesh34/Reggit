@@ -39,6 +39,9 @@ use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Domain\Settings\Repositories\StampSettings;
 use App\Domain\Settings\Repositories\WalletSettings;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
+use App\Http\Responses\AdminPasskeyConfirmationResponse;
+use App\Http\Responses\AdminPasskeyDeletedResponse;
+use App\Http\Responses\AdminPasskeyRegistrationResponse;
 use App\Infrastructure\Events\LoggingDomainEventListener;
 use App\Infrastructure\Events\MulticastDomainEventDispatcher;
 use App\Infrastructure\Events\SyncOrderPointsToSmaregiListener;
@@ -54,6 +57,7 @@ use App\Infrastructure\Persistence\Eloquent\Product\EloquentProductReadRepositor
 use App\Infrastructure\Persistence\Eloquent\Queue\EloquentQueueEntryRepository;
 use App\Infrastructure\Persistence\Eloquent\Reservation\EloquentReservationRepository;
 use App\Infrastructure\Persistence\Eloquent\Settings\EloquentShopSettingRepository;
+use App\Models\AdminUser;
 use App\Models\Announcement;
 use App\Models\Coupon;
 use App\Models\CouponRedemption;
@@ -88,6 +92,8 @@ use App\Repositories\Eloquent\EloquentUserDeviceRepository;
 use App\Repositories\Eloquent\EloquentUserRepository;
 use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\Smaregi\SmaregiApiClient;
+use App\Support\AdminPasskeyAudit;
+use App\Support\PasskeyOrigin;
 use App\UseCases\Payment\GatewayUnpaidPaymentSessionCanceller;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\StripePaymentGateway;
@@ -97,14 +103,28 @@ use App\Util\TenantContext;
 use App\View\Composers\AdminLayoutComposer;
 use App\View\Composers\FrontendShellComposer;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passkeys\Contracts\PasskeyConfirmationResponse as PasskeyConfirmationResponseContract;
+use Laravel\Passkeys\Contracts\PasskeyDeletedResponse as PasskeyDeletedResponseContract;
+use Laravel\Passkeys\Contracts\PasskeyRegistrationResponse as PasskeyRegistrationResponseContract;
+use Laravel\Passkeys\Events\PasskeyDeleted;
+use Laravel\Passkeys\Events\PasskeyRegistered;
+use Laravel\Passkeys\Passkey;
+use Laravel\Passkeys\Passkeys;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        Passkeys::useUserModel(AdminUser::class);
+        Passkeys::ignoreRoutes();
+        $this->app->singleton(PasskeyConfirmationResponseContract::class, AdminPasskeyConfirmationResponse::class);
+        $this->app->singleton(PasskeyRegistrationResponseContract::class, AdminPasskeyRegistrationResponse::class);
+        $this->app->singleton(PasskeyDeletedResponseContract::class, AdminPasskeyDeletedResponse::class);
+
         $this->app->scoped(TenantContext::class);
         $this->app->scoped(StoreContext::class);
         $this->app->bind(ProjectRepository::class, EloquentProjectRepository::class);
@@ -202,6 +222,7 @@ class AppServiceProvider extends ServiceProvider
         require base_path('routes/channels.php');
 
         if ($this->app->runningInConsole() === false) {
+            PasskeyOrigin::apply();
             if (request()->isSecure() ||
                 request()->header('X-Forwarded-Proto') === 'https' ||
                 request()->header('X-Forwarded-Ssl') === 'on') {
@@ -211,5 +232,24 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('admin.layout', AdminLayoutComposer::class);
         View::composer(['index', 'frontend.line', 'frontend.native'], FrontendShellComposer::class);
+
+        Event::listen(PasskeyRegistered::class, function (PasskeyRegistered $event): void {
+            if (! $event->user instanceof AdminUser || ! $event->passkey instanceof Passkey) {
+                return;
+            }
+            AdminPasskeyAudit::record($event->user, 'passkey_registered', [
+                'passkey_id' => $event->passkey->id,
+                'passkey_name' => $event->passkey->name,
+            ], 'passkey.store');
+        });
+        Event::listen(PasskeyDeleted::class, function (PasskeyDeleted $event): void {
+            if (! $event->user instanceof AdminUser || ! $event->passkey instanceof Passkey) {
+                return;
+            }
+            AdminPasskeyAudit::record($event->user, 'passkey_deleted', [
+                'passkey_id' => $event->passkey->id,
+                'passkey_name' => $event->passkey->name,
+            ], 'passkey.destroy', 'DELETE');
+        });
     }
 }

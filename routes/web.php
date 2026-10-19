@@ -15,6 +15,12 @@ use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementContro
 use App\Http\Controllers\Admin\AnnouncementDeliveryController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\Auth\AdminLoginController;
+use App\Http\Controllers\Admin\Auth\AdminLoginSecurityController;
+use App\Http\Controllers\Admin\Auth\AdminPasskeyEnrollController;
+use App\Http\Controllers\Admin\Auth\AdminPasskeyRecoveryController;
+use App\Http\Controllers\Admin\Auth\AdminPasskeyRemoteEnrollController;
+use App\Http\Controllers\Admin\Auth\AdminPasskeySettingsController;
+use App\Http\Controllers\Admin\Auth\AdminPasskeyVerifyController;
 use App\Http\Controllers\Admin\Auth\AdminPasswordController;
 use App\Http\Controllers\Admin\Auth\LogoutController;
 use App\Http\Controllers\Admin\Auth\SystemAdminLoginController;
@@ -102,6 +108,8 @@ use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampGrantOpenController;
 use App\Http\Controllers\WalletAddPageController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController;
+use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 
 // ========== 公開 ==========
 Route::get('/', LandingController::class);
@@ -184,8 +192,10 @@ Route::get('/admin/forgot-password', [AdminPasswordController::class, 'forgot'])
 Route::post('/admin/forgot-password', [AdminPasswordController::class, 'send'])->middleware('throttle:5,1')->name('admin.password.email');
 Route::get('/admin/reset-password/{token}', [AdminPasswordController::class, 'reset'])->name('admin.password.reset');
 Route::post('/admin/reset-password', [AdminPasswordController::class, 'update'])->middleware('throttle:5,1')->name('admin.password.update');
-Route::get('/admin/change-password', [AdminPasswordController::class, 'edit'])->middleware(['auth:admin', 'admin.auth.session'])->name('admin.password.edit');
-Route::put('/admin/change-password', [AdminPasswordController::class, 'change'])->middleware(['auth:admin', 'admin.auth.session', 'throttle:5,1'])->name('admin.password.change');
+Route::get('/admin/change-password', [AdminPasswordController::class, 'edit'])->middleware(['auth:admin', 'admin.auth.session', 'admin.passkey'])->name('admin.password.edit');
+Route::put('/admin/change-password', [AdminPasswordController::class, 'change'])->middleware(['auth:admin', 'admin.auth.session', 'admin.passkey', 'throttle:5,1'])->name('admin.password.change');
+Route::get('/admin/login-security/current-ip', [AdminLoginSecurityController::class, 'currentIp'])->middleware(['auth:admin', 'admin.auth.session', 'admin.passkey', 'throttle:30,1'])->name('admin.login-security.current-ip');
+Route::put('/admin/login-security', [AdminLoginSecurityController::class, 'update'])->middleware(['auth:admin', 'admin.auth.session', 'admin.passkey', 'throttle:10,1'])->name('admin.login-security.update');
 
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
 Route::get('/admin/login/form', [AdminLoginController::class, 'showLoginForm'])->name('admin.login.form');
@@ -196,11 +206,37 @@ Route::post('/admin/{project_key}/login', [AdminLoginController::class, 'login']
 Route::get('/system-admin/login', [SystemAdminLoginController::class, 'show'])->name('system-admin.login');
 Route::post('/system-admin/login', [SystemAdminLoginController::class, 'login'])->name('system-admin.login.submit')->middleware('throttle:admin-login');
 
+Route::get('/admin/passkey/remote-enroll/confirm', [AdminPasskeyRemoteEnrollController::class, 'confirm'])
+    ->middleware(['web', 'throttle:10,1'])->name('admin.passkey.remote-enroll.confirm');
+
+Route::middleware(['web', 'auth:admin', 'admin.auth.session'])->group(function () {
+    Route::get('/admin/passkey/verify', AdminPasskeyVerifyController::class)->name('admin.passkey.verify');
+    Route::get('/admin/passkey/enroll', AdminPasskeyEnrollController::class)->name('admin.passkey.enroll');
+    Route::post('/admin/passkey/recovery/email', [AdminPasskeyRecoveryController::class, 'send'])
+        ->middleware('throttle:5,1')->name('admin.passkey.recovery.email');
+    Route::get('/admin/passkey/recovery/confirm', [AdminPasskeyRecoveryController::class, 'confirm'])
+        ->middleware('throttle:10,1')->name('admin.passkey.recovery.confirm');
+    Route::get('/admin/passkeys', AdminPasskeySettingsController::class)->middleware('admin.passkey')->name('admin.passkey.settings');
+    Route::post('/admin/passkeys/remote-enroll', [AdminPasskeyRemoteEnrollController::class, 'create'])
+        ->middleware(['admin.passkey', 'throttle:10,1'])->name('admin.passkey.remote-enroll.create');
+
+    Route::get('/admin/passkeys/confirm/options', [PasskeyConfirmationController::class, 'index'])
+        ->middleware('throttle:6,1')->name('passkey.confirm-options');
+    Route::post('/admin/passkeys/confirm', [PasskeyConfirmationController::class, 'store'])
+        ->middleware('throttle:6,1')->name('passkey.confirm');
+    Route::get('/admin/passkeys/options', [PasskeyRegistrationController::class, 'index'])
+        ->middleware('throttle:6,1')->name('passkey.registration-options');
+    Route::post('/admin/passkeys', [PasskeyRegistrationController::class, 'store'])
+        ->middleware('throttle:6,1')->name('passkey.store');
+    Route::delete('/admin/passkeys/{passkey}', [PasskeyRegistrationController::class, 'destroy'])
+        ->middleware('admin.passkey')->name('passkey.destroy');
+});
+
 // /admin のみのアクセス時はアクセス可能な先頭プロジェクトへリダイレクト
 Route::get('/admin', AdminRootController::class)->middleware('web')->name('admin.root');
 
 // ========== 店舗管理画面（project_key 必須） ==========
-Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', 'bind.admin.project', 'admin.audit'])->group(function () {
+Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', 'admin.passkey', 'bind.admin.project', 'admin.audit'])->group(function () {
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('admin.logout')->withoutMiddleware('bind.admin.project');
 
     Route::prefix('{project_key}')->group(function () {
@@ -391,7 +427,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
 });
 
 // ========== システム管理画面（システム管理者のみ） ==========
-Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'admin.auth.session', 'system.admin', 'admin.audit'])->group(function () {
+Route::prefix('system-admin')->middleware(['web', 'auth:admin', 'admin.auth.session', 'admin.passkey', 'system.admin', 'admin.audit'])->group(function () {
     Route::get('/', fn () => redirect()->route('system-admin.dashboard'));
     Route::post('/logout', [LogoutController::class, '__invoke'])->name('system-admin.logout');
 

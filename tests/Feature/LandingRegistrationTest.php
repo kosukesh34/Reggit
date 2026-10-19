@@ -156,7 +156,8 @@ class LandingRegistrationTest extends TestCase
         $registration->refresh();
         $this->assertNotNull($registration->submitted_at);
         $this->assertSame($registration->admin_login_id, auth('admin')->user()?->login_id);
-        $this->get('/admin/'.$registration->project->project_key.'/stores')->assertOk();
+        $this->get('/admin/'.$registration->project->project_key.'/stores')
+            ->assertRedirect(route('admin.passkey.enroll'));
         $this->assertSame('テスト店舗', $registration->store_name);
         $this->assertSame(LandingInquiryPlan::LINE, $registration->plan);
         $this->assertNotNull($registration->project_id);

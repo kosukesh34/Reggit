@@ -49,7 +49,7 @@ class AdminPasswordController extends Controller
 
     public function edit()
     {
-        return view('admin.password', ['mode' => 'change']);
+        return redirect()->route('admin.passkey.settings');
     }
 
     public function change(Request $request)

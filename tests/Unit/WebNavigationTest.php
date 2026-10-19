@@ -38,7 +38,10 @@ class WebNavigationTest extends TestCase
             if (! in_array('GET', $route->methods(), true)
                 || ! in_array('auth:admin', $route->middleware(), true)
                 || ! preg_match('/^(admin|system-admin)\./', $name)
-                || str_starts_with($name, 'admin.password.')) {
+                || str_starts_with($name, 'admin.password.')
+                || str_starts_with($name, 'admin.passkey.')
+                || str_starts_with($name, 'admin.login-security.')
+                || str_starts_with($name, 'passkey.')) {
                 continue;
             }
             $params = array_fill_keys($route->parameterNames(), 7);

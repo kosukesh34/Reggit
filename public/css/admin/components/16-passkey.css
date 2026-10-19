@@ -1,0 +1,90 @@
+/* Passkey screens: only deltas on top of admin-login / admin card styles. */
+.admin-login-box .alert {
+    margin: 0 0 16px;
+}
+
+.admin-login-box .form-text[hidden],
+[data-admin-passkey-settings] .form-text[hidden] {
+    display: none !important;
+}
+
+.admin-login-box .form-text[data-passkey-status]:not([hidden]) {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+}
+
+.admin-passkey-logout {
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font-weight: 500;
+    font-size: 13px;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.admin-passkey-logout:hover {
+    text-decoration: underline;
+}
+
+.admin-login-settings-form {
+    max-width: 520px;
+}
+
+.admin-login-settings-form .form-group {
+    margin-bottom: 16px;
+}
+
+.admin-login-current-ip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.admin-login-current-ip code {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.admin-login-ip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.admin-login-ip-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-login-ip-item .form-control {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.admin-passkey-recovery {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.admin-passkey-remote {
+    margin-top: 20px;
+    max-width: 480px;
+}
+
+.admin-passkey-remote-qr {
+    margin-top: 16px;
+    width: 200px;
+    min-height: 200px;
+}
+
+.admin-passkey-remote-qr canvas {
+    display: block;
+    width: 200px;
+    height: 200px;
+}

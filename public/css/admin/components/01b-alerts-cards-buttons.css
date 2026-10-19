@@ -36,6 +36,11 @@
     border-color: #fecaca;
 }
 
+/* .alert { display: flex } overrides the UA [hidden] rule; keep empty alerts invisible. */
+.alert[hidden] {
+    display: none !important;
+}
+
 /* ===== カード ===== */
 .card {
     background: var(--bg-primary);

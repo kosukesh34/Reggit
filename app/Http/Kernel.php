@@ -11,6 +11,7 @@ use App\Http\Middleware\BindAdminProject;
 use App\Http\Middleware\BindProjectFromRequest;
 use App\Http\Middleware\CheckAdminPermission;
 use App\Http\Middleware\CheckApiProject;
+use App\Http\Middleware\EnsureAdminPasskeyVerified;
 use App\Http\Middleware\EnsureProjectPlanFeature;
 use App\Http\Middleware\EnsureStoreAdmin;
 use App\Http\Middleware\EnsureSystemAdmin;
@@ -86,6 +87,7 @@ class Kernel extends HttpKernel
         'auth.basic' => AuthenticateWithBasicAuth::class,
         'auth.session' => AuthenticateSession::class,
         'admin.auth.session' => AuthenticateAdminSession::class,
+        'admin.passkey' => EnsureAdminPasskeyVerified::class,
         'cache.headers' => SetCacheHeaders::class,
         'can' => Authorize::class,
         'guest' => RedirectIfAuthenticated::class,

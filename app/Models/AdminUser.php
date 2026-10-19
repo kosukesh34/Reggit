@@ -3,16 +3,21 @@
 namespace App\Models;
 
 use App\Notifications\AdminPasswordReset;
+use App\Support\AdminLoginIpAllowlist;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Passkeys\Contracts\PasskeyUser;
+use Laravel\Passkeys\Passkey;
+use Laravel\Passkeys\PasskeyAuthenticatable;
+use Laravel\Passkeys\Passkeys;
 use Laravel\Sanctum\HasApiTokens;
 
-class AdminUser extends Authenticatable
+class AdminUser extends Authenticatable implements PasskeyUser
 {
-    use HasApiTokens, HasFactory, \Illuminate\Notifications\Notifiable;
+    use HasApiTokens, HasFactory, \Illuminate\Notifications\Notifiable, PasskeyAuthenticatable;
 
     public const ROLE_SYSTEM_ADMIN = 'system_admin';
 
@@ -100,6 +105,8 @@ class AdminUser extends Authenticatable
         'role',
         'project_id',
         'created_by_id',
+        'login_allowed_ips',
+        'login_notify_by_email',
     ];
 
     protected $hidden = [
@@ -110,7 +117,13 @@ class AdminUser extends Authenticatable
     /** @var array<string, string> */
     protected $casts = [
         'password' => 'hashed',
+        'login_notify_by_email' => 'boolean',
     ];
+
+    public function allowsLoginFromIp(?string $ip): bool
+    {
+        return AdminLoginIpAllowlist::allows($ip, AdminLoginIpAllowlist::parse($this->login_allowed_ips));
+    }
 
     protected static function booted(): void
     {
@@ -215,6 +228,24 @@ class AdminUser extends Authenticatable
         }
 
         return 1;
+    }
+
+    /** @return HasMany<Passkey, $this> */
+    public function passkeys(): HasMany
+    {
+        return $this->hasMany(Passkeys::passkeyModel(), 'user_id');
+    }
+
+    public function getPasskeyDisplayName(): string
+    {
+        $name = trim((string) ($this->name ?? ''));
+
+        return $name !== '' ? $name : $this->getPasskeyUsername();
+    }
+
+    public function getPasskeyUsername(): string
+    {
+        return (string) $this->login_id;
     }
 
     // ── ロール判定 ──
