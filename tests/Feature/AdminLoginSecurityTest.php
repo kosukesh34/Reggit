@@ -35,7 +35,7 @@ class AdminLoginSecurityTest extends TestCase
         $this->assertGuest('admin');
     }
 
-    public function test_login_システム管理者はip制限とパスキーをバイパスすること(): void
+    public function test_login_システム管理者にもip制限とパスキーが適用されること(): void
     {
         AdminUser::factory()->create([
             'login_id' => 'sys_admin',
@@ -49,10 +49,17 @@ class AdminLoginSecurityTest extends TestCase
             'login_id' => 'sys_admin',
             'password' => 'password',
         ], ['REMOTE_ADDR' => '198.51.100.20'])
-            ->assertRedirect(route('system-admin.projects.index'));
+            ->assertSessionHasErrors('login_id');
+        $this->assertGuest('admin');
+
+        $this->post(route('system-admin.login.submit'), [
+            'login_id' => 'sys_admin',
+            'password' => 'password',
+        ], ['REMOTE_ADDR' => '203.0.113.10'])
+            ->assertRedirect(route('admin.passkey.enroll'));
 
         $this->assertAuthenticated('admin');
-        $this->assertTrue((bool) session(AdminPasskeyGate::PASSKEY_VERIFIED));
+        $this->assertFalse((bool) session(AdminPasskeyGate::PASSKEY_VERIFIED));
     }
 
     public function test_admin_パスキー確認済みのシステム管理者はプロジェクトへ追加認証なしで入れること(): void
@@ -100,7 +107,7 @@ class AdminLoginSecurityTest extends TestCase
         $this->post(route('system-admin.login.submit'), [
             'login_id' => 'sys_admin',
             'password' => 'password',
-        ])->assertRedirect(route('system-admin.projects.index'));
+        ])->assertRedirect(route('admin.passkey.enroll'));
 
         $this->assertSame(1, AdminAuditLog::query()
             ->where('admin_user_id', $admin->id)

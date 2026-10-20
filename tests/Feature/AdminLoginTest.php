@@ -54,7 +54,7 @@ class AdminLoginTest extends TestCase
         $this->assertAuthenticated('admin');
     }
 
-    /** 共通「ID・パスワードでログイン」からシステム管理者でログインできる（パスキーはバイパス） */
+    /** 共通「ID・パスワードでログイン」からシステム管理者でログインできる（パスキー未登録なら登録へ進む） */
     public function test_login_共通ログイン画面からシステム管理者はシステム管理へリダイレクトされること(): void
     {
         Project::firstOrCreate(
@@ -73,11 +73,11 @@ class AdminLoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('system-admin.projects.index'));
+        $response->assertRedirect(route('admin.passkey.enroll'));
         $this->assertAuthenticated('admin');
     }
 
-    /** システム管理者はプロジェクト指定ログインで、パスキーなしでそのプロジェクトへ進む */
+    /** システム管理者はプロジェクト指定ログインでログインでき、パスキー後にそのプロジェクトへ進む */
     public function test_login_システム管理者がプロジェクトログイン経由でログインできること(): void
     {
         $project = Project::firstOrCreate(
@@ -96,8 +96,12 @@ class AdminLoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('admin.dashboard', ['project_key' => 'default']));
+        $response->assertRedirect(route('admin.passkey.enroll'));
         $this->assertAuthenticated('admin');
+        $this->assertSame(
+            route('admin.dashboard', ['project_key' => 'default']),
+            session('url.intended')
+        );
     }
 
     public function test_login_システム管理者が正しい認証でリダイレクトされること(): void
@@ -118,7 +122,7 @@ class AdminLoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('system-admin.projects.index'));
+        $response->assertRedirect(route('admin.passkey.enroll'));
         $this->assertAuthenticated('admin');
         $this->assertSame(route('system-admin.projects.index'), session('url.intended'));
     }
@@ -143,11 +147,11 @@ class AdminLoginTest extends TestCase
             'password' => 'DemoSys#2026',
         ]);
 
-        $response->assertRedirect(route('system-admin.projects.index'));
+        $response->assertRedirect(route('admin.passkey.enroll'));
         $this->assertAuthenticated('admin');
     }
 
-    /** /admin/default/login からシステム管理者でログインすると default のダッシュボードへ進むこと */
+    /** /admin/default/login からシステム管理者でログインするとパスキー後に default のダッシュボードへ進むこと */
     public function test_login_プロジェクトdefaultログインでシステム管理者がダッシュボードへ遷移できること(): void
     {
         $project = Project::firstOrCreate(
@@ -166,8 +170,12 @@ class AdminLoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('admin.dashboard', ['project_key' => 'default']));
+        $response->assertRedirect(route('admin.passkey.enroll'));
         $this->assertAuthenticated('admin');
+        $this->assertSame(
+            route('admin.dashboard', ['project_key' => 'default']),
+            session('url.intended')
+        );
     }
 
     /** 「ID・パスワードでログイン」画面（admin.login.submit）からシステム管理者でログインできること */
@@ -189,7 +197,7 @@ class AdminLoginTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('system-admin.projects.index'));
+        $response->assertRedirect(route('admin.passkey.enroll'));
         $this->assertAuthenticated('admin');
     }
 
