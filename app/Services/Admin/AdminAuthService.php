@@ -158,25 +158,20 @@ class AdminAuthService
         ]);
         $this->notifyLoginIfEnabled($user, $input->auditContext);
 
-        // システムAdminはパスキー／IPをスキップ。ログイン後のプロジェクト移動でも再認証しない。
+        // ログイン後のプロジェクト移動では再認証しない。ログイン時のみIP・パスキーを要求する。
         return $this->completeLoginGate($user, $this->getSystemAdminDashboardRedirect());
     }
 
     private function completeLoginGate(AdminUser $user, AdminRedirectResult $intended): AdminRedirectResult
     {
         AdminPasskeyGate::rememberIntended($intended);
-        if ($user->isSystemAdmin()) {
-            AdminPasskeyGate::markPasskeyVerified();
-
-            return $intended;
-        }
 
         return AdminPasskeyGate::nextStep($user);
     }
 
     private function assertLoginIpAllowed(AdminUser $user, ?string $ip): void
     {
-        if ($user->isSystemAdmin() || $user->allowsLoginFromIp($ip)) {
+        if ($user->allowsLoginFromIp($ip)) {
             return;
         }
 

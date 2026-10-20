@@ -103,7 +103,7 @@ class AdminPasskeyMfaTest extends TestCase
         $this->assertDatabaseHas('passkeys', ['id' => $second->id]);
     }
 
-    public function test_login_システム管理者はパスキーをバイパスすること(): void
+    public function test_login_システム管理者もパスキー登録へ進むこと(): void
     {
         AdminUser::factory()->create([
             'login_id' => 'sys_admin',
@@ -115,11 +115,10 @@ class AdminPasskeyMfaTest extends TestCase
         $this->post(route('system-admin.login.submit'), [
             'login_id' => 'sys_admin',
             'password' => 'password',
-        ])->assertRedirect(route('system-admin.projects.index'));
+        ])->assertRedirect(route('admin.passkey.enroll'));
 
         $this->get(route('system-admin.projects.index'))
-            ->assertOk();
-        $this->assertTrue((bool) session(AdminPasskeyGate::PASSKEY_VERIFIED));
+            ->assertRedirect(route('admin.passkey.enroll'));
     }
 
     public function test_verify_パスキー確認済みでintended先が開けること(): void

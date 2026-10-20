@@ -30,12 +30,6 @@ class EnsureAdminPasskeyVerified
         if (! $admin instanceof AdminUser) {
             return $next($request);
         }
-        // システムAdminはログイン時にバイパス済み。セッション欠落時も再要求しない。
-        if ($admin->isSystemAdmin()) {
-            AdminPasskeyGate::markPasskeyVerified();
-
-            return $next($request);
-        }
 
         return redirect()->route(AdminPasskeyGate::nextStep($admin)->route);
     }
