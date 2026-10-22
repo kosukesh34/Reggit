@@ -92,6 +92,8 @@ use App\Repositories\Eloquent\EloquentUserDeviceRepository;
 use App\Repositories\Eloquent\EloquentUserRepository;
 use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\Smaregi\SmaregiApiClient;
+use App\Services\Subscription\StripeSubscriptionGateway;
+use App\Services\Subscription\SubscriptionGateway;
 use App\Support\AdminPasskeyAudit;
 use App\Support\DestructiveDatabaseGuard;
 use App\Support\PasskeyOrigin;
@@ -180,6 +182,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(UnpaidPaymentSessionCanceller::class, GatewayUnpaidPaymentSessionCanceller::class);
+        $this->app->bind(SubscriptionGateway::class, StripeSubscriptionGateway::class);
         $this->app->scoped(PaymentGateway::class, function () {
             $secret = (string) config('services.stripe.secret', '');
 

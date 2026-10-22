@@ -56,6 +56,7 @@ use App\Http\Controllers\Member\MemberWalletSummaryController;
 use App\Http\Controllers\Member\MemberWithdrawController;
 use App\Http\Controllers\Member\WalletPassController;
 use App\Http\Controllers\Member\WalletPassUrlController;
+use App\Http\Controllers\MemberSubscriptionController;
 use App\Http\Controllers\Onboarding\OnboardingProjectStoreController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Payment\PaymentConfirmCheckoutController;
@@ -281,6 +282,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/member-coupons/{id}/redeem', [CouponController::class, 'use']);
     Route::get('/member-tickets', [TicketController::class, 'index']);
     Route::post('/member-tickets/{id}/use', [TicketController::class, 'use'])->whereNumber('id');
+    Route::post('/member-subscriptions/checkout', [MemberSubscriptionController::class, 'checkout'])->middleware('throttle:10,1');
+    Route::post('/member-subscriptions/{id}/cancel', [MemberSubscriptionController::class, 'cancel'])->whereNumber('id');
     Route::get('/member-lottery', [MemberLotteryController::class, 'index']);
     Route::post('/member-lottery/{id}/play', [MemberLotteryController::class, 'play'])->whereNumber('id');
     Route::post('/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin'])->whereNumber('id');

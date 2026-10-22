@@ -82,6 +82,13 @@ class MemberTicketService
                 'expired' => 'この回数券は有効期限が切れています',
                 default => null,
             };
+            if ($message === null && $ticket->daily_limit !== null && MemberTicketUse::withoutGlobalScopes()
+                ->where('member_ticket_id', $ticket->id)
+                ->whereNull('cancelled_at')
+                ->where('used_at', '>=', today())
+                ->count() >= $ticket->daily_limit) {
+                $message = '本日の利用上限に達しました。明日以降にご利用ください';
+            }
             if ($message !== null) {
                 throw ValidationException::withMessages(['ticket' => [$message]]);
             }

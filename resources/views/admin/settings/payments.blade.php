@@ -20,7 +20,7 @@
         <p>Apple PayはiOS・macOS、Google PayはAndroid・その他のOSに表示します。実際の利用可否はStripe決済画面で端末・ブラウザーとウォレットの設定に応じて判定されます。</p>
         <button class="btn btn-primary" type="submit">保存する</button>
     </form>
-    @if($webhookUrl)<h3>Stripeに登録するWebhook</h3><p><code>{{ $webhookUrl }}</code></p><p>イベント：payment_intent.succeeded。設定更新でURLが変わります。進行中の注文がある間は旧URLも維持してください。</p>@endif
+    @if($webhookUrl)<h3>Stripeに登録するWebhook</h3><p><code>{{ $webhookUrl }}</code></p><p>イベント：payment_intent.succeeded（サブスクを販売する場合は invoice.paid・customer.subscription.updated・customer.subscription.deleted も）。設定更新でURLが変わります。進行中の注文がある間は旧URLも維持してください。</p>@endif
     <h3>ブランド・手数料の目安</h3>
     <table class="table"><thead><tr><th>ブランド</th><th>公開標準手数料</th><th>導入状況</th></tr></thead><tbody>
         <tr><td>カード / Apple Pay / Google Pay</td><td>3.6%</td><td>対応</td></tr>

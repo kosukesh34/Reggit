@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\MemberSubscription;
 use App\Models\MemberTicket;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
 use App\UseCases\Admin\Member\AdminMemberEditUseCase;
@@ -34,6 +35,7 @@ class MemberController extends AdminBaseController
             'view' => $output,
             'allTags' => $tags,
             'tickets' => MemberTicket::query()->with('uses.store')->where('member_id', $output->member->id)->latest('id')->get(),
+            'subscriptions' => MemberSubscription::query()->where('member_id', $output->member->id)->latest('id')->get(),
         ]);
     }
 

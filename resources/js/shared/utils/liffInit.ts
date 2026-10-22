@@ -220,7 +220,7 @@ function bootstrapLiffInit(): void {
         }
         try {
             const current = new URL(window.location.href);
-            const keepParams = ['queue_id', 'queue_token', 'project_key', 'store_id', 'g', 'point_code', 'payment_order_id', 'payment_status'];
+            const keepParams = ['queue_id', 'queue_token', 'project_key', 'store_id', 'g', 'point_code', 'payment_order_id', 'payment_status', 'subscription_status'];
             const kept = new URLSearchParams();
             keepParams.forEach((key) => {
                 const value = current.searchParams.get(key);

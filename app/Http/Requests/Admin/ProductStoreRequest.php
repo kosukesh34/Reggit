@@ -21,6 +21,11 @@ class ProductStoreRequest extends FormRequest
             $merged['ticket_uses'] = null;
             $merged['ticket_valid_days'] = null;
         }
+        $merged['subscription_enabled'] = $this->boolean('subscription_enabled');
+        if (! $merged['subscription_enabled']) {
+            $merged['subscription_monthly_uses'] = null;
+            $merged['subscription_daily_limit'] = null;
+        }
         $this->merge($merged);
     }
 
@@ -44,6 +49,9 @@ class ProductStoreRequest extends FormRequest
             'ticket_enabled' => 'nullable|boolean',
             'ticket_uses' => 'nullable|required_if_accepted:ticket_enabled|integer|min:1|max:1000',
             'ticket_valid_days' => 'nullable|integer|min:1|max:3650',
+            'subscription_enabled' => 'boolean|declined_if:ticket_enabled,1',
+            'subscription_monthly_uses' => 'nullable|integer|min:1|max:1000',
+            'subscription_daily_limit' => 'nullable|integer|min:1|max:100',
             'option_groups' => 'nullable|array|max:10',
             'option_groups.*.name' => 'required|string|max:100',
             'option_groups.*.selection_type' => 'required|in:single,multiple',
@@ -51,6 +59,15 @@ class ProductStoreRequest extends FormRequest
             'option_groups.*.options' => 'required|array|min:1|max:20',
             'option_groups.*.options.*.name' => 'required|string|max:100',
             'option_groups.*.options.*.price_delta' => 'required|numeric|min:-999999|max:999999',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'ticket_uses.required_if_accepted' => '回数券の利用回数を入力してください。',
+            'subscription_enabled.declined_if' => '回数券とサブスクは同時に設定できません。',
         ];
     }
 }

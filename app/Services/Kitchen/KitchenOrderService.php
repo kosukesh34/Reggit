@@ -50,7 +50,7 @@ class KitchenOrderService
         $orders = Order::query()
             ->with(['items.product'])
             ->where('project_id', $projectId)
-            ->whereNotIn('order_type', [OrderType::SHIPPING, OrderType::TICKET])
+            ->whereNotIn('order_type', [OrderType::SHIPPING, OrderType::TICKET, OrderType::SUBSCRIPTION])
             ->whereIn('status', self::ACTIVE_STATUSES)
             ->orderBy('created_at')
             ->get();
