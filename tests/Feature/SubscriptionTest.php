@@ -75,7 +75,7 @@ class SubscriptionTest extends TestCase
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         $product = Product::factory()->create([
             'project_id' => $project->id, 'name' => 'コーヒー定期便', 'price' => 3000, 'stock' => null,
-            'subscription_enabled' => true, 'subscription_monthly_uses' => null, 'subscription_daily_limit' => 1,
+            'subscription_enabled' => true, 'subscription_monthly_uses' => null, 'daily_limit' => 1,
         ]);
 
         return [$project, $setting, $member, $product];

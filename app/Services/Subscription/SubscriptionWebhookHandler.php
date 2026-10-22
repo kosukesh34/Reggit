@@ -137,7 +137,7 @@ class SubscriptionWebhookHandler
             'product_id' => $product->id,
             'name' => $product->name,
             'total_uses' => $product->subscription_monthly_uses,
-            'daily_limit' => $product->subscription_daily_limit,
+            'daily_limit' => $product->daily_limit,
             'expires_at' => $expiresAt,
         ]);
         $subscription->forceFill(['status' => 'active', 'current_period_end' => $expiresAt])->save();

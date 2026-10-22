@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::table('products', function (Blueprint $table): void {
             $table->boolean('subscription_enabled')->default(false)->after('ticket_valid_days')->comment('月額サブスクとして販売する');
             $table->unsignedInteger('subscription_monthly_uses')->nullable()->after('subscription_enabled')->comment('サブスクの月間利用回数。NULLは無制限');
-            $table->unsignedSmallInteger('subscription_daily_limit')->nullable()->after('subscription_monthly_uses')->comment('サブスクの1日の利用上限。NULLは制限なし');
+            $table->unsignedSmallInteger('daily_limit')->nullable()->after('subscription_monthly_uses')->comment('回数券・サブスクの1日の利用上限。NULLは制限なし');
         });
 
         Schema::create('member_subscriptions', function (Blueprint $table): void {
@@ -53,7 +53,7 @@ return new class extends Migration
         });
         Schema::dropIfExists('member_subscriptions');
         Schema::table('products', function (Blueprint $table): void {
-            $table->dropColumn(['subscription_enabled', 'subscription_monthly_uses', 'subscription_daily_limit']);
+            $table->dropColumn(['subscription_enabled', 'subscription_monthly_uses', 'daily_limit']);
         });
     }
 };

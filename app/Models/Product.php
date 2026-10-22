@@ -25,7 +25,7 @@ class Product extends Model
         'ticket_valid_days',
         'subscription_enabled',
         'subscription_monthly_uses',
-        'subscription_daily_limit',
+        'daily_limit',
     ];
 
     /** @var array<string, string> */
@@ -37,7 +37,7 @@ class Product extends Model
         'ticket_valid_days' => 'integer',
         'subscription_enabled' => 'boolean',
         'subscription_monthly_uses' => 'integer',
-        'subscription_daily_limit' => 'integer',
+        'daily_limit' => 'integer',
     ];
 
     public function isTicket(): bool

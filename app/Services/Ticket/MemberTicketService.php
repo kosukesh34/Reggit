@@ -48,6 +48,7 @@ class MemberTicketService
                     'product_id' => $product->id,
                     'name' => (string) ($item->product_name ?: $product->name),
                     'total_uses' => $product->ticket_uses * (int) $item->quantity,
+                    'daily_limit' => $product->daily_limit,
                     'expires_at' => $product->ticket_valid_days !== null
                         ? now()->addDays($product->ticket_valid_days)->endOfDay()
                         : null,

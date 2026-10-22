@@ -145,11 +145,13 @@
                     <label class="form-label" for="subscription_monthly_uses">月の利用回数（空欄で無制限）</label>
                     <input type="number" name="subscription_monthly_uses" id="subscription_monthly_uses" class="form-control" value="{{ old('subscription_monthly_uses', $product->subscription_monthly_uses ?? '') }}" min="1" max="1000" step="1" placeholder="例：30">
                 </div>
-                <div>
-                    <label class="form-label" for="subscription_daily_limit">1日の上限（空欄で制限なし）</label>
-                    <input type="number" name="subscription_daily_limit" id="subscription_daily_limit" class="form-control" value="{{ old('subscription_daily_limit', $product->subscription_daily_limit ?? '') }}" min="1" max="100" step="1" placeholder="例：1">
-                </div>
             </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="daily_limit">1日の利用上限（回数券・サブスク共通、空欄で制限なし）</label>
+            <input type="number" name="daily_limit" id="daily_limit" class="form-control" value="{{ old('daily_limit', $product->daily_limit ?? '') }}" min="1" max="100" step="1" placeholder="例：1">
+            <small class="form-help">お客様が1日に「使う」を押せる回数です。スタッフが利用を取り消した分は数えません。</small>
         </div>
 
         <div class="form-group">

@@ -41,7 +41,7 @@ class TicketController extends Controller
             'image_url' => $product->image_url,
             'ticket_uses' => $product->subscription_enabled ? $product->subscription_monthly_uses : $product->ticket_uses,
             'ticket_valid_days' => $product->ticket_valid_days,
-            'daily_limit' => $product->subscription_daily_limit,
+            'daily_limit' => $product->daily_limit,
         ])->values()->all();
         $subscriptions = $member === null ? [] : MemberSubscription::query()
             ->where('member_id', $member->id)

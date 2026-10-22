@@ -24,7 +24,9 @@ class ProductUpdateRequest extends FormRequest
         $merged['subscription_enabled'] = $this->boolean('subscription_enabled');
         if (! $merged['subscription_enabled']) {
             $merged['subscription_monthly_uses'] = null;
-            $merged['subscription_daily_limit'] = null;
+        }
+        if (! $merged['subscription_enabled'] && ! $this->boolean('ticket_enabled')) {
+            $merged['daily_limit'] = null;
         }
         $this->merge($merged);
     }
@@ -51,7 +53,7 @@ class ProductUpdateRequest extends FormRequest
             'ticket_valid_days' => 'nullable|integer|min:1|max:3650',
             'subscription_enabled' => 'boolean|declined_if:ticket_enabled,1',
             'subscription_monthly_uses' => 'nullable|integer|min:1|max:1000',
-            'subscription_daily_limit' => 'nullable|integer|min:1|max:100',
+            'daily_limit' => 'nullable|integer|min:1|max:100',
             'option_groups' => 'nullable|array|max:10',
             'option_groups.*.name' => 'required|string|max:100',
             'option_groups.*.selection_type' => 'required|in:single,multiple',
