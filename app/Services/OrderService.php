@@ -244,6 +244,9 @@ class OrderService
         foreach ($items as $item) {
             $product = $this->productCatalogRepository->findForOrderOrFail((int) $item['product_id'], $projectId);
             $quantity = (int) $item['quantity'];
+            if ($product->isSubscription) {
+                throw new OrderOperationException('サブスクは回数券の画面から申し込んでください');
+            }
             if ($product->isTicket !== $ticketOrder) {
                 throw new OrderOperationException($ticketOrder
                     ? '回数券以外の商品は一緒に購入できません'

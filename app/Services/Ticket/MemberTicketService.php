@@ -48,6 +48,7 @@ class MemberTicketService
                     'product_id' => $product->id,
                     'name' => (string) ($item->product_name ?: $product->name),
                     'total_uses' => $product->ticket_uses * (int) $item->quantity,
+                    'daily_limit' => $product->daily_limit,
                     'expires_at' => $product->ticket_valid_days !== null
                         ? now()->addDays($product->ticket_valid_days)->endOfDay()
                         : null,
@@ -82,6 +83,13 @@ class MemberTicketService
                 'expired' => 'この回数券は有効期限が切れています',
                 default => null,
             };
+            if ($message === null && $ticket->daily_limit !== null && MemberTicketUse::withoutGlobalScopes()
+                ->where('member_ticket_id', $ticket->id)
+                ->whereNull('cancelled_at')
+                ->where('used_at', '>=', today())
+                ->count() >= $ticket->daily_limit) {
+                $message = '本日の利用上限に達しました。明日以降にご利用ください';
+            }
             if ($message !== null) {
                 throw ValidationException::withMessages(['ticket' => [$message]]);
             }

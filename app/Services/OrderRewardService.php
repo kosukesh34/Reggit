@@ -67,8 +67,8 @@ class OrderRewardService
         }
 
         $projectId = (int) $order->project_id;
-        // 回数券の購入は来店ではないため、来店記録とスタンプは付けない
-        $isVisit = $order->order_type !== OrderType::TICKET;
+        // 回数券・サブスクの支払いは来店ではないため、来店記録とスタンプは付けない
+        $isVisit = ! in_array($order->order_type, [OrderType::TICKET, OrderType::SUBSCRIPTION], true);
         $hasVisit = ! $isVisit || MemberVisit::query()
             ->where('project_id', $projectId)
             ->where('order_id', (int) $order->id)

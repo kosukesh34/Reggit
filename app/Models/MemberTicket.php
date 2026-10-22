@@ -14,12 +14,14 @@ class MemberTicket extends Model
     protected $fillable = [
         'project_id',
         'member_id',
+        'member_subscription_id',
         'order_id',
         'order_item_id',
         'product_id',
         'name',
         'total_uses',
         'used_count',
+        'daily_limit',
         'expires_at',
         'revoked_at',
     ];
@@ -28,6 +30,7 @@ class MemberTicket extends Model
     protected $casts = [
         'total_uses' => 'integer',
         'used_count' => 'integer',
+        'daily_limit' => 'integer',
         'expires_at' => 'datetime',
         'revoked_at' => 'datetime',
     ];
@@ -47,9 +50,10 @@ class MemberTicket extends Model
         return $this->hasMany(MemberTicketUse::class)->orderByDesc('used_at')->orderByDesc('id');
     }
 
-    public function remainingUses(): int
+    /** NULL は回数無制限（サブスク） */
+    public function remainingUses(): ?int
     {
-        return max(0, $this->total_uses - $this->used_count);
+        return $this->total_uses === null ? null : max(0, $this->total_uses - $this->used_count);
     }
 
     /** active / used_up / expired / revoked */
@@ -58,7 +62,7 @@ class MemberTicket extends Model
         if ($this->revoked_at !== null) {
             return 'revoked';
         }
-        if ($this->remainingUses() === 0) {
+        if ($this->total_uses !== null && $this->remainingUses() === 0) {
             return 'used_up';
         }
         if ($this->expires_at !== null && $this->expires_at->isPast()) {

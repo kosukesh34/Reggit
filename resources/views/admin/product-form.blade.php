@@ -131,6 +131,29 @@
             </div>
         </div>
 
+        @php
+            $subscriptionEnabled = (bool) old('subscription_enabled', $product->subscription_enabled ?? false);
+        @endphp
+        <div class="form-group">
+            <div class="form-check mb-2">
+                <input type="checkbox" name="subscription_enabled" id="subscription_enabled" value="1" {{ $subscriptionEnabled ? 'checked' : '' }}>
+                <label for="subscription_enabled">月額サブスクとして販売する</label>
+            </div>
+            <small class="form-help">価格が毎月の請求額になります（クレジットカードのみ）。支払いのたびにその月の利用券を発行し、スマレジへ売上を送ります。回数券とは同時に設定できません。Stripe の Webhook に invoice.paid・customer.subscription.updated・customer.subscription.deleted を追加してください。</small>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:10px">
+                <div>
+                    <label class="form-label" for="subscription_monthly_uses">月の利用回数（空欄で無制限）</label>
+                    <input type="number" name="subscription_monthly_uses" id="subscription_monthly_uses" class="form-control" value="{{ old('subscription_monthly_uses', $product->subscription_monthly_uses ?? '') }}" min="1" max="1000" step="1" placeholder="例：30">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="daily_limit">1日の利用上限（回数券・サブスク共通、空欄で制限なし）</label>
+            <input type="number" name="daily_limit" id="daily_limit" class="form-control" value="{{ old('daily_limit', $product->daily_limit ?? '') }}" min="1" max="100" step="1" placeholder="例：1">
+            <small class="form-help">お客様が1日に「使う」を押せる回数です。スタッフが利用を取り消した分は数えません。</small>
+        </div>
+
         <div class="form-group">
             <div class="form-check">
                 <input type="checkbox" name="is_available" id="is_available" value="1" {{ ((bool) old('is_available', $product->is_available ?? true)) ? 'checked' : '' }}>

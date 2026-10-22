@@ -51,7 +51,7 @@
         ['id' => 'redemptions', 'label' => 'クーポン使用', 'count' => $view->couponRedemptions?->total() ?? 0],
         ['id' => 'rank', 'label' => 'ランク', 'count' => $view->rankHistories?->total() ?? 0],
         ['id' => 'stamps', 'label' => 'スタンプ', 'count' => $view->stampTransactions?->total() ?? 0],
-        ['id' => 'tickets', 'label' => '回数券', 'count' => $tickets->count()],
+        ['id' => 'tickets', 'label' => '回数券・サブスク', 'count' => $tickets->count()],
     ];
 @endphp
 
@@ -308,8 +308,30 @@
 ])
 
 <div class="card" data-history-tab="tickets" id="member-history-tickets" role="tabpanel" aria-labelledby="member-history-tab-tickets" hidden>
-    <div class="card-header"><h3 class="card-title"><i class="fas fa-ticket"></i> 回数券</h3></div>
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-ticket"></i> 回数券・サブスク</h3></div>
     <div class="member-history-body">
+        @if($subscriptions->isNotEmpty())
+        <table class="table">
+            <thead><tr><th>サブスク</th><th>状態</th><th>次回更新・終了</th><th></th></tr></thead>
+            <tbody>
+            @foreach($subscriptions as $subscription)
+                <tr>
+                    <td>{{ $subscription->name }}</td>
+                    <td>{{ $subscription->isEnded() ? '解約済み' : ($subscription->cancel_at_period_end ? '期間末で解約' : ['active' => '契約中', 'past_due' => '支払い遅延', 'unpaid' => '未払い'][$subscription->status] ?? $subscription->status) }}</td>
+                    <td>{{ $subscription->current_period_end?->format('Y/m/d') ?? '—' }}</td>
+                    <td>
+                        @if($canManage && ! $subscription->isEnded() && ! $subscription->cancel_at_period_end)
+                        <form action="{{ admin_route('admin.members.subscriptions.cancel', ['id' => $view->member->id, 'subscription' => $subscription->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('このサブスクを現在の期間の終わりで解約しますか？')">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-danger">解約</button>
+                        </form>
+                        @endif
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+        @endif
         <table class="table">
             <thead><tr><th>回数券</th><th>残り</th><th>有効期限</th><th>状態</th><th>購入</th><th></th></tr></thead>
             <tbody>
@@ -319,7 +341,7 @@
                 @endphp
                 <tr>
                     <td>{{ $ticket->name }}</td>
-                    <td>{{ $ticket->remainingUses() }} / {{ $ticket->total_uses }}回</td>
+                    <td>{{ $ticket->total_uses === null ? '無制限' : $ticket->remainingUses().' / '.$ticket->total_uses.'回' }}{{ $ticket->daily_limit ? '（1日'.$ticket->daily_limit.'回まで）' : '' }}</td>
                     <td>{{ $ticket->expires_at?->format('Y/m/d') ?? '無期限' }}</td>
                     <td>{{ $ticketStatusLabel }}</td>
                     <td><a href="{{ admin_route('admin.orders.detail', ['id' => $ticket->order_id]) }}">{{ $ticket->created_at->format('Y/m/d') }}</a></td>

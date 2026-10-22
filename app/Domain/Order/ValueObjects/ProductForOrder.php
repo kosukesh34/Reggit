@@ -15,5 +15,6 @@ final class ProductForOrder
         public readonly ?int $stock,
         public readonly array $optionGroups,
         public readonly bool $isTicket = false,
+        public readonly bool $isSubscription = false,
     ) {}
 }

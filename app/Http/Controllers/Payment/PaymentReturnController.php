@@ -18,6 +18,15 @@ class PaymentReturnController extends Controller
 
         if ($request->query('surface') === 'web') {
             $project = Project::where('project_key', $request->query('project_key'))->firstOrFail();
+            if ($request->query('subscription') === '1') {
+                $liffId = ProjectLineLiffSetting::find($project->id)?->line_liff_id;
+                $returnUrl = (filled($liffId) ? 'https://liff.line.me/'.rawurlencode($liffId) : url('/liff/'.rawurlencode($project->project_key)))
+                    .'?subscription_status='.$status.'#/tickets';
+
+                return response()->view('payment.return', [
+                    'returnUrl' => $returnUrl, 'status' => $status,
+                ])->header('Cache-Control', 'private, no-store');
+            }
             $order = Order::withoutGlobalScopes()->where('project_id', $project->id)->findOrFail($orderId);
 
             if ($order->order_type === OrderType::SHIPPING) {

@@ -321,6 +321,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
 
         Route::get('/members', [MemberIndexController::class, 'index'])->name('admin.members')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/transfer-code', [AdminMemberTransferController::class, 'store'])->name('admin.members.transfer-code')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/subscriptions/{subscription}/cancel', [AdminMemberTicketController::class, 'cancelSubscription'])->whereNumber(['id', 'subscription'])->name('admin.members.subscriptions.cancel')->middleware('admin.permission:members.manage');
         Route::post('/members/{id}/tickets/{ticket}/revoke', [AdminMemberTicketController::class, 'revoke'])->whereNumber(['id', 'ticket'])->name('admin.members.tickets.revoke')->middleware('admin.permission:members.manage');
         Route::post('/members/{id}/tickets/{ticket}/uses/{use}/cancel', [AdminMemberTicketController::class, 'cancelUse'])->whereNumber(['id', 'ticket', 'use'])->name('admin.members.tickets.uses.cancel')->middleware('admin.permission:members.manage');
         Route::get('/members/export', [MemberIndexController::class, 'export'])->name('admin.members.export')->middleware('admin.permission:members.view');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
 use App\Models\Settings\ProjectPaymentSetting;
+use App\Services\Subscription\SubscriptionWebhookHandler;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -14,7 +15,8 @@ use Stripe\Exception\SignatureVerificationException;
 class PaymentWebhookController extends Controller
 {
     public function __construct(
-        private PaymentWebhookUseCase $webhookUseCase
+        private PaymentWebhookUseCase $webhookUseCase,
+        private SubscriptionWebhookHandler $subscriptionWebhook,
     ) {}
 
     public function __invoke(Request $request)
@@ -38,6 +40,12 @@ class PaymentWebhookController extends Controller
         }
 
         try {
+            // サブスクはプロジェクト別の決済設定がある場合だけ扱う
+            if (isset($setting) && SubscriptionWebhookHandler::handles($payload)) {
+                $this->subscriptionWebhook->handle($payload, $sigHeader, $endpointSecret, (int) $projectId, (int) $setting->id);
+
+                return response()->json(['received' => true]);
+            }
             $this->webhookUseCase->handle($payload, $sigHeader, $endpointSecret, $projectId, isset($setting) ? (int) $setting->id : null);
         } catch (SignatureVerificationException|\UnexpectedValueException $e) {
             return response()->json(['error' => 'Invalid signature'], 400);

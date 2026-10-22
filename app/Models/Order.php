@@ -30,6 +30,7 @@ class Order extends Model
         'shipping_prefecture',
         'shipping_address',
         'shipping_fee',
+        'stripe_invoice_id',
         'points_used',
         'points_earned',
         'smaregi_points_synced_at',

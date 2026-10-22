@@ -122,6 +122,33 @@ class TicketPassTest extends TestCase
         $this->assertContains('shop', $keys());
     }
 
+    public function test_管理画面で設定した1日の上限が回数券にも効くこと(): void
+    {
+        [$project, $user] = $this->setUpTicketShop();
+        /** @var AdminUser $admin */
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
+        $this->actingAs($admin, 'admin')->post(route('admin.products.store', ['project_key' => $project->project_key]), [
+            'name' => 'ランチ5回券', 'price' => 4000, 'category' => 'other', 'stock_unlimited' => '1', 'is_available' => '1',
+            'ticket_enabled' => '1', 'ticket_uses' => 5, 'daily_limit' => 1,
+        ])->assertSessionHasNoErrors();
+        $product = Product::where('name', 'ランチ5回券')->sole();
+        $this->assertSame(1, $product->daily_limit);
+
+        $this->payByWebhook($this->buyTicket($user, $product));
+        $ticket = MemberTicket::sole();
+        $this->assertSame(1, $ticket->daily_limit);
+        $use = '/api/member-tickets/'.$ticket->id.'/use?project_key=default';
+        $headers = ['X-Line-User-Id' => self::LINE_USER_ID];
+        $this->withHeaders($headers)->post($use)->assertOk()->assertJsonPath('data.remaining_uses', 4);
+        $this->withHeaders($headers)->post($use)->assertStatus(422)->assertJsonPath('message', '本日の利用上限に達しました。明日以降にご利用ください');
+
+        // スタッフが取り消した利用は数えない
+        $this->actingAs($admin, 'admin')->post(route('admin.members.tickets.uses.cancel', [
+            'project_key' => $project->project_key, 'id' => $ticket->member_id, 'ticket' => $ticket->id, 'use' => $ticket->uses()->value('id'),
+        ]))->assertRedirect();
+        $this->withHeaders($headers)->post($use)->assertOk();
+    }
+
     public function test_回数券と通常商品は混ぜて注文できないこと(): void
     {
         [$project, $user, , $ticketProduct] = $this->setUpTicketShop();
