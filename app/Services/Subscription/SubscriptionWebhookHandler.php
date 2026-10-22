@@ -39,6 +39,7 @@ class SubscriptionWebhookHandler
         private OrderNumberAssigner $orderNumberAssigner,
         private OrderService $orderService,
         private PostCommitDomainEventDispatcher $postCommitEvents,
+        private StoreContext $storeContext,
     ) {}
 
     /** 署名検証前の種別判定。サブスクのイベントだけをこのハンドラーへ回す。 */
@@ -83,7 +84,7 @@ class SubscriptionWebhookHandler
         $previousProject = AdminContext::getCurrentProject();
         AdminContext::setCurrentProject(Project::findOrFail($projectId));
         try {
-            $order = app(StoreContext::class)->runForStore($store, fn (): ?Order => DB::transaction(
+            $order = $this->storeContext->runForStore($store, fn (): ?Order => DB::transaction(
                 fn (): ?Order => $this->recordPaidPeriod($invoice->id, (int) $invoice->amount_paid, $stripeSubscriptionId, $periodEnd, $member, $product, $store, $settingId),
             ));
             if ($order !== null) {
