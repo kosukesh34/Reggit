@@ -15,7 +15,7 @@ Skip・LINE は Stripe hosted Checkout を外部ブラウザーで開く。PayPa
 1. 管理画面「店舗設定 → 決済・入金先」を開く。
 2. 対象プロジェクトの Stripe 公開キー・秘密キー・Webhook 署名キーを登録する。Stripe API でアカウント ID を確認し、接続アカウントを表示する。
 3. 利用する4種類の方法を選ぶ。PayPay は対象 Stripe アカウントのダッシュボードでも利用申請・有効化する。
-4. 保存後に表示されるプロジェクト・設定バージョン専用の Webhook URL を Stripe に登録する。イベントは `payment_intent.succeeded`。
+4. 保存後に表示されるプロジェクト・設定バージョン専用の Webhook URL を Stripe に登録する。イベントは `payment_intent.succeeded`。サブスクを販売する場合は `invoice.paid`・`customer.subscription.updated`・`customer.subscription.deleted` も登録する。
 5. Webhook 署名キーは対象エンドポイントの値を使う。キーを後から登録・変更した場合、保存後の URL へ同じ Stripe エンドポイントの URL を更新する。
 6. 設定変更前の未決済注文が残っている間は、旧バージョンの URL とアカウント認証情報も使用可能な状態に保つ。各バージョンに別エンドポイントを用意すると、旧注文の完了通知も受け取れる。
 

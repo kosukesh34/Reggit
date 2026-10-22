@@ -40,7 +40,7 @@ class ShopSettingKeys
         'feature_home_enabled' => 'ホーム',
         'feature_orders_enabled' => '注文（オーダー・履歴）',
         'feature_shop_enabled' => 'ショップ（配送）',
-        'feature_tickets_enabled' => '回数券',
+        'feature_tickets_enabled' => '回数券・サブスク',
         'feature_reservations_enabled' => '予約',
         'feature_queue_enabled' => '順番待ち',
         'feature_stamps_enabled' => 'スタンプカード',
