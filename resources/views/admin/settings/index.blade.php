@@ -8,7 +8,13 @@
     $settingsPlan = isset($currentProject) && $currentProject !== null
         ? (string) ($currentProject->plan ?? \App\Enums\ProjectPlan::NORMAL)
         : \App\Enums\ProjectPlan::NORMAL;
-    $settingsSections = \App\Support\AdminSettingsNavigation::sections(auth('admin')->user(), $settingsPlan);
+    $settingsSections = \App\Support\AdminSettingsNavigation::sections(
+        auth('admin')->user(),
+        $settingsPlan,
+        isset($currentProject) && $currentProject !== null
+            ? app(\App\Domain\Settings\Repositories\FeatureSettings::class)->getFeatureFlags((int) $currentProject->id)
+            : null,
+    );
 @endphp
 
 <div class="settings-hub" data-settings-hub>
