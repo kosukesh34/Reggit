@@ -76,6 +76,16 @@
         <div class="form-group">
             <label class="form-label">価格</label>
             <input type="number" name="price" class="form-control" value="{{ old('price', $product->price ?? '') }}" min="0" step="1" required>
+            <small class="form-help">税込価格を入力します。</small>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="tax_rate">消費税率</label>
+            <select name="tax_rate" id="tax_rate" class="form-select">
+                <option value="10" @selected((int) old('tax_rate', $product->tax_rate ?? 10) === 10)>10%（標準税率）</option>
+                <option value="8" @selected((int) old('tax_rate', $product->tax_rate ?? 10) === 8)>8%（軽減税率：飲食料品など）</option>
+            </select>
+            <small class="form-help">ショップの領収書で税率ごとの消費税額を表示するために使います。</small>
         </div>
 
         <div class="form-group">

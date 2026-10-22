@@ -311,6 +311,8 @@ export const reggitApi = {
       shipping_postal_code: input.shippingPostalCode,
       shipping_prefecture: input.shippingPrefecture,
       shipping_address: input.shippingAddress,
+      delivery_date: input.deliveryDate || undefined,
+      delivery_time_slot: input.deliveryTimeSlot || undefined,
     });
     if (result.success === false) {
       throw new Error(result.error || '注文に失敗しました');

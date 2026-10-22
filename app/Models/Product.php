@@ -17,6 +17,7 @@ class Product extends Model
         'name',
         'description',
         'price',
+        'tax_rate',
         'image_url',
         'category',
         'is_available',
@@ -31,6 +32,7 @@ class Product extends Model
     /** @var array<string, string> */
     protected $casts = [
         'price' => 'decimal:2',
+        'tax_rate' => 'integer',
         'is_available' => 'boolean',
         'stock' => 'integer',
         'ticket_uses' => 'integer',

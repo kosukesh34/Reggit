@@ -13,7 +13,7 @@ class ProductUpdateRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $merged = ['is_available' => $this->boolean('is_available')];
+        $merged = ['is_available' => $this->boolean('is_available'), 'tax_rate' => (int) ($this->input('tax_rate') ?: 10)];
         if ($this->boolean('stock_unlimited')) {
             $merged['stock'] = null;
         }
@@ -41,6 +41,7 @@ class ProductUpdateRequest extends FormRequest
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
             'price' => 'required|numeric|min:0',
+            'tax_rate' => 'required|in:8,10',
             'image_url' => 'nullable|string|url|max:500',
             'image' => 'nullable|image|mimes:png,jpg,jpeg,gif,webp|max:2048',
             'image_clear' => 'nullable|in:0,1',

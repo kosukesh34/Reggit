@@ -112,6 +112,7 @@ use App\Http\Controllers\Shop\ShopController;
 use App\Http\Controllers\Shop\ShopLineAuthController;
 use App\Http\Controllers\Shop\ShopMemberRegistrationController;
 use App\Http\Controllers\Shop\ShopPasskeyController;
+use App\Http\Controllers\Shop\ShopReceiptController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampGrantOpenController;
@@ -175,6 +176,7 @@ Route::prefix('liff')->middleware('bind.project')->group(function () {
 // ========== 公開ショップ（PC / 一般ブラウザ） ==========
 Route::prefix('web/{project_key}')->middleware(['web', 'bind.project', 'shop.enabled'])->group(function () {
     Route::get('/shop', [ShopController::class, 'show'])->name('shop.show');
+    Route::get('/shop/legal', [ShopController::class, 'legal'])->name('shop.legal');
     Route::get('/shop/login', [ShopAuthController::class, 'loginForm'])->name('shop.login');
     Route::post('/shop/logout', [ShopAuthController::class, 'logout'])->name('shop.logout');
     Route::get('/shop/line/start', [ShopLineAuthController::class, 'start'])->name('shop.line.start');
@@ -191,8 +193,13 @@ Route::prefix('web/{project_key}')->middleware(['web', 'bind.project', 'shop.ena
 });
 
 // 独自ショップドメイン（Host → project）。LIFF / 管理画面は対象外。
+// 領収書は署名つき URL で開く（ショップ停止後も過去の注文分は表示できる）
+Route::get('/web/{project_key}/shop/orders/{order}/receipt', ShopReceiptController::class)
+    ->whereNumber('order')->middleware(['web', 'bind.project', 'signed', 'throttle:60,1'])->name('shop.receipt');
+
 Route::middleware(['web', 'shop.domain', 'shop.enabled'])->group(function () {
     Route::get('/shop', [ShopController::class, 'show'])->name('shop.domain.show');
+    Route::get('/shop/legal', [ShopController::class, 'legal'])->name('shop.domain.legal');
     Route::get('/shop/login', [ShopAuthController::class, 'loginForm'])->name('shop.domain.login');
     Route::post('/shop/logout', [ShopAuthController::class, 'logout'])->name('shop.domain.logout');
     Route::get('/shop/line/start', [ShopLineAuthController::class, 'start'])->name('shop.domain.line.start');
@@ -310,6 +317,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/shop/orders/{id}', [ShopOrderController::class, 'detail'])->name('admin.shop.orders.detail')->middleware('admin.permission:orders.view');
         Route::post('/shop/orders/{id}/status', [ShopOrderController::class, 'updateStatus'])->name('admin.shop.orders.status')->middleware('admin.permission:orders.update');
         Route::post('/shop/orders/{id}/complete', [ShopOrderController::class, 'complete'])->name('admin.shop.orders.complete')->middleware('admin.permission:orders.update');
+        Route::post('/shop/orders/{id}/refund', [ShopOrderController::class, 'refund'])->name('admin.shop.orders.refund')->middleware('admin.permission:orders.update');
 
         Route::get('/products', [AdminProductController::class, 'products'])->name('admin.products')->middleware('admin.permission:products.view');
         Route::post('/products/import-smaregi', [AdminProductController::class, 'importSmaregi'])->name('admin.products.import-smaregi')->middleware('admin.permission:products.manage');

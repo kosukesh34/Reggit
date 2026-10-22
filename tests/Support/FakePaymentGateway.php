@@ -18,6 +18,15 @@ class FakePaymentGateway implements PaymentGateway
 
     public array $cancelledSessions = [];
 
+    public array $refunds = [];
+
+    public function refundPayment(string $paymentIntentId, int $amount, string $idempotencyKey): string
+    {
+        $this->refunds[] = compact('paymentIntentId', 'amount', 'idempotencyKey');
+
+        return 're_test_'.count($this->refunds);
+    }
+
     public function cancelUnpaidSession(string $channel, string $sessionId): void
     {
         $this->cancelledSessions[] = compact('channel', 'sessionId');

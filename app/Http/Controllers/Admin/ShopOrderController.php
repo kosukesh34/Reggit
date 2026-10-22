@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Order\Exceptions\OrderOperationException;
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Http\Requests\Admin\OrderStatusRequest;
 use App\Services\Admin\OrderAdminService;
+use App\Services\Shop\ShopOperations;
+use App\Services\Shop\ShopOrderRefundService;
 use App\Util\AdminStatusLabels;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ShopOrderController extends AdminBaseController
 {
@@ -46,8 +50,19 @@ class ShopOrderController extends AdminBaseController
 
     public function updateStatus(OrderStatusRequest $request, string $projectKey, $id)
     {
-        $this->orderAdminService->findShippingOrFail((int) $id);
+        $order = $this->orderAdminService->findShippingOrFail((int) $id);
         $status = $request->validated('status');
+        $shipping = $request->validate([
+            'shipping_carrier' => ['nullable', Rule::in(array_keys(ShopOperations::CARRIERS))],
+            'shipping_tracking_number' => ['nullable', 'string', 'max:64', 'regex:/^[0-9A-Za-z\-]+$/'],
+        ], ['shipping_tracking_number.regex' => 'お問い合わせ番号は英数字とハイフンで入力してください。']);
+        if ($status === OrderStatus::SHIPPED && $request->has('shipping_carrier')) {
+            // 発送メールに載せるため、状態を変える前に保存する
+            $order->forceFill([
+                'shipping_carrier' => $shipping['shipping_carrier'] ?? null,
+                'shipping_tracking_number' => trim((string) ($shipping['shipping_tracking_number'] ?? '')) ?: null,
+            ])->save();
+        }
         try {
             $this->orderAdminService->updateStatus((int) $id, $status);
         } catch (OrderOperationException $e) {
@@ -56,6 +71,19 @@ class ShopOrderController extends AdminBaseController
 
         return redirect()->back()
             ->with('success', '注文ステータスを「'.AdminStatusLabels::orderStatusLabel($status).'」に更新しました');
+    }
+
+    public function refund(string $projectKey, $id, ShopOrderRefundService $refunds)
+    {
+        $order = $this->orderAdminService->findShippingOrFail((int) $id);
+        try {
+            $refunds->refundInFull($order);
+        } catch (OrderOperationException $e) {
+            return redirect()->back()->withErrors(['status' => $e->getMessage()]);
+        }
+
+        return redirect()->back()->with('success', '全額を返金し、注文をキャンセルしました'
+            .($order->smaregi_transaction_head_id ? '。スマレジの取引を取消してください' : ''));
     }
 
     public function complete(string $projectKey, $id)

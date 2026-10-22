@@ -7,6 +7,7 @@ use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderReady;
 use App\Domain\Order\Events\OrderShipped;
 use App\Enums\OrderStatus;
+use App\Enums\OrderType;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\Store;
@@ -36,6 +37,10 @@ class OrderNotificationOutbox
         }
         $order = Order::withoutGlobalScopes()->where('project_id', $event->projectId)->findOrFail($event->orderId);
         $channels = $name === 'confirmed' ? ['native', 'line', 'kitchen'] : (in_array($name, ['ready', 'shipped'], true) ? ['native', 'line'] : ['native']);
+        if ($order->order_type === OrderType::SHIPPING && in_array($name, ['confirmed', 'shipped'], true)) {
+            // 配送注文は厨房に出さず、購入者へメールでも知らせる
+            $channels = ['native', 'line', 'email'];
+        }
         foreach ($channels as $channel) {
             DB::table(self::TABLE)->upsert([[
                 'project_id' => $event->projectId,
@@ -113,6 +118,11 @@ class OrderNotificationOutbox
                 }
                 if ($delivery->channel === 'kitchen') {
                     $this->kitchen->notifyNewOrder($delivery->order_id, $delivery->project_id);
+
+                    return;
+                }
+                if ($delivery->channel === 'email') {
+                    $this->notifications->emailShopOrder($delivery->order_id, $delivery->project_id, $delivery->event);
 
                     return;
                 }

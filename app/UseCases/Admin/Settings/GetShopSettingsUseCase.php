@@ -6,6 +6,7 @@ use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Domain\Settings\Repositories\OperationalSettings;
 use App\Models\Product;
 use App\Models\Project;
+use App\Services\Shop\ShopOperations;
 use App\Support\JapanPrefectures;
 use App\UseCases\Admin\Settings\Data\ShopSettingsView;
 
@@ -14,6 +15,7 @@ class GetShopSettingsUseCase
     public function __construct(
         private FeatureSettings $features,
         private OperationalSettings $operations,
+        private ShopOperations $shopOperations,
     ) {}
 
     public function handle(int $projectId): ShopSettingsView
@@ -50,6 +52,16 @@ class GetShopSettingsUseCase
             products: $products,
             publicShopUrl: route('shop.show', ['project_key' => $project->project_key]),
             customDomainUrl: $domain !== '' ? 'https://'.$domain.'/shop' : '',
+            operations: [
+                'legal_notice' => $this->shopOperations->legalNotice($projectId),
+                'free_shipping_threshold' => $this->shopOperations->freeShippingThreshold($projectId),
+                'delivery_date_enabled' => (bool) $this->features->getValue('shop_delivery_date_enabled', false, $projectId),
+                'delivery_lead_days' => (int) $this->features->getValue('shop_delivery_lead_days', 3, $projectId),
+                'delivery_range_days' => (int) $this->features->getValue('shop_delivery_range_days', 14, $projectId),
+                'delivery_time_slots' => $this->shopOperations->deliveryOptions($projectId)['time_slots'],
+                'invoice_registration_number' => $this->shopOperations->invoiceRegistrationNumber($projectId),
+            ],
+            legalNoticeUrl: route('shop.legal', ['project_key' => $project->project_key]),
         );
     }
 }

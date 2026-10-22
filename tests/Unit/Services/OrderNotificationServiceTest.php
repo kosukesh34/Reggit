@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\Line\LineService;
 use App\Services\OrderNotificationService;
 use App\Services\PushNotificationService;
+use App\Services\Shop\ShopOperations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -54,7 +55,7 @@ class OrderNotificationServiceTest extends TestCase
         $push = Mockery::mock(PushNotificationService::class);
         $push->shouldReceive('sendToUser')->once()->andReturn(['target_tokens' => 0, 'sent' => 0]);
 
-        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push, app(ShopOperations::class));
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -84,7 +85,7 @@ class OrderNotificationServiceTest extends TestCase
         $push = Mockery::mock(PushNotificationService::class);
         $push->shouldReceive('sendToUser')->never();
 
-        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push, app(ShopOperations::class));
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -124,7 +125,7 @@ class OrderNotificationServiceTest extends TestCase
             )
             ->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
 
-        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push, app(ShopOperations::class));
         $service->notifyConfirmed((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -157,7 +158,7 @@ class OrderNotificationServiceTest extends TestCase
             Mockery::on(fn (array $data): bool => $data['type'] === 'order_ready' && $data['tab'] === 'orders')
         )->andReturn(['target_tokens' => 1, 'sent' => 1]);
 
-        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push, app(ShopOperations::class));
         $service->notifyReady((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
@@ -191,7 +192,7 @@ class OrderNotificationServiceTest extends TestCase
             Mockery::on(fn (array $data): bool => $data['type'] === 'order_shipped')
         )->andReturn(['target_tokens' => 1, 'sent' => 1]);
 
-        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push, app(ShopOperations::class));
         $service->notifyShipped((int) $order->id, (int) $project->id);
         $service->notifyReady((int) $order->id, (int) $project->id);
     }

@@ -44,6 +44,8 @@ class OrderStoreRequest extends FormRequest
             'shipping_postal_code' => ['nullable', 'string', 'max:16'],
             'shipping_prefecture' => ['nullable', 'string', Rule::in(JapanPrefectures::names())],
             'shipping_address' => ['nullable', 'string', 'max:500'],
+            'delivery_date' => ['nullable', 'date_format:Y-m-d'],
+            'delivery_time_slot' => ['nullable', 'string', 'max:32'],
         ];
     }
 }

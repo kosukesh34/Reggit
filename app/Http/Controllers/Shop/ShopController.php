@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
+use App\Services\Shop\ShopOperations;
 use App\Support\ShopMemberSession;
 use App\UseCases\Shop\ShowShopPageUseCase;
+use App\Util\AdminContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,6 +17,20 @@ class ShopController extends Controller
         private ShowShopPageUseCase $showShopPageUseCase,
         private ShopMemberSession $session,
     ) {}
+
+    public function legal(Request $request, ShopOperations $operations): View
+    {
+        $project = AdminContext::getCurrentProject();
+        abort_unless($project !== null, 404);
+        $projectKey = (string) ($request->route('project_key') ?? '');
+
+        return view('frontend.shop-legal', [
+            'projectName' => (string) $project->name,
+            'notice' => $operations->legalNotice((int) $project->id),
+            'labels' => ShopOperations::LEGAL_FIELDS,
+            'shopUrl' => $projectKey !== '' ? route('shop.show', ['project_key' => $projectKey]) : route('shop.domain.show'),
+        ]);
+    }
 
     public function show(Request $request): View|RedirectResponse
     {

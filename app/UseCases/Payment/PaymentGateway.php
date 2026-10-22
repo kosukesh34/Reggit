@@ -22,4 +22,7 @@ interface PaymentGateway
     public function cancelUnpaidSession(string $channel, string $sessionId): void;
 
     public function constructWebhookEvent(string $payload, string $sigHeader, string $secret): array;
+
+    /** 返金を作成して返金 ID を返す。同じキーでの再試行は同じ返金になる。 */
+    public function refundPayment(string $paymentIntentId, int $amount, string $idempotencyKey): string;
 }

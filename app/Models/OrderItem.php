@@ -18,6 +18,7 @@ class OrderItem extends Model
         'smaregi_product_id',
         'quantity',
         'price',
+        'tax_rate',
         'notes',
         'option_ids',
     ];
@@ -26,6 +27,7 @@ class OrderItem extends Model
     protected $casts = [
         'quantity' => 'integer',
         'price' => 'decimal:2',
+        'tax_rate' => 'integer',
         'option_ids' => 'array',
     ];
 

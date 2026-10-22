@@ -68,6 +68,75 @@
                     @endforeach
                 </div>
             </div>
+            @php $ops = $view->operations; @endphp
+            <div class="form-group">
+                <label class="form-label" for="shop_free_shipping_threshold">送料無料になる金額（円、税込）</label>
+                <input type="number" name="shop_free_shipping_threshold" id="shop_free_shipping_threshold" class="form-control" value="{{ old('shop_free_shipping_threshold', $ops['free_shipping_threshold']) }}" min="1" max="10000000" placeholder="空欄で送料無料なし">
+                <small class="form-text">商品合計がこの金額以上なら、どの都道府県でも送料0円にします。</small>
+                @error('shop_free_shipping_threshold')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+            </div>
+
+            <h3 class="settings-subheading">お届け日時の指定</h3>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="hidden" name="shop_delivery_date_enabled" value="0">
+                    <input type="checkbox" name="shop_delivery_date_enabled" value="1" {{ old('shop_delivery_date_enabled', $ops['delivery_date_enabled']) ? 'checked' : '' }}>
+                    <span>お客様がお届け希望日・時間帯を指定できるようにする（指定なしも選べます）</span>
+                </label>
+            </div>
+            <div class="row">
+                <div class="col-md-4 form-group">
+                    <label class="form-label" for="shop_delivery_lead_days">最短お届け日（注文日から何日後）</label>
+                    <input type="number" name="shop_delivery_lead_days" id="shop_delivery_lead_days" class="form-control" value="{{ old('shop_delivery_lead_days', $ops['delivery_lead_days']) }}" min="1" max="60" required>
+                    @error('shop_delivery_lead_days')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                </div>
+                <div class="col-md-4 form-group">
+                    <label class="form-label" for="shop_delivery_range_days">指定できる期間（日数）</label>
+                    <input type="number" name="shop_delivery_range_days" id="shop_delivery_range_days" class="form-control" value="{{ old('shop_delivery_range_days', $ops['delivery_range_days']) }}" min="1" max="90" required>
+                    @error('shop_delivery_range_days')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                </div>
+                <div class="col-md-4 form-group">
+                    <label class="form-label" for="shop_delivery_time_slots">時間帯（1行に1つ）</label>
+                    <textarea name="shop_delivery_time_slots" id="shop_delivery_time_slots" class="form-control" rows="4" placeholder="午前中&#10;14〜16時&#10;16〜18時&#10;18〜20時&#10;19〜21時">{{ old('shop_delivery_time_slots', implode("\n", $ops['delivery_time_slots'])) }}</textarea>
+                    <small class="form-text">配送業者の時間帯区分に合わせてください。空欄なら日付のみ指定できます。</small>
+                </div>
+            </div>
+
+            <h3 class="settings-subheading">特定商取引法に基づく表記</h3>
+            <p class="form-text">通信販売では表示が法律で義務付けられています。ショップを公開するにはすべて入力してください。入力内容はショップの「特定商取引法に基づく表記」ページと、注文確認メールに表示されます。@if($view->shopEnabled)<a href="{{ $view->legalNoticeUrl }}" target="_blank" rel="noopener noreferrer">表示を確認</a>@endif</p>
+            @php
+                $legalPlaceholders = [
+                    'seller' => '株式会社〇〇（個人事業主の場合は氏名）',
+                    'representative' => '山田 太郎',
+                    'address' => '〒100-0001 東京都千代田区…',
+                    'phone' => '03-0000-0000（受付時間 平日10:00〜18:00）',
+                    'email' => 'shop@example.com',
+                    'extra_fees' => '送料（都道府県により異なります。〇円以上のご注文で無料）',
+                    'payment' => 'クレジットカード（ご注文時にお支払い）',
+                    'delivery' => 'ご注文確定後、〇営業日以内に発送します。',
+                    'returns' => '商品到着後〇日以内にご連絡ください。お客様都合の返品はお受けできません。不良品は送料当店負担で交換します。',
+                ];
+            @endphp
+            @foreach(\App\Services\Shop\ShopOperations::LEGAL_FIELDS as $legalKey => $legalLabel)
+                <div class="form-group">
+                    <label class="form-label" for="shop_legal_{{ $legalKey }}">{{ $legalLabel }}</label>
+                    @if(in_array($legalKey, ['extra_fees', 'payment', 'delivery', 'returns', 'address'], true))
+                        <textarea name="shop_legal_notice[{{ $legalKey }}]" id="shop_legal_{{ $legalKey }}" class="form-control" rows="2" maxlength="1000" placeholder="{{ $legalPlaceholders[$legalKey] }}">{{ old('shop_legal_notice.'.$legalKey, $ops['legal_notice'][$legalKey] ?? '') }}</textarea>
+                    @else
+                        <input type="{{ $legalKey === 'email' ? 'email' : 'text' }}" name="shop_legal_notice[{{ $legalKey }}]" id="shop_legal_{{ $legalKey }}" class="form-control" maxlength="{{ $legalKey === 'email' ? 255 : 1000 }}" value="{{ old('shop_legal_notice.'.$legalKey, $ops['legal_notice'][$legalKey] ?? '') }}" placeholder="{{ $legalPlaceholders[$legalKey] }}">
+                    @endif
+                    @error('shop_legal_notice.'.$legalKey)<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                </div>
+            @endforeach
+
+            <h3 class="settings-subheading">領収書</h3>
+            <div class="form-group">
+                <label class="form-label" for="shop_invoice_registration_number">適格請求書発行事業者の登録番号</label>
+                <input type="text" name="shop_invoice_registration_number" id="shop_invoice_registration_number" class="form-control" value="{{ old('shop_invoice_registration_number', $ops['invoice_registration_number']) }}" placeholder="T1234567890123" maxlength="14" pattern="T\d{13}">
+                <small class="form-text">入力すると、領収書が適格簡易請求書（税率ごとの消費税額つき）になります。税率は商品ごとに設定します（標準10%・軽減8%）。</small>
+                @error('shop_invoice_registration_number')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+            </div>
+
             <div class="form-group">
                 <label class="form-label" for="shop_hero_headline">トップ見出し</label>
                 <input type="text" name="shop_hero_headline" id="shop_hero_headline" class="form-control" value="{{ old('shop_hero_headline', $view->heroHeadline) }}" maxlength="120" placeholder="今だけのオンラインショップ">

@@ -88,6 +88,8 @@ export interface OrderInput {
   shippingPostalCode?: string;
   shippingPrefecture?: string;
   shippingAddress?: string;
+  deliveryDate?: string;
+  deliveryTimeSlot?: string;
   lines: OrderLineInput[];
   total: number;
 }
