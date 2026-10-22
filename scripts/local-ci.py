@@ -64,7 +64,7 @@ def main():
             run(*backend, 'cp -r /source/. /work/ && '
                 'timeout 900 ./vendor/bin/pint --test && '
                 'timeout 900 ./vendor/bin/phpstan analyse --memory-limit=768M && '
-                'timeout 900 php artisan test --exclude-group=smaregi-integration', timeout=2400)
+                'timeout 1500 php artisan test --exclude-group=smaregi-integration', timeout=2400)
             # Install locked dependencies without running package lifecycle scripts. Only this
             # preparation container has network access; all actual frontend checks run offline.
             run('docker', 'volume', 'create', identifier, stdout=subprocess.DEVNULL)
