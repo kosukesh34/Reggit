@@ -17,6 +17,10 @@ class ProductUpdateRequest extends FormRequest
         if ($this->boolean('stock_unlimited')) {
             $merged['stock'] = null;
         }
+        if (! $this->boolean('ticket_enabled')) {
+            $merged['ticket_uses'] = null;
+            $merged['ticket_valid_days'] = null;
+        }
         $this->merge($merged);
     }
 
@@ -37,6 +41,9 @@ class ProductUpdateRequest extends FormRequest
             'is_available' => 'nullable|boolean',
             'stock_unlimited' => 'nullable|boolean',
             'stock' => $stockRules,
+            'ticket_enabled' => 'nullable|boolean',
+            'ticket_uses' => 'nullable|required_if_accepted:ticket_enabled|integer|min:1|max:1000',
+            'ticket_valid_days' => 'nullable|integer|min:1|max:3650',
             'option_groups' => 'nullable|array|max:10',
             'option_groups.*.name' => 'required|string|max:100',
             'option_groups.*.selection_type' => 'required|in:single,multiple',

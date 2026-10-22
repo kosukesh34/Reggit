@@ -8,7 +8,7 @@
 |---|---|
 | 目的・利用者・店舗ごとの情報範囲 | [1. 全体像](#overview) |
 | 登録・プロフィール・ポイント・ランク・引継ぎ・退会 | [2. 会員](#members) |
-| 商品・注文・決済・予約・順番待ち・店舗端末 | [3. 店舗利用](#store-flows) |
+| 商品・注文・決済・予約・順番待ち・店舗端末・回数券 | [3. 店舗利用](#store-flows) |
 | 特典・配信・分析・外部連携・導入登録 | [4. 特典と再来店](#benefits) |
 | 保存のタイミング・処理順・失敗時の分岐 | [5. シーケンス図](#sequences) |
 
@@ -374,9 +374,26 @@ Kitchenは注文一覧・状態更新・Push登録、Waitingは受付一覧・�
 
 <a id="store-flows-06"></a>
 
+### 6. 回数券
+
+**目的（2026-10-22 ユーザー指示）：** 前払いの回数券で再来店を増やします。サブスクは同じ回数券の仕組みを使う次の段階で追加します。
+
+商品編集で「回数券として販売する」を選び、利用回数と有効日数（空欄で無期限）を設定します。回数券商品は通常のメニュー・ショップに表示せず、「設定 → 機能」で回数券を有効にした場合だけアプリの「回数券」画面で販売します。購入は会員だけ、オンライン決済だけです。注文種別 `ticket` の注文として作成し、決済・Webhook・スマレジ取引同期は通常のオンライン注文と同じ経路を使います。
+
+決済確定で注文を `completed` にし、注文明細ごとに回数券を1件発行します（回数 × 数量、明細IDで重複発行を防止）。有効期限は決済確定日から有効日数後の日の終わりです。回数・有効日数は決済確定時の商品設定を使います。獲得ポイントと購買由来の抽選権利は通常どおり付与し、購入は来店ではないため来店記録とスタンプは付与しません。
+
+お客様はクーポンと同じく、スタッフの前で「1回使う」を押します。サーバーは現在の会員と回数券をロックし、本人の券・未無効化・期限内・残り回数ありを確認して1回分を記録します。管理画面の会員詳細「回数券」で残り回数と利用履歴を確認し、利用の取消（1回分戻す）と無効化ができます。無効化は返金を伴いません。返金はStripeで別途行います。スマレジ側の返品と回数券の無効化は連動しません。
+
+機能を無効にすると販売とメニュー表示を止めます。購入済みの回数券は `/tickets` 画面で引き続き利用できます。
+
+**根拠：** [回数券Service](../app/Services/Ticket/MemberTicketService.php)、[顧客API](../app/Http/Controllers/TicketController.php)、[注文可否](../app/Domain/Order/Policies/OrderPlacementPolicy.php)、[テスト](../tests/Feature/TicketPassTest.php)。
+
+
+<a id="store-flows-07"></a>
+
 ### 関連する検証先
 
-[決済本人確認](../tests/Feature/PaymentPrincipalTest.php)、[決済通貨](../tests/Feature/PaymentCurrencyTest.php)、[予約枠の同時登録](../tests/Feature/ReservationCapacityConcurrencyTest.php)、[受付状態競合](../tests/Feature/QueueStateConcurrencyTest.php)、[抽選付与時期](../tests/Feature/LotteryOrderGrantTimingTest.php)。実行結果はリリースPRを参照してください。
+[回数券](../tests/Feature/TicketPassTest.php)、[決済本人確認](../tests/Feature/PaymentPrincipalTest.php)、[決済通貨](../tests/Feature/PaymentCurrencyTest.php)、[予約枠の同時登録](../tests/Feature/ReservationCapacityConcurrencyTest.php)、[受付状態競合](../tests/Feature/QueueStateConcurrencyTest.php)、[抽選付与時期](../tests/Feature/LotteryOrderGrantTimingTest.php)。実行結果はリリースPRを参照してください。
 
 <a id="benefits"></a>
 

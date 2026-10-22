@@ -101,7 +101,7 @@ class OrderPaymentSessionService
         if ((int) $order->user_id !== $userId) {
             throw new InvalidArgumentException('注文の所有者と一致しません');
         }
-        if (! in_array($order->order_type, [OrderType::MOBILE, OrderType::SHIPPING], true) || $order->payment_method !== PaymentMethod::STRIPE) {
+        if (! in_array($order->order_type, [OrderType::MOBILE, OrderType::SHIPPING, OrderType::TICKET], true) || $order->payment_method !== PaymentMethod::STRIPE) {
             throw new InvalidArgumentException('カード払いのモバイル注文のみ決済できます');
         }
         if ($order->status !== OrderStatus::PENDING) {

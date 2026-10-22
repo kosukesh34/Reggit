@@ -21,6 +21,7 @@
         'orders' => 'feature_orders_enabled',
         'stamps' => 'feature_stamps_enabled',
         'coupons' => 'feature_coupons_enabled',
+        'tickets' => 'feature_tickets_enabled',
         'queue' => 'feature_queue_enabled',
         'reservations' => 'feature_reservations_enabled',
         'member' => 'feature_members_enabled',

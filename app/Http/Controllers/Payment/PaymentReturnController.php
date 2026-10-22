@@ -30,7 +30,8 @@ class PaymentReturnController extends Controller
             } else {
                 $liffId = ProjectLineLiffSetting::find($project->id)?->line_liff_id;
                 $returnUrl = filled($liffId) ? 'https://liff.line.me/'.rawurlencode($liffId) : url('/liff/'.rawurlencode($project->project_key));
-                $returnUrl .= '?payment_order_id='.$order->id.'&payment_status='.$status.'#/menu';
+                $returnUrl .= '?payment_order_id='.$order->id.'&payment_status='.$status
+                    .($order->order_type === OrderType::TICKET ? '#/tickets' : '#/menu');
             }
 
             return response()->view('payment.return', [

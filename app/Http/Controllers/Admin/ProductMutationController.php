@@ -69,7 +69,7 @@ class ProductMutationController extends AdminBaseController
     private function productPayload(ProductStoreRequest|ProductUpdateRequest $request): array
     {
         $validated = $request->validated();
-        unset($validated['image'], $validated['image_clear']);
+        unset($validated['image'], $validated['image_clear'], $validated['ticket_enabled']);
 
         $file = $request->file('image');
         if ($file instanceof UploadedFile) {

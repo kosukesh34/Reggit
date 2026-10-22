@@ -41,6 +41,7 @@ use App\Http\Controllers\Admin\MemberHistoryController;
 use App\Http\Controllers\Admin\MemberIndexController;
 use App\Http\Controllers\Admin\MemberMutationController;
 use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
+use App\Http\Controllers\Admin\MemberTicketController as AdminMemberTicketController;
 use App\Http\Controllers\Admin\MemberTransferController as AdminMemberTransferController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PointGrantQrController;
@@ -320,6 +321,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
 
         Route::get('/members', [MemberIndexController::class, 'index'])->name('admin.members')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/transfer-code', [AdminMemberTransferController::class, 'store'])->name('admin.members.transfer-code')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/tickets/{ticket}/revoke', [AdminMemberTicketController::class, 'revoke'])->whereNumber(['id', 'ticket'])->name('admin.members.tickets.revoke')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/tickets/{ticket}/uses/{use}/cancel', [AdminMemberTicketController::class, 'cancelUse'])->whereNumber(['id', 'ticket', 'use'])->name('admin.members.tickets.uses.cancel')->middleware('admin.permission:members.manage');
         Route::get('/members/export', [MemberIndexController::class, 'export'])->name('admin.members.export')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/history/{section}', [MemberHistoryController::class, 'index'])->name('admin.members.history')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/visits/{visitId}', [MemberHistoryController::class, 'visit'])->name('admin.members.visits.detail')->middleware('admin.permission:members.view');

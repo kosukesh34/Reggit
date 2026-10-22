@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\MemberTicket;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
 use App\UseCases\Admin\Member\AdminMemberEditUseCase;
 use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
@@ -32,6 +33,7 @@ class MemberController extends AdminBaseController
         return view('admin.member-detail', [
             'view' => $output,
             'allTags' => $tags,
+            'tickets' => MemberTicket::query()->with('uses.store')->where('member_id', $output->member->id)->latest('id')->get(),
         ]);
     }
 

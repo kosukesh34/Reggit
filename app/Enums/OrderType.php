@@ -11,6 +11,7 @@ class OrderType extends EnumBase
         'in_store' => '店内注文',
         'pos' => 'POS会計',
         'shipping' => '配送注文',
+        'ticket' => '回数券購入',
     ];
 
     public const MOBILE = 'mobile';
@@ -20,4 +21,6 @@ class OrderType extends EnumBase
     public const POS = 'pos';
 
     public const SHIPPING = 'shipping';
+
+    public const TICKET = 'ticket';
 }

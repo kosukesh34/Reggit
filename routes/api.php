@@ -88,6 +88,7 @@ use App\Http\Controllers\StampController;
 use App\Http\Controllers\StampGrantCodeController;
 use App\Http\Controllers\StampGrantController;
 use App\Http\Controllers\StoreListController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\Wallet\AppleWalletPasskitController;
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\CheckAnalysisApiAccess;
@@ -278,6 +279,8 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/member-wallet/summary', MemberWalletSummaryController::class);
     Route::get('/member-coupons', [CouponController::class, 'myCoupons']);
     Route::post('/member-coupons/{id}/redeem', [CouponController::class, 'use']);
+    Route::get('/member-tickets', [TicketController::class, 'index']);
+    Route::post('/member-tickets/{id}/use', [TicketController::class, 'use'])->whereNumber('id');
     Route::get('/member-lottery', [MemberLotteryController::class, 'index']);
     Route::post('/member-lottery/{id}/play', [MemberLotteryController::class, 'play'])->whereNumber('id');
     Route::post('/member-lottery/{id}/notify-win', [MemberLotteryController::class, 'notifyWin'])->whereNumber('id');

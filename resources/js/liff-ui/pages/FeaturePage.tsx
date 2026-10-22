@@ -1,5 +1,6 @@
 import { Navigate, useParams } from "react-router-dom";
 import { NativeCouponsPage } from "../native/NativeCouponsPage";
+import { NativeTicketsPage } from "../native/NativeTicketsPage";
 import { NativeStampsPage } from "../native/NativeStampsPage";
 import { NativeQueuePage } from "../native/NativeQueuePage";
 import { NativeReservationsPage } from "../native/NativeReservationsPage";
@@ -20,6 +21,7 @@ export function FeaturePage() {
     case "member": case "membership": return <Navigate to="/membership" replace />;
     case "profileEdit": return <Navigate to="/profile" replace />;
     case "coupon": case "coupons": return <NativeCouponsPage />;
+    case "ticket": case "tickets": return <NativeTicketsPage />;
     case "stamp": case "stamps": return <NativeStampsPage />;
     case "queue": return <NativeQueuePage />;
     case "reservation": case "reservations": return <NativeReservationsPage />;

@@ -110,6 +110,27 @@
             <small class="form-help">在庫無制限にした場合は在庫チェック・減算を行いません</small>
         </div>
 
+        @php
+            $ticketEnabled = (bool) old('ticket_enabled', isset($product) && $product->ticket_uses !== null);
+        @endphp
+        <div class="form-group">
+            <div class="form-check mb-2">
+                <input type="checkbox" name="ticket_enabled" id="ticket_enabled" value="1" {{ $ticketEnabled ? 'checked' : '' }}>
+                <label for="ticket_enabled">回数券として販売する</label>
+            </div>
+            <small class="form-help">回数券は通常のメニューに表示せず、アプリの「回数券」画面でオンライン決済のみで販売します。「設定 → 機能」で回数券を有効にしてください。</small>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:10px">
+                <div>
+                    <label class="form-label" for="ticket_uses">利用回数</label>
+                    <input type="number" name="ticket_uses" id="ticket_uses" class="form-control" value="{{ old('ticket_uses', $product->ticket_uses ?? '') }}" min="1" max="1000" step="1" placeholder="例：11">
+                </div>
+                <div>
+                    <label class="form-label" for="ticket_valid_days">有効日数（空欄で無期限）</label>
+                    <input type="number" name="ticket_valid_days" id="ticket_valid_days" class="form-control" value="{{ old('ticket_valid_days', $product->ticket_valid_days ?? '') }}" min="1" max="3650" step="1" placeholder="例：180">
+                </div>
+            </div>
+        </div>
+
         <div class="form-group">
             <div class="form-check">
                 <input type="checkbox" name="is_available" id="is_available" value="1" {{ ((bool) old('is_available', $product->is_available ?? true)) ? 'checked' : '' }}>

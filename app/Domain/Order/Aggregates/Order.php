@@ -150,15 +150,16 @@ final class Order
             return false;
         }
 
-        $this->status = OrderStatus::CONFIRMED;
+        // 回数券は受け渡しがないため、決済確定で完了にする
+        $this->status = $this->orderType === OrderType::TICKET ? OrderStatus::COMPLETED : OrderStatus::CONFIRMED;
         $this->paymentMethod = PaymentMethod::STRIPE;
 
         return true;
     }
 
-    /** オンライン決済を伴う注文（モバイル注文・配送注文） */
+    /** オンライン決済を伴う注文（モバイル注文・配送注文・回数券） */
     private function isOnlinePaidType(): bool
     {
-        return in_array($this->orderType, [OrderType::MOBILE, OrderType::SHIPPING], true);
+        return in_array($this->orderType, [OrderType::MOBILE, OrderType::SHIPPING, OrderType::TICKET], true);
     }
 }

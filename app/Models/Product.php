@@ -21,6 +21,8 @@ class Product extends Model
         'category',
         'is_available',
         'stock',
+        'ticket_uses',
+        'ticket_valid_days',
     ];
 
     /** @var array<string, string> */
@@ -28,7 +30,14 @@ class Product extends Model
         'price' => 'decimal:2',
         'is_available' => 'boolean',
         'stock' => 'integer',
+        'ticket_uses' => 'integer',
+        'ticket_valid_days' => 'integer',
     ];
+
+    public function isTicket(): bool
+    {
+        return $this->ticket_uses !== null;
+    }
 
     public function project()
     {
