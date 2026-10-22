@@ -29,7 +29,7 @@ struct NativeRootView: View {
 
     private var rootContent: some View {
         VStack(spacing: 0) {
-            if expandedHomeImageIndex == nil && (viewModel.phase == .ready || viewModel.phase == .needsRegistration) {
+            if expandedHomeImageIndex == nil && viewModel.phase == .ready {
                 NativeSharedHeader(
                     backgroundColorHex: viewModel.navigationHeaderBackgroundColorHex,
                     colors: viewModel.nativeChromeColors,
@@ -44,18 +44,6 @@ struct NativeRootView: View {
                     onOpenHamburger: { handleHeaderBack() }
                 )
             }
-            if viewModel.businessStores.count > 1 && (viewModel.phase == .ready || viewModel.phase == .needsRegistration) {
-                Button {
-                    viewModel.showStoreSelection()
-                } label: {
-                    HStack {
-                        Text(viewModel.selectedStoreName ?? "店舗を選択")
-                        Image(systemName: "chevron.down")
-                    }
-                    .font(.subheadline)
-                    .padding(.vertical, 8)
-                }
-            }
         NavigationStack {
             Group {
                 switch viewModel.phase {
@@ -63,12 +51,34 @@ struct NativeRootView: View {
                     splash
                 case .failed(let message):
                     errorScreen(message)
-                case .needsStoreSelection:
-                    businessStoreSelection
+                case .welcome:
+                    if let client = viewModel.apiClient {
+                        WelcomeView(
+                            apiClient: client,
+                            title: viewModel.navigationHeaderText ?? viewModel.projectName,
+                            backgroundImageURL: viewModel.homeImageURLs.first,
+                            canSkip: viewModel.membership?.registrationMode.canSkipRegistration ?? true,
+                            onRegister: { viewModel.startRegistration() },
+                            onTransfer: { accountMode = "transfer" },
+                            onExistingMember: { accountMode = "link" },
+                            onSkip: { viewModel.skipRegistration() }
+                        )
+                    } else {
+                        splash
+                    }
                 case .needsRegistration:
+                    VStack(spacing: 0) {
+                    Button {
+                        viewModel.showWelcome()
+                    } label: {
+                        FontAwesomeLabel("ログイン画面に戻る", systemImage: "chevron.left")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
                     MembershipRegistrationGateView(
-                        projectName: viewModel.projectName,
-                        message: viewModel.membership?.message,
                         canSkip: viewModel.membership?.registrationMode.canSkipRegistration ?? true,
                         isRegistering: viewModel.isRegistering,
                         errorMessage: viewModel.registrationError,
@@ -81,6 +91,7 @@ struct NativeRootView: View {
                         },
                         onSkip: { viewModel.skipRegistration() }
                     )
+                    }
                 case .ready:
                     mainChrome
                 }
@@ -93,12 +104,6 @@ struct NativeRootView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
-        .alert("会員登録", isPresented: $viewModel.showRegistrationPopup) {
-            Button("会員登録する") { viewModel.openRegistrationFromPopup() }
-            Button("あとで", role: .cancel) {}
-        } message: {
-            Text(viewModel.membership?.message ?? "会員登録でポイントやクーポンが使えます。")
-        }
         .navigationDestination(isPresented: Binding(
             get: { accountMode != nil },
             set: { if $0 == false { accountMode = nil } }
@@ -128,6 +133,14 @@ struct NativeRootView: View {
                     onClose: { accountMode = nil }
                 )
             }
+        }
+        .alert("ログイン", isPresented: Binding(
+            get: { viewModel.loginLinkMessage != nil },
+            set: { if $0 == false { viewModel.loginLinkMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(viewModel.loginLinkMessage ?? "")
         }
         .navigationDestination(isPresented: $showAppInfo) {
             AppInfoView(
@@ -165,11 +178,34 @@ struct NativeRootView: View {
         .textFieldStyle(.plain)
         .preferredColorScheme(.light)
         .background {
-            if viewModel.phase == .ready || viewModel.phase == .needsRegistration {
+            if viewModel.phase == .ready {
                 viewModel.navigationHeaderBackgroundColorHex.toNativeColor(fallback: AppDesign.surface)
                     .ignoresSafeArea()
             }
         }
+        .overlay {
+            if viewModel.showFeatureTour {
+                FeatureTourView(
+                    pointsGuide: viewModel.pointsGuide,
+                    storeName: viewModel.navigationHeaderText ?? viewModel.projectName,
+                    onClose: viewModel.featureTourClosable ? { closeFeatureTour() } : nil,
+                    onFinish: { closeFeatureTour() }
+                )
+                .environment(\.appButtonColors, viewModel.nativeChromeColors)
+                .environment(\.brandAccent, accent)
+                .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
+                .transition(.move(edge: .bottom))
+            }
+        }
+    }
+
+    private func openFeatureTour() {
+        viewModel.featureTourClosable = true
+        withAnimation(.easeInOut(duration: 0.3)) { viewModel.showFeatureTour = true }
+    }
+
+    private func closeFeatureTour() {
+        withAnimation(.easeInOut(duration: 0.3)) { viewModel.showFeatureTour = false }
     }
 
     private func openExternalPage(_ key: String) -> Bool {
@@ -271,19 +307,6 @@ struct NativeRootView: View {
     }
 
     @ViewBuilder
-    private var businessStoreSelection: some View {
-        VStack(spacing: 20) {
-            Text("ご利用店舗を選択してください")
-                .font(.title2.bold())
-            ForEach(viewModel.businessStores) { store in
-                Button(store.name) { viewModel.selectBusinessStore(store) }
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(24)
-    }
-
-    @ViewBuilder
     private var mainChrome: some View {
         if let client = viewModel.apiClient {
             ZStack(alignment: .leading) {
@@ -381,6 +404,15 @@ struct NativeRootView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    if viewModel.membership?.isMember == false {
+                        Button {
+                            showHamburgerMenu = false
+                            viewModel.showWelcome()
+                        } label: {
+                            drawerRow(title: "ログイン・新規登録", systemImage: "person.crop.circle")
+                        }
+                        .buttonStyle(.plain)
+                    }
                     Button {
                         showHamburgerMenu = false
                         accountMode = "link"
@@ -404,6 +436,13 @@ struct NativeRootView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    Button {
+                        showHamburgerMenu = false
+                        openFeatureTour()
+                    } label: {
+                        drawerRow(title: "アプリの使い方", systemImage: "questionmark")
+                    }
+                    .buttonStyle(.plain)
                     Button {
                         appInfoDisplayedAt = Date()
                         showHamburgerMenu = false
@@ -512,6 +551,9 @@ struct NativeRootView: View {
                 showRankProgress: viewModel.memberShowRankProgress,
                 showPointHistory: viewModel.memberShowPointHistory,
                 showCouponActivity: viewModel.memberShowCouponActivity,
+                businessStores: viewModel.businessStores,
+                selectedStoreName: viewModel.selectedStoreName,
+                onSelectStore: { viewModel.selectBusinessStore($0) },
                 onMembershipUpdated: { viewModel.applyMembership($0) }
             )
         } }

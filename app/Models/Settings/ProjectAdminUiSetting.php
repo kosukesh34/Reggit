@@ -36,6 +36,10 @@ class ProjectAdminUiSetting extends Model
         'member_show_point_history',
         'member_show_coupon_activity',
         'frontend_header_text',
+        'shop_hero_headline',
+        'shop_hero_subcopy',
+        'shop_hero_image_url',
+        'shop_featured_product_ids',
     ];
 
     /** @var array<string, string> */
@@ -48,6 +52,7 @@ class ProjectAdminUiSetting extends Model
         'member_show_rank_progress' => 'boolean',
         'member_show_point_history' => 'boolean',
         'member_show_coupon_activity' => 'boolean',
+        'shop_featured_product_ids' => 'array',
     ];
 
     public function project(): BelongsTo

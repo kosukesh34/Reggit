@@ -7,7 +7,8 @@ import SkipFuse
 final class NativeRootViewModel: PushNotificationHandling {
     enum Phase: Equatable {
         case loading
-        case needsStoreSelection
+        /// 未会員の起動直後。ログインか新規登録かを選ぶ
+        case welcome
         case needsRegistration
         case ready
         case failed(String)
@@ -64,7 +65,14 @@ final class NativeRootViewModel: PushNotificationHandling {
     var registrationFieldErrors: [String: String] = [:]
     var registrationError: String?
     var isRegistering = false
-    var showRegistrationPopup = false
+    var pointsGuide = PointsGuide()
+    /// ログイン・会員登録が完了した直後（または「アプリの使い方」）に出す機能案内
+    var showFeatureTour = false
+    /// メニューから開いたときだけ閉じられる（認証直後は最後まで見てもらう）
+    var featureTourClosable = false
+    /// メールのログインリンクの処理結果（アラート表示用）
+    var loginLinkMessage: String?
+    private var pendingLoginLink: (projectKey: String, memberId: Int, code: String)?
 
     private(set) var apiClient: (any ReggitAPIServing)?
     private let bootstrap: DeviceBootstrapService
@@ -116,7 +124,6 @@ final class NativeRootViewModel: PushNotificationHandling {
         let hadReadyScreen = phase == .ready
         if !hadReadyScreen { phase = .loading }
         registrationError = nil
-        showRegistrationPopup = false
         do {
             let previousProjectKey = currentProjectKey
             currentProjectKey = configRepository.resolveConfig().projectKey
@@ -133,15 +140,10 @@ final class NativeRootViewModel: PushNotificationHandling {
             apiClient = client
             businessStores = try await client.fetchStores()
             let selectedID = MobileSelectedProjectStore.selectedStoreID(baseURL: client.baseURL, projectKey: currentProjectKey)
-            if !businessStores.isEmpty && !businessStores.contains(where: { $0.id == selectedID }) {
-                if businessStores.count == 1, let store = businessStores.first {
-                    MobileSelectedProjectStore.selectStore(store.id, baseURL: client.baseURL, projectKey: currentProjectKey)
-                    SecondaryScreenCache.reset()
-                } else {
-                    MobileSelectedProjectStore.selectStore(nil, baseURL: client.baseURL, projectKey: currentProjectKey)
-                    phase = .needsStoreSelection
-                    return
-                }
+            // 店舗はプロフィール画面で変更する。未選択なら先頭の店舗で始める
+            if !businessStores.contains(where: { $0.id == selectedID }), let store = businessStores.first {
+                MobileSelectedProjectStore.selectStore(store.id, baseURL: client.baseURL, projectKey: currentProjectKey)
+                SecondaryScreenCache.reset()
             }
             let activeID = MobileSelectedProjectStore.selectedStoreID(baseURL: client.baseURL, projectKey: currentProjectKey)
             selectedStoreName = businessStores.first(where: { $0.id == activeID })?.name
@@ -173,6 +175,7 @@ final class NativeRootViewModel: PushNotificationHandling {
             homeImageURLs = config.homeImageURLs
             nativeChromeColors = config.nativeChromeColors
             homeShowMemberCard = config.homeShowMemberCard
+            pointsGuide = config.pointsGuide
             homeMenuLayout = config.homeMenuLayout
             homeLayout = config.homeLayout
             homeGalleryItems = config.homeGalleryItems
@@ -191,13 +194,17 @@ final class NativeRootViewModel: PushNotificationHandling {
                 }
             }
 
+            let wasGuest = membership?.isMember == false
             let member = try await loadMembership(using: client)
             membership = member
-            if !member.isMember, member.registrationMode.requiresRegistrationGate {
-                phase = .needsRegistration
+            if wasGuest && member.isMember { featureTourClosable = false; showFeatureTour = true }
+            let mode = member.registrationMode
+            // スキップ可能なモードで使い始めた人は、再読み込みでログイン画面に戻さない
+            if !member.isMember, mode.requiresRegistrationGate || mode == .popup,
+               !(hadReadyScreen && mode.canSkipRegistration) {
+                phase = .welcome
             } else {
                 phase = .ready
-                showRegistrationPopup = !member.isMember && member.registrationMode == .popup
             }
 
             await refreshAnnouncements()
@@ -213,6 +220,9 @@ final class NativeRootViewModel: PushNotificationHandling {
                 pendingQueueToken = nil
                 handleQueueDeepLink(queueToken: token)
             }
+            if pendingLoginLink != nil {
+                Task { await consumePendingLoginLink() }
+            }
         } catch {
             if !hadReadyScreen { phase = .failed(error.localizedDescription) }
             logger.error("Native bootstrap failed: \(error.localizedDescription)")
@@ -226,12 +236,6 @@ final class NativeRootViewModel: PushNotificationHandling {
         membership = nil
         phase = .loading
         Task { await start() }
-    }
-
-    func showStoreSelection() {
-        walletRealtime.stop()
-        cancelWalletRefresh()
-        phase = .needsStoreSelection
     }
 
     func submitRegistration(values: [String: String], listValues: [String: [String]]) async {
@@ -262,6 +266,8 @@ final class NativeRootViewModel: PushNotificationHandling {
             membership = member
             connectRealtimeIfPossible()
             phase = .ready
+            featureTourClosable = false
+            showFeatureTour = member.isMember
             membershipRevision &+= 1
             if tabs.contains(where: { $0.key == "member" }) {
                 selectedTab = "member"
@@ -420,12 +426,42 @@ final class NativeRootViewModel: PushNotificationHandling {
     func skipRegistration() {
         guard membership?.registrationMode.canSkipRegistration != false else { return }
         phase = .ready
+        // ログインせずに使う人にも、機能の案内は最後まで見てもらう
+        featureTourClosable = false
+        showFeatureTour = true
     }
 
-    func openRegistrationFromPopup() {
-        guard phase == .ready, membership?.isMember == false else { return }
-        showRegistrationPopup = false
+    func startRegistration() {
+        guard membership?.isMember == false else { return }
         phase = .needsRegistration
+    }
+
+    func showWelcome() {
+        guard membership?.isMember == false else { return }
+        phase = .welcome
+    }
+
+    /// reggit://login（メールのログインリンク）。起動途中なら読み込み完了後に処理する
+    func handleLoginLink(projectKey: String, memberId: Int, code: String) {
+        pendingLoginLink = (projectKey, memberId, code)
+        Task { await consumePendingLoginLink() }
+    }
+
+    private func consumePendingLoginLink() async {
+        guard let link = pendingLoginLink, let client = apiClient,
+              phase != .loading, !currentProjectKey.isEmpty else { return }
+        pendingLoginLink = nil
+        guard link.projectKey == currentProjectKey else {
+            loginLinkMessage = "このアプリで選んでいるお店とは別のお店のログインリンクです"
+            return
+        }
+        do {
+            try await client.claimTransferCode(memberId: link.memberId, code: link.code)
+            loginLinkMessage = "ログインしました"
+            await start()
+        } catch {
+            loginLinkMessage = error.localizedDescription
+        }
     }
 
     func handleQueueDeepLink(queueToken: String) {

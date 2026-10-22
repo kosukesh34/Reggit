@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Payment;
 
+use App\Enums\OrderType;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Project;
@@ -19,9 +20,18 @@ class PaymentReturnController extends Controller
             $project = Project::where('project_key', $request->query('project_key'))->firstOrFail();
             $order = Order::withoutGlobalScopes()->where('project_id', $project->id)->findOrFail($orderId);
 
-            $liffId = ProjectLineLiffSetting::find($project->id)?->line_liff_id;
-            $returnUrl = filled($liffId) ? 'https://liff.line.me/'.rawurlencode($liffId) : url('/liff/'.rawurlencode($project->project_key));
-            $returnUrl .= '?payment_order_id='.$order->id.'&payment_status='.$status.'#/menu';
+            if ($order->order_type === OrderType::SHIPPING) {
+                // 決済開始時と同じホストへ戻る（独自ドメインなら /shop、それ以外は /web/{key}/shop）
+                $domain = strtolower(trim((string) $project->custom_shop_domain));
+                $returnUrl = ($domain !== '' && strtolower($request->getHost()) === $domain
+                    ? 'https://'.$domain.'/shop'
+                    : route('shop.show', ['project_key' => $project->project_key]))
+                    .'?payment_order_id='.$order->id.'&payment_status='.$status;
+            } else {
+                $liffId = ProjectLineLiffSetting::find($project->id)?->line_liff_id;
+                $returnUrl = filled($liffId) ? 'https://liff.line.me/'.rawurlencode($liffId) : url('/liff/'.rawurlencode($project->project_key));
+                $returnUrl .= '?payment_order_id='.$order->id.'&payment_status='.$status.'#/menu';
+            }
 
             return response()->view('payment.return', [
                 'returnUrl' => $returnUrl, 'status' => $status,

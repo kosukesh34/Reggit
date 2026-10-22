@@ -40,7 +40,12 @@
         <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'ready']) }}" 
            class="status-filter {{ request('status') === 'ready' ? 'active' : '' }}">
             <i class="fas fa-check"></i> 準備完了
-            <span class="badge badge-info">{{ $statusCounts['ready'] }}</span>
+            <span class="badge badge-info">{{ $statusCounts['ready'] ?? 0 }}</span>
+        </a>
+        <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'shipped']) }}"
+           class="status-filter {{ request('status') === 'shipped' ? 'active' : '' }}">
+            <i class="fas fa-truck"></i> 発送済み
+            <span class="badge badge-info">{{ $statusCounts['shipped'] ?? 0 }}</span>
         </a>
         <a href="{{ admin_route('admin.orders', $orderUserFilter + ['status' => 'completed']) }}" 
            class="status-filter {{ request('status') === 'completed' ? 'active' : '' }}">

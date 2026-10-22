@@ -30,4 +30,7 @@ return [
 
     'migrations' => 'migrations',
 
+    // migrate:fresh / db:wipe を開発共有DB・本番で許可する（App\Support\DestructiveDatabaseGuard）
+    'allow_destructive' => filter_var(env('ALLOW_DESTRUCTIVE_DB', false), FILTER_VALIDATE_BOOL),
+
 ];

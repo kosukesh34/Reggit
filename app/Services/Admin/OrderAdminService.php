@@ -3,26 +3,30 @@
 namespace App\Services\Admin;
 
 use App\Enums\OrderStatus;
+use App\Enums\OrderType;
 use App\Models\Order;
 use App\Services\OrderStatusService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrderAdminService
 {
     public function __construct(private OrderStatusService $orderStatus) {}
 
-    /** 決済済み = 確定・準備中・受け取り可能・完了 */
+    /** 決済済み = 確定・準備中・受け取り可能・発送済み・完了 */
     private const PAID_STATUSES = [
         OrderStatus::CONFIRMED,
         OrderStatus::PREPARING,
         OrderStatus::READY,
+        OrderStatus::SHIPPED,
         OrderStatus::COMPLETED,
     ];
 
-    public function getPaginatedList(?string $status, int $perPage = 20, ?int $userId = null): LengthAwarePaginator
+    public function getPaginatedList(?string $status, int $perPage = 20, ?int $userId = null, ?string $orderType = null): LengthAwarePaginator
     {
         $query = Order::with('user.member')
             ->orderByDesc('created_at');
+        $this->applyOrderTypeFilter($query, $orderType);
         if ($userId !== null) {
             $query->where('user_id', $userId);
         }
@@ -35,9 +39,10 @@ class OrderAdminService
         return $query->paginate($perPage);
     }
 
-    public function getStatusCounts(?int $userId = null): array
+    public function getStatusCounts(?int $userId = null, ?string $orderType = null): array
     {
         $base = Order::query();
+        $this->applyOrderTypeFilter($base, $orderType);
         if ($userId !== null) {
             $base->where('user_id', $userId);
         }
@@ -66,5 +71,19 @@ class OrderAdminService
     public function complete(int $id): void
     {
         $this->orderStatus->update($id, OrderStatus::COMPLETED);
+    }
+
+    public function findShippingOrFail(int $id): Order
+    {
+        return Order::with(['items.product', 'user.member'])
+            ->where('order_type', OrderType::SHIPPING)
+            ->findOrFail($id);
+    }
+
+    private function applyOrderTypeFilter(Builder $query, ?string $orderType): void
+    {
+        if ($orderType !== null && $orderType !== '') {
+            $query->where('order_type', $orderType);
+        }
     }
 }

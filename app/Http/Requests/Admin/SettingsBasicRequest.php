@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\UseCases\Admin\Settings\Data\UpdateBasicSettingsInput;
+use App\UseCases\Admin\Settings\Data\UpdateStoreOperationSettingsInput;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SettingsBasicRequest extends FormRequest
@@ -23,13 +23,15 @@ class SettingsBasicRequest extends FormRequest
         ];
     }
 
-    public function toInput(int $projectId): UpdateBasicSettingsInput
+    public function toInput(int $projectId): UpdateStoreOperationSettingsInput
     {
-        $v = $this->validated();
-
-        return new UpdateBasicSettingsInput(
-            $projectId, $v['business_hours_start'], $v['business_hours_end'], $v['order_mode'],
-            (bool) ($v['order_line_notify_enabled'] ?? false), (bool) ($v['order_ready_line_notify_enabled'] ?? false),
+        return new UpdateStoreOperationSettingsInput(
+            projectId: $projectId,
+            businessHoursStart: (string) $this->validated('business_hours_start'),
+            businessHoursEnd: (string) $this->validated('business_hours_end'),
+            orderMode: (string) $this->validated('order_mode'),
+            orderLineNotifyEnabled: $this->boolean('order_line_notify_enabled'),
+            orderReadyLineNotifyEnabled: $this->boolean('order_ready_line_notify_enabled'),
         );
     }
 }

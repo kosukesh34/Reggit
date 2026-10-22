@@ -40,6 +40,7 @@ use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\Member\ExistingMemberLinkController;
 use App\Http\Controllers\Member\GoogleWalletUrlController;
 use App\Http\Controllers\Member\LiffBroadcastAuthController;
+use App\Http\Controllers\Member\MemberEmailLoginController;
 use App\Http\Controllers\Member\MemberLotteryController;
 use App\Http\Controllers\Member\MemberMeController;
 use App\Http\Controllers\Member\MemberPointCardController;
@@ -294,6 +295,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/withdraw', [MemberWithdrawController::class, '__invoke']);
     Route::post('/members/transfer-code', MemberTransferCodeController::class)->middleware('throttle:10,1');
     Route::post('/members/transfer', MemberTransferClaimController::class)->middleware('throttle:10,1');
+    Route::post('/members/email-login', MemberEmailLoginController::class)->middleware('throttle:5,1');
     Route::get('/members/existing-link', [ExistingMemberLinkController::class, 'show']);
     Route::post('/members/existing-link', [ExistingMemberLinkController::class, 'store'])->middleware('throttle:10,1');
     Route::post('/members/existing-link/confirm', [ExistingMemberLinkController::class, 'confirm'])->middleware('throttle:10,1');

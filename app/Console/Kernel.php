@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('deliveries:send-scheduled')->everyMinute()->withoutOverlapping();
         $schedule->command('coupons:issue-birthday')->daily();
         $schedule->command('crm:point-expiry-reminder')->daily();
+        $schedule->command('crm:coupon-expiry-reminder')->daily();
         $schedule->command('member-ranks:recalculate')->daily()->withoutOverlapping();
     }
 

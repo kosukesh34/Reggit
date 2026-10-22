@@ -8,6 +8,8 @@ interface ProjectRepository
 {
     public function findActiveByProjectKey(string $projectKey): ?Project;
 
+    public function findActiveByCustomShopDomain(string $host): ?Project;
+
     public function findFirstActive(): ?Project;
 
     /**

@@ -58,6 +58,8 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'segment_last_visit_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'segment_rank' => ['nullable', 'string', 'max:64'],
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
+            'segment_coupon_id' => ['nullable', 'integer', 'min:1'],
+            'segment_coupon_status' => ['nullable', Rule::in(['unused', 'used'])],
             'segment_period_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'segment_condition' => ['nullable', Rule::in(['min_amount', 'no_orders'])],
             'segment_min_amount' => ['nullable', 'numeric', 'min:0'],

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+<!-- Original illustration generated for the Reggit shop demo. No third-party assets. -->
+<rect width="800" height="1000" fill="#d9d2bf"/><rect y="760" width="800" height="240" fill="#c7bfa8"/>
+<ellipse cx="400" cy="790" rx="300" ry="24" fill="#000" opacity=".18"/>
+<path d="M120 520q0-120 280-120t280 120v250H120z" fill="#c98f3c"/>
+<path d="M120 520q0-120 280-120t280 120q-60 40-140 20t-140 20-140-20-140-20z" fill="#f2efe6"/>
+<rect x="120" y="640" width="560" height="130" fill="#e6c25e"/><g fill="#c98f3c" opacity=".35"><circle cx="240" cy="700" r="8"/><circle cx="400" cy="720" r="8"/><circle cx="540" cy="690" r="8"/></g>
+<g><circle cx="300" cy="400" r="70" fill="#f1d640"/><circle cx="300" cy="400" r="58" fill="#f8e977"/><g stroke="#f1d640" stroke-width="5"><path d="M300 342v116M242 400h116M259 359l82 82M341 359l-82 82"/></g></g>
+<g><circle cx="500" cy="388" r="62" fill="#f1d640"/><circle cx="500" cy="388" r="51" fill="#f8e977"/><g stroke="#f1d640" stroke-width="5"><path d="M500 337v102M449 388h102M464 352l72 72M536 352l-72 72"/></g></g>
+</svg>

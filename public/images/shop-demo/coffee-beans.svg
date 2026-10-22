@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+<!-- Original illustration generated for the Reggit shop demo. No third-party assets. -->
+<rect width="800" height="1000" fill="#2f4a5a"/><rect y="800" width="800" height="200" fill="#263c49"/>
+<ellipse cx="400" cy="800" rx="230" ry="26" fill="#000" opacity=".25"/>
+<path d="M240 250h320l16 540a14 14 0 0 1-14 14H238a14 14 0 0 1-14-14z" fill="#17191a"/>
+<rect x="240" y="214" width="320" height="52" rx="6" fill="#0d0e0f"/><rect x="240" y="266" width="320" height="8" fill="#000" opacity=".4"/>
+<rect x="290" y="420" width="220" height="230" fill="#ece8df"/>
+<rect x="320" y="456" width="160" height="14" fill="#17191a"/><rect x="320" y="486" width="110" height="8" fill="#17191a" opacity=".6"/>
+<circle cx="400" cy="570" r="34" fill="none" stroke="#17191a" stroke-width="6"/><path d="M386 570q14-26 28 0q-14 26-28 0z" fill="#17191a"/>
+<rect x="320" y="620" width="160" height="8" fill="#17191a" opacity=".6"/>
+<g fill="#5a3a26"><ellipse cx="250" cy="830" rx="26" ry="17" transform="rotate(-25 250 830)"/><ellipse cx="300" cy="860" rx="26" ry="17" transform="rotate(15 300 860)"/><ellipse cx="560" cy="845" rx="26" ry="17" transform="rotate(30 560 845)"/><ellipse cx="610" cy="815" rx="26" ry="17" transform="rotate(-10 610 815)"/></g>
+</svg>

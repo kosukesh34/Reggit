@@ -110,4 +110,27 @@ class AdminQrCodesTest extends TestCase
         $this->assertStringContainsString('tab=products', $url);
         $this->assertStringNotContainsString('another-project', $url);
     }
+
+    public function test_ショップ有効時だけオンラインショップ_q_rが表示され独自ドメインを優先する(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
+        $response = $this->actingAs($admin, 'admin')->get(route('admin.qr-codes', ['project_key' => $project->project_key]));
+        $response->assertOk()->assertDontSee('オンラインショップ');
+        $this->assertArrayNotHasKey('shop', $response->viewData('view')->links);
+
+        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $project->id);
+        $enabled = $this->get(route('admin.qr-codes', ['project_key' => $project->project_key]));
+        $enabled->assertOk()->assertSee('オンラインショップ');
+        $this->assertSame(
+            route('shop.show', ['project_key' => $project->project_key]),
+            $enabled->viewData('view')->links['shop']['url']
+        );
+
+        $project->custom_shop_domain = 'shop.example.com';
+        $project->save();
+        $custom = $this->get(route('admin.qr-codes', ['project_key' => $project->project_key]));
+        $custom->assertOk();
+        $this->assertSame('https://shop.example.com/shop', $custom->viewData('view')->links['shop']['url']);
+    }
 }

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+<!-- Original illustration generated for the Reggit shop demo. No third-party assets. -->
+<rect width="800" height="1000" fill="#c9cfd2"/>
+<g transform="rotate(-6 400 500)"><rect x="140" y="220" width="520" height="560" fill="#1d3b6f"/>
+<g fill="none" stroke="#e9eef5" stroke-width="7">
+<g id="w"><path d="M140 300a40 40 0 0 1 80 0a40 40 0 0 1 80 0a40 40 0 0 1 80 0a40 40 0 0 1 80 0a40 40 0 0 1 80 0a40 40 0 0 1 80 0"/></g>
+<use href="#w" y="80"/><use href="#w" y="160"/><use href="#w" y="240"/><use href="#w" y="320"/><use href="#w" y="400"/></g>
+<rect x="140" y="220" width="520" height="14" fill="#fff" opacity=".9"/><rect x="140" y="766" width="520" height="14" fill="#fff" opacity=".9"/></g>
+</svg>

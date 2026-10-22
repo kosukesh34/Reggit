@@ -405,12 +405,24 @@ open class MainActivity: AppCompatActivity {
 
         requestNotificationPermissionIfNeeded()
         deliverNotificationIntent(intent)
+        deliverLoginLinkIntent(intent)
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         deliverNotificationIntent(intent)
+        deliverLoginLinkIntent(intent)
+    }
+
+    // メールのログインリンク（reggit://login）を Swift 側へ渡す
+    private fun deliverLoginLinkIntent(intent: android.content.Intent?) {
+        val data = intent?.data ?: return
+        if (intent.action != android.content.Intent.ACTION_VIEW || data.host != "login") return
+        intent.data = null
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            AppDelegate.shared.onOpenURL(data.toString())
+        }, 500)
     }
 
     private fun deliverNotificationIntent(intent: android.content.Intent?) {

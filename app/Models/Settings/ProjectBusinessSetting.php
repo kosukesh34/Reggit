@@ -27,6 +27,8 @@ class ProjectBusinessSetting extends Model
         'queue_require_membership',
         'queue_channel_line',
         'queue_channel_native',
+        'shop_shipping_fee',
+        'shop_shipping_fees_by_prefecture',
     ];
 
     /** @var array<string, string> */
@@ -37,6 +39,8 @@ class ProjectBusinessSetting extends Model
         'queue_require_membership' => 'boolean',
         'queue_channel_line' => 'boolean',
         'queue_channel_native' => 'boolean',
+        'shop_shipping_fee' => 'integer',
+        'shop_shipping_fees_by_prefecture' => 'array',
     ];
 
     public function project(): BelongsTo
@@ -59,6 +63,8 @@ class ProjectBusinessSetting extends Model
             'queue_require_membership' => false,
             'queue_channel_line' => true,
             'queue_channel_native' => false,
+            'shop_shipping_fee' => 500,
+            'shop_shipping_fees_by_prefecture' => [],
         ];
     }
 }

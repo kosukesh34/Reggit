@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+<!-- Original illustration generated for the Reggit shop demo. No third-party assets. -->
+<rect width="800" height="1000" fill="#c9a24a"/><rect y="760" width="800" height="240" fill="#b58f38"/>
+<ellipse cx="400" cy="790" rx="280" ry="26" fill="#000" opacity=".2"/>
+<g fill="#e8c27a" stroke="#a9772f" stroke-width="6">
+<circle cx="330" cy="700" r="130"/><circle cx="480" cy="620" r="130"/><circle cx="400" cy="470" r="130"/></g>
+<g stroke="#a9772f" stroke-width="5" stroke-linecap="round" opacity=".7"><path d="M330 640v120M270 700h120M480 560v120M420 620h120M400 410v120M340 470h120"/></g>
+<g fill="#a9772f" opacity=".5"><circle cx="360" cy="670" r="5"/><circle cx="300" cy="730" r="5"/><circle cx="510" cy="590" r="5"/><circle cx="450" cy="650" r="5"/><circle cx="430" cy="440" r="5"/><circle cx="370" cy="500" r="5"/></g>
+</svg>

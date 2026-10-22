@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Domain\Settings\Repositories\AppConfigSettings;
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Support\HomeContent;
 use App\Support\HomeImageUrls;
+use App\Support\JapanPrefectures;
 use App\Support\LiffDesignerSanitizer;
 use App\Support\LiffThemePresets;
 use Illuminate\Support\Collection;
@@ -19,6 +21,7 @@ class AppConfigService
     public function __construct(
         private ProjectRepository $projectRepository,
         private AppConfigSettings $shopSettingRepository,
+        private RankSettings $rankSettings,
     ) {}
 
     /**
@@ -37,6 +40,7 @@ class AppConfigService
         $tabFeatureMap = [
             'home' => 'feature_home_enabled',
             'products' => 'feature_orders_enabled',
+            'shop' => 'feature_shop_enabled',
             'orders' => 'feature_orders_enabled',
             'stamps' => 'feature_stamps_enabled',
             'coupons' => 'feature_coupons_enabled',
@@ -122,6 +126,21 @@ class AppConfigService
                 'hamburger' => $this->navigationItems($nativeNavigation['hamburger'] ?? [], $nativeNavigationByKey),
             ],
             'feature_flags' => $featureFlags,
+            // アプリ初回の機能案内用（1pt = 1円で利用、貯まり方は「円ごとに1pt」）
+            'points_guide' => [
+                'use_points' => $this->rankSettings->getUsePoints($projectId),
+                'earn_yen_per_point' => max(1, $this->rankSettings->getPointEarnRate($projectId)),
+                'usage_scope' => (string) $this->rankSettings->getValue('point_usage_scope', 'app', $projectId),
+                'ranks' => array_values(array_map(
+                    static fn (array $rank): array => ['label' => (string) $rank['label'], 'min_points' => (int) $rank['min_points'], 'color' => $rank['card_color'] ?? null],
+                    array_filter($this->rankSettings->getMemberRankSettings($projectId), static fn (array $rank): bool => (bool) ($rank['is_active'] ?? true)),
+                )),
+            ],
+            'shop_shipping_fee' => max(0, (int) $repo->getValue('shop_shipping_fee', 500, $projectId)),
+            'shop_shipping_fees_by_prefecture' => $this->normalizePrefectureFees(
+                $repo->getValue('shop_shipping_fees_by_prefecture', [], $projectId)
+            ),
+            'shop_prefectures' => JapanPrefectures::names(),
             'theme' => [
                 'primary_color' => $accent,
                 'primary_rgb' => $accentRgb,
@@ -236,6 +255,7 @@ class AppConfigService
         return match ($tab) {
             'home' => 'house.fill',
             'products' => 'fork.knife',
+            'shop' => 'bag.fill',
             'orders' => 'list.clipboard.fill',
             'stamps' => 'star.fill',
             'designlab' => 'dice.fill',
@@ -280,5 +300,24 @@ class AppConfigService
         }
 
         return $items->all();
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function normalizePrefectureFees(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+        $fees = [];
+        foreach ($raw as $prefecture => $fee) {
+            if (! is_string($prefecture) || ! is_numeric($fee)) {
+                continue;
+            }
+            $fees[$prefecture] = max(0, (int) $fee);
+        }
+
+        return $fees;
     }
 }

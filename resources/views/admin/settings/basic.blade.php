@@ -109,6 +109,9 @@
                 </label>
                 <small class="form-text">キッチン／管理画面で「受取可」に更新したとき、顧客の LINE に通知します。</small>
             </div>
+            <div class="form-group">
+                <p class="form-text mb-0">ショップ（配送）の送料・トップ販促・注目商品は <a href="{{ admin_route('admin.settings.shop') }}">ショップ設定</a> で変更します。</p>
+            </div>
         </div>
     </div>
     </section>

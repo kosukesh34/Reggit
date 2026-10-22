@@ -78,4 +78,11 @@ import SkipFuse
             userInfo: userInfo
         )
     }
+
+    /// Android の reggit:// Intent。iOS は Main.swift の onOpenURL で同じハンドラーを呼ぶ
+    /* SKIP @bridge */public func onOpenURL(_ urlString: String) {
+        Task { @MainActor in
+            LoginDeepLinkHandler.handle(urlString: urlString)
+        }
+    }
 }

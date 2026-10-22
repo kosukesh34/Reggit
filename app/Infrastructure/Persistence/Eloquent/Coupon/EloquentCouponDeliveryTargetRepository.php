@@ -5,6 +5,7 @@ namespace App\Infrastructure\Persistence\Eloquent\Coupon;
 use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
 use App\Enums\OrderStatus;
 use App\Models\Member;
+use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
 use App\Models\Order;
 use App\Models\Product;
@@ -312,6 +313,23 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             ->all();
 
         return array_values(array_unique(array_merge($fromOrders, $fromVisits)));
+    }
+
+    public function findIdsByCouponStatus(int $projectId, int $couponId, string $status): array
+    {
+        if ($couponId <= 0 || ! in_array($status, [MemberCoupon::STATUS_UNUSED, MemberCoupon::STATUS_USED], true)) {
+            return [];
+        }
+
+        return MemberCoupon::query()
+            ->where('project_id', $projectId)
+            ->where('coupon_id', $couponId)
+            ->where('status', $status)
+            ->distinct()
+            ->pluck('member_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
     }
 
     public function findIdsByProfileField(int $projectId, string $key, array $values, bool $requireAll = false): array

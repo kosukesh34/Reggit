@@ -12,7 +12,9 @@ use App\Http\Middleware\BindProjectFromRequest;
 use App\Http\Middleware\CheckAdminPermission;
 use App\Http\Middleware\CheckApiProject;
 use App\Http\Middleware\EnsureAdminPasskeyVerified;
+use App\Http\Middleware\EnsureCustomShopDomain;
 use App\Http\Middleware\EnsureProjectPlanFeature;
+use App\Http\Middleware\EnsureShopFeatureEnabled;
 use App\Http\Middleware\EnsureStoreAdmin;
 use App\Http\Middleware\EnsureSystemAdmin;
 use App\Http\Middleware\RedirectIfAuthenticated;
@@ -98,6 +100,8 @@ class Kernel extends HttpKernel
         'set.admin.project' => SetAdminProjectFromQuery::class,
         'bind.admin.project' => BindAdminProject::class,
         'bind.project' => BindProjectFromRequest::class,
+        'shop.enabled' => EnsureShopFeatureEnabled::class,
+        'shop.domain' => EnsureCustomShopDomain::class,
         'api.auth' => AuthenticateApiToken::class,
         'api.token' => AuthenticateApiToken::class,
         'admin.audit' => AdminAuditLogger::class,

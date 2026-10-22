@@ -110,6 +110,23 @@ class AppConfigApiTest extends TestCase
         }
     }
 
+    public function test_app_config_に初回案内用のポイントとランクが含まれること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
+        );
+        ShopSettingStore::setValue('point_earn_rate', 200, 'integer', $project->id);
+
+        $response = $this->getJson('/api/v1/app-config?project_key=default');
+
+        $response->assertOk()->assertJsonPath('points_guide.earn_yen_per_point', 200);
+        $this->assertIsBool($response->json('points_guide.use_points'));
+        $this->assertNotEmpty($response->json('points_guide.ranks'));
+        $this->assertArrayHasKey('label', $response->json('points_guide.ranks.0'));
+        $this->assertSame('#cd7f32', $response->json('points_guide.ranks.0.color'));
+    }
+
     public function test_app_config_project_key未指定は400を返すこと(): void
     {
         $response = $this->getJson('/api/v1/app-config');

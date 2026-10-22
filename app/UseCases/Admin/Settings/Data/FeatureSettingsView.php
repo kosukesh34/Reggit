@@ -9,6 +9,7 @@ final readonly class FeatureSettingsView
         public array $featureFlags,
         public array $featureFlagLabels,
         public bool $usePoints,
-        public bool $useTransactionStamps
+        public bool $useTransactionStamps,
+        public string $pointUsageScope = 'app',
     ) {}
 }

@@ -161,4 +161,38 @@ class OrderNotificationServiceTest extends TestCase
         $service->notifyReady((int) $order->id, (int) $project->id);
         $this->assertTrue(true);
     }
+
+    public function test_発送通知は受取可設定に関係なく配送注文へ_lin_eとプッシュを送ること(): void
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
+        ShopSettingStore::setLineChannelAccessToken('test-token', (int) $project->id);
+        $user = User::factory()->create([
+            'project_id' => $project->id,
+            'line_user_id' => 'U'.str_repeat('d', 32),
+        ]);
+        $order = Order::create([
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'total_amount' => 1500,
+            'status' => OrderStatus::SHIPPED,
+            'payment_method' => PaymentMethod::STRIPE,
+            'order_type' => OrderType::SHIPPING,
+            'order_number' => '20260725005',
+            'points_used' => 0,
+            'points_earned' => 0,
+        ]);
+
+        $line = Mockery::mock(LineService::class);
+        $line->shouldReceive('pushMessage')->once()->andReturn([]);
+        $push = Mockery::mock(PushNotificationService::class);
+        $push->shouldReceive('sendToUser')->once()->with(
+            (int) $project->id, (int) $user->id, 'ご注文の商品を発送しました', Mockery::type('string'),
+            Mockery::on(fn (array $data): bool => $data['type'] === 'order_shipped')
+        )->andReturn(['target_tokens' => 1, 'sent' => 1]);
+
+        $service = new OrderNotificationService($line, app(OrderNotificationSettings::class), $push);
+        $service->notifyShipped((int) $order->id, (int) $project->id);
+        $service->notifyReady((int) $order->id, (int) $project->id);
+    }
 }

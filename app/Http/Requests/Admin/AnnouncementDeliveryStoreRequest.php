@@ -109,6 +109,8 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             'segment_rfm_segments' => ['nullable', 'array'],
             'segment_rfm_segments.*' => ['string', Rule::in(RfmSegment::keys()), 'distinct'],
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
+            'segment_coupon_id' => ['nullable', 'integer', 'min:1'],
+            'segment_coupon_status' => ['nullable', Rule::in(['unused', 'used'])],
             'segment_operators' => ['nullable', 'array'],
             'segment_match_mode' => ['nullable', Rule::in(SegmentCombineMode::keys())],
             'segment_value_mode' => ['nullable', 'array'],

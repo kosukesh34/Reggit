@@ -187,6 +187,9 @@ struct MembershipView: View {
     let showPointHistory: Bool
     let showCouponActivity: Bool
     let onMembershipUpdated: ((MemberProfileSnapshot) -> Void)?
+    let businessStores: [BusinessStore]
+    let selectedStoreName: String?
+    let onSelectStore: ((BusinessStore) -> Void)?
     @Environment(\.brandAccent) var accent
 
     init(
@@ -199,6 +202,9 @@ struct MembershipView: View {
         showRankProgress: Bool = true,
         showPointHistory: Bool = true,
         showCouponActivity: Bool = true,
+        businessStores: [BusinessStore] = [],
+        selectedStoreName: String? = nil,
+        onSelectStore: ((BusinessStore) -> Void)? = nil,
         onMembershipUpdated: ((MemberProfileSnapshot) -> Void)? = nil
     ) {
         _viewModel = State(initialValue: MembershipViewModel(
@@ -216,6 +222,9 @@ struct MembershipView: View {
         self.showPointHistory = showPointHistory
         self.showCouponActivity = showCouponActivity
         self.onMembershipUpdated = onMembershipUpdated
+        self.businessStores = businessStores
+        self.selectedStoreName = selectedStoreName
+        self.onSelectStore = onSelectStore
     }
 
     var body: some View {
@@ -362,6 +371,10 @@ struct MembershipView: View {
                     .buttonStyle(.plain)
                 }
 
+                if businessStores.count > 1 {
+                    storeSelection
+                }
+
                 if viewModel.canAddToWallet {
                     VStack(spacing: 10) {
                         AppleWalletButton(enabled: !viewModel.isAddingWallet && !member.memberNumber.isEmpty) {
@@ -500,6 +513,31 @@ struct MembershipView: View {
         }
     }
 
+    /// ご利用店舗（注文・メニューに使う店舗）。変更するとアプリを読み込み直す
+    private var storeSelection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            AppSectionHeader(title: "ご利用店舗", subtitle: "注文やメニューに使う店舗")
+            Menu {
+                ForEach(businessStores) { store in
+                    Button(store.name) { onSelectStore?(store) }
+                }
+            } label: {
+                HStack {
+                    Text(selectedStoreName ?? "店舗を選択")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(AppDesign.ink)
+                    Spacer()
+                    FontAwesomeIcon(systemName: "chevron.down")
+                        .foregroundStyle(AppDesign.inkSecondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(AppDesign.surface)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
+            }
+        }
+    }
+
     private func rankProgressValue(member: MemberProfileSnapshot, remaining: Int) -> Double {
         min(max(Double(member.points) / Double(max(member.points + remaining, 1)), 0), 1)
     }
@@ -509,6 +547,9 @@ struct MembershipView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text(member.message ?? "登録するとポイントやクーポンが使えます。")
                     .foregroundStyle(.secondary)
+                if businessStores.count > 1 {
+                    storeSelection
+                }
                 MemberFieldStack(
                     lastName: Binding(
                         get: { viewModel.registerLastName },

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Order\Events\OrderCompleted;
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderReady;
+use App\Domain\Order\Events\OrderShipped;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Project;
@@ -34,7 +35,7 @@ class OrderNotificationOutbox
             return;
         }
         $order = Order::withoutGlobalScopes()->where('project_id', $event->projectId)->findOrFail($event->orderId);
-        $channels = $name === 'confirmed' ? ['native', 'line', 'kitchen'] : ($name === 'ready' ? ['native', 'line'] : ['native']);
+        $channels = $name === 'confirmed' ? ['native', 'line', 'kitchen'] : (in_array($name, ['ready', 'shipped'], true) ? ['native', 'line'] : ['native']);
         foreach ($channels as $channel) {
             DB::table(self::TABLE)->upsert([[
                 'project_id' => $event->projectId,
@@ -106,6 +107,7 @@ class OrderNotificationOutbox
                 if ($order === null || $order->status === OrderStatus::CANCELLED
                     || ($delivery->event !== 'completed' && $order->status === OrderStatus::COMPLETED)
                     || ($delivery->event === 'ready' && $order->status !== OrderStatus::READY)
+                    || ($delivery->event === 'shipped' && $order->status !== OrderStatus::SHIPPED)
                     || ($delivery->channel === 'kitchen' && ! in_array($order->status, [OrderStatus::CONFIRMED, OrderStatus::PREPARING], true))) {
                     return;
                 }
@@ -117,6 +119,7 @@ class OrderNotificationOutbox
                 match ($delivery->event) {
                     'confirmed' => $this->notifications->notifyConfirmed($delivery->order_id, $delivery->project_id, $delivery->channel),
                     'ready' => $this->notifications->notifyReady($delivery->order_id, $delivery->project_id, $delivery->channel),
+                    'shipped' => $this->notifications->notifyShipped($delivery->order_id, $delivery->project_id, $delivery->channel),
                     'completed' => $this->notifications->notifyCompleted($delivery->order_id, $delivery->project_id, $delivery->channel),
                     default => throw new \RuntimeException('Unknown notification event'),
                 };
@@ -141,6 +144,7 @@ class OrderNotificationOutbox
         return match (true) {
             $event instanceof OrderConfirmed => 'confirmed',
             $event instanceof OrderReady => 'ready',
+            $event instanceof OrderShipped => 'shipped',
             $event instanceof OrderCompleted => 'completed',
             default => null,
         };

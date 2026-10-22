@@ -75,6 +75,7 @@ Reggit は PHP 8.4 / Laravel 13 + Vite/React（管理画面・LIFF）+ MySQL の
 ### Lint / テスト
 - Lint（整形チェック）: `./vendor/bin/pint --test`（自動修正は `./vendor/bin/pint`）。
 - テスト: `php artisan test`。`phpunit.xml` が `APP_ENV=testing` と `DB_DATABASE=reggit_test` を強制するため `.env.testing` を読み、開発 DB `reggit` は破壊されません。
+- **破壊的 DB コマンド**: `migrate:fresh` / `db:wipe` 等は `reggit`（開発共有DB）と `production` で禁止（`App\Support\DestructiveDatabaseGuard`）。テストは `reggit_test` のためそのまま可。どうしても開発DBを消すときだけ `ALLOW_DESTRUCTIVE_DB=true`。エージェントは `Artisan::call('migrate:fresh')` をデフォルト接続に対して実行しないこと。
 
 ### 既知のハマりどころ
 - `tests/Feature/SmaregiApiIntegrationTest.php`（`@group smaregi-integration`、3 テスト）は**スマレジ外部 API への実接続**テストです。`env.testing.example` がダミー資格情報を含むため空判定でのスキップが効かず、有効な `SMAREGI_CLIENT_ID` / `SMAREGI_CLIENT_SECRET` が無いと **失敗**します（コア 670 テストは成功）。実接続を検証しない限りこの 3 件の失敗は想定内です。

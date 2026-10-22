@@ -79,10 +79,15 @@ export interface OrderLineInput {
 export interface OrderInput {
   storeId: string;
   venueName: string;
-  fulfillment: "pickup" | "dine_in";
-  /** pickup 時のみ。未指定ならカード決済 */
+  fulfillment: "pickup" | "dine_in" | "shipping";
+  /** pickup / shipping 時のみ。未指定ならカード決済 */
   paymentMethod?: "stripe" | "card" | "paypay" | "apple_pay" | "google_pay" | "cash";
   tableNumber?: string;
+  shippingName?: string;
+  shippingPhone?: string;
+  shippingPostalCode?: string;
+  shippingPrefecture?: string;
+  shippingAddress?: string;
   lines: OrderLineInput[];
   total: number;
 }

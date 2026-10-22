@@ -29,6 +29,7 @@ class ShopSettingKeys
         'feature_announcements_enabled' => true,
         'feature_payments_enabled' => true,
         'feature_gallery_enabled' => true,
+        'feature_shop_enabled' => false,
         'feature_gacha_enabled' => false,
         'feature_scratch_enabled' => false,
         'feature_roulette_enabled' => false,
@@ -37,6 +38,7 @@ class ShopSettingKeys
     public const FEATURE_FLAG_LABELS = [
         'feature_home_enabled' => 'ホーム',
         'feature_orders_enabled' => '注文（オーダー・履歴）',
+        'feature_shop_enabled' => 'ショップ（配送）',
         'feature_reservations_enabled' => '予約',
         'feature_queue_enabled' => '順番待ち',
         'feature_stamps_enabled' => 'スタンプカード',

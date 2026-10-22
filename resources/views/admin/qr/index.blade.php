@@ -17,7 +17,7 @@
                 <p class="text-danger" data-qr-error hidden role="alert"></p>
             @else
                 <div class="qr-empty">URLが未設定です</div>
-                <p class="text-muted">{{ $key === 'line' ? 'LINE連携設定でミニアプリURLを設定してください。' : 'システム管理者にダウンロードURLの設定を依頼してください。' }}</p>
+                <p class="text-muted">@if($key === 'line')LINE連携設定でミニアプリURLを設定してください。@elseif($key === 'shop')ショップ設定でオンラインショップを有効にしてください。@elseシステム管理者にダウンロードURLの設定を依頼してください。@endif</p>
             @endif
         </div>
     </section>

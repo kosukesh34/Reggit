@@ -16,6 +16,20 @@ class EloquentProjectRepository implements ProjectRepository
             ->first();
     }
 
+    public function findActiveByCustomShopDomain(string $host): ?Project
+    {
+        $host = strtolower(trim($host));
+        if ($host === '') {
+            return null;
+        }
+
+        return Project::query()
+            ->whereRaw('LOWER(custom_shop_domain) = ?', [$host])
+            ->where('is_active', true)
+            ->where('service_status', 'active')
+            ->first();
+    }
+
     public function findFirstActive(): ?Project
     {
         return Project::query()

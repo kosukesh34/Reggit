@@ -475,6 +475,15 @@ function initAnnouncementDelivery(): void {
         }
 
         add('購入商品', '=', selectedOptionText('segment_product_id'), () => clearIds(['segment_product_id']));
+        const heldCouponName = selectedOptionText('segment_coupon_id');
+        const heldCouponStatus = fieldValue('segment_coupon_status');
+        const heldCouponStatusLabel = heldCouponStatus === 'unused' ? '未使用' : heldCouponStatus === 'used' ? '使用済み' : '';
+        add(
+            '保有クーポン',
+            '=',
+            heldCouponName !== '' && heldCouponStatusLabel !== '' ? `${heldCouponName}（${heldCouponStatusLabel}）` : '',
+            () => clearIds(['segment_coupon_id', 'segment_coupon_status']),
+        );
         if (field<HTMLInputElement>('event_rank_up')?.checked === true) {
             add('ランクアップ達成', '=', fieldValue('segment_rank') || '対象ランクを指定', () => clearIds(['event_rank_up', 'segment_rank']));
         }
@@ -846,6 +855,7 @@ function initAnnouncementDelivery(): void {
             'segment_channel', 'segment_visit_count_min', 'segment_visit_count_max',
             'segment_lifetime_points_min', 'segment_lifetime_points_max', 'segment_last_visit_mode',
             'segment_last_visit_days', 'segment_sex', 'segment_rank', 'segment_product_id',
+            'segment_coupon_id', 'segment_coupon_status',
             'segment_period_days', 'segment_min_amount',
             'stamp_card_id', 'stamp_count_min',
         ].forEach((id) => {
@@ -1083,6 +1093,7 @@ function initAnnouncementDelivery(): void {
             'segment_channel', 'segment_visit_count_min', 'segment_visit_count_max',
             'segment_lifetime_points_min', 'segment_lifetime_points_max', 'segment_last_visit_mode',
             'segment_sex', 'segment_rank', 'segment_product_id',
+            'segment_coupon_id', 'segment_coupon_status',
         ].some((id) => (field<HTMLInputElement | HTMLSelectElement>(id)?.value || '').trim() !== '')
             || checkedValues('segment_birthday_months[]').length > 0
             || checkedValues('segment_tag_ids[]').length > 0

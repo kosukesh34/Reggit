@@ -101,6 +101,8 @@ struct AccountActionsView: View {
         let model = AccountActionsModel(apiClient: apiClient)
         model.mode = initialMode
         _model = State(initialValue: model)
+        // 未会員は発行できないので、受け取り側（引き継ぐ）を最初に出す
+        _transferTab = State(initialValue: isMember ? 0 : 1)
     }
 
     var body: some View {

@@ -7,7 +7,7 @@ use InvalidArgumentException;
 class LiffDesignerSanitizer
 {
     private const ALLOWED_TABS = [
-        'home', 'products', 'orders', 'stamps', 'coupons',
+        'home', 'products', 'shop', 'orders', 'stamps', 'coupons',
         'queue', 'reservations', 'member', 'profile', 'gallery', 'announcements',
     ];
 
@@ -23,7 +23,7 @@ class LiffDesignerSanitizer
 
     /** タブメニュー（表示/非表示・並び替え・名前/アイコン変更）の対象タブ */
     private const MENU_TABS = [
-        'home', 'products', 'orders', 'stamps', 'coupons',
+        'home', 'products', 'shop', 'orders', 'stamps', 'coupons',
         'queue', 'reservations', 'member', 'profile', 'gallery', 'announcements',
     ];
 

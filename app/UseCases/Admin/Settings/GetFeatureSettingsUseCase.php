@@ -18,6 +18,7 @@ class GetFeatureSettingsUseCase
             $this->shopSettingRepository->getFeatureFlagLabels(),
             (bool) $this->shopSettingRepository->getValue('use_points', true, $projectId),
             (bool) $this->shopSettingRepository->getValue('use_transaction_stamps', true, $projectId),
+            (string) $this->shopSettingRepository->getValue('point_usage_scope', 'app', $projectId),
         );
     }
 }

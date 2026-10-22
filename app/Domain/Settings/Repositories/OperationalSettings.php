@@ -15,6 +15,13 @@ interface OperationalSettings extends KitchenAccessSettings, OrderNotificationSe
 
     public function getOrderMode(int $projectId): string;
 
+    public function getShopShippingFee(int $projectId): int;
+
+    public function getShopShippingFeeForPrefecture(int $projectId, string $prefecture): int;
+
+    /** @return array<string, int> */
+    public function getShopShippingFeesByPrefecture(int $projectId): array;
+
     public function setOrderMode(string $mode, int $projectId): void;
 
     public function setOrderLineNotifyEnabled(bool $enabled, int $projectId): void;
