@@ -18,7 +18,7 @@ class PaymentCardController extends Controller
         // The signed URL grants access to this order independently of a browser login.
         $paymentOrder = Order::withoutGlobalScope(StoreAccessScope::class)
             ->where('project_id', AdminContext::requireCurrentProjectId())->findOrFail($order);
-        abort_unless($paymentOrder->order_type === OrderType::MOBILE
+        abort_unless(in_array($paymentOrder->order_type, [OrderType::MOBILE, OrderType::SHIPPING, OrderType::TICKET], true)
             && $paymentOrder->payment_method === PaymentMethod::STRIPE, 404);
         $session = $paymentOrder->payment_session;
         abort_unless(($session['channel'] ?? null) === 'card', 404);

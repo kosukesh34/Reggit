@@ -127,6 +127,16 @@ class MemberSegmentService
             }
         }
 
+        $heldCouponId = $input['segment_coupon_id'] ?? $input['held_coupon_id'] ?? null;
+        $heldCouponStatus = trim((string) ($input['segment_coupon_status'] ?? $input['coupon_status'] ?? ''));
+        if ($heldCouponId !== null && $heldCouponId !== '' && in_array($heldCouponStatus, ['unused', 'used'], true)) {
+            $parsedHeldCouponId = (int) $heldCouponId;
+            if ($parsedHeldCouponId > 0) {
+                $criteria['held_coupon_id'] = $parsedHeldCouponId;
+                $criteria['held_coupon_status'] = $heldCouponStatus;
+            }
+        }
+
         $stampCardId = $input['segment_stamp_card_id'] ?? $input['stamp_card_id'] ?? null;
         $stampCountMin = $input['segment_stamp_count_min'] ?? $input['stamp_count_min'] ?? null;
         $stampCompleted = $input['segment_stamp_completed'] ?? $input['stamp_completed'] ?? null;
@@ -269,6 +279,14 @@ class MemberSegmentService
             $add('product', $this->targetRepository->findIdsByPurchasedProduct($projectId, (int) $criteria['product_id']));
         }
 
+        if (isset($criteria['held_coupon_id'], $criteria['held_coupon_status'])) {
+            $add('held_coupon', $this->targetRepository->findIdsByCouponStatus(
+                $projectId,
+                (int) $criteria['held_coupon_id'],
+                (string) $criteria['held_coupon_status'],
+            ));
+        }
+
         $hasStampFilter = isset($criteria['stamp_card_id'])
             || isset($criteria['stamp_count_min'])
             || (($criteria['stamp_completed'] ?? false) === true);
@@ -315,7 +333,7 @@ class MemberSegmentService
             return collect();
         }
 
-        $displayOrder = ['groups', 'channel', 'birthday', 'sex', 'rfm', 'tags', 'visits', 'rank', 'points', 'last_visit', 'product', 'stamp', 'sales'];
+        $displayOrder = ['groups', 'channel', 'birthday', 'sex', 'rfm', 'tags', 'visits', 'rank', 'points', 'last_visit', 'product', 'held_coupon', 'stamp', 'sales'];
         usort($sets, static function (array $left, array $right) use ($displayOrder): int {
             $leftPosition = array_search($left['key'], $displayOrder, true);
             $rightPosition = array_search($right['key'], $displayOrder, true);

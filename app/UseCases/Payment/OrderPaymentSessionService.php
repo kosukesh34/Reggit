@@ -101,7 +101,7 @@ class OrderPaymentSessionService
         if ((int) $order->user_id !== $userId) {
             throw new InvalidArgumentException('注文の所有者と一致しません');
         }
-        if ($order->order_type !== OrderType::MOBILE || $order->payment_method !== PaymentMethod::STRIPE) {
+        if (! in_array($order->order_type, [OrderType::MOBILE, OrderType::SHIPPING, OrderType::TICKET], true) || $order->payment_method !== PaymentMethod::STRIPE) {
             throw new InvalidArgumentException('カード払いのモバイル注文のみ決済できます');
         }
         if ($order->status !== OrderStatus::PENDING) {
@@ -123,8 +123,16 @@ class OrderPaymentSessionService
         }
 
         $order = Order::findOrFail($orderId);
-        $projectKey = Project::findOrFail($order->project_id)->project_key;
-        $base = rtrim((string) config('app.url'), '/').'/mobile/payment/return';
+        $project = Project::findOrFail($order->project_id);
+        $projectKey = $project->project_key;
+        $root = rtrim((string) config('app.url'), '/');
+        // 独自ドメインのショップで購入したときは、ログインセッションがある同じホストへ戻す
+        $customDomain = strtolower(trim((string) $project->custom_shop_domain));
+        if ($order->order_type === OrderType::SHIPPING && $customDomain !== ''
+            && strtolower((string) parse_url(url('/'), PHP_URL_HOST)) === $customDomain) {
+            $root = 'https://'.$customDomain;
+        }
+        $base = $root.'/mobile/payment/return';
         $query = '&project_key='.rawurlencode($projectKey).'&surface='.($channel === 'checkout_web' ? 'web' : 'native');
         $result = $gateway->createCheckoutSession(
             $amount,

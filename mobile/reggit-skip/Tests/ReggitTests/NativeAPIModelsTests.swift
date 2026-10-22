@@ -74,6 +74,21 @@ final class NativeAPIModelsTests: XCTestCase {
         XCTAssertEqual(config.homeImageURLs, ["https://example.com/legacy.webp"])
     }
 
+    func testAppConfigParsesRankColorsForFeatureTour() throws {
+        let data = try JSONSerialization.data(withJSONObject: [
+            "points_guide": ["ranks": [
+                ["label": "ブロンズ", "color": "#cd7f32"],
+                ["label": "シルバー", "color": NSNull()],
+                ["label": " "],
+            ]],
+        ])
+        let config = try XCTUnwrap(AppConfigClient.parse(data))
+        XCTAssertEqual(config.pointsGuide.ranks, [
+            PointsGuide.Rank(label: "ブロンズ", colorHex: "#cd7f32"),
+            PointsGuide.Rank(label: "シルバー", colorHex: nil),
+        ])
+    }
+
     func testAPIDateFormattingHidesTimezoneSuffix() {
         XCTAssertEqual(AppFormat.dateTime("2026-09-19T12:34:56+09:00"), "2026/09/19 12:34")
         XCTAssertEqual(AppFormat.date("2026-09-19T12:34:56+09:00"), "2026/09/19")

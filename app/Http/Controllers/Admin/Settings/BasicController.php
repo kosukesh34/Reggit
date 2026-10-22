@@ -6,20 +6,20 @@ use App\Http\Controllers\Admin\AdminBaseController;
 use App\Http\Requests\Admin\SettingsBasicRequest;
 use App\UseCases\Admin\Settings\GetBasicSettingsUseCase;
 use App\UseCases\Admin\Settings\GetStoreAppCredentialsUseCase;
-use App\UseCases\Admin\Settings\UpdateBasicSettingsUseCase;
+use App\UseCases\Admin\Settings\UpdateStoreOperationSettingsUseCase;
 
 class BasicController extends AdminBaseController
 {
     private GetBasicSettingsUseCase $getBasicSettingsUseCase;
 
-    private UpdateBasicSettingsUseCase $updateBasicSettingsUseCase;
+    private UpdateStoreOperationSettingsUseCase $updateStoreOperationSettingsUseCase;
 
     public function __construct(
         GetBasicSettingsUseCase $getBasicSettingsUseCase,
-        UpdateBasicSettingsUseCase $updateBasicSettingsUseCase
+        UpdateStoreOperationSettingsUseCase $updateStoreOperationSettingsUseCase
     ) {
         $this->getBasicSettingsUseCase = $getBasicSettingsUseCase;
-        $this->updateBasicSettingsUseCase = $updateBasicSettingsUseCase;
+        $this->updateStoreOperationSettingsUseCase = $updateStoreOperationSettingsUseCase;
     }
 
     public function index(GetStoreAppCredentialsUseCase $getCredentials)
@@ -36,7 +36,7 @@ class BasicController extends AdminBaseController
     public function update(SettingsBasicRequest $request)
     {
         $projectId = $this->resolveAdminProjectId();
-        $this->updateBasicSettingsUseCase->handle($request->toInput($projectId));
+        $this->updateStoreOperationSettingsUseCase->handle($request->toInput($projectId));
 
         return redirect()->route('admin.settings.basic', $this->buildAdminRouteParams())
             ->with('success', '店舗運用設定を更新しました');

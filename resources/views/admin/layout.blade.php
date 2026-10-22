@@ -103,6 +103,8 @@
                     && \App\Support\PlanFeatures::hasFeature($navPlan, \App\Support\PlanFeatures::ANALYTICS_ADVANCED);
                 $showGallery = $navStore !== null
                     && app(\App\Domain\Settings\Repositories\FeatureSettings::class)->isFeatureEnabled('feature_gallery_enabled', (int) $navStore->id);
+                $showShop = $navStore !== null
+                    && app(\App\Domain\Settings\Repositories\FeatureSettings::class)->isFeatureEnabled('feature_shop_enabled', (int) $navStore->id);
             @endphp
             <header class="admin-topbar">
                 <a class="admin-topbar-brand" href="{{ $isSystemAdminScreen ? route('system-admin.dashboard') : admin_route('admin.dashboard') }}">
@@ -211,6 +213,12 @@
                         <a href="{{ admin_route('admin.orders') }}" class="nav-item {{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                             <i class="fas fa-shopping-cart"></i>
                             <span>注文</span>
+                        </a>
+                        @endif
+                        @if($showShop && ($adminUser === null || $adminUser->hasPermission('orders.view')))
+                        <a href="{{ admin_route('admin.shop.orders') }}" class="nav-item {{ request()->routeIs('admin.shop.orders*') ? 'active' : '' }}">
+                            <i class="fas fa-truck"></i>
+                            <span>ショップ注文</span>
                         </a>
                         @endif
                         @if($adminUser === null || $adminUser->hasPermission('reservations.view'))

@@ -36,6 +36,38 @@ struct HomeGalleryCard: Identifiable, Equatable {
     let url: String
 }
 
+/// 認証後の機能案内に使うポイント・ランク設定（app-config の points_guide）
+struct PointsGuide: Equatable {
+    var usePoints = true
+    /// この金額ごとに 1pt 貯まる。使うときは 1pt = 1円
+    var earnYenPerPoint = 100
+    /// ポイントを使える場所（app / store / both）。管理画面の機能設定で選ぶ
+    var usageScope = "app"
+    var ranks: [Rank] = []
+
+    struct Rank: Equatable {
+        let label: String
+        /// 管理画面で設定したランクのカード色（#RRGGBB）。未設定は nil
+        let colorHex: String?
+    }
+
+    var usageText: String {
+        switch usageScope {
+        case "store": return "お店のレジで使えます"
+        case "both": return "アプリの注文とお店のレジで使えます"
+        default: return "アプリからの注文で使えます"
+        }
+    }
+
+    var usagePlaces: [String] {
+        switch usageScope {
+        case "store": return ["お店のレジ"]
+        case "both": return ["アプリの注文", "お店のレジ"]
+        default: return ["アプリの注文"]
+        }
+    }
+}
+
 struct AppConfig {
     let projectName: String
     let tabs: [AppTabItem]
@@ -60,6 +92,7 @@ struct AppConfig {
     let memberShowPointHistory: Bool
     let memberShowCouponActivity: Bool
     let realtimeWebSocketURL: String?
+    let pointsGuide: PointsGuide
 
     init(
         projectName: String,
@@ -84,7 +117,8 @@ struct AppConfig {
         memberShowRankProgress: Bool = true,
         memberShowPointHistory: Bool = true,
         memberShowCouponActivity: Bool = true,
-        realtimeWebSocketURL: String? = nil
+        realtimeWebSocketURL: String? = nil,
+        pointsGuide: PointsGuide = PointsGuide()
     ) {
         self.projectName = projectName
         self.tabs = tabs
@@ -109,5 +143,6 @@ struct AppConfig {
         self.memberShowPointHistory = memberShowPointHistory
         self.memberShowCouponActivity = memberShowCouponActivity
         self.realtimeWebSocketURL = realtimeWebSocketURL
+        self.pointsGuide = pointsGuide
     }
 }

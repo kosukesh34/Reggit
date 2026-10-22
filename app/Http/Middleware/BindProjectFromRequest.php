@@ -53,6 +53,10 @@ class BindProjectFromRequest
         }
 
         if ($project === null && $isExplicitProjectKey === false) {
+            $project = $this->projectRepository->findActiveByCustomShopDomain($request->getHost());
+        }
+
+        if ($project === null && $isExplicitProjectKey === false) {
             $project = $this->projectRepository->findFirstActive();
         }
 

@@ -9,6 +9,7 @@ final readonly class UpdateFeatureSettingsInput
         public int $projectId,
         public array $features,
         public ?bool $usePoints = null,
+        public ?string $pointUsageScope = null,
         public ?bool $useTransactionStamps = null,
     ) {}
 }

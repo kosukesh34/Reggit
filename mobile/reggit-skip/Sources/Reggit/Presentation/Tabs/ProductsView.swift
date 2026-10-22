@@ -760,7 +760,9 @@ struct OrderConfirmView: View {
                     paymentOption(value: "cash", title: "現金", subtitle: "商品受け取り時にお支払い", icon: "banknote")
                 }
                 .listRowBackground(Color.clear)
+                #if !os(Android)
                 .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                #endif
             }
             Section {
                 HStack {
@@ -845,7 +847,7 @@ struct OrderConfirmView: View {
         }
         .buttonStyle(.plain)
         .disabled(!available || isSubmitting)
-        .accessibilityLabel(title)
+        .accessibilityLabel(Text(title))
         .accessibilityValue(selected ? "選択中" : available ? "未選択" : "現在利用できません")
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

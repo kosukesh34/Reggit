@@ -66,6 +66,7 @@ class EloquentProductCatalogRepository implements ProductCatalogRepository
             (bool) $product->is_available,
             $product->stock !== null ? (int) $product->stock : null,
             $groups,
+            $product->isTicket(),
         );
     }
 }

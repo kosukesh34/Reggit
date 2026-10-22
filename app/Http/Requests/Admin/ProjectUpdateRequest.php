@@ -27,6 +27,13 @@ class ProjectUpdateRequest extends FormRequest
             ],
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
+            'custom_shop_domain' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i',
+                Rule::unique('projects', 'custom_shop_domain')->ignore($projectId),
+            ],
             'is_active' => 'nullable|boolean',
             'service_status' => 'sometimes|required|in:active,unpaid,cancelled',
             'plan' => 'required|string|in:normal,distribution,premium',
@@ -44,10 +51,13 @@ class ProjectUpdateRequest extends FormRequest
 
     public function toProjectPayload(): array
     {
+        $domain = strtolower(trim((string) ($this->validated('custom_shop_domain') ?? '')));
+
         return [
             'project_key' => $this->validated('project_key'),
             'name' => $this->validated('name'),
             'description' => $this->validated('description'),
+            'custom_shop_domain' => $domain !== '' ? $domain : null,
             'is_active' => (bool) ($this->validated('is_active') ?? false),
             'plan' => $this->validated('plan') ?? 'normal',
             ...($this->has('max_active_stores') ? ['max_active_stores' => (int) $this->validated('max_active_stores')] : []),

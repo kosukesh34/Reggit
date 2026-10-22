@@ -24,6 +24,7 @@ class Project extends Model
 
     protected $fillable = [
         'project_key',
+        'custom_shop_domain',
         'name',
         'description',
         'is_active',

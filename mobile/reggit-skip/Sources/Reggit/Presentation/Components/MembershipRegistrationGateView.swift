@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct MembershipRegistrationGateView: View {
-    let projectName: String
-    let message: String?
     let canSkip: Bool
     let isRegistering: Bool
     let errorMessage: String?
@@ -23,15 +21,7 @@ struct MembershipRegistrationGateView: View {
             serverFieldErrors: serverFieldErrors,
             onSave: onSubmit,
             isRegistration: true,
-            introduction: "\(projectName)\n\(displayMessage)",
             onSkip: canSkip ? onSkip : nil
         )
-    }
-
-    private var displayMessage: String {
-        if let message, !message.isEmpty { return message }
-        return canSkip
-            ? "会員登録でポイントやクーポンが使えます。"
-            : "ご利用には会員登録が必要です。"
     }
 }

@@ -52,6 +52,23 @@ class OrderNotificationService
         );
     }
 
+    public function notifyShipped(int $orderId, int $projectId, string $channel = 'all'): void
+    {
+        // 配送注文の発送連絡は店舗設定に関係なく送る（受け取りに来ないため唯一の連絡になる）
+        $this->notifyMobileOrder(
+            $orderId,
+            $projectId,
+            true,
+            'ご注文の商品を発送しました',
+            'order_shipped',
+            static fn (string $refNumber): string => $refNumber !== ''
+                ? '注文番号: '.$refNumber."\n到着まで今しばらくお待ちください。"
+                : '到着まで今しばらくお待ちください。',
+            $channel,
+            OrderType::SHIPPING,
+        );
+    }
+
     public function notifyCompleted(int $orderId, int $projectId, string $channel = 'all'): void
     {
         $this->notifyMobileOrder(
@@ -76,6 +93,7 @@ class OrderNotificationService
         string $pushType,
         callable $bodyBuilder,
         string $channel,
+        string $orderType = OrderType::MOBILE,
     ): void {
         $order = Order::query()
             ->with('user')
@@ -85,7 +103,7 @@ class OrderNotificationService
         if ($order === null) {
             return;
         }
-        if ($order->order_type !== OrderType::MOBILE) {
+        if ($order->order_type !== $orderType) {
             return;
         }
         $refNumber = $order->formattedOrderNumber();
@@ -182,7 +200,7 @@ class OrderNotificationService
             $ordersUrl = LiffTabUrlBuilder::build($projectId, $projectKey, 'orders');
             $flex = [
                 'type' => 'flex',
-                'altText' => $title.($refNumber !== '' ? '（引換番号: '.$refNumber.'）' : ''),
+                'altText' => $title.($refNumber !== '' ? '（'.($order->order_type === OrderType::SHIPPING ? '注文番号' : '引換番号').': '.$refNumber.'）' : ''),
                 'contents' => [
                     'type' => 'bubble',
                     'body' => [

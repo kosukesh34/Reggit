@@ -11,6 +11,7 @@ use App\Enums\LotterySourceType;
 use App\Enums\MemberCouponSource;
 use App\Enums\MemberVisitSource;
 use App\Enums\OrderStatus;
+use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\MemberStampTransaction;
 use App\Models\MemberVisit;
@@ -66,7 +67,9 @@ class OrderRewardService
         }
 
         $projectId = (int) $order->project_id;
-        $hasVisit = MemberVisit::query()
+        // 回数券の購入は来店ではないため、来店記録とスタンプは付けない
+        $isVisit = $order->order_type !== OrderType::TICKET;
+        $hasVisit = ! $isVisit || MemberVisit::query()
             ->where('project_id', $projectId)
             ->where('order_id', (int) $order->id)
             ->exists();
@@ -74,7 +77,7 @@ class OrderRewardService
             $this->recordMemberVisit($user, $order);
         }
 
-        $hasStamp = MemberStampTransaction::query()
+        $hasStamp = ! $isVisit || MemberStampTransaction::query()
             ->where('project_id', $projectId)
             ->where('order_id', (int) $order->id)
             ->exists();

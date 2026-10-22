@@ -152,6 +152,8 @@ class CouponBulkIssueRequest extends FormRequest
             'segment_rfm_segments' => ['nullable', 'array'],
             'segment_rfm_segments.*' => ['string', Rule::in(RfmSegment::keys()), 'distinct'],
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
+            'segment_coupon_id' => ['nullable', 'integer', 'min:1'],
+            'segment_coupon_status' => ['nullable', Rule::in(['unused', 'used'])],
             'segment_stamp_card_id' => ['nullable', 'integer', 'min:1'],
             'segment_stamp_count_min' => ['nullable', 'integer', 'min:0'],
             'segment_stamp_completed' => ['nullable'],

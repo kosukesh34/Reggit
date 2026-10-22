@@ -17,6 +17,7 @@ final class AdminSettingsNavigation
                 $can('settings.view') ? ['route' => 'admin.settings.features', 'icon' => 'fas fa-toggle-on', 'label' => '利用機能', 'hint' => 'お客様向けアプリで利用する機能の有効化'] : null,
                 ['route' => 'admin.stores.index', 'icon' => 'fas fa-store', 'label' => '利用店舗', 'hint' => 'スマレジ店舗の同期・利用店舗の選択'],
                 $can('settings.view') ? ['route' => 'admin.settings.basic', 'icon' => 'fas fa-store', 'label' => '店舗運用設定', 'hint' => '営業時間、注文・通知、店舗端末'] : null,
+                $can('settings.view') ? ['route' => 'admin.settings.shop', 'icon' => 'fas fa-shipping-fast', 'label' => 'ショップ', 'hint' => '配送ECの公開・送料・トップ販促・注目商品'] : null,
                 $can('reservations.view') ? ['route' => 'admin.settings.reservations', 'icon' => 'fas fa-calendar-check', 'label' => '予約', 'hint' => '時間帯・予約枠'] : null,
                 $can('queue.view') ? ['route' => 'admin.settings.queue', 'icon' => 'fas fa-list-ol', 'label' => '順番待ち', 'hint' => '待ち時間'] : null,
             ]],

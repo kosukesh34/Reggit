@@ -275,7 +275,11 @@ export const reggitApi = {
 
   async createOrder(input: OrderInput): Promise<OperationReceipt> {
     await ensureIdentity();
-    const orderType = input.fulfillment === 'dine_in' ? 'in_store' : 'mobile';
+    const orderType = input.fulfillment === 'dine_in'
+      ? 'in_store'
+      : input.fulfillment === 'shipping'
+        ? 'shipping'
+        : 'mobile';
     const paymentMethod = input.fulfillment === 'dine_in'
       ? 'cash'
       : (input.paymentMethod === 'cash' ? 'cash' : 'stripe');
@@ -302,6 +306,11 @@ export const reggitApi = {
       points_used: 0,
       notes: input.tableNumber ? `卓番: ${input.tableNumber}` : null,
       order_type: orderType,
+      shipping_name: input.shippingName,
+      shipping_phone: input.shippingPhone,
+      shipping_postal_code: input.shippingPostalCode,
+      shipping_prefecture: input.shippingPrefecture,
+      shipping_address: input.shippingAddress,
     });
     if (result.success === false) {
       throw new Error(result.error || '注文に失敗しました');

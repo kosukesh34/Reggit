@@ -153,7 +153,7 @@
                             {{ \App\Enums\OrderStatus::getLabel($order->status) }}
                         </span>
                     </td>
-                    <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>
+                    <td>{{ $order->created_at?->format('Y/m/d H:i') ?? '—' }}</td>
                 </tr>
                 @empty
                 <tr>

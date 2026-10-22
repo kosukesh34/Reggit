@@ -24,6 +24,9 @@ use App\Models\Project;
 use App\Models\Settings\ProjectPaymentSetting;
 use App\Models\User;
 use App\Services\Member\CurrentMemberPrincipal;
+use App\Services\Ticket\MemberTicketService;
+use App\Support\JapanPrefectures;
+use App\Support\MemberChannel;
 use App\Util\AdminContext;
 use App\Util\StoreContext;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +47,7 @@ class OrderService
         private ProductOptionSelectionPolicy $productOptionSelectionPolicy,
         private OrderNumberAssigner $orderNumberAssigner,
         private CurrentMemberPrincipal $principals,
+        private MemberTicketService $tickets,
     ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
@@ -60,21 +64,45 @@ class OrderService
             }
             $orderType = (string) ($orderData['order_type'] ?? OrderType::MOBILE);
             $paymentMethod = (string) ($orderData['payment_method'] ?? '');
-
             $this->orderPlacementPolicy->assertValid(
                 $orderType,
                 $paymentMethod,
                 $this->shopSettingRepository->getOrderMode($projectId),
                 (string) config('native_app.order_type_mobile_label', 'Reggit'),
+                $this->shopSettingRepository->isFeatureEnabled('feature_shop_enabled', $projectId),
+                $this->shopSettingRepository->isFeatureEnabled('feature_tickets_enabled', $projectId),
             );
+            if ($orderType === OrderType::TICKET && $user->member === null) {
+                throw new OrderOperationException('回数券の購入には会員登録が必要です');
+            }
+            if ($orderType === OrderType::SHIPPING && ! $this->hasShopBuyerIdentity($user)) {
+                throw new OrderOperationException('ショップでのご注文にはログインが必要です。');
+            }
 
-            $orderItems = $this->validateAndPrepareOrderItems($orderData['items'], $projectId);
+            $orderItems = $this->validateAndPrepareOrderItems($orderData['items'], $projectId, $orderType === OrderType::TICKET);
             $lineItems = $this->toOrderLineItems($orderItems);
             $totalAmount = OrderLineItem::sumTotal($lineItems);
+            $shippingFee = 0;
+            $shippingPrefecture = '';
+            if ($orderType === OrderType::SHIPPING) {
+                foreach (['shipping_name', 'shipping_phone', 'shipping_postal_code', 'shipping_prefecture', 'shipping_address'] as $field) {
+                    if (trim((string) ($orderData[$field] ?? '')) === '') {
+                        throw new OrderOperationException('配送先情報を入力してください');
+                    }
+                }
+                $shippingPrefecture = trim((string) $orderData['shipping_prefecture']);
+                if (! JapanPrefectures::isValid($shippingPrefecture)) {
+                    throw new OrderOperationException('都道府県を選択してください');
+                }
+                $shippingFee = $this->shopSettingRepository->getShopShippingFeeForPrefecture($projectId, $shippingPrefecture);
+                $totalAmount += $shippingFee;
+            }
 
             $paymentSetting = ProjectPaymentSetting::current($projectId);
             $brand = $paymentMethod === PaymentMethod::STRIPE ? ($orderData['payment_brand'] ?? 'card') : 'cash';
-            if ($orderType === OrderType::MOBILE && $paymentSetting !== null && ! in_array($brand, $paymentSetting->methods, true)) {
+            if (in_array($orderType, [OrderType::MOBILE, OrderType::SHIPPING], true)
+                && $paymentSetting !== null
+                && ! in_array($brand, $paymentSetting->methods, true)) {
                 throw new OrderOperationException('このお支払い方法は現在利用できません');
             }
             if ($paymentSetting === null && ($brand !== 'card' && $brand !== 'cash')) {
@@ -116,6 +144,14 @@ class OrderService
             $order = Order::findOrFail($orderId);
             $order->payment_brand = $brand;
             $order->payment_setting_id = $paymentMethod === PaymentMethod::STRIPE ? $paymentSetting?->id : null;
+            if ($orderType === OrderType::SHIPPING) {
+                $order->shipping_name = trim((string) $orderData['shipping_name']);
+                $order->shipping_phone = trim((string) $orderData['shipping_phone']);
+                $order->shipping_postal_code = trim((string) $orderData['shipping_postal_code']);
+                $order->shipping_prefecture = $shippingPrefecture;
+                $order->shipping_address = trim((string) $orderData['shipping_address']);
+                $order->shipping_fee = $shippingFee;
+            }
             $order->save();
             if ($paymentMethod !== PaymentMethod::STRIPE) {
                 $this->orderNumberAssigner->assignIfMissing((int) $order->id, $projectId);
@@ -168,6 +204,7 @@ class OrderService
     public function applyStripePaymentRewardsIfNeeded(Order $order): void
     {
         $this->rewards->applyStripePaymentRewardsIfNeeded($order);
+        $this->tickets->issueForPaidOrder($order);
     }
 
     /**
@@ -200,13 +237,18 @@ class OrderService
         return $lineItems;
     }
 
-    private function validateAndPrepareOrderItems(array $items, int $projectId): array
+    private function validateAndPrepareOrderItems(array $items, int $projectId, bool $ticketOrder = false): array
     {
         $orderItems = [];
 
         foreach ($items as $item) {
             $product = $this->productCatalogRepository->findForOrderOrFail((int) $item['product_id'], $projectId);
             $quantity = (int) $item['quantity'];
+            if ($product->isTicket !== $ticketOrder) {
+                throw new OrderOperationException($ticketOrder
+                    ? '回数券以外の商品は一緒に購入できません'
+                    : '回数券は回数券の画面から購入してください');
+            }
 
             $this->productAvailabilityPolicy->assertAvailable(
                 $product->name,
@@ -338,5 +380,15 @@ class OrderService
                 (int) $item->quantity,
             );
         }
+    }
+
+    private function hasShopBuyerIdentity(User $user): bool
+    {
+        if (MemberChannel::hasLine($user)) {
+            return true;
+        }
+        $email = is_string($user->email) ? trim($user->email) : '';
+
+        return $email !== '' && $user->email_verified_at !== null;
     }
 }

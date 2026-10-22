@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
+use App\Support\JapanPrefectures;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -38,6 +39,11 @@ class OrderStoreRequest extends FormRequest
             'points_used' => ['integer', 'min:0'],
             'notes' => ['nullable', 'string'],
             'order_type' => ['nullable', Rule::in(array_keys(OrderType::getValues()))],
+            'shipping_name' => ['nullable', 'string', 'max:100'],
+            'shipping_phone' => ['nullable', 'string', 'max:30'],
+            'shipping_postal_code' => ['nullable', 'string', 'max:16'],
+            'shipping_prefecture' => ['nullable', 'string', Rule::in(JapanPrefectures::names())],
+            'shipping_address' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

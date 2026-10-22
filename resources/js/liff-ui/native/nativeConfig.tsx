@@ -37,6 +37,9 @@ export type NativeConfig = {
     show_member_card?: boolean;
   };
   products?: { display_layout?: string };
+  shop_shipping_fee?: number;
+  shop_shipping_fees_by_prefecture?: Record<string, number>;
+  shop_prefectures?: string[];
   member_screen?: {
     style?: "classic" | "wallet" | "minimal" | "ticket";
     show_rank_progress?: boolean;

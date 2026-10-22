@@ -93,6 +93,7 @@ use App\Repositories\Eloquent\EloquentUserRepository;
 use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\Smaregi\SmaregiApiClient;
 use App\Support\AdminPasskeyAudit;
+use App\Support\DestructiveDatabaseGuard;
 use App\Support\PasskeyOrigin;
 use App\UseCases\Payment\GatewayUnpaidPaymentSessionCanceller;
 use App\UseCases\Payment\PaymentGateway;
@@ -103,6 +104,7 @@ use App\Util\TenantContext;
 use App\View\Composers\AdminLayoutComposer;
 use App\View\Composers\FrontendShellComposer;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -194,6 +196,15 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $database = (string) config('database.connections.'.config('database.default').'.database');
+        if (DestructiveDatabaseGuard::shouldProhibit(
+            $database,
+            (string) $this->app->environment(),
+            (bool) config('database.allow_destructive'),
+        )) {
+            DB::prohibitDestructiveCommands();
+        }
+
         Project::observe(ProjectObserver::class);
         MemberStamp::observe(MemberStampObserver::class);
         MemberCoupon::observe(MemberCouponObserver::class);
@@ -231,7 +242,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         View::composer('admin.layout', AdminLayoutComposer::class);
-        View::composer(['index', 'frontend.line', 'frontend.native'], FrontendShellComposer::class);
+        View::composer(['index', 'frontend.line', 'frontend.native', 'frontend.shop', 'frontend.shop-login'], FrontendShellComposer::class);
 
         Event::listen(PasskeyRegistered::class, function (PasskeyRegistered $event): void {
             if (! $event->user instanceof AdminUser || ! $event->passkey instanceof Passkey) {

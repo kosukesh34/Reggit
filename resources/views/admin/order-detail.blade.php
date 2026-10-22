@@ -4,6 +4,11 @@
 @section('page-title', '注文詳細: ' . $order->formattedOrderNumber())
 
 @section('content')
+@php
+    $shopOrdersMode = (bool) ($shopOrdersMode ?? false);
+    $orderStatusRoute = $shopOrdersMode ? 'admin.shop.orders.status' : 'admin.orders.status';
+    $orderCompleteRoute = $shopOrdersMode ? 'admin.shop.orders.complete' : 'admin.orders.complete';
+@endphp
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-info-circle"></i> 注文情報</h3>
@@ -51,6 +56,7 @@
                             'confirmed' => '確認済み',
                             'preparing' => '準備中',
                             'ready' => '準備完了',
+                            'shipped' => '発送済み',
                             'completed' => '完了',
                             'cancelled' => 'キャンセル',
                         ];
@@ -59,6 +65,7 @@
                             'confirmed' => 'info',
                             'preparing' => 'info',
                             'ready' => 'info',
+                            'shipped' => 'info',
                             'completed' => 'success',
                             'cancelled' => 'danger',
                         ];
@@ -68,6 +75,16 @@
                     </span>
                 </div>
             </div>
+            @if($order->order_type === 'shipping')
+            <div class="info-item">
+                <div class="info-label">配送先</div>
+                <div class="info-value">
+                    {{ $order->shipping_name }} / {{ $order->shipping_phone }}<br>
+                    〒{{ $order->shipping_postal_code }} {{ $order->shipping_prefecture }} {{ $order->shipping_address }}<br>
+                    送料: ¥{{ number_format((int) $order->shipping_fee) }}
+                </div>
+            </div>
+            @endif
             <div class="info-item">
                 <div class="info-label">注文日時</div>
                 <div class="info-value">{{ $order->created_at->format('Y/m/d H:i:s') }}</div>
@@ -76,7 +93,7 @@
 
         <div class="order-status-actions">
             @if($order->status !== 'completed' && $order->status !== 'cancelled')
-            <form action="{{ admin_route('admin.orders.complete', ['id' => $order->id]) }}" method="POST" class="complete-form">
+            <form action="{{ admin_route($orderCompleteRoute, ['id' => $order->id]) }}" method="POST" class="complete-form">
                 @csrf
                 <button type="submit" class="btn btn-success btn-large" onclick="return confirm('この注文を完了にしますか？')">
                     <i class="fas fa-check-double"></i> 完了にする
@@ -88,7 +105,7 @@
                 <h4><i class="fas fa-bolt"></i> クイックアクション</h4>
                 <div class="quick-action-buttons">
                     @if($order->status === 'pending')
-                    <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST" class="form-inline">
+                    <form action="{{ admin_route($orderStatusRoute, ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
                         <input type="hidden" name="status" value="confirmed">
                         <button type="submit" class="btn btn-info">
@@ -98,7 +115,7 @@
                     @endif
 
                     @if($order->status === 'confirmed')
-                    <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST" class="form-inline">
+                    <form action="{{ admin_route($orderStatusRoute, ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
                         <input type="hidden" name="status" value="preparing">
                         <button type="submit" class="btn btn-info">
@@ -107,8 +124,16 @@
                     </form>
                     @endif
 
-                    @if($order->status === 'preparing')
-                    <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST" class="form-inline">
+                    @if($order->status === 'preparing' && $order->order_type === 'shipping')
+                    <form action="{{ admin_route($orderStatusRoute, ['id' => $order->id]) }}" method="POST" class="form-inline">
+                        @csrf
+                        <input type="hidden" name="status" value="shipped">
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-truck"></i> 発送済み
+                        </button>
+                    </form>
+                    @elseif($order->status === 'preparing')
+                    <form action="{{ admin_route($orderStatusRoute, ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
                         <input type="hidden" name="status" value="ready">
                         <button type="submit" class="btn btn-info">
@@ -117,8 +142,8 @@
                     </form>
                     @endif
 
-                    @if($order->status === 'ready')
-                    <form action="{{ admin_route('admin.orders.complete', ['id' => $order->id]) }}" method="POST" class="form-inline">
+                    @if($order->status === 'ready' || $order->status === 'shipped')
+                    <form action="{{ admin_route($orderCompleteRoute, ['id' => $order->id]) }}" method="POST" class="form-inline">
                         @csrf
                         <button type="submit" class="btn btn-success" onclick="return confirm('この注文を完了にしますか？')">
                             <i class="fas fa-check-double"></i> 完了
@@ -130,14 +155,18 @@
 
             <div class="status-selector">
                 <h4><i class="fas fa-cog"></i> ステータス変更</h4>
-                <form action="{{ admin_route('admin.orders.status', ['id' => $order->id]) }}" method="POST">
+                <form action="{{ admin_route($orderStatusRoute, ['id' => $order->id]) }}" method="POST">
                     @csrf
                     <div class="form-group">
                         <select name="status" class="form-select">
                             <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>未処理 (pending)</option>
                             <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>確認済み (confirmed)</option>
                             <option value="preparing" {{ $order->status === 'preparing' ? 'selected' : '' }}>準備中 (preparing)</option>
-                            <option value="ready" {{ $order->status === 'ready' ? 'selected' : '' }}>準備完了 (ready)</option>
+                            @if($order->order_type === 'shipping')
+                                <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>発送済み (shipped)</option>
+                            @else
+                                <option value="ready" {{ $order->status === 'ready' ? 'selected' : '' }}>準備完了 (ready)</option>
+                            @endif
                             <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>完了 (completed)</option>
                             <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>キャンセル (cancelled)</option>
                         </select>

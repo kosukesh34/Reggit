@@ -19,7 +19,31 @@ final class OrderPlacementPolicy
         string $paymentMethod,
         string $configuredOrderMode,
         string $mobileOrderLabel,
+        bool $shopEnabled = false,
+        bool $ticketsEnabled = false,
     ): void {
+        if ($orderType === OrderType::TICKET) {
+            if (! $ticketsEnabled) {
+                throw new OrderOperationException('回数券は現在購入できません。');
+            }
+            if ($paymentMethod !== PaymentMethod::STRIPE) {
+                throw new OrderOperationException('回数券はオンライン決済のみ利用できます。');
+            }
+
+            return;
+        }
+
+        if ($orderType === OrderType::SHIPPING) {
+            if (! $shopEnabled) {
+                throw new OrderOperationException('ショップ機能は現在利用できません。');
+            }
+            if ($paymentMethod !== PaymentMethod::STRIPE) {
+                throw new OrderOperationException('配送注文はオンライン決済のみ利用できます。');
+            }
+
+            return;
+        }
+
         if ($configuredOrderMode === self::MODE_MOBILE_ONLY && $orderType !== OrderType::MOBILE) {
             throw new OrderOperationException('現在はモバイル注文のみ利用できます。');
         }

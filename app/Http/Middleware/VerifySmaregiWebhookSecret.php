@@ -17,8 +17,8 @@ class VerifySmaregiWebhookSecret
         $secret = (string) config('smaregi.webhook_secret');
         $header = (string) config('smaregi.webhook_secret_header');
         if ($secret === '' || $header === '') {
-            // 本番で秘密未設定のまま通すと改ざん Webhook を受理してしまう
-            if (app()->environment('production')) {
+            // 秘密未設定のまま通すと改ざん Webhook を受理してしまう。ローカルとテストだけ許可する
+            if (! app()->environment(['local', 'testing'])) {
                 return response('', Response::HTTP_UNAUTHORIZED);
             }
 

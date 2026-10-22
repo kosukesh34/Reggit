@@ -19,6 +19,7 @@ class UpdateFeatureSettingsRequest extends FormRequest
             'features' => 'nullable|array',
             'features.*' => 'boolean',
             'use_points' => 'nullable|boolean',
+            'point_usage_scope' => 'nullable|in:app,store,both',
             'use_transaction_stamps' => 'nullable|boolean',
         ];
     }
@@ -30,6 +31,7 @@ class UpdateFeatureSettingsRequest extends FormRequest
         return new UpdateFeatureSettingsInput(
             projectId: $projectId,
             usePoints: array_key_exists('use_points', $v) ? (bool) $v['use_points'] : null,
+            pointUsageScope: isset($v['point_usage_scope']) ? (string) $v['point_usage_scope'] : null,
             useTransactionStamps: array_key_exists('use_transaction_stamps', $v) ? (bool) $v['use_transaction_stamps'] : null,
             features: array_map(fn ($value) => (bool) $value, array_intersect_key($v['features'] ?? [], ShopSettingKeys::FEATURE_FLAG_LABELS)),
         );

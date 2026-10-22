@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 
 async function mountIssuedQr(root: HTMLElement): Promise<void> {
-    const card = root.closest('.qr-card');
+    const card = root.closest('.qr-card, .card');
     const button = card?.querySelector<HTMLButtonElement>('[data-save-issued-qr]');
     const error = card?.querySelector<HTMLElement>('[data-qr-error]');
     const url = root.dataset.url;

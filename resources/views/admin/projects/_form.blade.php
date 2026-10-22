@@ -20,6 +20,12 @@
             @error('description')<span class="invalid-feedback">{{ $message }}</span>@enderror
         </div>
         <div class="form-group">
+            <label for="custom_shop_domain" class="form-label">ショップ独自ドメイン</label>
+            <input type="text" name="custom_shop_domain" id="custom_shop_domain" class="form-control" value="{{ old('custom_shop_domain', optional($view->project)->custom_shop_domain ?? '') }}" maxlength="255" placeholder="shop.example.com">
+            <div class="form-text">PC向け公開ショップ専用。CNAME を Reggit に向けてください（LIFF / 管理画面は既存ドメインのまま）。</div>
+            @error('custom_shop_domain')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
             <label for="plan" class="form-label">プラン <span class="text-danger">*</span></label>
             <select name="plan" id="plan" class="form-control" required>
                 @foreach(\App\Enums\ProjectPlan::getValues() as $value => $label)

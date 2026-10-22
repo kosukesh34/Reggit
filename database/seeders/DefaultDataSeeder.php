@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\Project;
@@ -18,6 +19,7 @@ class DefaultDataSeeder extends Seeder
     {
         $this->seedCouponsOnly($project, $forceCoupons);
         app(ProductDeduplicationService::class)->deduplicateForProject((int) $project->id);
+        $this->enablePublicShop((int) $project->id);
 
         if ($forceProducts) {
             Product::withoutGlobalScopes()->where('project_id', $project->id)->delete();
@@ -31,6 +33,15 @@ class DefaultDataSeeder extends Seeder
         }
 
         $this->seedProductsOnly($project);
+    }
+
+    /** PC向け公開ショップ（/web/{project_key}/shop）をサンプルで使えるようにする。 */
+    private function enablePublicShop(int $projectId): void
+    {
+        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $projectId);
+        ShopSettingStore::setValue('shop_shipping_fee', 500, 'integer', $projectId);
+        ShopSettingStore::setValue('shop_hero_headline', '自宅で楽しむ、お店の味', 'string', $projectId);
+        ShopSettingStore::setValue('shop_hero_subcopy', '人気メニューをオンラインでお届け。今だけのラインナップをチェック。', 'string', $projectId);
     }
 
     /** デフォルトのサンプルクーポンのみ投入（既存がある場合はスキップ。$force で上書き） */

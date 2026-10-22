@@ -51,6 +51,16 @@ struct AppConfigClient {
         let productDisplayLayout = ((json["products"] as? [String: Any])?["display_layout"] as? String)?.trimmedNonEmpty ?? "list_with_image"
         let memberScreen = json["member_screen"] as? [String: Any] ?? [:]
         let realtimeWebSocketURL = ((json["realtime"] as? [String: Any])?["websocket_url"] as? String)?.trimmedNonEmpty
+        let pointsGuideJSON = json["points_guide"] as? [String: Any] ?? [:]
+        let pointsGuide = PointsGuide(
+            usePoints: pointsGuideJSON["use_points"] as? Bool ?? true,
+            earnYenPerPoint: max(1, pointsGuideJSON["earn_yen_per_point"] as? Int ?? 100),
+            usageScope: pointsGuideJSON["usage_scope"] as? String ?? "app",
+            ranks: (pointsGuideJSON["ranks"] as? [[String: Any]] ?? []).compactMap { row in
+                guard let label = (row["label"] as? String)?.trimmedNonEmpty else { return nil }
+                return PointsGuide.Rank(label: label, colorHex: (row["color"] as? String)?.trimmedNonEmpty)
+            }
+        )
 
         var tabs = parseMenuItems(json["tabs"])
 
@@ -85,7 +95,8 @@ struct AppConfigClient {
             memberShowRankProgress: memberScreen["show_rank_progress"] as? Bool ?? true,
             memberShowPointHistory: memberScreen["show_point_history"] as? Bool ?? true,
             memberShowCouponActivity: memberScreen["show_coupon_activity"] as? Bool ?? true,
-            realtimeWebSocketURL: realtimeWebSocketURL
+            realtimeWebSocketURL: realtimeWebSocketURL,
+            pointsGuide: pointsGuide
         )
     }
 

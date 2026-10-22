@@ -107,6 +107,20 @@ class AdminSettingsSeparationTest extends TestCase
         $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_orders_enabled', $project->id));
     }
 
+    public function test_point_usage_scope_is_saved_and_sent_to_app_config(): void
+    {
+        $project = $this->login();
+        $this->get('/admin/'.$project->project_key.'/settings/features')->assertOk()->assertSee('ポイントを使える場所');
+
+        $this->post('/admin/'.$project->project_key.'/settings/features', ['point_usage_scope' => 'both'])->assertRedirect();
+        $this->assertSame('both', ShopSettingStore::getValue('point_usage_scope', 'app', $project->id));
+        $this->getJson('/api/v1/app-config?project_key='.$project->project_key)
+            ->assertOk()->assertJsonPath('points_guide.usage_scope', 'both');
+
+        $this->post('/admin/'.$project->project_key.'/settings/features', ['point_usage_scope' => 'invalid'])
+            ->assertSessionHasErrors('point_usage_scope');
+    }
+
     public function test_member_code_is_in_profile_and_rank_save_cannot_change_it_or_features(): void
     {
         $project = $this->login();

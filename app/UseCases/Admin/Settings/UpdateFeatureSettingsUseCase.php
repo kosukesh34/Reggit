@@ -18,6 +18,9 @@ class UpdateFeatureSettingsUseCase
         if ($input->usePoints !== null) {
             $this->settings->setValue('use_points', $input->usePoints, 'boolean', $input->projectId);
         }
+        if ($input->pointUsageScope !== null) {
+            $this->settings->setValue('point_usage_scope', $input->pointUsageScope, 'string', $input->projectId);
+        }
         if ($input->useTransactionStamps !== null) {
             $this->settings->setValue('use_transaction_stamps', $useStamps && $input->useTransactionStamps, 'boolean', $input->projectId);
         }

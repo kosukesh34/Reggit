@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Order\Events\OrderCompleted;
 use App\Domain\Order\Events\OrderConfirmed;
 use App\Domain\Order\Events\OrderReady;
+use App\Domain\Order\Events\OrderShipped;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
@@ -47,6 +48,7 @@ class OrderStatusService
             $event = match ($status) {
                 OrderStatus::CONFIRMED => new OrderConfirmed($id, $projectId, (int) $order->user_id),
                 OrderStatus::READY => new OrderReady($id, $projectId, (int) $order->user_id),
+                OrderStatus::SHIPPED => new OrderShipped($id, $projectId, (int) $order->user_id),
                 OrderStatus::COMPLETED => new OrderCompleted($id, $projectId, (int) $order->user_id),
                 default => null,
             };

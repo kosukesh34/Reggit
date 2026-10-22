@@ -3,6 +3,7 @@
 namespace App\Services\Kitchen;
 
 use App\Enums\OrderStatus;
+use App\Enums\OrderType;
 use App\Models\KitchenDevice;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -49,6 +50,7 @@ class KitchenOrderService
         $orders = Order::query()
             ->with(['items.product'])
             ->where('project_id', $projectId)
+            ->whereNotIn('order_type', [OrderType::SHIPPING, OrderType::TICKET])
             ->whereIn('status', self::ACTIVE_STATUSES)
             ->orderBy('created_at')
             ->get();

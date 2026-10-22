@@ -14,6 +14,7 @@ final class Order
         OrderStatus::CONFIRMED,
         OrderStatus::PREPARING,
         OrderStatus::READY,
+        OrderStatus::SHIPPED,
         OrderStatus::COMPLETED,
     ];
 
@@ -92,7 +93,9 @@ final class Order
     /** All staff surfaces share the same transition rules as the payment flow. */
     public function applyStaffStatus(string $status): bool
     {
-        $states = [OrderStatus::PENDING, OrderStatus::CONFIRMED, OrderStatus::PREPARING, OrderStatus::READY, OrderStatus::COMPLETED];
+        $states = $this->orderType === OrderType::SHIPPING
+            ? [OrderStatus::PENDING, OrderStatus::CONFIRMED, OrderStatus::PREPARING, OrderStatus::SHIPPED, OrderStatus::COMPLETED]
+            : [OrderStatus::PENDING, OrderStatus::CONFIRMED, OrderStatus::PREPARING, OrderStatus::READY, OrderStatus::COMPLETED];
         if (! in_array($status, $states, true)) {
             throw new OrderOperationException('更新できないステータスです');
         }
@@ -119,7 +122,7 @@ final class Order
             return;
         }
 
-        if ($this->orderType !== OrderType::MOBILE || $this->paymentMethod !== PaymentMethod::STRIPE) {
+        if (! $this->isOnlinePaidType() || $this->paymentMethod !== PaymentMethod::STRIPE) {
             throw new OrderOperationException('この注文は未決済キャンセル対象ではありません');
         }
 
@@ -135,7 +138,7 @@ final class Order
      */
     public function confirmStripePayment(): bool
     {
-        if ($this->orderType !== OrderType::MOBILE) {
+        if (! $this->isOnlinePaidType()) {
             throw new OrderOperationException('店内注文は決済確認の対象外です');
         }
 
@@ -147,9 +150,16 @@ final class Order
             return false;
         }
 
-        $this->status = OrderStatus::CONFIRMED;
+        // 回数券は受け渡しがないため、決済確定で完了にする
+        $this->status = $this->orderType === OrderType::TICKET ? OrderStatus::COMPLETED : OrderStatus::CONFIRMED;
         $this->paymentMethod = PaymentMethod::STRIPE;
 
         return true;
+    }
+
+    /** オンライン決済を伴う注文（モバイル注文・配送注文・回数券） */
+    private function isOnlinePaidType(): bool
+    {
+        return in_array($this->orderType, [OrderType::MOBILE, OrderType::SHIPPING, OrderType::TICKET], true);
     }
 }

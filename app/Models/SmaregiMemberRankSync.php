@@ -12,7 +12,7 @@ class SmaregiMemberRankSync extends Model
 
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $fillable = ['member_id', 'project_id', 'request_token', 'retry_at', 'leased_until', 'lease_token'];
 
     protected $casts = [
         'retry_at' => 'datetime',

@@ -135,7 +135,8 @@ class AfterRegistrationDeliveryAdminService
                 'segment_channel', 'segment_birthday_months', 'segment_tag_ids', 'segment_rfm_segments',
                 'segment_sex', 'segment_visit_count_min', 'segment_visit_count_max', 'segment_rank',
                 'segment_lifetime_points_min', 'segment_lifetime_points_max', 'segment_last_visit_mode',
-                'segment_last_visit_days', 'segment_product_id', 'segment_period_days', 'segment_condition',
+                'segment_last_visit_days', 'segment_product_id', 'segment_coupon_id', 'segment_coupon_status',
+                'segment_period_days', 'segment_condition',
                 'segment_min_amount', 'segment_profile', 'segment_value_mode', 'segment_match_mode',
                 'segment_audience_group_ids',
             ] as $key) {

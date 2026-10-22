@@ -61,8 +61,9 @@ struct AppMain: App {
             .onOpenURL { url in
                 _ = QueueDeepLinkHandler.handle(url)
                 _ = PaymentDeepLinkHandler.handle(url)
+                _ = LoginDeepLinkHandler.handle(url)
                 #if canImport(UIKit)
-                if url.scheme == NativeAppIdentity.urlScheme && url.host != "queue" && url.host != "payment" {
+                if url.scheme == NativeAppIdentity.urlScheme && url.host != "queue" && url.host != "payment" && url.host != "login" {
                     _ = NativeAppURLHandler.handle(url)
                 }
                 #endif

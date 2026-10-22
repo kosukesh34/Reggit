@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use App\Models\Member;
 use App\Services\AnnouncementNotificationService;
 use App\Services\MemberPointsExpiryCalculator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\Log;
  */
 class PointExpiryReminderService
 {
+    private const TITLE = 'ポイント期限のお知らせ';
+
     private MemberPointsExpiryCalculator $expiryCalculator;
 
     private AnnouncementNotificationService $announcementNotificationService;
@@ -67,10 +70,21 @@ class PointExpiryReminderService
         if ($daysLeft < 0 || $daysLeft > $daysBeforeExpiry) {
             return false;
         }
+        // 日次実行で同じ失効日を毎日通知しないよう、この失効日の通知期間内に送信済みならスキップする
+        $alreadyReminded = Announcement::query()
+            ->where('project_id', $projectId)
+            ->where('title', self::TITLE)
+            ->where('delivery_type', Announcement::DELIVERY_TYPE_PERSONAL)
+            ->whereJsonContains('target_member_ids', (int) $member->id)
+            ->where('created_at', '>=', Carbon::parse($expiresAt)->subDays($daysBeforeExpiry))
+            ->exists();
+        if ($alreadyReminded) {
+            return false;
+        }
 
         $announcement = Announcement::create([
             'project_id' => $projectId,
-            'title' => 'ポイント期限のお知らせ',
+            'title' => self::TITLE,
             'body' => "{$expiringPoints}ptが{$daysLeft}日後に失効します。お早めにご利用ください。",
             'is_pinned' => false,
             'delivery_type' => Announcement::DELIVERY_TYPE_PERSONAL,

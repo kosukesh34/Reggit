@@ -59,6 +59,27 @@ class OrderPlacementPolicyTest extends TestCase
         );
     }
 
+    public function test_assert_valid_配送注文はショップ有効かつ_stripeのみ許可されること(): void
+    {
+        (new OrderPlacementPolicy)->assertValid(
+            OrderType::SHIPPING,
+            PaymentMethod::STRIPE,
+            OrderPlacementPolicy::MODE_MOBILE_ONLY,
+            'Reggit',
+            true,
+        );
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('ショップ機能は現在利用できません。');
+        (new OrderPlacementPolicy)->assertValid(
+            OrderType::SHIPPING,
+            PaymentMethod::STRIPE,
+            OrderPlacementPolicy::MODE_BOTH,
+            'Reggit',
+            false,
+        );
+    }
+
     public function test_order_line_item_sum_total_明細合計を計算できること(): void
     {
         $items = [

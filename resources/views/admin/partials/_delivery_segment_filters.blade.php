@@ -14,7 +14,7 @@
     $advancedSegmentOpen = collect([
         'segment_visit_count_min', 'segment_visit_count_max', 'segment_lifetime_points_min',
         'segment_lifetime_points_max', 'segment_last_visit_mode', 'segment_rank',
-        'segment_product_id', 'segment_condition',
+        'segment_product_id', 'segment_coupon_id', 'segment_coupon_status', 'segment_condition',
     ])->contains(fn ($field) => filled($segmentOld($field)));
 @endphp
                         <div class="ad-segment-head">
@@ -43,6 +43,7 @@
                                         <li><button type="button" data-menu-field="points" data-group="visit">累計付与ポイント</button></li>
                                         <li><button type="button" data-menu-field="last_visit" data-group="visit">最終来店</button></li>
                                         <li><button type="button" data-menu-field="product" data-group="visit">購入した商品</button></li>
+                                        <li><button type="button" data-menu-field="held_coupon" data-group="visit">保有クーポン</button></li>
                                         <li><button type="button" data-menu-field="sales" data-group="visit">売上</button></li>
                                         @if($isCouponDelivery)
                                             <li><button type="button" data-menu-field="stamp" data-group="visit">スタンプ</button></li>
@@ -180,6 +181,26 @@
                                         @endforeach
                                     </select>
                                     <p class="ad-field-help">アプリ注文・スマレジPOSで購入した会員に絞り込みます。</p>
+                                </div>
+                                <div class="ad-filter-grid ad-condition-item" data-condition="held_coupon" hidden>
+                                    <div class="form-group mb-0">
+                                        <div class="ad-filter-label"><label for="segment_coupon_id" class="form-label">保有クーポン</label></div>
+                                        <select name="segment_coupon_id" id="segment_coupon_id" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            @foreach(($view->coupons ?? []) as $coupon)
+                                                <option value="{{ $coupon->id }}" {{ (string) $segmentOld('segment_coupon_id') === (string) $coupon->id ? 'selected' : '' }}>{{ $coupon->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label for="segment_coupon_status" class="form-label">使用状態</label>
+                                        <select name="segment_coupon_status" id="segment_coupon_status" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            <option value="unused" {{ $segmentOld('segment_coupon_status') === 'unused' ? 'selected' : '' }}>未使用</option>
+                                            <option value="used" {{ $segmentOld('segment_coupon_status') === 'used' ? 'selected' : '' }}>使用済み</option>
+                                        </select>
+                                    </div>
+                                    <p class="ad-field-help">指定クーポンを保有し、使用状態が一致する会員に絞り込みます。</p>
                                 </div>
                                 <div class="ad-sales-filter ad-condition-item" data-condition="sales" hidden>
                                     <div class="form-group mb-0">

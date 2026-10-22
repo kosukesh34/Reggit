@@ -51,6 +51,7 @@
         ['id' => 'redemptions', 'label' => 'クーポン使用', 'count' => $view->couponRedemptions?->total() ?? 0],
         ['id' => 'rank', 'label' => 'ランク', 'count' => $view->rankHistories?->total() ?? 0],
         ['id' => 'stamps', 'label' => 'スタンプ', 'count' => $view->stampTransactions?->total() ?? 0],
+        ['id' => 'tickets', 'label' => '回数券', 'count' => $tickets->count()],
     ];
 @endphp
 
@@ -305,6 +306,60 @@
     'member' => $view->member,
     'historyFilters' => $view->historyFilters,
 ])
+
+<div class="card" data-history-tab="tickets" id="member-history-tickets" role="tabpanel" aria-labelledby="member-history-tab-tickets" hidden>
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-ticket"></i> 回数券</h3></div>
+    <div class="member-history-body">
+        <table class="table">
+            <thead><tr><th>回数券</th><th>残り</th><th>有効期限</th><th>状態</th><th>購入</th><th></th></tr></thead>
+            <tbody>
+            @forelse($tickets as $ticket)
+                @php
+                    $ticketStatusLabel = ['active' => '利用可能', 'used_up' => '使い切り', 'expired' => '期限切れ', 'revoked' => '無効'][$ticket->status()];
+                @endphp
+                <tr>
+                    <td>{{ $ticket->name }}</td>
+                    <td>{{ $ticket->remainingUses() }} / {{ $ticket->total_uses }}回</td>
+                    <td>{{ $ticket->expires_at?->format('Y/m/d') ?? '無期限' }}</td>
+                    <td>{{ $ticketStatusLabel }}</td>
+                    <td><a href="{{ admin_route('admin.orders.detail', ['id' => $ticket->order_id]) }}">{{ $ticket->created_at->format('Y/m/d') }}</a></td>
+                    <td>
+                        @if($canManage && $ticket->revoked_at === null)
+                        <form action="{{ admin_route('admin.members.tickets.revoke', ['id' => $view->member->id, 'ticket' => $ticket->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('この回数券を無効にしますか？返金はStripeで別途行ってください。')">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-danger">無効化</button>
+                        </form>
+                        @endif
+                    </td>
+                </tr>
+                @foreach($ticket->uses as $use)
+                <tr>
+                    <td colspan="4" style="padding-left:2em">
+                        利用 {{ $use->used_at->format('Y/m/d H:i') }}{{ $use->store ? '（'.$use->store->name.'）' : '' }}
+                        @if($use->cancelled_at)<span class="badge badge-secondary">取消済み</span>@endif
+                    </td>
+                    <td colspan="2">
+                        @if($canManage && $use->cancelled_at === null)
+                        <form action="{{ admin_route('admin.members.tickets.uses.cancel', ['id' => $view->member->id, 'ticket' => $ticket->id, 'use' => $use->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('この利用を取り消し、回数を1回分戻しますか？')">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-secondary">利用を取り消す</button>
+                        </form>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            @empty
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <i class="fas fa-ticket"></i>
+                        <p>回数券はありません</p>
+                    </td>
+                </tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
 </section>
 <aside class="member-detail-sidebar" aria-label="会員プロフィールとスタッフメモ">
 @if($hasProfileExtras)

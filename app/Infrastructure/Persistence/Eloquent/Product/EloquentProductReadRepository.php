@@ -10,7 +10,8 @@ class EloquentProductReadRepository implements ProductReadRepository
 {
     public function list(?string $category, ?bool $availableOnly): array
     {
-        $query = Product::query()->with('optionGroups.options');
+        // 回数券は回数券の画面だけで販売する
+        $query = Product::query()->with('optionGroups.options')->whereNull('ticket_uses');
         if ($availableOnly === true) {
             $query->where('is_available', true);
         }
@@ -31,6 +32,7 @@ class EloquentProductReadRepository implements ProductReadRepository
     public function categoryCounts(): array
     {
         return Product::query()
+            ->whereNull('ticket_uses')
             ->select('category', DB::raw('COUNT(*) as count'))
             ->groupBy('category')
             ->pluck('count', 'category')

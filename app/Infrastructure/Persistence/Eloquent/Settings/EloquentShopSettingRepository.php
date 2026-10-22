@@ -107,6 +107,38 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
         return ShopSettingStore::getOrderMode($projectId);
     }
 
+    public function getShopShippingFee(int $projectId): int
+    {
+        return max(0, (int) ShopSettingStore::getValue('shop_shipping_fee', 500, $projectId));
+    }
+
+    public function getShopShippingFeesByPrefecture(int $projectId): array
+    {
+        $raw = ShopSettingStore::getValue('shop_shipping_fees_by_prefecture', [], $projectId);
+        if (! is_array($raw)) {
+            return [];
+        }
+        $fees = [];
+        foreach ($raw as $prefecture => $fee) {
+            if (! is_string($prefecture) || ! is_numeric($fee)) {
+                continue;
+            }
+            $fees[$prefecture] = max(0, (int) $fee);
+        }
+
+        return $fees;
+    }
+
+    public function getShopShippingFeeForPrefecture(int $projectId, string $prefecture): int
+    {
+        $fees = $this->getShopShippingFeesByPrefecture($projectId);
+        if (array_key_exists($prefecture, $fees)) {
+            return $fees[$prefecture];
+        }
+
+        return $this->getShopShippingFee($projectId);
+    }
+
     public function setOrderMode(string $mode, int $projectId): void
     {
         ShopSettingStore::setOrderMode($mode, $projectId);

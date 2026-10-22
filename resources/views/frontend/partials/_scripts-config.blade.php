@@ -21,6 +21,7 @@
         'orders' => 'feature_orders_enabled',
         'stamps' => 'feature_stamps_enabled',
         'coupons' => 'feature_coupons_enabled',
+        'tickets' => 'feature_tickets_enabled',
         'queue' => 'feature_queue_enabled',
         'reservations' => 'feature_reservations_enabled',
         'member' => 'feature_members_enabled',
@@ -79,7 +80,7 @@
     window.__COUPON_FORM_PREVIEW__ = {{ request()->query('coupon_form_preview') === '1' ? 'true' : 'false' }};
     window.__ANNOUNCEMENT_FORM_PREVIEW__ = {{ request()->query('announcement_form_preview') === '1' ? 'true' : 'false' }};
     window.__DESIGNER_PREVIEW_MEMBER_PAYLOAD__ = @json($designerPreviewMemberPayload ?? null);
-    window.__INLINE_LOCAL_ASSETS__ = {{ $useInlineLocalAssets ? 'true' : 'false' }};
+    window.__INLINE_LOCAL_ASSETS__ = {{ ($useInlineLocalAssets ?? false) ? 'true' : 'false' }};
     window.__clientDebugLog = function (eventName, payloadObj) {
         try {
             var payload = '';

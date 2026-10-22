@@ -6,8 +6,10 @@ use App\Enums\MemberVisitSource;
 use App\Enums\OrderStatus;
 use App\Enums\SegmentCombineMode;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
+use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberAudienceGroup;
+use App\Models\MemberCoupon;
 use App\Models\MemberVisit;
 use App\Models\MemberVisitItem;
 use App\Models\Order;
@@ -478,6 +480,42 @@ class MemberSegmentAndChannelTest extends TestCase
         } finally {
             $this->assertDatabaseMissing('coupons', ['code' => 'FAILCODE1']);
         }
+    }
+
+    public function test_保有クーポンの未使用と使用済みで会員を絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $unusedMember = Member::factory()->create(['project_id' => $project->id]);
+        $usedMember = Member::factory()->create(['project_id' => $project->id]);
+        Member::factory()->create(['project_id' => $project->id]);
+
+        MemberCoupon::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $unusedMember->id,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCoupon::STATUS_UNUSED,
+        ]);
+        MemberCoupon::factory()->create([
+            'project_id' => $project->id,
+            'member_id' => $usedMember->id,
+            'coupon_id' => $coupon->id,
+            'status' => MemberCoupon::STATUS_USED,
+            'used_at' => now(),
+        ]);
+
+        $segment = app(MemberSegmentService::class);
+        $unusedIds = $segment->getMemberIds($project->id, [
+            'held_coupon_id' => $coupon->id,
+            'held_coupon_status' => 'unused',
+        ]);
+        $usedIds = $segment->getMemberIds($project->id, [
+            'held_coupon_id' => $coupon->id,
+            'held_coupon_status' => 'used',
+        ]);
+
+        $this->assertEqualsCanonicalizing([$unusedMember->id], $unusedIds->all());
+        $this->assertEqualsCanonicalizing([$usedMember->id], $usedIds->all());
     }
 
     public function test_購入商品でアプリ注文とpos来店の会員を絞り込めること(): void

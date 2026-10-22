@@ -32,7 +32,7 @@
     $advancedSegmentOpen = collect([
         'segment_visit_count_min', 'segment_visit_count_max', 'segment_lifetime_points_min',
         'segment_lifetime_points_max', 'segment_last_visit_mode', 'segment_rank',
-        'segment_product_id', 'segment_condition',
+        'segment_product_id', 'segment_coupon_id', 'segment_coupon_status', 'segment_condition',
     ])->contains(fn ($field) => filled(old($field)));
     $announcementPreviewBaseUrl = admin_front_url();
     $announcementPreviewUrl = $announcementPreviewBaseUrl !== null

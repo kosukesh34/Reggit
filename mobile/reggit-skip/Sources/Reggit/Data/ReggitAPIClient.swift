@@ -116,6 +116,15 @@ struct ReggitAPIClient: ReggitAPIServing {
         )
     }
 
+    func requestEmailLogin(email: String) async throws -> String {
+        let json = try await requestJSON(
+            path: "/api/members/email-login",
+            method: "POST",
+            body: ["email": email]
+        )
+        return json["message"] as? String ?? "ログイン用のリンクを送信しました"
+    }
+
     func fetchExistingMemberLinkForm() async throws -> ExistingMemberLinkForm {
         let json = try await requestJSON(path: "/api/members/existing-link", method: "GET")
         guard let data = json["data"] as? [String: Any] else { throw ReggitAPIError.invalidResponse }

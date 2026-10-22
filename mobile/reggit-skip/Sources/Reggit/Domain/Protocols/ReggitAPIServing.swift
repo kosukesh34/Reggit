@@ -45,6 +45,7 @@ protocol ReggitAPIServing: Sendable {
     func withdrawMember() async throws
     func issueTransferCode() async throws -> TransferCode
     func claimTransferCode(memberId: Int, code: String) async throws
+    func requestEmailLogin(email: String) async throws -> String
     func fetchExistingMemberLinkForm() async throws -> ExistingMemberLinkForm
     func submitExistingMemberLink(values: [String: String]) async throws -> ExistingMemberLinkResult
     func confirmExistingMemberLink(token: String) async throws -> ExistingMemberLinkResult

@@ -52,16 +52,20 @@ const categoryLabels: Record<string, string> = {
 
 interface NativeProductsProps {
   dineIn: boolean;
+  shipping?: boolean;
   image: string;
   storeId: string;
   venueName: string;
 }
 
-export function NativeProductsPage({ dineIn, image, storeId, venueName }: NativeProductsProps) {
+export function NativeProductsPage({ dineIn, shipping = false, image, storeId, venueName }: NativeProductsProps) {
   const { config: nativeConfig } = useNativeConfig();
   const displayLayout = nativeConfig.products?.display_layout ?? "list_with_image";
   const config: AppCustomization["order"] = { showEarliestPickup: false, showItemImages: displayLayout !== "name_only", ctaPosition: "sticky", catalogLayout: displayLayout === "grid" || displayLayout === "grid_2_columns" ? "cards" : "compact", groupByCategory: true };
   const { createOrder, commerce, mode, member } = useRuntimeData();
+  const defaultShippingFee = Math.max(0, Number(nativeConfig.shop_shipping_fee ?? 500) || 0);
+  const shippingFeesByPrefecture = nativeConfig.shop_shipping_fees_by_prefecture ?? {};
+  const prefectures = nativeConfig.shop_prefectures ?? [];
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [configuringItemId, setConfiguringItemId] = useState<string>();
@@ -72,6 +76,14 @@ export function NativeProductsPage({ dineIn, image, storeId, venueName }: Native
     const params = new URLSearchParams(window.location.search);
     return params.get("table_number") || params.get("table") || window.sessionStorage.getItem("reggit-table-number") || "";
   });
+  const [shippingName, setShippingName] = useState(() => member.name || "");
+  const [shippingPhone, setShippingPhone] = useState("");
+  const [shippingPostalCode, setShippingPostalCode] = useState("");
+  const [shippingPrefecture, setShippingPrefecture] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
+  const shippingFee = shippingPrefecture !== "" && shippingFeesByPrefecture[shippingPrefecture] !== undefined
+    ? Math.max(0, Number(shippingFeesByPrefecture[shippingPrefecture]) || 0)
+    : defaultShippingFee;
   const [paymentMethod, setPaymentMethod] = useState<PaymentBrand>("card");
   const [availableMethods, setAvailableMethods] = useState<PaymentBrand[]>(mode === "live" ? [] : devicePaymentBrands());
   const [methodsError, setMethodsError] = useState<string>();
@@ -212,7 +224,8 @@ export function NativeProductsPage({ dineIn, image, storeId, venueName }: Native
     .flatMap((group) => group.options)
     .filter((option) => (selectedOptions[item.id] ?? []).includes(option.id))
     .map((option) => option.name);
-  const total = orderItems.reduce((sum, item) => item.isAvailable === false ? sum : sum + itemUnitPrice(item) * (quantities[item.id] ?? 0), 0);
+  const itemsTotal = orderItems.reduce((sum, item) => item.isAvailable === false ? sum : sum + itemUnitPrice(item) * (quantities[item.id] ?? 0), 0);
+  const total = shipping ? itemsTotal + (count > 0 ? shippingFee : 0) : itemsTotal;
   const categories = useMemo(() => Array.from(new Set(orderItems.map((item) => item.category || "other"))), [orderItems]);
   const visibleItems = orderItems.filter((item) => (!config.groupByCategory || selectedCategory === "all" || (item.category || "other") === selectedCategory) && `${item.name} ${item.description}`.toLocaleLowerCase().includes(searchText.toLocaleLowerCase()));
 
@@ -312,12 +325,20 @@ export function NativeProductsPage({ dineIn, image, storeId, venueName }: Native
         setTableSheetOpen(true);
         throw new Error("卓番を入力してください");
       }
+      if (shipping && [shippingName, shippingPhone, shippingPostalCode, shippingPrefecture, shippingAddress].some((value) => value.trim() === "")) {
+        throw new Error("配送先情報を入力してください");
+      }
       const receipt = await createOrder({
         storeId,
         venueName,
-        fulfillment: dineIn ? "dine_in" : "pickup",
+        fulfillment: dineIn ? "dine_in" : shipping ? "shipping" : "pickup",
         paymentMethod: dineIn ? "cash" : paymentMethod,
         tableNumber: dineIn ? tableNumber.trim() : undefined,
+        shippingName: shipping ? shippingName.trim() : undefined,
+        shippingPhone: shipping ? shippingPhone.trim() : undefined,
+        shippingPostalCode: shipping ? shippingPostalCode.trim() : undefined,
+        shippingPrefecture: shipping ? shippingPrefecture.trim() : undefined,
+        shippingAddress: shipping ? shippingAddress.trim() : undefined,
         lines: orderItems.filter((item) => quantities[item.id] && item.isAvailable !== false).map((item) => ({
           itemId: item.id,
           name: item.name,
@@ -368,8 +389,24 @@ export function NativeProductsPage({ dineIn, image, storeId, venueName }: Native
 
   if (sheetOpen) return <div className="native-order-confirm">
     <section><h2>注文内容</h2><div className="native-confirm-group">{orderItems.filter((item) => quantities[item.id]).map((item) => <div className="native-confirm-line" key={item.id}><div>{item.name}<small>×{quantities[item.id]} {selectedOptionNames(item).join("、")}</small></div><span>¥{(itemUnitPrice(item) * quantities[item.id]).toLocaleString()}</span></div>)}</div></section>
+    {shipping ? <section><h2>配送先</h2><div className="native-confirm-group">
+      <label className="form-label" htmlFor="shop-shipping-name">お名前</label>
+      <input id="shop-shipping-name" className="form-control" value={shippingName} onChange={(event) => setShippingName(event.target.value)} disabled={submitting} />
+      <label className="form-label" htmlFor="shop-shipping-phone">電話番号</label>
+      <input id="shop-shipping-phone" className="form-control" value={shippingPhone} onChange={(event) => setShippingPhone(event.target.value)} disabled={submitting} />
+      <label className="form-label" htmlFor="shop-shipping-postal">郵便番号</label>
+      <input id="shop-shipping-postal" className="form-control" value={shippingPostalCode} onChange={(event) => setShippingPostalCode(event.target.value)} disabled={submitting} />
+      <label className="form-label" htmlFor="shop-shipping-prefecture">都道府県</label>
+      <select id="shop-shipping-prefecture" className="form-control" value={shippingPrefecture} onChange={(event) => setShippingPrefecture(event.target.value)} disabled={submitting}>
+        <option value="">選択してください</option>
+        {prefectures.map((name) => <option key={name} value={name}>{name}</option>)}
+      </select>
+      <label className="form-label" htmlFor="shop-shipping-address">住所（市区町村以降）</label>
+      <textarea id="shop-shipping-address" className="form-control" rows={3} value={shippingAddress} onChange={(event) => setShippingAddress(event.target.value)} disabled={submitting} />
+      <div className="native-confirm-line"><span>送料</span><span>¥{shippingFee.toLocaleString()}</span></div>
+    </div></section> : null}
     {!dineIn ? <section><h2>お支払い方法</h2>{testPayment ? <p className="native-caption" role="status">オンライン決済はテストモードです。実際の請求は発生しません。</p> : null}<PaymentBrandPicker value={paymentMethod} methods={availableMethods} onChange={setPaymentMethod} disabled={submitting} />{methodsError ? <p className="form-error" role="alert">{methodsError}</p> : null}</section> : null}
-    <section className="native-confirm-group"><div className="native-confirm-total"><span>合計</span><strong>¥{total.toLocaleString()}</strong></div><p className="native-caption">{dineIn ? `テーブル ${tableNumber}` : paymentMethod !== "cash" ? `${paymentBrandLabels[paymentMethod]}の決済画面へ進みます` : "商品受け取り時に現金でお支払いください"}</p></section>
+    <section className="native-confirm-group"><div className="native-confirm-total"><span>合計</span><strong>¥{total.toLocaleString()}</strong></div><p className="native-caption">{dineIn ? `テーブル ${tableNumber}` : shipping ? "配送注文としてお支払いへ進みます" : paymentMethod !== "cash" ? `${paymentBrandLabels[paymentMethod]}の決済画面へ進みます` : "商品受け取り時に現金でお支払いください"}</p></section>
     <div className="native-confirm-submit">{error ? <p className="form-error" role="alert">{error}</p> : null}<button className="native-button" disabled={submitting || !count || (!dineIn && !availableMethods.includes(paymentMethod))} onClick={() => void submitOrder(dineIn ? "cash" : paymentMethod)}>{submitting ? "送信中…" : `${!dineIn && paymentMethod !== "cash" ? "お支払いへ" : "注文を確定"} · ¥${total.toLocaleString()}`}</button></div>
   </div>;
 

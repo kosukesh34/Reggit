@@ -11,9 +11,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Config;
+use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements PasskeyUser
 {
     use BelongsToProject, HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
@@ -76,5 +78,50 @@ class User extends Authenticatable
     public function announcementReads(): HasMany
     {
         return $this->hasMany(AnnouncementRead::class);
+    }
+
+    /** @return HasMany<MemberPasskey, $this> */
+    public function memberPasskeys(): HasMany
+    {
+        return $this->hasMany(MemberPasskey::class);
+    }
+
+    /** @return HasMany<MemberPasskey, $this> */
+    public function passkeys(): HasMany
+    {
+        return $this->memberPasskeys();
+    }
+
+    public function hasPasskeysEnabled(): bool
+    {
+        return $this->memberPasskeys()->exists();
+    }
+
+    public function getPasskeyUserHandle(): string
+    {
+        return hash_hmac(
+            'sha256',
+            $this->getTable().'|'.$this->getKey(),
+            Config::string('passkeys.user_handle_secret'),
+            binary: true,
+        );
+    }
+
+    public function getPasskeyDisplayName(): string
+    {
+        $name = trim((string) ($this->name ?? ''));
+        if ($name !== '') {
+            return $name;
+        }
+        $email = trim((string) ($this->email ?? ''));
+
+        return $email !== '' ? $email : 'member-'.$this->getKey();
+    }
+
+    public function getPasskeyUsername(): string
+    {
+        $email = trim((string) ($this->email ?? ''));
+
+        return $email !== '' ? $email : 'member-'.$this->getKey();
     }
 }

@@ -30,10 +30,11 @@ const ACTIVE_TRACKER_STEPS: TrackerStep[] = [
     { key: 'confirmed', tMark: 'T+0', label: '受付', detail: '注文を受け付けました' },
     { key: 'preparing', tMark: 'T+1', label: '準備中', detail: 'キッチンで準備しています' },
     { key: 'ready', tMark: 'T+2', label: '受取可', detail: '受け取りの準備が整いました' },
+    { key: 'shipped', tMark: 'T+2', label: '発送済み', detail: '商品を発送しました' },
     { key: 'completed', tMark: 'T+3', label: '完了', detail: 'ミッション完了' },
 ];
 
-const ACTIVE_ORDER_STATUSES = ['pending', 'confirmed', 'preparing', 'ready'];
+const ACTIVE_ORDER_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'shipped'];
 
 export class OrderManager {
     apiClient: ApiClient;

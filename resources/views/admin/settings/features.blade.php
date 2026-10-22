@@ -32,6 +32,15 @@
                 <label class="checkbox-label checkbox-block"><input type="hidden" name="{{ $key }}" value="0"><input type="checkbox" name="{{ $key }}" value="1" @checked(old($key, $enabled))>{{ $label }}</label>
             @endforeach
             <p class="form-text">取引連動スタンプは、スタンプカード機能が有効な場合に利用できます。</p>
+            <div class="form-group">
+                <label for="point_usage_scope" class="form-label">ポイントを使える場所</label>
+                <select id="point_usage_scope" name="point_usage_scope" class="form-control">
+                    @foreach(['app' => 'アプリからの注文', 'store' => 'お店のレジ', 'both' => 'アプリからの注文とお店のレジ'] as $value => $label)
+                        <option value="{{ $value }}" @selected(old('point_usage_scope', $view->pointUsageScope) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="form-text">アプリの初回案内に表示します。お店のレジで使う場合は、スマレジ側のポイント設定に合わせてください。</p>
+            </div>
 
         </div>
     </div>

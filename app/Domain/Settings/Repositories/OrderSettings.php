@@ -19,4 +19,13 @@ interface OrderSettings
     public function getUseStamps(int $projectId): bool;
 
     public function getUseTransactionStamps(int $projectId): bool;
+
+    public function isFeatureEnabled(string $featureKey, int $projectId): bool;
+
+    public function getShopShippingFee(int $projectId): int;
+
+    public function getShopShippingFeeForPrefecture(int $projectId, string $prefecture): int;
+
+    /** @return array<string, int> */
+    public function getShopShippingFeesByPrefecture(int $projectId): array;
 }

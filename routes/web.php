@@ -41,6 +41,7 @@ use App\Http\Controllers\Admin\MemberHistoryController;
 use App\Http\Controllers\Admin\MemberIndexController;
 use App\Http\Controllers\Admin\MemberMutationController;
 use App\Http\Controllers\Admin\MemberTagController as AdminMemberTagController;
+use App\Http\Controllers\Admin\MemberTicketController as AdminMemberTicketController;
 use App\Http\Controllers\Admin\MemberTransferController as AdminMemberTransferController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PointGrantQrController;
@@ -75,10 +76,12 @@ use App\Http\Controllers\Admin\Settings\ProfileController;
 use App\Http\Controllers\Admin\Settings\QueueController;
 use App\Http\Controllers\Admin\Settings\RanksController as SettingsRanksController;
 use App\Http\Controllers\Admin\Settings\ReservationsController;
+use App\Http\Controllers\Admin\Settings\ShopController as SettingsShopController;
 use App\Http\Controllers\Admin\Settings\StaffController as SettingsStaffController;
 use App\Http\Controllers\Admin\Settings\StaffMutationController;
 use App\Http\Controllers\Admin\Settings\StoreAppCredentialController;
 use App\Http\Controllers\Admin\Settings\WalletController;
+use App\Http\Controllers\Admin\ShopOrderController;
 use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\StampGrantQrController;
 use App\Http\Controllers\Admin\StampQrController;
@@ -87,6 +90,7 @@ use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\Admin\SystemHelpArticleController;
 use App\Http\Controllers\Admin\SystemNoticeController;
 use App\Http\Controllers\ApiInfoController;
+use App\Http\Controllers\AppLoginOpenController;
 use App\Http\Controllers\ExistingMemberLinkConfirmController;
 use App\Http\Controllers\GoogleWalletSaveRedirectController;
 use App\Http\Controllers\HealthController;
@@ -103,6 +107,11 @@ use App\Http\Controllers\Payment\PaymentReturnController;
 use App\Http\Controllers\PointGrantOpenController;
 use App\Http\Controllers\PublicHelpController;
 use App\Http\Controllers\Queue\QueueOpenController;
+use App\Http\Controllers\Shop\ShopAuthController;
+use App\Http\Controllers\Shop\ShopController;
+use App\Http\Controllers\Shop\ShopLineAuthController;
+use App\Http\Controllers\Shop\ShopMemberRegistrationController;
+use App\Http\Controllers\Shop\ShopPasskeyController;
 use App\Http\Controllers\Smaregi\SmaregiIdpController;
 use App\Http\Controllers\Smaregi\SmaregiWebhookController;
 use App\Http\Controllers\StampGrantOpenController;
@@ -162,6 +171,45 @@ Route::prefix('liff')->middleware('bind.project')->group(function () {
     Route::get('/{project_key}/{legacy_state}', LiffLegacyRedirectController::class)
         ->where('legacy_state', 'project_key=.*')->name('liff.project.legacy');
 });
+
+// ========== 公開ショップ（PC / 一般ブラウザ） ==========
+Route::prefix('web/{project_key}')->middleware(['web', 'bind.project', 'shop.enabled'])->group(function () {
+    Route::get('/shop', [ShopController::class, 'show'])->name('shop.show');
+    Route::get('/shop/login', [ShopAuthController::class, 'loginForm'])->name('shop.login');
+    Route::post('/shop/logout', [ShopAuthController::class, 'logout'])->name('shop.logout');
+    Route::get('/shop/line/start', [ShopLineAuthController::class, 'start'])->name('shop.line.start');
+    Route::get('/shop/line/callback', [ShopLineAuthController::class, 'callback'])->name('shop.line.callback');
+    Route::post('/shop/email', [ShopAuthController::class, 'sendEmail'])->middleware('throttle:5,1')->name('shop.email.send');
+    Route::get('/shop/email/consume', [ShopAuthController::class, 'consumeEmail'])->middleware('throttle:20,1')->name('shop.email.consume');
+    Route::post('/shop/app', [ShopAuthController::class, 'loginWithApp'])->middleware('throttle:5,1')->name('shop.app.login');
+    Route::get('/shop/passkey/login/options', [ShopPasskeyController::class, 'loginOptions'])->name('shop.passkey.login.options');
+    Route::post('/shop/passkey/login', [ShopPasskeyController::class, 'login'])->middleware('throttle:12,1')->name('shop.passkey.login');
+    Route::get('/shop/passkey/register/options', [ShopPasskeyController::class, 'registerOptions'])->middleware('auth')->name('shop.passkey.register.options');
+    Route::post('/shop/passkey/register', [ShopPasskeyController::class, 'register'])->middleware(['auth', 'throttle:12,1'])->name('shop.passkey.register');
+    Route::get('/shop/member/register', [ShopMemberRegistrationController::class, 'form'])->name('shop.member.register');
+    Route::post('/shop/member/register', [ShopMemberRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('shop.member.register.store');
+});
+
+// 独自ショップドメイン（Host → project）。LIFF / 管理画面は対象外。
+Route::middleware(['web', 'shop.domain', 'shop.enabled'])->group(function () {
+    Route::get('/shop', [ShopController::class, 'show'])->name('shop.domain.show');
+    Route::get('/shop/login', [ShopAuthController::class, 'loginForm'])->name('shop.domain.login');
+    Route::post('/shop/logout', [ShopAuthController::class, 'logout'])->name('shop.domain.logout');
+    Route::get('/shop/line/start', [ShopLineAuthController::class, 'start'])->name('shop.domain.line.start');
+    Route::get('/shop/line/callback', [ShopLineAuthController::class, 'callback'])->name('shop.domain.line.callback');
+    Route::post('/shop/email', [ShopAuthController::class, 'sendEmail'])->middleware('throttle:5,1')->name('shop.domain.email.send');
+    Route::get('/shop/email/consume', [ShopAuthController::class, 'consumeEmail'])->middleware('throttle:20,1')->name('shop.domain.email.consume');
+    Route::post('/shop/app', [ShopAuthController::class, 'loginWithApp'])->middleware('throttle:5,1')->name('shop.domain.app.login');
+    Route::get('/shop/passkey/login/options', [ShopPasskeyController::class, 'loginOptions'])->name('shop.domain.passkey.login.options');
+    Route::post('/shop/passkey/login', [ShopPasskeyController::class, 'login'])->middleware('throttle:12,1')->name('shop.domain.passkey.login');
+    Route::get('/shop/passkey/register/options', [ShopPasskeyController::class, 'registerOptions'])->middleware('auth')->name('shop.domain.passkey.register.options');
+    Route::post('/shop/passkey/register', [ShopPasskeyController::class, 'register'])->middleware(['auth', 'throttle:12,1'])->name('shop.domain.passkey.register');
+    Route::get('/shop/member/register', [ShopMemberRegistrationController::class, 'form'])->name('shop.domain.member.register');
+    Route::post('/shop/member/register', [ShopMemberRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('shop.domain.member.register.store');
+});
+
+// アプリのメールログイン用の中継ページ（メール内リンク → reggit://login）
+Route::get('/app-login', AppLoginOpenController::class)->name('app-login.open');
 
 // Wallet 追加用の中間ページ（追加後にアプリへ戻るリンクを表示）
 Route::get('/wallet-add', WalletAddPageController::class)
@@ -258,6 +306,10 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/orders/{id}', [AdminOrderController::class, 'orderDetail'])->name('admin.orders.detail')->middleware('admin.permission:orders.view');
         Route::post('/orders/{id}/status', [AdminOrderController::class, 'updateOrderStatus'])->name('admin.orders.status')->middleware('admin.permission:orders.update');
         Route::post('/orders/{id}/complete', [AdminOrderController::class, 'completeOrder'])->name('admin.orders.complete')->middleware('admin.permission:orders.update');
+        Route::get('/shop/orders', [ShopOrderController::class, 'index'])->name('admin.shop.orders')->middleware('admin.permission:orders.view');
+        Route::get('/shop/orders/{id}', [ShopOrderController::class, 'detail'])->name('admin.shop.orders.detail')->middleware('admin.permission:orders.view');
+        Route::post('/shop/orders/{id}/status', [ShopOrderController::class, 'updateStatus'])->name('admin.shop.orders.status')->middleware('admin.permission:orders.update');
+        Route::post('/shop/orders/{id}/complete', [ShopOrderController::class, 'complete'])->name('admin.shop.orders.complete')->middleware('admin.permission:orders.update');
 
         Route::get('/products', [AdminProductController::class, 'products'])->name('admin.products')->middleware('admin.permission:products.view');
         Route::post('/products/import-smaregi', [AdminProductController::class, 'importSmaregi'])->name('admin.products.import-smaregi')->middleware('admin.permission:products.manage');
@@ -269,6 +321,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
 
         Route::get('/members', [MemberIndexController::class, 'index'])->name('admin.members')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/transfer-code', [AdminMemberTransferController::class, 'store'])->name('admin.members.transfer-code')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/tickets/{ticket}/revoke', [AdminMemberTicketController::class, 'revoke'])->whereNumber(['id', 'ticket'])->name('admin.members.tickets.revoke')->middleware('admin.permission:members.manage');
+        Route::post('/members/{id}/tickets/{ticket}/uses/{use}/cancel', [AdminMemberTicketController::class, 'cancelUse'])->whereNumber(['id', 'ticket', 'use'])->name('admin.members.tickets.uses.cancel')->middleware('admin.permission:members.manage');
         Route::get('/members/export', [MemberIndexController::class, 'export'])->name('admin.members.export')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/history/{section}', [MemberHistoryController::class, 'index'])->name('admin.members.history')->middleware('admin.permission:members.view');
         Route::get('/members/{id}/visits/{visitId}', [MemberHistoryController::class, 'visit'])->name('admin.members.visits.detail')->middleware('admin.permission:members.view');
@@ -357,6 +411,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/settings', [SettingsIndexController::class, 'index'])->name('admin.settings.index');
         Route::get('/settings/basic', [SettingsBasicController::class, 'index'])->name('admin.settings.basic')->middleware('admin.permission:settings.view');
         Route::post('/settings/basic', [SettingsBasicController::class, 'update'])->name('admin.settings.basic.update')->middleware('admin.permission:settings.manage');
+        Route::get('/settings/shop', [SettingsShopController::class, 'index'])->name('admin.settings.shop')->middleware('admin.permission:settings.view');
+        Route::post('/settings/shop', [SettingsShopController::class, 'update'])->name('admin.settings.shop.update')->middleware('admin.permission:settings.manage');
         Route::post('/settings/store-app-credential', [StoreAppCredentialController::class, 'store'])->name('admin.settings.store-app-credential.store')->middleware('admin.permission:settings.manage');
         Route::get('/settings/payments', [PaymentsController::class, 'index'])->name('admin.settings.payments')->middleware('admin.permission:settings.manage');
         Route::post('/settings/payments', [PaymentsController::class, 'update'])->name('admin.settings.payments.update')->middleware('admin.permission:settings.manage');

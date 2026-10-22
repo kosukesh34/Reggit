@@ -40,6 +40,7 @@ export default defineConfig({
                 'resources/js/frontend/main.tsx',
                 'resources/js/liff-demo/main.tsx',
                 'resources/js/payment/card.ts',
+                'resources/js/shop/main.tsx',
             ],
             refresh: true,
         }),
