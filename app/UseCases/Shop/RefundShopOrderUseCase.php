@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Shop;
+namespace App\UseCases\Shop;
 
 use App\Domain\Order\Exceptions\OrderOperationException;
 use App\Enums\OrderStatus;
@@ -15,7 +15,7 @@ use App\Util\LogHelper;
 use Illuminate\Support\Facades\DB;
 
 /** 配送注文の全額返金。Stripe で返金し、注文をキャンセルして在庫・ポイントを戻す。 */
-class ShopOrderRefundService
+class RefundShopOrderUseCase
 {
     public function __construct(
         private PaymentGateway $gateway,
@@ -24,7 +24,7 @@ class ShopOrderRefundService
         private OrderNotificationService $notifications,
     ) {}
 
-    public function refundInFull(Order $target): void
+    public function handle(Order $target): void
     {
         $order = DB::transaction(function () use ($target): Order {
             $order = Order::withoutGlobalScopes()->where('project_id', $target->project_id)->lockForUpdate()->findOrFail($target->id);

@@ -413,7 +413,7 @@ Kitchenは注文一覧・状態更新・Push登録、Waitingは受付一覧・�
 
 **返金：** 管理画面のショップ注文詳細から全額返金できます。Stripe で返金し（注文ごとの冪等キーを使用）、注文をキャンセルにして在庫・利用ポイント・獲得ポイント・抽選権利を戻し、購入者へメールで知らせます。一部返金は Stripe の管理画面で行います。スマレジの取引は自動で取り消さないため、管理画面の案内に従ってスマレジで取消・返品します。
 
-**根拠：** [運用設定](../app/Services/Shop/ShopOperations.php)、[返金](../app/Services/Shop/ShopOrderRefundService.php)、[領収書](../app/Http/Controllers/Shop/ShopReceiptController.php)、[通知アウトボックス](../app/Services/OrderNotificationOutbox.php)、[テスト](../tests/Feature/ShopOperationsTest.php)。
+**根拠：** [運用設定](../app/Services/Shop/ShopOperations.php)、[返金](../app/UseCases/Shop/RefundShopOrderUseCase.php)、[領収書](../app/Http/Controllers/Shop/ShopReceiptController.php)、[通知アウトボックス](../app/Services/OrderNotificationOutbox.php)、[テスト](../tests/Feature/ShopOperationsTest.php)。
 
 
 <a id="store-flows-08"></a>

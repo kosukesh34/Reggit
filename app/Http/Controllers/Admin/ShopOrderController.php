@@ -8,7 +8,7 @@ use App\Enums\OrderType;
 use App\Http\Requests\Admin\OrderStatusRequest;
 use App\Services\Admin\OrderAdminService;
 use App\Services\Shop\ShopOperations;
-use App\Services\Shop\ShopOrderRefundService;
+use App\UseCases\Shop\RefundShopOrderUseCase;
 use App\Util\AdminStatusLabels;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -73,11 +73,11 @@ class ShopOrderController extends AdminBaseController
             ->with('success', '注文ステータスを「'.AdminStatusLabels::orderStatusLabel($status).'」に更新しました');
     }
 
-    public function refund(string $projectKey, $id, ShopOrderRefundService $refunds)
+    public function refund(string $projectKey, $id, RefundShopOrderUseCase $refunds)
     {
         $order = $this->orderAdminService->findShippingOrFail((int) $id);
         try {
-            $refunds->refundInFull($order);
+            $refunds->handle($order);
         } catch (OrderOperationException $e) {
             return redirect()->back()->withErrors(['status' => $e->getMessage()]);
         }
