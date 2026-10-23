@@ -82,6 +82,20 @@
                     {{ $order->shipping_name }} / {{ $order->shipping_phone }}<br>
                     〒{{ $order->shipping_postal_code }} {{ $order->shipping_prefecture }} {{ $order->shipping_address }}<br>
                     送料: ¥{{ number_format((int) $order->shipping_fee) }}
+                    @if($order->delivery_date || $order->delivery_time_slot)
+                        <br><strong>お届け希望: {{ $order->delivery_date?->format('Y/m/d') ?? '日付指定なし' }} {{ $order->delivery_time_slot }}</strong>
+                    @endif
+                    @if($order->shipping_tracking_number)
+                        @php $trackingUrl = \App\Services\Shop\ShopOperations::trackingUrl($order->shipping_carrier, $order->shipping_tracking_number); @endphp
+                        <br>{{ \App\Services\Shop\ShopOperations::carrierLabel($order->shipping_carrier) }} {{ $order->shipping_tracking_number }}
+                        @if($trackingUrl)<a href="{{ $trackingUrl }}" target="_blank" rel="noopener noreferrer">配送状況</a>@endif
+                    @endif
+                    @if($order->status !== 'pending')
+                        <br><a href="{{ \Illuminate\Support\Facades\URL::signedRoute('shop.receipt', ['project_key' => $order->project?->project_key, 'order' => $order->id]) }}" target="_blank" rel="noopener noreferrer">領収書を表示</a>
+                    @endif
+                    @if($order->refunded_at)
+                        <br><span class="badge badge-danger">返金済み ¥{{ number_format((int) $order->refund_amount) }}（{{ $order->refunded_at->format('Y/m/d H:i') }}）</span>
+                    @endif
                 </div>
             </div>
             @endif
@@ -125,11 +139,19 @@
                     @endif
 
                     @if($order->status === 'preparing' && $order->order_type === 'shipping')
-                    <form action="{{ admin_route($orderStatusRoute, ['id' => $order->id]) }}" method="POST" class="form-inline">
+                    <form action="{{ admin_route($orderStatusRoute, ['id' => $order->id]) }}" method="POST" class="form-inline shipping-form">
                         @csrf
                         <input type="hidden" name="status" value="shipped">
+                        <label class="sr-only" for="shipping_carrier">配送業者</label>
+                        <select name="shipping_carrier" id="shipping_carrier" class="form-select">
+                            @foreach(\App\Services\Shop\ShopOperations::CARRIERS as $carrierKey => $carrierLabel)
+                                <option value="{{ $carrierKey }}" @selected(old('shipping_carrier', $order->shipping_carrier) === $carrierKey)>{{ $carrierLabel }}</option>
+                            @endforeach
+                        </select>
+                        <label class="sr-only" for="shipping_tracking_number">お問い合わせ番号</label>
+                        <input type="text" name="shipping_tracking_number" id="shipping_tracking_number" class="form-control" maxlength="64" placeholder="お問い合わせ番号（任意）" value="{{ old('shipping_tracking_number', $order->shipping_tracking_number) }}">
                         <button type="submit" class="btn btn-info">
-                            <i class="fas fa-truck"></i> 発送済み
+                            <i class="fas fa-truck"></i> 発送済みにしてお客様へ連絡
                         </button>
                     </form>
                     @elseif($order->status === 'preparing')
@@ -152,6 +174,20 @@
                     @endif
                 </div>
             </div>
+
+            @if($shopOrdersMode && $order->payment_method === 'stripe' && ! in_array($order->status, ['pending', 'cancelled'], true) && $order->refunded_at === null)
+            <div class="status-selector">
+                <h4><i class="fas fa-undo"></i> 返金</h4>
+                <p class="form-text">Stripe で全額（¥{{ number_format((int) $order->total_amount) }}）を返金し、注文をキャンセルにします。在庫と利用ポイントを戻し、獲得ポイントを取り消して、お客様へメールで知らせます。元に戻せません。</p>
+                @if($order->smaregi_transaction_head_id)
+                    <p class="form-text"><strong>スマレジの取引（ID: {{ $order->smaregi_transaction_head_id }}）は自動では取り消されません。返金後にスマレジで取消・返品の処理をしてください。</strong></p>
+                @endif
+                <form action="{{ admin_route('admin.shop.orders.refund', ['id' => $order->id]) }}" method="POST" onsubmit="return confirm('全額を返金して注文をキャンセルしますか？この操作は元に戻せません。')">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-danger"><i class="fas fa-undo"></i> 全額返金する</button>
+                </form>
+            </div>
+            @endif
 
             <div class="status-selector">
                 <h4><i class="fas fa-cog"></i> ステータス変更</h4>

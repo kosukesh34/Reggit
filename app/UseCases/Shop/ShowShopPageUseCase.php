@@ -5,6 +5,7 @@ namespace App\UseCases\Shop;
 use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Domain\Settings\Repositories\OperationalSettings;
 use App\Models\User;
+use App\Services\Shop\ShopOperations;
 use App\Support\JapanPrefectures;
 use App\Support\ShopMemberSession;
 use App\UseCases\Shop\Data\ShopPageView;
@@ -17,6 +18,7 @@ class ShowShopPageUseCase
         private ShopMemberSession $session,
         private FeatureSettings $features,
         private OperationalSettings $operations,
+        private ShopOperations $shopOperations,
     ) {}
 
     public function handle(string $loginUrl, string $logoutUrl, ?string $routeProjectKey): ShopPageView
@@ -58,6 +60,10 @@ class ShowShopPageUseCase
             passkeyRegisterSubmitUrl: $hasRouteKey
                 ? route('shop.passkey.register', ['project_key' => $projectKey])
                 : route('shop.domain.passkey.register'),
+            legalUrl: $hasRouteKey ? route('shop.legal', ['project_key' => $projectKey]) : route('shop.domain.legal'),
+            legalReady: $this->shopOperations->isLegalNoticeComplete($projectId),
+            freeShippingThreshold: $this->shopOperations->freeShippingThreshold($projectId),
+            delivery: $this->shopOperations->deliveryOptions($projectId),
         );
     }
 

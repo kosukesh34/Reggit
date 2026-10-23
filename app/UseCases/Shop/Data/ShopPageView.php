@@ -29,5 +29,10 @@ final class ShopPageView
         public readonly array $theme,
         public readonly string $passkeyRegisterOptionsUrl,
         public readonly string $passkeyRegisterSubmitUrl,
+        public readonly string $legalUrl = '',
+        public readonly bool $legalReady = false,
+        public readonly ?int $freeShippingThreshold = null,
+        /** @var array{enabled: bool, earliest: string, latest: string, time_slots: list<string>} */
+        public readonly array $delivery = ['enabled' => false, 'earliest' => '', 'latest' => '', 'time_slots' => []],
     ) {}
 }

@@ -18,6 +18,10 @@ export type ShopBootstrap = {
   user: { id: number; name: string; email: string; hasPasskey: boolean } | null;
   passkeyRegisterOptionsUrl: string;
   passkeyRegisterSubmitUrl: string;
+  legalUrl: string;
+  legalReady: boolean;
+  freeShippingThreshold: number | null;
+  delivery: { enabled: boolean; earliest: string; latest: string; time_slots: string[] };
 };
 
 type ShopItem = { id: string | number; name: string; price: number | string; image?: string };
@@ -77,7 +81,28 @@ function readBootstrap(): ShopBootstrap {
     user: null,
     passkeyRegisterOptionsUrl: "",
     passkeyRegisterSubmitUrl: "",
+    legalUrl: "#",
+    legalReady: true,
+    freeShippingThreshold: null,
+    delivery: { enabled: false, earliest: "", latest: "", time_slots: [] },
   };
+}
+
+/** earliest〜latest（YYYY-MM-DD）の日付一覧 */
+function deliveryDates(earliest: string, latest: string): string[] {
+  const dates: string[] = [];
+  const cursor = new Date(`${earliest}T00:00:00`);
+  const end = new Date(`${latest}T00:00:00`);
+  while (!Number.isNaN(cursor.getTime()) && cursor <= end && dates.length < 120) {
+    dates.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+
+function dateLabel(value: string): string {
+  const date = new Date(`${value}T00:00:00`);
+  return `${date.getMonth() + 1}/${date.getDate()}（${"日月火水木金土"[date.getDay()]}）`;
 }
 
 function shopAuthUrl(loginUrl: string, mode: "login" | "register"): string {
@@ -102,9 +127,12 @@ export function ShopStorefront(): React.ReactElement {
   const [shippingPostalCode, setShippingPostalCode] = useState("");
   const [shippingPrefecture, setShippingPrefecture] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
-  const shippingFee = shippingPrefecture !== "" && bootstrap.shippingFeesByPrefecture[shippingPrefecture] !== undefined
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState("");
+  const prefectureFee = shippingPrefecture !== "" && bootstrap.shippingFeesByPrefecture[shippingPrefecture] !== undefined
     ? Math.max(0, Number(bootstrap.shippingFeesByPrefecture[shippingPrefecture]) || 0)
     : bootstrap.shippingFee;
+  const freeShipping = bootstrap.freeShippingThreshold;
 
   useEffect(() => {
     // Stripe からの戻り（/mobile/payment/return → ?payment_order_id=）で決済を確定する
@@ -153,6 +181,8 @@ export function ShopStorefront(): React.ReactElement {
     }));
   const itemsTotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
   const count = lines.reduce((sum, line) => sum + line.quantity, 0);
+  // サーバーと同じ規則：商品合計が送料無料ライン以上なら送料0円
+  const shippingFee = freeShipping !== null && itemsTotal >= freeShipping ? 0 : prefectureFee;
   const total = itemsTotal + (count > 0 ? shippingFee : 0);
 
   const setQty = (id: string, next: number): void => {
@@ -262,6 +292,8 @@ export function ShopStorefront(): React.ReactElement {
         shippingPostalCode: shippingPostalCode.trim(),
         shippingPrefecture: shippingPrefecture.trim(),
         shippingAddress: shippingAddress.trim(),
+        deliveryDate: deliveryDate || undefined,
+        deliveryTimeSlot: deliveryTimeSlot || undefined,
         lines: lines.map((line) => ({
           itemId: line.id,
           name: line.name,
@@ -317,7 +349,8 @@ export function ShopStorefront(): React.ReactElement {
         ["--shop-primary-dark" as string]: bootstrap.theme.primaryDark,
       }}
     >
-      <div className="shop-notice">送料は都道府県により異なります（基本 ¥{bootstrap.shippingFee.toLocaleString()}） / お支払いはクレジットカード</div>
+      <div className="shop-notice">送料は都道府県により異なります（基本 ¥{bootstrap.shippingFee.toLocaleString()}）{freeShipping !== null ? ` / ¥${freeShipping.toLocaleString()}以上で送料無料` : ""} / お支払いはクレジットカード</div>
+      {!bootstrap.legalReady ? <p className="shop-banner-error" role="status">現在ご注文の受付を準備中です。</p> : null}
       <header className="shop-topbar">
         <div className="shop-topbar-inner">
           <a className="shop-brand" href="#top">
@@ -399,10 +432,11 @@ export function ShopStorefront(): React.ReactElement {
 
       <footer className="shop-footer">
         <ul>
-          <li><b>配送</b>ご指定の配送先へお届けします。送料は都道府県により異なります（基本 ¥{bootstrap.shippingFee.toLocaleString()}）。</li>
+          <li><b>配送</b>ご指定の配送先へお届けします。送料は都道府県により異なります（基本 ¥{bootstrap.shippingFee.toLocaleString()}）。{freeShipping !== null ? `¥${freeShipping.toLocaleString()}以上のご注文で送料無料です。` : ""}{bootstrap.delivery.enabled ? "お届け希望日・時間帯を指定できます。" : ""}</li>
           <li><b>お支払い</b>クレジットカード(ご注文後に決済画面へ進みます)。</li>
           <li><b>ご注文</b>ログイン後、カートから配送先を入力してご注文いただけます。</li>
         </ul>
+        <p><a href={bootstrap.legalUrl}>特定商取引法に基づく表記</a></p>
         <p>© {bootstrap.projectName}</p>
       </footer>
 
@@ -421,7 +455,8 @@ export function ShopStorefront(): React.ReactElement {
                 <strong>¥{(line.price * line.quantity).toLocaleString()}</strong>
               </div>
             ))}
-            <div className="shop-line"><span>送料</span><span>¥{shippingFee.toLocaleString()}</span></div>
+            <div className="shop-line"><span>送料</span><span>{count > 0 && shippingFee === 0 && freeShipping !== null ? "無料" : `¥${shippingFee.toLocaleString()}`}</span></div>
+            {freeShipping !== null && count > 0 && itemsTotal < freeShipping ? <p className="shop-free-shipping-hint">あと¥{(freeShipping - itemsTotal).toLocaleString()}で送料無料</p> : null}
             <div className="shop-total"><span>合計</span><span>¥{total.toLocaleString()}</span></div>
             {bootstrap.user === null ? (
               <div className="shop-auth-gate">
@@ -451,10 +486,25 @@ export function ShopStorefront(): React.ReactElement {
                   </select>
                   <label htmlFor="shop-address">住所（市区町村以降）</label>
                   <textarea id="shop-address" rows={3} value={shippingAddress} onChange={(event) => setShippingAddress(event.target.value)} disabled={submitting} />
+                  {bootstrap.delivery.enabled ? <>
+                    <label htmlFor="shop-delivery-date">お届け希望日</label>
+                    <select id="shop-delivery-date" value={deliveryDate} onChange={(event) => setDeliveryDate(event.target.value)} disabled={submitting}>
+                      <option value="">指定なし（最短でお届け）</option>
+                      {deliveryDates(bootstrap.delivery.earliest, bootstrap.delivery.latest).map((date) => <option key={date} value={date}>{dateLabel(date)}</option>)}
+                    </select>
+                    {bootstrap.delivery.time_slots.length > 0 ? <>
+                      <label htmlFor="shop-delivery-slot">お届け時間帯</label>
+                      <select id="shop-delivery-slot" value={deliveryTimeSlot} onChange={(event) => setDeliveryTimeSlot(event.target.value)} disabled={submitting}>
+                        <option value="">指定なし</option>
+                        {bootstrap.delivery.time_slots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
+                      </select>
+                    </> : null}
+                  </> : null}
                 </div>
+                <p className="shop-legal-agree">ご注文前に<a href={bootstrap.legalUrl} target="_blank" rel="noopener noreferrer">特定商取引法に基づく表記</a>（返品・キャンセル等）をご確認ください。</p>
                 {error ? <p className="shop-error" role="alert">{error}</p> : null}
                 {done ? <p role="status">受付番号 {done}</p> : null}
-                <button type="button" className="shop-btn shop-btn-primary shop-btn-block" disabled={submitting || count === 0 || orderBlocked} onClick={() => void submit()}>
+                <button type="button" className="shop-btn shop-btn-primary shop-btn-block" disabled={submitting || count === 0 || orderBlocked || !bootstrap.legalReady} onClick={() => void submit()}>
                   {orderBlocked ? "デモ表示のため注文できません" : submitting ? "送信中…" : "お支払いへ進む"}
                 </button>
               </>

@@ -9,6 +9,7 @@ final class UpdateShopSettingsInput
     /**
      * @param  list<int>  $featuredProductIds
      * @param  array<string, int>  $shippingFeesByPrefecture
+     * @param  array{legal_notice: array<string, string>, free_shipping_threshold: ?int, delivery_date_enabled: bool, delivery_lead_days: int, delivery_range_days: int, delivery_time_slots: list<string>, invoice_registration_number: string}  $operations
      */
     public function __construct(
         public readonly int $projectId,
@@ -20,5 +21,6 @@ final class UpdateShopSettingsInput
         public readonly ?UploadedFile $heroImage,
         public readonly bool $clearHeroImage,
         public readonly array $featuredProductIds,
+        public readonly array $operations,
     ) {}
 }

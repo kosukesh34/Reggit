@@ -105,6 +105,16 @@ class StripePaymentGateway implements PaymentGateway
         ];
     }
 
+    public function refundPayment(string $paymentIntentId, int $amount, string $idempotencyKey): string
+    {
+        $refund = $this->client->refunds->create([
+            'payment_intent' => $paymentIntentId,
+            'amount' => $amount,
+        ], ['idempotency_key' => $idempotencyKey]);
+
+        return (string) $refund->id;
+    }
+
     public function cancelUnpaidSession(string $channel, string $sessionId): void
     {
         if (in_array($channel, ['checkout', 'checkout_web'], true)) {

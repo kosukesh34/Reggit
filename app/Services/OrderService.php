@@ -24,6 +24,7 @@ use App\Models\Project;
 use App\Models\Settings\ProjectPaymentSetting;
 use App\Models\User;
 use App\Services\Member\CurrentMemberPrincipal;
+use App\Services\Shop\ShopOperations;
 use App\Services\Ticket\MemberTicketService;
 use App\Support\JapanPrefectures;
 use App\Support\MemberChannel;
@@ -48,6 +49,7 @@ class OrderService
         private OrderNumberAssigner $orderNumberAssigner,
         private CurrentMemberPrincipal $principals,
         private MemberTicketService $tickets,
+        private ShopOperations $shopOperations,
     ) {}
 
     private const DESC_REFUND_CANCEL = '注文キャンセルによる返却';
@@ -78,6 +80,9 @@ class OrderService
             if ($orderType === OrderType::SHIPPING && ! $this->hasShopBuyerIdentity($user)) {
                 throw new OrderOperationException('ショップでのご注文にはログインが必要です。');
             }
+            if ($orderType === OrderType::SHIPPING && ! $this->shopOperations->isLegalNoticeComplete($projectId)) {
+                throw new OrderOperationException('特定商取引法に基づく表記の準備中のため、現在ご注文いただけません。');
+            }
 
             $orderItems = $this->validateAndPrepareOrderItems($orderData['items'], $projectId, $orderType === OrderType::TICKET);
             $lineItems = $this->toOrderLineItems($orderItems);
@@ -94,8 +99,12 @@ class OrderService
                 if (! JapanPrefectures::isValid($shippingPrefecture)) {
                     throw new OrderOperationException('都道府県を選択してください');
                 }
-                $shippingFee = $this->shopSettingRepository->getShopShippingFeeForPrefecture($projectId, $shippingPrefecture);
+                $freeShippingThreshold = $this->shopOperations->freeShippingThreshold($projectId);
+                $shippingFee = $freeShippingThreshold !== null && $totalAmount >= $freeShippingThreshold
+                    ? 0
+                    : $this->shopSettingRepository->getShopShippingFeeForPrefecture($projectId, $shippingPrefecture);
                 $totalAmount += $shippingFee;
+                [$deliveryDate, $deliveryTimeSlot] = $this->validatedDelivery($orderData, $projectId);
             }
 
             $paymentSetting = ProjectPaymentSetting::current($projectId);
@@ -151,6 +160,8 @@ class OrderService
                 $order->shipping_prefecture = $shippingPrefecture;
                 $order->shipping_address = trim((string) $orderData['shipping_address']);
                 $order->shipping_fee = $shippingFee;
+                $order->delivery_date = $deliveryDate;
+                $order->delivery_time_slot = $deliveryTimeSlot;
             }
             $order->save();
             if ($paymentMethod !== PaymentMethod::STRIPE) {
@@ -383,6 +394,32 @@ class OrderService
                 (int) $item->quantity,
             );
         }
+    }
+
+    /**
+     * お届け希望日・時間帯（任意）。設定の範囲外は受け付けない。
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function validatedDelivery(array $orderData, int $projectId): array
+    {
+        $date = trim((string) ($orderData['delivery_date'] ?? ''));
+        $slot = trim((string) ($orderData['delivery_time_slot'] ?? ''));
+        if ($date === '' && $slot === '') {
+            return [null, null];
+        }
+        $options = $this->shopOperations->deliveryOptions($projectId);
+        if (! $options['enabled']) {
+            throw new OrderOperationException('お届け日時の指定は現在受け付けていません');
+        }
+        if ($date !== '' && ($date < $options['earliest'] || $date > $options['latest'])) {
+            throw new OrderOperationException('お届け希望日は'.$options['earliest'].'から'.$options['latest'].'の間で選択してください');
+        }
+        if ($slot !== '' && ! in_array($slot, $options['time_slots'], true)) {
+            throw new OrderOperationException('お届け時間帯を選択し直してください');
+        }
+
+        return [$date !== '' ? $date : null, $slot !== '' ? $slot : null];
     }
 
     private function hasShopBuyerIdentity(User $user): bool

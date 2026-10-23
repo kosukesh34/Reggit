@@ -29,6 +29,13 @@ class ProjectBusinessSetting extends Model
         'queue_channel_native',
         'shop_shipping_fee',
         'shop_shipping_fees_by_prefecture',
+        'shop_legal_notice',
+        'shop_free_shipping_threshold',
+        'shop_delivery_date_enabled',
+        'shop_delivery_lead_days',
+        'shop_delivery_range_days',
+        'shop_delivery_time_slots',
+        'shop_invoice_registration_number',
     ];
 
     /** @var array<string, string> */
@@ -41,6 +48,12 @@ class ProjectBusinessSetting extends Model
         'queue_channel_native' => 'boolean',
         'shop_shipping_fee' => 'integer',
         'shop_shipping_fees_by_prefecture' => 'array',
+        'shop_legal_notice' => 'array',
+        'shop_free_shipping_threshold' => 'integer',
+        'shop_delivery_date_enabled' => 'boolean',
+        'shop_delivery_lead_days' => 'integer',
+        'shop_delivery_range_days' => 'integer',
+        'shop_delivery_time_slots' => 'array',
     ];
 
     public function project(): BelongsTo
@@ -65,6 +78,13 @@ class ProjectBusinessSetting extends Model
             'queue_channel_native' => false,
             'shop_shipping_fee' => 500,
             'shop_shipping_fees_by_prefecture' => [],
+            'shop_legal_notice' => [],
+            'shop_free_shipping_threshold' => null,
+            'shop_delivery_date_enabled' => false,
+            'shop_delivery_lead_days' => 3,
+            'shop_delivery_range_days' => 14,
+            'shop_delivery_time_slots' => [],
+            'shop_invoice_registration_number' => null,
         ];
     }
 }

@@ -12,10 +12,12 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ConfiguresShopLegalNotice;
 use Tests\TestCase;
 
 class AdminShopSettingsTest extends TestCase
 {
+    use ConfiguresShopLegalNotice;
     use RefreshDatabase;
 
     public function test_ショップ設定を保存できること(): void
@@ -33,6 +35,7 @@ class AdminShopSettingsTest extends TestCase
                 'shop_hero_headline' => '春の配送キャンペーン',
                 'shop_hero_subcopy' => '期間限定でお届けします',
                 'shop_featured_product_ids' => [$product->id],
+                'shop_legal_notice' => $this->shopLegalNotice(),
             ])
             ->assertRedirect(route('admin.settings.shop', ['project_key' => $project->project_key]));
 

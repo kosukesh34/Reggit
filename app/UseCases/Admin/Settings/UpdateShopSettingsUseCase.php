@@ -24,6 +24,14 @@ class UpdateShopSettingsUseCase
             'json',
             $input->projectId,
         );
+        $ops = $input->operations;
+        $this->settings->setValue('shop_legal_notice', $ops['legal_notice'], 'json', $input->projectId);
+        $this->settings->setValue('shop_free_shipping_threshold', $ops['free_shipping_threshold'], 'integer', $input->projectId);
+        $this->settings->setValue('shop_delivery_date_enabled', $ops['delivery_date_enabled'], 'boolean', $input->projectId);
+        $this->settings->setValue('shop_delivery_lead_days', $ops['delivery_lead_days'], 'integer', $input->projectId);
+        $this->settings->setValue('shop_delivery_range_days', $ops['delivery_range_days'], 'integer', $input->projectId);
+        $this->settings->setValue('shop_delivery_time_slots', $ops['delivery_time_slots'], 'json', $input->projectId);
+        $this->settings->setValue('shop_invoice_registration_number', $ops['invoice_registration_number'], 'string', $input->projectId);
         $this->settings->setValue('shop_hero_headline', $input->heroHeadline, 'string', $input->projectId);
         $this->settings->setValue('shop_hero_subcopy', $input->heroSubcopy, 'string', $input->projectId);
 

@@ -4,11 +4,15 @@ namespace App\Services;
 
 use App\Domain\Settings\Repositories\OrderNotificationSettings;
 use App\Enums\OrderType;
+use App\Mail\ShopOrderMail;
 use App\Models\Order;
 use App\Models\Project;
 use App\Services\Line\LineService;
+use App\Services\Shop\ShopOperations;
 use App\Support\LiffTabUrlBuilder;
 use App\Util\LogHelper;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 
 class OrderNotificationService
 {
@@ -16,10 +20,26 @@ class OrderNotificationService
         private LineService $lineService,
         private OrderNotificationSettings $shopSettingRepository,
         private PushNotificationService $pushNotificationService,
+        private ShopOperations $shopOperations,
     ) {}
 
     public function notifyConfirmed(int $orderId, int $projectId, string $channel = 'all'): void
     {
+        if (Order::query()->whereKey($orderId)->where('project_id', $projectId)->value('order_type') === OrderType::SHIPPING) {
+            // 配送注文は受け取りに来ないため、店舗設定に関係なく受付を知らせる
+            $this->notifyMobileOrder(
+                $orderId,
+                $projectId,
+                true,
+                'ご注文を受け付けました',
+                'order_confirmed',
+                static fn (string $refNumber): string => ($refNumber !== '' ? '注文番号: '.$refNumber."\n" : '').'発送の準備ができ次第お知らせします。',
+                $channel,
+                OrderType::SHIPPING,
+            );
+
+            return;
+        }
         $this->notifyMobileOrder(
             $orderId,
             $projectId,
@@ -33,6 +53,25 @@ class OrderNotificationService
             },
             $channel
         );
+    }
+
+    /** 配送注文の購入者へメールで知らせる。メールアドレス未確認の購入者には送らない。 */
+    public function emailShopOrder(int $orderId, int $projectId, string $event): void
+    {
+        $order = Order::query()->with(['items', 'user'])->whereKey($orderId)->where('project_id', $projectId)->first();
+        $email = trim((string) ($order?->user?->email ?? ''));
+        if ($order === null || $order->order_type !== OrderType::SHIPPING || $email === '' || $order->user?->email_verified_at === null) {
+            return;
+        }
+        $project = Project::findOrFail($projectId);
+        Mail::to($email)->send(new ShopOrderMail(
+            $order,
+            $event,
+            (string) $project->name,
+            $this->shopOperations->legalNotice($projectId),
+            URL::signedRoute('shop.receipt', ['project_key' => $project->project_key, 'order' => $order->id]),
+            ShopOperations::trackingUrl($order->shipping_carrier, $order->shipping_tracking_number),
+        ));
     }
 
     public function notifyReady(int $orderId, int $projectId, string $channel = 'all'): void

@@ -53,6 +53,10 @@
             'user' => $shopUserPayload,
             'passkeyRegisterOptionsUrl' => $shopPage->passkeyRegisterOptionsUrl,
             'passkeyRegisterSubmitUrl' => $shopPage->passkeyRegisterSubmitUrl,
+            'legalUrl' => $shopPage->legalUrl,
+            'legalReady' => $shopPage->legalReady,
+            'freeShippingThreshold' => $shopPage->freeShippingThreshold,
+            'delivery' => $shopPage->delivery,
         ];
     @endphp
     <script>

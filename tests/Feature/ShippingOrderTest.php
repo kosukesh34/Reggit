@@ -13,10 +13,12 @@ use App\Models\User;
 use App\Services\OrderService;
 use App\Services\OrderStatusService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ConfiguresShopLegalNotice;
 use Tests\TestCase;
 
 class ShippingOrderTest extends TestCase
 {
+    use ConfiguresShopLegalNotice;
     use RefreshDatabase;
 
     public function test_配送注文は送料込みで作成でき発送済みに進められること(): void
@@ -31,6 +33,7 @@ class ShippingOrderTest extends TestCase
             'methods' => ['card'],
         ]);
         ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $project->id);
+        $this->completeShopLegalNotice($project->id);
         ShopSettingStore::setValue('shop_shipping_fee', 300, 'integer', $project->id);
         ShopSettingStore::setValue('shop_shipping_fees_by_prefecture', [
             '東京都' => 300,

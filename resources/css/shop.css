@@ -700,3 +700,23 @@ body.shop-web {
     opacity: 1;
   }
 }
+
+/* 送料無料までの案内・特定商取引法の確認 */
+.shop-free-shipping-hint {
+  margin: 4px 0 0;
+  color: var(--shop-primary-dark);
+  font-size: 13px;
+  text-align: right;
+}
+
+.shop-legal-agree {
+  margin: 12px 0 0;
+  color: var(--shop-muted);
+  font-size: 12px;
+}
+
+.shop-legal-agree a,
+.shop-footer a {
+  color: inherit;
+  text-decoration: underline;
+}

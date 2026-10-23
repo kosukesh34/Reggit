@@ -10,6 +10,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Order as OrderModel;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Scopes\ProjectScope;
 use App\Models\Scopes\StoreAccessScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -137,6 +138,8 @@ class EloquentOrderRepository implements OrderRepository
                 'option_ids' => $item->optionIds,
                 'quantity' => $item->quantity,
                 'price' => $item->unitPrice,
+                // 領収書の税率別内訳のため、注文時点の税率を残す
+                'tax_rate' => (int) (Product::withoutGlobalScopes()->whereKey($item->productId)->value('tax_rate') ?? 10),
                 'notes' => $item->notes,
             ]);
         }
