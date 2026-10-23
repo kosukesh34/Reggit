@@ -101,10 +101,21 @@
                     && \App\Support\PlanFeatures::hasFeature($navPlan, \App\Support\PlanFeatures::LIFF_DESIGNER_ADVANCED);
                 $showAnalytics = ($adminUser === null || $adminUser->hasPermission('analytics.view'))
                     && \App\Support\PlanFeatures::hasFeature($navPlan, \App\Support\PlanFeatures::ANALYTICS_ADVANCED);
-                $showGallery = $navStore !== null
-                    && app(\App\Domain\Settings\Repositories\FeatureSettings::class)->isFeatureEnabled('feature_gallery_enabled', (int) $navStore->id);
-                $showShop = $navStore !== null
-                    && app(\App\Domain\Settings\Repositories\FeatureSettings::class)->isFeatureEnabled('feature_shop_enabled', (int) $navStore->id);
+                // 「利用機能」で無効にした機能のメニューは出さない
+                $navFeatureFlags = $navStore !== null
+                    ? app(\App\Domain\Settings\Repositories\FeatureSettings::class)->getFeatureFlags((int) $navStore->id)
+                    : [];
+                $navFeatureOn = fn (string $key): bool => $navStore === null || (bool) ($navFeatureFlags[$key] ?? false);
+                $showGallery = $navStore !== null && $navFeatureOn('feature_gallery_enabled');
+                $showShop = $navStore !== null && $navFeatureOn('feature_shop_enabled');
+                $showOrders = $navFeatureOn('feature_orders_enabled') || $navFeatureOn('feature_shop_enabled') || $navFeatureOn('feature_tickets_enabled');
+                $navCan = fn (string $permission): bool => $adminUser === null || $adminUser->hasPermission($permission);
+                $showOrderList = $showOrders && $navCan('orders.view');
+                $showReservations = $navFeatureOn('feature_reservations_enabled') && $navCan('reservations.view');
+                $showQueue = $navFeatureOn('feature_queue_enabled') && $navCan('queue.view');
+                $showStamps = $navFeatureOn('feature_stamps_enabled') && $navCan('stamps.view');
+                $showCoupons = $navFeatureOn('feature_coupons_enabled') && $navCan('coupons.view');
+                $showAnnouncements = $navFeatureOn('feature_announcements_enabled') && $navCan('announcements.view');
             @endphp
             <header class="admin-topbar">
                 <a class="admin-topbar-brand" href="{{ $isSystemAdminScreen ? route('system-admin.dashboard') : admin_route('admin.dashboard') }}">
@@ -206,10 +217,10 @@
                         <span>ダッシュボード</span>
                     </a>
                     @endif
-                    @if($adminUser === null || $adminUser->hasPermission('orders.view') || $adminUser->hasPermission('reservations.view') || $adminUser->hasPermission('queue.view'))
+                    @if($showOrderList || $showReservations || $showQueue)
                     <div class="nav-group">
                         <div class="nav-group-label">運用</div>
-                        @if($adminUser === null || $adminUser->hasPermission('orders.view'))
+                        @if($showOrderList)
                         <a href="{{ admin_route('admin.orders') }}" class="nav-item {{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
                             <i class="fas fa-shopping-cart"></i>
                             <span>注文</span>
@@ -221,13 +232,13 @@
                             <span>ショップ注文</span>
                         </a>
                         @endif
-                        @if($adminUser === null || $adminUser->hasPermission('reservations.view'))
+                        @if($showReservations)
                         <a href="{{ admin_route('admin.reservations') }}" class="nav-item {{ request()->routeIs('admin.reservations*') && !request()->routeIs('admin.settings.reservations*') ? 'active' : '' }}">
                             <i class="fas fa-calendar-check"></i>
                             <span>予約</span>
                         </a>
                         @endif
-                        @if($adminUser === null || $adminUser->hasPermission('queue.view'))
+                        @if($showQueue)
                         <a href="{{ admin_route('admin.queue') }}" class="nav-item {{ request()->routeIs('admin.queue*') && !request()->routeIs('admin.settings.queue*') ? 'active' : '' }}">
                             <i class="fas fa-list-ol"></i>
                             <span>順番待ち</span>
@@ -235,7 +246,7 @@
                         @endif
                     </div>
                     @endif
-                    @if($adminUser === null || $adminUser->hasPermission('products.view'))
+                    @if($showOrders && $navCan('products.view'))
                     <a href="{{ admin_route('admin.products') }}" class="nav-item {{ request()->routeIs('admin.products*') ? 'active' : '' }}">
                         <i class="fas fa-utensils"></i>
                         <span>商品</span>
@@ -252,22 +263,22 @@
                         <i class="fas fa-qrcode"></i><span>QRコード発行</span>
                     </a>
                     @endif
-                    @if($adminUser === null || $adminUser->hasPermission('stamps.view') || $adminUser->hasPermission('coupons.view') || $adminUser->hasPermission('announcements.view'))
+                    @if($showStamps || $showCoupons || $showAnnouncements)
                     <div class="nav-group">
                         <div class="nav-group-label">販促</div>
-                        @if($adminUser === null || $adminUser->hasPermission('stamps.view'))
+                        @if($showStamps)
                         <a href="{{ admin_route('admin.stamps') }}" class="nav-item {{ request()->routeIs('admin.stamps*') ? 'active' : '' }}">
                             <i class="fas fa-stamp"></i>
                             <span>スタンプ</span>
                         </a>
                         @endif
-                        @if($adminUser === null || $adminUser->hasPermission('coupons.view'))
+                        @if($showCoupons)
                         <a href="{{ admin_route('admin.coupons') }}" class="nav-item {{ request()->routeIs('admin.coupons*') && !request()->routeIs('admin.settings.coupons*') ? 'active' : '' }}">
                             <i class="fas fa-ticket-alt"></i>
                             <span>クーポン</span>
                         </a>
                         @endif
-                        @if($adminUser === null || $adminUser->hasPermission('announcements.view'))
+                        @if($showAnnouncements)
                         <a href="{{ admin_route('admin.announcements') }}" class="nav-item {{ (request()->routeIs('admin.announcements*') && ! request()->routeIs('admin.settings.announcements*')) || request()->routeIs('admin.after-registration-deliveries*') ? 'active' : '' }}">
                             <i class="fas fa-bullhorn"></i>
                             <span>お知らせ</span>

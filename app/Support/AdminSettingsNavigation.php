@@ -7,8 +7,12 @@ use App\Models\AdminUser;
 
 final class AdminSettingsNavigation
 {
-    public static function sections(?AdminUser $user, string $plan = ProjectPlan::NORMAL): array
+    /**
+     * @param  array<string, bool>|null  $featureFlags  「利用機能」の設定。無効な機能の設定は出さない（null は全表示）
+     */
+    public static function sections(?AdminUser $user, string $plan = ProjectPlan::NORMAL, ?array $featureFlags = null): array
     {
+        $on = fn (string $key): bool => $featureFlags === null || (bool) ($featureFlags[$key] ?? false);
         $can = fn (string $permission): bool => $user === null || $user->hasPermission($permission);
         $hasPlan = fn (string $feature): bool => PlanFeatures::hasFeature($plan, $feature);
 
@@ -18,8 +22,8 @@ final class AdminSettingsNavigation
                 ['route' => 'admin.stores.index', 'icon' => 'fas fa-store', 'label' => '利用店舗', 'hint' => 'スマレジ店舗の同期・利用店舗の選択'],
                 $can('settings.view') ? ['route' => 'admin.settings.basic', 'icon' => 'fas fa-store', 'label' => '店舗運用設定', 'hint' => '営業時間、注文・通知、店舗端末'] : null,
                 $can('settings.view') ? ['route' => 'admin.settings.shop', 'icon' => 'fas fa-shipping-fast', 'label' => 'ショップ', 'hint' => '配送ECの公開・送料・トップ販促・注目商品'] : null,
-                $can('reservations.view') ? ['route' => 'admin.settings.reservations', 'icon' => 'fas fa-calendar-check', 'label' => '予約', 'hint' => '時間帯・予約枠'] : null,
-                $can('queue.view') ? ['route' => 'admin.settings.queue', 'icon' => 'fas fa-list-ol', 'label' => '順番待ち', 'hint' => '待ち時間'] : null,
+                ($on('feature_reservations_enabled') && $can('reservations.view')) ? ['route' => 'admin.settings.reservations', 'icon' => 'fas fa-calendar-check', 'label' => '予約', 'hint' => '時間帯・予約枠'] : null,
+                ($on('feature_queue_enabled') && $can('queue.view')) ? ['route' => 'admin.settings.queue', 'icon' => 'fas fa-list-ol', 'label' => '順番待ち', 'hint' => '待ち時間'] : null,
             ]],
             ['title' => '画面・デザイン', 'items' => [
                 $can('settings.view') ? ['route' => 'admin.settings.home', 'icon' => 'fas fa-mobile-alt', 'label' => 'アプリデザイン', 'hint' => 'ホーム・メニュー、配色、店舗名・ロゴ、会員証、Wallet'] : null,
@@ -31,9 +35,9 @@ final class AdminSettingsNavigation
                 ($can('settings.view') || $can('members.manage')) ? ['route' => 'admin.settings.existing-member-link', 'icon' => 'fas fa-link', 'label' => '既存会員連携', 'hint' => 'スマレジの会員を結びつける'] : null,
             ]],
             ['title' => '販促', 'items' => [
-                $can('coupons.view') ? ['route' => 'admin.settings.coupons', 'icon' => 'fas fa-ticket-alt', 'label' => 'クーポン', 'hint' => '利用状況の確認とクーポン管理への案内'] : null,
+                ($on('feature_coupons_enabled') && $can('coupons.view')) ? ['route' => 'admin.settings.coupons', 'icon' => 'fas fa-ticket-alt', 'label' => 'クーポン', 'hint' => '利用状況の確認とクーポン管理への案内'] : null,
                 ($can('coupons.view') && $hasPlan(PlanFeatures::LOTTERY)) ? ['route' => 'admin.settings.lottery', 'icon' => 'fas fa-dice', 'label' => '購入特典ゲーム', 'hint' => '条件・景品'] : null,
-                $can('announcements.view') ? ['route' => 'admin.settings.announcements', 'icon' => 'fas fa-bullhorn', 'label' => 'お知らせ', 'hint' => '新規お知らせの固定表示・掲載期間'] : null,
+                ($on('feature_announcements_enabled') && $can('announcements.view')) ? ['route' => 'admin.settings.announcements', 'icon' => 'fas fa-bullhorn', 'label' => 'お知らせ', 'hint' => '新規お知らせの固定表示・掲載期間'] : null,
             ]],
             ['title' => '連携・管理', 'items' => [
                 $can('settings.manage') ? ['route' => 'admin.settings.payments', 'icon' => 'fas fa-credit-card', 'label' => '決済・入金先', 'hint' => 'Stripeアカウント、PayPay・Apple Pay・決済ブランド'] : null,
