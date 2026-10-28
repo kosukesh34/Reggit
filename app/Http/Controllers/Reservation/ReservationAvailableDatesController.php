@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Reservation;
 
+use App\Domain\Reservation\ValueObjects\ReservationRules;
 use App\Http\Controllers\Controller;
 use App\UseCases\Reservation\ReservationAvailableDatesUseCase;
 use App\Util\LogHelper;
@@ -21,13 +22,17 @@ class ReservationAvailableDatesController extends Controller
                 $excludeReservationId = filter_var($excludeReservationId, FILTER_VALIDATE_INT) ?: null;
             }
 
-            $result = $this->availableDatesUseCase->handle($excludeReservationId);
+            $numberOfPeople = filter_var($request->query('number_of_people', 1), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => ReservationRules::MAX_PARTY_SIZE_LIMIT]]) ?: 1;
+
+            $result = $this->availableDatesUseCase->handle($excludeReservationId, $numberOfPeople);
 
             return response()->json([
                 'available_dates' => $result->availableDates,
                 'start_date' => $result->startDate,
                 'end_date' => $result->endDate,
                 'courses' => $result->courses,
+                'max_party_size' => $result->maxPartySize,
+                'change_deadline_hours' => $result->changeDeadlineHours,
             ]);
         } catch (\Exception $e) {
             LogHelper::error('[Reservation] available dates failed', [

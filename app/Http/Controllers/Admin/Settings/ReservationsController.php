@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Domain\Reservation\Policies\ReservationReminderPolicy;
+use App\Domain\Reservation\ValueObjects\ReservationRules;
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\UseCases\Admin\Settings\GetReservationCoursesUseCase;
 use App\UseCases\Admin\Settings\GetReservationOnlySettingsUseCase;
@@ -51,6 +52,11 @@ class ReservationsController extends AdminBaseController
             'closed_dates.*' => 'nullable|string',
             'advance_booking_days' => 'required|integer|min:1|max:365',
             'reservation_capacity_per_slot' => 'required|integer|min:1|max:999',
+            'reservation_capacity_by_people' => 'sometimes|boolean',
+            'reservation_max_party_size' => 'sometimes|integer|min:1|max:'.ReservationRules::MAX_PARTY_SIZE_LIMIT,
+            'reservation_same_day' => 'sometimes|boolean',
+            'reservation_lead_minutes' => ['sometimes', 'integer', Rule::in(ReservationRules::LEAD_MINUTE_OPTIONS)],
+            'reservation_change_deadline_hours' => ['sometimes', 'integer', Rule::in(ReservationRules::CHANGE_DEADLINE_HOUR_OPTIONS)],
             'reservation_reminder_hours' => ['nullable', 'integer', Rule::in(ReservationReminderPolicy::HOUR_OPTIONS)],
             'reservation_reminder_second_hours' => ['nullable', 'integer', Rule::in(ReservationReminderPolicy::HOUR_OPTIONS)],
             'reservation_reminder_message' => ['nullable', 'string', 'max:500'],

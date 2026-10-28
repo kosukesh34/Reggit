@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Persistence\Eloquent\Settings;
 
 use App\Domain\Reservation\ValueObjects\ReservationReminderConfig;
+use App\Domain\Reservation\ValueObjects\ReservationRules;
 use App\Domain\Settings\Repositories\AdminAppearanceSettings;
 use App\Domain\Settings\Repositories\AppConfigSettings;
 use App\Domain\Settings\Repositories\CouponNotificationSettings;
@@ -74,6 +75,20 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
     public function getReservationCapacityPerSlot(int $projectId): int
     {
         return ShopSettingStore::getReservationCapacityPerSlot($projectId);
+    }
+
+    public function getReservationRules(int $projectId): ReservationRules
+    {
+        return new ReservationRules(
+            ShopSettingStore::getReservationTimeSlots($projectId),
+            ShopSettingStore::getAdvanceBookingDays($projectId),
+            ShopSettingStore::getReservationCapacityPerSlot($projectId),
+            (bool) ShopSettingStore::getValue('reservation_capacity_by_people', false, $projectId),
+            (int) ShopSettingStore::getValue('reservation_max_party_size', 10, $projectId),
+            (bool) ShopSettingStore::getValue('reservation_same_day', false, $projectId),
+            (int) ShopSettingStore::getValue('reservation_lead_minutes', 0, $projectId),
+            (int) ShopSettingStore::getValue('reservation_change_deadline_hours', 0, $projectId),
+        );
     }
 
     private const REMINDER_KEYS = ['reservation_reminder_hours', 'reservation_reminder_second_hours', 'reservation_reminder_message'];

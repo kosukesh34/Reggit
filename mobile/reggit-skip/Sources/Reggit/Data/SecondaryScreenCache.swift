@@ -10,7 +10,6 @@ enum SecondaryScreenCache {
     static var orders: [OrderSnapshot]?
     static var announcements: [AnnouncementItem]?
     static var reservations: [ReservationItem]?
-    static var reservationCourses: [ReservationCourseItem]?
     static var galleries: [String: GallerySnapshot] = [:]
     static var appConfig: AppConfig?
     static var pointHistory: [PointHistoryItem]?
@@ -40,7 +39,7 @@ enum SecondaryScreenCache {
         case "points": pointHistory = nil
         case "stamps": stamps = nil
         case "products": products = nil
-        case "reservations": reservations = nil; reservationCourses = nil
+        case "reservations": reservations = nil
         case "gallery": galleries.removeAll()
         case "announcements": announcements = nil
         default: break
@@ -55,7 +54,6 @@ enum SecondaryScreenCache {
         orders = nil
         announcements = nil
         reservations = nil
-        reservationCourses = nil
         galleries.removeAll()
         appConfig = nil
         pointHistory = nil

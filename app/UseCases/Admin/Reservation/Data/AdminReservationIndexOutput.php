@@ -19,6 +19,8 @@ class AdminReservationIndexOutput
         public ?string $selectedDateLabel,
         public ?array $dateStatusCounts,
         public array $timeSlotSummary,
-        public int $reservationCapacity
+        public int $reservationCapacity,
+        /** true なら上限と集計は人数、false なら件数 */
+        public bool $capacityByPeople = false,
     ) {}
 }

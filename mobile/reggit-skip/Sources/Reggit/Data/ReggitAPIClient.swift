@@ -410,25 +410,31 @@ struct ReggitAPIClient: ReggitAPIServing {
         return try ReservationListResponse.parse(data).reservations
     }
 
-    func fetchReservationCourses() async throws -> [ReservationCourseItem] {
-        let data = try await requestData(path: "/api/reservations/available-dates", method: "GET")
-        return try ReservationCourseItem.parseList(data)
+    func fetchReservationAvailability(numberOfPeople: Int, excludeReservationId: Int?) async throws -> ReservationAvailability {
+        var path = "/api/reservations/available-dates?number_of_people=\(numberOfPeople)"
+        if let excludeReservationId {
+            path += "&exclude_reservation_id=\(excludeReservationId)"
+        }
+        let data = try await requestData(path: path, method: "GET")
+        return try ReservationAvailability.parse(data)
     }
 
-    func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?, courseId: Int?) async throws {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        var body: [String: Any] = [
-            "reserved_at": formatter.string(from: reservedAt),
+    func bookReservation(reservedAt: String, numberOfPeople: Int, notes: String?, courseId: Int?) async throws {
+        _ = try await requestJSON(path: "/api/reservations", method: "POST", body: reservationBody(reservedAt: reservedAt, numberOfPeople: numberOfPeople, notes: notes, courseId: courseId))
+    }
+
+    func updateReservationBooking(id: Int, reservedAt: String, numberOfPeople: Int, notes: String?, courseId: Int?) async throws {
+        _ = try await requestJSON(path: "/api/reservations/\(id)", method: "PUT", body: reservationBody(reservedAt: reservedAt, numberOfPeople: numberOfPeople, notes: notes, courseId: courseId))
+    }
+
+    private func reservationBody(reservedAt: String, numberOfPeople: Int, notes: String?, courseId: Int?) -> [String: Any] {
+        [
+            "reserved_at": reservedAt,
             "number_of_people": numberOfPeople,
+            "notes": notes ?? "",
+            // 変更でコースを外すときも null で送る
+            "reservation_course_id": courseId.map { $0 as Any } ?? NSNull(),
         ]
-        if let notes, !notes.isEmpty {
-            body["notes"] = notes
-        }
-        if let courseId {
-            body["reservation_course_id"] = courseId
-        }
-        _ = try await requestJSON(path: "/api/reservations", method: "POST", body: body)
     }
 
     func cancelReservationBooking(id: Int) async throws {

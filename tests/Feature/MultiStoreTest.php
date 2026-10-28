@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Settings\Repositories\OperationalSettings;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Announcement;
 use App\Models\ApiToken;
@@ -116,6 +117,23 @@ class MultiStoreTest extends TestCase
             'reservation_time_slots' => ['10:00'], 'advance_booking_days' => 20,
             'reservation_capacity_per_slot' => 5,
         ])->assertRedirect()->assertSessionHasNoErrors()->assertSessionHas('success');
+    }
+
+    public function test_branch_keeps_its_own_reservation_rules(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        $this->post('/admin/brand/settings/reservations', [
+            'reservation_time_slots' => ['10:00'], 'advance_booking_days' => 20, 'reservation_capacity_per_slot' => 8,
+            'reservation_capacity_by_people' => '1', 'reservation_max_party_size' => 6, 'reservation_same_day' => '1',
+            'reservation_lead_minutes' => 60, 'reservation_change_deadline_hours' => 24,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $branch = $this->a->fresh()->settings;
+        $this->assertTrue($branch['reservation_capacity_by_people']);
+        $this->assertSame(6, $branch['reservation_max_party_size']);
+        $this->assertSame(24, $branch['reservation_change_deadline_hours']);
+        $this->assertArrayNotHasKey('reservation_same_day', $this->b->fresh()->settings ?? []);
+        $this->assertFalse((bool) ShopSettingStore::getValue('reservation_same_day', false, $this->project->id));
     }
 
     public function test_headquarters_can_create_and_update_shared_reservation_courses(): void

@@ -82,12 +82,13 @@ class EloquentReservationRepository implements ReservationRepository
         \DateTimeInterface $start,
         \DateTimeInterface $end,
         ?int $excludeReservationId,
+        bool $countPeople = false,
     ): array {
         $query = ReservationModel::query()
             ->where('project_id', $projectId)
             ->whereBetween('reserved_at', [$start, $end])
             ->whereIn('status', [ReservationStatus::PENDING, ReservationStatus::CONFIRMED]);
-        $reservations = $query->get(['id', 'reserved_at']);
+        $reservations = $query->get(['id', 'reserved_at', 'number_of_people']);
 
         $slotCounts = [];
         foreach ($reservations as $reservation) {
@@ -103,7 +104,7 @@ class EloquentReservationRepository implements ReservationRepository
             if (! isset($slotCounts[$dateKey][$timeKey])) {
                 $slotCounts[$dateKey][$timeKey] = 0;
             }
-            $slotCounts[$dateKey][$timeKey] += 1;
+            $slotCounts[$dateKey][$timeKey] += $countPeople ? (int) $reservation->number_of_people : 1;
         }
 
         return $slotCounts;
@@ -114,6 +115,7 @@ class EloquentReservationRepository implements ReservationRepository
         \DateTimeInterface $slotStart,
         \DateTimeInterface $slotEnd,
         ?int $excludeReservationId,
+        bool $countPeople = false,
     ): int {
         $query = ReservationModel::query()
             ->where('project_id', $projectId)
@@ -124,8 +126,9 @@ class EloquentReservationRepository implements ReservationRepository
         }
 
         // Use a current locking read even when the caller already has a transaction snapshot.
-        // @phpstan-ignore-next-line larastan.noUnnecessaryCollectionCall (Fetch rows to acquire locks before counting.)
-        return $query->lockForUpdate()->get(['id'])->count();
+        $rows = $query->lockForUpdate()->get(['id', 'number_of_people']);
+
+        return $countPeople ? (int) $rows->sum('number_of_people') : $rows->count();
     }
 
     public function save(ReservationAggregate $reservation): void

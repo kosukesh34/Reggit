@@ -185,6 +185,10 @@ progress::-moz-progress-bar { background: var(--skip-accent); }
 .native-reservation-row { padding: 18px 0; border-bottom: .5px solid var(--skip-hairline); display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .native-reservation-row h2 { font-size: 20px; }
 .native-reservation-row .native-secondary { font-size: 12px; }
+.native-reservation-row .native-dialog-actions { width: 100%; margin-top: 0; }
+.native-reservations .native-party-card { margin: 0; padding: 16px; text-align: center; }
+.native-reservations .native-chips { padding: 0; }
+.native-chips--wrap { flex-wrap: wrap; overflow: visible; }
 .native-text-danger { color: var(--skip-danger); min-height: 44px; font-size: 15px; }
 .native-form { display: flex; flex-direction: column; gap: 16px; }
 .native-form label { display: flex; flex-direction: column; gap: 10px; background: #fff; border-radius: 12px; padding: 16px; }

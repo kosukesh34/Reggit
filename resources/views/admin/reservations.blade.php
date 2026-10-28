@@ -100,7 +100,7 @@
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-chart-bar"></i> 予約状況</h3>
         <span class="card-header-note">
-            1枠上限: {{ $view->reservationCapacity }}件
+            1枠上限: {{ $view->reservationCapacity }}{{ $view->capacityByPeople ? '名' : '件' }}
         </span>
     </div>
     <div class="card-body">
@@ -136,7 +136,7 @@
                 @foreach($view->timeSlotSummary as $slot)
                     <div class="time-slot-card {{ $slot['is_full'] ? 'is-full' : 'is-open' }}">
                         <div class="time-slot-time">{{ $slot['time'] }}</div>
-                        <div class="time-slot-count">{{ $slot['count'] }} / {{ $slot['capacity'] }}件</div>
+                        <div class="time-slot-count">{{ $slot['count'] }} / {{ $slot['capacity'] }}{{ $view->capacityByPeople ? '名' : '件' }}</div>
                         <div class="time-slot-status">
                             <i class="fas {{ $slot['is_full'] ? 'fa-times-circle' : 'fa-check-circle' }}"></i>
                             {{ $slot['is_full'] ? '満席' : '空きあり' }}

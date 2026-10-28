@@ -41,7 +41,7 @@ class ReservationUpdateUseCase
             // An existing store row serializes capacity checks, including empty slots.
             Store::where('project_id', $projectId)->whereKey($storeId)->lockForUpdate()->firstOrFail();
 
-            $availabilityError = $this->availabilityService->getAvailabilityError($reservedAt, $input->reservationId);
+            $availabilityError = $this->availabilityService->getAvailabilityError($reservedAt, $input->reservationId, (int) ($reservationPayload['number_of_people'] ?? 1));
             if ($availabilityError !== null) {
                 return new ReservationActionOutput(false, null, $availabilityError);
             }

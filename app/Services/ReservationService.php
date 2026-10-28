@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Domain\Reservation\Aggregates\Reservation as ReservationAggregate;
+use App\Domain\Reservation\Policies\ReservationSlotPolicy;
 use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Reservation\ValueObjects\PendingReservation;
+use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation;
 use App\Models\ReservationCourse;
@@ -20,6 +23,8 @@ class ReservationService
     public function __construct(
         private ReservationRepository $reservationRepository,
         private StoreContext $storeContext,
+        private ReservationSettings $reservationSettings,
+        private ReservationSlotPolicy $slotPolicy,
     ) {}
 
     public function createReservation(User $user, array $data): Reservation
@@ -67,6 +72,7 @@ class ReservationService
             if ($aggregate === null) {
                 throw (new ModelNotFoundException)->setModel(Reservation::class, [$reservationId]);
             }
+            $this->assertMemberCanChange($aggregate, $projectId);
             $aggregate->cancel();
             $this->reservationRepository->save($aggregate);
 
@@ -93,6 +99,7 @@ class ReservationService
             if ($aggregate === null) {
                 throw (new ModelNotFoundException)->setModel(Reservation::class, [$reservationId]);
             }
+            $this->assertMemberCanChange($aggregate, $projectId);
 
             $reservedAt = DateUtil::nullableCarbon($data['reserved_at']);
             if ($reservedAt === null) {
@@ -131,18 +138,28 @@ class ReservationService
             $reservations = $user->reservations()
                 ->orderBy('reserved_at', 'desc')
                 ->get();
+            // ponytail: 選択中の店舗（未選択ならプロジェクト共通）の締め切りで表示する。変更・キャンセル時は同じ店舗の値で判定される
+            $rules = $this->reservationSettings->getReservationRules((int) $user->project_id);
+            $now = now();
 
-            return $reservations->map(function ($reservation) {
+            return $reservations->map(function ($reservation) use ($rules, $now) {
+                $reservedAt = DateUtil::nullableCarbon($reservation->reserved_at);
+                $status = $reservation->status ?? ReservationStatus::PENDING;
+                $changeDeadline = $reservedAt !== null ? $this->slotPolicy->changeDeadline($reservedAt, $rules) : null;
+
                 return [
                     'id' => $reservation->id,
                     'reservation_number' => $reservation->reservation_number ?? '',
                     'reserved_at' => DateUtil::nullableCarbon($reservation->reserved_at)?->format('c'),
                     'number_of_people' => $reservation->number_of_people ?? 1,
-                    'status' => $reservation->status ?? ReservationStatus::PENDING,
+                    'status' => $status,
                     'notes' => $reservation->notes ?? null,
                     'reservation_course_id' => $reservation->reservation_course_id,
                     'course_name' => $reservation->course_name,
                     'course_price' => $reservation->course_price,
+                    'change_deadline' => $changeDeadline?->format('c'),
+                    'can_change' => in_array($status, [ReservationStatus::PENDING, ReservationStatus::CONFIRMED], true)
+                        && $changeDeadline !== null && $now < $changeDeadline,
                 ];
             })->toArray();
         } catch (\Exception $e) {
@@ -151,6 +168,15 @@ class ReservationService
                 'error' => $e->getMessage(),
             ]);
             throw $e;
+        }
+    }
+
+    /** 会員の変更・キャンセルは締め切りまで。店舗側の操作は ReservationAdminService を通るため対象外 */
+    private function assertMemberCanChange(ReservationAggregate $reservation, int $projectId): void
+    {
+        $error = $this->slotPolicy->changeError($reservation->reservedAt(), now(), $this->reservationSettings->getReservationRules($projectId));
+        if ($error !== null) {
+            throw new \DomainException($error);
         }
     }
 
