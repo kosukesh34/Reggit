@@ -8,8 +8,8 @@ class ReservationAvailableDatesUseCase
 {
     public function __construct(private ReservationAvailabilityService $availabilityService) {}
 
-    public function handle(?int $excludeReservationId): ReservationAvailability
+    public function handle(?int $excludeReservationId, int $numberOfPeople = 1): ReservationAvailability
     {
-        return $this->availabilityService->getAvailableDates($excludeReservationId);
+        return $this->availabilityService->getAvailableDates($excludeReservationId, $numberOfPeople);
     }
 }

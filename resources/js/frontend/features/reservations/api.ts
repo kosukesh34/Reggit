@@ -12,6 +12,11 @@ export type Reservation = {
     reservation_number?: string | number | null;
     number_of_people: number;
     notes?: string | null;
+    reservation_course_id?: number | null;
+    course_name?: string | null;
+    /** 会員が変更・キャンセルできる最後の時刻と、いまできるか */
+    change_deadline?: string | null;
+    can_change?: boolean;
     is_sample_preview?: boolean;
 };
 

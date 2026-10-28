@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Reservation;
 
+use App\Domain\Reservation\ValueObjects\ReservationRules;
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\UserService;
 use App\UseCases\Reservation\Data\ReservationStoreInput;
@@ -22,7 +23,7 @@ class ReservationStoreController extends BaseApiController
         try {
             $validated = $request->validate([
                 'reserved_at' => 'required|date|after:now',
-                'number_of_people' => 'required|integer|min:1|max:10',
+                'number_of_people' => 'required|integer|min:1|max:'.ReservationRules::MAX_PARTY_SIZE_LIMIT,
                 'notes' => 'nullable|string|max:500',
                 'reservation_course_id' => 'nullable|integer|min:1',
             ]);

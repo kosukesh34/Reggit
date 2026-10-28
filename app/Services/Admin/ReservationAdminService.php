@@ -35,18 +35,19 @@ class ReservationAdminService
         $dateStatusCounts = null;
         $timeSlotSummary = [];
         $selectedDateLabel = null;
-        $reservationCapacity = $this->shopSettingRepository->getReservationCapacityPerSlot($projectId);
+        $rules = $this->shopSettingRepository->getReservationRules($projectId);
+        $reservationCapacity = $rules->capacity;
+        $capacityByPeople = $rules->capacityByPeople;
 
         if ($selectedDate !== null && $selectedDate !== '') {
             $date = DateUtil::nullableCarbon($selectedDate);
             if ($date !== null) {
                 $selectedDateLabel = $date->format('Y年m月d日');
                 $dateStatusCounts = $this->getStatusCounts($selectedDate);
-                $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
                 $slotCounts = $this->reservationRepository->getActiveSlotCounts(
-                    $projectId, $date->copy()->startOfDay(), $date->copy()->endOfDay(), null,
+                    $projectId, $date->copy()->startOfDay(), $date->copy()->endOfDay(), null, $capacityByPeople,
                 );
-                foreach ($timeSlots as $slot) {
+                foreach ($rules->timeSlots as $slot) {
                     $slotStart = DateUtil::nullableCarbon($date->format('Y-m-d').' '.$slot);
                     if ($slotStart === null) {
                         continue;
@@ -69,7 +70,8 @@ class ReservationAdminService
             'selectedDateLabel',
             'dateStatusCounts',
             'timeSlotSummary',
-            'reservationCapacity'
+            'reservationCapacity',
+            'capacityByPeople'
         );
     }
 

@@ -112,13 +112,15 @@
     "cf3e676a67927e315bfcfd40dbf1329295d07c028939ed56bd81bce466a1f09a"
   ],
   "reservations-customer": [
-    "fa9f1fdcb749fb0887bef44e3392460406752407a64bae33e3d70affa2a01ce9"
+    "fa9f1fdcb749fb0887bef44e3392460406752407a64bae33e3d70affa2a01ce9",
+    "67d3eab2f6938186dba78e2fc879f441bcc1cdf9c86fc539be66f9e10865cb9b"
   ],
   "reservations-staff": [
     "b21db17adc7d6c750f8c01505c69f3aa7f2a50f4e65f978c191453074e2f6cde"
   ],
   "reservations-settings": [
-    "7027fe86990696458d15bdf3b8b7f6adb5ff823be6d65640d2bd060f72f75806"
+    "7027fe86990696458d15bdf3b8b7f6adb5ff823be6d65640d2bd060f72f75806",
+    "da092f47b1cc215f7d16d001db7bcf07be30cc5cbad0ad8f5fe74512dd2053c4"
   ],
   "queue-customer": [
     "0c9c7429def6266b00e9d26b296dc005fb000a670378493ecc0c8be2dd1c0538"

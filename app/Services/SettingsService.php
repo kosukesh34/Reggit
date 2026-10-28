@@ -99,6 +99,7 @@ class SettingsService
             'closedDates' => $repo->getClosedDates($projectId),
             'advanceDays' => $repo->getAdvanceBookingDays($projectId),
             'reservationCapacity' => $repo->getReservationCapacityPerSlot($projectId),
+            'rules' => $repo->getReservationRules($projectId),
             'reminder' => $repo->getReservationReminderConfig($projectId),
         ];
     }
@@ -115,6 +116,11 @@ class SettingsService
         $repo->setValue('closed_dates', $closedDates, 'json', $projectId);
         $repo->setValue('advance_booking_days', (int) ($validated['advance_booking_days'] ?? 30), 'integer', $projectId);
         $repo->setValue('reservation_capacity_per_slot', (int) ($validated['reservation_capacity_per_slot'] ?? 20), 'integer', $projectId);
+        foreach (['reservation_capacity_by_people' => 'boolean', 'reservation_max_party_size' => 'integer', 'reservation_same_day' => 'boolean', 'reservation_lead_minutes' => 'integer', 'reservation_change_deadline_hours' => 'integer'] as $key => $type) {
+            if (array_key_exists($key, $validated)) {
+                $repo->setValue($key, $type === 'boolean' ? (bool) $validated[$key] : (int) $validated[$key], $type, $projectId);
+            }
+        }
         $repo->setValue('reservation_reminder_hours', (int) ($validated['reservation_reminder_hours'] ?? 0), 'integer', $projectId);
         $repo->setValue('reservation_reminder_second_hours', (int) ($validated['reservation_reminder_second_hours'] ?? 0), 'integer', $projectId);
         $message = trim((string) ($validated['reservation_reminder_message'] ?? ''));

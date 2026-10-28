@@ -84,8 +84,10 @@ protocol ReggitAPIServing: PromoPopupFetching, SurveyServing {
     func fetchPublishedAnnouncements() async throws -> [AnnouncementItem]
     func fetchGalleryContent(categoryId: Int?) async throws -> GallerySnapshot
     func fetchMemberReservations() async throws -> [ReservationItem]
-    func fetchReservationCourses() async throws -> [ReservationCourseItem]
-    func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?, courseId: Int?) async throws
+    func fetchReservationAvailability(numberOfPeople: Int, excludeReservationId: Int?) async throws -> ReservationAvailability
+    /// reservedAt は ReservationStoreDateTime.requestValue の値（店舗の日付と時刻）
+    func bookReservation(reservedAt: String, numberOfPeople: Int, notes: String?, courseId: Int?) async throws
+    func updateReservationBooking(id: Int, reservedAt: String, numberOfPeople: Int, notes: String?, courseId: Int?) async throws
     func cancelReservationBooking(id: Int) async throws
 
     func fetchChatSession() async throws -> ChatSessionInfo

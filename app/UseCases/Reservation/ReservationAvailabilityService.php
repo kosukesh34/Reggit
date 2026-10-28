@@ -18,72 +18,61 @@ class ReservationAvailabilityService
         private ReservationSlotPolicy $reservationSlotPolicy,
     ) {}
 
-    public function getAvailableDates(?int $excludeReservationId): ReservationAvailability
+    /** @param  int  $numberOfPeople  人数で枠を数える設定のとき、この人数が入る枠だけを返す */
+    public function getAvailableDates(?int $excludeReservationId, int $numberOfPeople = 1): ReservationAvailability
     {
         $projectId = AdminContext::requireCurrentProjectId();
-        $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
-        $advanceDays = $this->shopSettingRepository->getAdvanceBookingDays($projectId);
-        $reservationCapacity = $this->shopSettingRepository->getReservationCapacityPerSlot($projectId);
+        $rules = $this->shopSettingRepository->getReservationRules($projectId);
 
-        $today = now();
-        $startDate = $today->copy()->addDay()->startOfDay();
-        $endDate = $today->copy()->addDays($advanceDays)->endOfDay();
-        $slotCounts = $this->reservationRepository->getActiveSlotCounts(
+        $now = now();
+        $startDate = $this->reservationSlotPolicy->firstBookableDay($now, $rules);
+        $endDate = $this->reservationSlotPolicy->lastBookableDay($now, $rules);
+        $usedSeats = $this->reservationRepository->getActiveSlotCounts(
             $projectId,
             $startDate,
             $endDate,
             $excludeReservationId,
+            $rules->capacityByPeople,
         );
 
         $dateAvailability = [];
-        for ($i = 1; $i <= $advanceDays; $i++) {
-            $dateStr = $today->copy()->addDays($i)->format(ReservationSlotPolicy::DATE_FORMAT);
+        foreach ($this->reservationSlotPolicy->bookableDates($now, $rules) as $date) {
+            $dateStr = $date->format(ReservationSlotPolicy::DATE_FORMAT);
             $dateAvailability[$dateStr] = $this->shopSettingRepository->isDateAvailable($dateStr, $projectId);
         }
 
-        $availableDates = $this->reservationSlotPolicy->buildAvailableDates(
-            $today,
-            $advanceDays,
-            $timeSlots,
-            $dateAvailability,
-            $slotCounts,
-            $reservationCapacity,
-        );
-
         return new ReservationAvailability(
-            $availableDates,
+            $this->reservationSlotPolicy->buildAvailableDates($now, $rules, $dateAvailability, $usedSeats, $numberOfPeople),
             $startDate->format(ReservationSlotPolicy::DATE_FORMAT),
             $endDate->format(ReservationSlotPolicy::DATE_FORMAT),
             ReservationCourse::where('project_id', $projectId)->where('is_active', true)
                 ->orderBy('sort_order')->orderBy('id')->get(['id', 'name', 'price', 'description'])->toArray(),
+            $rules->maxPartySize,
+            $rules->changeDeadlineHours,
         );
     }
 
-    public function getAvailabilityError(Carbon $reservedAt, ?int $excludeReservationId): ?string
+    public function getAvailabilityError(Carbon $reservedAt, ?int $excludeReservationId, int $numberOfPeople): ?string
     {
         $projectId = AdminContext::requireCurrentProjectId();
-        $advanceDays = $this->shopSettingRepository->getAdvanceBookingDays($projectId);
-        $timeSlots = $this->shopSettingRepository->getReservationTimeSlots($projectId);
-        $reservationCapacity = $this->shopSettingRepository->getReservationCapacityPerSlot($projectId);
+        $rules = $this->shopSettingRepository->getReservationRules($projectId);
         $dateStr = $reservedAt->format(ReservationSlotPolicy::DATE_FORMAT);
 
-        $slotStart = $reservedAt->copy()->startOfMinute();
-        $slotEnd = $reservedAt->copy()->endOfMinute();
-        $currentSlotCount = $this->reservationRepository->countActiveInSlot(
+        $usedSeats = $this->reservationRepository->countActiveInSlot(
             $projectId,
-            $slotStart,
-            $slotEnd,
+            $reservedAt->copy()->startOfMinute(),
+            $reservedAt->copy()->endOfMinute(),
             $excludeReservationId,
+            $rules->capacityByPeople,
         );
 
         return $this->reservationSlotPolicy->availabilityError(
             $reservedAt,
             now(),
-            $advanceDays,
-            $timeSlots,
+            $rules,
             $this->shopSettingRepository->isDateAvailable($dateStr, $projectId),
-            $reservationCapacity,
-            $currentSlotCount,
+            $numberOfPeople,
+            $usedSeats,
         );
     }
 }

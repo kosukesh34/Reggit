@@ -32,6 +32,44 @@
                 <label class="form-label">予約枠上限（1時間帯あたり）</label>
                 <input type="number" name="reservation_capacity_per_slot" class="form-control" value="{{ $reservationCapacity }}" min="1" required>
             </div>
+            @php
+                $rules = $settings['rules'];
+                $leadLabels = [0 => '予約時刻まで', 30 => '30分前まで', 60 => '1時間前まで', 120 => '2時間前まで', 180 => '3時間前まで', 360 => '6時間前まで', 720 => '12時間前まで', 1440 => '24時間前まで'];
+                $deadlineLabels = [0 => '予約時刻まで', 1 => '1時間前まで', 3 => '3時間前まで', 6 => '6時間前まで', 12 => '12時間前まで', 24 => '前日（24時間前）まで', 48 => '2日前まで', 72 => '3日前まで'];
+            @endphp
+            <div class="form-group">
+                <label class="form-label" for="reservation_capacity_by_people">予約枠上限の数え方</label>
+                <select name="reservation_capacity_by_people" id="reservation_capacity_by_people" class="form-control">
+                    <option value="0" {{ ! old('reservation_capacity_by_people', $rules->capacityByPeople) ? 'selected' : '' }}>予約の件数（1件＝1枠。サロン・個室など）</option>
+                    <option value="1" {{ old('reservation_capacity_by_people', $rules->capacityByPeople) ? 'selected' : '' }}>人数の合計（4名の予約＝4席。飲食店の席数など）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reservation_max_party_size">1回の予約で選べる最大人数</label>
+                <input type="number" name="reservation_max_party_size" id="reservation_max_party_size" class="form-control" value="{{ old('reservation_max_party_size', $rules->maxPartySize) }}" min="1" max="{{ \App\Domain\Reservation\ValueObjects\ReservationRules::MAX_PARTY_SIZE_LIMIT }}" required>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label"><input type="hidden" name="reservation_same_day" value="0"><input type="checkbox" name="reservation_same_day" value="1" {{ old('reservation_same_day', $rules->sameDay) ? 'checked' : '' }}> 当日の予約を受け付ける</label>
+                <p class="text-muted">オフのときは翌日以降の予約だけを受け付けます。</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reservation_lead_minutes">予約の受付締め切り</label>
+                <select name="reservation_lead_minutes" id="reservation_lead_minutes" class="form-control">
+                    @foreach($leadLabels as $minutes => $label)
+                    <option value="{{ $minutes }}" {{ (int) old('reservation_lead_minutes', $rules->leadMinutes) === $minutes ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="text-muted">締め切りを過ぎた時間帯は、会員の画面に表示しません。</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reservation_change_deadline_hours">会員による変更・キャンセルの締め切り</label>
+                <select name="reservation_change_deadline_hours" id="reservation_change_deadline_hours" class="form-control">
+                    @foreach($deadlineLabels as $hours => $label)
+                    <option value="{{ $hours }}" {{ (int) old('reservation_change_deadline_hours', $rules->changeDeadlineHours) === $hours ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="text-muted">締め切り後は会員の画面から変更・キャンセルできず、店舗への連絡を案内します。管理画面からはいつでも変更できます。</p>
+            </div>
             <div class="form-group">
                 <label class="form-label">休業日（曜日）</label>
                 @php $days = ['日','月','火','水','木','金','土']; @endphp

@@ -32,7 +32,8 @@ class AdminReservationIndexUseCase
             $payload['selectedDateLabel'] ?? null,
             $payload['dateStatusCounts'] ?? null,
             $payload['timeSlotSummary'] ?? [],
-            $payload['reservationCapacity'] ?? 0
+            $payload['reservationCapacity'] ?? 0,
+            $payload['capacityByPeople'] ?? false,
         );
     }
 }

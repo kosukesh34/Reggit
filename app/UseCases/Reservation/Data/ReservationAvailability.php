@@ -14,5 +14,8 @@ class ReservationAvailability
         public string $startDate,
         public string $endDate,
         public array $courses = [],
+        public int $maxPartySize = 10,
+        /** 会員が変更・キャンセルできるのは予約時刻の何時間前までか */
+        public int $changeDeadlineHours = 0,
     ) {}
 }
