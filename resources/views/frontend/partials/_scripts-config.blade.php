@@ -15,6 +15,8 @@
     $scriptLiffDetailLayouts = $isDemoFixedUi ? [] : ($liffDetailLayouts ?? []);
     $scriptLiffTabSettings = $isDemoFixedUi ? [] : ($liffTabSettings ?? []);
     $flags = $featureFlags ?? [];
+    // LINE 内のチャットは「チャット」と「チャット（LINE 内にも表示）」の両方がオンのときだけ出す
+    $flags['feature_chat_liff_enabled'] = ($flags['feature_chat_enabled'] ?? false) && ($flags['feature_chat_liff_enabled'] ?? false);
     $tabFeatureMap = [
         'home' => 'feature_home_enabled',
         'products' => 'feature_orders_enabled',
@@ -27,7 +29,7 @@
         'member' => 'feature_members_enabled',
         'gallery' => 'feature_gallery_enabled',
         'announcements' => 'feature_announcements_enabled',
-        'chat' => 'feature_chat_enabled',
+        'chat' => 'feature_chat_liff_enabled',
     ];
     $filteredMenu = $isDemoFixedUi
         ? []

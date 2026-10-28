@@ -2,6 +2,7 @@
 
 namespace App\Services\Chat;
 
+use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Models\Member;
 use App\Services\Line\LineService;
@@ -28,6 +29,7 @@ class ChatReplyNotifier
         private PushNotificationService $push,
         private LineService $line,
         private LineConnectionSettings $lineSettings,
+        private FeatureSettings $features,
     ) {}
 
     public function notify(Member $member, string $projectKey): void
@@ -53,6 +55,10 @@ class ChatReplyNotifier
             LogHelper::error('[Chat] native push failed', ['member_id' => $member->id, 'project_id' => $projectId, 'error' => $e->getMessage()]);
         }
 
+        // LINE 内にチャットを出さない設定では、開けないページへのリンクを LINE に送らない
+        if (! $this->features->isFeatureEnabled('feature_chat_liff_enabled', $projectId)) {
+            return;
+        }
         $lineUserId = trim((string) ($member->user?->line_user_id ?? ''));
         if ($lineUserId === '' || ! MemberChannel::isValidLineUserId($lineUserId) || ! $this->lineSettings->hasLineChannelAccessToken($projectId)) {
             return;

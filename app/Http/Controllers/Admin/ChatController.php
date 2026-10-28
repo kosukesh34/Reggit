@@ -6,12 +6,18 @@ use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Enums\ReservationStatus;
 use App\Models\Coupon;
 use App\Models\Member;
+use App\Models\MemberStamp;
 use App\Models\Reservation;
+use App\Models\StampCard;
 use App\Services\Chat\ChatReplyNotifier;
+use App\Services\Chat\ChatStaffInbox;
 use App\Services\Chat\FirebaseChatTokenIssuer;
 use App\Services\MemberBenefitService;
+use App\UseCases\Admin\Member\AdminMemberAdjustStampsUseCase;
 use App\Util\StoreContext;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ChatController extends AdminBaseController
@@ -32,7 +38,10 @@ class ChatController extends AdminBaseController
                 'notifyUrl' => admin_route('admin.chats.notify', ['member' => '__MEMBER__']),
                 'memberUrl' => admin_route('admin.members.detail', ['id' => '__MEMBER__']),
                 'contextUrl' => admin_route('admin.chats.context', ['member' => '__MEMBER__']),
+                'membersUrl' => admin_route('admin.chats.members'),
+                'readUrl' => admin_route('admin.chats.read', ['member' => '__MEMBER__']),
                 'couponUrl' => admin_route('admin.chats.coupon', ['member' => '__MEMBER__', 'coupon' => '__COUPON__']),
+                'stampUrl' => admin_route('admin.chats.stamps', ['member' => '__MEMBER__']),
                 'csrfToken' => csrf_token(),
             ],
         ]);
@@ -54,10 +63,36 @@ class ChatController extends AdminBaseController
         ]);
     }
 
-    public function notify(string $project_key, int $member, ChatReplyNotifier $notifier): JsonResponse
+    public function notify(string $project_key, int $member, ChatReplyNotifier $notifier, ChatStaffInbox $inbox): JsonResponse
     {
         $this->ensureEnabled();
-        $notifier->notify(Member::query()->with('user')->findOrFail($member), $project_key);
+        $target = Member::query()->with('user')->findOrFail($member);
+        $notifier->notify($target, $project_key);
+        // 返信したら店舗側の未読も消す
+        $inbox->markRead((int) $target->project_id, (int) $target->id);
+
+        return response()->json(['success' => true]);
+    }
+
+    /** 会話一覧の会員の名前とプロフィール画像。見られる会員（StoreAccessScope）の分だけ返す */
+    public function members(Request $request): JsonResponse
+    {
+        $this->ensureEnabled();
+        $ids = $request->validate(['ids' => ['required', 'array', 'max:100'], 'ids.*' => ['integer']])['ids'];
+        $members = Member::query()->with('user:id,name,profile_image_path')->whereIn('id', $ids)->get(['id', 'user_id']);
+
+        return response()->json(['members' => $members->mapWithKeys(fn (Member $member): array => [$member->id => [
+            'name' => admin_person_name($member->user?->name),
+            'avatar_url' => $member->user?->profile_image_path ? asset('storage/'.ltrim($member->user->profile_image_path, '/')) : null,
+        ]])]);
+    }
+
+    /** 店舗が会話を開いて読んだ。メニューの未読数から外す */
+    public function read(string $project_key, int $member, ChatStaffInbox $inbox): JsonResponse
+    {
+        $this->ensureEnabled();
+        $target = Member::query()->findOrFail($member);
+        $inbox->markRead((int) $target->project_id, (int) $target->id);
 
         return response()->json(['success' => true]);
     }
@@ -96,7 +131,19 @@ class ChatController extends AdminBaseController
                 ->all()
             : [];
 
-        return response()->json(['reservations' => $reservations, 'coupons' => $coupons, 'can_issue_coupons' => $admin->hasPermission('members.manage')]);
+        $canManage = $admin->hasPermission('members.manage');
+        $current = MemberStamp::query()->where('member_id', $target->id)->pluck('current_stamps', 'stamp_card_id');
+        $stampCards = $canManage
+            ? StampCard::query()->where('is_active', true)->orderBy('id')->limit(50)->get(['id', 'name', 'required_stamps'])
+                ->map(fn (StampCard $card): array => [
+                    'id' => $card->id,
+                    'name' => $card->name,
+                    'required' => (int) $card->required_stamps,
+                    'current' => (int) ($current[$card->id] ?? 0),
+                ])->all()
+            : [];
+
+        return response()->json(['reservations' => $reservations, 'coupons' => $coupons, 'stamp_cards' => $stampCards, 'can_issue_coupons' => $canManage]);
     }
 
     /** チャットからクーポンを配布する。会員詳細の手動配布と同じ処理で発行し、カードの内容を返す */
@@ -114,6 +161,27 @@ class ChatController extends AdminBaseController
             'name' => (string) $issued->coupon_name_snapshot,
             'valid_until' => $issued->valid_until?->toIso8601String(),
         ]);
+    }
+
+    /** チャットからスタンプを付与する。会員詳細の「スタンプ調整」と同じ処理で加算し、カードの内容を返す */
+    public function grantStamps(Request $request, string $project_key, int $member, AdminMemberAdjustStampsUseCase $stamps): JsonResponse
+    {
+        $this->ensureEnabled();
+        $target = Member::query()->findOrFail($member);
+        $projectId = $this->resolveAdminProjectId();
+        $validated = $request->validate([
+            'stamp_card_id' => ['required', 'integer', Rule::exists('stamp_cards', 'id')->where('project_id', $projectId)->where('is_active', true)],
+            'count' => ['required', 'integer', 'min:1', 'max:20'],
+        ]);
+        try {
+            $stamps->handle($projectId, (int) $target->id, (int) $validated['stamp_card_id'], (int) $validated['count'], 0, 'チャットで付与');
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+        $card = StampCard::query()->findOrFail($validated['stamp_card_id']);
+        $current = (int) MemberStamp::query()->where('member_id', $target->id)->where('stamp_card_id', $card->id)->value('current_stamps');
+
+        return response()->json(['name' => $card->name, 'count' => (int) $validated['count'], 'current' => $current, 'required' => (int) $card->required_stamps]);
     }
 
     private function ensureEnabled(): void

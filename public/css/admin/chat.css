@@ -2,11 +2,11 @@
 .admin-chat-card { padding: 0; overflow: hidden; }
 .admin-chat { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; height: min(72vh, 760px); min-height: 420px; }
 .admin-chat-threads { border-right: 1px solid #e5e7eb; overflow-y: auto; }
-.admin-chat-thread { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; width: 100%; padding: 12px 16px; border: 0; border-bottom: 1px solid #f1f5f9; background: none; text-align: left; cursor: pointer; }
+.admin-chat-thread { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 2px 10px; width: 100%; padding: 12px 16px; border: 0; border-bottom: 1px solid #f1f5f9; background: none; text-align: left; cursor: pointer; }
 .admin-chat-thread:hover, .admin-chat-thread.is-active { background: #f1f5f9; }
 .admin-chat-thread-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin-chat-thread-time { font-size: 12px; color: #6b7280; }
-.admin-chat-unread { grid-column: 1 / -1; justify-self: start; padding: 1px 8px; border-radius: 999px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; }
+.admin-chat-unread { grid-column: 2 / -1; justify-self: start; padding: 1px 8px; border-radius: 999px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; }
 .admin-chat-conversation { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .admin-chat-conversation-header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #e5e7eb; }
 .admin-chat-conversation-header strong { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -23,7 +23,7 @@
     .admin-chat-back { display: inline-block; }
 }
 .admin-chat-summary-waiting { color: #b45309; }
-.admin-chat-thread-tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+.admin-chat-thread-tags { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
 .admin-chat-thread-tags:empty { display: none; }
 .admin-chat-thread.is-waiting { box-shadow: inset 3px 0 0 #f59e0b; }
 .admin-chat-waiting, .admin-chat-blocked { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
@@ -45,8 +45,8 @@
 .admin-chat-body .chat-view { min-width: 0; }
 .admin-chat-panel { border-left: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; font-size: 14px; background: #fafafa; }
 .admin-chat-panel-title { margin: 0 0 12px; font-size: 15px; font-weight: 700; }
-.admin-chat-panel section + section { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
-.admin-chat-panel h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+.admin-chat-panel details + details { margin-top: 16px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+.admin-chat-panel summary { margin-bottom: 6px; font-size: 14px; font-weight: 700; cursor: pointer; }
 .admin-chat-panel-help { margin: 0 0 10px; font-size: 12px; color: #6b7280; }
 .admin-chat-panel-empty { margin: 0; font-size: 13px; color: #6b7280; }
 .admin-chat-panel-notice { margin: 0 0 12px; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
@@ -60,3 +60,11 @@
     .admin-chat-body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
     .admin-chat-panel { border-left: 0; border-top: 1px solid #e5e7eb; max-height: 40vh; }
 }
+.admin-chat-thread > .chat-avatar { grid-row: span 2; }
+.admin-chat-thread .chat-avatar, .admin-chat-conversation-header .chat-avatar { border-radius: 50%; object-fit: cover; background: #f3f4f6; }
+.admin-chat-thread .chat-avatar.is-initial, .admin-chat-conversation-header .chat-avatar.is-initial { display: inline-grid; place-items: center; color: #0d9488; font-weight: 700; }
+.admin-chat-skeleton-line.is-avatar { width: 36px; height: 36px; border-radius: 50%; grid-row: span 2; }
+.admin-chat-body.is-panel-closed { grid-template-columns: 1fr; }
+.admin-chat-stamp-count { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.admin-chat-stamp-count input { width: 88px; }
+.admin-chat-conversation-header { flex-wrap: wrap; }

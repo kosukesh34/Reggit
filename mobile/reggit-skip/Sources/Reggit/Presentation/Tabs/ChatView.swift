@@ -20,6 +20,7 @@ final class ChatViewModel {
     var imagesEnabled = false
     var staffReadAt: Date?
     var blocked = false
+    var storeIconURL: String?
     var attempt = 0
     /// 編集中の自分のメッセージ。入力欄に本文を入れ、送信ボタンで保存する
     var editing: ChatMessageItem?
@@ -34,6 +35,8 @@ final class ChatViewModel {
     }
 
     var trimmedDraft: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    var mediaBaseURL: String { apiClient.baseURL }
 
     var canSend: Bool {
         !isSending && !trimmedDraft.isEmpty && trimmedDraft.count <= FirebaseChatClient.textLimit
@@ -63,6 +66,7 @@ final class ChatViewModel {
             lastRaw = messages.last?.createdAtRaw
             apply(try await client.fetchThread())
             imagesEnabled = session.imagesEnabled
+            storeIconURL = session.storeIconURL
             self.client = client
             isLoading = false
         } catch {
@@ -165,6 +169,7 @@ final class ChatViewModel {
             } else {
                 try await client.send(text: draft)
                 draft = ""
+                try? await apiClient.notifyChatSent()
             }
             await refresh()
         } catch {
@@ -305,6 +310,8 @@ struct ChatView: View {
             if message.isMine {
                 Spacer(minLength: 48)
                 meta(message, alignment: .trailing)
+            } else {
+                storeAvatar
             }
             VStack(alignment: .leading, spacing: 6) {
                 if !message.isMine && !message.senderName.isEmpty {
@@ -343,6 +350,25 @@ struct ChatView: View {
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// 店舗の返信の横に出すお店のロゴ。未設定なら「店」の丸
+    @ViewBuilder private var storeAvatar: some View {
+        Group {
+            if viewModel.storeIconURL != nil {
+                RemoteImageView(urlString: viewModel.storeIconURL, baseURL: viewModel.mediaBaseURL, contentMode: .fill, cornerRadius: 16)
+            } else {
+                Text("店")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(accent)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(AppDesign.surfaceMuted)
+            }
+        }
+        .frame(width: 32, height: 32)
+        .clipShape(Circle())
+        .frame(maxHeight: .infinity, alignment: .top)
+        .accessibilityHidden(true)
     }
 
     private func cardView(_ card: ChatCardItem) -> some View {

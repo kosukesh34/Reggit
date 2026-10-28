@@ -11,10 +11,10 @@ class GetAppConfigUseCase
         private AppConfigService $appConfigService,
     ) {}
 
-    public function handle(string $projectKey): AppConfigView
+    public function handle(string $projectKey, bool $liff = false): AppConfigView
     {
         return new AppConfigView(
-            $this->appConfigService->buildForProjectKey($projectKey),
+            $this->appConfigService->buildForProjectKey($projectKey, $liff),
         );
     }
 }

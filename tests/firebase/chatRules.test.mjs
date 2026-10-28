@@ -246,6 +246,7 @@ describe("削除・ブロック・カード", () => {
     const staffDb = db("a-1", staff());
     await assertSucceeds(addMessage(staffDb, "1", message("staff", "店長", { text: "", card })));
     await assertSucceeds(addMessage(staffDb, "1", message("staff", "店長", { text: "", card: { type: "reservation", title: "11月3日 18:00" } })));
+    await assertSucceeds(addMessage(staffDb, "1", message("staff", "店長", { text: "", card: { type: "stamp", title: "スタンプを2個プレゼント", subtitle: "コーヒーカード（2 / 10）" } })));
     await assertFails(addMessage(staffDb, "1", message("staff", "店長", { text: "", card: { ...card, type: "link" } })));
     await assertFails(addMessage(staffDb, "1", message("staff", "店長", { text: "", card: { ...card, url: "https://evil.example" } })));
     const claims = member("1");

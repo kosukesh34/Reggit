@@ -8,6 +8,7 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\Reservation;
+use App\Models\StampCard;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Chat\ChatReplyNotifier;
@@ -172,6 +173,7 @@ class MemberChatTest extends TestCase
     public function test_返信通知は本文を載せず担当外の会員には送らない(): void
     {
         config(['line.channel_access_token' => 'line-token']);
+        ShopSettingStore::setValue('feature_chat_liff_enabled', true, 'boolean', $this->project->id);
         $this->mock(PushNotificationService::class)->shouldReceive('sendToUser')->once()
             ->withArgs(fn (int $projectId, int $userId, string $title, string $body, array $data, ?string $collapseId, ?int $badge) => $title === 'お店からメッセージが届きました' && $body === 'チャットを開いてご確認ください' && $badge === 1)
             ->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
@@ -251,5 +253,95 @@ class MemberChatTest extends TestCase
             ->assertJsonPath('can_issue_coupons', false)->assertJsonPath('coupons', [])->assertJsonPath('reservations', []);
         $this->postJson("/admin/brand/chats/{$mine->id}/issue-coupon/{$coupon->id}")->assertForbidden();
         $this->assertDatabaseCount('member_coupons', 1);
+    }
+
+    public function test_line内に出さない設定ではliffにチャットを出さずlineにも通知しない(): void
+    {
+        $member = $this->member([$this->a->id], self::LINE_USER_ID);
+        $this->actingAs($member->user);
+
+        $tabs = fn (string $query) => collect($this->getJson('/api/v1/app-config?project_key=brand'.$query)->assertOk()->json('tabs'))->pluck('key')->all();
+        $this->assertContains('chat', $tabs(''));
+        $this->assertNotContains('chat', $tabs('&surface=liff'));
+        $this->postJson('/api/member-chat/token', ['surface' => 'liff'])->assertNotFound();
+        $this->postJson('/api/member-chat/token')->assertOk();
+
+        $this->mock(PushNotificationService::class)->shouldReceive('sendToUser')->once()->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
+        $this->mock(LineService::class)->shouldNotReceive('pushMessage');
+        config(['line.channel_access_token' => 'line-token']);
+        $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin');
+        $this->postJson("/admin/brand/chats/{$member->id}/notify")->assertOk();
+
+        ShopSettingStore::setValue('feature_chat_liff_enabled', true, 'boolean', $this->project->id);
+        $this->actingAs($member->user);
+        $this->assertContains('chat', $tabs('&surface=liff'));
+        $this->postJson('/api/member-chat/token', ['surface' => 'liff'])->assertOk();
+    }
+
+    public function test_会員の送信をメニューの未読数に出し店舗が読むか返信すると消す(): void
+    {
+        $this->mock(PushNotificationService::class)->shouldReceive('sendToUser')->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
+        $mine = $this->member([$this->a->id]);
+        $other = $this->member([$this->b->id]);
+        foreach ([$mine, $other] as $member) {
+            $this->actingAs($member->user);
+            $this->postJson('/api/member-chat/sent')->assertOk();
+        }
+
+        // 全店舗の管理者には2件、担当店舗の管理者には担当店舗の会員の1件だけ
+        $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin');
+        $this->get('/admin/brand/chats')->assertOk()->assertSee('aria-label="未読 2件"', false);
+        $branch = $this->admin(AdminUser::ROLE_ADMIN);
+        $this->actingAs($branch, 'admin');
+        $this->get('/admin/brand/chats')->assertOk()->assertSee('aria-label="未読 1件"', false);
+
+        $this->postJson("/admin/brand/chats/{$other->id}/read")->assertNotFound();
+        $this->postJson("/admin/brand/chats/{$mine->id}/read")->assertOk();
+        $this->get('/admin/brand/chats')->assertSee('aria-label="未読 0件"', false);
+
+        $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin');
+        $this->postJson("/admin/brand/chats/{$other->id}/notify")->assertOk();
+        $this->get('/admin/brand/chats')->assertSee('aria-label="未読 0件"', false);
+    }
+
+    public function test_会話一覧の写真は見られる会員の分だけ返す(): void
+    {
+        $mine = $this->member([$this->a->id]);
+        $mine->user->update(['profile_image_path' => 'profiles/me.jpg']);
+        $other = $this->member([$this->b->id]);
+        $this->actingAs($this->admin(AdminUser::ROLE_ADMIN), 'admin');
+
+        $members = $this->getJson("/admin/brand/chats/members?ids[]={$mine->id}&ids[]={$other->id}")->assertOk()->json('members');
+        $this->assertSame([(string) $mine->id], array_map('strval', array_keys($members)));
+        $this->assertStringEndsWith('/storage/profiles/me.jpg', $members[$mine->id]['avatar_url']);
+        $this->assertSame('山田 花子', $members[$mine->id]['name']);
+
+        ShopSettingStore::setValue('frontend_logo_url', '/storage/logo.png', 'string', $this->project->id);
+        $this->actingAs($mine->user);
+        $this->assertSame('/storage/logo.png', $this->postJson('/api/member-chat/token')->json('data.store_icon_url'));
+    }
+
+    public function test_チャットからスタンプを付与でき担当外と権限のないスタッフは付与できない(): void
+    {
+        $card = StampCard::create(['project_id' => $this->project->id, 'name' => 'コーヒーカード', 'required_stamps' => 10, 'is_active' => true]);
+        $mine = $this->member([$this->a->id]);
+        $other = $this->member([$this->b->id]);
+
+        $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin');
+        $this->getJson("/admin/brand/chats/{$mine->id}/context")->assertOk()
+            ->assertJsonPath('stamp_cards.0.name', 'コーヒーカード')->assertJsonPath('stamp_cards.0.current', 0);
+        $this->postJson("/admin/brand/chats/{$mine->id}/grant-stamps", ['stamp_card_id' => $card->id, 'count' => 2])->assertOk()
+            ->assertJsonPath('current', 2)->assertJsonPath('required', 10);
+        $this->postJson("/admin/brand/chats/{$mine->id}/grant-stamps", ['stamp_card_id' => $card->id, 'count' => 0])->assertUnprocessable();
+        $this->postJson("/admin/brand/chats/{$mine->id}/grant-stamps", ['stamp_card_id' => $card->id, 'count' => 21])->assertUnprocessable();
+
+        // 支店の管理者は担当店舗の会員だけ（会員詳細の調整と同じ）
+        $this->actingAs($this->admin(AdminUser::ROLE_ADMIN), 'admin');
+        $this->postJson("/admin/brand/chats/{$other->id}/grant-stamps", ['stamp_card_id' => $card->id, 'count' => 1])->assertNotFound();
+        $this->postJson("/admin/brand/chats/{$mine->id}/grant-stamps", ['stamp_card_id' => $card->id, 'count' => 1])->assertOk()->assertJsonPath('current', 3);
+
+        $this->actingAs($this->admin(AdminUser::ROLE_STAFF, ['chat.manage']), 'admin');
+        $this->postJson("/admin/brand/chats/{$mine->id}/grant-stamps", ['stamp_card_id' => $card->id, 'count' => 1])->assertForbidden();
+        $this->assertSame(3, (int) $mine->memberStamps()->where('stamp_card_id', $card->id)->value('current_stamps'));
     }
 }

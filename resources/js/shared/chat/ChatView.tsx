@@ -45,6 +45,7 @@ export function linkify(text: string): ReactNode[] {
 const CARD_LABELS: Record<ChatCard["type"], { icon: string; action: string }> = {
   coupon: { icon: "fa-ticket", action: "クーポンを見る" },
   reservation: { icon: "fa-calendar-check", action: "予約を確認" },
+  stamp: { icon: "fa-stamp", action: "スタンプを見る" },
 };
 
 /** 読み込み中の吹き出し。実際の表示と同じく左右に並べる */
@@ -54,8 +55,17 @@ export function ChatSkeleton() {
   </div>;
 }
 
+/** 相手のアイコン。画像がなければ名前の頭文字を丸に入れる */
+export function ChatAvatar({ name, url, size = 32 }: { name: string; url?: string | null; size?: number }) {
+  const [failed, setFailed] = useState(false);
+  const style = { width: size, height: size };
+  return url && !failed
+    ? <img className="chat-avatar" style={style} src={url} alt="" onError={() => setFailed(true)} />
+    : <span className="chat-avatar is-initial" style={style} aria-hidden="true">{Array.from(name.trim())[0] ?? "?"}</span>;
+}
+
 /** 会員・店舗共通の会話画面。viewer は自分の立場（自分の吹き出しを右に寄せる） */
-export function ChatView({ client, memberId, viewer, emptyText, onSent, onRead, onOpenCard }: {
+export function ChatView({ client, memberId, viewer, emptyText, onSent, onRead, onOpenCard, otherAvatar }: {
   client: ChatClient;
   memberId: string;
   viewer: ChatSender;
@@ -65,6 +75,8 @@ export function ChatView({ client, memberId, viewer, emptyText, onSent, onRead, 
   onRead?: () => void;
   /** 会員がカードのボタンを押したとき（クーポン・予約の画面へ移る） */
   onOpenCard?: (type: ChatCard["type"]) => void;
+  /** 相手側の吹き出しの横に出すアイコン（店舗から見た会員の写真、会員から見たお店のロゴ） */
+  otherAvatar?: { name: string; url?: string | null };
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [thread, setThread] = useState<ChatThread | null>(null);
@@ -155,6 +167,7 @@ export function ChatView({ client, memberId, viewer, emptyText, onSent, onRead, 
         return <Fragment key={message.id}>
           {newDay && message.createdAt !== null ? <p className="chat-day" role="separator">{dayLabel(message.createdAt)}</p> : null}
           <div className={`chat-row${mine ? " is-mine" : ""}`}>
+            {!mine && otherAvatar ? <ChatAvatar name={otherAvatar.name || message.senderName} url={otherAvatar.url} /> : null}
             {message.deleted ? <p className="chat-deleted">{message.sender === viewer ? "送信を取り消しました" : "メッセージは削除されました"}</p> : <div className={`chat-bubble${message.card ? " has-card" : ""}`}>
               {!mine && message.senderName !== "" ? <span className="chat-sender">{message.senderName}</span> : null}
               {message.imagePath !== undefined ? <ChatImage client={client} path={message.imagePath} /> : null}

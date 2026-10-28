@@ -119,6 +119,8 @@
                 $showSurveys = $navFeatureOn('feature_surveys_enabled') && $navCan('announcements.view');
                 $showPopups = $navFeatureOn('feature_popups_enabled') && $navCan('announcements.view');
                 $showChat = $navStore !== null && $navFeatureOn('feature_chat_enabled') && $navCan('chat.manage');
+                // 会員から届いてまだ読んでいない会話の数（担当店舗の会員だけ）
+                $chatUnread = $showChat ? app(\App\Services\Chat\ChatStaffInbox::class)->unreadCount((int) $navStore->id) : 0;
             @endphp
             <header class="admin-topbar">
                 <a class="admin-topbar-brand" href="{{ $isSystemAdminScreen ? route('system-admin.dashboard') : admin_route('admin.dashboard') }}">
@@ -251,6 +253,7 @@
                         <a href="{{ admin_route('admin.chats') }}" class="nav-item {{ request()->routeIs('admin.chats*') ? 'active' : '' }}">
                             <i class="fas fa-comments"></i>
                             <span>チャット</span>
+                            <span class="nav-badge" data-chat-unread-badge @if($chatUnread === 0) hidden @endif aria-label="未読 {{ $chatUnread }}件">{{ $chatUnread > 99 ? '99+' : $chatUnread }}</span>
                         </a>
                         @endif
                     </div>

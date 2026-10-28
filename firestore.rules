@@ -66,11 +66,11 @@ service cloud.firestore {
         && validEditedAt();
     }
 
-    // 店舗が送るクーポン・予約のカード。表示用の文字だけを持つ
+    // 店舗が送るクーポン・予約・スタンプのカード。表示用の文字だけを持つ
     function validCard(card) {
       return card is map
         && card.keys().hasOnly(['type', 'title', 'subtitle'])
-        && card.type in ['coupon', 'reservation']
+        && card.type in ['coupon', 'reservation', 'stamp']
         && card.title is string && card.title.size() > 0 && card.title.size() <= 100
         && (!('subtitle' in card) || (card.subtitle is string && card.subtitle.size() <= 200));
     }

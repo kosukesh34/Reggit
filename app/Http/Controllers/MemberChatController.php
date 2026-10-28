@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Services\Chat\ChatReplyNotifier;
+use App\Services\Chat\ChatStaffInbox;
 use App\Services\Chat\FirebaseChatTokenIssuer;
 use App\Services\UserService;
 use App\Util\AdminContext;
@@ -25,7 +26,8 @@ class MemberChatController extends Controller
     public function token(Request $request): JsonResponse
     {
         $projectId = AdminContext::requireCurrentProjectId();
-        if (! $this->features->isFeatureEnabled('feature_chat_enabled', $projectId) || ! $this->tokens->isConfigured()) {
+        $liffHidden = $request->input('surface') === 'liff' && ! $this->features->isFeatureEnabled('feature_chat_liff_enabled', $projectId);
+        if (! $this->features->isFeatureEnabled('feature_chat_enabled', $projectId) || $liffHidden || ! $this->tokens->isConfigured()) {
             return response()->json(['success' => false, 'message' => 'チャットは利用できません'], 404);
         }
         $user = $this->userService->findUser($request);
@@ -41,6 +43,8 @@ class MemberChatController extends Controller
             ...$this->tokens->forMember($projectId, (int) $member->id, (string) $user->name, $member->stores()->pluck('stores.id')->all()),
             'project_id' => $projectId,
             'member_id' => (int) $member->id,
+            // 店舗の返信の横に出すアイコン
+            'store_icon_url' => $this->features->getFrontendLogoUrl($projectId) ?: null,
         ]]);
     }
 
@@ -50,6 +54,20 @@ class MemberChatController extends Controller
         $key = $this->unreadKey($request);
 
         return response()->json(['success' => true, 'data' => ['count' => $key === null ? 0 : (int) Cache::get($key, 0)]]);
+    }
+
+    /** 会員が送信した。本文は受け取らず、管理画面のメニューに未読として出すための印だけを付ける */
+    public function sent(Request $request, ChatStaffInbox $inbox): JsonResponse
+    {
+        $projectId = AdminContext::requireCurrentProjectId();
+        $member = $this->features->isFeatureEnabled('feature_chat_enabled', $projectId)
+            ? $this->userService->findUser($request)?->member
+            : null;
+        if ($member !== null) {
+            $inbox->markUnread($projectId, (int) $member->id);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /** 開いたままのチャットで返信を読んだとき */
