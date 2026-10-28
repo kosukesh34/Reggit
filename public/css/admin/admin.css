@@ -100,3 +100,7 @@
   .dashboard-notice-title { flex-basis: 100%; }
   .dashboard-notice-article { padding: 20px 16px; }
 }
+
+/* サイドバーの未読数（チャット） */
+.nav-item .nav-badge { margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: 999px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; }
+.nav-item .nav-badge[hidden] { display: none; }

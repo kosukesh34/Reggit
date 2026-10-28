@@ -12,12 +12,14 @@ export type ChatSession = {
   firebase: FirebaseOptions & { emulatorHost?: string };
   project_id: number;
   member_id?: number;
+  /** 店舗の返信の横に出すお店のロゴ */
+  store_icon_url?: string | null;
 };
 
 export type ChatSender = "member" | "staff";
 
 /** 店舗が送るクーポン・予約のカード（表示用の文字だけ） */
-export type ChatCard = { type: "coupon" | "reservation"; title: string; subtitle?: string };
+export type ChatCard = { type: "coupon" | "reservation" | "stamp"; title: string; subtitle?: string };
 
 export type ChatMessage = {
   id: string;
@@ -88,7 +90,7 @@ function toThread(memberId: string, data: DocumentData | undefined): ChatThread 
 function toCard(value: unknown): ChatCard | undefined {
   if (value === null || typeof value !== "object") return undefined;
   const card = value as Record<string, unknown>;
-  return (card.type === "coupon" || card.type === "reservation") && typeof card.title === "string"
+  return (card.type === "coupon" || card.type === "reservation" || card.type === "stamp") && typeof card.title === "string"
     ? { type: card.type, title: card.title, ...(typeof card.subtitle === "string" ? { subtitle: card.subtitle } : {}) }
     : undefined;
 }

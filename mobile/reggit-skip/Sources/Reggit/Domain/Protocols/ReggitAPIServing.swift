@@ -91,6 +91,7 @@ protocol ReggitAPIServing: PromoPopupFetching, SurveyServing {
     func fetchChatSession() async throws -> ChatSessionInfo
     func fetchChatUnreadCount() async throws -> Int
     func markChatRead() async throws
+    func notifyChatSent() async throws
 }
 
 extension ReggitAPIServing {

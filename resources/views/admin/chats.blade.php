@@ -20,7 +20,7 @@
         <div class="admin-chat" aria-busy="true" aria-label="チャットを読み込み中">
             <div class="admin-chat-threads" aria-hidden="true">
                 @for ($row = 0; $row < 5; $row++)
-                <div class="admin-chat-thread"><span class="admin-chat-skeleton-line is-name"></span><span class="admin-chat-skeleton-line is-time"></span></div>
+                <div class="admin-chat-thread"><span class="admin-chat-skeleton-line is-avatar"></span><span class="admin-chat-skeleton-line is-name"></span><span class="admin-chat-skeleton-line is-time"></span></div>
                 @endfor
             </div>
             <div class="admin-chat-conversation chat-view">

@@ -450,6 +450,11 @@ struct ReggitAPIClient: ReggitAPIServing {
         _ = try await requestJSON(path: "/api/member-chat/read", method: "POST", body: [:])
     }
 
+    /// 送ったことだけを知らせる（本文は送らない）。管理画面のメニューの未読数に使う
+    func notifyChatSent() async throws {
+        _ = try await requestJSON(path: "/api/member-chat/sent", method: "POST", body: [:])
+    }
+
     // MARK: - HTTP
 
     private func requestJSON(

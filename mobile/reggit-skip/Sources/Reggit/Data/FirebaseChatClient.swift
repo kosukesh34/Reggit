@@ -15,6 +15,8 @@ struct ChatSessionInfo: Equatable, Sendable {
     /// トークンに署名済みの表示名・利用店舗。会話ドキュメントにはこの値しか書けない
     let label: String
     let storeIds: [Int]
+    /// 店舗の返信の横に出すお店のロゴ（未設定なら nil）
+    var storeIconURL: String? = nil
 
     static func parse(_ data: Data) throws -> ChatSessionInfo {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -37,7 +39,8 @@ struct ChatSessionInfo: Equatable, Sendable {
             projectId: String(projectId),
             memberId: String(memberId),
             label: claims["label"] as? String ?? "",
-            storeIds: (claims["stores"] as? [Any] ?? []).compactMap { Self.int($0) }
+            storeIds: (claims["stores"] as? [Any] ?? []).compactMap { Self.int($0) },
+            storeIconURL: (body["store_icon_url"] as? String)?.trimmedNonEmpty
         )
     }
 
@@ -61,16 +64,36 @@ struct ChatSessionInfo: Equatable, Sendable {
     }
 }
 
-/// 店舗が送るクーポン・予約のカード
+/// 店舗が送るクーポン・予約・スタンプのカード
 struct ChatCardItem: Equatable, Sendable {
     let type: String
     let title: String
     let subtitle: String
 
     /// ボタンで開くアプリのタブ
-    var tabKey: String { type == "coupon" ? "coupons" : "reservations" }
-    var actionLabel: String { type == "coupon" ? "クーポンを見る" : "予約を確認" }
-    var icon: String { type == "coupon" ? "ticket.fill" : "calendar" }
+    var tabKey: String {
+        switch type {
+        case "coupon": return "coupons"
+        case "stamp": return "stamps"
+        default: return "reservations"
+        }
+    }
+
+    var actionLabel: String {
+        switch type {
+        case "coupon": return "クーポンを見る"
+        case "stamp": return "スタンプを見る"
+        default: return "予約を確認"
+        }
+    }
+
+    var icon: String {
+        switch type {
+        case "coupon": return "ticket.fill"
+        case "stamp": return "star.fill"
+        default: return "calendar"
+        }
+    }
 }
 
 struct ChatMessageItem: Identifiable, Equatable, Sendable {
@@ -341,7 +364,7 @@ actor FirebaseChatClient {
 
     static func parseCard(_ value: Any?) -> ChatCardItem? {
         guard let fields = ((value as? [String: Any])?["mapValue"] as? [String: Any])?["fields"] as? [String: Any],
-              let type = stringValue(fields["type"]), ["coupon", "reservation"].contains(type),
+              let type = stringValue(fields["type"]), ["coupon", "reservation", "stamp"].contains(type),
               let title = stringValue(fields["title"]) else { return nil }
         return ChatCardItem(type: type, title: title, subtitle: stringValue(fields["subtitle"]) ?? "")
     }

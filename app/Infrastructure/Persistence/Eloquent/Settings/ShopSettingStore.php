@@ -89,6 +89,7 @@ class ShopSettingStore
         'feature_surveys_enabled' => ProjectFeatureFlags::class,
         'feature_popups_enabled' => ProjectFeatureFlags::class,
         'feature_chat_enabled' => ProjectFeatureFlags::class,
+        'feature_chat_liff_enabled' => ProjectFeatureFlags::class,
         'feature_gacha_enabled' => ProjectFeatureFlags::class,
         'feature_scratch_enabled' => ProjectFeatureFlags::class,
         'feature_roulette_enabled' => ProjectFeatureFlags::class,

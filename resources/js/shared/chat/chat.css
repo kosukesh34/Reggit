@@ -55,3 +55,5 @@
 @media (prefers-reduced-motion: reduce) { .chat-skeleton-bubble { animation: none; } }
 .chat-actions { display: flex; gap: 8px; }
 .chat-editing { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 4px 4px 4px 10px; border-radius: 10px; background: var(--chat-other); font-size: 13px; color: var(--chat-muted); }
+.chat-avatar { flex: none; align-self: flex-start; border-radius: 50%; object-fit: cover; background: var(--chat-other); }
+.chat-avatar.is-initial { display: inline-grid; place-items: center; color: var(--chat-accent); font-size: 14px; font-weight: 700; }

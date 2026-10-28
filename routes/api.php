@@ -344,6 +344,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/member-chat/token', [MemberChatController::class, 'token'])->middleware('throttle:20,1');
     Route::get('/member-chat/unread', [MemberChatController::class, 'unread'])->middleware('throttle:60,1');
     Route::post('/member-chat/read', [MemberChatController::class, 'read'])->middleware('throttle:60,1');
+    Route::post('/member-chat/sent', [MemberChatController::class, 'sent'])->middleware('throttle:60,1');
     Route::get('/gallery', [GalleryController::class, 'index']);
     Route::get('/stamps', [StampController::class, 'index']);
 

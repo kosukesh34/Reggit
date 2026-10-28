@@ -334,6 +334,10 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/chats', [AdminChatController::class, 'index'])->name('admin.chats')->middleware('admin.permission:chat.manage');
         Route::post('/chats/token', [AdminChatController::class, 'token'])->name('admin.chats.token')->middleware(['admin.permission:chat.manage', 'throttle:30,1']);
         Route::post('/chats/{member}/notify', [AdminChatController::class, 'notify'])->whereNumber('member')->name('admin.chats.notify')->middleware(['admin.permission:chat.manage', 'throttle:60,1']);
+        Route::get('/chats/members', [AdminChatController::class, 'members'])->name('admin.chats.members')->middleware('admin.permission:chat.manage');
+        Route::post('/chats/{member}/read', [AdminChatController::class, 'read'])->whereNumber('member')->name('admin.chats.read')->middleware(['admin.permission:chat.manage', 'throttle:120,1']);
+        // パスに「/stamps」を含めない（支店管理者のプロジェクト共通設定の保護に当たらないよう、会員詳細の adjust-stamps と同じ扱い）
+        Route::post('/chats/{member}/grant-stamps', [AdminChatController::class, 'grantStamps'])->whereNumber('member')->name('admin.chats.stamps')->middleware(['admin.permission:chat.manage', 'admin.permission:members.manage', 'throttle:30,1']);
         Route::get('/chats/{member}/context', [AdminChatController::class, 'context'])->whereNumber('member')->name('admin.chats.context')->middleware('admin.permission:chat.manage');
         Route::post('/chats/{member}/issue-coupon/{coupon}', [AdminChatController::class, 'issueCoupon'])->whereNumber(['member', 'coupon'])->name('admin.chats.coupon')->middleware(['admin.permission:chat.manage', 'admin.permission:members.manage', 'throttle:30,1']);
 

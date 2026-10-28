@@ -27,7 +27,7 @@ class AppConfigController extends Controller
         if ($projectKey === '') {
             return response()->json(['error' => 'project_key は必須です。'], 400);
         }
-        $view = $this->getAppConfigUseCase->handle($projectKey);
+        $view = $this->getAppConfigUseCase->handle($projectKey, $request->query('surface') === 'liff');
 
         return response()->json($view->toArray());
     }

@@ -12,13 +12,14 @@ final class FirebaseChatClientTests: XCTestCase {
         return try "\(encode(["alg": "none", "typ": "JWT"])).\(encode(["uid": uid, "iat": now, "exp": now + 3600, "aud": "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit", "claims": claims]))."
     }
 
-    private func sessionData(memberId: Int, label: String, stores: [Int], storageBucket: String? = nil, emulatorHost: String? = nil) throws -> Data {
+    private func sessionData(memberId: Int, label: String, stores: [Int], storageBucket: String? = nil, emulatorHost: String? = nil, storeIcon: String? = nil) throws -> Data {
         let claims: [String: Any] = ["role": "member", "pid": "7", "mid": String(memberId), "label": label, "stores": stores, "until": (Date().timeIntervalSince1970 + 3600) * 1000]
         var firebase: [String: Any] = ["apiKey": "fake", "projectId": "demo-reggit", "appId": "fake"]
         firebase["storageBucket"] = storageBucket
         firebase["emulatorHost"] = emulatorHost
         return try JSONSerialization.data(withJSONObject: ["success": true, "data": [
             "token": try customToken(uid: "m-7-\(memberId)", claims: claims), "firebase": firebase, "project_id": 7, "member_id": memberId,
+            "store_icon_url": storeIcon ?? NSNull(),
         ]])
     }
 
@@ -29,6 +30,8 @@ final class FirebaseChatClientTests: XCTestCase {
         XCTAssertEqual(session.label, "佐藤")
         XCTAssertEqual(session.storeIds, [3, 4])
         XCTAssertFalse(session.imagesEnabled)
+        XCTAssertNil(session.storeIconURL)
+        XCTAssertEqual(try ChatSessionInfo.parse(try sessionData(memberId: 5, label: "佐藤", stores: [], storeIcon: "/storage/logo.png")).storeIconURL, "/storage/logo.png")
         XCTAssertTrue(try ChatSessionInfo.parse(try sessionData(memberId: 5, label: "佐藤", stores: [], storageBucket: "b")).imagesEnabled)
         XCTAssertThrowsError(try ChatSessionInfo.parse(Data(#"{"success":false,"message":"x"}"#.utf8)))
     }
@@ -80,6 +83,9 @@ final class FirebaseChatClientTests: XCTestCase {
         XCTAssertEqual(card?.tabKey, "coupons")
         XCTAssertEqual(card?.title, "10%OFF")
         XCTAssertNil(FirebaseChatClient.parseCard(["mapValue": ["fields": ["type": ["stringValue": "link"], "title": ["stringValue": "x"]]]]))
+        let stamp = FirebaseChatClient.parseCard(["mapValue": ["fields": ["type": ["stringValue": "stamp"], "title": ["stringValue": "スタンプを2個プレゼント"]]]])
+        XCTAssertEqual(stamp?.tabKey, "stamps")
+        XCTAssertEqual(stamp?.actionLabel, "スタンプを見る")
     }
 
     /// エミュレーターの firestore.rules に対して送受信する。

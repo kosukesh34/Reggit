@@ -27,7 +27,8 @@ class AppConfigService
     /**
      * @return array<string, mixed>
      */
-    public function buildForProjectKey(string $projectKey): array
+    /** @param bool $liff LINE 内（LIFF）からの取得。チャットは LINE 内表示の設定もオンのときだけ出す */
+    public function buildForProjectKey(string $projectKey, bool $liff = false): array
     {
         $project = $this->projectRepository->findActiveByProjectKey($projectKey);
         $projectId = $project !== null ? (int) $project->id : 1;
@@ -35,6 +36,9 @@ class AppConfigService
         $homeImageUrls = HomeImageUrls::forProject($repo, $projectId);
 
         $featureFlags = $repo->getFeatureFlags($projectId);
+        if ($liff) {
+            $featureFlags['feature_chat_enabled'] = ($featureFlags['feature_chat_enabled'] ?? false) && ($featureFlags['feature_chat_liff_enabled'] ?? false);
+        }
         $menuItems = $repo->getFrontendMenuItems($projectId);
 
         $tabFeatureMap = [
