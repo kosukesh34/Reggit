@@ -96,7 +96,8 @@ class PushNotificationService
         string $title,
         string $body,
         array $data = [],
-        ?string $collapseId = null
+        ?string $collapseId = null,
+        ?int $badge = null
     ): array {
         $tokens = UserDevice::query()
             ->where('project_id', $projectId)
@@ -125,7 +126,7 @@ class PushNotificationService
 
         $resolvedCollapseId = $collapseId ?? $this->resolveCollapseIdFromData($projectId, $userId, $data);
 
-        return $this->sendViaFcm($tokens, $title, $body, $data, $resolvedCollapseId, false, false, $projectId);
+        return $this->sendViaFcm($tokens, $title, $body, $data, $resolvedCollapseId, false, false, $projectId, $badge);
     }
 
     /**
@@ -337,7 +338,8 @@ class PushNotificationService
         ?string $collapseId = null,
         bool $contentAvailable = false,
         bool $mutableContent = false,
-        ?int $projectId = null
+        ?int $projectId = null,
+        ?int $badge = null
     ): array {
         $client = new FcmHttpV1Client($this->http);
         $result = $client->sendToTokens(
@@ -347,7 +349,8 @@ class PushNotificationService
             $data,
             $this->normalizeCollapseId($collapseId),
             $contentAvailable,
-            $mutableContent
+            $mutableContent,
+            $badge
         );
 
         if ($projectId !== null && $result['invalid_tokens'] !== []) {

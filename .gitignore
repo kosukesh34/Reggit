@@ -40,3 +40,8 @@ storage/app/firebase/
 /e2e/web/blob-report/
 /playwright-report/
 /test-results/
+
+# Firebase エミュレーターのログ
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

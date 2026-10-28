@@ -1,6 +1,9 @@
 import Foundation
 import Observation
 import SkipFuse
+#if !os(Android)
+import UserNotifications
+#endif
 
 @MainActor
 @Observable
@@ -21,7 +24,17 @@ final class NativeRootViewModel: PushNotificationHandling {
     var footerItems: [AppTabItem] = []
     var hamburgerItems: [AppTabItem] = []
     var announcementCount = 0
-    var selectedTab: String = "home"
+    var selectedTab: String = "home" {
+        // チャットを開けば既読になる（サーバーの未読数もトークン発行時に0に戻る）
+        didSet { if selectedTab == "chat" { chatUnreadCount = 0 } }
+    }
+    /// 店舗から届いたチャットの未読数。メニューとアプリアイコン（iOS）の数字に使う
+    var chatUnreadCount = 0 {
+        didSet { Self.applyAppIconBadge(chatUnreadCount) }
+    }
+
+    /// メニューの数字。キーはタブのキー
+    var badgeCounts: [String: Int] { ["announcements": announcementCount, "chat": chatUnreadCount] }
     var businessStores: [BusinessStore] = []
     var selectedStoreName: String?
     var currentProjectKey = ""
@@ -197,6 +210,12 @@ final class NativeRootViewModel: PushNotificationHandling {
             let wasGuest = membership?.isMember == false
             let member = try await loadMembership(using: client)
             membership = member
+            // プロフィールのご利用店舗を、注文・メニューの店舗にも使う（画面を出す前なので読み込み直しは不要）
+            if let store = profileStore(member), store.id != MobileSelectedProjectStore.selectedStoreID(baseURL: client.baseURL, projectKey: currentProjectKey) {
+                MobileSelectedProjectStore.selectStore(store.id, baseURL: client.baseURL, projectKey: currentProjectKey)
+                selectedStoreName = store.name
+                SecondaryScreenCache.reset()
+            }
             if wasGuest && member.isMember { featureTourClosable = false; showFeatureTour = true }
             let mode = member.registrationMode
             // スキップ可能なモードで使い始めた人は、再読み込みでログイン画面に戻さない
@@ -208,6 +227,7 @@ final class NativeRootViewModel: PushNotificationHandling {
             }
 
             await refreshAnnouncements()
+            await refreshChatUnread()
             connectRealtimeIfPossible()
             if phase == .ready, let tab = pendingNotificationTab {
                 let type = pendingNotificationType
@@ -284,7 +304,19 @@ final class NativeRootViewModel: PushNotificationHandling {
 
     func applyMembership(_ member: MemberProfileSnapshot) {
         membership = member
+        // プロフィール編集でご利用店舗を変えたら、アプリの店舗も切り替えて読み込み直す
+        if let client = apiClient, let store = profileStore(member),
+           store.id != MobileSelectedProjectStore.selectedStoreID(baseURL: client.baseURL, projectKey: currentProjectKey) {
+            selectBusinessStore(store)
+            return
+        }
         connectRealtimeIfPossible()
+    }
+
+    /// プロフィールのご利用店舗（customer_store_id）。注文・メニュー・お知らせの店舗と同じもの
+    private func profileStore(_ member: MemberProfileSnapshot) -> BusinessStore? {
+        guard member.isMember, let id = Int(member.profilePayload["customer_store_id"] ?? "") else { return nil }
+        return businessStores.first { $0.id == id }
     }
 
     private func connectRealtimeIfPossible() {
@@ -532,6 +564,14 @@ final class NativeRootViewModel: PushNotificationHandling {
         }
     }
 
+    /// アプリ内パス（/coupon など）の画面を開く。このアプリに無い画面なら何もしない
+    func openInAppTab(_ key: String) {
+        let mapped = Self.mapTabKey(key)
+        if tabs.contains(where: { $0.key == mapped }) {
+            selectedTab = mapped
+        }
+    }
+
     func handleForegroundNotification(notificationType: String?) {
         refreshForNotification(notificationType)
         if notificationType == "coupon_issued" { selectedTab = "coupons" }
@@ -543,8 +583,29 @@ final class NativeRootViewModel: PushNotificationHandling {
         case "queue_called", "queue_linked": handleProjectUpdate(topic: "queue")
         case "coupon_issued": handleProjectUpdate(topic: "coupons")
         case "announcement": handleProjectUpdate(topic: "announcements")
+        case "chat_reply": Task { await refreshChatUnread() }
         default: break
         }
+    }
+
+    /// 起動時・アプリに戻ったとき・返信の通知を受けたときに未読数を取り直す（Firebase には接続しない）
+    func refreshChatUnread() async {
+        guard let client = apiClient, tabs.contains(where: { $0.key == "chat" }) else { return }
+        guard selectedTab != "chat" else {
+            chatUnreadCount = 0
+            return
+        }
+        do {
+            chatUnreadCount = try await client.fetchChatUnreadCount()
+        } catch {
+            // 数字は補助表示のため、取得できなければ前回の値のままにする
+        }
+    }
+
+    private static func applyAppIconBadge(_ count: Int) {
+        #if !os(Android)
+        UNUserNotificationCenter.current().setBadgeCount(count, withCompletionHandler: nil)
+        #endif
     }
 
     func injectPushToken(_ token: String) async {
@@ -560,7 +621,7 @@ final class NativeRootViewModel: PushNotificationHandling {
     // MARK: - Tabs
 
     static let supportedTabKeys: Set<String> = [
-        "home", "member", "profile", "profileEdit", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "lottery", "storeSearch", "terms", "privacy",
+        "home", "member", "profile", "profileEdit", "products", "orders", "coupons", "stamps", "queue", "reservations", "gallery", "announcements", "lottery", "storeSearch", "terms", "privacy", "chat",
     ]
 
     /// テスト用。サーバのメニュー設定に関係なく、実装済み機能を全部出す。
@@ -577,6 +638,7 @@ final class NativeRootViewModel: PushNotificationHandling {
         AppTabItem(id: "announcements", key: "announcements", label: "お知らせ", icon: "fa-bell", sfSymbol: "bell.fill"),
         AppTabItem(id: "lottery", key: "lottery", label: "抽選", icon: "fa-dice", sfSymbol: "dice.fill"),
         AppTabItem(id: "storeSearch", key: "storeSearch", label: "店舗を探す", icon: "fa-location-dot", sfSymbol: "location.fill"),
+        AppTabItem(id: "chat", key: "chat", label: "チャット", icon: "fa-comments", sfSymbol: "bubble.left.and.bubble.right.fill"),
     ]
 
     /// Temporary shortcuts, including projects with a configured hamburger menu.
@@ -622,6 +684,8 @@ final class NativeRootViewModel: PushNotificationHandling {
         case "coupon": return "coupons"
         case "stamp": return "stamps"
         case "reservation": return "reservations"
+        case "menu": return "products"
+        case "news": return "announcements"
         case "store", "stores": return "storeSearch"
         default: return key
         }

@@ -129,6 +129,8 @@ class Announcement extends Model
         'image_paths',
         'title',
         'body',
+        'action_path',
+        'action_label',
         'image_url',
         'published_at',
         'expires_at',

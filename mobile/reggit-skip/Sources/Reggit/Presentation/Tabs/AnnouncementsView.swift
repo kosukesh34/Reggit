@@ -88,6 +88,7 @@ struct AnnouncementCardView: View {
     let apiClient: any ReggitAPIServing
     let imageHeight: CGFloat
     @Environment(\.brandAccent) var accent
+    @Environment(\.openAppPath) var openAppPath
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -136,6 +137,9 @@ struct AnnouncementCardView: View {
                     .lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if let path = item.actionPath {
+                AppPrimaryButton(title: item.actionLabel ?? "開く") { openAppPath(path) }
             }
         }
         .foregroundStyle(AppDesign.inkSecondary)

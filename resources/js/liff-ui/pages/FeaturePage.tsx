@@ -7,6 +7,7 @@ import { NativeReservationsPage } from "../native/NativeReservationsPage";
 import { NativeGalleryPage, NativeNewsPage, NativeOrdersPage } from "../native/NativeContentPages";
 import { NativeStorePage, NativeLegalPage } from "../native/NativeUtilityPages";
 import { NativeProductsPage } from "../native/NativeProductsPage";
+import { NativeSurveyPage } from "../native/NativeSurveyPage";
 import { useNativeConfig } from "../native/nativeConfig";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { LinkSitePage } from "./LinkSitePage";
@@ -29,6 +30,7 @@ export function FeaturePage() {
     case "news": case "announcements": return <NativeNewsPage />;
     case "orderHistory": case "orders": case "purchaseHistory": return <NativeOrdersPage />;
     case "storeSearch": return <NativeStorePage />;
+    case "survey": return <NativeSurveyPage />;
     case "terms": case "privacy": return <NativeLegalPage kind={feature} />;
     case "lottery": return <Navigate to="/designlab" replace />;
     case "menu": case "products": case "mobileOrder": case "dineInOrder": {

@@ -1,0 +1,62 @@
+/* 管理画面チャット: 左に会話一覧、右に会話。狭い画面では一覧と会話を切り替える */
+.admin-chat-card { padding: 0; overflow: hidden; }
+.admin-chat { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; height: min(72vh, 760px); min-height: 420px; }
+.admin-chat-threads { border-right: 1px solid #e5e7eb; overflow-y: auto; }
+.admin-chat-thread { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; width: 100%; padding: 12px 16px; border: 0; border-bottom: 1px solid #f1f5f9; background: none; text-align: left; cursor: pointer; }
+.admin-chat-thread:hover, .admin-chat-thread.is-active { background: #f1f5f9; }
+.admin-chat-thread-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-chat-thread-time { font-size: 12px; color: #6b7280; }
+.admin-chat-unread { grid-column: 1 / -1; justify-self: start; padding: 1px 8px; border-radius: 999px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; }
+.admin-chat-conversation { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.admin-chat-conversation-header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #e5e7eb; }
+.admin-chat-conversation-header strong { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-chat-conversation .chat-view { flex: 1; }
+.admin-chat-back { display: none; }
+.admin-chat-summary { margin: 0; padding: 10px 16px; border-bottom: 1px solid #e5e7eb; font-size: 12px; font-weight: 700; color: #6b7280; position: sticky; top: 0; background: #fff; }
+.admin-chat-empty, .admin-chat-loading, .admin-chat-error { margin: 0; padding: 24px 16px; color: #6b7280; }
+.admin-chat-error { color: #b91c1c; }
+@media (max-width: 768px) {
+    .admin-chat { grid-template-columns: 1fr; }
+    .admin-chat-threads { border-right: 0; }
+    .admin-chat.has-selection .admin-chat-threads, .admin-chat:not(.has-selection) .admin-chat-conversation { display: none; }
+    .admin-chat-conversation-header { flex-wrap: wrap; }
+    .admin-chat-back { display: inline-block; }
+}
+.admin-chat-summary-waiting { color: #b45309; }
+.admin-chat-thread-tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+.admin-chat-thread-tags:empty { display: none; }
+.admin-chat-thread.is-waiting { box-shadow: inset 3px 0 0 #f59e0b; }
+.admin-chat-waiting, .admin-chat-blocked { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.admin-chat-waiting { background: #fef3c7; color: #92400e; }
+.admin-chat-blocked { margin-left: 8px; background: #e5e7eb; color: #374151; }
+.admin-chat-thread-tags .admin-chat-blocked { margin-left: 0; }
+/* 読み込み中の表示。JavaScript（共通の chat.css）より先に表示されるため、ここにも同じ形を定義する */
+.admin-chat .chat-messages { padding: 16px; }
+.admin-chat .chat-skeleton { display: flex; flex-direction: column; gap: 12px; }
+.admin-chat .chat-skeleton-bubble, .admin-chat-skeleton-line { display: block; height: 40px; border-radius: 16px; background: linear-gradient(90deg, #f3f4f6 0%, #fff 50%, #f3f4f6 100%); background-size: 200% 100%; animation: admin-chat-shimmer 1.4s ease-in-out infinite; }
+.admin-chat .chat-skeleton-bubble.is-mine { align-self: flex-end; }
+.admin-chat .chat-skeleton-bubble.w-35 { width: 35%; } .admin-chat .chat-skeleton-bubble.w-40 { width: 40%; } .admin-chat .chat-skeleton-bubble.w-50 { width: 50%; } .admin-chat .chat-skeleton-bubble.w-60 { width: 60%; } .admin-chat .chat-skeleton-bubble.w-70 { width: 70%; }
+.admin-chat-skeleton-line.is-name { width: 60%; height: 14px; border-radius: 7px; }
+.admin-chat-skeleton-line.is-time { width: 40px; height: 12px; border-radius: 6px; }
+@keyframes admin-chat-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .admin-chat .chat-skeleton-bubble, .admin-chat-skeleton-line { animation: none; } }
+/* 会話の右の「お客様の情報」。狭い画面では会話の下に並べる */
+.admin-chat-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 280px; }
+.admin-chat-body .chat-view { min-width: 0; }
+.admin-chat-panel { border-left: 1px solid #e5e7eb; padding: 16px; overflow-y: auto; font-size: 14px; background: #fafafa; }
+.admin-chat-panel-title { margin: 0 0 12px; font-size: 15px; font-weight: 700; }
+.admin-chat-panel section + section { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+.admin-chat-panel h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; }
+.admin-chat-panel-help { margin: 0 0 10px; font-size: 12px; color: #6b7280; }
+.admin-chat-panel-empty { margin: 0; font-size: 13px; color: #6b7280; }
+.admin-chat-panel-notice { margin: 0 0 12px; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+.admin-chat-panel-notice.is-ok { background: #ecfdf5; color: #047857; }
+.admin-chat-panel-notice.is-error { background: #fef2f2; color: #b91c1c; }
+.admin-chat-reservations { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.admin-chat-reservations li { display: grid; gap: 6px; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+.admin-chat-reservations li span { display: block; font-size: 12px; color: #6b7280; }
+.admin-chat-panel-submit { width: 100%; margin-top: 8px; }
+@media (max-width: 1100px) {
+    .admin-chat-body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+    .admin-chat-panel { border-left: 0; border-top: 1px solid #e5e7eb; max-height: 40vh; }
+}

@@ -11,12 +11,14 @@
     "typecheck:strict": "tsc --noEmit -p tsconfig.strict.json",
     "lint": "eslint resources/js --max-warnings=0",
     "test:unit:frontend": "node --experimental-strip-types --test resources/js/frontend/member/*.test.mjs resources/js/frontend/navigation/*.test.mjs resources/js/payment/*.test.mjs resources/js/liff-ui/native/*.test.mjs",
+    "test:firebase-rules": "npx --yes firebase-tools@15.33.0 emulators:exec --only auth,firestore,storage --project demo-reggit \"node --experimental-transform-types --no-warnings --test --test-concurrency=1 tests/firebase/*.test.mjs\"",
     "test:e2e": "playwright test --config=e2e/web/playwright.config.ts",
     "test:e2e:ui": "playwright test --config=e2e/web/playwright.config.ts --ui"
   },
   "dependencies": {
     "@laravel/passkeys": "^0.4.0",
     "date-fns": "^4.4.0",
+    "firebase": "13.0.0",
     "jsbarcode": "^3.12.3",
     "jsqr": "^1.4.0",
     "laravel-echo": "^2.5.0",
@@ -31,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "6.0.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/qrcode": "^1.5.6",

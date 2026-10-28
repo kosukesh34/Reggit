@@ -27,6 +27,8 @@ class PublicImageStorageService
 
     public const DIR_SHOP_HERO = 'shop_heroes';
 
+    public const DIR_PROMO_POPUP = 'promo_popups';
+
     public function store(UploadedFile $file, int $projectId, string $directory): string
     {
         $path = $file->store($directory.'/'.$projectId, 'public');

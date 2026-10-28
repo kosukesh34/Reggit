@@ -1,5 +1,6 @@
 import { getQueueTokenFromUrl } from '../../shared/utils/queueToken';
 import { getStampGrantCodeFromUrl } from '../../shared/utils/stampGrantToken';
+import { withSurveyLaunchQuery } from '../../shared/utils/launchParam';
 
 /** 旧 ReggitApp.switchTab のタブ名 → liff-ui HashRouter パス */
 
@@ -12,6 +13,7 @@ const TAB_PATHS: Record<string, string> = {
   coupons: '/coupon',
   coupon: '/coupon',
   tickets: '/tickets',
+  chat: '/chat',
   stamps: '/stamp',
   stamp: '/stamp',
   queue: '/queue',
@@ -25,6 +27,7 @@ const TAB_PATHS: Record<string, string> = {
   announcements: '/news',
   news: '/news',
   gallery: '/gallery',
+  survey: '/survey',
   more: '/more',
   link_1: '/link_1',
   link_2: '/link_2',
@@ -41,6 +44,7 @@ const PATH_TO_LEGACY_TAB: Record<string, string> = {
   '/designlab': 'designlab',
   '/coupon': 'coupons',
   '/tickets': 'tickets',
+  '/chat': 'chat',
   '/stamp': 'stamps',
   '/queue': 'queue',
   '/reservation': 'reservations',
@@ -49,6 +53,7 @@ const PATH_TO_LEGACY_TAB: Record<string, string> = {
   '/orderHistory': 'orders',
   '/news': 'announcements',
   '/gallery': 'gallery',
+  '/survey': 'survey',
   '/more': 'more',
   '/link_1': 'link_1',
   '/link_2': 'link_2',
@@ -85,6 +90,10 @@ function tabParamFromEncoded(raw: string | null): string | null {
 
 /** クエリ / liff.state / ネイティブ指定 / 待ち順トークンから初期パスを決める */
 export function resolveInitialHashPath(): string {
+  return typeof window === 'undefined' ? '/home' : withSurveyLaunchQuery(resolveInitialTabPath(), window.location.href);
+}
+
+function resolveInitialTabPath(): string {
   if (typeof window === 'undefined') {
     return '/home';
   }

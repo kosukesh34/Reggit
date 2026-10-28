@@ -371,6 +371,31 @@ struct ReggitAPIClient: ReggitAPIServing {
         return try AnnouncementListResponse.parse(data).announcements
     }
 
+    func fetchPromoPopups() async throws -> [PromoPopup] {
+        let data = try await requestData(path: "/api/promo-popups", method: "GET")
+        return try PromoPopup.parseList(data)
+    }
+
+    func recordPromoPopupEvent(id: Int, event: PromoPopup.Event) async throws {
+        _ = try await requestJSON(path: "/api/promo-popups/\(id)/events", method: "POST", body: ["event": event.rawValue])
+    }
+
+    // MARK: - Surveys
+
+    func fetchOpenSurveys() async throws -> [SurveyDetail] {
+        try SurveyDetail.parseList(try await requestData(path: "/api/surveys", method: "GET"))
+    }
+
+    func fetchSurvey(id: Int) async throws -> SurveyDetail {
+        try SurveyDetail.parseDetail(try await requestData(path: "/api/surveys/\(id)", method: "GET"))
+    }
+
+    func submitSurveyAnswers(id: Int, answers: [SurveyAnswerValue?]) async throws -> Int {
+        let body: [String: Any] = ["answers": answers.map { $0?.jsonValue ?? NSNull() }]
+        let json = try await requestJSON(path: "/api/surveys/\(id)/answers", method: "POST", body: body)
+        return ((json["data"] as? [String: Any])?["granted_points"] as? Int) ?? 0
+    }
+
     func fetchGalleryContent(categoryId: Int?) async throws -> GallerySnapshot {
         var path = "/api/gallery"
         if let categoryId {
@@ -408,6 +433,21 @@ struct ReggitAPIClient: ReggitAPIServing {
 
     func cancelReservationBooking(id: Int) async throws {
         _ = try await requestJSON(path: "/api/reservations/\(id)/cancel", method: "POST")
+    }
+
+    // MARK: - Chat
+
+    func fetchChatSession() async throws -> ChatSessionInfo {
+        try ChatSessionInfo.parse(try await requestData(path: "/api/member-chat/token", method: "POST", body: [:]))
+    }
+
+    func fetchChatUnreadCount() async throws -> Int {
+        let json = try await requestJSON(path: "/api/member-chat/unread", method: "GET")
+        return ((json["data"] as? [String: Any])?["count"] as? Int) ?? 0
+    }
+
+    func markChatRead() async throws {
+        _ = try await requestJSON(path: "/api/member-chat/read", method: "POST", body: [:])
     }
 
     // MARK: - HTTP

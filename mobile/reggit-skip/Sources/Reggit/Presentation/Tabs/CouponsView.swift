@@ -87,9 +87,20 @@ final class CouponsViewModel {
 
 struct CouponsView: View {
     @State var viewModel: CouponsViewModel
+    /// クーポンは店舗を限定できないため、プロジェクトの全店舗で使える
+    let storeNames: [String]
 
-    init(apiClient: any ReggitAPIServing) {
+    init(apiClient: any ReggitAPIServing, storeNames: [String] = []) {
         _viewModel = State(initialValue: CouponsViewModel(apiClient: apiClient))
+        self.storeNames = storeNames
+    }
+
+    static func storeLabel(_ names: [String]) -> String? {
+        switch names.count {
+        case 0: return nil
+        case 1: return "\(names[0])で使えます"
+        default: return "全店舗で使えます（\(names.joined(separator: "・"))）"
+        }
     }
 
     var body: some View {
@@ -284,6 +295,12 @@ struct CouponsView: View {
                             FontAwesomeLabel("期間中いつでも利用できます", systemImage: "infinity")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(AppDesign.inkSecondary)
+                        }
+                        if let storeLabel = Self.storeLabel(storeNames) {
+                            FontAwesomeLabel(storeLabel, systemImage: "location.fill")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(AppDesign.inkSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 

@@ -20,9 +20,10 @@
         'segment_birthday_months',
         filled(old('segment_birthday_month')) ? [old('segment_birthday_month')] : []
     ))->map(fn ($month) => (int) $month)->filter(fn ($month) => $month >= 1 && $month <= 12)->unique()->values();
-    $selectedTagIds = collect((array) old('segment_tag_ids', []))->map(fn ($id) => (int) $id)->filter()->unique()->values();
+    // アンケート結果などから「このタグの会員へ配信」で開いたときは、そのタグを選んだ状態にする
+    $selectedTagIds = collect((array) old('segment_tag_ids', request()->query('segment_tag_ids', [])))->map(fn ($id) => (int) $id)->filter()->unique()->values();
     $selectedRfmSegments = collect((array) old('segment_rfm_segments', []))->map(fn ($key) => (string) $key)->filter()->unique()->values();
-    $legacyDeliveryType = old('delivery_type', '');
+    $legacyDeliveryType = old('delivery_type', request()->query('delivery_type') === \App\Models\Announcement::DELIVERY_TYPE_SEGMENT ? \App\Models\Announcement::DELIVERY_TYPE_SEGMENT : '');
     $oldAudienceType = old('audience_type', $legacyDeliveryType === \App\Models\Announcement::DELIVERY_TYPE_SCHEDULED
         ? \App\Models\Announcement::DELIVERY_TYPE_IMMEDIATE_BULK
         : ($legacyDeliveryType ?: \App\Models\Announcement::DELIVERY_TYPE_IMMEDIATE_BULK));

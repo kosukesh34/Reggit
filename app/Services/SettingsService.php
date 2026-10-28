@@ -99,6 +99,7 @@ class SettingsService
             'closedDates' => $repo->getClosedDates($projectId),
             'advanceDays' => $repo->getAdvanceBookingDays($projectId),
             'reservationCapacity' => $repo->getReservationCapacityPerSlot($projectId),
+            'reminder' => $repo->getReservationReminderConfig($projectId),
         ];
     }
 
@@ -114,6 +115,10 @@ class SettingsService
         $repo->setValue('closed_dates', $closedDates, 'json', $projectId);
         $repo->setValue('advance_booking_days', (int) ($validated['advance_booking_days'] ?? 30), 'integer', $projectId);
         $repo->setValue('reservation_capacity_per_slot', (int) ($validated['reservation_capacity_per_slot'] ?? 20), 'integer', $projectId);
+        $repo->setValue('reservation_reminder_hours', (int) ($validated['reservation_reminder_hours'] ?? 0), 'integer', $projectId);
+        $repo->setValue('reservation_reminder_second_hours', (int) ($validated['reservation_reminder_second_hours'] ?? 0), 'integer', $projectId);
+        $message = trim((string) ($validated['reservation_reminder_message'] ?? ''));
+        $repo->setValue('reservation_reminder_message', $message !== '' ? $message : null, 'string', $projectId);
     }
 
     public function updateLineThemeSettings(array $validated, ?int $projectId = null): void

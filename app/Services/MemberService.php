@@ -242,14 +242,23 @@ class MemberService
             if ($key === 'profile_image') {
                 continue;
             }
+            if ($key === 'customer_store_id') {
+                $out[] = $this->storeProfileField($projectId, (bool) ($field['required'] ?? false));
+
+                continue;
+            }
             $out[] = [
                 'key' => $key,
                 'label' => $field['label'] ?? $key,
                 'required' => (bool) ($field['required'] ?? false) === true,
                 'input_type' => $this->resolveBasicFieldInputType($key),
-                'options' => $key === 'customer_store_id' ? $this->customerStoreProfile->options($projectId) : [],
-                'description' => $key === 'customer_store_id' ? '主に利用する店舗を選択してください。' : null,
+                'options' => [],
+                'description' => null,
             ];
+        }
+        // ご利用店舗はアプリの注文・お知らせの店舗と同じ。店舗が複数あれば、項目設定に関係なく選べるようにする
+        if (! in_array('customer_store_id', array_column($out, 'key'), true) && count($this->customerStoreProfile->options($projectId)) > 1) {
+            array_unshift($out, $this->storeProfileField($projectId, false));
         }
         foreach ($profileSettings['custom_fields'] ?? [] as $cf) {
             $out[] = [
@@ -276,6 +285,19 @@ class MemberService
         ];
 
         return $out;
+    }
+
+    /** @return array<string, mixed> */
+    private function storeProfileField(int $projectId, bool $required): array
+    {
+        return [
+            'key' => 'customer_store_id',
+            'label' => 'ご利用店舗',
+            'required' => $required,
+            'input_type' => ProfileCustomFieldInputType::SELECTBOX,
+            'options' => $this->customerStoreProfile->options($projectId),
+            'description' => '注文・メニュー・お知らせに使う店舗です。変更するとアプリの表示が切り替わります。',
+        ];
     }
 
     private function resolveBasicFieldInputType(string $key): string

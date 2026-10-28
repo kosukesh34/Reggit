@@ -2,6 +2,7 @@ import { Component, lazy, Suspense, type ErrorInfo, type ReactNode, useCallback,
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { PointQrClaim } from "../components/membership/PointQrClaim";
 import { LoginPromptPopup } from "../components/membership/LoginPromptPopup";
+import { PromoPopupHost } from "../components/home/PromoPopupHost";
 import { AppShell } from "../components/layout/AppShell";
 import { useMembershipGate } from "../../frontend/hooks/useMembershipGate";
 import { useLegacyTabBridge } from "../navigation/useLegacyTabBridge";
@@ -18,6 +19,8 @@ const WithdrawPage = lazy(() => import("../pages/WithdrawPage").then((module) =>
 const FeaturePage = lazy(() => import("../pages/FeaturePage").then((module) => ({ default: module.FeaturePage })));
 const StampIssuePage = lazy(() => import("../pages/StampIssuePage").then((module) => ({ default: module.StampIssuePage })));
 const NativeLotteryPage = lazy(() => import("../native/NativeLotteryPage").then((module) => ({ default: module.NativeLotteryPage })));
+// Firebase SDK はチャットを開いたときだけ読み込む
+const NativeChatPage = lazy(() => import("../native/NativeChatPage").then((module) => ({ default: module.NativeChatPage })));
 
 function ScreenLoadingFallback() {
   return (
@@ -87,6 +90,7 @@ function ScreenRoutes() {
           <Route path="/card" element={<Navigate to="/membership" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/designlab" element={<NativeLotteryPage />} />
+          <Route path="/chat" element={<NativeChatPage />} />
           <Route path="/more/link" element={<NativeExistingMemberPage />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="/more/withdraw" element={<WithdrawPage />} />
@@ -166,6 +170,7 @@ export function AppRouter() {
       <PointQrClaim />
       <MembershipGate onSettled={() => setGateSettled(true)} />
       <LoginPromptPopup />
+      <PromoPopupHost enabled={gateSettled} />
       <ScreenRoutes />
     </AppShell>
   );

@@ -2,6 +2,7 @@ import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
 import { ConfirmDialog } from '../../shared/utils/confirmDialog';
+import { clearAcquisitionSource, getAcquisitionSource } from '../../shared/utils/acquisitionSource';
 import { getGuestRegisterMessage, getMemberRegistrationMode, isMembershipRequired, shouldAutoCreateMember, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
 import { buildBuiltinSampleMemberData } from '../demo/sampleData';
@@ -873,7 +874,7 @@ export class MemberManager {
         }
         this._autoRegisterAttempted = true;
 
-        const payload: any = {};
+        const payload: any = { acquisition_source: getAcquisitionSource() };
         if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) {
             payload.line_name = window.__LINE_PROFILE__.displayName;
         }
@@ -882,6 +883,7 @@ export class MemberManager {
             const raw = result.success && result.data ? result.data : null;
             const memberPayload = raw ? (this._normalizeMemberPayload(raw) || raw) : null;
             if (memberPayload && memberPayload.is_member) {
+                clearAcquisitionSource();
                 this.memberData = memberPayload;
                 this.render(memberPayload);
                 ToastManager.success('会員証を作成しました');
@@ -2715,10 +2717,12 @@ export class MemberManager {
             if (typeof window !== 'undefined' && window.__LINE_PROFILE__ && window.__LINE_PROFILE__.displayName) {
                 payload.line_name = window.__LINE_PROFILE__.displayName;
             }
+            payload.acquisition_source = getAcquisitionSource();
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
             const raw = (result && result.data) != null ? result.data : result;
             const data = this._normalizeMemberPayload(raw) || raw;
             if (data && (data.is_member === true || typeof data.is_member !== 'undefined')) {
+                if (data.is_member === true) clearAcquisitionSource();
                 this.memberData = data;
                 this._forcedRegister = false;
                 if (this._registerFullScreen) {

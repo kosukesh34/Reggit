@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Settings;
 
+use App\Domain\Reservation\Policies\ReservationReminderPolicy;
 use App\Http\Controllers\Admin\AdminBaseController;
 use App\UseCases\Admin\Settings\GetReservationCoursesUseCase;
 use App\UseCases\Admin\Settings\GetReservationOnlySettingsUseCase;
@@ -9,6 +10,7 @@ use App\UseCases\Admin\Settings\StoreReservationCourseUseCase;
 use App\UseCases\Admin\Settings\UpdateReservationCourseUseCase;
 use App\UseCases\Admin\Settings\UpdateReservationOnlySettingsUseCase;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ReservationsController extends AdminBaseController
 {
@@ -49,6 +51,9 @@ class ReservationsController extends AdminBaseController
             'closed_dates.*' => 'nullable|string',
             'advance_booking_days' => 'required|integer|min:1|max:365',
             'reservation_capacity_per_slot' => 'required|integer|min:1|max:999',
+            'reservation_reminder_hours' => ['nullable', 'integer', Rule::in(ReservationReminderPolicy::HOUR_OPTIONS)],
+            'reservation_reminder_second_hours' => ['nullable', 'integer', Rule::in(ReservationReminderPolicy::HOUR_OPTIONS)],
+            'reservation_reminder_message' => ['nullable', 'string', 'max:500'],
         ]);
         $this->updateReservationOnlySettingsUseCase->handle($projectId, $validated);
 

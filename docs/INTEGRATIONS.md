@@ -84,6 +84,7 @@ IP 制限がある場合に登録するのは、Laravel サーバーの外向き
 
 ## Push・メール・リアルタイム
 
+- チャット（Firestore / Storage）: Firebase コンソールで Firestore を有効にし、Web アプリを登録して `FIREBASE_WEB_API_KEY`・`FIREBASE_WEB_APP_ID` を設定する。画像を使う場合だけ Storage（Blaze プランが必要）を有効にして `FIREBASE_STORAGE_BUCKET` を設定する（空なら画像なし）。プロジェクトIDとサービスアカウントは未設定なら `PUSH_FCM_*` を使う。`firebase deploy --only firestore:rules,firestore:indexes` でルールとインデックスを反映する。Storage を使う場合は `storage` も反映し、Storage ルールが Firestore を参照するための初回の権限付与を許可し、バケットの CORS で管理画面・LIFF のオリジンからの `GET` を許可する。ルールの検証は `npm run test:firebase-rules`（Java 21 以上が必要）。
 - FCM: `PUSH_FCM_ENABLED`、`PUSH_FCM_PROJECT_ID`、`PUSH_FCM_CREDENTIALS` を設定する。顧客アプリの iOS / Android 設定は [Skip README](../mobile/reggit-skip/README.md) を参照する。送信受付と端末受信を別に検証する。
 - メール: `MAIL_*` を実際の SMTP 設定に合わせる。送信元、パスワードリセット、注文通知を確認する。
 - Reverb: `BROADCAST_CONNECTION` / `BROADCAST_DRIVER`、`REVERB_*` を合わせ、Reverb プロセスと WebSocket プロキシを用意する。署名用 Secret は公開しない。

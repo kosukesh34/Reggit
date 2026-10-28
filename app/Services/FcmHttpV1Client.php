@@ -47,6 +47,7 @@ class FcmHttpV1Client
         ?string $collapseId = null,
         bool $contentAvailable = false,
         bool $mutableContent = false,
+        ?int $badge = null,
     ): array {
         $sent = 0;
         $failed = 0;
@@ -61,7 +62,7 @@ class FcmHttpV1Client
             }
 
             try {
-                $result = $this->sendOne($token, $title, $body, $data, $collapseId, $contentAvailable, $mutableContent);
+                $result = $this->sendOne($token, $title, $body, $data, $collapseId, $contentAvailable, $mutableContent, $badge);
             } catch (\Throwable $e) {
                 LogHelper::error('[Push] FCM v1 request failed', [
                     'error' => $e->getMessage(),
@@ -101,6 +102,7 @@ class FcmHttpV1Client
         ?string $collapseId,
         bool $contentAvailable,
         bool $mutableContent,
+        ?int $badge = null,
     ): array {
         $projectId = trim((string) config('push.fcm.project_id'));
         $message = [
@@ -140,6 +142,11 @@ class FcmHttpV1Client
         }
         if ($mutableContent) {
             $apns['payload']['aps']['mutable-content'] = 1;
+        }
+        // アプリアイコンの数字（iOS）・通知の件数（Android）
+        if ($badge !== null) {
+            $apns['payload']['aps']['badge'] = $badge;
+            $android['notification']['notification_count'] = $badge;
         }
         if (! $contentAvailable || $title !== '' || $body !== '') {
             $apns['payload']['aps']['alert'] = [

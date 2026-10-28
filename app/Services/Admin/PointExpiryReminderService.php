@@ -4,8 +4,8 @@ namespace App\Services\Admin;
 
 use App\Models\Announcement;
 use App\Models\Member;
-use App\Services\AnnouncementNotificationService;
 use App\Services\MemberPointsExpiryCalculator;
+use App\Services\PersonalAnnouncementSender;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -18,14 +18,11 @@ class PointExpiryReminderService
 
     private MemberPointsExpiryCalculator $expiryCalculator;
 
-    private AnnouncementNotificationService $announcementNotificationService;
-
     public function __construct(
         MemberPointsExpiryCalculator $expiryCalculator,
-        AnnouncementNotificationService $announcementNotificationService
+        private PersonalAnnouncementSender $announcements,
     ) {
         $this->expiryCalculator = $expiryCalculator;
-        $this->announcementNotificationService = $announcementNotificationService;
     }
 
     /**
@@ -82,18 +79,7 @@ class PointExpiryReminderService
             return false;
         }
 
-        $announcement = Announcement::create([
-            'project_id' => $projectId,
-            'title' => self::TITLE,
-            'body' => "{$expiringPoints}ptが{$daysLeft}日後に失効します。お早めにご利用ください。",
-            'is_pinned' => false,
-            'delivery_type' => Announcement::DELIVERY_TYPE_PERSONAL,
-            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
-            'target_member_ids' => [(int) $member->id],
-            'published_at' => now(),
-            'sent_at' => now(),
-        ]);
-        $this->announcementNotificationService->send($announcement);
+        $this->announcements->send($projectId, (int) $member->id, self::TITLE, "{$expiringPoints}ptが{$daysLeft}日後に失効します。お早めにご利用ください。", '/membership', 'ポイントを確認する');
 
         return true;
     }

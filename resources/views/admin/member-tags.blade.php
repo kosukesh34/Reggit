@@ -62,8 +62,7 @@
                 <td><code>{{ $tag->color }}</code></td>
                 <td>{{ number_format($tag->members_count ?? 0) }}人</td>
                 <td class="table-actions-cell">
-                    <form action="{{ admin_route('admin.member-tags.destroy', ['id' => $tag->id]) }}" method="POST"
-                          onsubmit="return confirmDialog('タグ「{{ $tag->name }}」を削除しますか？付与済みの会員からも解除されます。')">
+                    <form action="{{ admin_route('admin.member-tags.destroy', ['id' => $tag->id]) }}" method="POST" class="delete-form" data-item-name="タグ「{{ $tag->name }}」（付与済みの会員からも解除されます）">
                         @csrf @method('DELETE')
                         <button type="submit" class="btn btn-action btn-delete"><i class="fas fa-trash"></i></button>
                     </form>

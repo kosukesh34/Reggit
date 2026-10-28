@@ -50,6 +50,11 @@ class LayerDependencyTest extends TestCase
             'Admin/AnalysisDeliveryController.php',
             'Admin/ReservationController.php',
             'Admin/SystemHelpArticleController.php',
+            'Admin/SurveyController.php',
+            'Admin/PromoPopupController.php',
+            'Admin/AcquisitionSourceController.php',
+            'SurveyController.php',
+            'PromoPopupController.php',
         ];
         $violations = [];
         foreach ($controllers as $controller) {

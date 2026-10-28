@@ -1,0 +1,144 @@
+rules_version = '2';
+
+// チャット: projects/{pid}/chats/{mid}（会話）と messages（メッセージ）。
+// 読み書きの範囲は Laravel が署名したカスタムトークンのクレームだけで決まる。
+//   会員: role=member, pid, mid, label, stores（利用店舗）
+//   店舗: role=staff, pid, label, all_stores, stores（担当店舗）
+// until（ミリ秒）を過ぎたトークンは拒否し、退会・権限変更を一定時間内に反映する。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function claims() {
+      return request.auth.token;
+    }
+
+    function live(pid) {
+      return request.auth != null && claims().pid == pid && request.time.toMillis() < claims().until;
+    }
+
+    function isMember(pid, mid) {
+      return live(pid) && claims().role == 'member' && claims().mid == mid;
+    }
+
+    function isStaff(pid) {
+      return live(pid) && claims().role == 'staff';
+    }
+
+    // 会員一覧（StoreAccessScope）と同じく、担当店舗スタッフは利用店舗が重なる会員だけ見られる
+    function staffSees(pid, thread) {
+      return isStaff(pid) && (claims().all_stores == true || thread.store_ids.hasAny(claims().stores));
+    }
+
+    function thread(pid, mid) {
+      return get(/databases/$(database)/documents/projects/$(pid)/chats/$(mid)).data;
+    }
+
+    function changed() {
+      return request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys();
+    }
+
+    // edited_at: メッセージを削除した時刻。ポーリングする端末が一覧を取り直す合図
+    function validEditedAt() {
+      return !('edited_at' in changed()) || request.resource.data.edited_at == request.time;
+    }
+
+    // 会員は自分の会話の付帯情報を、トークンの値と同じ内容でだけ書ける。ブロックは変えられない
+    function validMemberThread(mid) {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['member_id', 'member_name', 'store_ids', 'last_message_at', 'last_sender', 'member_read_at', 'staff_read_at', 'blocked', 'edited_at'])
+        && data.member_id == mid
+        && data.member_name == claims().label
+        && data.store_ids == claims().stores
+        && (!('last_message_at' in changed()) || (data.last_message_at == request.time && data.last_sender == 'member'))
+        && (!('last_sender' in changed()) || 'last_message_at' in changed())
+        && (!('member_read_at' in changed()) || data.member_read_at == request.time)
+        && !('staff_read_at' in changed())
+        && !('blocked' in changed())
+        && validEditedAt();
+    }
+
+    function validStaffThread() {
+      let data = request.resource.data;
+      return changed().hasOnly(['last_message_at', 'last_sender', 'staff_read_at', 'blocked', 'edited_at'])
+        && (!('last_message_at' in changed()) || (data.last_message_at == request.time && data.last_sender == 'staff'))
+        && (!('last_sender' in changed()) || 'last_message_at' in changed())
+        && (!('staff_read_at' in changed()) || data.staff_read_at == request.time)
+        && (!('blocked' in changed()) || data.blocked is bool)
+        && validEditedAt();
+    }
+
+    // 店舗が送るクーポン・予約のカード。表示用の文字だけを持つ
+    function validCard(card) {
+      return card is map
+        && card.keys().hasOnly(['type', 'title', 'subtitle'])
+        && card.type in ['coupon', 'reservation']
+        && card.title is string && card.title.size() > 0 && card.title.size() <= 100
+        && (!('subtitle' in card) || (card.subtitle is string && card.subtitle.size() <= 200));
+    }
+
+    function validMessage(pid, mid, sender) {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['sender', 'sender_name', 'text', 'image_path', 'card', 'created_at'])
+        && data.sender == sender
+        && data.sender_name == claims().label
+        && data.created_at == request.time
+        && data.text is string && data.text.size() <= 2000
+        && (data.text.size() > 0 || 'image_path' in data || 'card' in data)
+        && (!('card' in data) || (sender == 'staff' && validCard(data.card)))
+        && (!('image_path' in data) || (data.image_path is string
+          && data.image_path.matches('projects/' + pid + '/chats/' + mid + '/[A-Za-z0-9_-]{20,64}[.](jpg|png|webp)')));
+    }
+
+    // 削除は本文・画像・カードを消して「削除済み」にする更新だけ。送信者と時刻は変えられない
+    function validDeletion() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['sender', 'sender_name', 'text', 'created_at', 'deleted', 'deleted_by'])
+        && data.sender == resource.data.sender
+        && data.sender_name == resource.data.sender_name
+        && data.created_at == resource.data.created_at
+        && data.text == ''
+        && data.deleted == true
+        && data.deleted_by == claims().role;
+    }
+
+    // 編集は本文だけ。送信者・時刻・画像は変えられず、カードと削除済みのメッセージは編集できない
+    function validEdit() {
+      let data = request.resource.data;
+      return !('deleted' in resource.data)
+        && !('card' in resource.data)
+        && data.keys().hasOnly(['sender', 'sender_name', 'text', 'image_path', 'created_at', 'edited_at'])
+        && data.sender == resource.data.sender
+        && data.sender_name == resource.data.sender_name
+        && data.created_at == resource.data.created_at
+        && data.get('image_path', '') == resource.data.get('image_path', '')
+        && data.text is string && data.text.size() <= 2000
+        && (data.text.size() > 0 || 'image_path' in data)
+        && data.text != resource.data.text
+        && data.edited_at == request.time;
+    }
+
+    match /projects/{pid}/chats/{mid} {
+      allow get: if isMember(pid, mid) || staffSees(pid, resource.data);
+      allow list: if staffSees(pid, resource.data);
+      allow create: if isMember(pid, mid) && validMemberThread(mid);
+      allow update: if (isMember(pid, mid) && validMemberThread(mid))
+        || (staffSees(pid, resource.data) && validStaffThread());
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isMember(pid, mid) || staffSees(pid, thread(pid, mid));
+        // ブロックされた会員は送信できない（過去の会話は読める）
+        allow create: if (isMember(pid, mid) && thread(pid, mid).get('blocked', false) != true && validMessage(pid, mid, 'member'))
+          || (staffSees(pid, thread(pid, mid)) && validMessage(pid, mid, 'staff'));
+        // 編集・削除は自分の側のメッセージだけ（会員は会員の送信、店舗は店舗の送信）。ブロック中の会員は編集できない
+        allow update: if resource.data.sender == claims().role
+          && ((isMember(pid, mid) && (validDeletion() || (validEdit() && thread(pid, mid).get('blocked', false) != true)))
+            || (staffSees(pid, thread(pid, mid)) && (validDeletion() || validEdit())));
+        allow delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

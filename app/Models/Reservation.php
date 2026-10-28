@@ -38,6 +38,8 @@ class Reservation extends Model
     /** @var array<string, string> */
     protected $casts = [
         'reserved_at' => 'datetime',
+        'reminder_sent_at' => 'datetime',
+        'second_reminder_sent_at' => 'datetime',
         'version' => 'integer',
         'number_of_people' => 'integer',
         'course_price' => 'integer',
@@ -61,6 +63,14 @@ class Reservation extends Model
     protected static function boot()
     {
         parent::boot();
+
+        // 日時を変えた予約には、新しい日時でもう一度リマインドを送る
+        static::saving(function (self $reservation): void {
+            if ($reservation->exists && $reservation->isDirty('reserved_at')) {
+                $reservation->reminder_sent_at = null;
+                $reservation->second_reminder_sent_at = null;
+            }
+        });
 
         static::creating(function ($reservation) {
             if ($reservation->reservation_number === null || $reservation->reservation_number === '') {

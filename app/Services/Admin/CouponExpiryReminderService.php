@@ -5,7 +5,7 @@ namespace App\Services\Admin;
 use App\Models\Announcement;
 use App\Models\Member;
 use App\Models\MemberCoupon;
-use App\Services\AnnouncementNotificationService;
+use App\Services\PersonalAnnouncementSender;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -17,7 +17,7 @@ class CouponExpiryReminderService
     private const TITLE = 'クーポン期限のお知らせ';
 
     public function __construct(
-        private AnnouncementNotificationService $announcementNotificationService
+        private PersonalAnnouncementSender $announcements,
     ) {}
 
     /**
@@ -93,18 +93,7 @@ class CouponExpiryReminderService
             ? "「{$name}」の有効期限まであと{$daysLeft}日です。お早めにご利用ください。"
             : "期限が近いクーポンが{$count}件あります。最短は「{$name}」（あと{$daysLeft}日）です。お早めにご利用ください。";
 
-        $announcement = Announcement::create([
-            'project_id' => $projectId,
-            'title' => self::TITLE,
-            'body' => $body,
-            'is_pinned' => false,
-            'delivery_type' => Announcement::DELIVERY_TYPE_PERSONAL,
-            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
-            'target_member_ids' => [(int) $member->id],
-            'published_at' => now(),
-            'sent_at' => now(),
-        ]);
-        $this->announcementNotificationService->send($announcement);
+        $this->announcements->send($projectId, (int) $member->id, self::TITLE, $body, '/coupon', 'クーポンを確認する');
 
         return true;
     }

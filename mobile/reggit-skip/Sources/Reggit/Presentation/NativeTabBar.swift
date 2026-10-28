@@ -3,7 +3,7 @@ import SwiftUI
 struct NativeTabBar: View {
     let items: [AppTabItem]
     var colors: [String: String] = [:]
-    var announcementCount = 0
+    var badges: [String: Int] = [:]
     @Binding var selectedTab: String
     @Environment(\.brandAccent) var accent
 
@@ -14,16 +14,7 @@ struct NativeTabBar: View {
                     VStack(spacing: 3) {
                         FontAwesomeIcon(systemName: TabIconResolver.systemName(for: item))
                             .overlay(alignment: .topTrailing) {
-                                if item.key == "announcements" && announcementCount > 0 {
-                                    Text(String(announcementCount))
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(Color.white)
-                                        .padding(.horizontal, 5)
-                                        .frame(minWidth: 18, minHeight: 18)
-                                        .background(Color.red)
-                                        .clipShape(Capsule())
-                                        .offset(x: 12, y: -8)
-                                }
+                                CountBadge(count: badges[item.key] ?? 0).offset(x: 12, y: -8)
                             }
                         Text(item.label)
                             .font(.system(size: 10, weight: .medium))
@@ -36,7 +27,7 @@ struct NativeTabBar: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(item.key == "announcements" && announcementCount > 0 ? "\(item.label)、\(announcementCount)件" : item.label))
+                .accessibilityLabel(Text(CountBadge.label(item.label, count: badges[item.key] ?? 0)))
             }
         }
         .padding(.horizontal, 8)
@@ -84,5 +75,27 @@ enum TabIconResolver {
         case "privacy": return "hand.raised.fill"
         default: return "circle.fill"
         }
+    }
+}
+
+/// メニューの未読数。0 のときは表示しない
+struct CountBadge: View {
+    let count: Int
+
+    var body: some View {
+        if count > 0 {
+            Text(count > 99 ? "99+" : String(count))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 5)
+                .frame(minWidth: 18, minHeight: 18)
+                .background(Color.red)
+                .clipShape(Capsule())
+                .accessibilityHidden(true)
+        }
+    }
+
+    static func label(_ label: String, count: Int) -> String {
+        count > 0 ? "\(label)、\(count)件" : label
     }
 }
