@@ -6,6 +6,7 @@ parameters:
         - app
     level: 0
     tmpDir: storage/framework/cache/phpstan
-    # ローカル CI のコンテナ（2コア・メモリ1GB）に合わせる。未指定だとホストのコア数だけ作業プロセスを起動し、メモリ不足で強制終了される
+    # ローカル CI のコンテナ（メモリ1GB、うちソースのコピー約110MB）に収める。
+    # 作業プロセスは1つで約420MB 使うため、2つだと上限を超えて強制終了される（単独でも約20秒で終わる）
     parallel:
-        maximumNumberOfProcesses: 2
+        maximumNumberOfProcesses: 1
