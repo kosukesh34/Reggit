@@ -88,6 +88,7 @@ class ShopSettingStore
         'feature_tickets_enabled' => ProjectFeatureFlags::class,
         'feature_surveys_enabled' => ProjectFeatureFlags::class,
         'feature_popups_enabled' => ProjectFeatureFlags::class,
+        'feature_chat_enabled' => ProjectFeatureFlags::class,
         'feature_gacha_enabled' => ProjectFeatureFlags::class,
         'feature_scratch_enabled' => ProjectFeatureFlags::class,
         'feature_roulette_enabled' => ProjectFeatureFlags::class,
@@ -310,6 +311,7 @@ class ShopSettingStore
             ['tab' => 'profile', 'label' => 'プロフィール', 'icon' => 'fa-user', 'order' => 10],
             ['tab' => 'gallery', 'label' => 'ギャラリー', 'icon' => 'fa-images', 'order' => 11],
             ['tab' => 'announcements', 'label' => 'お知らせ', 'icon' => 'fa-bullhorn', 'order' => 12],
+            ['tab' => 'chat', 'label' => 'チャット', 'icon' => 'fa-comments', 'order' => 13],
         ];
     }
 

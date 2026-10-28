@@ -118,6 +118,7 @@
                 $showAnnouncements = $navFeatureOn('feature_announcements_enabled') && $navCan('announcements.view');
                 $showSurveys = $navFeatureOn('feature_surveys_enabled') && $navCan('announcements.view');
                 $showPopups = $navFeatureOn('feature_popups_enabled') && $navCan('announcements.view');
+                $showChat = $navStore !== null && $navFeatureOn('feature_chat_enabled') && $navCan('chat.manage');
             @endphp
             <header class="admin-topbar">
                 <a class="admin-topbar-brand" href="{{ $isSystemAdminScreen ? route('system-admin.dashboard') : admin_route('admin.dashboard') }}">
@@ -219,7 +220,7 @@
                         <span>ダッシュボード</span>
                     </a>
                     @endif
-                    @if($showOrderList || $showReservations || $showQueue)
+                    @if($showOrderList || $showReservations || $showQueue || $showChat)
                     <div class="nav-group">
                         <div class="nav-group-label">運用</div>
                         @if($showOrderList)
@@ -244,6 +245,12 @@
                         <a href="{{ admin_route('admin.queue') }}" class="nav-item {{ request()->routeIs('admin.queue*') && !request()->routeIs('admin.settings.queue*') ? 'active' : '' }}">
                             <i class="fas fa-list-ol"></i>
                             <span>順番待ち</span>
+                        </a>
+                        @endif
+                        @if($showChat)
+                        <a href="{{ admin_route('admin.chats') }}" class="nav-item {{ request()->routeIs('admin.chats*') ? 'active' : '' }}">
+                            <i class="fas fa-comments"></i>
+                            <span>チャット</span>
                         </a>
                         @endif
                     </div>

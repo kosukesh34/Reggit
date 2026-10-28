@@ -27,6 +27,7 @@
         'member' => 'feature_members_enabled',
         'gallery' => 'feature_gallery_enabled',
         'announcements' => 'feature_announcements_enabled',
+        'chat' => 'feature_chat_enabled',
     ];
     $filteredMenu = $isDemoFixedUi
         ? []

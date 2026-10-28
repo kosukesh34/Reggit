@@ -435,6 +435,21 @@ struct ReggitAPIClient: ReggitAPIServing {
         _ = try await requestJSON(path: "/api/reservations/\(id)/cancel", method: "POST")
     }
 
+    // MARK: - Chat
+
+    func fetchChatSession() async throws -> ChatSessionInfo {
+        try ChatSessionInfo.parse(try await requestData(path: "/api/member-chat/token", method: "POST", body: [:]))
+    }
+
+    func fetchChatUnreadCount() async throws -> Int {
+        let json = try await requestJSON(path: "/api/member-chat/unread", method: "GET")
+        return ((json["data"] as? [String: Any])?["count"] as? Int) ?? 0
+    }
+
+    func markChatRead() async throws {
+        _ = try await requestJSON(path: "/api/member-chat/read", method: "POST", body: [:])
+    }
+
     // MARK: - HTTP
 
     private func requestJSON(

@@ -54,7 +54,12 @@ final class MemberProfileRules
                 $rules['name'],
             );
         }
+        // ご利用店舗は項目設定で無効でも、店舗が複数あれば受け付ける（MemberService の入力欄と対応）
+        if (! isset($rules['customer_store_id']) && count($this->customerStoreProfile->options($projectId)) > 1) {
+            $rules['customer_store_id'] = ['nullable', 'integer', $this->customerStoreProfile->rule($projectId)];
+        }
         $rules['line_name'] = ['nullable', 'string', 'max:'.ProfileValidationRules::NAME_MAX];
+
         $rules['notification_preference'] = ['nullable', Rule::in(MemberNotificationPreference::keys())];
 
         return $rules;

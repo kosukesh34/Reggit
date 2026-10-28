@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\Auth\AdminPasskeyVerifyController;
 use App\Http\Controllers\Admin\Auth\AdminPasswordController;
 use App\Http\Controllers\Admin\Auth\LogoutController;
 use App\Http\Controllers\Admin\Auth\SystemAdminLoginController;
+use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\CouponBulkIssueController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\CouponDeliveryController;
@@ -329,6 +330,12 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/products/{id}/edit', [AdminProductController::class, 'editProduct'])->name('admin.products.edit')->middleware('admin.permission:products.manage');
         Route::put('/products/{id}', [ProductMutationController::class, 'update'])->name('admin.products.update')->middleware('admin.permission:products.manage');
         Route::delete('/products/{id}', [ProductMutationController::class, 'destroy'])->name('admin.products.delete')->middleware('admin.permission:products.manage');
+
+        Route::get('/chats', [AdminChatController::class, 'index'])->name('admin.chats')->middleware('admin.permission:chat.manage');
+        Route::post('/chats/token', [AdminChatController::class, 'token'])->name('admin.chats.token')->middleware(['admin.permission:chat.manage', 'throttle:30,1']);
+        Route::post('/chats/{member}/notify', [AdminChatController::class, 'notify'])->whereNumber('member')->name('admin.chats.notify')->middleware(['admin.permission:chat.manage', 'throttle:60,1']);
+        Route::get('/chats/{member}/context', [AdminChatController::class, 'context'])->whereNumber('member')->name('admin.chats.context')->middleware('admin.permission:chat.manage');
+        Route::post('/chats/{member}/issue-coupon/{coupon}', [AdminChatController::class, 'issueCoupon'])->whereNumber(['member', 'coupon'])->name('admin.chats.coupon')->middleware(['admin.permission:chat.manage', 'admin.permission:members.manage', 'throttle:30,1']);
 
         Route::get('/members', [MemberIndexController::class, 'index'])->name('admin.members')->middleware('admin.permission:members.view');
         Route::post('/members/{id}/transfer-code', [AdminMemberTransferController::class, 'store'])->name('admin.members.transfer-code')->middleware('admin.permission:members.manage');

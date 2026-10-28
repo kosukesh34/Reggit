@@ -332,154 +332,174 @@ struct MembershipView: View {
         }
     }
 
+    /// 会員証の画面。会員証・特典・会員情報の順にまとめて表示する
     private func memberContent(_ member: MemberProfileSnapshot) -> some View {
         ScrollView {
-            VStack(spacing: 24) {
-                MembershipPassCard(
-                    member: member,
-                    projectName: projectName,
-                    baseURL: viewModel.mediaBaseURL,
-                    pageStyle: pageStyle,
-                    onEnlargeCode: { viewModel.showBarcodeEnlarge = true }
-                )
+            VStack(spacing: 20) {
+                VStack(spacing: 12) {
+                    MembershipPassCard(
+                        member: member,
+                        projectName: projectName,
+                        baseURL: viewModel.mediaBaseURL,
+                        pageStyle: pageStyle,
+                        onEnlargeCode: { viewModel.showBarcodeEnlarge = true }
+                    )
+                    if viewModel.canAddToWallet { walletButton(member) }
+                }
 
-                if !member.editableProfileFields.isEmpty {
-                    Button { viewModel.openProfileEdit() } label: {
-                        HStack(spacing: 12) {
-                            FontAwesomeIcon(systemName: "person.crop.circle")
-                                .foregroundStyle(accent)
-                                .frame(width: 36, height: 36)
-                                .background(AppDesign.surfaceMuted)
-                                .clipShape(Circle())
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("プロフィール編集")
-                                    .font(.subheadline.weight(.semibold))
-                                Text("登録情報を確認・編集")
-                                    .font(.caption)
-                                    .foregroundStyle(AppDesign.inkSecondary)
-                            }
-                            Spacer()
-                            FontAwesomeIcon(systemName: "chevron.right")
-                                .foregroundStyle(AppDesign.inkSecondary)
+                if showRankProgress || showPointHistory {
+                    memberGroup("ランク・ポイント", systemImage: "star.fill") {
+                        if showRankProgress, member.showRankProgress,
+                           let points = member.pointsToNextRank,
+                           let next = member.nextRankLabel, !next.isEmpty {
+                            rankProgress(member: member, points: points, next: next)
+                            if showPointHistory { Divider().padding(.horizontal, 16) }
                         }
-                        .foregroundStyle(AppDesign.ink)
-                        .padding(.horizontal, 16)
-                        .frame(maxWidth: .infinity, minHeight: 64)
-                        .background(AppDesign.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusM, style: .continuous))
+                        if showPointHistory { pointHistoryRows }
                     }
-                    .buttonStyle(.plain)
-                }
-
-                if businessStores.count > 1 {
-                    storeSelection
-                }
-
-                if viewModel.canAddToWallet {
-                    VStack(spacing: 10) {
-                        AppleWalletButton(enabled: !viewModel.isAddingWallet && !member.memberNumber.isEmpty) {
-                            Task { await viewModel.addToAppleWallet() }
-                        }
-                        .fixedSize()
-                        .frame(minHeight: 44)
-                        if viewModel.isAddingWallet {
-                            ProgressView("会員証を準備しています")
-                                .font(.caption).tint(AppDesign.ink)
-                        } else {
-                            Text("会員証をWalletに保存して、すぐに提示。")
-                                .font(.caption).foregroundStyle(AppDesign.inkSecondary)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                }
-
-                if showRankProgress, member.showRankProgress,
-                   let points = member.pointsToNextRank,
-                   let next = member.nextRankLabel,
-                   !next.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("次のランクまで")
-                            .font(.caption)
-                            .foregroundStyle(AppDesign.inkSecondary)
-                        Text("あと \(points.formatted())ポイントで\(next)")
-                            .font(.body.weight(.semibold))
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(AppDesign.hairline)
-                                Capsule().fill(accent)
-                                    .frame(width: geometry.size.width * rankProgressValue(member: member, remaining: points))
-                            }
-                        }
-                        .frame(height: 4)
-                        .accessibilityLabel("次のランクまでの達成状況")
-                        .accessibilityValue("\(Int(rankProgressValue(member: member, remaining: points) * 100))%")
-                    }
-                    .padding(.vertical, 8)
-                }
-
-                if showPointHistory {
-                    pointHistorySection
                 }
 
                 if showCouponActivity {
-                    couponActivitySection
+                    memberGroup("最近獲得したクーポン", systemImage: "ticket.fill") { couponRows }
                 }
 
+                if !member.editableProfileFields.isEmpty || businessStores.count > 1 {
+                    memberGroup("会員情報", systemImage: "person.crop.circle") {
+                        Button { viewModel.openProfileEdit() } label: {
+                            groupRow(
+                                title: "プロフィール編集",
+                                subtitle: businessStores.count > 1 ? "ご利用店舗: \(selectedStoreName ?? "未設定")" : "登録情報を確認・変更",
+                                systemImage: "person.text.rectangle"
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
             .padding(16)
         }
     }
 
-    private var pointHistorySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("ポイント履歴").font(.headline)
-            if viewModel.pointHistory.isEmpty {
-                Text("ポイントの付与・利用履歴はまだありません")
-                    .font(.subheadline).foregroundStyle(AppDesign.inkSecondary)
-            } else {
-                ForEach(viewModel.pointHistory.prefix(10)) { item in
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(item.description).font(.subheadline.weight(.medium))
-                            Text(AppFormat.dateTime(item.createdAt)).font(.caption).foregroundStyle(AppDesign.inkSecondary)
-                        }
-                        Spacer()
-                        Text("\(item.points >= 0 ? "+" : "")\(item.points) pt")
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(item.points >= 0 ? accent : AppDesign.danger)
-                    }
-                    .padding(.vertical, 8)
-                    Divider()
-                }
-            }
+    /// 見出し付きのまとまり。中身は白いカードに並べる
+    private func memberGroup<Content: View>(_ title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FontAwesomeLabel(title, systemImage: systemImage)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(AppDesign.inkSecondary)
+                .padding(.horizontal, 4)
+                .accessibilityAddTraits(.isHeader)
+            VStack(alignment: .leading, spacing: 0) { content() }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppDesign.surface)
+                .clipShape(RoundedRectangle(cornerRadius: AppDesign.radiusL, style: .continuous))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var couponActivitySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("最近獲得したクーポン").font(.headline)
-            if viewModel.recentCoupons.isEmpty {
-                Text("獲得したクーポンはまだありません")
-                    .font(.subheadline).foregroundStyle(AppDesign.inkSecondary)
+    private func groupRow(title: String, subtitle: String, systemImage: String) -> some View {
+        HStack(spacing: 12) {
+            FontAwesomeIcon(systemName: systemImage)
+                .foregroundStyle(accent)
+                .frame(width: 36, height: 36)
+                .background(AppDesign.surfaceMuted)
+                .clipShape(Circle())
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(AppDesign.ink)
+                Text(subtitle).font(.caption).foregroundStyle(AppDesign.inkSecondary)
+            }
+            Spacer()
+            FontAwesomeIcon(systemName: "chevron.right").foregroundStyle(AppDesign.inkSecondary)
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, minHeight: 64)
+        .contentShape(Rectangle())
+    }
+
+    private func walletButton(_ member: MemberProfileSnapshot) -> some View {
+        VStack(spacing: 8) {
+            AppleWalletButton(enabled: !viewModel.isAddingWallet && !member.memberNumber.isEmpty) {
+                Task { await viewModel.addToAppleWallet() }
+            }
+            .fixedSize()
+            .frame(minHeight: 44)
+            if viewModel.isAddingWallet {
+                ProgressView("会員証を準備しています")
+                    .font(.caption).tint(AppDesign.ink)
             } else {
-                ForEach(viewModel.recentCoupons.sorted { $0.issuedAt > $1.issuedAt }.prefix(5)) { coupon in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(coupon.name).font(.subheadline.weight(.semibold))
-                            Text(coupon.issuedAt.isEmpty ? coupon.status : "獲得日 \(AppFormat.date(coupon.issuedAt))")
-                                .font(.caption).foregroundStyle(AppDesign.inkSecondary)
-                        }
-                        Spacer()
-                        FontAwesomeIcon(systemName: "ticket.fill").foregroundStyle(accent)
-                    }
-                    .padding(.vertical, 8)
-                    Divider()
-                }
+                Text("会員証をWalletに保存して、すぐに提示。")
+                    .font(.caption).foregroundStyle(AppDesign.inkSecondary)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func rankProgress(member: MemberProfileSnapshot, points: Int, next: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("次のランクまで")
+                .font(.caption)
+                .foregroundStyle(AppDesign.inkSecondary)
+            Text("あと \(points.formatted())ポイントで\(next)")
+                .font(.body.weight(.semibold))
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(AppDesign.hairline)
+                    Capsule().fill(accent)
+                        .frame(width: geometry.size.width * rankProgressValue(member: member, remaining: points))
+                }
+            }
+            .frame(height: 6)
+            .accessibilityLabel("次のランクまでの達成状況")
+            .accessibilityValue("\(Int(rankProgressValue(member: member, remaining: points) * 100))%")
+        }
+        .padding(16)
+    }
+
+    @ViewBuilder private var pointHistoryRows: some View {
+        if viewModel.pointHistory.isEmpty {
+            Text("ポイントの付与・利用履歴はまだありません")
+                .font(.subheadline).foregroundStyle(AppDesign.inkSecondary)
+                .padding(16)
+        } else {
+            let items = Array(viewModel.pointHistory.prefix(5))
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(item.description).font(.subheadline.weight(.medium))
+                        Text(AppFormat.dateTime(item.createdAt)).font(.caption).foregroundStyle(AppDesign.inkSecondary)
+                    }
+                    Spacer()
+                    Text("\(item.points >= 0 ? "+" : "")\(item.points) pt")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(item.points >= 0 ? accent : AppDesign.danger)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                if index < items.count - 1 { Divider().padding(.horizontal, 16) }
+            }
+        }
+    }
+
+    @ViewBuilder private var couponRows: some View {
+        if viewModel.recentCoupons.isEmpty {
+            Text("獲得したクーポンはまだありません")
+                .font(.subheadline).foregroundStyle(AppDesign.inkSecondary)
+                .padding(16)
+        } else {
+            let coupons = Array(viewModel.recentCoupons.sorted { $0.issuedAt > $1.issuedAt }.prefix(5))
+            ForEach(Array(coupons.enumerated()), id: \.element.id) { index, coupon in
+                HStack(spacing: 12) {
+                    FontAwesomeIcon(systemName: "ticket.fill").foregroundStyle(accent)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(coupon.name).font(.subheadline.weight(.semibold))
+                        Text(coupon.issuedAt.isEmpty ? coupon.status : "獲得日 \(AppFormat.date(coupon.issuedAt))")
+                            .font(.caption).foregroundStyle(AppDesign.inkSecondary)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                if index < coupons.count - 1 { Divider().padding(.horizontal, 16) }
+            }
+        }
     }
 
     private func profileSummary(_ member: MemberProfileSnapshot) -> some View {
@@ -844,9 +864,10 @@ struct ProfileEditView: View {
     @State var attemptedSave = false
     @Environment(\.dismiss) var dismiss
 
-    private var groups: [String] { ["基本情報", "住所", "その他の情報"] }
+    private var groups: [String] { ["ご利用店舗", "基本情報", "住所", "その他の情報"] }
 
     private func group(for field: ProfileFieldDefinition) -> String {
+        if field.key == "customer_store_id" { return "ご利用店舗" }
         if ["postal_code", "address", "address1", "address2", "prefecture", "city"].contains(field.key) { return "住所" }
         if ["name", "kana", "name_kana", "phone", "email", "birthday", "birth_date", "sex"].contains(field.key) { return "基本情報" }
         return "その他の情報"

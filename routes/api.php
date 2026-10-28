@@ -56,6 +56,7 @@ use App\Http\Controllers\Member\MemberWalletSummaryController;
 use App\Http\Controllers\Member\MemberWithdrawController;
 use App\Http\Controllers\Member\WalletPassController;
 use App\Http\Controllers\Member\WalletPassUrlController;
+use App\Http\Controllers\MemberChatController;
 use App\Http\Controllers\MemberSubscriptionController;
 use App\Http\Controllers\Onboarding\OnboardingProjectStoreController;
 use App\Http\Controllers\OrderController;
@@ -340,6 +341,9 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::get('/announcements', [AnnouncementController::class, 'index']);
     Route::post('/announcements/{id}/read', [AnnouncementController::class, 'markRead']);
     Route::post('/contact', [ContactController::class, 'store']);
+    Route::post('/member-chat/token', [MemberChatController::class, 'token'])->middleware('throttle:20,1');
+    Route::get('/member-chat/unread', [MemberChatController::class, 'unread'])->middleware('throttle:60,1');
+    Route::post('/member-chat/read', [MemberChatController::class, 'read'])->middleware('throttle:60,1');
     Route::get('/gallery', [GalleryController::class, 'index']);
     Route::get('/stamps', [StampController::class, 'index']);
 

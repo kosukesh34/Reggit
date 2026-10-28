@@ -144,7 +144,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="customer_store_id" class="form-label">対象店舗</label>
+                    <label for="customer_store_id" class="form-label">ご利用店舗</label>
                     <select name="customer_store_id" id="customer_store_id" class="form-control">
                         <option value="">未設定</option>
                         @foreach($view->customerStoreOptions as $option)

@@ -33,6 +33,7 @@ class ShopSettingKeys
         'feature_tickets_enabled' => false,
         'feature_surveys_enabled' => true,
         'feature_popups_enabled' => true,
+        'feature_chat_enabled' => false,
         'feature_gacha_enabled' => false,
         'feature_scratch_enabled' => false,
         'feature_roulette_enabled' => false,
@@ -43,6 +44,7 @@ class ShopSettingKeys
         'feature_orders_enabled' => '注文（オーダー・履歴）',
         'feature_shop_enabled' => 'ショップ（配送）',
         'feature_tickets_enabled' => '回数券・サブスク',
+        'feature_chat_enabled' => 'チャット',
         'feature_reservations_enabled' => '予約',
         'feature_queue_enabled' => '順番待ち',
         'feature_stamps_enabled' => 'スタンプカード',
@@ -70,7 +72,7 @@ class ShopSettingKeys
         'birthday' => '生年月日',
         'sex' => '性別',
         'mail_receive_flag' => '店舗からの案内メールを受け取る',
-        'customer_store_id' => '対象店舗',
+        'customer_store_id' => 'ご利用店舗',
     ];
 
     public const PROFILE_SMAREGI_LINKED_KEYS = [

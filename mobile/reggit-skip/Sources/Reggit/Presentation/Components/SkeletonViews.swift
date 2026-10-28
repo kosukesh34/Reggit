@@ -307,3 +307,37 @@ struct GallerySkeletonView: View {
         }
     }
 }
+
+/// チャットを開くまでの表示。実際の画面と同じく、左右の吹き出しと下の入力欄を並べる
+struct ChatSkeletonView: View {
+    /// (自分の吹き出しか, 幅)
+    private let bubbles: [(Bool, CGFloat)] = [(false, 220), (false, 160), (true, 200), (false, 240), (true, 140), (true, 210)]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 14) {
+                SkeletonBlock(height: 22, width: 56, cornerRadius: 11)
+                    .frame(maxWidth: .infinity)
+                ForEach(Array(bubbles.enumerated()), id: \.offset) { _, bubble in
+                    HStack(alignment: .bottom, spacing: 6) {
+                        if bubble.0 { Spacer(minLength: 48) }
+                        SkeletonBlock(height: 40, width: bubble.1, cornerRadius: AppDesign.radiusL)
+                        if !bubble.0 { Spacer(minLength: 48) }
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            HStack(spacing: 8) {
+                SkeletonBlock(height: 44, cornerRadius: AppDesign.radiusM)
+                SkeletonCircle(size: 44)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(AppDesign.surface)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("チャットを読み込み中")
+    }
+}

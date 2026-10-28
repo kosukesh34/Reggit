@@ -41,4 +41,15 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    // チャットは Firestore/Storage に直接読み書きする。サービスアカウントは FCM と共用。storage_bucket が空なら画像なし
+    'firebase' => [
+        'project_id' => env('FIREBASE_PROJECT_ID', env('PUSH_FCM_PROJECT_ID')),
+        'credentials' => env('FIREBASE_CREDENTIALS', env('PUSH_FCM_CREDENTIALS')),
+        'web_api_key' => env('FIREBASE_WEB_API_KEY'),
+        'web_app_id' => env('FIREBASE_WEB_APP_ID'),
+        'storage_bucket' => env('FIREBASE_STORAGE_BUCKET'),
+        // ローカル検証用。設定すると画面が Firebase エミュレーターへ接続する
+        'emulator_host' => env('FIREBASE_EMULATOR_HOST'),
+    ],
+
 ];

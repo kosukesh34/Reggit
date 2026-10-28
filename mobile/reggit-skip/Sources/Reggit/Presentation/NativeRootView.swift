@@ -3,6 +3,7 @@ import SwiftUI
 
 struct NativeRootView: View {
     @Environment(\.openURL) var openURL
+    @Environment(\.scenePhase) var scenePhase
     @State var viewModel: NativeRootViewModel
     @State var showHamburgerMenu = false
     @State var accountMode: String?
@@ -27,6 +28,16 @@ struct NativeRootView: View {
 
     var body: some View {
         SkipRefreshing { rootContent }
+            .onChange(of: scenePhase) { _, phase in
+                // 通知を開かずにアプリへ戻ったときも、チャットの未読数を合わせる
+                if phase == .active { Task { await viewModel.refreshChatUnread() } }
+            }
+    }
+
+    /// メニューの中にしかない項目の未読数。ハンバーガーボタンに出す
+    private var hamburgerBadge: Int {
+        let visible = Set((viewModel.headerItems + viewModel.footerItems).map(\.key))
+        return viewModel.hamburgerItems.filter { $0.key == "chat" && !visible.contains($0.key) }.reduce(0) { $0 + (viewModel.badgeCounts[$1.key] ?? 0) }
     }
 
     private var rootContent: some View {
@@ -39,6 +50,8 @@ struct NativeRootView: View {
                     title: viewModel.navigationHeaderText ?? viewModel.projectName,
                     baseURL: viewModel.apiClient?.baseURL ?? "",
                     items: viewModel.headerItems,
+                    badges: viewModel.badgeCounts,
+                    hamburgerBadge: hamburgerBadge,
                     showsHamburger: true,
                     menuOpen: showHamburgerMenu,
                     showsBack: !showHamburgerMenu && (headerNavigation.backAction != nil || !menuHistory.isEmpty || accountMode != nil || showAppInfo || expandedHomeImageIndex != nil || viewModel.lotteryModalPresented),
@@ -359,7 +372,7 @@ struct NativeRootView: View {
                         NativeTabBar(
                             items: viewModel.footerItems,
                             colors: viewModel.nativeChromeColors,
-                            announcementCount: viewModel.announcementCount,
+                            badges: viewModel.badgeCounts,
                             selectedTab: Binding(
                                 get: { viewModel.selectedTab },
                                 set: {
@@ -428,6 +441,7 @@ struct NativeRootView: View {
                                     .font(.body.weight(.semibold))
                                     .foregroundStyle(AppDesign.ink)
                                 Spacer()
+                                CountBadge(count: viewModel.badgeCounts[item.key] ?? 0)
                                 FontAwesomeIcon(systemName: "chevron.right")
                                     .foregroundStyle(AppDesign.inkSecondary)
                             }
@@ -547,7 +561,7 @@ struct NativeRootView: View {
         case "orders":
             OrdersView(apiClient: client, reloadRevision: viewModel.ordersRevision)
         case "coupons":
-            CouponsView(apiClient: client)
+            CouponsView(apiClient: client, storeNames: viewModel.businessStores.map(\.name))
                 .id(viewModel.screenRevisions["coupons", default: 0])
         case "stamps":
             StampsView(apiClient: client)
@@ -570,6 +584,9 @@ struct NativeRootView: View {
                 .id(viewModel.screenRevisions["announcements", default: 0])
         case "lottery":
             LotteryView(apiClient: client, refreshRevision: viewModel.lotteryRevision)
+        case "chat":
+            ChatView(apiClient: client, onOpenTab: { selectMenu($0) })
+                .id(viewModel.screenRevisions["chat", default: 0])
         case "storeSearch":
             StoreSearchView(baseURL: client.baseURL, currentProjectKey: viewModel.currentProjectKey) {
                 Task { await viewModel.start() }
@@ -601,6 +618,8 @@ struct NativeSharedHeader: View {
     var title: String = ""
     var baseURL: String = ""
     let items: [AppTabItem]
+    var badges: [String: Int] = [:]
+    var hamburgerBadge = 0
     let showsHamburger: Bool
     var menuOpen = false
     var showsBack = false
@@ -616,9 +635,10 @@ struct NativeSharedHeader: View {
                     Button(action: onOpenHamburger) {
                         FontAwesomeIcon(systemName: showsBack ? "chevron.left" : "line.3.horizontal")
                             .frame(width: 44, height: 44)
+                            .overlay(alignment: .topTrailing) { CountBadge(count: showsBack ? 0 : hamburgerBadge).offset(x: 2, y: 4) }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text(showsBack ? "戻る" : menuOpen ? "メニューを閉じる" : "メニューを開く"))
+                    .accessibilityLabel(Text(showsBack ? "戻る" : CountBadge.label(menuOpen ? "メニューを閉じる" : "メニューを開く", count: hamburgerBadge)))
                 }
                 Group {
                     if let imageURL = imageURL, !imageURL.isEmpty {
@@ -635,9 +655,10 @@ struct NativeSharedHeader: View {
                     Button { onSelect(item.key) } label: {
                         FontAwesomeIcon(systemName: TabIconResolver.systemName(for: item))
                             .frame(width: 44, height: 44)
+                            .overlay(alignment: .topTrailing) { CountBadge(count: badges[item.key] ?? 0).offset(x: 2, y: 4) }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text(item.label))
+                    .accessibilityLabel(Text(CountBadge.label(item.label, count: badges[item.key] ?? 0)))
                 }
                 if items.isEmpty { Color.clear.frame(width: 44, height: 44) }
             }

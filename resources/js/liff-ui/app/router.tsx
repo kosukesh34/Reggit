@@ -19,6 +19,8 @@ const WithdrawPage = lazy(() => import("../pages/WithdrawPage").then((module) =>
 const FeaturePage = lazy(() => import("../pages/FeaturePage").then((module) => ({ default: module.FeaturePage })));
 const StampIssuePage = lazy(() => import("../pages/StampIssuePage").then((module) => ({ default: module.StampIssuePage })));
 const NativeLotteryPage = lazy(() => import("../native/NativeLotteryPage").then((module) => ({ default: module.NativeLotteryPage })));
+// Firebase SDK はチャットを開いたときだけ読み込む
+const NativeChatPage = lazy(() => import("../native/NativeChatPage").then((module) => ({ default: module.NativeChatPage })));
 
 function ScreenLoadingFallback() {
   return (
@@ -88,6 +90,7 @@ function ScreenRoutes() {
           <Route path="/card" element={<Navigate to="/membership" replace />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/designlab" element={<NativeLotteryPage />} />
+          <Route path="/chat" element={<NativeChatPage />} />
           <Route path="/more/link" element={<NativeExistingMemberPage />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="/more/withdraw" element={<WithdrawPage />} />

@@ -50,6 +50,7 @@ class AppConfigService
             'member' => 'feature_members_enabled',
             'gallery' => 'feature_gallery_enabled',
             'announcements' => 'feature_announcements_enabled',
+            'chat' => 'feature_chat_enabled',
         ];
 
         $enabledTabs = array_values(array_filter($menuItems, function ($item) use ($featureFlags, $tabFeatureMap) {
@@ -267,6 +268,7 @@ class AppConfigService
             'reservations' => 'calendar',
             'gallery' => 'photo.on.rectangle.angled',
             'announcements' => 'megaphone.fill',
+            'chat' => 'bubble.left.and.bubble.right.fill',
             'terms' => 'doc.text.fill',
             'privacy' => 'hand.raised.fill',
             default => 'circle.fill',

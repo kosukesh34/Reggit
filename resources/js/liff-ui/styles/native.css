@@ -84,6 +84,8 @@ h1, h2, h3, p, figure { margin: 0; }
 .native-search i { color: var(--skip-ink-secondary); }
 .native-search input { min-width: 0; width: 100%; min-height: 44px; padding: 0; background: transparent; border: 0; outline-offset: 3px; }
 .native-message { padding: 12px 16px; }
+.native-chat { height: 100%; min-height: 360px; padding: 0; display: flex; flex-direction: column; }
+.native-chat > .chat-view { flex: 1; }
 .native-stamp-card { display: flex; flex-direction: column; gap: 14px; padding: 20px 0; }
 .native-stamp-card + .native-stamp-card { border-top: .5px solid var(--skip-hairline); }
 .native-stamp-card__heading { display: flex; gap: 14px; align-items: center; }

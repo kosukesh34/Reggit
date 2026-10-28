@@ -87,6 +87,10 @@ protocol ReggitAPIServing: PromoPopupFetching, SurveyServing {
     func fetchReservationCourses() async throws -> [ReservationCourseItem]
     func bookReservation(reservedAt: Date, numberOfPeople: Int, notes: String?, courseId: Int?) async throws
     func cancelReservationBooking(id: Int) async throws
+
+    func fetchChatSession() async throws -> ChatSessionInfo
+    func fetchChatUnreadCount() async throws -> Int
+    func markChatRead() async throws
 }
 
 extension ReggitAPIServing {

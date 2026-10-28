@@ -75,6 +75,24 @@ class PushNotificationServiceTest extends TestCase
         $this->assertSame('queue', $payload['data']['tab']);
     }
 
+    public function test_send_to_user_sets_app_icon_badge_only_when_given(): void
+    {
+        [$project, $user] = $this->createProjectAndUser();
+        $this->createUserDevice($project, $user, 'fcm-token-badge');
+
+        $payload = $this->captureFcmMessage(function (PushNotificationService $service) use ($project, $user) {
+            $service->sendToUser((int) $project->id, (int) $user->id, 'お店からメッセージが届きました', '本文', ['type' => 'chat_reply'], 'chat-1-2', 3);
+        });
+        $this->assertSame(3, $payload['apns']['payload']['aps']['badge'] ?? null);
+        $this->assertSame(3, $payload['android']['notification']['notification_count'] ?? null);
+
+        Cache::forget('push.fcm.access_token');
+        $payload = $this->captureFcmMessage(function (PushNotificationService $service) use ($project, $user) {
+            $service->sendToUser((int) $project->id, (int) $user->id, 'タイトル', '本文', ['type' => 'coupon_issued']);
+        });
+        $this->assertArrayNotHasKey('badge', $payload['apns']['payload']['aps']);
+    }
+
     public function test_send_to_user_includes_collapse_id_for_coupon_issued(): void
     {
         [$project, $user] = $this->createProjectAndUser();

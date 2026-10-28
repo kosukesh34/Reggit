@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// チャット画像: projects/{pid}/chats/{mid}/{file}。読み書きできる範囲は firestore.rules と同じ。
+// 形式は端末の申告（contentType）しか見られないため、表示側は <img> でだけ読み込む。
+service firebase.storage {
+  match /b/{bucket}/o {
+    function claims() {
+      return request.auth.token;
+    }
+
+    function live(pid) {
+      return request.auth != null && claims().pid == pid && request.time.toMillis() < claims().until;
+    }
+
+    function canAccess(pid, mid) {
+      return (live(pid) && claims().role == 'member' && claims().mid == mid)
+        || (live(pid) && claims().role == 'staff' && (claims().all_stores == true
+          || firestore.get(/databases/(default)/documents/projects/$(pid)/chats/$(mid)).data.store_ids.hasAny(claims().stores)));
+    }
+
+    match /projects/{pid}/chats/{mid}/{file} {
+      allow read: if canAccess(pid, mid);
+      // 既存の画像は差し替えさせない（上書きも create として評価される場合があるため明示する）
+      allow create: if resource == null
+        && canAccess(pid, mid)
+        && file.matches('[A-Za-z0-9_-]{20,64}[.](jpg|png|webp)')
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow update, delete: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

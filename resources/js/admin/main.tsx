@@ -343,3 +343,8 @@ if (mount !== null) {
 if (document.body.dataset.pageKind === 'liff-designer') {
   mountLiffDesigner();
 }
+
+// Firebase SDK はチャット画面だけで読み込む
+if (document.getElementById('admin-chat-root') !== null) {
+  void import('./chat').then(({ mountAdminChat }) => mountAdminChat());
+}
