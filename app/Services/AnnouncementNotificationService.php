@@ -77,11 +77,9 @@ class AnnouncementNotificationService
 
             return ['line_sent' => 0, 'line_failed' => 0, 'line_skipped' => $members->count()];
         }
-        $announcementsUrl = LiffTabUrlBuilder::build(
-            $projectId,
-            $projectKey,
-            'announcements'
-        );
+        $announcementsUrl = $announcement->action_path !== null && $announcement->action_path !== ''
+            ? self::appPathUrl($projectId, $projectKey, $announcement->action_path)
+            : LiffTabUrlBuilder::build($projectId, $projectKey, 'announcements');
         $title = trim((string) $announcement->title);
         $body = trim((string) ($announcement->body ?? ''));
         $imageUrls = array_values(array_filter(array_map(
@@ -208,7 +206,10 @@ class AnnouncementNotificationService
         string $projectKey,
         bool $includeCouponImage,
     ): array {
-        $message = $this->buildFlexMessage($title, $body, $announcementsUrl, $imageUrls[0] ?? null);
+        $buttonLabel = $announcement->action_path !== null && $announcement->action_path !== ''
+            ? ($announcement->action_label ?: '開く')
+            : 'お知らせを見る';
+        $message = $this->buildFlexMessage($title, $body, $announcementsUrl, $imageUrls[0] ?? null, $buttonLabel);
         if (count($imageUrls) > 1) {
             $bubbles = [$message['contents']];
             foreach (array_slice($imageUrls, 1, 9) as $url) {
@@ -274,10 +275,19 @@ class AnnouncementNotificationService
         return false;
     }
 
+    /** アプリ内パス（/survey?survey=1）を、そのタブを開く LIFF URL にする */
+    private static function appPathUrl(int $projectId, string $projectKey, string $path): string
+    {
+        $tab = trim((string) parse_url($path, PHP_URL_PATH), '/');
+        parse_str((string) parse_url($path, PHP_URL_QUERY), $extra);
+
+        return LiffTabUrlBuilder::build($projectId, $projectKey, $tab, array_map('strval', array_filter($extra, 'is_scalar')));
+    }
+
     /**
      * @return array{type: string, altText: string, contents: array<string, mixed>}
      */
-    private function buildFlexMessage(string $title, string $body, string $announcementsUrl, ?string $imageUrl): array
+    private function buildFlexMessage(string $title, string $body, string $announcementsUrl, ?string $imageUrl, string $buttonLabel = 'お知らせを見る'): array
     {
         $displayTitle = $title !== '' ? $title : 'お知らせ';
         $bodyContents = [
@@ -304,7 +314,7 @@ class AnnouncementNotificationService
                     'height' => 'sm',
                     'action' => [
                         'type' => 'uri',
-                        'label' => 'お知らせを見る',
+                        'label' => $buttonLabel,
                         'uri' => $announcementsUrl,
                     ],
                     'color' => '#06C755',

@@ -17,6 +17,8 @@ import './memberDetailHistory';
 import './memberLineQr';
 import './stampGrantQr';
 import './issuedQr';
+import './surveyBuilder';
+import './promoPopupPreview';
 import './queueRealtime';
 
 type DesignerDomConfig = {

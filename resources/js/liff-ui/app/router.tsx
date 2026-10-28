@@ -2,6 +2,7 @@ import { Component, lazy, Suspense, type ErrorInfo, type ReactNode, useCallback,
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { PointQrClaim } from "../components/membership/PointQrClaim";
 import { LoginPromptPopup } from "../components/membership/LoginPromptPopup";
+import { PromoPopupHost } from "../components/home/PromoPopupHost";
 import { AppShell } from "../components/layout/AppShell";
 import { useMembershipGate } from "../../frontend/hooks/useMembershipGate";
 import { useLegacyTabBridge } from "../navigation/useLegacyTabBridge";
@@ -166,6 +167,7 @@ export function AppRouter() {
       <PointQrClaim />
       <MembershipGate onSettled={() => setGateSettled(true)} />
       <LoginPromptPopup />
+      <PromoPopupHost enabled={gateSettled} />
       <ScreenRoutes />
     </AppShell>
   );

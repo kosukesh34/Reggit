@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\Account\AccountFormController;
 use App\Http\Controllers\Admin\Account\AccountIndexController;
 use App\Http\Controllers\Admin\Account\AccountStoreController;
 use App\Http\Controllers\Admin\Account\AccountUpdateController;
+use App\Http\Controllers\Admin\AcquisitionSourceController;
 use App\Http\Controllers\Admin\AdminProjectHomeController;
 use App\Http\Controllers\Admin\AdminRootController;
 use App\Http\Controllers\Admin\AfterRegistrationDeliveryController as AdminAfterRegistrationDeliveryController;
@@ -50,6 +51,7 @@ use App\Http\Controllers\Admin\ProductMutationController;
 use App\Http\Controllers\Admin\ProjectAppLinkController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\ProjectMutationController;
+use App\Http\Controllers\Admin\PromoPopupController as AdminPromoPopupController;
 use App\Http\Controllers\Admin\QrController;
 use App\Http\Controllers\Admin\QueueController as AdminQueueController;
 use App\Http\Controllers\Admin\ReservationController as AdminReservationController;
@@ -86,6 +88,7 @@ use App\Http\Controllers\Admin\StampController as AdminStampController;
 use App\Http\Controllers\Admin\StampGrantQrController;
 use App\Http\Controllers\Admin\StampQrController;
 use App\Http\Controllers\Admin\StoreController;
+use App\Http\Controllers\Admin\SurveyController as AdminSurveyController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\Admin\SystemHelpArticleController;
 use App\Http\Controllers\Admin\SystemNoticeController;
@@ -413,6 +416,28 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/after-registration-deliveries/{id}/edit', [AdminAfterRegistrationDeliveryController::class, 'edit'])->name('admin.after-registration-deliveries.edit')->middleware('admin.permission:announcements.manage');
         Route::put('/after-registration-deliveries/{id}', [AfterRegistrationDeliveryMutationController::class, 'update'])->name('admin.after-registration-deliveries.update')->middleware('admin.permission:announcements.manage');
         Route::delete('/after-registration-deliveries/{id}', [AfterRegistrationDeliveryMutationController::class, 'destroy'])->name('admin.after-registration-deliveries.destroy')->middleware('admin.permission:announcements.manage');
+
+        Route::get('/surveys', [AdminSurveyController::class, 'index'])->name('admin.surveys.index')->middleware('admin.permission:announcements.view');
+        Route::get('/surveys/create', [AdminSurveyController::class, 'create'])->name('admin.surveys.create')->middleware('admin.permission:announcements.manage');
+        Route::post('/surveys', [AdminSurveyController::class, 'store'])->name('admin.surveys.store')->middleware('admin.permission:announcements.manage');
+        Route::get('/surveys/{id}', [AdminSurveyController::class, 'show'])->whereNumber('id')->name('admin.surveys.show')->middleware('admin.permission:announcements.view');
+        Route::post('/surveys/{id}/duplicate', [AdminSurveyController::class, 'duplicate'])->whereNumber('id')->name('admin.surveys.duplicate')->middleware('admin.permission:announcements.manage');
+        Route::get('/surveys/{id}/export', [AdminSurveyController::class, 'export'])->whereNumber('id')->name('admin.surveys.export')->middleware('admin.permission:announcements.view');
+        Route::get('/surveys/{id}/edit', [AdminSurveyController::class, 'edit'])->whereNumber('id')->name('admin.surveys.edit')->middleware('admin.permission:announcements.manage');
+        Route::put('/surveys/{id}', [AdminSurveyController::class, 'update'])->whereNumber('id')->name('admin.surveys.update')->middleware('admin.permission:announcements.manage');
+        Route::delete('/surveys/{id}', [AdminSurveyController::class, 'destroy'])->whereNumber('id')->name('admin.surveys.destroy')->middleware('admin.permission:announcements.manage');
+
+        Route::get('/promo-popups', [AdminPromoPopupController::class, 'index'])->name('admin.promo-popups.index')->middleware('admin.permission:announcements.view');
+        Route::get('/promo-popups/create', [AdminPromoPopupController::class, 'create'])->name('admin.promo-popups.create')->middleware('admin.permission:announcements.manage');
+        Route::post('/promo-popups', [AdminPromoPopupController::class, 'store'])->name('admin.promo-popups.store')->middleware('admin.permission:announcements.manage');
+        Route::post('/promo-popups/{id}/duplicate', [AdminPromoPopupController::class, 'duplicate'])->whereNumber('id')->name('admin.promo-popups.duplicate')->middleware('admin.permission:announcements.manage');
+        Route::get('/promo-popups/{id}/edit', [AdminPromoPopupController::class, 'edit'])->whereNumber('id')->name('admin.promo-popups.edit')->middleware('admin.permission:announcements.manage');
+        Route::put('/promo-popups/{id}', [AdminPromoPopupController::class, 'update'])->whereNumber('id')->name('admin.promo-popups.update')->middleware('admin.permission:announcements.manage');
+        Route::delete('/promo-popups/{id}', [AdminPromoPopupController::class, 'destroy'])->whereNumber('id')->name('admin.promo-popups.destroy')->middleware('admin.permission:announcements.manage');
+
+        Route::get('/acquisition-sources', [AcquisitionSourceController::class, 'index'])->name('admin.acquisition-sources')->middleware('admin.permission:members.view');
+        Route::post('/acquisition-sources', [AcquisitionSourceController::class, 'store'])->name('admin.acquisition-sources.store')->middleware('admin.permission:members.manage');
+        Route::delete('/acquisition-sources/{id}', [AcquisitionSourceController::class, 'destroy'])->whereNumber('id')->name('admin.acquisition-sources.destroy')->middleware('admin.permission:members.manage');
 
         Route::get('/queue', [AdminQueueController::class, 'queue'])->name('admin.queue')->middleware('admin.permission:queue.view');
         Route::post('/queue/{id}/status', [AdminQueueController::class, 'updateQueueStatus'])->name('admin.queue.status')->middleware('admin.permission:queue.update');

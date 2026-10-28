@@ -330,6 +330,8 @@ stateDiagram-v2
 
 状態は予約待ち・予約確定・キャンセル・完了です。顧客はキャンセル済み・完了済みを編集・取消できません。管理側の状態指定は顧客操作と異なるため、注文のような一方向の状態規則を予約全体へ適用してはいません。
 
+**予約リマインド：** 予約設定の「予約リマインド」で、1回目・2回目をそれぞれ1・3・6・24・48時間前から選ぶと（例: 前日と3時間前）、15分ごとの処理が予約待ち・予約確定の予約へ、会員本人宛てのお知らせとLINEで送ります。本文は `{店舗}` `{日時}` `{人数}` `{コース}` `{詳細}` を使って書き換えられ、空欄なら標準の本文です。複数店舗では予約の店舗の設定を使います。送信済みは予約の `reminder_sent_at`・`second_reminder_sent_at` で回ごとに判定し、その時間より後に入った予約には、その回は送りません。予約日時を変えると両方とも未送信に戻ります。送信に失敗した予約は次の実行で送り直し、他の予約は止めません。会員登録していない利用者には送りません。
+
 **根拠：** [予約作成](../app/UseCases/Reservation/ReservationStoreUseCase.php)、[空き判定](../app/UseCases/Reservation/ReservationAvailabilityService.php)、[枠Policy](../app/Domain/Reservation/Policies/ReservationSlotPolicy.php)、[集約](../app/Domain/Reservation/Aggregates/Reservation.php)、[予約永続化](../app/Infrastructure/Persistence/Eloquent/Reservation/EloquentReservationRepository.php)。図：S07。
 
 
@@ -546,11 +548,26 @@ Reggitからの取引作成・現金引取確定は未完了要求をDBに残し
 **根拠：** [プロダクト](PRODUCT.md)、[アプリ設定](../app/Services/AppConfigService.php)、[導入メール](../app/UseCases/Landing/SendLandingVerificationUseCase.php)、[メール確認](../app/UseCases/Landing/VerifyLandingEmailUseCase.php)、[導入確定](../app/UseCases/Landing/SubmitLandingRegistrationUseCase.php)。導入画面は今回のリリース変更を含みます。図：S16。
 
 
+### 6. アンケート・宣伝ポップアップ・流入経路
+
+**アンケート：** 管理画面「アンケート」で、最大30問を作ります。左で質問を組み立て、右のプレビューで会員アプリでの見え方を確認しながら保存します。質問は形式ボタンで追加し、各質問の右上から並べ替え・複製・削除ができます。来店満足度・NPSだけ・商品評価・入会時のプロフィールの雛形から始めることも、既存のアンケートを複製（受付停止の状態で作成）することもできます。形式は NPS（0〜10、1問まで）・選択式（1つ・複数）・5段階評価（会員アプリでは星）・数値・日付・自由記述です。各質問に補足説明を付けられ、選択式では「その他（自由入力）」を出せます。「その他」の回答は `その他：本文`（200文字まで）で保存し、結果画面では「その他」にまとめて件数を出し、書かれた内容を一覧にします。会員アプリでは回答の進み具合を上部のバーで示し、送信ボタンは画面下に固定します。会員は `/survey?survey=ID`（LIFFの `tab=survey`）から1回だけ回答できます。回答特典ポイントはポイント機能が有効なときだけ付与します。NPSの回答に応じて「NPS推奨者・中立者・批判者」のいずれか1つのタグを付け直し、選択肢ごとのタグ欄（既存のタグから選ぶか新しい名前を入力）にタグ名を入れると、その選択肢を選んだ会員にタグを付けます。選択肢のタグは会員向けAPIには返しません。自動の回答依頼は、来店・注文の完了・予約の来店（完了）・会員登録のいずれかをきっかけに、N日後（1〜30日）の毎日10時に1回だけ送ります。実行が止まった日の分も6日前までさかのぼって送り（アンケート作成前のきっかけは除く）、送信に失敗した会員は次の実行で送り直します。結果画面には自動依頼の回答率と、NPSの区分ごとに「この人たちへ配信」（その区分のタグを選んだ状態でお知らせ配信を開く）を出します。回答が入った後は、集計がずれないよう質問を変更できません。回答は「CSVで出力」でダウンロードでき、数式として実行される文字（= + - @ で始まる入力）は先頭に ' を付けて無効にします。
+
+**宣伝ポップアップ：** 管理画面「ポップアップ」で、全画面・中央モーダル・下からシート・下部バナーの4形式から選びます。LIFF とネイティブアプリ（iOS / Android）の起動時に、表示期間中で有効なものから優先度の高い1つを表示します。表示する相手は「すべて・会員だけ・会員登録していない人だけ・指定したタグ／ランクの会員（どれか1つに当てはまる人）」から選び、複数店舗では表示する店舗も選べます。店舗はアプリで選んだ店舗、なければ会員の対象店舗で判定し、相手と店舗の絞り込みはサーバーで行います。ボタンは2つまで置け、2つ目のボタンは控えめな見た目で表示します（下部バナーは1つ目だけ）。リンク先は入力欄をクリックすると、アプリの画面と受付中のアンケートから選べます。作成画面は表示形式・相手をカードで選び、右に固定したプレビューで4形式の見え方を確認でき、一覧には表示回数・タップ回数・タップ率（日ごとに `promo_popup_stats` へ集計）を出します。複製すると表示を止めた状態で作ります。「1人1回だけ」「1日1回」「起動のたび」は端末の保存領域（ブラウザの localStorage、ネイティブは UserDefaults）で数えるため、端末を変えると再表示されます。内容を編集すると版が変わり、「1人1回だけ」でももう一度表示します。リンク先はアプリ内パスか https のURLだけを受け付け。ネイティブアプリでは、アンケートへのリンクとお知らせのボタンからアンケート画面（一覧・回答）を開きます。
+
+**流入経路：** 管理画面「流入経路」で経路ごとのQRを作り、QRで開く画面（ホーム・クーポン・メニューなど）を選べます。QRのURLの `src` を端末に保存し、新規会員登録のときに送ります。新規登録だった場合だけ会員に登録元を記録し、「流入:経路名」のタグを付けます。既存会員には記録しません。
+
+**お知らせの遷移先：** アンケート依頼と予約リマインドのお知らせは、遷移先（`action_path`）を持ちます。LINEのボタンとアプリ（LIFF・ネイティブ）のお知らせから、その画面を直接開きます。
+
+**機能の有効・無効：** 「利用機能」の「アンケート」「宣伝ポップアップ」を無効にすると、管理メニュー・会員向けAPI・自動の回答依頼が止まります。回答依頼はお知らせで届けるため、「お知らせ」が無効なプロジェクトにも送りません。
+
+**根拠：** [回答](../app/UseCases/Survey/SubmitSurveyAnswerUseCase.php)、[回答の検証](../app/Domain/Survey/Policies/SurveyAnswerPolicy.php)、[回答依頼](../app/UseCases/Survey/SendSurveyVisitInvitationsUseCase.php)、[予約リマインド](../app/UseCases/Reservation/SendReservationRemindersUseCase.php)、[送信時期](../app/Domain/Reservation/Policies/ReservationReminderPolicy.php)、[経路の記録](../app/UseCases/Member/RecordAcquisitionSourceUseCase.php)、[ポップアップ（LIFF）](../resources/js/liff-ui/components/home/PromoPopupHost.tsx)、[ポップアップ（ネイティブ）](../mobile/reggit-skip/Sources/Reggit/Presentation/ViewModels/PromoPopupViewModel.swift)。
+
+
 <a id="benefits-06"></a>
 
 ### 関連する検証先
 
-[スタンプ達成・取消](../tests/Feature/StampMilestoneRewardTest.php)、[抽選](../tests/Feature/LotteryEntitlementPlayTest.php)、[クーポン発行整合](../tests/Feature/CouponIssuanceConsistencyTest.php)、[通知回復](../tests/Feature/CouponNotificationTest.php)、[定期配信回復](../tests/Feature/ScheduledDeliveryRetryTest.php)。実行結果はリリースPRを参照してください。
+[スタンプ達成・取消](../tests/Feature/StampMilestoneRewardTest.php)、[抽選](../tests/Feature/LotteryEntitlementPlayTest.php)、[クーポン発行整合](../tests/Feature/CouponIssuanceConsistencyTest.php)、[通知回復](../tests/Feature/CouponNotificationTest.php)、[定期配信回復](../tests/Feature/ScheduledDeliveryRetryTest.php)、[アンケート・リマインド・経路・ポップアップ](../tests/Feature/EngagementFeaturesTest.php)。実行結果はリリースPRを参照してください。
 
 <a id="sequences"></a>
 

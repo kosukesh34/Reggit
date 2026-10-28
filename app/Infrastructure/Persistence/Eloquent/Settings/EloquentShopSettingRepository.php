@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Persistence\Eloquent\Settings;
 
+use App\Domain\Reservation\ValueObjects\ReservationReminderConfig;
 use App\Domain\Settings\Repositories\AdminAppearanceSettings;
 use App\Domain\Settings\Repositories\AppConfigSettings;
 use App\Domain\Settings\Repositories\CouponNotificationSettings;
@@ -28,6 +29,8 @@ use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Domain\Settings\Repositories\StampSettings;
 use App\Domain\Settings\Repositories\WalletSettings;
+use App\Models\Settings\ProjectBusinessSetting;
+use App\Models\Store;
 
 class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, CouponNotificationSettings, FeatureSettings, FrontendShellSettings, HomeSettingsRepository, KitchenAccessSettings, LiffDesignerSettings, LineAdminSettings, LineConnectionSettings, MemberCardPreviewSettings, MemberCardSettings, MemberCodeSettings, MemberSettings, OperationalSettings, OrderNotificationSettings, OrderSettings, ProfileSettings, ProjectSettings, QueueAdminSettings, QueueSettings, RankSettings, ReservationSettings, SmaregiSettings, StampSettings, WalletSettings
 {
@@ -71,6 +74,44 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
     public function getReservationCapacityPerSlot(int $projectId): int
     {
         return ShopSettingStore::getReservationCapacityPerSlot($projectId);
+    }
+
+    private const REMINDER_KEYS = ['reservation_reminder_hours', 'reservation_reminder_second_hours', 'reservation_reminder_message'];
+
+    public function getReservationReminderConfig(int $projectId): ReservationReminderConfig
+    {
+        return self::reminderConfig(array_map(fn (string $key) => ShopSettingStore::getValue($key, null, $projectId), array_combine(self::REMINDER_KEYS, self::REMINDER_KEYS)));
+    }
+
+    public function getReservationReminderConfigsByStore(int $projectId): array
+    {
+        $project = $this->getReservationReminderConfig($projectId);
+        $base = ['reservation_reminder_hours' => $project->firstHours, 'reservation_reminder_second_hours' => $project->secondHours, 'reservation_reminder_message' => $project->message];
+
+        return Store::withoutGlobalScopes()->where('project_id', $projectId)->get(['id', 'settings'])
+            ->filter(fn (Store $store): bool => array_intersect_key($store->settings ?? [], $base) !== [])
+            ->mapWithKeys(fn (Store $store): array => [(int) $store->id => self::reminderConfig([...$base, ...array_intersect_key($store->settings ?? [], $base)])])
+            ->all();
+    }
+
+    public function getProjectIdsWithReservationReminders(): array
+    {
+        $projects = ProjectBusinessSetting::query()
+            ->where(fn ($query) => $query->where('reservation_reminder_hours', '>', 0)->orWhere('reservation_reminder_second_hours', '>', 0))
+            ->pluck('project_id');
+        $stores = Store::withoutGlobalScopes()
+            ->where(fn ($query) => $query->where('settings->reservation_reminder_hours', '>', 0)->orWhere('settings->reservation_reminder_second_hours', '>', 0))
+            ->pluck('project_id');
+
+        return $projects->merge($stores)->map(fn ($id): int => (int) $id)->unique()->values()->all();
+    }
+
+    /** @param array<string, mixed> $values */
+    private static function reminderConfig(array $values): ReservationReminderConfig
+    {
+        $message = trim((string) ($values['reservation_reminder_message'] ?? ''));
+
+        return new ReservationReminderConfig((int) ($values['reservation_reminder_hours'] ?? 0), (int) ($values['reservation_reminder_second_hours'] ?? 0), $message !== '' ? $message : null);
     }
 
     public function isDateAvailable(string $date, int $projectId): bool

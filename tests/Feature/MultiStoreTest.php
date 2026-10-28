@@ -68,6 +68,9 @@ class MultiStoreTest extends TestCase
         $this->delete('/admin/brand/analysis-deliveries/token/'.$token->id)->assertForbidden();
         $this->post('/admin/brand/member-tags', ['name' => '禁止', 'color' => '#123456'])->assertForbidden();
         $this->delete('/admin/brand/member-tags/'.$tag->id)->assertForbidden();
+        $this->post('/admin/brand/surveys', ['title' => '禁止'])->assertForbidden();
+        $this->post('/admin/brand/promo-popups', ['title' => '禁止'])->assertForbidden();
+        $this->post('/admin/brand/acquisition-sources', ['name' => '禁止'])->assertForbidden();
         $this->assertFalse($this->project->fresh()->analysis_api_enabled);
         $this->assertTrue($token->fresh()->is_active);
         $this->assertDatabaseHas('member_tags', ['id' => $tag->id]);

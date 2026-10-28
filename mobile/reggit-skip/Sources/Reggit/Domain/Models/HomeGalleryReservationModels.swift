@@ -9,6 +9,9 @@ struct AnnouncementItem: Identifiable, Equatable, Hashable {
     let isPinned: Bool
     let isRead: Bool
     var imageURLs: [String] = []
+    /// お知らせから開くアプリ内パス（アンケートの依頼・予約リマインドなど）
+    var actionPath: String? = nil
+    var actionLabel: String? = nil
 }
 
 struct AnnouncementListResponse {
@@ -37,7 +40,9 @@ struct AnnouncementListResponse {
                 publishedAt: (row["published_at"] as? String) ?? "",
                 isPinned: row["is_pinned"] as? Bool ?? false,
                 isRead: row["is_read"] as? Bool ?? false,
-                imageURLs: (row["image_urls"] as? [String] ?? []).compactMap { $0.trimmedNonEmpty }
+                imageURLs: (row["image_urls"] as? [String] ?? []).compactMap { $0.trimmedNonEmpty },
+                actionPath: (row["action_path"] as? String)?.trimmedNonEmpty,
+                actionLabel: (row["action_label"] as? String)?.trimmedNonEmpty
             )
         }
         return AnnouncementListResponse(announcements: items)

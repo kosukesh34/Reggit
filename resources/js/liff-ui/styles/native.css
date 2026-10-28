@@ -529,3 +529,65 @@ progress::-moz-progress-bar { background: var(--skip-accent); }
 .native-header__action:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
 .native-header__action:focus-visible { outline: 3px solid currentColor; outline-offset: -3px; }
 .app-shell--profile .native-profile > form { min-height: auto; }
+/* Promo popups: modal / bottom sheet reuse the shared dialogs. */
+.promo-popup__image { display: block; width: 100%; max-height: 50dvh; object-fit: cover; border-radius: 12px; margin-bottom: 12px; }
+.promo-popup__body { margin-bottom: 16px; font-size: 14px; white-space: pre-wrap; }
+.promo-popup__action { width: 100%; }
+.promo-popup__action--secondary { margin-top: 8px; }
+.promo-fullscreen { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; justify-content: flex-end; background: var(--skip-canvas); overflow-y: auto; }
+.promo-fullscreen__close { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 12px; z-index: 1; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgb(0 0 0 / .55); color: #fff; }
+.promo-fullscreen__panel { display: flex; flex-direction: column; gap: 12px; padding: calc(64px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom)); }
+.promo-fullscreen__panel h2 { font-size: 22px; font-weight: 700; }
+.promo-fullscreen.has-image .promo-fullscreen__panel { padding-top: 0; }
+.promo-fullscreen.has-image .promo-popup__image { order: -1; width: calc(100% + 40px); max-height: 70dvh; margin: 0 -20px 4px; border-radius: 0; }
+.promo-banner { position: fixed; left: 12px; right: 12px; bottom: calc(78px + env(safe-area-inset-bottom)); z-index: 1500; display: flex; align-items: center; gap: 4px; max-width: 520px; margin: 0 auto; padding: 8px; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px rgb(0 0 0 / .18); }
+.promo-banner__main { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 44px; border: 0; background: none; text-align: left; color: var(--skip-ink); }
+.promo-banner__main img { width: 56px; height: 56px; flex: 0 0 auto; object-fit: cover; border-radius: 8px; }
+.promo-banner__main span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.promo-banner__main strong { font-size: 14px; }
+.promo-banner__main small { overflow: hidden; color: var(--skip-ink-secondary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.promo-banner__close { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto; border: 0; background: none; color: var(--skip-ink-secondary); }
+/* Surveys. */
+.native-survey-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 14px 16px; margin-bottom: 10px; border-radius: 14px; background: #fff; color: var(--skip-ink); text-decoration: none; }
+.native-survey-row-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; background: color-mix(in srgb, var(--skip-accent) 12%, #fff); color: var(--skip-accent); }
+.native-survey-row-text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.native-survey-row-text small { color: var(--skip-ink-secondary); font-size: 12px; }
+.native-survey-row-chevron { color: var(--skip-ink-secondary); font-size: 12px; }
+.native-survey-reward { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; background: #fff3e6; color: #b45309; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.native-survey-form { gap: 12px; }
+.native-survey-header { padding: 18px 16px; border-radius: 16px; background: var(--skip-accent); color: #fff; }
+.native-survey .native-survey-header h1 { margin: 0 0 6px; font-size: 20px; font-weight: 700; }
+.native-survey-header p { margin: 0 0 10px; opacity: .85; font-size: 14px; line-height: 1.6; }
+.native-survey-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.native-survey-meta > span:first-child { opacity: .85; }
+.native-survey-progress { position: sticky; top: -16px; z-index: 2; height: 6px; overflow: hidden; border-radius: 999px; background: var(--skip-hairline); }
+.native-survey-progress span { display: block; height: 100%; border-radius: inherit; background: var(--skip-coral); transition: width .25s ease; }
+.native-survey-question { display: flex; flex-direction: column; gap: 10px; min-width: 0; margin: 0; padding: 16px; border: 1px solid transparent; border-radius: 14px; background: #fff; }
+.native-survey-question.has-error { border-color: var(--skip-danger); }
+.native-survey-question legend { float: left; width: 100%; margin-bottom: 4px; font-weight: 600; line-height: 1.5; }
+.native-survey-number { display: inline-block; margin-right: 8px; padding: 1px 7px; border-radius: 6px; background: color-mix(in srgb, var(--skip-accent) 12%, #fff); color: var(--skip-accent); font-size: 12px; font-weight: 700; vertical-align: 1px; }
+.native-survey-required { margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: #fdecea; color: var(--skip-danger); font-size: 11px; font-weight: 700; vertical-align: 1px; }
+.native-survey-help { margin: 0; color: var(--skip-ink-secondary); font-size: 13px; }
+.native-form .native-survey-question label { padding: 0; }
+.native-survey-nps { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; }
+.native-form .native-survey-nps label { display: grid; place-items: center; min-height: 44px; padding: 0; border: 1px solid var(--skip-hairline); border-radius: 8px; font-weight: 600; }
+.native-form .native-survey-nps label.is-selected { border-color: var(--skip-accent); background: var(--skip-accent); color: #fff; }
+.native-form .native-survey-nps label.is-detractor { border-color: #d9534f; background: #d9534f; }
+.native-form .native-survey-nps label.is-passive { border-color: #e0a100; background: #e0a100; }
+.native-form .native-survey-nps label.is-promoter { border-color: #2e8b57; background: #2e8b57; }
+.native-form .native-survey-nps input, .native-form .native-survey-stars input { position: absolute; width: 1px; min-height: 0; height: 1px; opacity: 0; }
+.native-survey-nps label:has(input:focus-visible), .native-survey-stars label:has(input:focus-visible) { outline: 2px solid var(--skip-accent); outline-offset: 2px; }
+.native-survey-scale { display: flex; justify-content: space-between; color: var(--skip-ink-secondary); font-size: 12px; }
+.native-survey-stars { display: flex; align-items: center; gap: 4px; }
+.native-form .native-survey-stars label { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; color: var(--skip-hairline); font-size: 28px; cursor: pointer; }
+.native-form .native-survey-stars label.is-on { color: #f5a623; }
+.native-survey-stars-label { margin-left: 6px; color: var(--skip-ink-secondary); font-size: 13px; }
+.native-survey-options { display: flex; flex-direction: column; gap: 8px; }
+.native-form .native-survey-choice { flex-direction: row; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px; border: 1px solid var(--skip-hairline); border-radius: 12px; }
+.native-form .native-survey-choice.is-selected { border-color: var(--skip-accent); background: color-mix(in srgb, var(--skip-accent) 7%, #fff); font-weight: 600; }
+.native-form .native-survey-choice input { width: 20px; min-height: 20px; flex: 0 0 auto; accent-color: var(--skip-accent); }
+.native-form .native-survey-question input[type="number"], .native-form .native-survey-question input[type="date"] { width: 100%; }
+.native-form .native-survey-question textarea, .native-form .native-survey-question input[type="number"], .native-form .native-survey-question input[type="date"], .native-form .native-survey-other { padding: 10px 12px; border-radius: 10px; font-size: 16px; }
+.native-survey-submit { position: sticky; bottom: -16px; z-index: 2; display: flex; flex-direction: column; gap: 8px; margin: 4px -16px -16px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--skip-canvas) 92%, transparent); backdrop-filter: blur(8px); }
+.native-survey-submit .native-button { width: 100%; min-height: 50px; }
+.native-survey-done i { color: #2e8b57; }

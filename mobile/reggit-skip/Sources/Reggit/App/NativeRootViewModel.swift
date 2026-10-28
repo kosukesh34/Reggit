@@ -532,6 +532,14 @@ final class NativeRootViewModel: PushNotificationHandling {
         }
     }
 
+    /// アプリ内パス（/coupon など）の画面を開く。このアプリに無い画面なら何もしない
+    func openInAppTab(_ key: String) {
+        let mapped = Self.mapTabKey(key)
+        if tabs.contains(where: { $0.key == mapped }) {
+            selectedTab = mapped
+        }
+    }
+
     func handleForegroundNotification(notificationType: String?) {
         refreshForNotification(notificationType)
         if notificationType == "coupon_issued" { selectedTab = "coupons" }
@@ -622,6 +630,8 @@ final class NativeRootViewModel: PushNotificationHandling {
         case "coupon": return "coupons"
         case "stamp": return "stamps"
         case "reservation": return "reservations"
+        case "menu": return "products"
+        case "news": return "announcements"
         case "store", "stores": return "storeSearch"
         default: return key
         }

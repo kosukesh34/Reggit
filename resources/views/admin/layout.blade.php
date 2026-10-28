@@ -116,6 +116,8 @@
                 $showStamps = $navFeatureOn('feature_stamps_enabled') && $navCan('stamps.view');
                 $showCoupons = $navFeatureOn('feature_coupons_enabled') && $navCan('coupons.view');
                 $showAnnouncements = $navFeatureOn('feature_announcements_enabled') && $navCan('announcements.view');
+                $showSurveys = $navFeatureOn('feature_surveys_enabled') && $navCan('announcements.view');
+                $showPopups = $navFeatureOn('feature_popups_enabled') && $navCan('announcements.view');
             @endphp
             <header class="admin-topbar">
                 <a class="admin-topbar-brand" href="{{ $isSystemAdminScreen ? route('system-admin.dashboard') : admin_route('admin.dashboard') }}">
@@ -263,7 +265,7 @@
                         <i class="fas fa-qrcode"></i><span>QRコード発行</span>
                     </a>
                     @endif
-                    @if($showStamps || $showCoupons || $showAnnouncements)
+                    @if($showStamps || $showCoupons || $showAnnouncements || $showSurveys || $showPopups)
                     <div class="nav-group">
                         <div class="nav-group-label">販促</div>
                         @if($showStamps)
@@ -282,6 +284,18 @@
                         <a href="{{ admin_route('admin.announcements') }}" class="nav-item {{ (request()->routeIs('admin.announcements*') && ! request()->routeIs('admin.settings.announcements*')) || request()->routeIs('admin.after-registration-deliveries*') ? 'active' : '' }}">
                             <i class="fas fa-bullhorn"></i>
                             <span>お知らせ</span>
+                        </a>
+                        @endif
+                        @if($showSurveys)
+                        <a href="{{ admin_route('admin.surveys.index') }}" class="nav-item {{ request()->routeIs('admin.surveys*') ? 'active' : '' }}">
+                            <i class="fas fa-square-poll-vertical"></i>
+                            <span>アンケート</span>
+                        </a>
+                        @endif
+                        @if($showPopups)
+                        <a href="{{ admin_route('admin.promo-popups.index') }}" class="nav-item {{ request()->routeIs('admin.promo-popups*') ? 'active' : '' }}">
+                            <i class="fas fa-window-maximize"></i>
+                            <span>ポップアップ</span>
                         </a>
                         @endif
                     </div>
@@ -309,6 +323,10 @@
                         <a href="{{ admin_route('admin.rfm') }}" class="nav-item {{ request()->routeIs('admin.rfm*') ? 'active' : '' }}">
                             <i class="fas fa-chart-pie"></i>
                             <span>RFM分析</span>
+                        </a>
+                        <a href="{{ admin_route('admin.acquisition-sources') }}" class="nav-item {{ request()->routeIs('admin.acquisition-sources*') ? 'active' : '' }}">
+                            <i class="fas fa-route"></i>
+                            <span>流入経路</span>
                         </a>
                         @endif
                     </div>

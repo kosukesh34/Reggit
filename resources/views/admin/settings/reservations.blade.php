@@ -54,6 +54,31 @@
                 <label class="form-label">予約可能な日数（何日先まで）</label>
                 <input type="number" name="advance_booking_days" class="form-control" value="{{ $advanceDays }}" min="1" max="365" required>
             </div>
+            @php
+                $reminder = $settings['reminder'];
+                $hourLabels = [0 => '送らない', 1 => '1時間前', 3 => '3時間前', 6 => '6時間前', 24 => '前日（24時間前）', 48 => '2日前（48時間前）'];
+            @endphp
+            <fieldset class="form-group">
+                <legend class="form-label">予約リマインド</legend>
+                <div class="form-inline-flex">
+                    <label for="reservation_reminder_hours">1回目</label>
+                    <select name="reservation_reminder_hours" id="reservation_reminder_hours" class="form-control">
+                        @foreach($hourLabels as $hours => $label)
+                        <option value="{{ $hours }}" {{ (int) old('reservation_reminder_hours', $reminder->firstHours) === $hours ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <label for="reservation_reminder_second_hours">2回目</label>
+                    <select name="reservation_reminder_second_hours" id="reservation_reminder_second_hours" class="form-control">
+                        @foreach($hourLabels as $hours => $label)
+                        <option value="{{ $hours }}" {{ (int) old('reservation_reminder_second_hours', $reminder->secondHours) === $hours ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <p class="text-muted">予約した会員へ、お知らせとLINEでリマインドを送ります（例: 1回目「前日」、2回目「3時間前」）。その時間より後に入った予約には、その回は送りません。</p>
+                <label class="form-label" for="reservation_reminder_message">リマインドの本文</label>
+                <textarea name="reservation_reminder_message" id="reservation_reminder_message" class="form-control" rows="3" maxlength="500" placeholder="{{ '{店舗}で'.\App\Domain\Reservation\Policies\ReservationReminderPolicy::DEFAULT_MESSAGE }}">{{ old('reservation_reminder_message', $reminder->message) }}</textarea>
+                <p class="text-muted">空欄なら標準の本文です。差し込み：@foreach(\App\Domain\Reservation\Policies\ReservationReminderPolicy::PLACEHOLDERS as $placeholder => $label)<code>{{ $placeholder }}</code> {{ $label }}{{ $loop->last ? '' : '、' }}@endforeach</p>
+            </fieldset>
             <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button> <x-back-link :href="admin_route('admin.reservations')" label="予約一覧へ戻る" /></div>
         </div>
     </div>

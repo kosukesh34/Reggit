@@ -86,6 +86,7 @@ class Member extends Model
         'sex',
         'mail_receive_flag',
         'customer_store_id',
+        'acquisition_source_id',
         'notification_preference',
         'profile_extra',
         'memo',

@@ -12,6 +12,8 @@ struct NativeRootView: View {
     @State var expandedHomePage = 0
     @State var headerNavigation = HeaderNavigationState()
     @State var menuHistory: [String] = []
+    @State var promoPopup = PromoPopupViewModel()
+    @State var surveyRoute: SurveyRoute?
 
     init(viewModel: NativeRootViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -149,6 +151,14 @@ struct NativeRootView: View {
                 onClose: { showAppInfo = false }
             )
         }
+        .sheet(item: $surveyRoute) { route in
+            if let client = viewModel.apiClient {
+                SurveyScreen(service: client, surveyID: route.surveyID) { surveyRoute = nil }
+                    .environment(\.appButtonColors, viewModel.nativeChromeColors)
+                    .environment(\.brandAccent, accent)
+                    .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
+            }
+        }
         .sheet(isPresented: $viewModel.lotteryModalPresented, onDismiss: {
             viewModel.finishLotteryPresentation()
         }) {
@@ -174,6 +184,7 @@ struct NativeRootView: View {
         }
         }
         .environment(\.headerNavigation, headerNavigation)
+        .environment(\.openAppPath, { path in openPromoLink(PromoPopup.Link(rawValue: path)) })
         }
         .textFieldStyle(.plain)
         .preferredColorScheme(.light)
@@ -195,7 +206,30 @@ struct NativeRootView: View {
                 .environment(\.brandAccent, accent)
                 .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
                 .transition(.move(edge: .bottom))
+            } else if viewModel.phase == .ready, let popup = promoPopup.current {
+                PromoPopupOverlay(
+                    popup: popup,
+                    onClose: { withAnimation(.easeInOut(duration: 0.25)) { promoPopup.dismiss() } },
+                    onAction: { secondary in openPromoLink(promoPopup.takeAction(secondary: secondary)) }
+                )
+                .environment(\.appButtonColors, viewModel.nativeChromeColors)
+                .environment(\.brandAccent, accent)
+                .environment(\.brandForeground, BrandPalette(hex: themeHex).usesDarkForeground ? Color.black : Color.white)
+                .environment(\.apiBaseURL, viewModel.apiClient?.baseURL ?? "")
             }
+        }
+        .task(id: viewModel.phase == .ready ? viewModel.currentProjectKey : "") {
+            guard viewModel.phase == .ready, let client = viewModel.apiClient else { return }
+            await promoPopup.load(from: client, projectKey: viewModel.currentProjectKey)
+        }
+    }
+
+    private func openPromoLink(_ link: PromoPopup.Link) {
+        switch link {
+        case .none: break
+        case .tab(let key): viewModel.openInAppTab(key)
+        case .survey(let id): surveyRoute = SurveyRoute(surveyID: id)
+        case .external(let url): openURL(url)
         }
     }
 

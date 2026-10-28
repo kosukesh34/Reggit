@@ -31,6 +31,8 @@ class ShopSettingKeys
         'feature_gallery_enabled' => true,
         'feature_shop_enabled' => false,
         'feature_tickets_enabled' => false,
+        'feature_surveys_enabled' => true,
+        'feature_popups_enabled' => true,
         'feature_gacha_enabled' => false,
         'feature_scratch_enabled' => false,
         'feature_roulette_enabled' => false,
@@ -47,6 +49,8 @@ class ShopSettingKeys
         'feature_coupons_enabled' => 'クーポン',
         'feature_members_enabled' => '会員証',
         'feature_announcements_enabled' => 'お知らせ',
+        'feature_surveys_enabled' => 'アンケート',
+        'feature_popups_enabled' => '宣伝ポップアップ',
     ];
 
     public const LOTTERY_MANAGED_FEATURE_FLAGS = [

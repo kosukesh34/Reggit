@@ -7,7 +7,9 @@ import './app';
 import { CheckoutModal } from './features/cart/CheckoutModal';
 import { App } from '../liff-ui/app/App';
 import { normalizeLegacyLocationHash } from '../liff-ui/navigation/tabPath';
+import { captureAcquisitionSource } from '../shared/utils/acquisitionSource';
 
+captureAcquisitionSource();
 normalizeLegacyLocationHash();
 
 const mountNode = document.getElementById('app-container') ?? document.getElementById('react-frontend-root');

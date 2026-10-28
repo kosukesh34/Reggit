@@ -29,7 +29,8 @@ struct TransferCode: Equatable, Sendable {
 }
 
 /// 顧客向け REST API の境界。Presentation は具象クライアントではなくこのプロトコルに依存する。
-protocol ReggitAPIServing: Sendable {
+/// 新しい機能は小さなプロトコルに分け、ここで合成する（画面側は小さいほうだけに依存する）。
+protocol ReggitAPIServing: PromoPopupFetching, SurveyServing {
     var baseURL: String { get }
 
     func fetchStores() async throws -> [BusinessStore]
@@ -99,4 +100,10 @@ extension ReggitAPIServing {
     func fetchAnnouncementImage(id: Int) async throws -> Data {
         throw ReggitAPIError.invalidResponse
     }
+
+    func fetchPromoPopups() async throws -> [PromoPopup] { [] }
+    func recordPromoPopupEvent(id: Int, event: PromoPopup.Event) async throws {}
+    func fetchOpenSurveys() async throws -> [SurveyDetail] { [] }
+    func fetchSurvey(id: Int) async throws -> SurveyDetail { throw ReggitAPIError.invalidResponse }
+    func submitSurveyAnswers(id: Int, answers: [SurveyAnswerValue?]) async throws -> Int { throw ReggitAPIError.invalidResponse }
 }

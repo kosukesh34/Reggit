@@ -25,7 +25,7 @@ class AnnouncementIndexUseCase
             ->orderBy('is_pinned', 'desc')
             ->orderBy('published_at', 'desc')
             ->take(10)
-            ->get(['id', 'title', 'body', 'image_url', 'image_paths', 'project_id', 'private_image_path', 'published_at', 'is_pinned']);
+            ->get(['id', 'title', 'body', 'action_path', 'action_label', 'image_url', 'image_paths', 'project_id', 'private_image_path', 'published_at', 'is_pinned']);
 
         $readAtByAnnouncement = collect();
         if ($user !== null && $announcements->isNotEmpty()) {
@@ -42,6 +42,8 @@ class AnnouncementIndexUseCase
                 'id' => $announcement->id,
                 'title' => $announcement->title,
                 'body' => $announcement->body,
+                'action_path' => $announcement->action_path,
+                'action_label' => $announcement->action_label,
                 'image_urls' => $announcement->imageUrls(),
                 'image_url' => $announcement->image_url,
                 'published_at' => $announcement->published_at?->toIso8601String(),
