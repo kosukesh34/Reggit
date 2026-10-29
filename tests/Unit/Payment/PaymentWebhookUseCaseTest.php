@@ -59,6 +59,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(OrderNumberAssigner::class),
             app(OrderService::class),
         );
+        $this->freezeTime();
         $result = $useCase->handle('{}', 'sig', 'secret');
 
         $this->assertTrue($result);
