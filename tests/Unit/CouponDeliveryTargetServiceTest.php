@@ -4,11 +4,13 @@ namespace Tests\Unit;
 
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
+use App\Enums\OrderStatus;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
+use App\Models\Order;
 use App\Models\Project;
 use App\Models\StampCard;
 use App\Services\Admin\CouponDeliveryTargetService;
@@ -194,6 +196,53 @@ class CouponDeliveryTargetServiceTest extends TestCase
         $this->assertNull($resolved['error']);
         $this->assertSame([$gold->id], $resolved['member_ids']);
         $this->assertSame(['rank' => 'gold'], $resolved['segment_criteria']);
+    }
+
+    public function test_resolve_売上セグメントは購入額以上の会員を返すこと(): void
+    {
+        $project = $this->createProject();
+        $buyer = Member::factory()->create(['project_id' => $project->id]);
+        $smallBuyer = Member::factory()->create(['project_id' => $project->id]);
+        $this->createCompletedOrder($project, $buyer, 5000);
+        $this->createCompletedOrder($project, $smallBuyer, 2000);
+
+        $resolved = app(CouponDeliveryTargetService::class)->resolve(
+            $project->id,
+            CouponDeliveryType::IMMEDIATE_SEGMENT_SALES,
+            ['segment_period_days' => 30, 'segment_condition' => 'min_amount', 'segment_min_amount' => 3000],
+        );
+
+        $this->assertNull($resolved['error']);
+        $this->assertSame([$buyer->id], $resolved['member_ids']);
+    }
+
+    public function test_resolve_売上セグメントは期間内未購入の会員を返すこと(): void
+    {
+        $project = $this->createProject();
+        $noOrder = Member::factory()->create(['project_id' => $project->id]);
+        $buyer = Member::factory()->create(['project_id' => $project->id]);
+        $this->createCompletedOrder($project, $buyer, 1000);
+
+        $resolved = app(CouponDeliveryTargetService::class)->resolve(
+            $project->id,
+            CouponDeliveryType::IMMEDIATE_SEGMENT_SALES,
+            ['segment_period_days' => 30, 'segment_condition' => 'no_orders'],
+        );
+
+        $this->assertNull($resolved['error']);
+        $this->assertSame([$noOrder->id], $resolved['member_ids']);
+    }
+
+    private function createCompletedOrder(Project $project, Member $member, int $totalAmount): void
+    {
+        Order::create([
+            'project_id' => $project->id,
+            'user_id' => $member->user_id,
+            'order_number' => 'ORD-'.uniqid(),
+            'order_type' => 'take_out',
+            'total_amount' => $totalAmount,
+            'status' => OrderStatus::COMPLETED,
+        ]);
     }
 
     public function test_resolve_スタンプ累計条件の会員を返すこと(): void

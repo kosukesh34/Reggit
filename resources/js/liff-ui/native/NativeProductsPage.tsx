@@ -11,7 +11,7 @@ import { LotteryRewardModal } from "./NativeLotteryPage";
 import { playableEntitlements, type LotteryState } from "./nativeLottery";
 import { PaymentBrandPicker, devicePaymentBrands, paymentBrandLabels, type PaymentBrand } from "./PaymentBrandPicker";
 import { NativeRequestError, nativeRequest } from "./NativeResource";
-import type { OperationReceipt, RuntimeProductOptionGroup } from "../types/runtime";
+import type { RuntimeProductOptionGroup } from "../types/runtime";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 
 interface OrderItem {
