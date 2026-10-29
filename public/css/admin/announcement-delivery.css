@@ -2981,6 +2981,19 @@ body.ad-review-open {
     color: #98621d;
 }
 
+.ad-review-quota {
+    padding: 7px 8px;
+    border-radius: 8px;
+    background: #eef6ff;
+    color: #1f4f7a;
+}
+
+.ad-review-quota.is-over {
+    background: #fdecec;
+    color: #a12626;
+    font-weight: 700;
+}
+
 .ad-review-conditions[hidden] {
     display: none !important;
 }
@@ -3790,4 +3803,15 @@ details.ad-segment-details[hidden] {
 
 .ad-member-csv .btn {
     min-height: 44px;
+}
+
+/* 今月のLINEメッセージ送信数 */
+[data-line-message-quota] .info-item {
+    background: #111;
+    border-color: #111;
+}
+
+[data-line-message-quota] .info-label,
+[data-line-message-quota] .info-value {
+    color: #fff;
 }

@@ -35,6 +35,7 @@ class User extends Authenticatable implements PasskeyUser
         'profile_image_url',
         'profile_image_path',
         'last_login_at',
+        'line_blocked_at',
     ];
 
     protected $hidden = [
@@ -47,6 +48,7 @@ class User extends Authenticatable implements PasskeyUser
     protected $casts = [
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'line_blocked_at' => 'datetime',
         'authentication_version' => 'integer',
     ];
 

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 import { PointQrClaim } from "../components/membership/PointQrClaim";
 import { LoginPromptPopup } from "../components/membership/LoginPromptPopup";
 import { PromoPopupHost } from "../components/home/PromoPopupHost";
+import { FriendshipPrompt } from "../components/home/FriendshipPrompt";
 import { AppShell } from "../components/layout/AppShell";
 import { useMembershipGate } from "../../frontend/hooks/useMembershipGate";
 import { useLegacyTabBridge } from "../navigation/useLegacyTabBridge";
@@ -165,12 +166,15 @@ export function AppRouter() {
   useLegacyTabBridge();
   useDesignerPreviewNavigate();
   const [gateSettled, setGateSettled] = useState(false);
+  // 友だち追加の案内を先に出し、閉じてから宣伝ポップアップを出す
+  const [friendshipSettled, setFriendshipSettled] = useState(false);
   return (
     <AppShell gateSettled={gateSettled}>
       <PointQrClaim />
       <MembershipGate onSettled={() => setGateSettled(true)} />
       <LoginPromptPopup />
-      <PromoPopupHost enabled={gateSettled} />
+      <FriendshipPrompt enabled={gateSettled} onSettled={() => setFriendshipSettled(true)} />
+      <PromoPopupHost enabled={gateSettled && friendshipSettled} />
       <ScreenRoutes />
     </AppShell>
   );

@@ -15,6 +15,8 @@ type LiffLike = {
     getDecodedIDToken?: () => { sub?: string } | null;
     getIDToken?: () => string | null;
     login?: (opts?: { redirectUri?: string }) => void;
+    getFriendship?: () => Promise<{ friendFlag: boolean }>;
+    openWindow?: (params: { url: string; external?: boolean }) => void;
 };
 
 type QRCodeCtor = new (

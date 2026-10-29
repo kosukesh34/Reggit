@@ -73,8 +73,6 @@ class AdminProjectControllerTest extends TestCase
             ->assertStatus(200)
             ->assertDontSee('name="frontend_logo"', false)
             ->assertDontSee('name="frontend_header_text"', false)
-            ->assertDontSee('name="line_liff_id"', false)
-            ->assertDontSee('name="line_liff_url"', false)
             ->assertDontSee('name="frontend_logo_url"', false)
             ->assertDontSee('ロゴ画像URL', false);
     }
@@ -141,6 +139,75 @@ class AdminProjectControllerTest extends TestCase
 
         $response->assertRedirect(route('system-admin.projects.index'));
         $this->assertDatabaseHas('projects', ['id' => $project->id, 'name' => 'New']);
+    }
+
+    public function test_edit_line接続設定を表示しシークレットは保存して値を出さないこと(): void
+    {
+        $this->loginSystemAdmin();
+        // 保存時の LIFF モジュールモード切替（LINE API 呼び出し）はここでは行わない
+        config(['line.auto_enable_liff_module_mode' => false]);
+        $project = Project::factory()->create();
+        ShopSettingStore::setLineLiffId('old-liff', $project->id);
+        ShopSettingStore::setLineLiffUrl('https://liff.line.me/old', $project->id);
+        ShopSettingStore::setLineChannelAccessToken('kept-token', $project->id);
+
+        $this->get('/system-admin/projects/'.$project->id.'/edit')->assertOk()
+            ->assertSee('LINE接続・通知API')
+            ->assertSee(url('/api/line/webhook'))
+            ->assertSee(url('/liff/'.$project->project_key))
+            ->assertDontSee('kept-token');
+
+        $this->put('/system-admin/projects/'.$project->id, $this->projectFormPayload([
+            'project_key' => $project->project_key,
+            'name' => $project->name,
+            'line_liff_id' => 'new-liff',
+            'line_liff_url' => 'https://liff.line.me/new',
+            'line_friend_add_url' => 'https://line.me/R/ti/p/@shop',
+            'line_channel_secret' => 'new-secret',
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame('new-liff', ShopSettingStore::getLineLiffId($project->id));
+        $this->assertSame('https://line.me/R/ti/p/@shop', ShopSettingStore::getLineFriendAddUrl($project->id));
+        $this->assertSame('new-secret', ShopSettingStore::getLineChannelSecret($project->id));
+        // 空欄で送ったトークンは消さない
+        $this->assertSame('kept-token', ShopSettingStore::getLineChannelAccessToken($project->id));
+        $this->get('/system-admin/projects/'.$project->id.'/edit')->assertDontSee('new-secret');
+    }
+
+    public function test_update_入力エラーで戻ってもlineのシークレット入力を消さないこと(): void
+    {
+        $this->loginSystemAdmin();
+        $project = Project::factory()->create();
+        $editUrl = '/system-admin/projects/'.$project->id.'/edit';
+
+        $this->from($editUrl)->put('/system-admin/projects/'.$project->id, $this->projectFormPayload([
+            'project_key' => $project->project_key,
+            'name' => '',
+            'line_channel_secret' => 'typed-secret',
+        ]))->assertRedirect($editUrl)->assertSessionHasErrors('name');
+
+        $this->get($editUrl)->assertOk()->assertSee('value="typed-secret"', false);
+        $this->assertSame('', ShopSettingStore::getLineChannelSecret($project->id));
+    }
+
+    public function test_update_lineプランのonとoffを保存できること(): void
+    {
+        $this->loginSystemAdmin();
+        $project = Project::factory()->create();
+        $payload = fn (array $extra) => $this->projectFormPayload([
+            'project_key' => $project->project_key,
+            'name' => $project->name,
+            'is_active' => true,
+            'plan' => 'distribution',
+            ...$extra,
+        ]);
+
+        $this->put('/system-admin/projects/'.$project->id, $payload(['line_plan_enabled' => '1']))->assertSessionHasNoErrors();
+        $this->assertTrue($project->fresh()->line_plan_enabled);
+
+        // チェックを外すと項目自体が送られない
+        $this->put('/system-admin/projects/'.$project->id, $payload([]))->assertSessionHasNoErrors();
+        $this->assertFalse($project->fresh()->line_plan_enabled);
     }
 
     public function test_index_ダッシュボードリンクが店舗ダッシュボードへ遷移すること(): void

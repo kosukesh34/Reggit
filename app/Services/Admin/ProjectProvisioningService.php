@@ -28,6 +28,7 @@ class ProjectProvisioningService
      *     description?: string|null,
      *     is_active?: bool,
      *     plan?: string,
+     *     line_plan_enabled?: bool,
      *     max_active_stores?: int,
      * }  $projectPayload
      * @param  array{
@@ -62,6 +63,7 @@ class ProjectProvisioningService
                 'is_active' => (bool) ($projectPayload['is_active'] ?? true),
                 'service_status' => $projectPayload['service_status'] ?? 'active',
                 'plan' => $projectPayload['plan'] ?? 'normal',
+                'line_plan_enabled' => (bool) ($projectPayload['line_plan_enabled'] ?? false),
                 'max_active_stores' => $projectPayload['max_active_stores'] ?? 1,
             ]);
 

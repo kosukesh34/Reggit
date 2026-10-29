@@ -22,8 +22,7 @@
         <div class="member-line-qr-meta">
             <p class="form-label">{{ $view->lineInviteLabel ?? 'LINE URL' }}</p>
             <code class="smaregi-url">{{ $view->lineInviteUrl }}</code>
-            <p class="form-text text-muted mt-2">来店客にこのQRを読み取ってもらい、LINEアプリへ誘導できます。友だち追加URLは「LIFF設定」で変更できます。</p>
-            <a href="{{ admin_route('admin.settings.liff-connection') }}" class="btn btn-sm btn-secondary mt-2">LIFF設定へ</a>
+            <p class="form-text text-muted mt-2">来店客にこのQRを読み取ってもらい、LINEアプリへ誘導できます。友だち追加URLはシステム管理の「契約・連携設定」で変更できます。</p>
         </div>
     </div>
 </div>

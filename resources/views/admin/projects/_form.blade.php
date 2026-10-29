@@ -35,6 +35,14 @@
             @error('plan')<span class="invalid-feedback">{{ $message }}</span>@enderror
         </div>
         <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="line_plan_enabled" value="1" @checked((bool) old('line_plan_enabled', $view->project?->line_plan_enabled ?? false))>
+                <span>LINEプラン</span>
+            </label>
+            <p class="form-text text-muted">ONにすると、お知らせ配信画面に今月のLINEメッセージ送信数を表示します。</p>
+            @error('line_plan_enabled')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
             <label for="max_active_stores" class="form-label">利用可能な店舗数 <span class="text-danger">*</span></label>
             <input type="number" name="max_active_stores" id="max_active_stores" class="form-control" value="{{ old('max_active_stores', $view->project?->max_active_stores ?? 1) }}" required min="1" max="1000" step="1">
             @error('max_active_stores')<span class="invalid-feedback">{{ $message }}</span>@enderror
@@ -82,6 +90,53 @@
         </div>
     </div>
 </div>
+
+@if($view->project)
+<div class="card mt-3" id="line-connection">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fab fa-line"></i> LINE接続・通知API</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-group">
+            <span class="form-label">LIFF エントリURL</span>
+            <p><code>{{ $view->projectSettings['liff_entry_url'] ?? '' }}</code></p>
+            <p class="form-text text-muted">LINE Developers の LIFF の「エンドポイントURL」に設定します。</p>
+        </div>
+        <div class="form-group">
+            <span class="form-label">Webhook URL</span>
+            <p><code>{{ $view->projectSettings['line_webhook_url'] ?? '' }}</code></p>
+            <p class="form-text text-muted">LINE Developers の Messaging API 設定で「Webhook URL」に設定し、「Webhookの利用」をONにします。ブロックの記録に使います。</p>
+        </div>
+        <div class="form-group">
+            <label for="line_liff_id" class="form-label">LIFF ID <span class="text-danger">*</span></label>
+            <input type="text" name="line_liff_id" id="line_liff_id" class="form-control" value="{{ old('line_liff_id', $view->projectSettings['line_liff_id'] ?? '') }}" required maxlength="128" placeholder="例: 2008962885-44xGRSQL">
+            @error('line_liff_id')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="line_liff_url" class="form-label">LIFF URL <span class="text-danger">*</span></label>
+            <input type="url" name="line_liff_url" id="line_liff_url" class="form-control" value="{{ old('line_liff_url', $view->projectSettings['line_liff_url'] ?? '') }}" required maxlength="2048" placeholder="例: https://miniapp.line.me/2008962885-44xGRSQL">
+            @error('line_liff_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        <div class="form-group">
+            <label for="line_friend_add_url" class="form-label">LINE友だち追加URL</label>
+            <input type="url" name="line_friend_add_url" id="line_friend_add_url" class="form-control" value="{{ old('line_friend_add_url', $view->projectSettings['line_friend_add_url'] ?? '') }}" maxlength="2048" placeholder="例: https://line.me/R/ti/p/@xxxx">
+            <p class="form-text text-muted">アプリ起動時の友だち追加の案内と、会員管理の招待QRに使います。</p>
+            @error('line_friend_add_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        @foreach([
+            'line_channel_access_token' => ['チャネルアクセストークン', 'has_line_channel_access_token', 1024, 'お知らせ配信・送信数の表示に使います。'],
+            'line_channel_secret' => ['チャネルシークレット', 'has_line_channel_secret', 255, 'Webhookを使う場合は必須です。LINE Developers の Messaging API チャネルの「チャネル基本設定」にあります。'],
+        ] as $field => [$label, $flag, $max, $help])
+        <div class="form-group">
+            <label for="{{ $field }}" class="form-label">{{ $label }}</label>
+            <input type="password" name="{{ $field }}" id="{{ $field }}" class="form-control" value="{{ old($field) }}" maxlength="{{ $max }}" autocomplete="new-password" placeholder="{{ ($view->projectSettings[$flag] ?? '') !== '' ? '登録済み（変更する場合のみ入力）' : '未登録' }}">
+            <p class="form-text text-muted">{{ $help }}</p>
+            @error($field)<span class="invalid-feedback">{{ $message }}</span>@enderror
+        </div>
+        @endforeach
+    </div>
+</div>
+@endif
 
 @if($view->showAdminAccount)
 <div class="card mt-3">

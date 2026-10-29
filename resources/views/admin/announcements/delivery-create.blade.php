@@ -51,6 +51,38 @@
         <span>新規配信</span>
     </nav>
 
+    @if($view->linePlanEnabled)
+    <div class="card card-mb-16" data-line-message-quota>
+        <div class="card-header">
+            <h3 class="card-title"><i class="fab fa-line"></i> 今月のLINEメッセージ送信数</h3>
+        </div>
+        <div class="card-body">
+            @if($view->lineMessageQuota === null)
+            <p class="form-text">送信数を取得できませんでした。LINE接続設定のチャネルアクセストークンを確認してください。</p>
+            @else
+            @php
+                $quota = $view->lineMessageQuota;
+            @endphp
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">送信済み</div>
+                    <div class="info-value">{{ number_format($quota['used']) }}通</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">今月の上限</div>
+                    <div class="info-value">{{ $quota['limit'] === null ? '上限なし' : number_format($quota['limit']).'通' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">残り送信可能数</div>
+                    <div class="info-value">{{ $quota['limit'] === null ? '上限なし' : number_format(max(0, $quota['limit'] - $quota['used'])).'通' }}</div>
+                </div>
+            </div>
+            <p class="form-text">LINE公式アカウントの数え方（1人に1回送ると1通）で、毎月1日にリセットされます。LINE以外のアプリ通知は含みません。</p>
+            @endif
+        </div>
+    </div>
+    @endif
+
     @if($errors->any())
         <div class="alert alert-error" role="alert">
             <strong>入力内容を確認してください</strong>
@@ -172,6 +204,7 @@
     'audiencePreviewUrl' => admin_route('admin.announcements.audience.preview'),
     'memberCount' => $view->memberCount,
     'selectedMemberIds' => $selectedMemberIds,
+    'lineQuota' => $view->lineMessageQuota,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
 
 @push('styles')

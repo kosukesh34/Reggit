@@ -33,6 +33,7 @@ class ProjectMutationController extends Controller
             $id,
             $request->toProjectPayload(),
             $request->toProjectSettingsPayload(),
+            $request->toLineConnectionPayload(),
         );
 
         return $this->redirectToIndex()->with('success', 'プロジェクトを更新しました');

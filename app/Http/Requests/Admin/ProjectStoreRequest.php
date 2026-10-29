@@ -20,6 +20,7 @@ class ProjectStoreRequest extends FormRequest
             'is_active' => 'nullable|boolean',
             'service_status' => 'sometimes|required|in:active,unpaid,cancelled',
             'plan' => 'required|string|in:normal,distribution,premium',
+            'line_plan_enabled' => 'nullable|boolean',
             'max_active_stores' => 'sometimes|integer|min:1|max:1000',
             'line_liff_id' => 'required|string|max:128',
             'line_liff_url' => 'required|url|max:2048',
@@ -39,6 +40,7 @@ class ProjectStoreRequest extends FormRequest
             'description' => $this->validated('description'),
             'is_active' => (bool) ($this->validated('is_active') ?? true),
             'plan' => $this->validated('plan') ?? 'normal',
+            'line_plan_enabled' => $this->boolean('line_plan_enabled'),
             'max_active_stores' => (int) ($this->validated('max_active_stores') ?? 1),
             ...($this->has('service_status') ? ['service_status' => $this->validated('service_status')] : []),
         ];

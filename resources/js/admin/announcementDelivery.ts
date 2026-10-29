@@ -1,3 +1,5 @@
+import { lineQuotaCheck, type LineQuota } from './lineQuota';
+
 type AudienceType = 'immediate_bulk' | 'personal' | 'segment';
 type DeliveryTiming = 'immediate' | 'scheduled';
 type AudienceResolveMode = 'snapshot' | 'at_send';
@@ -9,6 +11,8 @@ type DeliveryConfig = {
     memberCount: number;
     selectedMemberIds: number[];
     mode?: 'announcement' | 'coupon';
+    /** LINEプランがONで、今月の通数を取得できたときだけ渡る */
+    lineQuota?: LineQuota | null;
 };
 
 type MemberSearchResult = {
@@ -1187,6 +1191,16 @@ function initAnnouncementDelivery(): void {
             unreachable.textContent = sending && notificationChannels.unreachable > 0
                 ? `${notificationChannels.unreachable.toLocaleString('ja-JP')}人はLINE・Push通知の送信先がありません。アプリ内のお知らせには掲載されます。`
                 : '';
+        }
+        const quota = field<HTMLElement>('deliveryReviewQuota');
+        if (quota) {
+            const check = sending && config.lineQuota
+                ? lineQuotaCheck(notificationChannels.line, couponOptions().length > 0 ? 2 : 1, config.lineQuota)
+                : null;
+            quota.hidden = check === null;
+            quota.textContent = check?.message ?? '';
+            quota.classList.toggle('is-over', check?.over === true);
+            quota.setAttribute('role', check?.over === true ? 'alert' : 'status');
         }
         if (optedOut) {
             optedOut.hidden = !sending || notificationChannels.opted_out === 0;
