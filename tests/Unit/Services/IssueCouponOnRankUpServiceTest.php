@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\UseCases\Coupon;
+namespace Tests\Unit\Services;
 
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
@@ -11,12 +11,12 @@ use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
 use App\Models\User;
-use App\UseCases\Coupon\IssueCouponOnRankUpUseCase;
+use App\Services\IssueCouponOnRankUpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-class IssueCouponOnRankUpUseCaseTest extends TestCase
+class IssueCouponOnRankUpServiceTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -48,7 +48,7 @@ class IssueCouponOnRankUpUseCaseTest extends TestCase
             'rank' => 'bronze',
         ]);
 
-        app(IssueCouponOnRankUpUseCase::class)->handle($member, 'bronze', 'gold');
+        app(IssueCouponOnRankUpService::class)->handle($member, 'bronze', 'gold');
 
         $this->assertDatabaseHas('member_coupons', [
             'member_id' => $member->id,
@@ -89,9 +89,9 @@ class IssueCouponOnRankUpUseCaseTest extends TestCase
             'rank' => 'bronze',
         ]);
 
-        $useCase = app(IssueCouponOnRankUpUseCase::class);
-        $useCase->handle($member, 'bronze', 'gold');
-        $useCase->handle($member, 'bronze', 'gold');
+        $service = app(IssueCouponOnRankUpService::class);
+        $service->handle($member, 'bronze', 'gold');
+        $service->handle($member, 'bronze', 'gold');
 
         $this->assertSame(1, MemberCoupon::query()->where('member_id', $member->id)->count());
     }
@@ -124,7 +124,7 @@ class IssueCouponOnRankUpUseCaseTest extends TestCase
             'rank' => 'bronze',
         ]);
 
-        app(IssueCouponOnRankUpUseCase::class)->handle($member, 'bronze', 'silver');
+        app(IssueCouponOnRankUpService::class)->handle($member, 'bronze', 'silver');
 
         $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
     }
@@ -156,7 +156,7 @@ class IssueCouponOnRankUpUseCaseTest extends TestCase
             'rank' => 'bronze',
         ]);
 
-        app(IssueCouponOnRankUpUseCase::class)->handle($member, '', 'bronze');
+        app(IssueCouponOnRankUpService::class)->handle($member, '', 'bronze');
 
         $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
     }
@@ -188,7 +188,7 @@ class IssueCouponOnRankUpUseCaseTest extends TestCase
             'rank' => 'gold',
         ]);
 
-        app(IssueCouponOnRankUpUseCase::class)->handle($member, 'gold', 'bronze');
+        app(IssueCouponOnRankUpService::class)->handle($member, 'gold', 'bronze');
 
         $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
     }
@@ -220,7 +220,7 @@ class IssueCouponOnRankUpUseCaseTest extends TestCase
             'rank' => 'gold',
         ]);
 
-        app(IssueCouponOnRankUpUseCase::class)->handle($member, 'gold', 'legacy');
+        app(IssueCouponOnRankUpService::class)->handle($member, 'gold', 'legacy');
 
         $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
     }
@@ -243,22 +243,22 @@ class IssueCouponOnRankUpUseCaseTest extends TestCase
             'project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id,
             'rank' => 'bronze',
         ]));
-        $useCase = app(IssueCouponOnRankUpUseCase::class);
+        $service = app(IssueCouponOnRankUpService::class);
         $interleaved = false;
-        DB::listen(function ($query) use ($useCase, $members, &$interleaved): void {
+        DB::listen(function ($query) use ($service, $members, &$interleaved): void {
             if (! $interleaved && str_starts_with($query->sql, 'select') && str_contains($query->sql, 'from `coupon_deliveries`')) {
                 // Another member completes after this SELECT fetched its old history.
                 $interleaved = true;
-                $useCase->handle($members[1], 'bronze', 'gold');
+                $service->handle($members[1], 'bronze', 'gold');
             }
         });
-        $useCase->handle($members[0], 'bronze', 'gold');
+        $service->handle($members[0], 'bronze', 'gold');
 
         $this->assertTrue($interleaved);
         $this->assertSame(2, MemberCoupon::where('coupon_id', $coupon->id)->count());
         $this->assertSame(2, $delivery->fresh()->issued_count);
         $this->assertEqualsCanonicalizing($members->pluck('id')->all(), $delivery->fresh()->issued_member_ids);
-        $useCase->handle($members[0], 'bronze', 'gold');
+        $service->handle($members[0], 'bronze', 'gold');
         $this->assertSame(2, $delivery->fresh()->issued_count);
         $this->assertSame(2, MemberCoupon::where('coupon_id', $coupon->id)->count());
     }

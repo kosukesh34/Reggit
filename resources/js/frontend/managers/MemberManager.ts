@@ -1,7 +1,6 @@
 import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
-import { ConfirmDialog } from '../../shared/utils/confirmDialog';
 import { clearAcquisitionSource, getAcquisitionSource } from '../../shared/utils/acquisitionSource';
 import { getGuestRegisterMessage, getMemberRegistrationMode, isMembershipRequired, shouldAutoCreateMember, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
 import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
