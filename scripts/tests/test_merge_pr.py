@@ -34,7 +34,7 @@ case "$*" in
   'pr view 123 --json headRefOid --jq .headRefOid')
     if [[ "$REGGIT_TEST_CASE" == changed_pr_head ]]; then echo different; else echo "$REGGIT_TEST_HEAD"; fi;;
   'pr view 123 --json commits --jq '*)
-    jq -r "$7" <<< '{"commits":[{"messageHeadline":"chore: sample","messageBody":"detail\\n\\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"},{"messageHeadline":"Merge origin/main","messageBody":"Co-authored-by: Claude <noreply@anthropic.com>\\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"}]}';;
+    jq -r "$7" <<< '{"commits":[{"messageHeadline":"chore: sample","messageBody":"detail\\nCo-Authored-By: Claude などの署名を説明する行\\n\\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"},{"messageHeadline":"Merge origin/main","messageBody":"Co-authored-by: Claude <noreply@anthropic.com>\\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"}]}';;
   'pr view '*) printf '{"headRefOid":"%s","state":"%s","baseRefName":"%s"}\\n' "$REGGIT_TEST_HEAD" "$REGGIT_TEST_STATE" "$REGGIT_TEST_BASE";;
   'pr checks '*)
     [[ "$REGGIT_TEST_CASE" != changed_head ]] || touch "$REGGIT_TEST_ROOT/changed"
@@ -111,7 +111,9 @@ exec "$REGGIT_TEST_PYTHON" "$@"
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertIn('* chore: sample\n\ndetail', merged)
         self.assertIn('* Merge origin/main', merged)
-        self.assertNotIn('Claude', merged)
+        self.assertIn('Co-Authored-By: Claude などの署名を説明する行', merged)
+        self.assertNotIn('noreply@anthropic.com', merged)
+        self.assertNotIn('Generated with', merged)
 
 
 if __name__ == '__main__':
