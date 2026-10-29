@@ -21,7 +21,9 @@ conclusion=$(gh api "repos/{owner}/{repo}/commits/$head_sha/check-runs?check_nam
 [[ "$(gh pr view "$pr" --json headRefOid --jq .headRefOid)" == "$head_sha" ]] || { echo 'PR HEAD changed during CI' >&2; exit 1; }
 git fetch origin main
 git merge-base --is-ancestor origin/main HEAD || { echo 'Base changed during CI; update and rerun' >&2; exit 1; }
-gh pr merge "$pr" --squash --match-head-commit "$head_sha"
+# Same squash body GitHub builds by default, minus Claude attribution lines.
+body=$(gh pr view "$pr" --json commits --jq '[.commits[] | "* " + .messageHeadline + "\n\n" + ([.messageBody | splits("\n") | select(test("^(co-authored-by: claude|🤖 generated with \\[claude code\\])"; "i") | not)] | join("\n"))] | join("\n\n")')
+gh pr merge "$pr" --squash --match-head-commit "$head_sha" --body "$body"
 # Remote branches are deleted by delete_branch_on_merge; detach instead of switching to a main another worktree may hold.
 branch=$(git branch --show-current)
 if [[ -n "$branch" ]]; then
