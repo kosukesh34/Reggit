@@ -18,8 +18,8 @@ REPO="${GITHUB_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
 BRANCHES="${PROTECTED_BRANCHES:-main develop}"
 
 # CI ワークフロー (.github/workflows/ci.yml) のジョブ名に対応するステータスチェック
-# 形式は "ワークフロー名 / ジョブ名"
-REQUIRED_CONTEXTS='["CI / test", "CI / lint"]'
+# test・lint・frontend の結果をまとめる集約ジョブ main だけを必須にする
+REQUIRED_CONTEXTS='["main"]'
 
 echo "Repository: $REPO"
 echo "Protected branches: $BRANCHES"
@@ -54,5 +54,5 @@ done
 
 echo ""
 echo "Branch protection has been applied. Merging is now allowed only when:"
-echo "  - Required status checks (CI / test, CI / lint) have passed"
+echo "  - Required status checks (CI main) have passed"
 echo "  - At least 1 pull request review approval is present"
