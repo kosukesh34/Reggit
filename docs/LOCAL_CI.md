@@ -10,7 +10,7 @@
 | ジョブ | 内容 |
 |---|---|
 | `test`（4分割） | PHP テスト。ファイルを名前順に4分割して並列実行する。MySQL 8.4 はメモリ上（tmpfs）で動かす |
-| `lint` | マージゲート契約テスト（5メソッド・12ケース）、Pint、PHPStan |
+| `lint` | マージゲート契約テスト（6メソッド・13ケース）、Pint、PHPStan |
 | `frontend` | TypeScript、ESLint、フロントエンド単体テスト、Vite ビルド |
 | `main` | 上の全ジョブの成功を確認する集約ジョブ。マージ条件はこの1つ |
 
@@ -27,6 +27,8 @@ scripts/merge-pr.sh <PR番号>
 - PR の最新 HEAD と checkout の一致、main の取り込み、clean な作業ツリーを確認する。
 - CI の完了を待ち、その HEAD で `main` チェックが成功していなければマージしない。
 - CI 完了後も checkout・PR HEAD・main を再確認し、GitHub では `--match-head-commit` で同じ HEAD のみマージする。
+- squash の本文は GitHub の既定と同じくコミットメッセージを並べ、Claude の署名行（`Co-Authored-By: Claude`、`Generated with Claude Code`）だけを取り除く。
+- squash の本文は GitHub の既定と同じくコミットメッセージを並べ、Claude の署名行（`Co-Authored-By: Claude`、`Generated with Claude Code`）だけを取り除く。
 - マージ後、リモートブランチは GitHub の `delete_branch_on_merge` で削除され、ローカルブランチはスクリプトが HEAD を切り離してから削除する。別 checkout が main を使用していてもマージできるよう、main への切替は行わない。不要になった worktree は作業完了後に別途整理する。
 - ローカルスクリプトは GitHub UI からの直接マージを防止するものではない。
 
