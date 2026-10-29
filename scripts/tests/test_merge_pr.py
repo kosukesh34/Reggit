@@ -1,4 +1,4 @@
-"""Merge gate contract tests; GitHub, Git and application CI are replaced by local fakes."""
+"""Merge gate contract tests; GitHub and Git are replaced by local fakes."""
 import os
 from pathlib import Path
 import subprocess
@@ -23,13 +23,25 @@ case "$*" in
     if [[ "$REGGIT_TEST_CASE" == wrong_head || -f "$REGGIT_TEST_ROOT/changed" ]]; then echo different; else echo "$REGGIT_TEST_HEAD"; fi;;
   'fetch origin main') :;;
   'merge-base --is-ancestor origin/main HEAD') [[ "$REGGIT_TEST_CASE" != stale_base && ! -f "$REGGIT_TEST_ROOT/new-base" ]];;
+  'branch --show-current') echo feature/merged;;
+  'switch --quiet --detach') [[ -f "$REGGIT_TEST_ROOT/merged" ]] && touch "$REGGIT_TEST_ROOT/detached";;
+  'branch -D feature/merged') [[ -f "$REGGIT_TEST_ROOT/detached" ]] && touch "$REGGIT_TEST_ROOT/branch-deleted";;
   *) exit 99;;
 esac
 ''',
                 'gh': '''#!/bin/bash
 case "$*" in
+  'pr view 123 --json headRefOid --jq .headRefOid')
+    if [[ "$REGGIT_TEST_CASE" == changed_pr_head ]]; then echo different; else echo "$REGGIT_TEST_HEAD"; fi;;
+  'pr view 123 --json commits --jq '*)
+    jq -r "$7" <<< '{"commits":[{"messageHeadline":"chore: sample","messageBody":"detail\\n\\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"},{"messageHeadline":"Merge origin/main","messageBody":"Co-authored-by: Claude <noreply@anthropic.com>\\n🤖 Generated with [Claude Code](https://claude.com/claude-code)"}]}';;
   'pr view '*) printf '{"headRefOid":"%s","state":"%s","baseRefName":"%s"}\\n' "$REGGIT_TEST_HEAD" "$REGGIT_TEST_STATE" "$REGGIT_TEST_BASE";;
-  'api '*) if [[ "$REGGIT_TEST_CASE" == workflow_enabled ]]; then echo active; else echo disabled_manually; fi;;
+  'pr checks '*)
+    [[ "$REGGIT_TEST_CASE" != changed_head ]] || touch "$REGGIT_TEST_ROOT/changed"
+    [[ "$REGGIT_TEST_CASE" != changed_base ]] || touch "$REGGIT_TEST_ROOT/new-base"
+    [[ "$REGGIT_TEST_CASE" != failing_ci ]];;
+  "api repos/{owner}/{repo}/commits/$REGGIT_TEST_HEAD/check-runs?check_name=main "*)
+    case "$REGGIT_TEST_CASE" in failing_ci) echo failure;; missing_ci) echo;; *) echo success;; esac;;
   'pr merge '*)
     printf '%s' "$*" > "$REGGIT_TEST_ROOT/merged"
     if [[ "$REGGIT_TEST_CASE" == worktree && "$*" == *--delete-branch* ]]; then
@@ -39,17 +51,9 @@ case "$*" in
   *) exit 99;;
 esac
 ''',
-                'mktemp': '''#!/bin/bash
-: > \"$REGGIT_TEST_ROOT/ci.log\"
-echo \"$REGGIT_TEST_ROOT/ci.log\"
-''',
                 'python3': '''#!/bin/bash
-if [[ "$1" == -c ]]; then exec "$REGGIT_TEST_PYTHON" "$@"; fi
-[[ "$*" == scripts/local-ci.py ]] || exit 99
-[[ "$REGGIT_TEST_CASE" != failing_ci ]] || exit 1
-[[ "$REGGIT_TEST_CASE" != changed_head ]] || touch "$REGGIT_TEST_ROOT/changed"
-[[ "$REGGIT_TEST_CASE" != changed_base ]] || touch "$REGGIT_TEST_ROOT/new-base"
-echo 'Fake local CI success'
+[[ "$1" == -c ]] || exit 99
+exec "$REGGIT_TEST_PYTHON" "$@"
 ''',
             }
             for name, contents in commands.items():
@@ -66,6 +70,7 @@ echo 'Fake local CI success'
             result = subprocess.run(['/bin/bash', str(SCRIPT), '123'], env=environment,
                                     capture_output=True, text=True, timeout=10)
             merged = (root / 'merged').read_text() if (root / 'merged').exists() else None
+            self.branch_deleted = (root / 'branch-deleted').exists()
             return result, merged
 
     def test_only_open_main_pr_is_accepted_even_when_python_is_optimized(self):
@@ -76,12 +81,18 @@ echo 'Fake local CI success'
                 self.assertIsNone(merged)
 
     def test_failed_or_stale_validation_never_merges(self):
-        for scenario in ['dirty', 'wrong_head', 'stale_base', 'workflow_enabled',
-                         'failing_ci', 'changed_head', 'changed_base']:
+        for scenario in ['dirty', 'wrong_head', 'stale_base', 'failing_ci', 'missing_ci',
+                         'changed_head', 'changed_base', 'changed_pr_head']:
             with self.subTest(scenario=scenario):
                 result, merged = self.execute(scenario)
                 self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
                 self.assertIsNone(merged)
+                self.assertFalse(self.branch_deleted)
+
+    def test_successful_merge_deletes_the_local_branch_without_switching_to_main(self):
+        result, merged = self.execute()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertTrue(self.branch_deleted)
 
     def test_worktree_merge_does_not_switch_to_an_occupied_main(self):
         result, merged = self.execute(scenario='worktree')
@@ -94,6 +105,13 @@ echo 'Fake local CI success'
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
         self.assertIn('--match-head-commit ' + HEAD, merged)
         self.assertNotIn('--admin', merged)
+
+    def test_squash_body_drops_claude_attribution(self):
+        result, merged = self.execute()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn('* chore: sample\n\ndetail', merged)
+        self.assertIn('* Merge origin/main', merged)
+        self.assertNotIn('Claude', merged)
 
 
 if __name__ == '__main__':

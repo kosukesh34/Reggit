@@ -10,7 +10,7 @@ The application has several files whose size is a symptom of mixed responsibilit
 2. `WalletPassService` into asset building, certificate resolution, manifest signing, and archive creation modules.
 3. `GoogleWalletPassService` into credentials/JWT, Google API access, and loyalty object mapping modules.
 4. `MemberService` into profile, registration, rank, image, and Smaregi synchronization modules.
-5. `LiffAppStudioTemplates` and `LiffSaaSTemplateKit` into one catalog plus one file per industry preset.
+5. `LiffAppStudioTemplates` into one catalog plus one file per industry preset.
 
 ## Rules for each extraction
 
