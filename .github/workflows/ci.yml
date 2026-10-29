@@ -1,134 +1,112 @@
-# テスト・Lint 用 CI（E2E はローカル実行）（GitHub 無料アカウントで利用可能）
-# パブリックリポジトリ: 実行時間無制限 / プライベート: 月 2,000 分まで無料
+# E2E 以外のテスト・Lint 用 CI（E2E はローカル実行）。パブリックリポジトリのため実行時間は無料。
 name: CI
 
 on:
   push:
-    branches: [ main, develop, ver1.0.0 ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop, ver1.0.0, 'feature/**', 'fix/**' ]
+    branches: [ main ]
+
+# 同じ PR に新しい push があれば古い実行を止める
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  APP_ENV: testing
 
 jobs:
+  # PHP テストをファイル単位で4分割し並列実行する
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
 
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: reggit_test
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --tmpfs /var/lib/mysql
+          --health-cmd="mysqladmin ping -h127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '24'
-        cache: 'npm'
-
-    - name: Install Node dependencies
-      run: npm ci
-
-    - name: Build frontend assets
-      run: npm run build
-
-    - name: Type check frontend
-      run: npx tsc --noEmit
-
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
+    - uses: shivammathur/setup-php@v2
       with:
         php-version: '8.4'
         extensions: mbstring, xml, mysql, pdo, pdo_mysql, gd, zip
         coverage: none
 
-    # .env を composer install より前に用意（post-autoload-dump で artisan package:discover が動くため）
+    # phpunit.xml が APP_ENV=testing を強制するため .env.testing を読む
     - name: Prepare environment file
       run: |
-        if [ -f env.example ]; then
-          cp env.example .env
-        elif [ -f .env.example ]; then
-          cp .env.example .env
-        else
-          echo 'APP_NAME="Reggit"' > .env
-          echo 'APP_ENV=testing' >> .env
-          echo 'APP_KEY=' >> .env
-          echo 'APP_DEBUG=true' >> .env
-          echo 'APP_URL=http://localhost' >> .env
-          echo 'DB_CONNECTION=mysql' >> .env
-          echo 'SESSION_DRIVER=array' >> .env
-          echo 'CACHE_DRIVER=array' >> .env
-          echo 'QUEUE_CONNECTION=sync' >> .env
-        fi
-        sed -i 's/^APP_ENV=.*/APP_ENV=testing/' .env
-        sed -i 's|^DB_HOST=.*|DB_HOST=127.0.0.1|' .env
-        sed -i 's/^DB_DATABASE=.*/DB_DATABASE=reggit_test/' .env
-        sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env
-        sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=root/' .env
+        mkdir -p storage/framework/views storage/framework/cache/data storage/framework/sessions storage/logs
+        cat > .env.testing <<'EOF'
+        APP_ENV=testing
+        APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+        DB_CONNECTION=mysql
+        DB_HOST=127.0.0.1
+        DB_PORT=3306
+        DB_DATABASE=reggit_test
+        DB_USERNAME=root
+        DB_PASSWORD=root
+        CACHE_STORE=array
+        SESSION_DRIVER=array
+        QUEUE_CONNECTION=sync
+        LOG_CHANNEL=stderr
+        EOF
 
-    - name: Install Dependencies
+    - uses: actions/cache@v4
+      id: vendor
+      with:
+        path: vendor
+        key: vendor-php8.4-${{ hashFiles('composer.lock') }}
+
+    - if: steps.vendor.outputs.cache-hit != 'true'
       run: composer install --prefer-dist --no-progress --no-interaction
 
-    - name: Generate application key
-      run: php artisan key:generate --force
-
-    - name: Setup Database
-      env:
-        DB_CONNECTION: mysql
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_DATABASE: reggit_test
-        DB_USERNAME: root
-        DB_PASSWORD: root
+    - name: Run tests (shard ${{ matrix.shard }}/4)
       run: |
-        php artisan migrate --env=testing --force
-
-    - name: Run Tests
-      env:
-        DB_CONNECTION: mysql
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_DATABASE: reggit_test
-        DB_USERNAME: root
-        DB_PASSWORD: root
-        SMAREGI_CLIENT_ID: ${{ secrets.SMAREGI_CLIENT_ID }}
-        SMAREGI_CLIENT_SECRET: ${{ secrets.SMAREGI_CLIENT_SECRET }}
-        SMAREGI_TEST_CONTRACT_ID: ${{ secrets.SMAREGI_TEST_CONTRACT_ID }}
-        SMAREGI_CONTRACT_ID: ${{ secrets.SMAREGI_CONTRACT_ID }}
-      run: php artisan test
+        files=$(find tests/Unit tests/Feature -name '*Test.php' | sort | awk -v n=4 -v i=${{ matrix.shard }} 'NR % n == i')
+        vendor/bin/phpunit --exclude-group smaregi-integration $files
 
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '24'
-        cache: 'npm'
-
-    - name: Install Node dependencies
-      run: npm ci
-
-    - name: Build frontend assets
-      run: npm run build
-
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
+    - uses: shivammathur/setup-php@v2
       with:
         php-version: '8.4'
         extensions: mbstring, xml
+        coverage: none
 
-    - name: Install Dependencies
+    - uses: actions/cache@v4
+      id: vendor
+      with:
+        path: vendor
+        key: vendor-php8.4-${{ hashFiles('composer.lock') }}
+
+    - if: steps.vendor.outputs.cache-hit != 'true'
       run: composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Merge gate contract tests
+      run: python3 -B scripts/tests/test_merge_pr.py
 
     - name: Run Laravel Pint (code style)
       run: vendor/bin/pint --test
@@ -136,17 +114,37 @@ jobs:
     - name: Run PHPStan
       run: composer analyse
 
-  # E2E/browser tests run locally. This check fails even when a dependency fails.
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+
+    - run: npm ci --ignore-scripts
+    - run: npm run typecheck
+    - run: npm run lint
+    - run: npm run test:unit:frontend
+    - run: npm run build
+
+  # マージ判定に使う唯一の必須チェック。依存ジョブが失敗・スキップでも必ず結果を出す
   main:
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    needs: [test, lint, frontend]
     if: always()
     steps:
       - name: Require all CI jobs to succeed
         env:
           TEST_RESULT: ${{ needs.test.result }}
           LINT_RESULT: ${{ needs.lint.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
         run: |
           test "$TEST_RESULT" = success
           test "$LINT_RESULT" = success
+          test "$FRONTEND_RESULT" = success
           echo "All CI checks passed"
