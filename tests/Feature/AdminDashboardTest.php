@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\AdminUser;
+use App\Models\Announcement;
+use App\Models\LineFollowEvent;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -54,6 +57,32 @@ class AdminDashboardTest extends TestCase
         $response->assertDontSee('クイックメニュー', false);
         $response->assertDontSee('総商品数', false);
         $response->assertDontSee('総ユーザー数', false);
+    }
+
+    public function test_dashboard_lineプランがonならブロック率の推移を表示すること(): void
+    {
+        $project = $this->createProject();
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
+        $route = route('admin.dashboard', ['project_key' => $project->project_key]);
+        $this->actingAs($admin, 'admin')->get($route)->assertOk()->assertDontSee('LINEブロック率の推移');
+
+        $project->update(['line_plan_enabled' => true]);
+        foreach (range(1, 4) as $i) {
+            User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat((string) $i, 32)]);
+        }
+        LineFollowEvent::create(['project_id' => $project->id, 'type' => LineFollowEvent::TYPE_UNFOLLOW]);
+        LineFollowEvent::create(['project_id' => $project->id, 'type' => LineFollowEvent::TYPE_FOLLOW]);
+        LineFollowEvent::create(['project_id' => $project->id, 'type' => LineFollowEvent::TYPE_FOLLOW]);
+        Announcement::factory()->create([
+            'project_id' => $project->id,
+            'send_notification' => true,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'sent_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'admin')->get($route)->assertOk()
+            ->assertSee('LINEブロック率の推移')
+            ->assertSeeInOrder([now()->format('Y/m'), '1回', '1人', '2人', '25.0%']);
     }
 
     public function test_dashboard_サイドバーは日常操作と設定ハブに分かれていること(): void

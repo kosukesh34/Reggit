@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Collection;
  *
  * @param  array<string, int|float>  $stats
  * @param  Collection<int, Order>  $recentOrders
+ * @param  list<array{month: string, deliveries: int, blocks: int, follows: int, line_users: int, block_rate: float}>|null  $lineBlockTrend  LINEプランがOFFなら null
  */
 class AdminDashboardIndexOutput
 {
     public function __construct(
         public array $stats,
-        public Collection $recentOrders
+        public Collection $recentOrders,
+        public ?array $lineBlockTrend = null,
     ) {}
 }

@@ -48,6 +48,12 @@ class ProjectController extends Controller
             [
                 'line_liff_id' => $this->shopSettingRepository->getLineLiffId((int) $project->id),
                 'line_liff_url' => $this->shopSettingRepository->getLineLiffUrl((int) $project->id),
+                'line_friend_add_url' => (string) ($this->shopSettingRepository->getValue('line_friend_add_url', '', (int) $project->id) ?? ''),
+                // 値は画面に出さず、登録済みかどうかだけ渡す
+                'has_line_channel_access_token' => trim((string) $this->shopSettingRepository->getValue('line_channel_access_token', '', (int) $project->id)) !== '' ? '1' : '',
+                'has_line_channel_secret' => trim((string) $this->shopSettingRepository->getValue('line_channel_secret', '', (int) $project->id)) !== '' ? '1' : '',
+                'liff_entry_url' => url('/liff/'.$project->project_key),
+                'line_webhook_url' => url('/api/line/webhook'),
                 'frontend_header_text' => (string) ($this->shopSettingRepository->getFrontendHeaderText((int) $project->id) ?? ''),
                 'frontend_logo_url' => (string) ($this->shopSettingRepository->getFrontendLogoUrl((int) $project->id) ?? ''),
                 'smaregi_contract_id' => (string) ($this->shopSettingRepository->getValue('smaregi_contract_id', '', (int) $project->id) ?? ''),

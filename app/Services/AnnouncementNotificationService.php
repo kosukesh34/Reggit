@@ -6,6 +6,7 @@ use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Models\Announcement;
 use App\Models\Coupon;
+use App\Models\LineDeliveryFailure;
 use App\Models\Member;
 use App\Models\Project;
 use App\Services\Line\LineService;
@@ -99,6 +100,12 @@ class AnnouncementNotificationService
 
                 continue;
             }
+            if ($member->user?->line_blocked_at !== null) {
+                $this->recordLineFailure($announcement, $member, LineDeliveryFailure::REASON_BLOCKED);
+                $skipped++;
+
+                continue;
+            }
 
             $payload = $this->buildLinePayload(
                 $title,
@@ -143,6 +150,7 @@ class AnnouncementNotificationService
                     }
                 }
                 $failed++;
+                $this->recordLineFailure($announcement, $member, LineDeliveryFailure::REASON_ERROR, $e->getMessage());
                 LogHelper::error('[Announcement] LINE push failed', [
                     'announcement_id' => $announcement->id,
                     'project_id' => $announcement->project_id,
@@ -154,6 +162,17 @@ class AnnouncementNotificationService
         }
 
         return ['line_sent' => $sent, 'line_failed' => $failed, 'line_skipped' => $skipped];
+    }
+
+    private function recordLineFailure(Announcement $announcement, Member $member, string $reason, ?string $error = null): void
+    {
+        LineDeliveryFailure::create([
+            'project_id' => $announcement->project_id,
+            'member_id' => $member->id,
+            'announcement_id' => $announcement->id,
+            'reason' => $reason,
+            'error_message' => $error !== null ? mb_substr($error, 0, 500) : null,
+        ]);
     }
 
     /** @return Collection<int, Member> */

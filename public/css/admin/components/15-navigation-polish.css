@@ -7,6 +7,7 @@
 .main-content :is(a, button, input, select, textarea):focus-visible, .admin-login-page :is(a, button, input):focus-visible { outline: 3px solid #2479a8; outline-offset: 3px; }
 .main-content .form-actions { flex-wrap: wrap; gap: 10px; }
 .admin-login-box > .web-page-navigation { margin-bottom: 24px; }
+.content-header .web-page-navigation { margin-bottom: 0; }
 .sidebar-toggle { width: 44px; height: 44px; border-radius: 12px; }
 .main-content .breadcrumb { color: #5e7581; font-size: 13px; line-height: 1.7; flex-wrap: wrap; }
 @media (max-width: 640px) {

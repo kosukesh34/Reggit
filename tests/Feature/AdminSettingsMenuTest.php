@@ -31,7 +31,7 @@ class AdminSettingsMenuTest extends TestCase
         ]);
     }
 
-    public function test_settings_hub_groups_settings_and_includes_line_connection(): void
+    public function test_settings_hub_groups_settings_without_retired_line_connection(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);
@@ -42,7 +42,8 @@ class AdminSettingsMenuTest extends TestCase
             ->assertSee('店舗運用')
             ->assertSee('画面・デザイン')
             ->assertSee('連携・管理')
-            ->assertSee(route('admin.settings.liff-connection', ['project_key' => $project->project_key]), false);
+            // LINE接続はシステム管理の契約・連携設定へ移した
+            ->assertDontSee(route('admin.settings.liff-connection', ['project_key' => $project->project_key]), false);
     }
 
     /** メニュー設定URLはホーム設定へリダイレクトする（統合済み） */

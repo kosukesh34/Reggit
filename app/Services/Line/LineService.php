@@ -5,6 +5,7 @@ namespace App\Services\Line;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class LineService
@@ -129,6 +130,37 @@ class LineService
     }
 
     /** @param array<string, mixed> $contents */
+    /**
+     * 今月の送信数と上限。上限のないプランは limit が null。取得できないときは null。
+     *
+     * @return array{used: int, limit: int|null}|null
+     */
+    public function getMessageQuota(?string $channelAccessToken = null): ?array
+    {
+        $token = $this->resolveAccessToken($channelAccessToken);
+        if ($token === null) {
+            return null;
+        }
+
+        try {
+            // 管理画面の表示を待たせないよう短めに切る
+            $request = Http::withToken($token)->timeout(5)->baseUrl('https://api.line.me/v2/bot/message/');
+            $quota = $request->get('quota')->throw()->json();
+            $consumption = $request->get('quota/consumption')->throw()->json();
+        } catch (\Exception $e) {
+            LogHelper::warning('[LINE] message quota failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        return [
+            'used' => (int) ($consumption['totalUsage'] ?? 0),
+            'limit' => ($quota['type'] ?? null) === 'limited' ? (int) ($quota['value'] ?? 0) : null,
+        ];
+    }
+
     public function createFlexMessage(string $altText, array $contents): array
     {
         return [

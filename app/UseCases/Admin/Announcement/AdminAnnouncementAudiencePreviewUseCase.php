@@ -140,8 +140,10 @@ class AdminAnnouncementAudiencePreviewUseCase
         $baseQuery = Member::query()
             ->where('project_id', $projectId)
             ->whereIn('id', $memberIds->all());
+        // ブロック中の人には送らないので LINE の送信先に数えない
         $lineConstraint = static function ($query): void {
-            $query->whereNotNull('line_user_id')
+            $query->whereNull('line_blocked_at')
+                ->whereNotNull('line_user_id')
                 ->where('line_user_id', '!=', '')
                 ->whereRaw('line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
         };

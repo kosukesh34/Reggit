@@ -7,12 +7,14 @@ use App\Enums\AnnouncementAudienceResolveMode;
 use App\Enums\MemberCouponSource;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\OrderStatus;
+use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Jobs\SendScheduledAnnouncementJob;
 use App\Models\AdminUser;
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
 use App\Models\Coupon;
+use App\Models\LineDeliveryFailure;
 use App\Models\Member;
 use App\Models\MemberAudienceGroup;
 use App\Models\MemberCoupon;
@@ -28,6 +30,7 @@ use App\Services\PushNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -127,6 +130,76 @@ class AdminAnnouncementsTest extends TestCase
         $project = Project::factory()->create(['plan' => 'distribution']);
 
         return $project;
+    }
+
+    public function test_delivery_create_lineの今月の送信数と残り送信可能数を表示すること(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.line.me/v2/bot/message/quota' => Http::response(['type' => 'limited', 'value' => 5000]),
+            'api.line.me/v2/bot/message/quota/consumption' => Http::response(['totalUsage' => 1234]),
+        ]);
+        $project = $this->createDistributionProject();
+        $project->update(['line_plan_enabled' => true]);
+        ShopSettingStore::setLineChannelAccessToken('project-token', (int) $project->id);
+
+        $this->actingAs($this->createAdmin($project), 'admin')
+            ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSeeInOrder(['今月のLINEメッセージ送信数', '1,234通', '5,000通', '3,766通'])
+            ->assertSee('"lineQuota":{"used":1234,"limit":5000}', false);
+        Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer project-token'));
+    }
+
+    public function test_delivery_create_lineプランがoffなら送信数を表示せずlineにも問い合わせないこと(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake();
+        $project = $this->createDistributionProject();
+        ShopSettingStore::setLineChannelAccessToken('project-token', (int) $project->id);
+
+        $this->actingAs($this->createAdmin($project), 'admin')
+            ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertDontSee('今月のLINEメッセージ送信数');
+        Http::assertNothingSent();
+    }
+
+    public function test_delivery_create_lineの送信数を取得できなくても配信画面を表示すること(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake(['api.line.me/*' => Http::response(['message' => 'Authentication failed'], 401)]);
+        $project = $this->createDistributionProject();
+        $project->update(['line_plan_enabled' => true]);
+        ShopSettingStore::setLineChannelAccessToken('invalid-token', (int) $project->id);
+
+        $this->actingAs($this->createAdmin($project), 'admin')
+            ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('送信数を取得できませんでした');
+    }
+
+    public function test_line_failures_lineで送れなかった会員を理由で絞り込んで表示すること(): void
+    {
+        $project = $this->createProject();
+        $other = Project::factory()->create();
+        $blockedUser = User::factory()->create(['project_id' => $project->id, 'name' => 'ブロック太郎', 'line_blocked_at' => now()]);
+        $blocked = Member::factory()->create(['project_id' => $project->id, 'user_id' => $blockedUser->id]);
+        $errored = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id, 'name' => 'エラー花子'])->id]);
+        $announcement = Announcement::factory()->create(['project_id' => $project->id, 'title' => '秋のセール']);
+        LineDeliveryFailure::create(['project_id' => $project->id, 'member_id' => $blocked->id, 'announcement_id' => $announcement->id, 'reason' => LineDeliveryFailure::REASON_BLOCKED]);
+        LineDeliveryFailure::create(['project_id' => $project->id, 'member_id' => $errored->id, 'announcement_id' => $announcement->id, 'reason' => LineDeliveryFailure::REASON_ERROR, 'error_message' => '400 Bad Request']);
+        $otherMember = Member::factory()->create(['project_id' => $other->id, 'user_id' => User::factory()->create(['project_id' => $other->id, 'name' => '別店舗さん'])->id]);
+        LineDeliveryFailure::create(['project_id' => $other->id, 'member_id' => $otherMember->id, 'reason' => LineDeliveryFailure::REASON_BLOCKED]);
+        $this->actingAs($this->createAdmin($project), 'admin');
+        $route = fn (array $query = []) => route('admin.announcements.line-failures', ['project_key' => $project->project_key, ...$query]);
+
+        $this->get($route())->assertOk()
+            ->assertSee('ブロック太郎')->assertSee('エラー花子')->assertSee('秋のセール')->assertSee('400 Bad Request')
+            ->assertDontSee('別店舗さん')
+            ->assertSee('現在ブロック中のLINEユーザー：<strong>1人</strong>', false);
+        $this->get($route(['reason' => LineDeliveryFailure::REASON_BLOCKED]))->assertOk()
+            ->assertSee('ブロック太郎')->assertDontSee('エラー花子');
     }
 
     public function test_announcements_お知らせ一覧にアクセスできること(): void
@@ -801,6 +874,21 @@ class AdminAnnouncementsTest extends TestCase
 
         $response->assertOk();
         $response->assertJson(['count' => 1]);
+    }
+
+    public function test_audience_preview_ブロック中の会員はlineの送信先に数えないこと(): void
+    {
+        $project = $this->createProject();
+        foreach (['a' => null, 'b' => now()] as $char => $blockedAt) {
+            $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat($char, 32), 'line_blocked_at' => $blockedAt]);
+            Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
+        }
+
+        $this->actingAs($this->createAdmin($project), 'admin')
+            ->get(route('admin.announcements.audience.preview', ['project_key' => $project->project_key, 'audience_type' => Announcement::DELIVERY_TYPE_IMMEDIATE_BULK]))
+            ->assertOk()
+            ->assertJsonPath('notification_channels.line', 1)
+            ->assertJsonPath('notification_channels.unreachable', 1);
     }
 
     public function test_audience_preview_配信対象会員の一覧を返すこと(): void

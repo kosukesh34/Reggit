@@ -4,6 +4,7 @@ namespace Tests\Unit\UseCases\Line;
 
 use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Models\LineFollowEvent;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Line\LineService;
@@ -112,6 +113,48 @@ class LineWebhookHandleUseCaseTest extends TestCase
 
         $this->assertSame(401, $result['status']);
         $this->assertSame(0, User::query()->count());
+    }
+
+    public function test_unfollowでブロック日時を記録しfollowで解除すること(): void
+    {
+        $project = Project::factory()->create(['project_key' => 'shop-block', 'is_active' => true]);
+        ShopSettingStore::setLineChannelSecret('secret-block', (int) $project->id);
+        $lineUserId = 'U00000000000000000000000000000033';
+        $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => $lineUserId]);
+        $line = $this->mockLineService('secret-block');
+
+        $unfollow = new LineWebhookInput(false, 'sig', json_encode([
+            'events' => [['type' => 'unfollow', 'source' => ['userId' => $lineUserId]]],
+        ], JSON_THROW_ON_ERROR));
+        $this->assertSame(200, $this->makeUseCase($line)->handle($unfollow)['status']);
+        $this->assertNotNull($user->fresh()->line_blocked_at);
+
+        $line->shouldReceive('getProfile')->andReturn(null);
+        $line->shouldReceive('createTextMessage')->andReturn(['type' => 'text', 'text' => 'ok']);
+        $line->shouldReceive('replyMessage')->andReturn([]);
+        $this->makeUseCase($line)->handle($this->followInput($lineUserId, 'reply-3', 'sig'));
+        $this->assertNull($user->fresh()->line_blocked_at);
+        $this->assertSame(
+            ['unfollow', 'follow'],
+            LineFollowEvent::query()->where('user_id', $user->id)->orderBy('id')->pluck('type')->all(),
+        );
+    }
+
+    public function test_同じunfollowが再送されてもブロックは1回だけ数えること(): void
+    {
+        $project = Project::factory()->create(['project_key' => 'shop-redelivery', 'is_active' => true]);
+        ShopSettingStore::setLineChannelSecret('secret-redelivery', (int) $project->id);
+        $lineUserId = 'U00000000000000000000000000000044';
+        User::factory()->create(['project_id' => $project->id, 'line_user_id' => $lineUserId]);
+        $input = new LineWebhookInput(false, 'sig', json_encode([
+            'events' => [['type' => 'unfollow', 'webhookEventId' => '01HXYZREDELIVERY', 'source' => ['userId' => $lineUserId]]],
+        ], JSON_THROW_ON_ERROR));
+
+        $useCase = $this->makeUseCase($this->mockLineService('secret-redelivery'));
+        $useCase->handle($input);
+        $useCase->handle($input);
+
+        $this->assertSame(1, LineFollowEvent::query()->where('project_id', $project->id)->count());
     }
 
     private function makeUseCase(LineService $line): LineWebhookHandleUseCase

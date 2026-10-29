@@ -4,6 +4,7 @@ namespace App\UseCases\Line;
 
 use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Enums\MemberStatus;
+use App\Models\LineFollowEvent;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Line\LineService;
@@ -81,6 +82,9 @@ class LineWebhookHandleUseCase
             case 'follow':
                 $this->handleFollow($event, $userId);
                 break;
+            case 'unfollow':
+                $this->handleUnfollow($event, $userId);
+                break;
             case 'message':
                 $this->handleMessage($event, $userId);
                 break;
@@ -105,6 +109,10 @@ class LineWebhookHandleUseCase
                 'line_user_id' => $userId,
             ],
         );
+        if ($user->line_blocked_at !== null) {
+            $user->update(['line_blocked_at' => null]);
+        }
+        $this->recordFollowEvent($event, LineFollowEvent::TYPE_FOLLOW, (int) $user->id);
 
         $profile = $this->lineService->getProfile($userId, $this->channelAccessToken);
         if ($profile !== null && $profile !== false) {
@@ -127,6 +135,30 @@ class LineWebhookHandleUseCase
         );
 
         $this->reply($event['replyToken'] ?? '', $message);
+    }
+
+    /** LINE ではブロックが unfollow として届く。送信は200で成功扱いになるため、ここで記録する */
+    private function handleUnfollow(array $event, string $userId): void
+    {
+        if ($this->projectId === null) {
+            return;
+        }
+        $user = $this->findUserByLineId($userId);
+        $user?->update(['line_blocked_at' => now()]);
+        $this->recordFollowEvent($event, LineFollowEvent::TYPE_UNFOLLOW, $user?->id);
+    }
+
+    /** 再送された同じイベントは webhookEventId の一意制約で無視する */
+    private function recordFollowEvent(array $event, string $type, ?int $userId): void
+    {
+        $eventId = $event['webhookEventId'] ?? null;
+        LineFollowEvent::query()->insertOrIgnore([
+            'project_id' => $this->projectId,
+            'user_id' => $userId,
+            'type' => $type,
+            'webhook_event_id' => is_string($eventId) && $eventId !== '' ? mb_substr($eventId, 0, 64) : null,
+            'created_at' => now(),
+        ]);
     }
 
     private function handleMessage(array $event, string $userId): void

@@ -42,6 +42,7 @@ class DashboardController extends AdminBaseController
             'readNoticeIds' => $readNoticeIds,
             'stats' => $output->stats,
             'recent_orders' => $output->recentOrders,
+            'lineBlockTrend' => $output->lineBlockTrend,
         ]);
     }
 }

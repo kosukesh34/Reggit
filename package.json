@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:strict": "tsc --noEmit -p tsconfig.strict.json",
     "lint": "eslint resources/js --max-warnings=0",
-    "test:unit:frontend": "node --experimental-strip-types --test resources/js/frontend/member/*.test.mjs resources/js/frontend/navigation/*.test.mjs resources/js/payment/*.test.mjs resources/js/liff-ui/native/*.test.mjs",
+    "test:unit:frontend": "node --experimental-strip-types --test resources/js/frontend/member/*.test.mjs resources/js/frontend/navigation/*.test.mjs resources/js/payment/*.test.mjs resources/js/liff-ui/native/*.test.mjs resources/js/admin/*.test.mjs",
     "test:firebase-rules": "npx --yes firebase-tools@15.33.0 emulators:exec --only auth,firestore,storage --project demo-reggit \"node --experimental-transform-types --no-warnings --test --test-concurrency=1 tests/firebase/*.test.mjs\"",
     "test:e2e": "playwright test --config=e2e/web/playwright.config.ts",
     "test:e2e:ui": "playwright test --config=e2e/web/playwright.config.ts --ui"

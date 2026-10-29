@@ -33,6 +33,7 @@ class Project extends Model
         'max_active_stores',
         'analysis_api_enabled',
         'analysis_delivery_enabled',
+        'line_plan_enabled',
     ];
 
     /** @var array<string, string> */
@@ -42,6 +43,7 @@ class Project extends Model
         'max_active_stores' => 'integer',
         'analysis_api_enabled' => 'boolean',
         'analysis_delivery_enabled' => 'boolean',
+        'line_plan_enabled' => 'boolean',
     ];
 
     public function isServiceAvailable(): bool

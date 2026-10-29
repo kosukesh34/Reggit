@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
  * @param  array<string, array{label: string, color: string}>  $rfmSegments
  * @param  list<array<string, mixed>>  $profileFields
  * @param  Collection<int, MemberAudienceGroup>  $audienceGroups
+ * @param  array{used: int, limit: int|null}|null  $lineMessageQuota
  */
 class AdminAnnouncementDeliveryFormView
 {
@@ -26,5 +27,7 @@ class AdminAnnouncementDeliveryFormView
         public readonly array $rfmSegments = [],
         public readonly array $profileFields = [],
         public readonly Collection $audienceGroups = new Collection,
+        public readonly bool $linePlanEnabled = false,
+        public readonly ?array $lineMessageQuota = null,
     ) {}
 }

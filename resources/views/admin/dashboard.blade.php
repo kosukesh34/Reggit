@@ -113,6 +113,46 @@
     </div>
 </div>
 
+@if($lineBlockTrend !== null)
+<div class="card" data-line-block-trend>
+    <div class="card-header">
+        <h3 class="card-title"><i class="fab fa-line"></i> LINEブロック率の推移</h3>
+        <div class="card-header-actions">
+            <a href="{{ admin_route('admin.announcements.line-failures', ['reason' => \App\Models\LineDeliveryFailure::REASON_BLOCKED]) }}" class="btn btn-sm btn-secondary">
+                <i class="fas fa-user-slash"></i> 送れなかった会員
+            </a>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>月</th>
+                    <th>LINE配信回数</th>
+                    <th>ブロック</th>
+                    <th>友だち追加・ブロック解除</th>
+                    <th>ブロック率</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($lineBlockTrend as $row)
+                <tr>
+                    <td>{{ $row['month'] }}</td>
+                    <td>{{ number_format($row['deliveries']) }}回</td>
+                    <td>{{ number_format($row['blocks']) }}人</td>
+                    <td>{{ number_format($row['follows']) }}人</td>
+                    <td><strong>{{ number_format($row['block_rate'], 1) }}%</strong></td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body">
+        <p class="form-text">ブロック率は「その月にブロックした人数 ÷ 月末時点のLINE会員数」です。配信回数が多い月にブロック率が上がっていれば、配信の頻度を見直す目安になります。ブロックはLINEのWebhookで受け取った時点から記録します。</p>
+    </div>
+</div>
+@endif
+
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-list"></i> 最近の注文</h3>

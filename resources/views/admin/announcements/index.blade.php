@@ -19,6 +19,7 @@
         <h1 class="page-header-title"><i class="fas fa-bullhorn"></i> お知らせ</h1>
     </div>
     <div class="page-header-actions">
+        <a href="{{ admin_route('admin.announcements.line-failures') }}" class="btn btn-secondary"><i class="fas fa-user-slash"></i> LINE未送信の履歴</a>
         <a href="{{ admin_route('admin.after-registration-deliveries.index') }}" class="btn btn-secondary"><i class="fas fa-clock"></i> スケジュール配信</a>
         <a href="{{ admin_route('admin.announcements.delivery.create') }}" class="btn btn-primary"><i class="fas fa-paper-plane"></i> お知らせを配信</a>
     </div>

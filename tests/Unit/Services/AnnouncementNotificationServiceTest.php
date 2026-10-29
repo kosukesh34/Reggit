@@ -7,6 +7,7 @@ use App\Enums\MemberNotificationPreference;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Announcement;
 use App\Models\Coupon;
+use App\Models\LineDeliveryFailure;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
@@ -434,6 +435,43 @@ class AnnouncementNotificationServiceTest extends TestCase
         $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
         $this->assertSame(0, $service->send($withoutCoupon)['line_sent']);
         $this->assertSame(1, $service->send($withCoupon)['line_sent']);
+    }
+
+    public function test_send_ブロック中の会員には送らず送信エラーと合わせて履歴に残すこと(): void
+    {
+        $project = $this->createProject();
+        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        $blocked = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat('b', 32), 'line_blocked_at' => now()])->id,
+        ]);
+        $failing = Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat('e', 32)])->id,
+        ]);
+        $announcement = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '履歴テスト',
+            'delivery_type' => Announcement::DELIVERY_TYPE_PERSONAL,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'target_member_ids' => [$blocked->id, $failing->id],
+        ]);
+
+        $pushMock = Mockery::mock(PushNotificationService::class);
+        $pushMock->shouldReceive('sendAnnouncement')->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0, 'notification_ids' => []]);
+        $lineMock = Mockery::mock(LineService::class);
+        $lineMock->shouldReceive('pushMessage')->once()
+            ->with('U'.str_repeat('e', 32), Mockery::any(), 'test-token')
+            ->andThrow(new \RuntimeException('400 Bad Request'));
+
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $result = $service->send($announcement);
+
+        $this->assertSame(0, $result['line_sent']);
+        $this->assertSame(1, $result['line_failed']);
+        $this->assertSame(1, $result['line_skipped']);
+        $this->assertDatabaseHas('line_delivery_failures', ['member_id' => $blocked->id, 'announcement_id' => $announcement->id, 'reason' => LineDeliveryFailure::REASON_BLOCKED]);
+        $this->assertDatabaseHas('line_delivery_failures', ['member_id' => $failing->id, 'reason' => LineDeliveryFailure::REASON_ERROR, 'error_message' => '400 Bad Request']);
     }
 
     private function createProject(): Project

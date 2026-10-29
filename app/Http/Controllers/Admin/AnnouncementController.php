@@ -10,6 +10,7 @@ use App\UseCases\Admin\Announcement\AdminAnnouncementEditUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementIndexUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementReadsUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementUpdateUseCase;
+use App\UseCases\Admin\Announcement\AdminLineDeliveryFailureIndexUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 
@@ -99,5 +100,13 @@ class AnnouncementController extends AdminBaseController
         $output = $this->readsUseCase->handle($id);
 
         return view('admin.announcements.reads', ['view' => $output]);
+    }
+
+    public function lineFailures(Request $request, AdminLineDeliveryFailureIndexUseCase $useCase)
+    {
+        return view('admin.announcements.line-failures', $useCase->handle(
+            $this->resolveAdminProjectId(),
+            $request->query('reason'),
+        ));
     }
 }

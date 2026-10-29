@@ -382,6 +382,14 @@
                     <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="メニューを開く">
                         <i class="fas fa-bars"></i>
                     </button>
+                    @php
+                        $backLink = \App\Support\WebNavigation::adminBack(request());
+                    @endphp
+                    @if($backLink !== null)
+                        <nav class="web-page-navigation" aria-label="ページの移動">
+                            <x-back-link :href="$backLink['href']" :label="$backLink['label']" />
+                        </nav>
+                    @endif
                     <h2>@yield('page-title', 'ダッシュボード')</h2>
                 </div>
                 @if(
@@ -406,12 +414,6 @@
                 </div>
             @endif
             <div class="content-body">
-                @php($backLink = \App\Support\WebNavigation::adminBack(request()))
-                @if($backLink !== null)
-                    <nav class="web-page-navigation" aria-label="ページの移動">
-                        <x-back-link :href="$backLink['href']" :label="$backLink['label']" />
-                    </nav>
-                @endif
                 @if((request()->routeIs('admin.settings.*') || request()->routeIs('admin.stores.*')) && !request()->routeIs('admin.settings.index') && !request()->routeIs('admin.settings.liff-designer*'))
                     <div class="settings-page-content">
                 @yield('content')

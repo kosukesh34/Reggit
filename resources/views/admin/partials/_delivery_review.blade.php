@@ -47,6 +47,7 @@
                             <strong id="deliveryReviewPushCount">0人</strong>
                         </div>
                     </div>
+                    <p class="ad-review-quota" id="deliveryReviewQuota" hidden></p>
                     <p class="ad-review-unreachable" id="deliveryReviewOptedOut" hidden></p>
                     <p class="ad-review-unreachable" id="deliveryReviewUnreachable" hidden></p>
                 </section>
