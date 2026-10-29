@@ -28,6 +28,7 @@ scripts/merge-pr.sh <PR番号>
 - CI の完了を待ち、その HEAD で `main` チェックが成功していなければマージしない。
 - CI 完了後も checkout・PR HEAD・main を再確認し、GitHub では `--match-head-commit` で同じ HEAD のみマージする。
 - squash の本文は GitHub の既定と同じくコミットメッセージを並べ、Claude の署名行（`Co-Authored-By: Claude`、`Generated with Claude Code`）だけを取り除く。
+- squash の本文は GitHub の既定と同じくコミットメッセージを並べ、Claude の署名行（`Co-Authored-By: Claude`、`Generated with Claude Code`）だけを取り除く。
 - マージ後、リモートブランチは GitHub の `delete_branch_on_merge` で削除され、ローカルブランチはスクリプトが HEAD を切り離してから削除する。別 checkout が main を使用していてもマージできるよう、main への切替は行わない。不要になった worktree は作業完了後に別途整理する。
 - ローカルスクリプトは GitHub UI からの直接マージを防止するものではない。
 
