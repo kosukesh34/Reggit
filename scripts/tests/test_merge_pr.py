@@ -23,6 +23,9 @@ case "$*" in
     if [[ "$REGGIT_TEST_CASE" == wrong_head || -f "$REGGIT_TEST_ROOT/changed" ]]; then echo different; else echo "$REGGIT_TEST_HEAD"; fi;;
   'fetch origin main') :;;
   'merge-base --is-ancestor origin/main HEAD') [[ "$REGGIT_TEST_CASE" != stale_base && ! -f "$REGGIT_TEST_ROOT/new-base" ]];;
+  'branch --show-current') echo feature/merged;;
+  'switch --quiet --detach') [[ -f "$REGGIT_TEST_ROOT/merged" ]] && touch "$REGGIT_TEST_ROOT/detached";;
+  'branch -D feature/merged') [[ -f "$REGGIT_TEST_ROOT/detached" ]] && touch "$REGGIT_TEST_ROOT/branch-deleted";;
   *) exit 99;;
 esac
 ''',
@@ -66,6 +69,7 @@ echo 'Fake local CI success'
             result = subprocess.run(['/bin/bash', str(SCRIPT), '123'], env=environment,
                                     capture_output=True, text=True, timeout=10)
             merged = (root / 'merged').read_text() if (root / 'merged').exists() else None
+            self.branch_deleted = (root / 'branch-deleted').exists()
             return result, merged
 
     def test_only_open_main_pr_is_accepted_even_when_python_is_optimized(self):
@@ -82,6 +86,12 @@ echo 'Fake local CI success'
                 result, merged = self.execute(scenario)
                 self.assertNotEqual(0, result.returncode, result.stdout + result.stderr)
                 self.assertIsNone(merged)
+                self.assertFalse(self.branch_deleted)
+
+    def test_successful_merge_deletes_the_local_branch_without_switching_to_main(self):
+        result, merged = self.execute()
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertTrue(self.branch_deleted)
 
     def test_worktree_merge_does_not_switch_to_an_occupied_main(self):
         result, merged = self.execute(scenario='worktree')

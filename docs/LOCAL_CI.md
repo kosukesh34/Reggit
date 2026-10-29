@@ -18,11 +18,11 @@ scripts/merge-pr.sh <PR番号>
 
 マージスクリプトは PR の最新 HEAD・main の取り込みを確認し、必ず CI を再実行する。
 CI 完了後も checkout と main を再確認し、GitHub では `--match-head-commit` で同じ HEAD のみマージする。
-worktree で別 checkout が main を使用していてもマージできるよう、マージ時にブランチの自動削除・main への切替は行わない。不要になった作業ブランチ・worktree は作業完了後に別途整理する。
+マージ後、リモートブランチは GitHub の `delete_branch_on_merge` で削除され、ローカルブランチはスクリプトが HEAD を切り離してから削除する。別 checkout が main を使用していてもマージできるよう、main への切替は行わない。不要になった worktree は作業完了後に別途整理する。
 複数人が同時に main を変更する運用では GitHub 側の branch protection / merge queue も必要。
 ローカルスクリプトは GitHub UI からの直接マージを防止するものではない。
 
-チェック: マージゲートの契約テスト（4メソッド・11ケース）、Pint、PHPStan、PHP コアテスト、TypeScript、ESLint、フロントエンド単体テスト、Vite ビルド。
+チェック: マージゲートの契約テスト（5メソッド・12ケース）、Pint、PHPStan、PHP コアテスト、TypeScript、ESLint、フロントエンド単体テスト、Vite ビルド。
 PHPStan は CI のコンテナ（メモリ1GB）に収めるため `phpstan.neon` で作業プロセスを1つにしている（2026-10-28、ユーザー承認のうえ設定）。作業プロセスは1つで約420MB 使い、2つ（既定のコア数分）とソースのコピー約110MB で上限を超えて強制終了していた。1つでも約20秒で終わる。
 PHP コアテストの制限時間は1500秒（2026-10-22、テスト約1930件で900秒を超えたためユーザー承認のうえ延長）。
 実接続専用 smaregi-integration は除外し、外部連携の検証完了とは扱わない。

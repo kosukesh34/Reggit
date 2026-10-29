@@ -22,3 +22,9 @@ python3 scripts/local-ci.py 2>&1 | tee "$log"
 git fetch origin main
 git merge-base --is-ancestor origin/main HEAD || { echo 'Base changed during CI; update and rerun' >&2; exit 1; }
 gh pr merge "$pr" --squash --match-head-commit "$head_sha"
+# Remote branches are deleted by delete_branch_on_merge; detach instead of switching to a main another worktree may hold.
+branch=$(git branch --show-current)
+if [[ -n "$branch" ]]; then
+  git switch --quiet --detach
+  git branch -D "$branch" || echo "Merged, but could not delete local branch $branch" >&2
+fi
