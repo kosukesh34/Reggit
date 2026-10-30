@@ -2,7 +2,10 @@
 
 namespace App\UseCases\Admin\Member\Data;
 
+use App\Models\Coupon;
+use App\Models\MemberAudienceGroup;
 use App\Models\MemberTag;
+use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -10,9 +13,14 @@ use Illuminate\Support\Collection;
 class AdminMemberListView
 {
     /**
-     * @param  array<string, string|null>  $filters
+     * @param  array<string, mixed>  $filters
      * @param  array<string, string>  $rankOptions
-     * @param  Collection<int, MemberTag>  $tags
+     * @param  Collection<int, MemberTag>  $memberTags
+     * @param  Collection<int, Product>  $products
+     * @param  Collection<int, Coupon>  $coupons
+     * @param  array<string, array{label: string, color: string}>  $rfmSegments
+     * @param  list<array<string, mixed>>  $profileFields
+     * @param  Collection<int, MemberAudienceGroup>  $audienceGroups
      */
     public function __construct(
         public LengthAwarePaginator $members,
@@ -20,11 +28,20 @@ class AdminMemberListView
         public string $lineInviteUrl,
         public string $lineInviteLabel,
         public array $rankOptions,
-        public Collection $tags,
+        public Collection $memberTags,
+        public Collection $products,
+        public Collection $coupons,
+        public array $rfmSegments,
+        public array $profileFields,
+        public Collection $audienceGroups,
+        public bool $hasSegmentFilters = false,
     ) {}
 
     public function hasSearchFilters(): bool
     {
+        if ($this->hasSegmentFilters) {
+            return true;
+        }
         foreach (['keyword', 'rank', 'channel', 'tag_id', 'visited_from', 'visited_to'] as $key) {
             if (trim((string) ($this->filters[$key] ?? '')) !== '') {
                 return true;
@@ -34,11 +51,18 @@ class AdminMemberListView
         return false;
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, mixed> */
     public function queryFilters(): array
     {
         $kept = [];
         foreach ($this->filters as $key => $value) {
+            if (is_array($value)) {
+                if ($value !== []) {
+                    $kept[$key] = $value;
+                }
+
+                continue;
+            }
             if (! is_string($value) && ! is_numeric($value)) {
                 continue;
             }

@@ -2,6 +2,7 @@
 
 @section('title', '会員管理')
 @section('page-title', '会員管理')
+@section('page-kind', 'member-list')
 
 @section('content')
 
@@ -37,7 +38,7 @@
         </a>
         @endif
     </div>
-    <form method="GET" action="{{ admin_route('admin.members') }}" class="member-search-form">
+    <form method="GET" action="{{ admin_route('admin.members') }}" class="member-search-form" data-segment-form>
         @if(($view->filters['sort'] ?? '') !== '')
         <input type="hidden" name="sort" value="{{ $view->filters['sort'] }}">
         @endif
@@ -59,26 +60,6 @@
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label" for="member-channel">登録チャネル</label>
-                <select name="channel" id="member-channel" class="form-control">
-                    <option value="">すべて</option>
-                    @foreach(\App\Support\MemberChannel::filterOptions() as $value => $label)
-                        <option value="{{ $value }}" {{ ($view->filters['channel'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @if($view->tags->isNotEmpty())
-            <div class="form-group">
-                <label class="form-label" for="member-tag">タグ</label>
-                <select name="tag_id" id="member-tag" class="form-control">
-                    <option value="">すべて</option>
-                    @foreach($view->tags as $tag)
-                    <option value="{{ $tag->id }}" {{ (string) ($view->filters['tag_id'] ?? '') === (string) $tag->id ? 'selected' : '' }}>{{ $tag->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @endif
-            <div class="form-group">
                 <label class="form-label" for="member-visited-from">最終来店（開始）</label>
                 <input type="date" name="visited_from" id="member-visited-from" class="form-control" value="{{ $view->filters['visited_from'] ?? '' }}">
             </div>
@@ -86,9 +67,14 @@
                 <label class="form-label" for="member-visited-to">最終来店（終了）</label>
                 <input type="date" name="visited_to" id="member-visited-to" class="form-control" value="{{ $view->filters['visited_to'] ?? '' }}">
             </div>
-            <div class="form-group form-group--action">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 検索</button>
+        </div>
+        <div class="announcement-delivery-admin member-segment-wrap">
+            <div id="segmentBlock" class="ad-segment-panel member-segment-panel">
+                @include('admin.partials._delivery_segment_filters', ['savedSegment' => $view->filters, 'isDeliveryForm' => false])
             </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 検索</button>
         </div>
     </form>
 </div>
@@ -205,4 +191,8 @@
     </div>
     {{ $view->members->appends($view->queryFilters())->links('vendor.pagination.admin') }}
 </div>
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/announcement-delivery.css') }}?v={{ (int) @filemtime(public_path('css/admin/announcement-delivery.css')) }}">
+@endpush
 @endsection
