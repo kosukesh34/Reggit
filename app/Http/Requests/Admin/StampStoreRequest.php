@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\StampCycleMode;
 use App\Enums\StampRewardType;
+use App\Models\StampCard;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -35,9 +36,8 @@ class StampStoreRequest extends FormRequest
             'reward_milestones.*.coupon_id' => ['nullable', 'integer', $couponExists],
             'image_url' => 'nullable|string|url|max:500',
             'image_data' => 'nullable|string',
-            'stamp_images_data' => 'nullable|string',
-            'stamp_empty_images_data' => 'nullable|string',
             'layout_style' => 'nullable|string|in:grid,row,circle,minimal,card',
+            'design' => ['nullable', 'string', Rule::in(array_keys(StampCard::getDesignOptions()))],
             'valid_days' => 'nullable|integer|min:1|max:3650',
             'valid_until' => 'nullable|date',
             'is_active' => 'nullable|boolean',

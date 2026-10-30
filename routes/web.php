@@ -383,6 +383,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::post('/stamps', [AdminStampController::class, 'storeStamp'])->name('admin.stamps.store')->middleware('admin.permission:stamps.manage');
         Route::get('/stamps/{id}/edit', [AdminStampController::class, 'editStamp'])->name('admin.stamps.edit')->middleware('admin.permission:stamps.manage');
         Route::put('/stamps/{id}', [AdminStampController::class, 'updateStamp'])->name('admin.stamps.update')->middleware('admin.permission:stamps.manage');
+        Route::get('/stamps/{id}/images', [AdminStampController::class, 'editStampImages'])->name('admin.stamps.images')->middleware('admin.permission:stamps.manage');
+        Route::put('/stamps/{id}/images', [AdminStampController::class, 'updateStampImages'])->name('admin.stamps.images.update')->middleware('admin.permission:stamps.manage');
         Route::delete('/stamps/{id}', [AdminStampController::class, 'deleteStamp'])->name('admin.stamps.delete')->middleware('admin.permission:stamps.manage');
 
         Route::get('/coupons', [AdminCouponController::class, 'coupons'])->name('admin.coupons')->middleware('admin.permission:coupons.view');

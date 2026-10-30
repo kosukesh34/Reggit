@@ -509,9 +509,118 @@ struct StampCardItem: Identifiable, Equatable {
     let requiredStamps: Int
     let rewardDescription: String
     let imageURL: String?
+    /// 管理画面の「デザイン」（standard / banner / membership）と「スタンプの並べ方」
+    var design = "standard"
+    var layoutStyle = "grid"
+    /// 位置（"1" 始まり）ごとの押したあと・押す前の画像
+    var stampImages: [String: String] = [:]
+    var stampEmptyImages: [String: String] = [:]
+    var milestones: [StampMilestone] = []
+    var validUntil: String?
 
     var progressLabel: String {
         "\(currentStamps)/\(requiredStamps)"
+    }
+}
+
+struct StampMilestone: Equatable {
+    let count: Int
+    let description: String
+}
+
+/// 次にもらえる特典。goal は途中の特典が残っておらず、ゴールを目標にしているとき
+struct StampNextReward: Equatable {
+    let count: Int
+    let description: String
+    let remaining: Int
+    let goal: Bool
+}
+
+struct StampSlot: Equatable {
+    let position: Int
+    let filled: Bool
+    let image: String?
+    let reward: Bool
+}
+
+/// スタンプの並べ方。LINE アプリ（resources/js/liff-ui/native/nativeStamps.ts）と同じ規則にする
+struct StampLayout: Equatable {
+    static let designs = ["standard", "banner", "membership"]
+    static let layouts = ["grid", "row", "circle", "minimal", "card"]
+
+    let design: String
+    let layout: String
+    /// nil は横スクロールの1行
+    let columns: Int?
+    let dense: Bool
+    let required: Int
+    let current: Int
+    let slots: [StampSlot]
+    let milestones: [StampMilestone]
+    let nextReward: StampNextReward?
+    let page: Int
+    let pages: Int
+    let first: Int
+    let last: Int
+
+    /// page が nil のときは、次に押すスタンプがあるページを開く
+    init(card: StampCardItem, page: Int? = nil) {
+        // 初期化が終わるまで self をクロージャに渡せないため、値はローカルで作ってから代入する
+        let layout = Self.layouts.contains(card.layoutStyle) ? card.layoutStyle : "grid"
+        let required = max(1, card.requiredStamps)
+        let current = max(0, card.currentStamps)
+        // 25個までは1行5個で全部並べ、それより多いときは1行10個の小さな枠で50個ずつ（row は横スクロールの1行に全部）
+        let dense = layout != "row" && required > 25
+        let perPage = layout == "row" ? required : (dense ? 50 : 25)
+        let pages = (required + perPage - 1) / perPage
+        let shown = max(0, min(pages - 1, page ?? min(current, required - 1) / perPage))
+        let valid = card.milestones.filter { $0.count > 0 && $0.count <= required && !$0.description.isEmpty }.sorted { $0.count < $1.count }
+        let rewards = Set(valid.map { $0.count })
+        let start = shown * perPage + 1
+        let end = min(required, start + perPage - 1)
+        design = Self.designs.contains(card.design) ? card.design : "standard"
+        self.layout = layout
+        columns = layout == "row" ? nil : (dense ? 10 : 5)
+        self.dense = dense
+        self.required = required
+        self.current = current
+        slots = (start ... end).map { position in
+            let filled = position <= current
+            let image = (filled ? card.stampImages : card.stampEmptyImages)[String(position)]?.trimmedNonEmpty
+            return StampSlot(position: position, filled: filled, image: image, reward: rewards.contains(position))
+        }
+        milestones = valid
+        if current >= required {
+            nextReward = nil
+        } else if let upcoming = valid.first(where: { $0.count > current }) {
+            nextReward = StampNextReward(count: upcoming.count, description: upcoming.description, remaining: upcoming.count - current, goal: false)
+        } else {
+            nextReward = StampNextReward(count: required, description: "", remaining: required - current, goal: true)
+        }
+        self.page = shown
+        self.pages = pages
+        first = start
+        last = end
+    }
+}
+
+/// スタンプの獲得履歴1件。label はサーバーが決めた会員向けの言葉（管理用メモは含まない）
+struct StampHistoryItem: Identifiable, Equatable {
+    let id: Int
+    let delta: Int
+    let balanceAfter: Int
+    let label: String
+    let createdAt: String?
+
+    static func parseList(_ data: Data) throws -> [StampHistoryItem] {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let raw = json["history"] as? [[String: Any]] else {
+            throw ReggitAPIError.invalidResponse
+        }
+        return raw.compactMap { item in
+            guard let id = item["id"] as? Int, let delta = item["delta"] as? Int else { return nil }
+            return StampHistoryItem(id: id, delta: delta, balanceAfter: item["balance_after"] as? Int ?? 0, label: item["label"] as? String ?? "スタンプ", createdAt: item["created_at"] as? String)
+        }
     }
 }
 
@@ -527,13 +636,23 @@ struct StampListResponse {
         let cards = raw.compactMap { item -> StampCardItem? in
             guard let id = item["id"] as? Int else { return nil }
             let image = (item["image_url"] as? String)?.trimmedNonEmpty ?? defaultImage
+            let milestones = (item["reward_milestones"] as? [[String: Any]] ?? []).compactMap { milestone -> StampMilestone? in
+                guard let count = milestone["stamp_count"] as? Int, let description = (milestone["description"] as? String)?.trimmedNonEmpty else { return nil }
+                return StampMilestone(count: count, description: description)
+            }
             return StampCardItem(
                 id: id,
                 name: item["name"] as? String ?? "スタンプカード",
                 currentStamps: item["current_stamps"] as? Int ?? 0,
                 requiredStamps: item["required_stamps"] as? Int ?? 0,
                 rewardDescription: item["reward_description"] as? String ?? "",
-                imageURL: image
+                imageURL: image,
+                design: item["design"] as? String ?? "standard",
+                layoutStyle: item["layout_style"] as? String ?? "grid",
+                stampImages: item["stamp_images"] as? [String: String] ?? [:],
+                stampEmptyImages: item["stamp_empty_images"] as? [String: String] ?? [:],
+                milestones: milestones,
+                validUntil: ((item["member_stamp_valid_until"] as? String) ?? (item["valid_until"] as? String))?.trimmedNonEmpty
             )
         }
         return StampListResponse(stampCards: cards)

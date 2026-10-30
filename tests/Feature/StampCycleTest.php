@@ -159,6 +159,7 @@ class StampCycleTest extends TestCase
             'is_active' => true,
             'cycle_mode' => StampCycleMode::NEXT_CARD,
             'next_stamp_card_id' => $next->id,
+            'design' => StampCard::DESIGN_MEMBERSHIP,
         ]);
 
         $headers = ['X-Line-User-Id' => self::LINE_USER_ID];
@@ -167,7 +168,8 @@ class StampCycleTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'stamp_cards')
             ->assertJsonPath('stamp_cards.0.name', 'ブロンズ')
-            ->assertJsonPath('stamp_cards.0.is_archived', false);
+            ->assertJsonPath('stamp_cards.0.is_archived', false)
+            ->assertJsonPath('stamp_cards.0.design', 'membership');
 
         resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $current->id, 5);
 
@@ -177,6 +179,7 @@ class StampCycleTest extends TestCase
             ->assertJsonCount(2, 'stamp_cards')
             ->assertJsonPath('stamp_cards.0.name', 'シルバー')
             ->assertJsonPath('stamp_cards.0.is_archived', false)
+            ->assertJsonPath('stamp_cards.0.design', 'standard')
             ->assertJsonPath('stamp_cards.1.name', 'ブロンズ')
             ->assertJsonPath('stamp_cards.1.is_archived', true);
     }

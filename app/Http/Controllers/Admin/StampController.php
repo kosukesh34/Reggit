@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Requests\Admin\StampImagesUpdateRequest;
 use App\Http\Requests\Admin\StampStoreRequest;
 use App\Http\Requests\Admin\StampUpdateRequest;
 use App\UseCases\Admin\Stamp\AdminStampCreateFormUseCase;
 use App\UseCases\Admin\Stamp\AdminStampDeleteUseCase;
 use App\UseCases\Admin\Stamp\AdminStampEditUseCase;
+use App\UseCases\Admin\Stamp\AdminStampImagesUpdateUseCase;
 use App\UseCases\Admin\Stamp\AdminStampIndexUseCase;
 use App\UseCases\Admin\Stamp\AdminStampStoreUseCase;
 use App\UseCases\Admin\Stamp\AdminStampUpdateUseCase;
@@ -20,6 +22,7 @@ class StampController extends AdminBaseController
         private AdminStampEditUseCase $editUseCase,
         private AdminStampUpdateUseCase $updateUseCase,
         private AdminStampDeleteUseCase $deleteUseCase,
+        private AdminStampImagesUpdateUseCase $imagesUpdateUseCase,
     ) {}
 
     public function stamps()
@@ -38,10 +41,10 @@ class StampController extends AdminBaseController
 
     public function storeStamp(StampStoreRequest $request)
     {
-        $this->storeUseCase->handle($this->resolveAdminProjectId(), $request->validated());
+        $card = $this->storeUseCase->handle($this->resolveAdminProjectId(), $request->validated());
 
-        return redirect()->route('admin.stamps', $this->buildAdminRouteParams())
-            ->with('success', 'スタンプカードを追加しました');
+        return redirect()->route('admin.stamps.images', [...$this->buildAdminRouteParams(), 'id' => $card->id])
+            ->with('success', 'スタンプカードを追加しました。続けて押す前・押したあとのスタンプ画像を設定できます');
     }
 
     public function editStamp(string $projectKey, $id)
@@ -57,6 +60,21 @@ class StampController extends AdminBaseController
 
         return redirect()->route('admin.stamps', $this->buildAdminRouteParams())
             ->with('success', 'スタンプカードを更新しました');
+    }
+
+    public function editStampImages(string $projectKey, $id)
+    {
+        $output = $this->editUseCase->handle($this->resolveAdminProjectId(), (int) $id);
+
+        return view('admin.stamps.images', ['stampCard' => $output->stampCard]);
+    }
+
+    public function updateStampImages(StampImagesUpdateRequest $request, string $projectKey, $id)
+    {
+        $this->imagesUpdateUseCase->handle((int) $id, $request->validated());
+
+        return redirect()->route('admin.stamps.images', [...$this->buildAdminRouteParams(), 'id' => (int) $id])
+            ->with('success', 'スタンプ画像を保存しました');
     }
 
     public function deleteStamp(string $projectKey, $id)

@@ -17,6 +17,7 @@ export type StampCard = {
     required_stamps?: number;
     completed_at?: string | null;
     layout_style?: string;
+    design?: string;
     image_url?: string | null;
     stamp_images?: Record<string, string> | null;
     stamp_empty_images?: Record<string, string> | null;

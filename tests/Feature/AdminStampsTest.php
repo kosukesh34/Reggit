@@ -199,6 +199,8 @@ class AdminStampsTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('admin.stamps.create', ['project_key' => $project->project_key]))
             ->assertOk()
+            ->assertSee('id="stampLivePreview"', false)
+            ->assertSee('#/stamp', false)
             ->assertSee('特典の種類')
             ->assertSee('クーポン')
             ->assertSee('ガチャ')
@@ -210,25 +212,83 @@ class AdminStampsTest extends TestCase
             ->assertDontSee('value="text"', false);
     }
 
-    public function test_押す前と押したあとのスタンプ画像を保存できること(): void
+    public function test_追加したあとはスタンプ画像の画面を開くこと(): void
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        $this->actingAs($admin, 'admin')
+        $response = $this->actingAs($admin, 'admin')
             ->post(route('admin.stamps.store', ['project_key' => $project->project_key]), [
                 'name' => '画像スタンプ',
                 'required_stamps' => 5,
                 'is_active' => '1',
-                'stamp_images_data' => json_encode(['1' => 'https://example.com/filled.png']),
-                'stamp_empty_images_data' => json_encode(['1' => 'https://example.com/empty.png']),
-            ])
-            ->assertRedirect(route('admin.stamps', ['project_key' => $project->project_key]));
+            ]);
 
-        $card = StampCard::query()->where('name', '画像スタンプ')->first();
-        $this->assertNotNull($card);
+        $card = StampCard::query()->where('name', '画像スタンプ')->sole();
+        $response->assertRedirect(route('admin.stamps.images', ['project_key' => $project->project_key, 'id' => $card->id]));
+        $this->get(route('admin.stamps.images', ['project_key' => $project->project_key, 'id' => $card->id]))
+            ->assertOk()
+            ->assertSee('id="stampImagesGrid"', false)
+            ->assertSee('id="stampLivePreview"', false)
+            ->assertSee('全5個');
+    }
+
+    public function test_スタンプ画面のデザインを選んで保存できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $store = fn (string $design) => $this->actingAs($admin, 'admin')
+            ->post(route('admin.stamps.store', ['project_key' => $project->project_key]), ['name' => 'デザイン'.$design, 'required_stamps' => 10, 'design' => $design]);
+
+        $store('banner')->assertRedirectContains('/images');
+        $card = StampCard::query()->where('name', 'デザインbanner')->sole();
+        $this->assertSame('banner', $card->design);
+        $this->get(route('admin.stamps.edit', ['project_key' => $project->project_key, 'id' => $card->id]))
+            ->assertOk()->assertSee('name="design" value="banner" checked', false)->assertSee('会員証型');
+        $store('unknown')->assertSessionHasErrors('design');
+    }
+
+    public function test_押す前と押したあとのスタンプ画像を保存し_すべて消せること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $card = StampCard::factory()->create(['project_id' => $project->id, 'name' => '画像スタンプ', 'required_stamps' => 5]);
+        $url = route('admin.stamps.images.update', ['project_key' => $project->project_key, 'id' => $card->id]);
+
+        $this->actingAs($admin, 'admin')
+            ->put($url, [
+                'stamp_images_data' => json_encode(['1' => 'https://example.com/filled.png']),
+                'stamp_empty_images_data' => json_encode(['1' => 'https://example.com/empty.png', '2' => 'javascript:alert(1)']),
+            ])
+            ->assertRedirect(route('admin.stamps.images', ['project_key' => $project->project_key, 'id' => $card->id]));
+
+        $card->refresh();
         $this->assertSame(['1' => 'https://example.com/filled.png'], $card->stamp_images);
         $this->assertSame(['1' => 'https://example.com/empty.png'], $card->stamp_empty_images);
+
+        $this->put($url, ['stamp_images_data' => '{}', 'stamp_empty_images_data' => '{}'])->assertRedirect();
+        $card->refresh();
+        $this->assertNull($card->stamp_images);
+        $this->assertNull($card->stamp_empty_images);
+    }
+
+    public function test_カードの編集ではスタンプ画像を変えないこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $card = StampCard::factory()->create(['project_id' => $project->id, 'name' => '画像スタンプ', 'required_stamps' => 5, 'stamp_images' => ['1' => 'https://example.com/filled.png']]);
+
+        $this->actingAs($admin, 'admin')
+            ->put(route('admin.stamps.update', ['project_key' => $project->project_key, 'id' => $card->id]), [
+                'name' => '名前だけ変更',
+                'required_stamps' => 5,
+                'stamp_images_data' => '{}',
+            ])
+            ->assertRedirect();
+
+        $card->refresh();
+        $this->assertSame('名前だけ変更', $card->name);
+        $this->assertSame(['1' => 'https://example.com/filled.png'], $card->stamp_images);
     }
 
     public function test_クーポンとガチャの達成特典を保存できること(): void
@@ -258,7 +318,7 @@ class AdminStampsTest extends TestCase
                     ],
                 ],
             ])
-            ->assertRedirect(route('admin.stamps', ['project_key' => $project->project_key]));
+            ->assertRedirectContains('/images');
 
         $card = StampCard::query()->where('name', '来店スタンプ')->first();
         $this->assertNotNull($card);
@@ -487,7 +547,7 @@ class AdminStampsTest extends TestCase
                 'cycle_mode' => 'next_card',
                 'next_stamp_card_id' => $next->id,
             ])
-            ->assertRedirect(route('admin.stamps', ['project_key' => $project->project_key]));
+            ->assertRedirectContains('/images');
 
         $card = StampCard::query()->where('name', 'ブロンズカード')->first();
         $this->assertNotNull($card);

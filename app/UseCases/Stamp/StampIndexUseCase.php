@@ -148,6 +148,7 @@ class StampIndexUseCase
             $cycleCount,
             $isArchived,
             $nextName,
+            (string) ($card->design ?? StampCard::DESIGN_STANDARD),
         );
     }
 

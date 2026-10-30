@@ -237,6 +237,11 @@ struct ReggitAPIClient: ReggitAPIServing {
         return try StampListResponse.parse(data).stampCards
     }
 
+    func fetchStampHistory(cardId: Int) async throws -> [StampHistoryItem] {
+        let data = try await requestData(path: "/api/stamps/\(cardId)/history", method: "GET")
+        return try StampHistoryItem.parseList(data)
+    }
+
     func fetchLotteryState() async throws -> LotteryStateSnapshot {
         let data = try await requestData(path: "/api/member-lottery", method: "GET")
         return try LotteryStateSnapshot.parse(data)

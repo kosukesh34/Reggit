@@ -61,6 +61,7 @@ protocol ReggitAPIServing: PromoPopupFetching, SurveyServing {
     func claimDeviceOnceCoupon(id: Int) async throws
     func redeemCoupon(id: Int) async throws -> CouponRedemptionResult
     func fetchStampCards() async throws -> [StampCardItem]
+    func fetchStampHistory(cardId: Int) async throws -> [StampHistoryItem]
     func fetchLotteryState() async throws -> LotteryStateSnapshot
     func playLottery(entitlementId: Int) async throws -> LotteryPlayResult
     func notifyLotteryWin(entitlementId: Int) async throws
@@ -97,6 +98,7 @@ protocol ReggitAPIServing: PromoPopupFetching, SurveyServing {
 }
 
 extension ReggitAPIServing {
+    func fetchStampHistory(cardId: Int) async throws -> [StampHistoryItem] { [] }
     func fetchStores() async throws -> [BusinessStore] { [] }
     func fetchPaymentMethods() async throws -> [String] { ["card", "cash"] }
 
