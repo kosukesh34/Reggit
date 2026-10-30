@@ -93,6 +93,14 @@ function conditionSentence(label: string, operator: SegmentConditionOperator, va
 }
 
 function conditionItemHasValue(item: HTMLElement): boolean {
+    // 初期値だけのフィールドで「条件あり」と誤判定しない
+    if (item.dataset.condition === 'sales') {
+        const selected = item.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked');
+        return selected !== null && selected.value !== '';
+    }
+    if (item.dataset.condition === 'last_visit') {
+        return (item.querySelector<HTMLSelectElement>('#segment_last_visit_mode')?.value || '').trim() !== '';
+    }
     const controls = item.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea');
     for (const control of controls) {
         if (control.dataset.ignoreEmpty === '1') continue;
@@ -236,6 +244,24 @@ function bindConditionPicker(form: HTMLFormElement): void {
     Array.from(pool.querySelectorAll<HTMLElement>('[data-condition]'))
         .filter((item) => conditionItemHasValue(item))
         .forEach((item) => addCard(item.dataset.condition ?? '', false));
+
+    // 未使用条件・見た目だけのカードは送信しない（初期値のままだと絞り込みが汚れる）
+    if (form.dataset.segmentSubmitBound !== '1') {
+        form.dataset.segmentSubmitBound = '1';
+        form.addEventListener('submit', () => {
+            const disable = (root: ParentNode): void => {
+                root.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea').forEach((control) => {
+                    control.disabled = true;
+                });
+            };
+            disable(pool);
+            list.querySelectorAll<HTMLElement>('[data-condition]').forEach((item) => {
+                if (!conditionItemHasValue(item)) disable(item);
+            });
+            const match = form.querySelector<HTMLElement>('#segmentMatchMode');
+            if (match !== null && match.hidden) disable(match);
+        });
+    }
 }
 
 function initAnnouncementDelivery(): void {
@@ -1470,13 +1496,20 @@ function initAnnouncementDelivery(): void {
     updateCounter(bodyInput, 'announcementBodyCounter', 5000);
 }
 
+/** 人数プレビューを持たない画面（スケジュール配信・会員一覧の検索）で条件ビルダーだけを動かす */
 function initScheduledSegmentUi(): void {
-    if (document.body.dataset.pageKind !== 'scheduled-delivery-form') return;
-    const form = document.getElementById('scheduledDeliveryForm');
+    const form = document.querySelector('form[data-segment-form]');
     if (!(form instanceof HTMLFormElement)) return;
 
     const checksByName = (name: string): HTMLInputElement[] => Array.from(form.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')).filter((input) => input.name === name);
     const checkedLabels = (name: string): string[] => checksByName(name).filter((input) => input.checked).map((input) => input.dataset.label?.trim() || input.value);
+
+    const selectedOptionText = (id: string): string => {
+        const element = form.querySelector<HTMLSelectElement>(`#${CSS.escape(id)}`);
+        if (element === null || element.value === '') return '';
+        return element.selectedOptions[0]?.textContent?.trim() || '';
+    };
+    const fieldValue = (id: string): string => (form.querySelector<HTMLInputElement | HTMLSelectElement>(`#${CSS.escape(id)}`)?.value || '').trim();
 
     const render = (): void => {
         form.querySelectorAll<HTMLElement>('[data-value-mode]').forEach((block) => {
@@ -1497,14 +1530,43 @@ function initScheduledSegmentUi(): void {
         const push = (label: string, operator: SegmentConditionOperator, value: string): void => {
             if (value !== '') chips.push(conditionSentence(label, operator, value));
         };
+        push('保存したグループ', listOperator(checkedLabels('segment_audience_group_ids[]').length), checkedLabels('segment_audience_group_ids[]').join('、'));
+        push('登録チャネル', '=', selectedOptionText('segment_channel'));
         const months = checksByName('segment_birthday_months[]').filter((input) => input.checked).map((input) => `${input.value}月`);
         push('誕生月', listOperator(months.length), months.join('、'));
-        const sex = form.querySelector<HTMLSelectElement>('#segment_sex');
-        push('性別', '=', sex?.selectedOptions[0]?.textContent?.trim() && sex.value !== '' ? sex.selectedOptions[0].textContent.trim() : '');
+        push('性別', '=', selectedOptionText('segment_sex'));
         const rfm = checkedLabels('segment_rfm_segments[]');
         push('RFMセグメント', listOperator(rfm.length), rfm.join('、'));
         const tags = checkedLabels('segment_tag_ids[]');
         push('会員タグ', listOperator(tags.length, readCombineMode(form, 'segment_value_mode[tags]')), tags.join('、'));
+        const visitMin = fieldValue('segment_visit_count_min');
+        const visitMax = fieldValue('segment_visit_count_max');
+        push('来店回数', '=', visitMin !== '' && visitMax !== ''
+            ? `${visitMin}〜${visitMax}回`
+            : visitMin !== '' ? `${visitMin}回以上` : visitMax !== '' ? `${visitMax}回以下` : '');
+        push('会員ランク', '=', fieldValue('segment_rank'));
+        const pointsMin = fieldValue('segment_lifetime_points_min');
+        const pointsMax = fieldValue('segment_lifetime_points_max');
+        push('累計付与ポイント', '=', pointsMin !== '' && pointsMax !== ''
+            ? `${pointsMin}〜${pointsMax}pt`
+            : pointsMin !== '' ? `${pointsMin}pt以上` : pointsMax !== '' ? `${pointsMax}pt以下` : '');
+        const lastVisitMode = fieldValue('segment_last_visit_mode');
+        const lastVisitDays = fieldValue('segment_last_visit_days');
+        if (lastVisitMode === 'inactive_days' && lastVisitDays !== '') push('最終来店', '=', `${lastVisitDays}日以上来店なし`);
+        if (lastVisitMode === 'visited_within_days' && lastVisitDays !== '') push('最終来店', '=', `${lastVisitDays}日以内に来店あり`);
+        if (lastVisitMode === 'days_after' && lastVisitDays !== '') push('最終来店', '=', `${lastVisitDays}日後`);
+        push('購入商品', '=', selectedOptionText('segment_product_id'));
+        const heldCouponName = selectedOptionText('segment_coupon_id');
+        const heldCouponStatus = fieldValue('segment_coupon_status');
+        const heldCouponStatusLabel = heldCouponStatus === 'unused' ? '未使用' : heldCouponStatus === 'used' ? '使用済み' : '';
+        push('保有クーポン', '=', heldCouponName !== '' && heldCouponStatusLabel !== '' ? `${heldCouponName}（${heldCouponStatusLabel}）` : '');
+        const period = selectedOptionText('segment_period_days');
+        if (sales === 'min_amount') {
+            const amount = fieldValue('segment_min_amount');
+            push(`購入額（${period}）`, '≥', amount === '' ? '' : `${amount}円`);
+        } else if (sales === 'no_orders') {
+            push(`購入履歴（${period}）`, '=', 'なし');
+        }
         form.querySelectorAll<HTMLElement>('.ad-profile-filter').forEach((group) => {
             const inputs = Array.from(group.querySelectorAll<HTMLInputElement>('[name^="segment_profile["]'));
             const values = inputs.filter((input) => input.type !== 'checkbox' || input.checked).map((input) => input.value.trim()).filter(Boolean);
