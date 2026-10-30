@@ -1,36 +1,4 @@
-@php
-    $couponPreviewBaseUrl = admin_front_url();
-    $couponPreviewUrl = $couponPreviewBaseUrl !== null
-        ? $couponPreviewBaseUrl.(str_contains($couponPreviewBaseUrl, '?') ? '&' : '?').'designer_live_preview=1&designer_embed=1&coupon_form_preview=1#/coupon'
-        : null;
-@endphp
-
-<div class="cp-real-preview-stage" aria-label="実際の会員アプリのプレビュー">
-    @if($couponPreviewUrl !== null)
-        <div class="cp-device-shell">
-            <span class="cp-device-button cp-device-button--silent" aria-hidden="true"></span>
-            <span class="cp-device-button cp-device-button--volume-up" aria-hidden="true"></span>
-            <span class="cp-device-button cp-device-button--volume-down" aria-hidden="true"></span>
-            <span class="cp-device-button cp-device-button--power" aria-hidden="true"></span>
-            <div class="cp-real-preview-frame">
-                <div class="cp-real-preview-screen">
-                    <iframe
-                        id="couponLivePreview"
-                        title="実際の会員アプリのクーポン画面"
-                        src="{{ $couponPreviewUrl }}"
-                        loading="eager"
-                    ></iframe>
-                </div>
-            </div>
-        </div>
-        <p class="cp-real-preview-note"><i class="fas fa-circle-check" aria-hidden="true"></i> 店舗アプリと同じ画面・デザインです</p>
-    @else
-        <div class="cp-real-preview-unavailable">
-            <i class="fas fa-mobile-screen" aria-hidden="true"></i>
-            <p>店舗アプリのURLを取得できませんでした。</p>
-        </div>
-    @endif
-</div>
+<x-admin.app-preview id="couponLivePreview" title="実際の会員アプリのクーポン画面" path="/coupon" kind="coupon" :query="['coupon_form_preview' => 1]" />
 
 <script>
 (function() {
@@ -119,11 +87,7 @@
     function sendPreview() {
         updateSummary();
         var frame = field('couponLivePreview');
-        if (!frame || !frame.contentWindow) return;
-        frame.contentWindow.postMessage({
-            type: 'reggit:coupon-form-preview:update',
-            coupon: currentPreviewCoupon()
-        }, window.location.origin);
+        if (frame) frame.dispatchEvent(new CustomEvent('app-preview:draft', { detail: currentPreviewCoupon() }));
     }
     function onReady() {
         [
@@ -144,13 +108,6 @@
         });
         var imageFile = field('coupon_image');
         if (imageFile) imageFile.addEventListener('admin-image-preview', sendPreview);
-        var frame = field('couponLivePreview');
-        if (frame) frame.addEventListener('load', sendPreview);
-        window.addEventListener('message', function(event) {
-            if (event.origin === window.location.origin && event.data && event.data.type === 'reggit:coupon-form-preview:ready') {
-                sendPreview();
-            }
-        });
         sendPreview();
     }
     window.updateCouponPreview = sendPreview;

@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import { useAdminFormPreview } from '../hooks/useAdminFormPreview';
 
 export type NativeTab = {
   key: string;
@@ -127,44 +128,22 @@ function loadNativeConfig(key: string): Promise<NativeConfig> {
 
 export function NativeConfigProvider({ children, initialConfig }: PropsWithChildren<{ initialConfig?: NativeConfig }>) {
   const key = useMemo(projectKey, []);
-  const receivedHomePreview = useRef(false);
   const [state, setState] = useState<NativeConfigState>({ config: initialConfig ? normalizeConfig(initialConfig) : fallbackConfig, loading: !initialConfig });
+  // 管理画面のホーム・会員証の編集中は、保存前の設定で表示する
+  const preview = useAdminFormPreview<NativeConfig>('home');
 
   useEffect(() => {
     if (initialConfig) return;
     let mounted = true;
     void loadNativeConfig(key).then((config) => {
-      if (mounted && !receivedHomePreview.current) setState({ config, loading: false });
+      if (mounted) setState({ config, loading: false });
     });
     return () => { mounted = false; };
   }, [key, initialConfig]);
 
-  useEffect(() => {
-    if (window.__IS_DESIGNER_EMBED_PREVIEW__ !== true || window.parent === window) return;
-    const receive = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin || event.source !== window.parent || event.data?.type !== 'reggit:home-form-preview:update') return;
-      const incoming = event.data.config as NativeConfig | undefined;
-      if (incoming && typeof incoming === 'object') {
-        receivedHomePreview.current = true;
-        setState({ config: normalizeConfig(incoming), loading: false });
-      }
-    };
-    const receiveDraft = (event: Event) => {
-      const incoming = (event as CustomEvent<NativeConfig>).detail;
-      if (!incoming || typeof incoming !== 'object') return;
-      receivedHomePreview.current = true;
-      setState({ config: normalizeConfig(incoming), loading: false });
-    };
-    window.addEventListener('reggit:home-preview-draft', receiveDraft);
-    window.addEventListener('message', receive);
-    window.parent.postMessage({ type: 'reggit:home-form-preview:ready' }, window.location.origin);
-    return () => {
-      window.removeEventListener('message', receive);
-      window.removeEventListener('reggit:home-preview-draft', receiveDraft);
-    };
-  }, []);
+  const value = useMemo(() => preview ? { config: normalizeConfig(preview), loading: false } : state, [preview, state]);
 
-  return <NativeConfigContext.Provider value={state}>{children}</NativeConfigContext.Provider>;
+  return <NativeConfigContext.Provider value={value}>{children}</NativeConfigContext.Provider>;
 }
 
 export function useNativeConfig(): NativeConfigState {

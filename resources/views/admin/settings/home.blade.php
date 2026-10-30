@@ -4,7 +4,6 @@
 @section('page-title', 'アプリデザイン')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/coupons.css') }}">
 <style>
 .home-settings { max-width: 1250px; }
 [data-design-panel][hidden] { display:none; }
@@ -77,9 +76,6 @@
 
 @section('content')
 @php
-    $homePreviewBase = route('liff.project', ['project_key' => request()->route('project_key')], false);
-    $homePreviewUrl = $homePreviewBase ? $homePreviewBase.(str_contains($homePreviewBase, '?') ? '&' : '?').'designer_live_preview=1&designer_embed=1&designer_source=member&home_form_preview=1#/home' : null;
-
     $reorderChoices = static function (array $choices, ?array $selectedKeys): array {
         $selectedKeys = is_array($selectedKeys) ? $selectedKeys : [];
         $byKey = collect($choices)->keyBy('key');
@@ -182,16 +178,7 @@
 
 </div><aside class="home-preview-panel"><h2>ホームプレビュー</h2><p class="section-help">実際の店舗アプリを表示します。変更は保存するまで公開されません。</p>
 
-<div class="cp-real-preview-stage">
-@if($homePreviewUrl)
-<div class="cp-device-shell">
-<span class="cp-device-button cp-device-button--silent" aria-hidden="true"></span><span class="cp-device-button cp-device-button--volume-up" aria-hidden="true"></span><span class="cp-device-button cp-device-button--volume-down" aria-hidden="true"></span><span class="cp-device-button cp-device-button--power" aria-hidden="true"></span>
-<div class="cp-real-preview-frame"><div class="cp-real-preview-screen"><iframe id="home-live-preview" title="実際の店舗アプリのホーム" src="{{ $homePreviewUrl }}"></iframe></div></div>
-</div>
-@else
-<p>店舗アプリのURLを取得できませんでした。</p>
-@endif
-</div></aside></div>
+<x-admin.app-preview id="home-live-preview" title="実際の店舗アプリのホーム" path="/home" kind="home" :query="['designer_source' => 'member', 'home_form_preview' => 1]" /></aside></div>
 </section>
 <section role="tabpanel" id="panel-header" aria-labelledby="tab-header" data-design-panel="header">    <div class="card">
         <div class="card-header"><h2 class="card-title">ヘッダー</h2></div>

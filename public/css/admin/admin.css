@@ -16,6 +16,7 @@
 @import url('components/13-smaregi-theme.css');
 @import url('components/15-navigation-polish.css?v=2');
 @import url('components/16-passkey.css?v=11');
+@import url('components/17-app-preview.css');
 
 /* Store context stays in the global header; settings live in the settings navigation. */
 .admin-store-switcher { position: relative; font-size: 12px; color: inherit; }

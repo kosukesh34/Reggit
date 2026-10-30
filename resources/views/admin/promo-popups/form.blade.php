@@ -213,14 +213,12 @@
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save" aria-hidden="true"></i> 保存</button>
                 <a href="{{ admin_route('admin.promo-popups.index') }}" class="btn btn-secondary">一覧へ戻る</a>
             </section>
-            <section class="eg-card">
+            <section class="eg-card" data-promo-popup-preview data-image-url="{{ $popup?->image_url }}">
                 <div class="eg-card-head eg-card-head--compact">
                     <span class="eg-icon eg-icon--green"><i class="fas fa-mobile-screen" aria-hidden="true"></i></span>
-                    <div><h2>プレビュー</h2><p>アプリでの見え方の目安です</p></div>
+                    <div><h2>プレビュー</h2><p>アプリでの見え方</p></div>
                 </div>
-                <div class="eg-phone" aria-hidden="true">
-                    <div class="promo-preview-screen" data-promo-popup-preview data-image-url="{{ $popup?->image_url }}"></div>
-                </div>
+                <x-admin.app-preview id="promoPopupLivePreview" title="実際の会員アプリのポップアップ" path="/home" kind="promo-popup" />
             </section>
         </aside>
     </div>
