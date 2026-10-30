@@ -36,10 +36,11 @@ class PromoPopupController extends Controller
         ], $popups)]);
     }
 
-    public function event(Request $request, int $id, RecordPromoPopupEventUseCase $useCase): JsonResponse
+    public function event(Request $request, int $id, RecordPromoPopupEventUseCase $useCase, UserService $users): JsonResponse
     {
         $event = (string) $request->validate(['event' => ['required', Rule::in(array_keys(PromoPopupEvent::getValues()))]])['event'];
-        abort_unless($useCase->handle(AdminContext::requireCurrentProjectId(), $id, $event), 404);
+        $member = $users->findUser($request)?->member;
+        abort_unless($useCase->handle(AdminContext::requireCurrentProjectId(), $id, $event, $member !== null ? (int) $member->id : null), 404);
 
         return response()->json(['success' => true]);
     }

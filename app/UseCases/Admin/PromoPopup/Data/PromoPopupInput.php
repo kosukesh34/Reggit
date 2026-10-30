@@ -16,6 +16,7 @@ final class PromoPopupInput
         public readonly ?string $secondaryButtonLabel,
         public readonly ?string $secondaryLinkUrl,
         public readonly string $frequency,
+        public readonly bool $hideWhenAnswered,
         public readonly string $audience,
         /** @var list<int> */
         public readonly array $audienceTagIds,
@@ -43,6 +44,7 @@ final class PromoPopupInput
             'secondary_button_label' => $this->secondaryButtonLabel,
             'secondary_link_url' => $this->secondaryLinkUrl,
             'frequency' => $this->frequency,
+            'hide_when_answered' => $this->hideWhenAnswered,
             'audience' => $this->audience,
             'audience_tag_ids' => $this->audienceTagIds,
             'audience_ranks' => $this->audienceRanks,

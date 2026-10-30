@@ -195,7 +195,11 @@
                         <input type="number" id="sort_order" name="sort_order" class="form-control" min="-999" max="999" value="{{ old('sort_order', $popup?->sort_order ?? 0) }}">
                     </div>
                 </div>
-                <p class="eg-hint">表示回数は端末ごとに数え、内容を編集すると「1人1回だけ」でももう一度表示します。表示中のものが複数あるときは、優先度の高い1つだけを出します。</p>
+                <div class="eg-field">
+                    <input type="hidden" name="hide_when_answered" value="0">
+                    <label class="checkbox-label"><input type="checkbox" name="hide_when_answered" value="1" {{ old('hide_when_answered', $popup?->hide_when_answered ?? true) ? 'checked' : '' }}> リンク先のアンケートに回答した人には表示しない</label>
+                </div>
+                <p class="eg-hint">表示回数は、会員はLINEとアプリをまたいで1人ごとに、会員登録前の人は端末ごとに数えます。内容を編集すると「1人1回だけ」でももう一度表示します。表示中のものが複数あるときは、優先度の高い1つだけを出します。</p>
             </section>
         </div>
 

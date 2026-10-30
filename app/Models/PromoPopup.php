@@ -35,6 +35,7 @@ class PromoPopup extends Model
         'secondary_button_label',
         'secondary_link_url',
         'frequency',
+        'hide_when_answered',
         'audience',
         'audience_tag_ids',
         'audience_ranks',
@@ -48,6 +49,7 @@ class PromoPopup extends Model
     /** @var array<string, string> */
     protected $casts = [
         'is_active' => 'boolean',
+        'hide_when_answered' => 'boolean',
         'sort_order' => 'integer',
         'audience_tag_ids' => 'array',
         'audience_ranks' => 'array',

@@ -347,6 +347,34 @@ class EngagementFeaturesTest extends TestCase
         $this->assertCount(2, $bodies);
     }
 
+    public function test_会員にはlineとアプリをまたいで表示回数と回答済みを判定すること(): void
+    {
+        [$project, , $member] = $this->member();
+        $survey = $this->survey($project);
+        $base = ['project_id' => $project->id, 'display_type' => 'modal', 'is_active' => true, 'audience' => 'all'];
+        $once = PromoPopup::create([...$base, 'title' => '1回', 'frequency' => 'once']);
+        $daily = PromoPopup::create([...$base, 'title' => '毎日', 'frequency' => 'daily']);
+        $everyOpen = PromoPopup::create([...$base, 'title' => '毎回', 'frequency' => 'every_open']);
+        PromoPopup::create([...$base, 'title' => '回答まで', 'frequency' => 'every_open', 'link_url' => '/survey?survey='.$survey->id]);
+        PromoPopup::create([...$base, 'title' => '回答後も', 'frequency' => 'every_open', 'secondary_link_url' => '/survey?survey='.$survey->id, 'hide_when_answered' => false]);
+        $headers = ['X-Line-User-Id' => self::LINE_USER_ID];
+        $titles = fn () => collect($this->withHeaders($headers)->getJson('/api/promo-popups?project_key=default')->assertOk()->json('popups'))->pluck('title')->sort()->values()->all();
+
+        // 別の端末・アプリで表示した記録として、サーバーに表示を送る
+        foreach ([$once, $daily, $everyOpen] as $popup) {
+            $this->withHeaders($headers)->postJson("/api/promo-popups/{$popup->id}/events?project_key=default", ['event' => 'view'])->assertOk();
+        }
+        $this->assertSame(['回答まで', '回答後も', '毎回'], $titles());
+
+        $this->travel(1)->days();
+        $this->assertSame(['回答まで', '回答後も', '毎回', '毎日'], $titles());
+        $once->update(['title' => '1回（編集）']);
+        $this->assertContains('1回（編集）', $titles());
+
+        DB::table('survey_responses')->insert(['project_id' => $project->id, 'survey_id' => $survey->id, 'member_id' => $member->id, 'answers' => '[]', 'answered_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        $this->assertSame(['1回（編集）', '回答後も', '毎回', '毎日'], $titles());
+    }
+
     public function test_ポップアップの表示とタップを日ごとに数えること(): void
     {
         [$project] = $this->member();

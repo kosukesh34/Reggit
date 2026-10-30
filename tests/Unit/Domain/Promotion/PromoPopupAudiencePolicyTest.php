@@ -12,7 +12,7 @@ class PromoPopupAudiencePolicyTest extends TestCase
     /** @param list<int>|null $storeIds */
     private function popup(string $audience, array $tagIds = [], array $ranks = [], ?array $storeIds = null): PromoPopupContent
     {
-        return new PromoPopupContent(1, '告知', null, null, 'modal', null, null, null, null, 'once', 1, $audience, $tagIds, $ranks, $storeIds);
+        return new PromoPopupContent(1, '告知', null, null, 'modal', null, null, null, null, 'once', true, 1, $audience, $tagIds, $ranks, $storeIds);
     }
 
     public function test_会員かどうかとタグ_ランクで出し分けること(): void

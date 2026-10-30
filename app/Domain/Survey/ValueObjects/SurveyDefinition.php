@@ -38,4 +38,10 @@ final class SurveyDefinition
     {
         return '/survey?survey='.$this->id;
     }
+
+    /** appPath() の形のリンクなら開くアンケートのID */
+    public static function idFromAppPath(?string $path): ?int
+    {
+        return preg_match('#^/survey\?survey=(\d+)$#', trim((string) $path), $match) === 1 ? (int) $match[1] : null;
+    }
 }
