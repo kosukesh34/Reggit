@@ -132,7 +132,7 @@ function bootstrapLiffInit(): void {
         }
         inner.innerHTML = ''
             + '<p class="liff-loading-text" style="margin-bottom:16px;">認証が必要です。</p>'
-            + '<p style="font-size:13px;color:rgba(255,255,255,0.9);margin-bottom:20px;">認証画面が表示されない場合は、下のボタンからもう一度お試しください。</p>'
+            + '<p style="font-size:13px;color:#57616b;margin-bottom:20px;">認証画面が表示されない場合は、下のボタンからもう一度お試しください。</p>'
             + '<button type="button" id="liff-login-retry-btn" style="border:none;border-radius:8px;padding:14px 24px;background:#06C755;color:#fff;font-size:15px;font-weight:700;cursor:pointer;width:100%;max-width:280px;">LINEでログインする</button>';
         const btn = document.getElementById('liff-login-retry-btn');
         btn?.addEventListener('click', () => {

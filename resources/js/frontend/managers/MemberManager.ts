@@ -2718,7 +2718,11 @@ export class MemberManager {
             }
             payload.acquisition_source = getAcquisitionSource();
             const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_REGISTER, payload);
-            const raw = (result && result.data) != null ? result.data : result;
+            // 失敗レスポンスを会員データとして扱うと「登録完了」と表示してしまう
+            if (!result.success) {
+                throw new Error(result.error || '登録に失敗しました');
+            }
+            const raw = result.data != null ? result.data : result;
             const data = this._normalizeMemberPayload(raw) || raw;
             if (data && (data.is_member === true || typeof data.is_member !== 'undefined')) {
                 if (data.is_member === true) clearAcquisitionSource();

@@ -10,6 +10,7 @@ use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Order\Repositories\ProductCatalogRepository;
 use App\Domain\Order\Repositories\ProductStockRepository;
 use App\Domain\Promotion\Repositories\PopupViewerRepository;
+use App\Domain\Promotion\Repositories\PromoPopupMemberViewRepository;
 use App\Domain\Promotion\Repositories\PromoPopupRepository;
 use App\Domain\Promotion\Repositories\PromoPopupStatsRepository;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
@@ -63,6 +64,7 @@ use App\Infrastructure\Persistence\Eloquent\Order\EloquentProductCatalogReposito
 use App\Infrastructure\Persistence\Eloquent\Order\EloquentProductStockRepository;
 use App\Infrastructure\Persistence\Eloquent\Product\EloquentProductReadRepository;
 use App\Infrastructure\Persistence\Eloquent\Promotion\EloquentPopupViewerRepository;
+use App\Infrastructure\Persistence\Eloquent\Promotion\EloquentPromoPopupMemberViewRepository;
 use App\Infrastructure\Persistence\Eloquent\Promotion\EloquentPromoPopupRepository;
 use App\Infrastructure\Persistence\Eloquent\Promotion\EloquentPromoPopupStatsRepository;
 use App\Infrastructure\Persistence\Eloquent\Queue\EloquentQueueEntryRepository;
@@ -164,6 +166,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PromoPopupRepository::class, EloquentPromoPopupRepository::class);
         $this->app->bind(PopupViewerRepository::class, EloquentPopupViewerRepository::class);
         $this->app->bind(PromoPopupStatsRepository::class, EloquentPromoPopupStatsRepository::class);
+        $this->app->bind(PromoPopupMemberViewRepository::class, EloquentPromoPopupMemberViewRepository::class);
         $this->app->bind(QueueEntryRepository::class, EloquentQueueEntryRepository::class);
         $this->app->bind(StampSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(WalletSettings::class, EloquentShopSettingRepository::class);

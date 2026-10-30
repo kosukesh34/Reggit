@@ -28,6 +28,7 @@ final class EloquentPromoPopupRepository implements PromoPopupRepository
                 secondaryButtonLabel: $popup->secondary_button_label,
                 secondaryLinkUrl: $popup->secondary_link_url,
                 frequency: (string) $popup->frequency,
+                hideWhenAnswered: (bool) $popup->hide_when_answered,
                 version: (int) $popup->updated_at?->timestamp,
                 audience: (string) $popup->audience,
                 audienceTagIds: array_map('intval', $popup->audience_tag_ids ?? []),
