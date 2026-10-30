@@ -18,7 +18,7 @@ class AdminMemberListUseCase
     }
 
     /**
-     * @param  array<string, string|null>  $filters
+     * @param  array<string, mixed>  $filters
      */
     public function handle(int $projectId, array $filters = []): AdminMemberListOutput
     {
@@ -27,6 +27,7 @@ class AdminMemberListUseCase
         return new AdminMemberListOutput(
             $members,
             $this->memberAdminService->getRankOptionsForSelect($projectId),
+            $this->memberList->segmentCriteria($filters) !== null,
         );
     }
 }
