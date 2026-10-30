@@ -16,7 +16,11 @@ use Illuminate\Support\Collection;
 /** 会員一覧とエクスポートで共通の絞り込み・並び替えを担当する。 */
 class MemberAdminListQueryService
 {
-    public function __construct(private RankSettings $shopSettingRepository, private StoreContext $storeContext) {}
+    public function __construct(
+        private RankSettings $shopSettingRepository,
+        private StoreContext $storeContext,
+        private MemberSegmentService $memberSegmentService,
+    ) {}
 
     /** @var array<string, string> */
     private const LIST_SORT_COLUMNS = [
@@ -29,7 +33,7 @@ class MemberAdminListQueryService
     ];
 
     /**
-     * @param  array<string, string|null>  $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getPaginatedList(int $projectId, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
@@ -39,7 +43,7 @@ class MemberAdminListQueryService
     }
 
     /**
-     * @param  array<string, string|null>  $filters
+     * @param  array<string, mixed>  $filters
      */
     public function getFilteredMembers(int $projectId, array $filters = []): Collection
     {
@@ -49,7 +53,7 @@ class MemberAdminListQueryService
     }
 
     /**
-     * @param  array<string, string|null>  $filters
+     * @param  array<string, mixed>  $filters
      */
     private function memberListQuery(int $projectId, array $filters): Builder
     {
@@ -62,13 +66,31 @@ class MemberAdminListQueryService
             ->where('members.project_id', $projectId)
             ->where('members.status', MemberStatus::ACTIVE);
         $this->applyMemberListFilters($query, $filters);
+        $criteria = $this->segmentCriteria($filters);
+        if ($criteria !== null) {
+            // 配信と同じ条件ビルダー（segment_*）で絞り込む。ID数が多くてもプレースホルダー上限に当たらないよう整数を直接埋め込む
+            $query->whereIntegerInRaw('members.id', $this->memberSegmentService->getMemberIds($projectId, $criteria)->all());
+        }
         $this->applyMemberListSort($query, $projectId, $filters);
 
         return $query;
     }
 
     /**
-     * @param  array<string, string|null>  $filters
+     * 配信の条件ビルダーと同じ segment_* 入力から絞り込み条件を作る。条件がなければ null。
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>|null
+     */
+    public function segmentCriteria(array $filters): ?array
+    {
+        return $this->memberSegmentService->buildCriteriaFromInput(
+            array_filter($filters, fn ($key): bool => str_starts_with((string) $key, 'segment_'), ARRAY_FILTER_USE_KEY),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
      */
     private function applyMemberListFilters(Builder $query, array $filters): void
     {
@@ -128,7 +150,7 @@ class MemberAdminListQueryService
     }
 
     /**
-     * @param  array<string, string|null>  $filters
+     * @param  array<string, mixed>  $filters
      */
     private function applyMemberListSort(Builder $query, int $projectId, array $filters): void
     {

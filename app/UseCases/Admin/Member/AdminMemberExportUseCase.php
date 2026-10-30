@@ -15,7 +15,7 @@ class AdminMemberExportUseCase
     ) {}
 
     /**
-     * @param  array<string, string|null>  $filters
+     * @param  array<string, mixed>  $filters
      * @return Collection<int, array<string, string>>
      */
     public function handle(int $projectId, array $filters): Collection
