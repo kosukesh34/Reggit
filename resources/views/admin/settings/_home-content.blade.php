@@ -76,19 +76,10 @@
             const saved = initial.tabs.find(tab => tab.key === key) || {};
             return { ...saved, key, label: row.querySelector('input[name$="[label]"]')?.value || row.querySelector('.home-sort-label')?.textContent, icon: row.querySelector('select.home-sort-icon').value };
         });
-        if (frame?.contentWindow) {
-            frame.contentWindow.postMessage({ type: 'reggit:home-form-preview:update', config }, window.location.origin);
-            try {
-                const draftEvent = frame.contentWindow.document.createEvent('CustomEvent');
-                draftEvent.initCustomEvent('reggit:home-preview-draft', false, false, config);
-                frame.contentWindow.dispatchEvent(draftEvent);
-            } catch (_) { /* The ready message resends the draft when the frame loads. */ }
-            frame.contentWindow.postMessage({ type: 'reggit:designer-preview:navigate', path: '/home' }, window.location.origin);
-        }
+        frame?.dispatchEvent(new CustomEvent('app-preview:draft', { detail: config }));
+        frame?.contentWindow?.postMessage({ type: 'reggit:designer-preview:navigate', path: '/home' }, window.location.origin);
     }
     form.addEventListener('input', render); form.addEventListener('change', render); form.addEventListener('drop', () => requestAnimationFrame(render));
-    frame?.addEventListener('load', render);
-    window.addEventListener('message', event => { if (event.origin === window.location.origin && event.source === frame?.contentWindow && event.data?.type === 'reggit:home-form-preview:ready') render(); });
     render();
 })();
 </script>

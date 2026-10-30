@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { NativeRequestError, NativeState, nativeRequest, useNativeResource } from "./NativeResource";
 import { isDemoDataMode } from "../../frontend/demo/demoMode";
 import { OTHER_KEY, OTHER_MAX, answerPayload, isAnswered, npsTone, type AnswerValue } from "./surveyAnswers";
+import { useAdminFormPreview } from "../hooks/useAdminFormPreview";
 
 type Question = { type: "nps" | "choice" | "multi_choice" | "rating" | "number" | "date" | "text"; label: string; help?: string; options?: string[]; allow_other?: boolean; required?: boolean };
 type Survey = { id: number; title: string; description?: string | null; questions: Question[]; reward_points: number; is_open: boolean; answered: boolean };
@@ -23,6 +24,8 @@ const sampleSurvey: Survey = {
 export function NativeSurveyPage() {
   const [search] = useSearchParams();
   const id = search.get("survey") ?? "";
+  const draft = useAdminFormPreview<Survey>("survey");
+  if (draft) return <SurveyForm key="preview" id="preview" preview={draft} />;
   return /^\d+$/.test(id) ? <SurveyForm key={id} id={id} /> : <SurveyList />;
 }
 
@@ -39,9 +42,10 @@ function SurveyList() {
   </NativeState></div>;
 }
 
-function SurveyForm({ id }: { id: string }) {
-  const resource = useNativeResource<{ survey?: Survey }>(`/api/surveys/${id}`, { survey: { ...sampleSurvey, id: Number(id) } });
-  const survey = resource.data.survey;
+/** preview は管理画面で編集中のアンケート。そのときは読み込みも送信もしない */
+function SurveyForm({ id, preview }: { id: string; preview?: Survey }) {
+  const resource = useNativeResource<{ survey?: Survey }>(`/api/surveys/${id}`, { survey: { ...sampleSurvey, id: Number(id) } }, isDemoDataMode() || preview !== undefined);
+  const survey = preview ?? resource.data.survey;
   const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
   const [others, setOthers] = useState<Record<number, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,7 +56,7 @@ function SurveyForm({ id }: { id: string }) {
   const other = (index: number, text: string) => setOthers((current) => ({ ...current, [index]: text }));
 
   async function submit() {
-    if (!survey || busy) return;
+    if (!survey || busy || preview) return;
     setBusy(true); setErrors({}); setMessage("");
     try {
       const payload = survey.questions.map((_, index) => answerPayload(answers[index], others[index]));

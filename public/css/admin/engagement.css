@@ -162,50 +162,9 @@ a.eg-choice { color: inherit; text-decoration: none; }
 .eg-danger-zone p { margin: 0; color: #7f1d1d; font-size: 13px; }
 .eg-danger-zone form { margin: 0; }
 
-/* スマホのプレビュー */
-.eg-phone { width: 280px; max-width: 100%; height: 540px; margin: 0 auto; padding: 10px; border-radius: 34px; background: #1f2937; box-shadow: 0 16px 34px rgba(15, 23, 42, .25); }
-.eg-phone-screen { position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 26px; background: #f3f4f6; font-size: 12px; }
-.eg-phone-caption { margin: 10px 0 0; color: var(--eg-muted); font-size: 12px; text-align: center; }
+/* 実アプリのプレビューはカードの端まで広げる（スマホ枠がカードの余白に収まらないため） */
+.eg-card .cp-real-preview-stage { margin: 0 -22px -22px; border-radius: 0 0 18px 18px; }
 
-/* アンケートのプレビュー */
-.eg-sv { flex: 1; overflow-y: auto; padding: 14px 12px 70px; }
-.eg-sv-title { margin: 0 0 4px; font-size: 15px; font-weight: 800; }
-.eg-sv-desc { margin: 0 0 8px; color: #4b5563; white-space: pre-wrap; }
-.eg-sv-reward { display: inline-block; margin-bottom: 10px; padding: 3px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-weight: 700; }
-.eg-sv-q { margin-bottom: 8px; padding: 10px; border-radius: 12px; background: #fff; }
-.eg-sv-q strong { display: block; margin-bottom: 6px; font-size: 12px; }
-.eg-sv-q small { display: block; margin: -2px 0 6px; color: #6b7280; }
-.eg-sv-scale { display: grid; gap: 3px; }
-.eg-sv-scale span { display: grid; height: 22px; place-items: center; border-radius: 6px; background: #f3f4f6; font-size: 10px; font-weight: 700; }
-.eg-sv-option { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
-.eg-sv-option i { color: #9ca3af; }
-.eg-sv-input { height: 26px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; }
-.eg-sv-stars { color: #f59e0b; letter-spacing: 4px; font-size: 16px; }
-.eg-sv-submit { position: absolute; right: 10px; bottom: 10px; left: 10px; padding: 10px; border-radius: 10px; background: var(--eg-primary); color: #fff; font-weight: 700; text-align: center; }
-.eg-sv-empty { padding: 30px 10px; color: #9ca3af; text-align: center; }
-
-/* ポップアップのプレビュー */
-.promo-preview-screen { position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 26px; background: #f3f4f6; font-size: 13px; }
-.promo-preview-screen.is-modal, .promo-preview-screen.is-bottom_sheet { justify-content: center; padding: 16px; background: rgba(0, 0, 0, .4); }
-.promo-preview-screen.is-bottom_sheet { justify-content: flex-end; padding: 0; }
-.promo-preview-screen.is-fullscreen { background: #fff; }
-.promo-preview-screen.is-banner { justify-content: flex-end; padding: 10px 10px 48px; }
-.promo-preview-panel { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: #fff; }
-.is-bottom_sheet .promo-preview-panel { border-radius: 16px 16px 0 0; }
-.is-fullscreen .promo-preview-panel { flex: 1; overflow: auto; border-radius: 0; }
-.is-banner .promo-preview-panel { flex-direction: row; align-items: center; padding: 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
-.promo-preview-header { display: flex; justify-content: space-between; gap: 8px; }
-.promo-preview-title { font-size: 15px; overflow-wrap: anywhere; }
-.promo-preview-close { color: #6b7280; font-size: 18px; line-height: 1; }
-.promo-preview-image { width: 100%; max-height: 180px; border-radius: 10px; object-fit: cover; }
-.is-fullscreen .promo-preview-image { max-height: 240px; }
-.promo-preview-thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
-.promo-preview-text { display: flex; flex: 1; flex-direction: column; min-width: 0; }
-.promo-preview-text small { overflow: hidden; color: #6b7280; text-overflow: ellipsis; white-space: nowrap; }
-.promo-preview-body { margin: 0; color: #374151; white-space: pre-wrap; overflow-wrap: anywhere; }
-.promo-preview-button { display: block; padding: 10px; border-radius: 10px; background: var(--eg-primary); color: #fff; font-weight: 600; text-align: center; }
-.promo-preview-button.is-secondary { background: #e5e7eb; color: #111827; }
-.promo-preview-app { flex: 1; display: grid; place-items: center; color: #9ca3af; }
 .eg-image-current { display: flex; align-items: center; gap: 12px; }
 .eg-image-current img { width: 88px; height: 88px; border-radius: 12px; object-fit: cover; }
 

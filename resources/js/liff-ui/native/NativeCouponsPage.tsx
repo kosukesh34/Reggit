@@ -6,6 +6,7 @@ import type { CouponRecord } from "../../frontend/features/coupons/couponHelpers
 import { CenterPopup } from "../components/ui/CenterPopup";
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { MembershipQr } from "../components/membership/MembershipQr";
+import { useAdminFormPreview } from "../hooks/useAdminFormPreview";
 type DeviceCoupon = { id: number; name: string; description?: string; image_url?: string };
 type Redemption = { code?: string; use_display?: string; coupon_name?: string };
 export function NativeCouponsPage() {
@@ -18,7 +19,8 @@ export function NativeCouponsPage() {
   const [redemption, setRedemption] = useState<Redemption>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const coupons = resource.data.coupons ?? [];
+  const draft = useAdminFormPreview<CouponRecord>("coupon");
+  const coupons = draft ? [draft] : resource.data.coupons ?? [];
   const archived = coupons.filter((coupon) => ["used", "expired"].includes(coupon.status ?? ""));
   const list = selected === 0 ? coupons.filter((coupon) => !archived.includes(coupon)) : archived;
   const labels: Record<string, string> = { available: "利用可能", unused: "利用可能", upcoming: "まもなく利用可能", used: "利用済み", expired: "期限切れ" };
@@ -28,7 +30,10 @@ export function NativeCouponsPage() {
     setBusy(true); setMessage("");
     try {
       let result: Redemption;
-      if (isDemoDataMode()) {
+      // 管理画面のプレビューでは利用処理をせず、選んだ表示方法（バーコード・QR）だけを見せる
+      if (draft) {
+        result = { code: draft.code, use_display: draft.use_display, coupon_name: draft.coupon_name };
+      } else if (isDemoDataMode()) {
         await runtime.useCoupon(String(coupon.id));
         result = { code: "DEMO000012345", use_display: "barcode", coupon_name: coupon.coupon_name };
         resource.setData((data) => ({ ...data, coupons: data.coupons.map((item) => item.id === coupon.id ? { ...item, status: "used" } : item) }));
@@ -52,7 +57,7 @@ export function NativeCouponsPage() {
   }
   return <div className="native-coupons"><NativeSegments labels={["利用可能", "履歴"]} selected={selected} onSelect={setSelected} />
     {message ? <p className="native-message" role="status">{message}</p> : null}
-    <NativeState loading={resource.loading} error={resource.error} empty={list.length === 0 && (selected !== 0 || !claimable.data.coupons?.length)} title={selected === 0 ? "利用できるクーポンはありません" : "履歴はありません"} subtitle={selected === 0 ? "新しいクーポンが届くとここに表示されます" : "使用済み・期限切れのクーポンがここに表示されます"} icon="fa-ticket" reload={() => void resource.reload()}>
+    <NativeState loading={!draft && resource.loading} error={draft ? undefined : resource.error} empty={list.length === 0 && (selected !== 0 || !claimable.data.coupons?.length)} title={selected === 0 ? "利用できるクーポンはありません" : "履歴はありません"} subtitle={selected === 0 ? "新しいクーポンが届くとここに表示されます" : "使用済み・期限切れのクーポンがここに表示されます"} icon="fa-ticket" reload={() => void resource.reload()}>
       <div className="native-screen native-coupon-list">
         {selected === 0 && claimable.data.coupons?.length ? <section><h2>この端末で獲得できるクーポン</h2>{claimable.data.coupons.map((coupon) => <article className="native-claimable" key={coupon.id}>{coupon.image_url ? <img src={coupon.image_url} alt="" /> : null}<div><strong>{coupon.name}</strong><p>{coupon.description}</p><small>1端末1回限り</small></div><button className="native-button" disabled={busy} onClick={() => void claim(coupon)}>獲得</button></article>)}</section> : null}
         {selected === 1 ? <div className="native-history-summary"><i className="fa-solid fa-clock-rotate-left" /><div><strong>これまでのクーポン</strong><p>利用済み {archived.filter((coupon) => coupon.status === "used").length}件 · 期限切れ {archived.filter((coupon) => coupon.status === "expired").length}件</p></div></div> : null}

@@ -95,7 +95,7 @@
                 </div>
                 @if($locked)
                     <div class="alert alert-info" role="status">回答が集まっているため、質問は変更できません。質問を変えるときは、このアンケートを複製して編集してください。</div>
-                    <ol class="eg-locked-list">
+                    <ol class="eg-locked-list" data-survey-locked="{{ json_encode(array_map(fn ($question) => ['type' => $question['type'], 'label' => $question['label'], 'help' => $question['help'] ?? '', 'options' => $question['options'] ?? [], 'allow_other' => $question['allow_other'] ?? false, 'required' => $question['required'] ?? false], $questions)) }}">
                         @foreach($questions as $question)
                         <li><i class="fas {{ SurveyQuestionType::icon($question['type']) }}" aria-hidden="true"></i> {{ $question['label'] }} <span class="eg-muted">（{{ SurveyQuestionType::getLabel($question['type']) }}）</span></li>
                         @endforeach
@@ -176,7 +176,7 @@
                     <span class="eg-icon eg-icon--green"><i class="fas fa-mobile-screen" aria-hidden="true"></i></span>
                     <div><h2>プレビュー</h2><p>会員のアプリでの見え方</p></div>
                 </div>
-                <div class="eg-phone" aria-hidden="true"><div class="eg-phone-screen" data-survey-preview></div></div>
+                <x-admin.app-preview id="surveyLivePreview" title="実際の会員アプリのアンケート画面" path="/survey" kind="survey" />
             </section>
         </aside>
     </div>

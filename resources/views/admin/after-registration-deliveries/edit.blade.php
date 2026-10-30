@@ -28,7 +28,7 @@
     </div>
 @endif
 
-<form action="{{ admin_route('admin.after-registration-deliveries.update', ['id' => $view->delivery->id]) }}" method="POST" id="scheduledDeliveryForm">
+<form action="{{ admin_route('admin.after-registration-deliveries.update', ['id' => $view->delivery->id]) }}" method="POST" id="scheduledDeliveryForm" data-segment-form>
     @csrf
     @method('PUT')
     @include('admin.after-registration-deliveries._form')

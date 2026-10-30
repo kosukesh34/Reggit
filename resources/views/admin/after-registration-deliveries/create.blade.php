@@ -28,7 +28,7 @@
     </div>
 @endif
 
-<form action="{{ admin_route('admin.after-registration-deliveries.store') }}" method="POST" id="scheduledDeliveryForm">
+<form action="{{ admin_route('admin.after-registration-deliveries.store') }}" method="POST" id="scheduledDeliveryForm" data-segment-form>
     @csrf
     @include('admin.after-registration-deliveries._form')
 </form>

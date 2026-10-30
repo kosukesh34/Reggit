@@ -2,9 +2,10 @@ import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { PromoPopupView } from "./PromoPopupView";
 import { usePromoPopup } from "../../hooks/usePromoPopup";
+import { useAdminFormPreview } from "../../hooks/useAdminFormPreview";
 import { fetchPromoPopups, localPromoPopupSeenStore, reportPromoPopupEvent } from "../../services/promoPopups";
 import { isDemoDataMode } from "../../../frontend/demo/demoMode";
-import type { PromoPopupLink } from "../../native/promoPopupPolicy";
+import type { PromoPopup, PromoPopupLink } from "../../native/promoPopupPolicy";
 
 function openExternal(url: string): void {
   const liff = window.liff as { isInClient?: () => boolean; openWindow?: (input: { url: string; external: boolean }) => void } | undefined;
@@ -22,6 +23,9 @@ export function PromoPopupHost({ enabled }: { enabled: boolean }) {
     if (link.kind === "app") navigate(link.path);
     else if (link.kind === "external") openExternal(link.url);
   }, [navigate]);
+  // 管理画面で編集中のポップアップは、閉じても押しても消さずに表示し続ける
+  const draft = useAdminFormPreview<PromoPopup>("promo-popup");
 
+  if (draft) return <PromoPopupView popup={draft} onClose={() => {}} onAction={() => {}} />;
   return popup ? <PromoPopupView popup={popup} onClose={dismiss} onAction={(button) => open(takeAction(button))} /> : null;
 }

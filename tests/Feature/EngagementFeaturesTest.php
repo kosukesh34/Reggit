@@ -409,6 +409,11 @@ class EngagementFeaturesTest extends TestCase
         $copy = Survey::withoutGlobalScopes()->where('title', 'ご来店アンケート（コピー）')->sole();
         $this->assertFalse($copy->is_active);
         $this->assertSame($survey->questions, $copy->questions);
+        // 回答があり質問を変えられないときも、保存済みの質問をアプリのプレビューへ渡す
+        $member = Member::factory()->create(['project_id' => $project->id]);
+        DB::table('survey_responses')->insert(['project_id' => $project->id, 'survey_id' => $survey->id, 'member_id' => $member->id, 'answers' => '[]', 'answered_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        $this->get(route('admin.surveys.edit', [...$key, 'id' => $survey->id]))->assertOk()
+            ->assertSee('data-survey-locked="[{&quot;type&quot;:&quot;nps&quot;', false)->assertSee('id="surveyLivePreview"', false);
 
         $popup = PromoPopup::create(['project_id' => $project->id, 'title' => '夏', 'display_type' => 'modal', 'frequency' => 'once', 'is_active' => true]);
         $this->post(route('admin.promo-popups.duplicate', [...$key, 'id' => $popup->id]))->assertRedirect();
@@ -416,7 +421,8 @@ class EngagementFeaturesTest extends TestCase
         $this->get(route('admin.promo-popups.create', $key))->assertOk()
             ->assertSee('<option value="/coupon">クーポン</option>', false)
             ->assertSee('value="/survey?survey='.$survey->id.'"', false)
-            ->assertSee('data-promo-popup-preview', false);
+            ->assertSee('data-promo-popup-preview', false)
+            ->assertSee('id="promoPopupLivePreview"', false);
 
         $this->post(route('admin.acquisition-sources.store', $key), ['name' => '店頭POP', 'landing_tab' => 'coupons'])->assertRedirect();
         $html = $this->get(route('admin.qr-codes', $key))->assertOk()->assertSee('開く画面：クーポン')->getContent();
@@ -497,7 +503,8 @@ class EngagementFeaturesTest extends TestCase
         $this->post(route('admin.surveys.store', $key), ['title' => 'NPS重複', 'questions' => [['type' => 'nps', 'label' => 'A'], ['type' => 'nps', 'label' => 'B']]])
             ->assertSessionHasErrors('questions');
         $this->get(route('admin.surveys.show', [...$key, 'id' => $survey->id]))->assertOk()->assertSee('満足度調査');
-        $this->get(route('admin.surveys.create', $key))->assertOk()->assertSee('data-survey-builder', false);
+        $this->get(route('admin.surveys.create', $key))->assertOk()->assertSee('data-survey-builder', false)
+            ->assertSee('id="surveyLivePreview"', false)->assertSee('#/survey', false);
         $this->get(route('admin.surveys.edit', [...$key, 'id' => $survey->id]))->assertOk()->assertSee('来店目的')
             ->assertSee('value="ランチ利用"', false)->assertSee('いくつでも');
         // 作成ボタンは画面上部のヘッダーに出す（本文の .page-header はCSSで隠れるため）
