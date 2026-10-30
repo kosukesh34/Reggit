@@ -184,6 +184,91 @@ class AdminMembersTest extends TestCase
         $this->assertStringNotContainsString('ステータス', $csvContent);
     }
 
+    public function test_members_配信と同じ条件ビルダーで絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $vipTag = MemberTag::create(['project_id' => $project->id, 'name' => '条件VIP', 'color' => '#0d9488']);
+        $newTag = MemberTag::create(['project_id' => $project->id, 'name' => '条件新規', 'color' => '#2563eb']);
+        $both = Member::factory()->create([
+            'user_id' => User::factory()->create(['project_id' => $project->id, 'name' => '両方タグ会員'])->id,
+            'project_id' => $project->id,
+            'rank' => 'gold',
+        ]);
+        $both->tags()->attach([$vipTag->id, $newTag->id]);
+        $vipOnly = Member::factory()->create([
+            'user_id' => User::factory()->create(['project_id' => $project->id, 'name' => 'VIPだけ会員'])->id,
+            'project_id' => $project->id,
+            'rank' => 'bronze',
+        ]);
+        $vipOnly->tags()->attach($vipTag->id);
+        Member::factory()->create([
+            'user_id' => User::factory()->create(['project_id' => $project->id, 'name' => 'タグなし会員'])->id,
+            'project_id' => $project->id,
+        ]);
+        $allTags = [
+            'project_key' => $project->project_key,
+            'segment_tag_ids' => [$vipTag->id, $newTag->id],
+            'segment_value_mode' => ['tags' => 'all'],
+        ];
+
+        $page = $this->actingAs($admin, 'admin')->get(route('admin.members', ['project_key' => $project->project_key]));
+        $page->assertOk();
+        $page->assertSee('segmentConditionPool', false);
+        $page->assertDontSee('segmentGroupSave', false);
+
+        $byAnyTag = $this->actingAs($admin, 'admin')->get(route('admin.members', [
+            'project_key' => $project->project_key,
+            'segment_tag_ids' => [$vipTag->id, $newTag->id],
+        ]));
+        $byAnyTag->assertSee('両方タグ会員');
+        $byAnyTag->assertSee('VIPだけ会員');
+        $byAnyTag->assertDontSee('タグなし会員');
+
+        $byAllTags = $this->actingAs($admin, 'admin')->get(route('admin.members', $allTags));
+        $byAllTags->assertSee('両方タグ会員');
+        $byAllTags->assertDontSee('VIPだけ会員');
+        $byAllTags->assertSee('クリア');
+
+        $byTagAndRank = $this->actingAs($admin, 'admin')->get(route('admin.members', [
+            'project_key' => $project->project_key,
+            'segment_tag_ids' => [$vipTag->id],
+            'segment_rank' => 'bronze',
+        ]));
+        $byTagAndRank->assertSee('VIPだけ会員');
+        $byTagAndRank->assertDontSee('両方タグ会員');
+
+        $sortHref = $this->actingAs($admin, 'admin')->get(route('admin.members', $allTags))->viewData('view')->sortHref('name');
+        $this->assertStringContainsString(urlencode('segment_tag_ids[0]').'='.$vipTag->id, $sortHref);
+
+        $csv = $this->actingAs($admin, 'admin')->get(route('admin.members.export', $allTags));
+        $csvContent = $csv->streamedContent();
+        $this->assertStringContainsString('両方タグ会員', $csvContent);
+        $this->assertStringNotContainsString('VIPだけ会員', $csvContent);
+
+        // ブラウザのGET送信に近い「空の segment_* が混ざる」ケースでもタグ条件だけが効くこと
+        $noisy = $this->actingAs($admin, 'admin')->get(route('admin.members', [
+            'project_key' => $project->project_key,
+            'segment_tag_ids' => [$vipTag->id],
+            'segment_channel' => '',
+            'segment_sex' => '',
+            'segment_rank' => '',
+            'segment_visit_count_min' => '',
+            'segment_visit_count_max' => '',
+            'segment_last_visit_mode' => '',
+            'segment_last_visit_days' => '30',
+            'segment_period_days' => '30',
+            'segment_condition' => '',
+            'segment_min_amount' => '5000',
+            'segment_match_mode' => 'all',
+        ]));
+        $noisy->assertSee('両方タグ会員');
+        $noisy->assertSee('VIPだけ会員');
+        $noisy->assertDontSee('タグなし会員');
+        $noisy->assertSee('value="'.$vipTag->id.'"', false);
+        $noisy->assertSee('checked', false);
+    }
+
     public function test_members_detail_and_edit_詳細と編集にアクセスできること(): void
     {
         $project = $this->createProject();

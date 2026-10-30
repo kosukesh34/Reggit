@@ -449,7 +449,6 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::put('/promo-popups/{id}', [AdminPromoPopupController::class, 'update'])->whereNumber('id')->name('admin.promo-popups.update')->middleware('admin.permission:announcements.manage');
         Route::delete('/promo-popups/{id}', [AdminPromoPopupController::class, 'destroy'])->whereNumber('id')->name('admin.promo-popups.destroy')->middleware('admin.permission:announcements.manage');
 
-        Route::get('/acquisition-sources', [AcquisitionSourceController::class, 'index'])->name('admin.acquisition-sources')->middleware('admin.permission:members.view');
         Route::post('/acquisition-sources', [AcquisitionSourceController::class, 'store'])->name('admin.acquisition-sources.store')->middleware('admin.permission:members.manage');
         Route::delete('/acquisition-sources/{id}', [AcquisitionSourceController::class, 'destroy'])->whereNumber('id')->name('admin.acquisition-sources.destroy')->middleware('admin.permission:members.manage');
 

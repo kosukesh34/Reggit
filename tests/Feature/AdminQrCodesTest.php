@@ -94,8 +94,17 @@ class AdminQrCodesTest extends TestCase
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_STAFF, 'project_id' => $project->id]);
         $admin->syncPermissions(['stamps.manage']);
         $this->actingAs($admin, 'admin')->get(route('admin.qr-codes', ['project_key' => $project->project_key]))
-            ->assertOk()->assertSee('スタンプ付与QR');
+            ->assertOk()->assertSee('スタンプ付与QR')->assertDontSee('流入経路QR');
         $this->post(route('admin.qr-codes.points.store', ['project_key' => $project->project_key]), [])->assertForbidden();
+    }
+
+    public function test_会員閲覧のみのスタッフは流入経路_q_rを見られるが追加できない(): void
+    {
+        $project = Project::factory()->create();
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_STAFF, 'project_id' => $project->id]);
+        $admin->syncPermissions(['members.view']);
+        $this->actingAs($admin, 'admin')->get(route('admin.qr-codes', ['project_key' => $project->project_key]))
+            ->assertOk()->assertSee('流入経路QR')->assertDontSee('name="landing_tab"', false);
     }
 
     public function test_mobile_order_qr_lin_e未設定でも自店舗の_web注文画面を案内できる(): void

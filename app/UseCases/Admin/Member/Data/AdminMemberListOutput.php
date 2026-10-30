@@ -13,5 +13,6 @@ class AdminMemberListOutput
     public function __construct(
         public LengthAwarePaginator $members,
         public array $rankOptions = [],
+        public bool $hasSegmentFilters = false,
     ) {}
 }

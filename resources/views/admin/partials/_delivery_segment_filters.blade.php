@@ -1,12 +1,18 @@
 @php
     $savedSegment = is_array($savedSegment ?? null) ? $savedSegment : [];
     $isCouponDelivery = ($isCouponDelivery ?? false) === true;
+    // 会員一覧など配信以外の画面では、人数表示とグループ保存（お知らせ配信フォーム専用）を出さない
+    $isDeliveryForm = ($isDeliveryForm ?? true) === true;
+    // 会員一覧のGET条件など、明示の savedSegment を session の old より優先する
     $segmentOld = function (string $key, mixed $default = null) use ($savedSegment) {
+        if (\Illuminate\Support\Arr::has($savedSegment, $key)) {
+            return data_get($savedSegment, $key);
+        }
         if (session()->hasOldInput()) {
             return old($key, $default);
         }
-        $saved = data_get($savedSegment, $key);
-        return $saved === null ? $default : $saved;
+
+        return $default;
     };
     $selectedBirthdayMonths = collect((array) $segmentOld('segment_birthday_months', []))->map(fn ($month) => (int) $month)->filter(fn ($month) => $month >= 1 && $month <= 12)->unique()->values();
     $selectedTagIds = collect((array) $segmentOld('segment_tag_ids', []))->map(fn ($id) => (int) $id)->filter()->unique()->values();
@@ -17,9 +23,11 @@
         'segment_product_id', 'segment_coupon_id', 'segment_coupon_status', 'segment_condition',
     ])->contains(fn ($field) => filled($segmentOld($field)));
 @endphp
+                        @if($isDeliveryForm)
                         <div class="ad-segment-head">
                             <span id="segmentPreview">人数を確認中</span>
                         </div>
+                        @endif
                         <div class="ad-cond-builder">
                             <div class="ad-cond-list" id="segmentConditionRows"></div>
                             <div class="ad-cond-add">
@@ -219,7 +227,7 @@
                                     </fieldset>
                                     <div id="segmentMinAmountBlock" class="form-group mb-0" hidden>
                                         <label for="segment_min_amount" class="form-label">最低購入額</label>
-                                        <div class="ad-input-suffix"><input type="number" name="segment_min_amount" id="segment_min_amount" class="form-control segment-filter" value="{{ $segmentOld('segment_min_amount', 5000) }}" min="0" step="1"><span>円</span></div>
+                                        <div class="ad-input-suffix"><input type="number" name="segment_min_amount" id="segment_min_amount" class="form-control segment-filter" value="{{ $segmentOld('segment_min_amount') }}" min="0" step="1" placeholder="5000"><span>円</span></div>
                                     </div>
                                 </div>
                                 @if($isCouponDelivery)
@@ -287,7 +295,7 @@
                                     <label><input type="radio" name="segment_match_mode" value="{{ \App\Enums\SegmentCombineMode::ANY }}" class="segment-filter" @checked($segmentOld('segment_match_mode') === \App\Enums\SegmentCombineMode::ANY)><span><strong>いずれか一致</strong></span></label>
                                 </div>
                             </fieldset>
-                            @unless($isCouponDelivery)
+                            @if($isDeliveryForm && ! $isCouponDelivery)
                             <details class="ad-details ad-segment-details" id="segmentGroupSave" @if(filled($segmentOld('audience_group_name')) || $errors->has('audience_group_name')) open @else hidden @endif>
                                 <summary><span>この条件をグループとして保存</span></summary>
                                 <div class="ad-segment-advanced">
@@ -298,4 +306,4 @@
                                     @error('audience_group_name')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                                 </div>
                             </details>
-                            @endunless
+                            @endif
