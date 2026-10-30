@@ -16,6 +16,7 @@ type LiffLike = {
     getIDToken?: () => string | null;
     login?: (opts?: { redirectUri?: string }) => void;
     getFriendship?: () => Promise<{ friendFlag: boolean }>;
+    requestFriendship?: () => Promise<void>;
     openWindow?: (params: { url: string; external?: boolean }) => void;
 };
 

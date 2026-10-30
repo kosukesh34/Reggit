@@ -44,6 +44,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @include('frontend.partials._head-assets')
+    {{-- ネイティブアプリと同じく、画面全体を跳ねさせず本文だけをスクロールし、ダブルタップ拡大とタップ時の色を出さない --}}
+    <style>
+        html, body { height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    </style>
     @if($isDesignerEmbedPreview)
     <style>html, body { background: #f2f5f7 !important; } #liff-loading { display: none !important; } #react-frontend-root { opacity: 1 !important; visibility: visible !important; }</style>
     @endif
