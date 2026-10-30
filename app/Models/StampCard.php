@@ -22,6 +22,22 @@ class StampCard extends Model
 
     public const LAYOUT_CARD = 'card';
 
+    public const DESIGN_STANDARD = 'standard';
+
+    public const DESIGN_BANNER = 'banner';
+
+    public const DESIGN_MEMBERSHIP = 'membership';
+
+    /** @return array<string, string> 会員アプリのスタンプ画面の見せ方 */
+    public static function getDesignOptions(): array
+    {
+        return [
+            self::DESIGN_STANDARD => 'スタンダード（左に小さな画像）',
+            self::DESIGN_BANNER => 'バナー（上に大きな画像）',
+            self::DESIGN_MEMBERSHIP => '会員証型（画像を背景にしたカード）',
+        ];
+    }
+
     /** @var array<string> */
     public static function getLayoutOptions(): array
     {
@@ -36,7 +52,7 @@ class StampCard extends Model
 
     protected $fillable = [
         'project_id', 'name', 'required_stamps', 'reward_description', 'image_url',
-        'stamp_images', 'stamp_empty_images', 'layout_style', 'valid_days', 'valid_until', 'reward_milestones', 'is_active',
+        'stamp_images', 'stamp_empty_images', 'layout_style', 'design', 'valid_days', 'valid_until', 'reward_milestones', 'is_active',
         'cycle_mode', 'next_stamp_card_id',
     ];
 

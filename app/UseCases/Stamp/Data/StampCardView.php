@@ -27,6 +27,7 @@ class StampCardView
         public int $cycleCount = 0,
         public bool $isArchived = false,
         public ?string $nextStampCardName = null,
+        public string $design = 'standard',
     ) {}
 
     /**
@@ -48,7 +49,8 @@ class StampCardView
      *     cycle_mode: string,
      *     cycle_count: int,
      *     is_archived: bool,
-     *     next_stamp_card_name: string|null
+     *     next_stamp_card_name: string|null,
+     *     design: string
      * }
      */
     public function toArray(): array
@@ -72,6 +74,7 @@ class StampCardView
             'cycle_count' => $this->cycleCount,
             'is_archived' => $this->isArchived,
             'next_stamp_card_name' => $this->nextStampCardName,
+            'design' => $this->design,
         ];
     }
 }

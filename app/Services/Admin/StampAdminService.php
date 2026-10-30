@@ -39,6 +39,15 @@ class StampAdminService
         return $card;
     }
 
+    /** 押す前・押したあとのスタンプ画像だけを更新する。空の JSON（{}）を送るとすべて消える */
+    public function updateImages(int $id, array $data): StampCard
+    {
+        $card = StampCard::findOrFail($id);
+        $card->update($this->normalizeStampImages($data));
+
+        return $card;
+    }
+
     public function isGachaEnabled(int $projectId): bool
     {
         $settings = ProjectLotterySetting::query()->find($projectId);
@@ -114,7 +123,6 @@ class StampAdminService
     {
         $data = $this->normalizeMilestones($data, $projectId);
         $data = $this->normalizeCardImage($data);
-        $data = $this->normalizeStampImages($data);
         $data = $this->normalizeCycle($data);
 
         return $data;

@@ -347,6 +347,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/member-chat/sent', [MemberChatController::class, 'sent'])->middleware('throttle:60,1');
     Route::get('/gallery', [GalleryController::class, 'index']);
     Route::get('/stamps', [StampController::class, 'index']);
+    Route::get('/stamps/{id}/history', [StampController::class, 'history'])->whereNumber('id');
 
     Route::post('/queue', [QueueStoreController::class, '__invoke']);
     Route::get('/queue/me', [QueueMeController::class, '__invoke']);

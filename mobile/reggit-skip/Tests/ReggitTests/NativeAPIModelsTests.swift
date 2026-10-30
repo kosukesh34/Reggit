@@ -14,6 +14,55 @@ final class NativeAPIModelsTests: XCTestCase {
         XCTAssertTrue(items[1].imageURLs.isEmpty)
     }
 
+    func testStampCardParsesDesignImagesAndRewards() throws {
+        let data = try JSONSerialization.data(withJSONObject: ["stamp_cards": [[
+            "id": 1, "name": "来店", "current_stamps": 2, "required_stamps": 4,
+            "design": "membership", "layout_style": "row",
+            "stamp_images": ["1": "/uploads/stamps/a.png"], "stamp_empty_images": ["3": "/uploads/stamps/b.png"],
+            "reward_milestones": [["stamp_count": 3, "description": "クーポン"], ["stamp_count": 9, "description": "範囲外"]],
+            "valid_until": "2026-12-31"
+        ]]])
+        let card = try XCTUnwrap(StampListResponse.parse(data).stampCards.first)
+        XCTAssertEqual(card.design, "membership")
+        XCTAssertEqual(card.validUntil, "2026-12-31")
+        let layout = StampLayout(card: card)
+        XCTAssertEqual(layout.slots.map(\.image), ["/uploads/stamps/a.png", nil, "/uploads/stamps/b.png", nil])
+        XCTAssertEqual(layout.slots.map(\.reward), [false, false, true, false])
+        XCTAssertEqual(layout.milestones, [StampMilestone(count: 3, description: "クーポン")])
+        XCTAssertNil(layout.columns)
+        XCTAssertEqual(layout.pages, 1)
+    }
+
+    func testStampHistoryParsesRows() throws {
+        let data = try JSONSerialization.data(withJSONObject: ["history": [
+            ["id": 3, "delta": -1, "balance_after": 4, "label": "スタンプの取り消し", "created_at": "2026-10-30T10:00:00+09:00"],
+            ["id": 2, "delta": 2, "balance_after": 5, "label": "スタンプ獲得"]
+        ]])
+        let items = try StampHistoryItem.parseList(data)
+        XCTAssertEqual(items.map(\.delta), [-1, 2])
+        XCTAssertEqual(items.first?.label, "スタンプの取り消し")
+        XCTAssertNil(items.last?.createdAt)
+    }
+
+    func testStampLayoutPagesManyStamps() {
+        let card = StampCardItem(id: 1, name: "", currentStamps: 60, requiredStamps: 100, rewardDescription: "", imageURL: nil)
+        let layout = StampLayout(card: card)
+        XCTAssertEqual([layout.columns, layout.pages, layout.page, layout.first, layout.last], [10, 2, 1, 51, 100])
+        XCTAssertEqual(StampLayout(card: card, page: 0).slots.count, 50)
+        let small = StampLayout(card: StampCardItem(id: 2, name: "", currentStamps: 0, requiredStamps: 25, rewardDescription: "", imageURL: nil, design: "unknown"))
+        XCTAssertEqual([small.columns, small.pages, small.slots.count], [5, 1, 25])
+        XCTAssertEqual(small.design, "standard")
+        XCTAssertEqual(small.nextReward, StampNextReward(count: 25, description: "", remaining: 25, goal: true))
+    }
+
+    func testStampNextRewardPrefersUpcomingMilestone() {
+        let milestones = [StampMilestone(count: 5, description: "お菓子"), StampMilestone(count: 10, description: "ドリンク")]
+        let card = StampCardItem(id: 1, name: "", currentStamps: 6, requiredStamps: 10, rewardDescription: "", imageURL: nil, milestones: milestones)
+        XCTAssertEqual(StampLayout(card: card).nextReward, StampNextReward(count: 10, description: "ドリンク", remaining: 4, goal: false))
+        let done = StampCardItem(id: 2, name: "", currentStamps: 10, requiredStamps: 10, rewardDescription: "", imageURL: nil, milestones: milestones)
+        XCTAssertNil(StampLayout(card: done).nextReward)
+    }
+
     func testUnpaidStripeOrderDoesNotShowPickupNumber() {
         let unpaid = OrderSnapshot(id: 1, orderNumber: "202609241", totalAmount: 1200, status: "pending", paymentMethod: "stripe", createdAt: "", items: [])
         XCTAssertTrue(unpaid.isAwaitingCardPayment)

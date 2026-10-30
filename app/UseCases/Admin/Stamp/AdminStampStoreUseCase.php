@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\Stamp;
 
+use App\Models\StampCard;
 use App\Services\Admin\StampAdminService;
 
 class AdminStampStoreUseCase
@@ -14,8 +15,8 @@ class AdminStampStoreUseCase
     }
 
     /** @param array<string, mixed> $validated */
-    public function handle(int $projectId, array $validated): void
+    public function handle(int $projectId, array $validated): StampCard
     {
-        $this->stampAdminService->create($projectId, $validated);
+        return $this->stampAdminService->create($projectId, $validated);
     }
 }
