@@ -419,7 +419,7 @@ class EngagementFeaturesTest extends TestCase
             ->assertSee('data-promo-popup-preview', false);
 
         $this->post(route('admin.acquisition-sources.store', $key), ['name' => '店頭POP', 'landing_tab' => 'coupons'])->assertRedirect();
-        $html = $this->get(route('admin.acquisition-sources', $key))->assertOk()->assertSee('開く画面：クーポン')->getContent();
+        $html = $this->get(route('admin.qr-codes', $key))->assertOk()->assertSee('開く画面：クーポン')->getContent();
         $this->assertStringContainsString('tab=coupons', urldecode(html_entity_decode($html)));
     }
 
@@ -520,7 +520,7 @@ class EngagementFeaturesTest extends TestCase
         $this->get(route('admin.settings.reservations', $key))->assertOk()->assertSee('予約リマインド');
 
         $this->post(route('admin.acquisition-sources.store', $key), ['name' => 'チラシ'])->assertRedirect();
-        $this->get(route('admin.acquisition-sources', $key))->assertOk()->assertSee('チラシ')
+        $this->get(route('admin.qr-codes', $key))->assertOk()->assertSee('チラシ')
             ->assertSee('delete-form', false)->assertDontSee('confirmDialog(', false);
         // 削除の確認は共通の delete-form で出す（名前をJSの文字列に埋め込まない）
         $this->get(route('admin.promo-popups.index', $key))->assertSee('delete-form', false)->assertDontSee('confirmDialog(', false);

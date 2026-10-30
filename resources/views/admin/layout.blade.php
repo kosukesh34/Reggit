@@ -334,10 +334,6 @@
                             <i class="fas fa-chart-pie"></i>
                             <span>RFM分析</span>
                         </a>
-                        <a href="{{ admin_route('admin.acquisition-sources') }}" class="nav-item {{ request()->routeIs('admin.acquisition-sources*') ? 'active' : '' }}">
-                            <i class="fas fa-route"></i>
-                            <span>流入経路</span>
-                        </a>
                         @endif
                     </div>
                     @endif
