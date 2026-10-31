@@ -9,7 +9,7 @@ use App\Models\Order;
 use App\Models\Project;
 use App\Models\Store;
 use App\Services\OrderNumberAssigner;
-use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -28,7 +28,7 @@ class PaymentWebhookUseCase
         private OrderRepository $orderRepository,
         private PostCommitDomainEventDispatcher $postCommitEvents,
         private OrderNumberAssigner $orderNumberAssigner,
-        private OrderService $orderService,
+        private PaidOrderRewardApplier $paidOrderRewards,
     ) {}
 
     public function handle(string $payload, string $sigHeader, string $secret, ?int $projectId = null, ?int $settingId = null): bool
@@ -150,7 +150,7 @@ class PaymentWebhookUseCase
                 ->where('project_id', $aggregate->projectId())
                 ->first();
             if ($order !== null) {
-                $this->orderService->applyStripePaymentRewardsIfNeeded($order);
+                $this->paidOrderRewards->applyStripePaymentRewardsIfNeeded($order);
             }
 
             if ($confirmedEvent !== null) {

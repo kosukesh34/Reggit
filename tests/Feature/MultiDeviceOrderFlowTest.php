@@ -13,7 +13,7 @@ use App\Models\Project;
 use App\Models\StoreAppCredential;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
-use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\UseCases\Admin\Order\AdminOrderUpdateStatusUseCase;
 use App\UseCases\Payment\PaymentWebhookUseCase;
@@ -115,7 +115,7 @@ class MultiDeviceOrderFlowTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
         $this->assertTrue($webhook->handle('{}', 'sig', 'secret'));
 

@@ -158,7 +158,7 @@ DBへの保存完了、外部同期完了、通知到達は別々です。例え
 
 会員情報には残高・ランク・次ランク情報・有効期限情報・会員証デザイン・項目設定を含みます。ネイティブのホーム会員コードは登録済み会員に表示します。会員情報の取得は完全な読み取りだけではなく、外部ポイント同期や台帳整合の処理を伴う場合があります。
 
-**根拠：** [MemberService](../app/Services/MemberService.php)、[登録UseCase](../app/UseCases/Member/MemberRegisterUseCase.php)、[登録モード](../app/Enums/MemberRegistrationMode.php)、[登録回復の詳細](MEMBER_REGISTRATION_RECOVERY.md)。図：S01。
+**根拠：** [会員登録](../app/Services/Member/MemberRegistrar.php)、[登録UseCase](../app/UseCases/Member/MemberRegisterUseCase.php)、[登録モード](../app/Enums/MemberRegistrationMode.php)、[登録回復の詳細](MEMBER_REGISTRATION_RECOVERY.md)。図：S01。
 
 
 <a id="members-02"></a>

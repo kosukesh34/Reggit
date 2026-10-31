@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
-use App\Services\MemberService;
+use App\Services\Member\MemberRegistrar;
 use App\Services\UserService;
 use App\Util\AdminContext;
 use Illuminate\Http\Request;
@@ -14,7 +14,7 @@ final class ShopMemberSession
 {
     public function __construct(
         private UserService $userService,
-        private MemberService $memberService,
+        private MemberRegistrar $memberRegistrar,
     ) {}
 
     public function login(User $user, Request $request): void
@@ -22,7 +22,7 @@ final class ShopMemberSession
         Auth::guard('web')->login($user, true);
         $request->session()->regenerate();
         $this->userService->rememberUser($user, (int) $user->project_id);
-        $this->memberService->ensureMemberWhenRegistrationOptional($user);
+        $this->memberRegistrar->ensureMemberWhenRegistrationOptional($user);
         $user->forceFill(['last_login_at' => now()])->save();
     }
 

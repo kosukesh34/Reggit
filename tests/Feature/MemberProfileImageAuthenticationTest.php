@@ -7,7 +7,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\DeviceService;
-use App\Services\MemberService;
+use App\Services\Member\MemberProfileUpdater;
 use App\Services\UserService;
 use App\UseCases\Member\ClaimMemberTransferCodeUseCase;
 use App\UseCases\Member\IssueMemberTransferCodeUseCase;
@@ -55,9 +55,9 @@ class MemberProfileImageAuthenticationTest extends TestCase
         $rejected = false;
         try {
             if ($action === 'upload') {
-                app(MemberService::class)->saveProfileImage($resolved, UploadedFile::fake()->image('replacement.png'));
+                app(MemberProfileUpdater::class)->saveProfileImage($resolved, UploadedFile::fake()->image('replacement.png'));
             } else {
-                app(MemberService::class)->deleteProfileImage($resolved);
+                app(MemberProfileUpdater::class)->deleteProfileImage($resolved);
             }
         } catch (ValidationException $exception) {
             $rejected = true;
@@ -94,9 +94,9 @@ class MemberProfileImageAuthenticationTest extends TestCase
         $rejected = false;
         try {
             if ($action === 'upload') {
-                app(MemberService::class)->saveProfileImage($user, UploadedFile::fake()->image('replacement.png'));
+                app(MemberProfileUpdater::class)->saveProfileImage($user, UploadedFile::fake()->image('replacement.png'));
             } else {
-                app(MemberService::class)->deleteProfileImage($user);
+                app(MemberProfileUpdater::class)->deleteProfileImage($user);
             }
         } catch (ValidationException $exception) {
             $rejected = true;

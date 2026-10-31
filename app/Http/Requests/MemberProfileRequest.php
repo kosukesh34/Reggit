@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\ProfileValidationRules;
-use App\Services\MemberService;
+use App\Services\MemberProfileRules;
 use App\Services\UserService;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -14,15 +14,15 @@ class MemberProfileRequest extends FormRequest
         return true;
     }
 
-    public function rules(): array
+    public function rules(UserService $users, MemberProfileRules $profileRules): array
     {
-        $user = resolve(UserService::class)->getOrCreateUser($this);
+        $user = $users->getOrCreateUser($this);
         $member = $user->member;
         $projectId = $member !== null
             ? (int) $member->project_id
             : (int) ($user->project_id ?? 0);
 
-        return resolve(MemberService::class)->getProfileValidationRules($projectId);
+        return $profileRules->getProfileValidationRules($projectId);
     }
 
     public function messages(): array

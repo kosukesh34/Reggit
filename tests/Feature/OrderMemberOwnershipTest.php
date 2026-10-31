@@ -11,8 +11,8 @@ use App\Models\StampCard;
 use App\Models\User;
 use App\Services\Lottery\LotteryEntitlementService;
 use App\Services\MemberBenefitService;
+use App\Services\OrderCancellationReverser;
 use App\Services\OrderRewardService;
-use App\Services\OrderService;
 use App\Services\Stamp\MemberCurrentStampCardResolver;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -144,7 +144,7 @@ class OrderMemberOwnershipTest extends TestCase
             }
         });
 
-        app(OrderService::class)->handleOrderCancellation($order);
+        app(OrderCancellationReverser::class)->handleOrderCancellation($order);
 
         $this->assertTrue($changed);
         $this->assertSame(0, $member->fresh()->points);

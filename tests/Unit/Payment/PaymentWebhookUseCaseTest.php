@@ -12,7 +12,7 @@ use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
-use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentWebhookUseCase;
@@ -57,7 +57,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
         $this->freezeTime();
         $result = $useCase->handle('{}', 'sig', 'secret');
@@ -107,7 +107,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
@@ -153,7 +153,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
@@ -199,7 +199,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
@@ -235,7 +235,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             'amount' => 1000,
         ];
 
-        $orderService = \Mockery::mock(OrderService::class);
+        $orderService = \Mockery::mock(PaidOrderRewardApplier::class);
         $orderService->shouldReceive('applyStripePaymentRewardsIfNeeded')
             ->once()
             ->andThrow(new \RuntimeException('reward persistence failed'));

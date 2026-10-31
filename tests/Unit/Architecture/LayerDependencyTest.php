@@ -224,12 +224,12 @@ class LayerDependencyTest extends TestCase
         $source = file_get_contents($file);
 
         self::assertIsString($source);
-        self::assertStringContainsString('private readonly MemberService $memberService', $source);
+        self::assertStringContainsString('private readonly MemberDataReader $memberData', $source);
         self::assertStringContainsString(
             'private readonly MemberCardAppearanceService $memberCardAppearanceService',
             $source
         );
-        self::assertStringNotContainsString('app(MemberService::class)', $source);
+        self::assertStringNotContainsString('app(MemberDataReader::class)', $source);
         self::assertStringNotContainsString('app(MemberCardAppearanceService::class)', $source);
     }
 

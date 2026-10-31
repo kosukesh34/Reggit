@@ -14,7 +14,7 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Member\CurrentMemberPrincipal;
-use App\Services\OrderService;
+use App\Services\OrderCancellationReverser;
 use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\UnpaidOrderCancellationService;
 use App\UseCases\Payment\OrderPaymentSessionService;
@@ -53,7 +53,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $order = $this->pendingOrder($user, ['channel' => 'checkout_web', 'result' => ['id' => 'cs_fixture']]);
         $gateway = new FakePaymentGateway;
         $this->app->instance(PaymentGateway::class, $gateway);
-        $service = Mockery::mock(OrderService::class);
+        $service = Mockery::mock(OrderCancellationReverser::class);
         $service->shouldReceive('handleOrderCancellation')->once()->andReturnUsing(function () use ($gateway): void {
             $this->assertSame([['channel' => 'checkout_web', 'sessionId' => 'cs_fixture']], $gateway->cancelledSessions);
         });
@@ -71,7 +71,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $gateway = Mockery::mock(PaymentGateway::class);
         $gateway->shouldReceive('cancelUnpaidSession')->once()->with('card', 'pi_fixture')->andThrow(new \RuntimeException('Stripe rejected cancellation'));
         $this->app->instance(PaymentGateway::class, $gateway);
-        $service = Mockery::mock(OrderService::class);
+        $service = Mockery::mock(OrderCancellationReverser::class);
         $service->shouldNotReceive('handleOrderCancellation');
         try {
             (new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class)))->cancel($order->id, (int) $user->project_id, (int) $user->id);
@@ -86,7 +86,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
     {
         $user = User::factory()->create(['project_id' => Project::factory()->create()->id]);
         $order = $this->pendingOrder($user, ['channel' => 'checkout_web', 'lease' => 'fixture', 'expires_at' => now()->addMinutes(2)->toIso8601String()]);
-        $service = Mockery::mock(OrderService::class);
+        $service = Mockery::mock(OrderCancellationReverser::class);
         $service->shouldNotReceive('handleOrderCancellation');
         try {
             (new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class)))->cancel($order->id, (int) $user->project_id, (int) $user->id);
@@ -110,7 +110,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
             $this->assertSame('Network timeout', $e->getMessage());
         }
         $this->assertSame('checkout_web', $order->fresh()->payment_session['channel']);
-        $service = Mockery::mock(OrderService::class);
+        $service = Mockery::mock(OrderCancellationReverser::class);
         $service->shouldNotReceive('handleOrderCancellation');
         try {
             (new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class)))->cancel($order->id, (int) $user->project_id, (int) $user->id);
@@ -138,7 +138,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
             'order_type' => 'mobile',
         ]);
 
-        $orderService = Mockery::mock(OrderService::class);
+        $orderService = Mockery::mock(OrderCancellationReverser::class);
         $orderService->shouldReceive('handleOrderCancellation')->once();
 
         $useCase = new UnpaidOrderCancellationService(
@@ -169,7 +169,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
 
         $useCase = new UnpaidOrderCancellationService(
             app(OrderRepository::class),
-            Mockery::mock(OrderService::class),
+            Mockery::mock(OrderCancellationReverser::class),
             app(UnpaidPaymentSessionCanceller::class),
         );
 
@@ -194,7 +194,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
             'order_type' => 'mobile',
         ]);
 
-        $orderService = Mockery::mock(OrderService::class);
+        $orderService = Mockery::mock(OrderCancellationReverser::class);
         $orderService->shouldNotReceive('handleOrderCancellation');
 
         $useCase = new UnpaidOrderCancellationService(
@@ -223,8 +223,8 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         PointTransaction::create(['project_id' => $project->id, 'member_id' => $member->id, 'order_id' => $order->id, 'type' => 'used', 'points' => -20]);
         $member->recalcPointsFromTransactions();
         OrderItem::create(['order_id' => $order->id, 'product_id' => $product->id, 'quantity' => 2, 'price' => 500]);
-        $service = app(OrderService::class);
-        $failingService = Mockery::mock(OrderService::class);
+        $service = app(OrderCancellationReverser::class);
+        $failingService = Mockery::mock(OrderCancellationReverser::class);
         $failingService->shouldReceive('handleOrderCancellation')->once()->andReturnUsing(function (Order $cancelled) use ($service): void {
             $service->handleOrderCancellation($cancelled);
             throw new \RuntimeException('fixture failure after stock restoration');

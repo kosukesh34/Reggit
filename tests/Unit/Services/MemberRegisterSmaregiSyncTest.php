@@ -7,7 +7,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\CouponIssueService;
-use App\Services\MemberService;
+use App\Services\Member\MemberRegistrar;
 use App\Services\Smaregi\SmaregiApiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -61,7 +61,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $this->app->instance(SmaregiApiService::class, $smaregiApi);
         $this->app->instance(CouponIssueService::class, $couponIssue);
 
-        $member = app(MemberService::class)->registerMember($user, [
+        $member = app(MemberRegistrar::class)->registerMember($user, [
             'name' => '山田 太郎',
             'kana' => 'ヤマダ タロウ',
             'phone' => '09012345678',
@@ -118,7 +118,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $this->app->instance(SmaregiApiService::class, $smaregiApi);
         $this->app->instance(CouponIssueService::class, $couponIssue);
 
-        $member = app(MemberService::class)->registerMember($user, [
+        $member = app(MemberRegistrar::class)->registerMember($user, [
             'name' => '山田 太郎',
             'nickname' => 'たろう',
         ]);
@@ -145,7 +145,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $this->expectExceptionMessage('スマレジへの会員登録に失敗しました');
 
         try {
-            app(MemberService::class)->registerMember($user, [
+            app(MemberRegistrar::class)->registerMember($user, [
                 'name' => '山田 太郎',
                 'kana' => '山田太郎',
                 'phone' => '09012345678',
@@ -174,7 +174,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $this->app->instance(SmaregiApiService::class, $smaregiApi);
         $this->app->instance(CouponIssueService::class, $couponIssue);
 
-        $member = app(MemberService::class)->registerMember($user, [], false);
+        $member = app(MemberRegistrar::class)->registerMember($user, [], false);
 
         $this->assertNull($member->smaregi_customer_id);
         $this->assertNotSame('', trim((string) $member->member_number));
@@ -195,7 +195,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $this->app->instance(SmaregiApiService::class, $smaregiApi);
         $this->app->instance(CouponIssueService::class, $couponIssue);
 
-        $member = app(MemberService::class)->registerMember($user, [
+        $member = app(MemberRegistrar::class)->registerMember($user, [
             'name' => '山田 太郎',
         ]);
 
@@ -221,7 +221,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
         $this->app->instance(SmaregiApiService::class, $smaregiApi);
         $this->app->instance(CouponIssueService::class, $couponIssue);
 
-        $member = app(MemberService::class)->registerMember($user, [
+        $member = app(MemberRegistrar::class)->registerMember($user, [
             'name' => '山田 太郎',
         ]);
 

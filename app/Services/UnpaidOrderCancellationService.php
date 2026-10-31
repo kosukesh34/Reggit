@@ -13,7 +13,7 @@ class UnpaidOrderCancellationService
 {
     public function __construct(
         private OrderRepository $orderRepository,
-        private OrderService $orderService,
+        private OrderCancellationReverser $cancellations,
         private UnpaidPaymentSessionCanceller $paymentSessions,
     ) {}
 
@@ -45,7 +45,7 @@ class UnpaidOrderCancellationService
             $this->orderRepository->save($aggregate);
 
             $order = Order::with('items.product')->findOrFail($orderId);
-            $this->orderService->handleOrderCancellation($order);
+            $this->cancellations->handleOrderCancellation($order);
 
             return $order->refresh();
         });

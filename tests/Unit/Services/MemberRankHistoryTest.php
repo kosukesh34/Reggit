@@ -13,8 +13,8 @@ use App\Models\MemberRankHistory;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
+use App\Services\Member\MemberDataReader;
 use App\Services\MemberRankSyncService;
-use App\Services\MemberService;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -88,7 +88,7 @@ class MemberRankHistoryTest extends TestCase
         $this->grantMemberPoints($member, 150, 'ランクアップ用');
 
         app(MemberRankSyncService::class)->sync($member->fresh());
-        $data = app(MemberService::class)->getMemberData($user->fresh(['member']));
+        $data = app(MemberDataReader::class)->getMemberData($user->fresh(['member']));
 
         $this->assertTrue($data['is_member']);
         $this->assertDatabaseHas('member_rank_histories', [
@@ -125,7 +125,7 @@ class MemberRankHistoryTest extends TestCase
         ]);
         $this->grantMemberPoints($member, 150, 'ランクアップ用');
 
-        app(MemberService::class)->getMemberData($user->fresh(['member']));
+        app(MemberDataReader::class)->getMemberData($user->fresh(['member']));
 
         $this->assertSame('bronze', $member->fresh()->rank);
         $this->assertSame(0, MemberRankHistory::where('member_id', $member->id)->count());

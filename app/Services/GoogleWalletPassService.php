@@ -6,9 +6,10 @@ use App\Domain\Settings\Repositories\WalletSettings;
 use App\Enums\GoogleWalletApi;
 use App\Models\Member;
 use App\Models\User;
+use App\Services\GoogleWallet\GoogleWalletCredentials;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
+use App\Services\Member\MemberDataReader;
 use App\Util\AdminContext;
-use App\Util\StrHelper;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
@@ -24,8 +25,6 @@ use Illuminate\Support\Facades\Log;
 class GoogleWalletPassService
 {
     private const SAVE_URL_PREFIX = 'https://pay.google.com/gp/v/save/';
-
-    private const WALLET_OBJECT_SCOPE = 'https://www.googleapis.com/auth/wallet_object.issuer';
 
     private const WALLET_OBJECTS_BASE = 'https://walletobjects.googleapis.com/walletobjects/v1';
 
@@ -45,8 +44,9 @@ class GoogleWalletPassService
     public function __construct(
         private readonly GoogleWalletLoyaltyPayloadBuilder $payloadBuilder,
         private readonly WalletSettings $walletSettings,
-        private readonly MemberService $memberService,
+        private readonly MemberDataReader $memberData,
         private readonly MemberCardAppearanceService $memberCardAppearanceService,
+        private readonly GoogleWalletCredentials $credentials,
     ) {}
 
     public function getLastError(): ?string
@@ -56,7 +56,7 @@ class GoogleWalletPassService
 
     public function getServiceAccountEmail(): ?string
     {
-        $credentials = $this->loadCredentials();
+        $credentials = $this->credentials->load();
 
         return is_array($credentials) ? ($credentials['client_email'] ?? null) : null;
     }
@@ -72,7 +72,7 @@ class GoogleWalletPassService
      */
     public function createSaveUrlForUser(User $user): ?string
     {
-        $data = $this->memberService->getMemberData($user);
+        $data = $this->memberData->getMemberData($user);
         if (! $this->isValidMemberData($data)) {
             $projectId = AdminContext::getCurrentProjectId();
             Log::info('google-wallet createSaveUrlForUser: not a member or no member data', [
@@ -161,7 +161,7 @@ class GoogleWalletPassService
         ];
         $walletObject = $this->payloadBuilder->build($payloadParams)['loyaltyObject'];
 
-        $token = $this->getWalletApiAccessToken();
+        $token = $this->credentials->accessToken();
         if ($token === null) {
             return false;
         }
@@ -323,7 +323,7 @@ class GoogleWalletPassService
         $classExistsOnServer = $this->loyaltyClassExistsOnServer($classId);
         $built = $this->payloadBuilder->build($payloadParams, forSaveJwt: true);
 
-        $credentials = $this->loadCredentials();
+        $credentials = $this->credentials->load();
         if ($credentials === null) {
             return null;
         }
@@ -391,7 +391,7 @@ class GoogleWalletPassService
     /**
      * getMemberData の戻り値が会員かつ member インスタンスを持つか。
      *
-     * @param  array{is_member: bool, member?: Member, ...}  $data  MemberService::getMemberData の戻り値
+     * @param  array{is_member: bool, member?: Member, ...}  $data  MemberDataReader::getMemberData の戻り値
      */
     private function isValidMemberData(array $data): bool
     {
@@ -483,7 +483,7 @@ class GoogleWalletPassService
 
     private function loyaltyClassExistsOnServer(string $classId): bool
     {
-        $token = $this->getWalletApiAccessToken();
+        $token = $this->credentials->accessToken();
         if ($token === null) {
             return false;
         }
@@ -500,7 +500,7 @@ class GoogleWalletPassService
             return true;
         }
 
-        $token = $this->getWalletApiAccessToken();
+        $token = $this->credentials->accessToken();
         if ($token === null) {
             $this->setLastError('OAuth token request failed. credentials.json を確認してください。');
 
@@ -562,28 +562,6 @@ class GoogleWalletPassService
         return 'Google Wallet API へのアクセスが拒否されました (HTTP 403)。'
             .' サービスアカウント '.$serviceAccount.' が Issuer ID '
             .config('google_wallet.issuer_id').' に紐付いているか確認してください。';
-    }
-
-    /**
-     * サービスアカウント JSON から client_email と private_key を読む。
-     *
-     * @return array{client_email: string, private_key: string}|null
-     */
-    private function loadCredentials(): ?array
-    {
-        $path = config('google_wallet.credentials_path', '');
-        if ($path === '' || ! File::isFile($path) || ! File::isReadable($path)) {
-            return null;
-        }
-        $json = File::get($path);
-        $data = json_decode($json, true);
-        if (! is_array($data)
-            || StrHelper::isEmptyStringOrNull($data['client_email'] ?? null)
-            || StrHelper::isEmptyStringOrNull($data['private_key'] ?? null)) {
-            return null;
-        }
-
-        return $data;
     }
 
     private function resolveProgramLogoUri(?int $projectId): string
@@ -652,64 +630,12 @@ class GoogleWalletPassService
     }
 
     /**
-     * サービスアカウントで OAuth2 アクセストークンを取得する。
-     */
-    private function getWalletApiAccessToken(): ?string
-    {
-        $credentials = $this->loadCredentials();
-        if ($credentials === null) {
-            return null;
-        }
-
-        $now = time();
-        $assertion = [
-            'iss' => $credentials['client_email'],
-            'sub' => $credentials['client_email'],
-            'aud' => 'https://oauth2.googleapis.com/token',
-            'iat' => $now,
-            'exp' => $now + GoogleWalletApi::OAUTH2_TOKEN_TTL_SECONDS,
-            'scope' => self::WALLET_OBJECT_SCOPE,
-        ];
-
-        try {
-            $jwt = JWT::encode(
-                $assertion,
-                $credentials['private_key'],
-                self::JWT_ALGORITHM
-            );
-        } catch (\Throwable $e) {
-            Log::warning('google-wallet OAuth2 JWT encode failed', ['error' => $e->getMessage()]);
-
-            return null;
-        }
-
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
-            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-            'assertion' => $jwt,
-        ]);
-
-        if (! $response->successful()) {
-            Log::warning('google-wallet OAuth2 token request failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            return null;
-        }
-
-        $data = $response->json();
-        $token = $data['access_token'] ?? null;
-
-        return is_string($token) ? $token : null;
-    }
-
-    /**
      * LoyaltyClass が存在すれば true、存在しなければ REST で作成して true、失敗時は false。
      * クラスが既に存在すれば JWT で Object のみ送るため、createSaveUrl 内で毎回呼ぶ。
      */
     public function ensureLoyaltyClassExists(string $classId, string $programName, string $programLogoUri): bool
     {
-        $token = $this->getWalletApiAccessToken();
+        $token = $this->credentials->accessToken();
         if ($token === null) {
             return false;
         }

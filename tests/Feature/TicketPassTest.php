@@ -17,6 +17,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
 use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use App\Util\AdminContext;
@@ -83,7 +84,7 @@ class TicketPassTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         ))->handle('{}', 'sig', 'secret');
     }
 

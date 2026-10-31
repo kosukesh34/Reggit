@@ -13,7 +13,7 @@ use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\OrderNumberAssigner;
-use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentConfirmUseCase;
@@ -73,7 +73,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
@@ -136,7 +136,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
@@ -171,7 +171,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
@@ -205,7 +205,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
 
         $this->expectException(ModelNotFoundException::class);
@@ -222,7 +222,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
-            app(OrderService::class),
+            app(PaidOrderRewardApplier::class),
         );
 
         $this->expectException(ModelNotFoundException::class);
