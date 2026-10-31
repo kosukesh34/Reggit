@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\SystemNotice;
 use App\UseCases\Admin\Dashboard\AdminDashboardIndexUseCase;
-use Illuminate\Support\Facades\DB;
+use App\UseCases\Admin\Dashboard\AdminSystemNoticeReadUseCase;
 
 class DashboardController extends AdminBaseController
 {
@@ -15,31 +14,20 @@ class DashboardController extends AdminBaseController
         $this->dashboardIndexUseCase = $dashboardIndexUseCase;
     }
 
-    public function notice(string $project_key, int $id)
+    public function notice(string $project_key, int $id, AdminSystemNoticeReadUseCase $notices)
     {
-        $notice = SystemNotice::visible()->findOrFail($id);
-        DB::table('system_notice_reads')->updateOrInsert(
-            ['system_notice_id' => $notice->id, 'admin_user_id' => auth('admin')->id()],
-            ['read_at' => now()]
-        );
-
-        return view('admin.notice-detail', ['notice' => $notice]);
+        return view('admin.notice-detail', ['notice' => $notices->open($id, (int) auth('admin')->id())]);
     }
 
-    public function dashboard()
+    public function dashboard(AdminSystemNoticeReadUseCase $systemNotices)
     {
         $output = $this->dashboardIndexUseCase->handle();
 
-        $notices = SystemNotice::visible()->get();
-        $readNoticeIds = DB::table('system_notice_reads')
-            ->where('admin_user_id', auth('admin')->id())
-            ->whereIn('system_notice_id', $notices->pluck('id'))
-            ->pluck('system_notice_id')
-            ->all();
+        $notices = $systemNotices->visible((int) auth('admin')->id());
 
         return view('admin.dashboard', [
-            'systemNotices' => $notices,
-            'readNoticeIds' => $readNoticeIds,
+            'systemNotices' => $notices['notices'],
+            'readNoticeIds' => $notices['readIds'],
             'stats' => $output->stats,
             'recent_orders' => $output->recentOrders,
             'lineBlockTrend' => $output->lineBlockTrend,

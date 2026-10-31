@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\MemberSubscription;
-use App\Models\MemberTicket;
 use App\UseCases\Admin\Member\AdminMemberDetailUseCase;
 use App\UseCases\Admin\Member\AdminMemberEditUseCase;
+use App\UseCases\Admin\Member\AdminMemberTicketUseCase;
 use App\UseCases\Admin\MemberTag\AdminMemberTagIndexUseCase;
 use Illuminate\Http\Request;
 
@@ -15,6 +14,7 @@ class MemberController extends AdminBaseController
         private AdminMemberDetailUseCase $detailUseCase,
         private AdminMemberEditUseCase $editUseCase,
         private AdminMemberTagIndexUseCase $tagIndexUseCase,
+        private AdminMemberTicketUseCase $ticketUseCase,
     ) {}
 
     public function memberDetail(Request $request, string $project_key, int $id)
@@ -34,8 +34,7 @@ class MemberController extends AdminBaseController
         return view('admin.member-detail', [
             'view' => $output,
             'allTags' => $tags,
-            'tickets' => MemberTicket::query()->with('uses.store')->where('member_id', $output->member->id)->latest('id')->get(),
-            'subscriptions' => MemberSubscription::query()->where('member_id', $output->member->id)->latest('id')->get(),
+            ...$this->ticketUseCase->forMember((int) $output->member->id),
         ]);
     }
 

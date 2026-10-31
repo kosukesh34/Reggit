@@ -49,4 +49,23 @@ class ProjectPaymentGatewayResolver
         return Project::find($projectId)?->project_key === $defaultKey
             && filled(config('services.stripe.secret')) ? ['card', 'cash'] : ['cash'];
     }
+
+    /** 決済画面（Stripe.js）に渡す公開キー。プロジェクトの決済設定がなければ共通設定 */
+    public function publishableKey(int $projectId): string
+    {
+        return ProjectPaymentSetting::current($projectId)?->publishable_key ?? (string) config('services.stripe.key');
+    }
+
+    /** 注文作成時の決済設定の公開キー。設定なしで作られた注文は共通設定 */
+    public function publishableKeyForOrder(Order $order): ?string
+    {
+        return $order->payment_setting_id === null ? config('services.stripe.key')
+            : ProjectPaymentSetting::where('project_id', $order->project_id)->findOrFail($order->payment_setting_id)->publishable_key;
+    }
+
+    /** Webhook URL に含まれる決済設定。他プロジェクトの設定は 404 */
+    public function webhookSetting(int $projectId, int|string $settingId): ProjectPaymentSetting
+    {
+        return ProjectPaymentSetting::where('project_id', $projectId)->findOrFail($settingId);
+    }
 }
