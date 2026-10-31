@@ -1,5 +1,5 @@
 /** LIFF 固定UIシェルかどうか（/liff デモ体験用。iOS専用ではない） */
-export function isFixedUiShell(): boolean {
+function isFixedUiShell(): boolean {
     if (typeof document === 'undefined' || document.body === null) {
         return false;
     }

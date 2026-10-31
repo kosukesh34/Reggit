@@ -15,18 +15,17 @@ class ProjectPaymentGatewayResolver
             $setting = ProjectPaymentSetting::where('project_id', $order->project_id)
                 ->findOrFail($order->payment_setting_id);
 
-            // Alternative gateway implementations manage their own credentials.
-            if (! $legacy instanceof StripePaymentGateway) {
+            if (! $legacy instanceof ProjectCredentialedGateway) {
                 return $legacy;
             }
 
-            return new StripePaymentGateway($setting->secret_key, $order->payment_brand ?? 'card', [
+            return $legacy->withProjectCredentials($setting->secret_key, $order->payment_brand ?? 'card', [
                 'project_id' => (string) $order->project_id,
                 'payment_setting_id' => (string) $setting->id,
             ]);
         }
 
-        if ($legacy instanceof StripePaymentGateway) {
+        if ($legacy instanceof ProjectCredentialedGateway) {
             $defaultKey = config('app.default_project_key') ?: 'default';
             if (Project::find($order->project_id)?->project_key !== $defaultKey) {
                 throw new InvalidArgumentException('このプロジェクトの決済設定を登録してください');
