@@ -7,7 +7,7 @@ use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Models\Product;
 use App\Models\Project;
 use App\Services\Admin\CouponAdminService;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\Services\Admin\MemberTagAdminService;
 use App\Services\Admin\RfmAnalysisService;
 use App\Services\Line\LineService;
@@ -16,7 +16,7 @@ use App\UseCases\Admin\Announcement\Data\AdminAnnouncementDeliveryFormView;
 class AdminAnnouncementDeliveryFormUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberAdminQueryService $memberAdminService,
         private CouponAdminService $couponAdminService,
         private MemberTagAdminService $memberTagAdminService,
         private RfmAnalysisService $rfmAnalysisService,

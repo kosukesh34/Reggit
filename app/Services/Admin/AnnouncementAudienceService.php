@@ -16,7 +16,7 @@ class AnnouncementAudienceService
 {
     public function __construct(
         private MemberSegmentService $memberSegmentService,
-        private MemberAdminService $memberAdminService,
+        private MemberAdminQueryService $memberAdminService,
         private MemberBenefitService $memberBenefitService,
         private readonly AnnouncementStoreAudience $storeAudience,
     ) {}

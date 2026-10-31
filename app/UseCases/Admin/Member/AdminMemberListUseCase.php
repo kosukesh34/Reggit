@@ -3,16 +3,16 @@
 namespace App\UseCases\Admin\Member;
 
 use App\Services\Admin\MemberAdminListQueryService;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\UseCases\Admin\Member\Data\AdminMemberListOutput;
 
 class AdminMemberListUseCase
 {
     private const PER_PAGE = 20;
 
-    private MemberAdminService $memberAdminService;
+    private MemberAdminQueryService $memberAdminService;
 
-    public function __construct(MemberAdminService $memberAdminService, private MemberAdminListQueryService $memberList)
+    public function __construct(MemberAdminQueryService $memberAdminService, private MemberAdminListQueryService $memberList)
     {
         $this->memberAdminService = $memberAdminService;
     }

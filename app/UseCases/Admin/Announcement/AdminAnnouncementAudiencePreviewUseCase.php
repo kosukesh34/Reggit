@@ -5,7 +5,7 @@ namespace App\UseCases\Admin\Announcement;
 use App\Enums\MemberNotificationPreference;
 use App\Models\Announcement;
 use App\Models\Member;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\Services\Admin\MemberSegmentService;
 use App\Support\AdminMemberIdentifier;
 use App\Support\MemberChannel;
@@ -16,7 +16,7 @@ class AdminAnnouncementAudiencePreviewUseCase
     private const PER_PAGE = 20;
 
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberAdminQueryService $memberAdminService,
         private MemberSegmentService $memberSegmentService,
     ) {}
 

@@ -2,14 +2,14 @@
 
 namespace App\UseCases\Admin\Member;
 
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\Services\Admin\MemberHistoryQueryService;
 use App\UseCases\Admin\Member\Data\AdminMemberDetailOutput;
 
 class AdminMemberDetailUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberAdminQueryService $memberAdminService,
         private MemberHistoryQueryService $historyQueryService,
     ) {}
 
