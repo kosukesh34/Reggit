@@ -31,9 +31,8 @@ class SmaregiSyncInboundCustomerPointsJob
 
     public function handle(
         SmaregiCustomerPointsInboundSyncService $syncService,
-        ?SmaregiApiService $smaregiApi = null,
+        SmaregiApiService $smaregiApi,
     ): void {
-        $smaregiApi ??= app(SmaregiApiService::class);
         $customerIds = $this->customerIds;
         $pointsByCustomerId = $this->pointsByCustomerId;
 

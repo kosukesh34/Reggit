@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Member\CurrentMemberPrincipal;
 use App\UseCases\Payment\OrderPaymentSessionService;
 use App\UseCases\Payment\PaymentCreateCheckoutUseCase;
+use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use Tests\Support\FakePaymentGateway;
@@ -39,7 +40,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class)));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class), app(ProjectPaymentGatewayResolver::class)));
 
         $output = $useCase->handle((int) $order->id, (int) $project->id, $user);
 
@@ -71,7 +72,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
         ]];
         $order->save();
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class)));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class), app(ProjectPaymentGatewayResolver::class)));
 
         $output = $useCase->handle((int) $order->id, (int) $project->id, $user);
 
@@ -96,7 +97,7 @@ class PaymentCreateCheckoutUseCaseTest extends TestCase
             'order_type' => OrderType::MOBILE,
         ]);
         $gateway = new FakePaymentGateway;
-        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class)));
+        $useCase = new PaymentCreateCheckoutUseCase(new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class), app(ProjectPaymentGatewayResolver::class)));
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('未決済の注文のみ決済できます');

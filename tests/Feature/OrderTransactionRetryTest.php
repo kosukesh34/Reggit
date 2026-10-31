@@ -21,6 +21,7 @@ use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
 use App\Services\Smaregi\SmaregiPointsSyncService;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\UseCases\Payment\PaymentWebhookUseCase;
+use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use App\Util\AdminContext;
 use App\Util\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -150,9 +151,9 @@ class OrderTransactionRetryTest extends TestCase
         $dispatcher->shouldReceive('dispatch');
         $events = app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]);
         $webhook = new PaymentWebhookUseCase($gateway, app(OrderRepository::class),
-            $events, app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class));
+            $events, app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class), app(StoreContext::class));
         $confirm = new PaymentConfirmUseCase($gateway, app(OrderRepository::class),
-            $events, app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class));
+            $events, app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class), app(ProjectPaymentGatewayResolver::class));
         $webhook->handle('{}', 'sig', 'secret');
         $due = $order->refresh()->smaregi_create_retry_at;
         $this->assertSame(now()->addSeconds(20)->toDateTimeString(), $due->toDateTimeString());
@@ -180,7 +181,7 @@ class OrderTransactionRetryTest extends TestCase
         $this->mock(OrderNotificationService::class)->shouldNotReceive('notifyConfirmed');
         $confirm = new PaymentConfirmUseCase($gateway, app(OrderRepository::class),
             app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class),
-            app(PaidOrderRewardApplier::class));
+            app(PaidOrderRewardApplier::class), app(ProjectPaymentGatewayResolver::class));
         DB::beginTransaction();
         try {
             $this->assertTrue($confirm->handle('pi_test', (int) $order->id, (int) $order->project_id, (int) $order->user_id)->isSuccess);
@@ -202,7 +203,7 @@ class OrderTransactionRetryTest extends TestCase
             'metadata' => ['order_id' => $order->id], 'amount' => 1000];
         $this->mock(OrderNotificationService::class)->shouldNotReceive('notifyConfirmed');
         $webhook = new PaymentWebhookUseCase($gateway, app(OrderRepository::class),
-            app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class));
+            app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class), app(StoreContext::class));
         DB::beginTransaction();
         try {
             $this->assertTrue($webhook->handle('{}', 'sig', 'secret'));

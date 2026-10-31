@@ -23,11 +23,11 @@ class SystemNoticeController extends Controller
         return $data;
     }
 
-    public function preview(Request $request)
+    public function preview(Request $request, NoticeMarkdown $markdown)
     {
         $data = $request->validate(['body' => 'nullable|string|max:20000']);
 
-        return response()->json(['html' => app(NoticeMarkdown::class)->toHtml($data['body'] ?? '')]);
+        return response()->json(['html' => $markdown->toHtml($data['body'] ?? '')]);
     }
 
     public function store(Request $request)

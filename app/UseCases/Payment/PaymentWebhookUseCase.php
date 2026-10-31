@@ -29,6 +29,7 @@ class PaymentWebhookUseCase
         private PostCommitDomainEventDispatcher $postCommitEvents,
         private OrderNumberAssigner $orderNumberAssigner,
         private PaidOrderRewardApplier $paidOrderRewards,
+        private StoreContext $storeContext,
     ) {}
 
     public function handle(string $payload, string $sigHeader, string $secret, ?int $projectId = null, ?int $settingId = null): bool
@@ -54,7 +55,7 @@ class PaymentWebhookUseCase
             // Use the order's store, not a webhook query/header selection, for rewards and notifications.
             $store = Store::where('project_id', $order->project_id)->findOrFail($order->store_id);
 
-            return app(StoreContext::class)->runForStore($store,
+            return $this->storeContext->runForStore($store,
                 fn () => $this->processEvent($event, $projectId, $settingId));
         } finally {
             AdminContext::setCurrentProject($previousProject);
@@ -178,12 +179,12 @@ class PaymentWebhookUseCase
         if ($shouldDelaySmaregiSync) {
             $syncAt = now()->addSeconds(self::SMAREGI_SYNC_DELAY_SECONDS);
             $project = AdminContext::getCurrentProject();
-            $storeContext = clone app(StoreContext::class);
+            $storeContext = clone $this->storeContext;
             DB::afterCommit(function () use ($syncOrderId, $syncProjectId, $syncUserId, $syncAt, $project, $storeContext): void {
                 $previousProject = AdminContext::getCurrentProject();
                 AdminContext::setCurrentProject($project);
                 try {
-                    app(StoreContext::class)->runWithContext($storeContext, function () use ($syncOrderId, $syncProjectId, $syncUserId, $syncAt): void {
+                    $this->storeContext->runWithContext($storeContext, function () use ($syncOrderId, $syncProjectId, $syncUserId, $syncAt): void {
                         SyncOrderPointsToSmaregiJob::dispatch($syncOrderId, $syncProjectId, $syncUserId)->delay($syncAt);
                     });
                 } finally {

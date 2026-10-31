@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
 
 class StoreAppCredentialController extends AdminBaseController
 {
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, StoreContext $storeContext): RedirectResponse
     {
         $data = $request->validate(['app' => ['required', Rule::in(['kitchen', 'waiting'])]]);
         /** @var AdminUser $admin */
@@ -23,10 +23,10 @@ class StoreAppCredentialController extends AdminBaseController
         abort_unless(! $admin->isStaff() && $admin->canAccessProject($projectId), 403);
 
         $plainToken = Str::upper(Str::random(8).'-'.Str::random(8).'-'.Str::random(8));
-        DB::transaction(function () use ($admin, $projectId, $data, $plainToken): void {
+        DB::transaction(function () use ($admin, $projectId, $data, $plainToken, $storeContext): void {
             $credential = StoreAppCredential::query()->firstOrNew([
                 'project_id' => $projectId,
-                'store_id' => app(StoreContext::class)->resolveForWrite($projectId),
+                'store_id' => $storeContext->resolveForWrite($projectId),
                 'app' => $data['app'],
             ]);
             if ($credential->personal_access_token_id !== null) {

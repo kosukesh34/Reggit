@@ -59,10 +59,9 @@ class StoreController extends AdminBaseController
         return back()->with('success', '利用する店舗を更新しました。');
     }
 
-    public function select(Request $request)
+    public function select(Request $request, StoreContext $context)
     {
         $request->validate(['store_id' => ['required']]);
-        $context = app(StoreContext::class);
         $context->bind($request, $this->resolveAdminProjectId(), $request->user('admin'));
         session(["admin_store.{$context->projectId}" => $request->input('store_id')]);
 

@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class AnnouncementMarkReadUseCase
 {
-    public function __construct(private CurrentMemberPrincipal $principals) {}
+    public function __construct(
+        private CurrentMemberPrincipal $principals,
+        private AnnouncementVisibility $visibility,
+    ) {}
 
     /** @return array{announcement_id: int, read_at: string} */
     public function handle(AnnouncementMarkReadInput $input): array
@@ -29,7 +32,7 @@ class AnnouncementMarkReadUseCase
         if ($user === null) {
             throw ValidationException::withMessages(['user' => ['ログインし直してください']]);
         }
-        $announcement = app(AnnouncementVisibility::class)->apply(Announcement::where('project_id', $projectId), $user)
+        $announcement = $this->visibility->apply(Announcement::where('project_id', $projectId), $user)
             ->where('id', $input->announcementId)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())

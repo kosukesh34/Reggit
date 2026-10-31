@@ -26,7 +26,9 @@ use App\Models\UserDevice;
 use App\Services\Admin\AnnouncementAdminService;
 use App\Services\Admin\PublicImageStorageService;
 use App\Services\AnnouncementNotificationService;
+use App\Services\AnnouncementStoreAudience;
 use App\Services\PushNotificationService;
+use App\Util\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
@@ -513,6 +515,8 @@ class AdminAnnouncementsTest extends TestCase
         $job->handle(
             app(AnnouncementNotificationService::class),
             app(AnnouncementAdminService::class),
+            app(TenantContext::class),
+            app(AnnouncementStoreAudience::class),
         );
 
         $announcement->refresh();
@@ -562,6 +566,8 @@ class AdminAnnouncementsTest extends TestCase
         $job->handle(
             app(AnnouncementNotificationService::class),
             app(AnnouncementAdminService::class),
+            app(TenantContext::class),
+            app(AnnouncementStoreAudience::class),
         );
 
         $announcement->refresh();
@@ -590,10 +596,14 @@ class AdminAnnouncementsTest extends TestCase
         $job->handle(
             app(AnnouncementNotificationService::class),
             app(AnnouncementAdminService::class),
+            app(TenantContext::class),
+            app(AnnouncementStoreAudience::class),
         );
         $job->handle(
             app(AnnouncementNotificationService::class),
             app(AnnouncementAdminService::class),
+            app(TenantContext::class),
+            app(AnnouncementStoreAudience::class),
         );
 
         $announcement->refresh();
@@ -639,6 +649,8 @@ class AdminAnnouncementsTest extends TestCase
         (new SendScheduledAnnouncementJob($announcement->id))->handle(
             app(AnnouncementNotificationService::class),
             app(AnnouncementAdminService::class),
+            app(TenantContext::class),
+            app(AnnouncementStoreAudience::class),
         );
 
         $this->assertSame(Announcement::DELIVERY_STATUS_SENT, $sentStatus);

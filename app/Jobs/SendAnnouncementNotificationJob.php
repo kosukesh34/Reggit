@@ -24,7 +24,7 @@ class SendAnnouncementNotificationJob implements ShouldQueue
 
     public function __construct(public int $announcementId) {}
 
-    public function handle(AnnouncementNotificationService $notifications): void
+    public function handle(AnnouncementNotificationService $notifications, TenantContext $tenants): void
     {
         // Persist a lease before network I/O. A stopped worker becomes retryable
         // after five minutes, including when no queue message survives.
@@ -47,7 +47,7 @@ class SendAnnouncementNotificationJob implements ShouldQueue
 
         try {
             $project = Project::query()->findOrFail($announcement->project_id);
-            $result = app(TenantContext::class)->runForProject(
+            $result = $tenants->runForProject(
                 $project,
                 fn (): array => $notifications->send($announcement),
             );

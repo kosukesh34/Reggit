@@ -20,6 +20,7 @@ use App\Services\Admin\AnnouncementAdminService;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberBenefitService;
 use App\Services\AnnouncementNotificationService;
+use App\Services\AnnouncementStoreAudience;
 use App\Services\ScheduledDeliverySendService;
 use App\Util\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,6 +56,8 @@ class DeliveryRetryTest extends TestCase
         try {
             (new SendScheduledAnnouncementJob($announcement->id))->handle(
                 $notifications, app(AnnouncementAdminService::class),
+                app(TenantContext::class),
+                app(AnnouncementStoreAudience::class),
             );
             $this->fail('Notification failure must reach the queue worker.');
         } catch (\RuntimeException $exception) {
@@ -70,8 +73,8 @@ class DeliveryRetryTest extends TestCase
         $notifications = Mockery::mock(AnnouncementNotificationService::class);
         $notifications->shouldReceive('send')->once()->andReturn(['failed' => 0, 'line_failed' => 0]);
         $job = new SendAnnouncementNotificationJob($announcement->id);
-        $job->handle($notifications);
-        $job->handle($notifications);
+        $job->handle($notifications, app(TenantContext::class));
+        $job->handle($notifications, app(TenantContext::class));
 
         $announcement->refresh();
         $this->assertFalse($announcement->notification_pending);
@@ -93,7 +96,7 @@ class DeliveryRetryTest extends TestCase
             return ['failed' => 0, 'line_failed' => 0];
         });
 
-        (new SendAnnouncementNotificationJob($announcement->id))->handle($notifications);
+        (new SendAnnouncementNotificationJob($announcement->id))->handle($notifications, app(TenantContext::class));
 
         $this->assertSame($caller->id, $context->projectId());
         $this->assertFalse(Announcement::withoutGlobalScopes()->findOrFail($announcement->id)->notification_pending);
@@ -112,7 +115,7 @@ class DeliveryRetryTest extends TestCase
         });
 
         try {
-            (new SendAnnouncementNotificationJob($announcement->id))->handle($notifications);
+            (new SendAnnouncementNotificationJob($announcement->id))->handle($notifications, app(TenantContext::class));
             $this->fail('Provider failures must reach the worker.');
         } catch (\RuntimeException $exception) {
             $this->assertSame('Provider unavailable', $exception->getMessage());
@@ -141,6 +144,7 @@ class DeliveryRetryTest extends TestCase
 
         (new SendScheduledCouponDeliveryJob($delivery->id))->handle(
             app(MemberBenefitService::class), app(CouponDeliveryTargetService::class),
+            app(TenantContext::class),
         );
 
         $this->assertSame($caller->id, $context->projectId());
@@ -167,6 +171,8 @@ class DeliveryRetryTest extends TestCase
 
         (new SendScheduledAnnouncementJob($announcement->id))->handle(
             $notifications, app(AnnouncementAdminService::class),
+            app(TenantContext::class),
+            app(AnnouncementStoreAudience::class),
         );
 
         $this->assertSame($caller->id, $context->projectId());
@@ -181,7 +187,7 @@ class DeliveryRetryTest extends TestCase
         $notifications = Mockery::mock(AnnouncementNotificationService::class);
         $notifications->shouldReceive('send')->once()->andReturn(['failed' => 0, 'line_failed' => 1]);
         try {
-            (new SendAnnouncementNotificationJob($announcement->id))->handle($notifications);
+            (new SendAnnouncementNotificationJob($announcement->id))->handle($notifications, app(TenantContext::class));
             $this->fail('Partial delivery must remain retryable.');
         } catch (\RuntimeException) {
             $this->assertTrue($announcement->fresh()->notification_pending);
@@ -213,7 +219,7 @@ class DeliveryRetryTest extends TestCase
         $this->mock(AnnouncementNotificationService::class, function ($mock): void {
             $mock->shouldReceive('send')->once()->andReturn(['failed' => 0, 'line_failed' => 0]);
         });
-        (new SendAnnouncementNotificationJob($announcement->id))->handle(app(AnnouncementNotificationService::class));
+        (new SendAnnouncementNotificationJob($announcement->id))->handle(app(AnnouncementNotificationService::class), app(TenantContext::class));
 
         $this->assertFalse($announcement->fresh()->notification_pending);
         $this->assertSame(1, MemberCoupon::where('member_id', $member->id)->where('coupon_id', $coupon->id)->count());
@@ -226,11 +232,11 @@ class DeliveryRetryTest extends TestCase
         $notifications = Mockery::mock(AnnouncementNotificationService::class);
         $notifications->shouldReceive('send')->once()->andReturn(['failed' => 0, 'line_failed' => 0]);
         $job = new SendAnnouncementNotificationJob($announcement->id);
-        $job->handle($notifications);
+        $job->handle($notifications, app(TenantContext::class));
         $this->assertTrue($announcement->fresh()->notification_pending);
 
         $this->travel(301)->seconds();
-        $job->handle($notifications);
+        $job->handle($notifications, app(TenantContext::class));
         $this->assertFalse($announcement->fresh()->notification_pending);
     }
 
@@ -243,14 +249,14 @@ class DeliveryRetryTest extends TestCase
         $stale->shouldReceive('send')->once()->andReturnUsing(function () use ($announcement, $replacement): array {
             $this->travel(301)->seconds();
             try {
-                (new SendAnnouncementNotificationJob($announcement->id))->handle($replacement);
+                (new SendAnnouncementNotificationJob($announcement->id))->handle($replacement, app(TenantContext::class));
             } catch (\RuntimeException $exception) {
                 $this->assertSame('Replacement failed', $exception->getMessage());
             }
 
             return ['failed' => 0, 'line_failed' => 0];
         });
-        (new SendAnnouncementNotificationJob($announcement->id))->handle($stale);
+        (new SendAnnouncementNotificationJob($announcement->id))->handle($stale, app(TenantContext::class));
         $this->assertTrue($announcement->fresh()->notification_pending);
         $this->assertSame(now()->addMinute()->toDateTimeString(), $announcement->fresh()->notification_retry_at->toDateTimeString());
     }
@@ -281,6 +287,8 @@ class DeliveryRetryTest extends TestCase
         $notifications->shouldNotReceive('send');
         (new SendScheduledAnnouncementJob($announcement->id))->handle(
             $notifications, app(AnnouncementAdminService::class),
+            app(TenantContext::class),
+            app(AnnouncementStoreAudience::class),
         );
 
         $this->assertFalse($announcement->fresh()->notification_pending);
@@ -320,7 +328,7 @@ class DeliveryRetryTest extends TestCase
 
         $job = new SendScheduledCouponDeliveryJob($delivery->id);
         try {
-            $job->handle($benefits, app(CouponDeliveryTargetService::class));
+            $job->handle($benefits, app(CouponDeliveryTargetService::class), app(TenantContext::class));
             $this->fail('Batch failure must reach the queue worker.');
         } catch (\RuntimeException $exception) {
             $this->assertSame('Batch interrupted', $exception->getMessage());
@@ -330,7 +338,7 @@ class DeliveryRetryTest extends TestCase
         $this->assertSame(CouponDeliveryStatus::SCHEDULED, $delivery->fresh()->status);
         $this->assertNotContains(SendCouponIssuedNotificationJob::class, $dispatched);
 
-        $job->handle(app(MemberBenefitService::class), app(CouponDeliveryTargetService::class));
+        $job->handle(app(MemberBenefitService::class), app(CouponDeliveryTargetService::class), app(TenantContext::class));
         $this->assertSame(CouponDeliveryStatus::SENT, $delivery->fresh()->status);
         $this->assertSame(1, MemberCoupon::where('member_id', $member->id)->where('coupon_id', $coupon->id)->count());
         $this->assertContains(SendCouponIssuedNotificationJob::class, $dispatched);

@@ -21,6 +21,7 @@ class PaymentConfirmCheckoutController extends Controller
         private PaymentConfirmUseCase $confirmUseCase,
         private UserService $userService,
         private OrderFactory $orderFactory,
+        private ProjectPaymentGatewayResolver $gateways,
     ) {}
 
     public function __invoke(Request $request)
@@ -43,7 +44,7 @@ class PaymentConfirmCheckoutController extends Controller
         }
 
         try {
-            $gateway = app(ProjectPaymentGatewayResolver::class)->forOrder($order, $this->gateway);
+            $gateway = $this->gateways->forOrder($order, $this->gateway);
             $paymentIntentId = $sessionId;
             if (in_array($order->payment_session['channel'], ['checkout', 'checkout_web'], true)) {
                 $session = $gateway->retrieveCheckoutSession($sessionId);

@@ -17,6 +17,7 @@ class ReservationUpdateUseCase
     public function __construct(
         private ReservationService $reservationService,
         private ReservationAvailabilityService $availabilityService,
+        private StoreContext $storeContext,
     ) {}
 
     public function handle(ReservationUpdateInput $input): ReservationActionOutput
@@ -37,7 +38,7 @@ class ReservationUpdateUseCase
                 || $user->member()->where('project_id', $projectId)->lockForUpdate()->first() === null) {
                 return new ReservationActionOutput(true, null, null);
             }
-            $storeId = app(StoreContext::class)->resolveForWrite($projectId);
+            $storeId = $this->storeContext->resolveForWrite($projectId);
             // An existing store row serializes capacity checks, including empty slots.
             Store::where('project_id', $projectId)->whereKey($storeId)->lockForUpdate()->firstOrFail();
 

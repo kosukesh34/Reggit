@@ -23,12 +23,13 @@ class PaymentConfirmUseCase
         private PostCommitDomainEventDispatcher $postCommitEvents,
         private OrderNumberAssigner $orderNumberAssigner,
         private PaidOrderRewardApplier $paidOrderRewards,
+        private ProjectPaymentGatewayResolver $gateways,
     ) {}
 
     public function handle(string $paymentIntentId, int $orderId, int $projectId, int $userId): PaymentConfirmOutput
     {
         $paymentOrder = Order::where('project_id', $projectId)->where('user_id', $userId)->findOrFail($orderId);
-        $gateway = app(ProjectPaymentGatewayResolver::class)->forOrder($paymentOrder, $this->gateway);
+        $gateway = $this->gateways->forOrder($paymentOrder, $this->gateway);
         $intent = $gateway->retrievePaymentIntent($paymentIntentId);
         if (($intent['currency'] ?? '') !== 'jpy') {
             return new PaymentConfirmOutput(false, '決済通貨が注文と一致しません', (string) ($intent['status'] ?? ''), null);

@@ -50,7 +50,7 @@ class AnnouncementController extends AdminBaseController
         return view('admin.announcements.edit', compact('announcement'));
     }
 
-    public function updateAnnouncement(AnnouncementUpdateRequest $request, string $projectKey, int $id)
+    public function updateAnnouncement(AnnouncementUpdateRequest $request, string $projectKey, int $id, AnnouncementImageStorage $images)
     {
         $projectId = $this->resolveAdminProjectId();
         $validated = $request->validated();
@@ -69,7 +69,7 @@ class AnnouncementController extends AdminBaseController
         }
         if ($request->hasFile('image_files')) {
             $validated['image_paths'] = array_map(
-                fn (UploadedFile $file) => app(AnnouncementImageStorage::class)->store($file, $projectId),
+                fn (UploadedFile $file) => $images->store($file, $projectId),
                 array_values($request->file('image_files')),
             );
             $validated['private_image_path'] = null;

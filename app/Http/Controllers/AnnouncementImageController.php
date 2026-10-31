@@ -11,12 +11,12 @@ use Illuminate\Support\Facades\Storage;
 
 class AnnouncementImageController extends Controller
 {
-    public function __invoke(Request $request, int $id)
+    public function __invoke(Request $request, int $id, AnnouncementVisibility $visibility, UserService $users)
     {
         $query = Announcement::where('project_id', AdminContext::requireCurrentProjectId());
         $admin = $request->user('admin');
         if ($admin === null || ! $admin->canAccessProject(AdminContext::requireCurrentProjectId())) {
-            $query = app(AnnouncementVisibility::class)->apply($query, app(UserService::class)->findUser($request));
+            $query = $visibility->apply($query, $users->findUser($request));
             $query->whereNotNull('published_at')->where('published_at', '<=', now())
                 ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()));
         } elseif (! $admin->isSystemAdmin() && ! $admin->isProjectAdmin()) {
