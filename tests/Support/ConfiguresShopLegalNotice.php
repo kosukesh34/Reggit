@@ -18,6 +18,6 @@ trait ConfiguresShopLegalNotice
 
     protected function completeShopLegalNotice(int $projectId): void
     {
-        ShopSettingStore::setValue('shop_legal_notice', $this->shopLegalNotice(), 'json', $projectId);
+        app(ShopSettingStore::class)->setValue('shop_legal_notice', $this->shopLegalNotice(), 'json', $projectId);
     }
 }

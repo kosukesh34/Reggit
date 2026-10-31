@@ -149,7 +149,7 @@ class SmaregiApiIntegrationTest extends TestCase
     public function test_integration_d_bの会員番号とスマレジの会員コードが一致すること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', $this->contractId, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', $this->contractId, 'string', (int) $project->id);
 
         $code = 'DC'.date('YmdHis');
         $user = User::factory()->create(['project_id' => $project->id]);

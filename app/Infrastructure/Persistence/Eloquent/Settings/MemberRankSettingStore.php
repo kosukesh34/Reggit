@@ -8,27 +8,31 @@ use App\Util\StrHelper;
 /** ポイント・スタンプの付与率と会員ランクの設定。 */
 class MemberRankSettingStore
 {
-    public static function getPointEarnRate(?int $projectId = null): int
+    public function __construct(
+        private ShopSettingStore $values,
+    ) {}
+
+    public function getPointEarnRate(?int $projectId = null): int
     {
-        return (int) ShopSettingStore::getValue('point_earn_rate', 100, $projectId);
+        return (int) $this->values->getValue('point_earn_rate', 100, $projectId);
     }
 
     /** 注文ごとの固定ポイント（0で無効） */
-    public static function getPointsPerOrder(?int $projectId = null): int
+    public function getPointsPerOrder(?int $projectId = null): int
     {
-        return (int) ShopSettingStore::getValue('points_per_order', 0, $projectId);
+        return (int) $this->values->getValue('points_per_order', 0, $projectId);
     }
 
     /** スタンプ1個付与につき何円か（0で無効）。例: 1000 = 1000円で1スタンプ */
-    public static function getStampEarnPerAmount(?int $projectId = null): int
+    public function getStampEarnPerAmount(?int $projectId = null): int
     {
-        return (int) ShopSettingStore::getValue('stamp_earn_per_amount', 0, $projectId);
+        return (int) $this->values->getValue('stamp_earn_per_amount', 0, $projectId);
     }
 
     /** 注文時にスタンプを付与するスタンプカードID（nullで付与しない） */
-    public static function getOrderStampCardId(?int $projectId = null): ?int
+    public function getOrderStampCardId(?int $projectId = null): ?int
     {
-        $v = ShopSettingStore::getValue('order_stamp_card_id', null, $projectId);
+        $v = $this->values->getValue('order_stamp_card_id', null, $projectId);
         if ($v === null || $v === '') {
             return null;
         }
@@ -37,53 +41,53 @@ class MemberRankSettingStore
         return $id > 0 ? $id : null;
     }
 
-    public static function getPointsValidDays(?int $projectId = null): int
+    public function getPointsValidDays(?int $projectId = null): int
     {
-        return (int) ShopSettingStore::getValue('points_valid_days', 365, $projectId);
+        return (int) $this->values->getValue('points_valid_days', 365, $projectId);
     }
 
-    public static function getRankBasis(?int $projectId = null): string
+    public function getRankBasis(?int $projectId = null): string
     {
-        return (string) ShopSettingStore::getValue('member_rank_basis', 'points', $projectId);
+        return (string) $this->values->getValue('member_rank_basis', 'points', $projectId);
     }
 
-    public static function getUseStamps(?int $projectId = null): bool
+    public function getUseStamps(?int $projectId = null): bool
     {
-        return (bool) ShopSettingStore::getValue('use_stamps', true, $projectId);
+        return (bool) $this->values->getValue('use_stamps', true, $projectId);
     }
 
-    public static function getUseTransactionStamps(?int $projectId = null): bool
+    public function getUseTransactionStamps(?int $projectId = null): bool
     {
-        return self::getUseStamps($projectId) && (bool) ShopSettingStore::getValue('use_transaction_stamps', true, $projectId);
+        return $this->getUseStamps($projectId) && (bool) $this->values->getValue('use_transaction_stamps', true, $projectId);
     }
 
-    public static function getUsePoints(?int $projectId = null): bool
+    public function getUsePoints(?int $projectId = null): bool
     {
-        return (bool) ShopSettingStore::getValue('use_points', true, $projectId);
+        return (bool) $this->values->getValue('use_points', true, $projectId);
     }
 
-    public static function getRankAggregationType(?int $projectId = null): string
+    public function getRankAggregationType(?int $projectId = null): string
     {
-        return RankAggregationType::normalize((string) ShopSettingStore::getValue('member_rank_aggregation_type', RankAggregationType::TOTAL, $projectId));
+        return RankAggregationType::normalize((string) $this->values->getValue('member_rank_aggregation_type', RankAggregationType::TOTAL, $projectId));
     }
 
-    public static function getRankPeriodDays(?int $projectId = null): int
+    public function getRankPeriodDays(?int $projectId = null): int
     {
-        $days = (int) ShopSettingStore::getValue('member_rank_period_days', 365, $projectId);
+        $days = (int) $this->values->getValue('member_rank_period_days', 365, $projectId);
 
         return $days > 0 ? $days : 365;
     }
 
-    public static function getIsRankDownEnabled(?int $projectId = null): bool
+    public function getIsRankDownEnabled(?int $projectId = null): bool
     {
-        return (bool) ShopSettingStore::getValue('is_rank_down_enabled', false, $projectId);
+        return (bool) $this->values->getValue('is_rank_down_enabled', false, $projectId);
     }
 
-    public static function getMemberRankSettings(?int $projectId = null): array
+    public function getMemberRankSettings(?int $projectId = null): array
     {
-        $settings = ShopSettingStore::getValue('member_rank_settings', null, $projectId);
+        $settings = $this->values->getValue('member_rank_settings', null, $projectId);
         if (! is_array($settings) || $settings === []) {
-            return self::defaultMemberRankSettings();
+            return $this->defaultMemberRankSettings();
         }
         $normalized = [];
         foreach ($settings as $row) {
@@ -115,7 +119,7 @@ class MemberRankSettingStore
             ];
         }
         if ($normalized === []) {
-            return self::defaultMemberRankSettings();
+            return $this->defaultMemberRankSettings();
         }
         usort($normalized, fn ($a, $b) => ($a['min_points'] <=> $b['min_points']) ?: ($a['order'] <=> $b['order']));
 
@@ -125,13 +129,13 @@ class MemberRankSettingStore
     /**
      * ランク別の付与レート（円/1pt）。未設定時はプロジェクト全体のデフォルトを返す。
      */
-    public static function getPointEarnRateForRank(?int $projectId, ?string $rankKey): int
+    public function getPointEarnRateForRank(?int $projectId, ?string $rankKey): int
     {
-        $default = self::getPointEarnRate($projectId);
+        $default = $this->getPointEarnRate($projectId);
         if ($rankKey === null || $rankKey === '') {
             return $default;
         }
-        foreach (self::getMemberRankSettings($projectId) as $rank) {
+        foreach ($this->getMemberRankSettings($projectId) as $rank) {
             if ((string) ($rank['key'] ?? '') !== $rankKey) {
                 continue;
             }
@@ -149,13 +153,13 @@ class MemberRankSettingStore
     /**
      * ランク別のスタンプ付与レート（円/1スタンプ）。未設定時はプロジェクト全体のデフォルト。0 は付与しない。
      */
-    public static function getStampEarnPerAmountForRank(?int $projectId, ?string $rankKey): int
+    public function getStampEarnPerAmountForRank(?int $projectId, ?string $rankKey): int
     {
-        $default = self::getStampEarnPerAmount($projectId);
+        $default = $this->getStampEarnPerAmount($projectId);
         if ($rankKey === null || $rankKey === '') {
             return $default;
         }
-        foreach (self::getMemberRankSettings($projectId) as $rank) {
+        foreach ($this->getMemberRankSettings($projectId) as $rank) {
             if ((string) ($rank['key'] ?? '') !== $rankKey) {
                 continue;
             }
@@ -169,12 +173,12 @@ class MemberRankSettingStore
         return $default;
     }
 
-    public static function setMemberRankSettings(array $settings, ?int $projectId = null): void
+    public function setMemberRankSettings(array $settings, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('member_rank_settings', $settings, 'json', $projectId);
+        $this->values->setValue('member_rank_settings', $settings, 'json', $projectId);
     }
 
-    public static function defaultMemberRankSettings(): array
+    public function defaultMemberRankSettings(): array
     {
         return [
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'card_color' => '#cd7f32', 'order' => 1, 'point_earn_rate' => null, 'stamp_earn_per_amount' => null, 'smaregi_rank_id' => null],

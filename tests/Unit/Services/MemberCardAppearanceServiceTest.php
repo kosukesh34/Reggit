@@ -48,13 +48,13 @@ class MemberCardAppearanceServiceTest extends TestCase
         ]);
 
         if ($rankKey === 'gold') {
-            MemberRankSettingStore::setMemberRankSettings([
+            app(MemberRankSettingStore::class)->setMemberRankSettings([
                 ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'order' => 1, 'card_color' => '#cd7f32'],
                 ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1000, 'is_active' => true, 'order' => 2, 'card_color' => '#d97706'],
             ], (int) $project->id);
             $this->grantMemberPoints($member, 1200, 'test');
         } else {
-            MemberRankSettingStore::setMemberRankSettings([
+            app(MemberRankSettingStore::class)->setMemberRankSettings([
                 ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'is_active' => true, 'order' => 1],
             ], (int) $project->id);
             $this->grantMemberPoints($member, 100, 'test');

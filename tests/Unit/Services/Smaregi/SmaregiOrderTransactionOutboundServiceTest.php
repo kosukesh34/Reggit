@@ -33,9 +33,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_store_id', '1', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_terminal_id', '1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_store_id', '1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_terminal_id', '1', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -88,9 +88,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -156,9 +156,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -225,9 +225,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -299,9 +299,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
         Queue::fake();
 
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -354,9 +354,9 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
     public function test_stripe未決済は取引登録しないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_store_id', '10', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_store_id', '10', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_terminal_id', '20', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,

@@ -114,8 +114,8 @@ class ReviewFixRegressionTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('reservation_time_slots', ['11:00', '12:00'], 'json', $project->id);
-        ShopSettingStore::setValue('reservation_capacity_per_slot', 2, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('reservation_time_slots', ['11:00', '12:00'], 'json', $project->id);
+        app(ShopSettingStore::class)->setValue('reservation_capacity_per_slot', 2, 'integer', $project->id);
         $day = now()->addDay()->startOfDay();
         foreach ([['11:00', 'pending'], ['11:00', 'cancelled'], ['11:00', 'completed'], ['12:00', 'confirmed']] as [$time, $status]) {
             Reservation::factory()->create(['project_id' => $project->id, 'reserved_at' => $day->format('Y-m-d').' '.$time, 'status' => $status]);

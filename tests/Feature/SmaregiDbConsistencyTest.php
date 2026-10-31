@@ -36,7 +36,7 @@ class SmaregiDbConsistencyTest extends TestCase
     public function test_get_customers_d_bの会員番号とスマレジ会員コードが一致すること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -82,7 +82,7 @@ class SmaregiDbConsistencyTest extends TestCase
     public function test_create_customer_登録した会員コードと_d_b会員番号が一致すること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $codeToUse = 'MATCH002';
         $this->fakeSmaregiHttp([
@@ -144,7 +144,7 @@ class SmaregiDbConsistencyTest extends TestCase
     public function test_get_customers_複数会員を会員コードで突き合わせられること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user1 = User::factory()->create(['project_id' => $project->id]);
         $user2 = User::factory()->create(['project_id' => $project->id]);

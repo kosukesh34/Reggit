@@ -78,8 +78,8 @@ class StampGrantTest extends TestCase
     {
         [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
         $member->update(['rank' => 'bronze']);
-        ShopSettingStore::setValue('member_rank_basis', 'stamps', 'string', (int) $project->id);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(ShopSettingStore::class)->setValue('member_rank_basis', 'stamps', 'string', (int) $project->id);
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);
@@ -94,7 +94,7 @@ class StampGrantTest extends TestCase
     public function test_スタンプ機能オフならqr付与を拒否すること(): void
     {
         [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
-        ShopSettingStore::setValue('use_stamps', false, 'boolean', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('use_stamps', false, 'boolean', (int) $project->id);
         $grantUrl = $this->signedGrantUrl($project, $card, 'off-nonce', 1, StampGrantLimit::PER_MEMBER);
 
         $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])->postJson($grantUrl)
@@ -217,8 +217,8 @@ class StampGrantTest extends TestCase
     {
         [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
         $member->update(['rank' => 'bronze']);
-        ShopSettingStore::setValue('member_rank_basis', 'stamps', 'string', (int) $project->id);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(ShopSettingStore::class)->setValue('member_rank_basis', 'stamps', 'string', (int) $project->id);
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);

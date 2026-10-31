@@ -21,8 +21,8 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
     public function test_assign_rank_to_customer_スマレジ顧客へrankと付与率を送信すること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', $project->id);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', $project->id);
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '1', 'point_earn_rate' => 100],
             ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true, 'smaregi_rank_id' => '2', 'point_earn_rate' => 50],
         ], $project->id);
@@ -81,8 +81,8 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
     public function test_sync_point_rates_for_project_連携済み会員へ付与率を反映すること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', $project->id);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', $project->id);
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '9', 'point_earn_rate' => 80],
         ], $project->id);
 

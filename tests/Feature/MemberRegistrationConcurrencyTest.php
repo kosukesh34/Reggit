@@ -28,8 +28,8 @@ class MemberRegistrationConcurrencyTest extends TestCase
 
         $project = Project::factory()->create();
         config(['smaregi.contract_id' => '']);
-        ShopSettingStore::setValue('member_code_type', 'sequential', 'string', $project->id);
-        ShopSettingStore::setValue('member_code_length', 4, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('member_code_type', 'sequential', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('member_code_length', 4, 'integer', $project->id);
         $users = User::factory()->count(2)->create(['project_id' => $project->id]);
         $directory = sys_get_temp_dir().'/member-registration-'.bin2hex(random_bytes(8));
         mkdir($directory, 0700);

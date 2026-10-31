@@ -37,7 +37,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        LiffSettingStore::setFrontendMenuItems([
+        app(LiffSettingStore::class)->setFrontendMenuItems([
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-home', 'order' => 0, 'enabled' => true],
             ['tab' => 'products', 'label' => 'オーダー', 'icon' => 'fa-utensils', 'order' => 1, 'enabled' => true],
             [
@@ -69,7 +69,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $raw = ShopSettingStore::getValue('frontend_menu_items', null, $project->id);
+        $raw = app(ShopSettingStore::class)->getValue('frontend_menu_items', null, $project->id);
         $this->assertIsArray($raw);
         $tabs = array_column($raw, 'tab');
         $this->assertContains('home', $tabs);
@@ -80,7 +80,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         $link = collect($raw)->firstWhere('tab', 'link_1');
         $this->assertSame('公式サイト', $link['label']);
         $this->assertSame('https://example.com', $link['url']);
-        $navigation = ShopSettingStore::getValue('native_navigation_items', [], $project->id);
+        $navigation = app(ShopSettingStore::class)->getValue('native_navigation_items', [], $project->id);
         $this->assertSame(['member'], $navigation['header']);
         $this->assertSame(['home', 'products'], $navigation['footer']);
         $this->assertSame(['home', 'member', 'terms', 'privacy'], $navigation['hamburger']);
@@ -99,10 +99,10 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
             'native_navigation' => ['hamburger' => ['link_1']],
         ];
         $this->actingAs($admin, 'admin')->post($endpoint, $payload)->assertSessionHasNoErrors();
-        $link = collect(ShopSettingStore::getValue('frontend_menu_items', [], $project->id))->firstWhere('tab', 'link_1');
+        $link = collect(app(ShopSettingStore::class)->getValue('frontend_menu_items', [], $project->id))->firstWhere('tab', 'link_1');
         $this->assertSame('https://example.com', $link['url']);
         $this->assertSame('embed', $link['open']);
-        $this->assertSame(['link_1'], ShopSettingStore::getValue('native_navigation_items', [], $project->id)['hamburger']);
+        $this->assertSame(['link_1'], app(ShopSettingStore::class)->getValue('native_navigation_items', [], $project->id)['hamburger']);
 
         $payload['tabs'][0]['url'] = 'https://example.com/new';
         $payload['tabs'][0]['open'] = 'external';
@@ -110,7 +110,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         $view = app(GetHomeSettingsUseCase::class)->handle($project->id);
         $this->assertSame('https://example.com/new', collect($view['tabs'])->firstWhere('tab', 'link_1')['url']);
         $this->assertSame('external', collect($view['tabs'])->firstWhere('tab', 'link_1')['open']);
-        $this->assertSame('external', collect(LiffSettingStore::getFrontendMenuItems($project->id))->firstWhere('tab', 'link_1')['open']);
+        $this->assertSame('external', collect(app(LiffSettingStore::class)->getFrontendMenuItems($project->id))->firstWhere('tab', 'link_1')['open']);
 
         $payload['tabs'][0]['open'] = 'invalid';
         $this->post($endpoint, $payload)->assertSessionHasErrors('tabs.0.open');
@@ -123,8 +123,8 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
 
         $payload['tabs'][0]['url'] = '';
         $this->post($endpoint, $payload)->assertSessionHasNoErrors();
-        $this->assertNull(collect(ShopSettingStore::getValue('frontend_menu_items', [], $project->id))->firstWhere('tab', 'link_1'));
-        $this->assertSame([], ShopSettingStore::getValue('native_navigation_items', [], $project->id)['hamburger']);
+        $this->assertNull(collect(app(ShopSettingStore::class)->getValue('frontend_menu_items', [], $project->id))->firstWhere('tab', 'link_1'));
+        $this->assertSame([], app(ShopSettingStore::class)->getValue('native_navigation_items', [], $project->id)['hamburger']);
     }
 
     public function test_home_settings_ナビゲーションバー画像をアップロードできること(): void
@@ -141,13 +141,13 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $url = (string) ShopSettingStore::getValue('navigation_header_image_url', '', $project->id);
+        $url = (string) app(ShopSettingStore::class)->getValue('navigation_header_image_url', '', $project->id);
         $this->assertStringContainsString('/storage/navigation_headers/'.$project->id.'/', $url);
         Storage::disk('public')->assertExists(parse_url($url, PHP_URL_PATH) !== null
             ? ltrim(str_replace('/storage/', '', (string) parse_url($url, PHP_URL_PATH)), '/')
             : 'missing');
-        $this->assertSame('grid_3x2', ShopSettingStore::getValue('home_menu_layout', '', $project->id));
-        $this->assertSame('name_only', ShopSettingStore::getValue('product_display_layout', '', $project->id));
+        $this->assertSame('grid_3x2', app(ShopSettingStore::class)->getValue('home_menu_layout', '', $project->id));
+        $this->assertSame('name_only', app(ShopSettingStore::class)->getValue('product_display_layout', '', $project->id));
     }
 
     public function test_home_settings_複数画像を追加して個別に削除できること(): void
@@ -155,7 +155,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         Storage::fake('public');
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        ShopSettingStore::setValue('home_image_url', 'https://example.com/legacy.webp', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('home_image_url', 'https://example.com/legacy.webp', 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.home.update', ['project_key' => $project->project_key]), [
@@ -168,10 +168,10 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
                 'product_display_layout' => 'list_with_image',
             ])->assertRedirect();
 
-        $urls = ShopSettingStore::getValue('home_image_urls', [], $project->id);
+        $urls = app(ShopSettingStore::class)->getValue('home_image_urls', [], $project->id);
         $this->assertCount(3, $urls);
         $this->assertSame('https://example.com/legacy.webp', $urls[0]);
-        $this->assertSame($urls[0], ShopSettingStore::getValue('home_image_url', '', $project->id));
+        $this->assertSame($urls[0], app(ShopSettingStore::class)->getValue('home_image_url', '', $project->id));
         $this->assertStringContainsString('/storage/home_images/'.$project->id.'/', $urls[1]);
         $this->assertStringContainsString('/storage/home_images/'.$project->id.'/', $urls[2]);
 
@@ -183,8 +183,8 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
                 'product_display_layout' => 'list_with_image',
             ])->assertRedirect();
 
-        $this->assertSame([$urls[1]], ShopSettingStore::getValue('home_image_urls', [], $project->id));
-        $this->assertSame($urls[1], ShopSettingStore::getValue('home_image_url', '', $project->id));
+        $this->assertSame([$urls[1]], app(ShopSettingStore::class)->getValue('home_image_urls', [], $project->id));
+        $this->assertSame($urls[1], app(ShopSettingStore::class)->getValue('home_image_url', '', $project->id));
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.home.update', ['project_key' => $project->project_key]), [
@@ -194,8 +194,8 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
                 'product_display_layout' => 'list_with_image',
             ])->assertRedirect();
 
-        $this->assertSame([], ShopSettingStore::getValue('home_image_urls', null, $project->id));
-        $this->assertSame('', ShopSettingStore::getValue('home_image_url', null, $project->id));
+        $this->assertSame([], app(ShopSettingStore::class)->getValue('home_image_urls', null, $project->id));
+        $this->assertSame('', app(ShopSettingStore::class)->getValue('home_image_url', null, $project->id));
     }
 
     public function test_home_menu_非表示設定を保存して再表示しても維持すること(): void
@@ -214,7 +214,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $saved = collect(ShopSettingStore::getValue('frontend_menu_items', [], $project->id))->firstWhere('tab', 'products');
+        $saved = collect(app(ShopSettingStore::class)->getValue('frontend_menu_items', [], $project->id))->firstWhere('tab', 'products');
         $this->assertFalse($saved['enabled']);
 
         $view = app(GetHomeSettingsUseCase::class)->handle((int) $project->id);
@@ -266,7 +266,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $navigation = ShopSettingStore::getValue('native_navigation_items', [], $project->id);
+        $navigation = app(ShopSettingStore::class)->getValue('native_navigation_items', [], $project->id);
         $this->assertSame(['coupons'], $navigation['header']);
         $this->assertSame(['products', 'home', 'member'], $navigation['footer']);
         $this->assertSame(['privacy', 'terms', 'coupons'], $navigation['hamburger']);

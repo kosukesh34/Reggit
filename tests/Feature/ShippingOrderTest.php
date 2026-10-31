@@ -32,10 +32,10 @@ class ShippingOrderTest extends TestCase
             'webhook_secret' => 'whsec_test',
             'methods' => ['card'],
         ]);
-        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_shop_enabled', true, 'boolean', $project->id);
         $this->completeShopLegalNotice($project->id);
-        ShopSettingStore::setValue('shop_shipping_fee', 300, 'integer', $project->id);
-        ShopSettingStore::setValue('shop_shipping_fees_by_prefecture', [
+        app(ShopSettingStore::class)->setValue('shop_shipping_fee', 300, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_shipping_fees_by_prefecture', [
             '東京都' => 300,
             '沖縄県' => 1200,
         ], 'json', $project->id);

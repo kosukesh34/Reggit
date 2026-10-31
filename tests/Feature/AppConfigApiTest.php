@@ -18,7 +18,7 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
         );
-        LiffSettingStore::setFrontendMenuItems([
+        app(LiffSettingStore::class)->setFrontendMenuItems([
             ['tab' => 'gallery', 'label' => 'ギャラリー', 'enabled' => false, 'order' => 10],
         ], $project->id);
 
@@ -117,7 +117,7 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setValue('point_earn_rate', 200, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 200, 'integer', $project->id);
 
         $response = $this->getJson('/api/v1/app-config?project_key=default');
 
@@ -142,18 +142,18 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setValue(
+        app(ShopSettingStore::class)->setValue(
             'navigation_header_image_url',
             'https://example.com/store-header.webp',
             'string',
             $project->id,
         );
-        ShopSettingStore::setValue('home_menu_layout', 'grid_2_columns', 'string', $project->id);
-        ShopSettingStore::setValue('product_display_layout', 'grid_2_columns', 'string', $project->id);
-        ShopSettingStore::setValue('navigation_header_background_color', '#F6F1E8', 'string', $project->id);
-        ShopSettingStore::setValue('home_image_url', 'https://example.com/home.webp', 'string', $project->id);
-        ShopSettingStore::setValue('member_show_point_history', false, 'boolean', $project->id);
-        ShopSettingStore::setValue('native_navigation_items', [
+        app(ShopSettingStore::class)->setValue('home_menu_layout', 'grid_2_columns', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('product_display_layout', 'grid_2_columns', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('navigation_header_background_color', '#F6F1E8', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('home_image_url', 'https://example.com/home.webp', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('member_show_point_history', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('native_navigation_items', [
             'header' => ['member'],
             'footer' => ['home', 'products'],
             'hamburger' => ['orders', 'terms', 'privacy'],
@@ -182,11 +182,11 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'is_active' => true]
         );
-        LiffSettingStore::setFrontendMenuItems([
+        app(LiffSettingStore::class)->setFrontendMenuItems([
             ['tab' => 'link_1', 'label' => '外部サイト', 'url' => 'https://example.com', 'open' => 'external', 'enabled' => true, 'order' => 0],
             ['tab' => 'link_2', 'label' => '内部サイト', 'url' => 'https://example.com/internal', 'open' => 'embed', 'enabled' => true, 'order' => 1],
         ], $project->id);
-        ShopSettingStore::setValue('native_navigation_items', [
+        app(ShopSettingStore::class)->setValue('native_navigation_items', [
             'header' => ['link_1'],
             'footer' => ['link_1', 'link_2'],
             'hamburger' => ['link_1', 'link_2'],
@@ -205,10 +205,10 @@ class AppConfigApiTest extends TestCase
     public function test_web_page_hidden_from_home_can_still_be_used_in_all_navigation_placements(): void
     {
         $project = Project::firstOrCreate(['project_key' => 'default'], ['name' => 'テスト店舗', 'is_active' => true]);
-        LiffSettingStore::setFrontendMenuItems([
+        app(LiffSettingStore::class)->setFrontendMenuItems([
             ['tab' => 'link_1', 'label' => '公式サイト', 'url' => 'https://example.com', 'open' => 'external', 'enabled' => false, 'order' => 0],
         ], $project->id);
-        ShopSettingStore::setValue('native_navigation_items', [
+        app(ShopSettingStore::class)->setValue('native_navigation_items', [
             'header' => ['link_1'], 'footer' => ['link_1'], 'hamburger' => ['link_1'],
         ], 'json', $project->id);
 
@@ -227,12 +227,12 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
         );
-        LiffSettingStore::setFrontendMenuItems([
+        app(LiffSettingStore::class)->setFrontendMenuItems([
             ['tab' => 'home', 'label' => 'ホーム', 'enabled' => true, 'order' => 0],
             ['tab' => 'member', 'label' => '会員証', 'enabled' => false, 'order' => 1],
             ['tab' => 'coupons', 'label' => 'クーポン', 'enabled' => false, 'order' => 2],
         ], $project->id);
-        ShopSettingStore::setValue('native_navigation_items', [
+        app(ShopSettingStore::class)->setValue('native_navigation_items', [
             'header' => ['member', 'coupons'],
             'footer' => ['home', 'member', 'coupons'],
             'hamburger' => [],
@@ -250,7 +250,7 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setValue('home_image_urls', [
+        app(ShopSettingStore::class)->setValue('home_image_urls', [
             'https://example.com/first.webp',
             'https://example.com/second.webp',
         ], 'json', $project->id);
@@ -270,7 +270,7 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setValue('feature_gacha_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_gacha_enabled', true, 'boolean', $project->id);
 
         $response = $this->getJson('/api/v1/app-config?project_key=default')->assertOk();
 

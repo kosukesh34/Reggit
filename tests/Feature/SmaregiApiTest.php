@@ -262,7 +262,7 @@ class SmaregiApiTest extends TestCase
     private function createProjectWithContract(): Project
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         return $project;
     }

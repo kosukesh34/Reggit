@@ -31,7 +31,7 @@ class SmaregiMemberRankRetryTest extends TestCase
     private function member(string $rank = 'gold'): Member
     {
         $project = Project::factory()->create();
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true, 'order' => 1, 'smaregi_rank_id' => '1', 'point_earn_rate' => 100],
             ['key' => 'gold', 'label' => 'Gold', 'min_points' => 100, 'is_active' => true, 'order' => 2, 'smaregi_rank_id' => '2', 'point_earn_rate' => 50],
         ], (int) $project->id);
@@ -226,7 +226,7 @@ class SmaregiMemberRankRetryTest extends TestCase
         });
         app(SmaregiCustomerRankAssignmentService::class)->assignRankToCustomer($member, 'gold');
         $this->assertSame((int) $other->id, AdminContext::getCurrentProjectId());
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'gold', 'label' => 'Gold', 'min_points' => 100, 'is_active' => true, 'order' => 1, 'smaregi_rank_id' => '2', 'point_earn_rate' => 80],
         ], (int) $member->project_id);
         $this->travel(1)->minutes();

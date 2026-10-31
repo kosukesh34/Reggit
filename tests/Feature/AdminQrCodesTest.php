@@ -20,8 +20,8 @@ class AdminQrCodesTest extends TestCase
     {
         $project = Project::factory()->create();
         $other = Project::factory()->create();
-        LineSettingStore::setLineLiffUrl('https://liff.line.me/own-app', $project->id);
-        LineSettingStore::setLineLiffUrl('https://liff.line.me/other-app', $other->id);
+        app(LineSettingStore::class)->setLineLiffUrl('https://liff.line.me/own-app', $project->id);
+        app(LineSettingStore::class)->setLineLiffUrl('https://liff.line.me/other-app', $other->id);
         ProjectAppLink::create(['project_id' => $project->id, 'download_url' => 'https://example.com/own-download']);
         ProjectAppLink::create(['project_id' => $other->id, 'download_url' => 'https://example.com/other-download']);
         StampCard::factory()->create(['project_id' => $project->id, 'name' => '自店舗カード', 'is_active' => true]);
@@ -129,7 +129,7 @@ class AdminQrCodesTest extends TestCase
         $response->assertOk()->assertDontSee('オンラインショップ');
         $this->assertArrayNotHasKey('shop', $response->viewData('view')->links);
 
-        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_shop_enabled', true, 'boolean', $project->id);
         $enabled = $this->get(route('admin.qr-codes', ['project_key' => $project->project_key]));
         $enabled->assertOk()->assertSee('オンラインショップ');
         $this->assertSame(

@@ -27,7 +27,7 @@ class PointGrantQrTest extends TestCase
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'points' => 0]);
-        ShopSettingStore::setValue('use_points', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('use_points', true, 'boolean', $project->id);
         $code = PointGrantCode::create(['project_id' => $project->id, 'token' => bin2hex(random_bytes(24)), 'points' => 100, 'usage_quota' => 1, 'expires_at' => now()->addHour()]);
 
         return [$project, $user, $member, $code];
@@ -114,7 +114,7 @@ class PointGrantQrTest extends TestCase
         $code->update(['expires_at' => now()->subMinute()]);
         $this->actingAs($user)->postJson($this->endpoint($project, $code))->assertStatus(410);
         $code->update(['expires_at' => now()->addHour()]);
-        ShopSettingStore::setValue('use_points', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('use_points', false, 'boolean', $project->id);
         $this->postJson($this->endpoint($project, $code))->assertForbidden();
         $this->assertDatabaseCount('point_grant_redemptions', 0);
     }

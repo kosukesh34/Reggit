@@ -47,7 +47,7 @@ class PublicProjectsApiAndMemberLineQrTest extends TestCase
             'description' => '',
             'is_active' => true,
         ]);
-        LineSettingStore::setLineFriendAddUrl('https://line.me/R/ti/p/@example', $project->id);
+        app(LineSettingStore::class)->setLineFriendAddUrl('https://line.me/R/ti/p/@example', $project->id);
         $admin = AdminUser::factory()->create([
             'role' => AdminUser::ROLE_ADMIN,
             'project_id' => $project->id,

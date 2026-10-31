@@ -47,7 +47,7 @@ class TicketPassTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setValue('feature_tickets_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_tickets_enabled', true, 'boolean', $project->id);
         $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => self::LINE_USER_ID]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         $product = Product::factory()->create([
@@ -113,14 +113,14 @@ class TicketPassTest extends TestCase
     public function test_アプリのタブは回数券とショップの機能設定に従うこと(): void
     {
         [$project] = $this->setUpTicketShop();
-        ShopSettingStore::setValue('feature_shop_enabled', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_shop_enabled', false, 'boolean', $project->id);
 
         $keys = fn (): array => array_column($this->getJson('/api/v1/app-config?project_key=default')->assertOk()->json('navigation.hamburger'), 'key');
         $this->assertContains('tickets', $keys());
         $this->assertNotContains('shop', $keys());
 
-        ShopSettingStore::setValue('feature_tickets_enabled', false, 'boolean', $project->id);
-        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_tickets_enabled', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_shop_enabled', true, 'boolean', $project->id);
         $this->assertNotContains('tickets', $keys());
         $this->assertContains('shop', $keys());
     }
@@ -175,7 +175,7 @@ class TicketPassTest extends TestCase
     public function test_機能が無効なら回数券を購入できないこと(): void
     {
         [$project, $user, , $product] = $this->setUpTicketShop();
-        ShopSettingStore::setValue('feature_tickets_enabled', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_tickets_enabled', false, 'boolean', $project->id);
 
         $this->expectExceptionMessage('回数券は現在購入できません。');
         $this->buyTicket($user, $product);

@@ -24,8 +24,8 @@ class AdminNativeDesignSettingsTest extends TestCase
             'native_navigation' => ['header' => ['profileEdit'], 'footer' => ['home', 'member']],
         ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $this->assertFalse((bool) ShopSettingStore::getValue('home_show_member_card', true, $project->id));
-        $this->assertSame(['profileEdit'], ShopSettingStore::getValue('native_navigation_items', [], $project->id)['header']);
+        $this->assertFalse((bool) app(ShopSettingStore::class)->getValue('home_show_member_card', true, $project->id));
+        $this->assertSame(['profileEdit'], app(ShopSettingStore::class)->getValue('native_navigation_items', [], $project->id)['header']);
         $this->getJson('/api/v1/app-config?project_key='.$project->project_key)->assertOk()->assertJsonPath('home.show_member_card', false)->assertJsonPath('navigation.header.0.key', 'profileEdit');
         $this->get(route('admin.settings.home', ['project_key' => $project->project_key]))->assertOk()->assertSee('プロフィール編集')->assertSee('ホームに会員証を表示する');
     }
@@ -51,7 +51,7 @@ class AdminNativeDesignSettingsTest extends TestCase
         $this->post(route('admin.settings.home.update', ['project_key' => $project->project_key]), [
             'home_menu_layout' => 'grid_3x2', 'product_display_layout' => 'list_with_image',
         ])->assertSessionHasNoErrors();
-        $this->assertSame('#FFFFFF', ShopSettingStore::getValue('native_chrome_colors', [], $project->id)['header_icon']);
+        $this->assertSame('#FFFFFF', app(ShopSettingStore::class)->getValue('native_chrome_colors', [], $project->id)['header_icon']);
     }
 
     public function test_invalid_navigation_colors_are_rejected(): void
@@ -68,12 +68,12 @@ class AdminNativeDesignSettingsTest extends TestCase
     {
         $project = Project::firstOrCreate(['project_key' => 'default'], ['name' => 'Default', 'is_active' => true]);
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
-        ShopSettingStore::setValue('frontend_menu_items', [
+        app(ShopSettingStore::class)->setValue('frontend_menu_items', [
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house', 'order' => 0, 'enabled' => true],
             ['tab' => 'products', 'label' => 'モバイル注文', 'icon' => 'fa-house', 'order' => 1, 'enabled' => true],
             ['tab' => 'member', 'label' => '会員証', 'icon' => 'fa-house', 'order' => 2, 'enabled' => true],
         ], 'json', $project->id);
-        ShopSettingStore::setValue('native_navigation_items', [
+        app(ShopSettingStore::class)->setValue('native_navigation_items', [
             'header' => [], 'footer' => ['home', 'products', 'member'], 'hamburger' => ['home', 'products', 'member'],
         ], 'json', $project->id);
 

@@ -50,7 +50,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $savedUrl = AppearanceSettingStore::getFrontendLogoUrl($project->id);
+        $savedUrl = app(AppearanceSettingStore::class)->getFrontendLogoUrl($project->id);
         $this->assertNotNull($savedUrl);
         $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_FRONTEND_LOGO.'/'.$project->id, (string) $savedUrl);
         Storage::disk('public')->assertExists(
@@ -62,7 +62,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        ShopSettingStore::setValue('frontend_logo_url', 'https://example.com/old-logo.png', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('frontend_logo_url', 'https://example.com/old-logo.png', 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
@@ -74,7 +74,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame('', (string) (AppearanceSettingStore::getFrontendLogoUrl($project->id) ?? ''));
+        $this->assertSame('', (string) (app(AppearanceSettingStore::class)->getFrontendLogoUrl($project->id) ?? ''));
     }
 
     public function test_アプリデザインでロゴ未指定なら既存値を維持すること(): void
@@ -82,7 +82,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
         $existing = 'https://example.com/keep-logo.png';
-        ShopSettingStore::setValue('frontend_logo_url', $existing, 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('frontend_logo_url', $existing, 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
@@ -93,7 +93,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame($existing, AppearanceSettingStore::getFrontendLogoUrl($project->id));
+        $this->assertSame($existing, app(AppearanceSettingStore::class)->getFrontendLogoUrl($project->id));
     }
 
     public function test_アプリデザイン画面にロゴのドロップゾーンがあること(): void
@@ -130,7 +130,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $savedUrl = AppearanceSettingStore::getStampDefaultImageUrl($project->id);
+        $savedUrl = app(AppearanceSettingStore::class)->getStampDefaultImageUrl($project->id);
         $this->assertNotNull($savedUrl);
         $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_STAMP_DEFAULT.'/'.$project->id, (string) $savedUrl);
         Storage::disk('public')->assertExists(
@@ -142,7 +142,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        ShopSettingStore::setValue('stamp_default_image_url', 'https://example.com/old-stamp.png', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('stamp_default_image_url', 'https://example.com/old-stamp.png', 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
@@ -154,6 +154,6 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame('', (string) (AppearanceSettingStore::getStampDefaultImageUrl($project->id) ?? ''));
+        $this->assertSame('', (string) (app(AppearanceSettingStore::class)->getStampDefaultImageUrl($project->id) ?? ''));
     }
 }

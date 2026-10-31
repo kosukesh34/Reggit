@@ -26,7 +26,7 @@ class ProfileValidationRulesTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ProfileSettingStore::setProfileFieldSettings([
+        app(ProfileSettingStore::class)->setProfileFieldSettings([
             'smaregi_fields' => [
                 'name' => ['enabled' => true, 'required' => true],
                 'kana' => ['enabled' => true, 'required' => false],

@@ -254,8 +254,8 @@ class ExistingMemberLinkTest extends TestCase
         $user = User::factory()->create(['project_id' => $project->id]);
         $original = $this->customer();
         $otherContractCustomer = array_replace($original, ['mailAddress' => 'other@example.com', 'point' => 999]);
-        $settings = ShopSettingStore::class;
-        $settings::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        $settings = app(ShopSettingStore::class);
+        $settings->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
         $api = Mockery::mock(SmaregiApiService::class, [
             app(SmaregiApiClient::class),
             app(SmaregiTransactionCustomerResolver::class),
@@ -263,7 +263,7 @@ class ExistingMemberLinkTest extends TestCase
         ])->makePartial();
         $api->shouldReceive('getCustomers')->with('contract-1', Mockery::type('array'))->once()->andReturnUsing(function () use ($changeDuringLookup, $settings, $project, $original): array {
             if ($changeDuringLookup) {
-                $settings::setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
+                $settings->setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
             }
 
             return ['customers' => [$original]];
@@ -274,7 +274,7 @@ class ExistingMemberLinkTest extends TestCase
         $pending = ExistingMemberLinkRequest::where('user_id', $user->id)->firstOrFail();
         $this->assertSame('a@example.com', $pending->email);
         $this->assertSame('contract-1', $pending->contract_id);
-        $settings::setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
+        $settings->setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
         $rejected = false;
         try {
             app(ConfirmExistingMemberLinkUseCase::class)->handle($pending->token, $user->fresh());
@@ -312,8 +312,8 @@ class ExistingMemberLinkTest extends TestCase
     {
         $project = $this->createProject();
         $this->enable($project, ['customer_code']);
-        $settings = ShopSettingStore::class;
-        $settings::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        $settings = app(ShopSettingStore::class);
+        $settings->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
         $customer = $this->customer();
         $api = Mockery::mock(SmaregiApiService::class, [
             app(SmaregiApiClient::class),
@@ -321,7 +321,7 @@ class ExistingMemberLinkTest extends TestCase
             app(SmaregiSettings::class),
         ])->makePartial();
         $api->shouldReceive('getCustomers')->with('contract-1', Mockery::type('array'))->once()->andReturnUsing(function () use ($settings, $project, $customer): array {
-            $settings::setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
+            $settings->setValue('smaregi_contract_id', 'contract-2', 'string', (int) $project->id);
 
             return ['customers' => [$customer]];
         });

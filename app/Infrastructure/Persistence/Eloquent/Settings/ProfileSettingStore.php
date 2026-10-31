@@ -10,8 +10,12 @@ use App\Util\AdminContext;
 /** プロフィール項目と会員登録方式の設定。 */
 class ProfileSettingStore
 {
+    public function __construct(
+        private ShopSettingStore $values,
+    ) {}
+
     /** プロフィール項目設定のデフォルト（スマレジ項目は表示ON・名前と電話は必須、任意項目は空） */
-    public static function defaultProfileFieldSettings(): array
+    public function defaultProfileFieldSettings(): array
     {
         $smaregi = [];
         foreach (ShopSettingKeys::PROFILE_SMAREGI_FIELDS as $key => $label) {
@@ -29,20 +33,20 @@ class ProfileSettingStore
         ];
     }
 
-    public static function isSmaregiLinkedProfileField(string $key): bool
+    public function isSmaregiLinkedProfileField(string $key): bool
     {
         return in_array($key, ShopSettingKeys::PROFILE_SMAREGI_LINKED_KEYS, true);
     }
 
     /** プロフィール項目設定を取得（会員登録・編集フォームの表示とバリデーションに使用） */
-    public static function getProfileFieldSettings(?int $projectId = null): array
+    public function getProfileFieldSettings(?int $projectId = null): array
     {
         $projectId = AdminContext::resolveProjectId($projectId);
-        $raw = ShopSettingStore::getValue('profile_field_settings', null, $projectId);
+        $raw = $this->values->getValue('profile_field_settings', null, $projectId);
         if (! is_array($raw)) {
-            return self::defaultProfileFieldSettings();
+            return $this->defaultProfileFieldSettings();
         }
-        $defaults = self::defaultProfileFieldSettings();
+        $defaults = $this->defaultProfileFieldSettings();
         $smaregi = $defaults['smaregi_fields'];
         foreach ($defaults['smaregi_fields'] as $key => $def) {
             if (isset($raw['smaregi_fields'][$key]) && is_array($raw['smaregi_fields'][$key])) {
@@ -97,15 +101,15 @@ class ProfileSettingStore
     }
 
     /** プロフィール項目設定を保存 */
-    public static function setProfileFieldSettings(array $settings, ?int $projectId = null): void
+    public function setProfileFieldSettings(array $settings, ?int $projectId = null): void
     {
         $projectId = AdminContext::resolveProjectId($projectId);
-        ShopSettingStore::setValue('profile_field_settings', $settings, 'json', $projectId);
+        $this->values->setValue('profile_field_settings', $settings, 'json', $projectId);
     }
 
-    public static function getMemberRegistrationMode(?int $projectId = null): string
+    public function getMemberRegistrationMode(?int $projectId = null): string
     {
-        $value = (string) ShopSettingStore::getValue('member_registration_mode', MemberRegistrationMode::OPTIONAL, $projectId);
+        $value = (string) $this->values->getValue('member_registration_mode', MemberRegistrationMode::OPTIONAL, $projectId);
         if (array_key_exists($value, MemberRegistrationMode::getValues())) {
             return $value;
         }
@@ -113,11 +117,11 @@ class ProfileSettingStore
         return MemberRegistrationMode::OPTIONAL;
     }
 
-    public static function setMemberRegistrationMode(string $mode, ?int $projectId = null): void
+    public function setMemberRegistrationMode(string $mode, ?int $projectId = null): void
     {
         if (! array_key_exists($mode, MemberRegistrationMode::getValues())) {
             $mode = MemberRegistrationMode::OPTIONAL;
         }
-        ShopSettingStore::setValue('member_registration_mode', $mode, 'string', $projectId);
+        $this->values->setValue('member_registration_mode', $mode, 'string', $projectId);
     }
 }

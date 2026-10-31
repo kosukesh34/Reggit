@@ -54,9 +54,9 @@ class OnboardingProjectStoreTest extends TestCase
         ]);
 
         $project = Project::where('project_key', 'store-a')->firstOrFail();
-        $this->assertSame('sb_skx928r2', ShopSettingStore::getValue('smaregi_contract_id', null, (int) $project->id));
-        $this->assertSame('test_client_id_onboard', ShopSettingStore::getValue('smaregi_client_id', null, (int) $project->id));
-        $this->assertSame('test_client_secret_onboard', ShopSettingStore::getValue('smaregi_client_secret', null, (int) $project->id));
+        $this->assertSame('sb_skx928r2', app(ShopSettingStore::class)->getValue('smaregi_contract_id', null, (int) $project->id));
+        $this->assertSame('test_client_id_onboard', app(ShopSettingStore::class)->getValue('smaregi_client_id', null, (int) $project->id));
+        $this->assertSame('test_client_secret_onboard', app(ShopSettingStore::class)->getValue('smaregi_client_secret', null, (int) $project->id));
     }
 
     public function test_必須項目不足なら422を返すこと(): void
@@ -76,7 +76,7 @@ class OnboardingProjectStoreTest extends TestCase
             'project_key' => 'old-store',
             'is_active' => true,
         ]);
-        ShopSettingStore::setValue('smaregi_contract_id', 'sb_shared_contract', 'string', (int) $oldProject->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'sb_shared_contract', 'string', (int) $oldProject->id);
         SmaregiContract::create([
             'contract_id' => 'sb_shared_contract',
             'project_id' => $oldProject->id,
@@ -92,7 +92,7 @@ class OnboardingProjectStoreTest extends TestCase
         $response->assertUnprocessable()->assertJsonValidationErrors('smaregi_contract_id');
         $this->assertDatabaseMissing('projects', ['project_key' => 'new-store']);
         $this->assertDatabaseMissing('admin_users', ['login_id' => 'new_store_admin']);
-        $this->assertSame('sb_shared_contract', ShopSettingStore::getValue('smaregi_contract_id', null, (int) $oldProject->id));
+        $this->assertSame('sb_shared_contract', app(ShopSettingStore::class)->getValue('smaregi_contract_id', null, (int) $oldProject->id));
         $this->assertDatabaseHas('smaregi_contracts', [
             'contract_id' => 'sb_shared_contract',
             'project_id' => $oldProject->id,

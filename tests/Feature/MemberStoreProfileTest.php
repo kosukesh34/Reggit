@@ -35,12 +35,12 @@ class MemberStoreProfileTest extends TestCase
     /** 項目設定でご利用店舗を無効にし、名前だけを必須にする */
     private function disableStoreField(): void
     {
-        $settings = ProfileSettingStore::defaultProfileFieldSettings();
+        $settings = app(ProfileSettingStore::class)->defaultProfileFieldSettings();
         foreach ($settings['smaregi_fields'] as $key => $field) {
             $settings['smaregi_fields'][$key]['enabled'] = $key === 'name';
             $settings['smaregi_fields'][$key]['required'] = $key === 'name';
         }
-        ProfileSettingStore::setProfileFieldSettings($settings, (int) $this->project->id);
+        app(ProfileSettingStore::class)->setProfileFieldSettings($settings, (int) $this->project->id);
     }
 
     private function member(): Member

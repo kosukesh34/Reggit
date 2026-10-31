@@ -41,7 +41,7 @@ class RequestPrincipalWriteTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('queue_require_membership', false, 'boolean', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('queue_require_membership', false, 'boolean', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         $product = Product::factory()->create(['project_id' => $project->id, 'stock' => 10]);

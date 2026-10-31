@@ -57,10 +57,10 @@ class AdminLiffConnectionSettingsTest extends TestCase
             ]);
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
-        $this->assertSame('2000000000-abcdef', LineSettingStore::getLineLiffId((int) $project->id));
-        $this->assertSame('https://miniapp.line.me/2000000000-abcdef', LineSettingStore::getLineLiffUrl((int) $project->id));
-        $this->assertSame('test-channel-access-token', LineSettingStore::getLineChannelAccessToken((int) $project->id));
-        $this->assertSame('test-channel-secret', LineSettingStore::getLineChannelSecret((int) $project->id));
+        $this->assertSame('2000000000-abcdef', app(LineSettingStore::class)->getLineLiffId((int) $project->id));
+        $this->assertSame('https://miniapp.line.me/2000000000-abcdef', app(LineSettingStore::class)->getLineLiffUrl((int) $project->id));
+        $this->assertSame('test-channel-access-token', app(LineSettingStore::class)->getLineChannelAccessToken((int) $project->id));
+        $this->assertSame('test-channel-secret', app(LineSettingStore::class)->getLineChannelSecret((int) $project->id));
     }
 
     public function test_liff設定画面に_messaging_ap_i項目があること(): void

@@ -169,7 +169,7 @@ class UserServiceTest extends TestCase
         config(['line.verify_liff_id_token' => true]);
         $project = $this->createProject();
         AdminContext::setCurrentProject($project);
-        LineSettingStore::setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
+        app(LineSettingStore::class)->setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
 
         $request = Request::create('/', 'GET');
         $request->headers->set('X-Line-User-Id', self::LINE_USER_ID);
@@ -184,7 +184,7 @@ class UserServiceTest extends TestCase
         config(['line.verify_liff_id_token' => true]);
         $project = $this->createProject();
         AdminContext::setCurrentProject($project);
-        LineSettingStore::setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
+        app(LineSettingStore::class)->setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
         Http::fake([
             'https://api.line.me/oauth2/v2.1/verify' => Http::response([
                 'sub' => self::LINE_USER_ID,

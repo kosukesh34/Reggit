@@ -172,7 +172,7 @@ class AdminQueueTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);
-        LineSettingStore::setLineChannelAccessToken('queue-test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('queue-test-token', $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('a', 32),

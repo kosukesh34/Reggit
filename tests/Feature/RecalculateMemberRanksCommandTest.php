@@ -29,13 +29,13 @@ class RecalculateMemberRanksCommandTest extends TestCase
     {
         $project = Project::factory()->create(['is_active' => true]);
         AdminContext::setCurrentProject($project);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);
-        ShopSettingStore::setValue('member_rank_aggregation_type', RankAggregationType::PERIOD, 'string', (int) $project->id);
-        ShopSettingStore::setValue('member_rank_period_days', 30, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('is_rank_down_enabled', true, 'boolean', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_aggregation_type', RankAggregationType::PERIOD, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_period_days', 30, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('is_rank_down_enabled', true, 'boolean', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -60,13 +60,13 @@ class RecalculateMemberRanksCommandTest extends TestCase
     {
         $project = Project::factory()->create(['is_active' => true]);
         AdminContext::setCurrentProject($project);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);
-        ShopSettingStore::setValue('member_rank_aggregation_type', RankAggregationType::PERIOD, 'string', (int) $project->id);
-        ShopSettingStore::setValue('member_rank_period_days', 30, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('is_rank_down_enabled', false, 'boolean', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_aggregation_type', RankAggregationType::PERIOD, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_period_days', 30, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('is_rank_down_enabled', false, 'boolean', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([

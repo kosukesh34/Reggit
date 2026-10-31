@@ -124,8 +124,8 @@ class KitchenApiTest extends TestCase
     {
         $project = $this->createProject();
         $this->authenticate($project);
-        OrderSettingStore::setOrderReadyLineNotifyEnabled(true, (int) $project->id);
-        LineSettingStore::setLineChannelAccessToken('test-token', (int) $project->id);
+        app(OrderSettingStore::class)->setOrderReadyLineNotifyEnabled(true, (int) $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat('a', 32)]);
         $order = Order::create([
             'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 800,

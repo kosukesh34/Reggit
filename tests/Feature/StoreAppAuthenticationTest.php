@@ -69,7 +69,7 @@ class StoreAppAuthenticationTest extends TestCase
     public function test_only_authenticated_waiting_device_can_register_non_members(): void
     {
         [$project] = $this->createEnrollment('waiting', 'WAITING-CODE');
-        ShopSettingStore::setValue('queue_require_membership', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('queue_require_membership', true, 'boolean', $project->id);
         $this->withHeader('X-Queue-Client', 'waiting-system')
             ->postJson("/api/store-app/waiting/{$project->project_key}/queue", ['party_size' => 1])->assertUnauthorized();
 

@@ -124,7 +124,7 @@ class EngagementFeaturesTest extends TestCase
     public function test_遷移先付きのお知らせはlineのボタンからその画面を開くこと(): void
     {
         [$project, , $member] = $this->member();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $push = Mockery::mock(PushNotificationService::class);
         $push->shouldReceive('sendAnnouncement')->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0, 'notification_ids' => []]);
         $this->app->instance(PushNotificationService::class, $push);
@@ -148,7 +148,7 @@ class EngagementFeaturesTest extends TestCase
     public function test_予約の指定時間前に一度だけリマインドを送ること(): void
     {
         [$project, $user, $member] = $this->member();
-        ShopSettingStore::setValue('reservation_reminder_hours', 24, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('reservation_reminder_hours', 24, 'integer', $project->id);
         $due = Reservation::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'reserved_at' => now()->addHours(20), 'status' => ReservationStatus::CONFIRMED]);
         $due->forceFill(['created_at' => now()->subDays(3)])->save();
         // 予約から来店まで24時間ない予約と、まだ先の予約には送らない
@@ -274,7 +274,7 @@ class EngagementFeaturesTest extends TestCase
         $survey->forceFill(['created_at' => now()->subDays(10)])->save();
         // 3日前の来店（1日後に送るはずが、スケジューラーが止まっていた想定）
         DB::table('member_visits')->insert(['project_id' => $project->id, 'member_id' => $member->id, 'visited_at' => now()->subDays(3), 'source' => 'manual', 'created_at' => now(), 'updated_at' => now()]);
-        ShopSettingStore::setValue('reservation_reminder_hours', 24, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('reservation_reminder_hours', 24, 'integer', $project->id);
         $reservation = Reservation::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'reserved_at' => now()->addHours(20), 'status' => ReservationStatus::CONFIRMED]);
         $reservation->forceFill(['created_at' => now()->subDays(3)])->save();
 
@@ -315,8 +315,8 @@ class EngagementFeaturesTest extends TestCase
         [$project] = $this->member();
         PromoPopup::create(['project_id' => $project->id, 'title' => '告知', 'display_type' => 'modal', 'frequency' => 'once', 'is_active' => true]);
         $survey = $this->survey($project);
-        ShopSettingStore::setValue('feature_popups_enabled', false, 'boolean', $project->id);
-        ShopSettingStore::setValue('feature_surveys_enabled', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_popups_enabled', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_surveys_enabled', false, 'boolean', $project->id);
 
         $this->getJson('/api/promo-popups?project_key=default')->assertOk()->assertJsonCount(0, 'popups');
         $this->getJson('/api/surveys?project_key=default')->assertOk()->assertJsonCount(0, 'surveys');
@@ -331,9 +331,9 @@ class EngagementFeaturesTest extends TestCase
     public function test_リマインドを2回送り本文を差し替えられること(): void
     {
         [$project, $user] = $this->member();
-        ShopSettingStore::setValue('reservation_reminder_hours', 24, 'integer', $project->id);
-        ShopSettingStore::setValue('reservation_reminder_second_hours', 3, 'integer', $project->id);
-        ShopSettingStore::setValue('reservation_reminder_message', '{日時}のご予約です（{人数}）', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('reservation_reminder_hours', 24, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('reservation_reminder_second_hours', 3, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('reservation_reminder_message', '{日時}のご予約です（{人数}）', 'string', $project->id);
         $reservation = Reservation::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'reserved_at' => now()->addHours(20), 'number_of_people' => 2, 'status' => ReservationStatus::CONFIRMED]);
         $reservation->forceFill(['created_at' => now()->subDays(3)])->save();
         $this->fakeNotifier(2);
@@ -455,14 +455,14 @@ class EngagementFeaturesTest extends TestCase
         // 入れ子の配列は 500 ではなく入力エラー
         $this->withHeaders($headers)->postJson("/api/surveys/{$survey->id}/answers?project_key=default", ['answers' => [[['A']]]])->assertStatus(422);
         // ポイント機能が無効なら、付かないポイントを案内しない
-        ShopSettingStore::setValue('use_points', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('use_points', false, 'boolean', $project->id);
         $this->withHeaders($headers)->getJson("/api/surveys/{$survey->id}?project_key=default")->assertJsonPath('survey.reward_points', 0);
         // 停止中のポップアップの反応は数えない
         $stopped = PromoPopup::create(['project_id' => $project->id, 'title' => '停止中', 'display_type' => 'modal', 'frequency' => 'once', 'is_active' => false]);
         $this->postJson("/api/promo-popups/{$stopped->id}/events?project_key=default", ['event' => 'click'])->assertNotFound();
         // お知らせが無効ならリマインドを送らない
-        ShopSettingStore::setValue('reservation_reminder_hours', 24, 'integer', $project->id);
-        ShopSettingStore::setValue('feature_announcements_enabled', false, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('reservation_reminder_hours', 24, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_announcements_enabled', false, 'boolean', $project->id);
         $reservation = Reservation::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'reserved_at' => now()->addHours(20), 'status' => ReservationStatus::CONFIRMED]);
         $reservation->forceFill(['created_at' => now()->subDays(3)])->save();
         $this->fakeNotifier(0);

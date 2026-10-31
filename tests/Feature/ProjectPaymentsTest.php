@@ -251,8 +251,8 @@ class ProjectPaymentsTest extends TestCase
         $gateway->event = ['type' => 'payment_intent.succeeded', 'currency' => 'jpy', 'metadata' => ['order_id' => $order->id], 'amount' => 1000];
         $this->app->instance(PaymentGateway::class, $gateway);
         config(['services.stripe.webhook_secret' => 'whsec_fixture']);
-        ShopSettingStore::setValue('use_points', true, 'boolean', $project->id);
-        ShopSettingStore::setValue('points_per_order', 10, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('use_points', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('points_per_order', 10, 'integer', $project->id);
         $this->postJson('/api/payment/webhook?store_id='.$store->id)->assertOk();
         $fresh = $order->fresh();
         $this->assertSame('confirmed', $fresh->status);

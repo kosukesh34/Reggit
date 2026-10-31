@@ -150,7 +150,7 @@ class MemberTransferTest extends TestCase
         $project = $this->createProject();
         $source = User::factory()->create(['project_id' => $project->id, 'line_user_id' => self::SOURCE_LINE_ID]);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $source->id]);
-        ShopSettingStore::setValue('member_registration_mode', 'force', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('member_registration_mode', 'force', 'string', $project->id);
         $oldToken = $this->registerDevice(self::SOURCE_LINE_ID, 'old-device');
         $code = $this->withHeaders(['X-Line-User-Id' => self::SOURCE_LINE_ID])
             ->postJson('/api/members/transfer-code?project_key=default')->assertOk()->json('data.code');

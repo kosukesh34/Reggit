@@ -41,6 +41,6 @@ class AdminContextTest extends TestCase
     public function test_get_business_hours_店舗未解決なら例外になること(): void
     {
         $this->expectException(ProjectContextMissingException::class);
-        BusinessSettingStore::getBusinessHours();
+        app(BusinessSettingStore::class)->getBusinessHours();
     }
 }

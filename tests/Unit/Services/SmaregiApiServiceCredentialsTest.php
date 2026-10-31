@@ -21,9 +21,9 @@ class SmaregiApiServiceCredentialsTest extends TestCase
         ]);
 
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract_proj', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_client_id', 'proj_client_id', 'string', (int) $project->id);
-        ShopSettingStore::setValue('smaregi_client_secret', 'proj_client_secret', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract_proj', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_client_id', 'proj_client_id', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_client_secret', 'proj_client_secret', 'string', (int) $project->id);
         SmaregiContract::create([
             'contract_id' => 'contract_proj',
             'project_id' => $project->id,

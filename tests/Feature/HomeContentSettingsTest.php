@@ -33,7 +33,7 @@ class HomeContentSettingsTest extends TestCase
         ];
         $endpoint = route('admin.settings.home.update', ['project_key' => $project->project_key]);
         $this->actingAs($admin, 'admin')->post($endpoint, $payload)->assertSessionHasNoErrors();
-        $saved = ShopSettingStore::getValue('home_content', [], $project->id);
+        $saved = app(ShopSettingStore::class)->getValue('home_content', [], $project->id);
         $this->assertArrayNotHasKey($foreign->id, $saved['actions']);
         $home = app(AppConfigService::class)->buildForProjectKey($project->project_key)['home'];
         $this->assertSame('buttons_gallery', $home['layout']);
@@ -84,13 +84,13 @@ class HomeContentSettingsTest extends TestCase
     {
         $project = Project::factory()->create();
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
-        ShopSettingStore::setValue('liff_tab_settings', ['_global' => ['theme_preset' => 'test'], 'member' => ['title' => 'Card']], 'json', $project->id);
+        app(ShopSettingStore::class)->setValue('liff_tab_settings', ['_global' => ['theme_preset' => 'test'], 'member' => ['title' => 'Card']], 'json', $project->id);
         $endpoint = route('admin.settings.member-card.update', ['project_key' => $project->project_key]);
         foreach (['minimal', 'ticket', 'wallet'] as $style) {
             $this->actingAs($admin, 'admin')->post($endpoint, ['member_page_style' => $style])->assertSessionHasNoErrors();
             $config = app(AppConfigService::class)->buildForProjectKey($project->project_key);
             $this->assertSame($style, $config['member_screen']['style']);
-            $this->assertSame('test', ShopSettingStore::getValue('liff_tab_settings', [], $project->id)['_global']['theme_preset']);
+            $this->assertSame('test', app(ShopSettingStore::class)->getValue('liff_tab_settings', [], $project->id)['_global']['theme_preset']);
         }
         $this->post($endpoint, ['member_page_style' => 'invalid'])->assertSessionHasErrors('member_page_style');
         $this->get(route('admin.settings.member-card', ['project_key' => $project->project_key]))->assertOk()->assertSee('member-page-preview', false)->assertSee('会員証ページのスタイル');
@@ -101,7 +101,7 @@ class HomeContentSettingsTest extends TestCase
         $project = Project::factory()->create();
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
         $this->assertSame('legacy', app(AppConfigService::class)->buildForProjectKey($project->project_key)['home']['layout']);
-        ShopSettingStore::setValue('home_content', ['layout' => 'member_news', 'image_limit' => null], 'json', $project->id);
+        app(ShopSettingStore::class)->setValue('home_content', ['layout' => 'member_news', 'image_limit' => null], 'json', $project->id);
         $this->actingAs($admin, 'admin')->post(route('admin.settings.home.update', ['project_key' => $project->project_key]), ['home_menu_layout' => 'list', 'product_display_layout' => 'name_only'])->assertSessionHasNoErrors();
         $home = app(AppConfigService::class)->buildForProjectKey($project->project_key)['home'];
         $this->assertSame('member_news', $home['layout']);

@@ -28,7 +28,7 @@ class LiffSettingsServiceTest extends TestCase
 
     public function test_get_menu_items_for_designer_デフォルトと保存値をマージしてorder順で返す(): void
     {
-        LiffSettingStore::setFrontendMenuItems([
+        app(LiffSettingStore::class)->setFrontendMenuItems([
             ['tab' => 'reservations', 'label' => 'ご予約', 'icon' => 'fa-calendar-check', 'order' => 0, 'enabled' => true],
             ['tab' => 'products', 'label' => 'お品書き', 'icon' => 'fa-utensils', 'order' => 2, 'enabled' => false],
         ], $this->project->id);

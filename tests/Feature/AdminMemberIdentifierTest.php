@@ -27,8 +27,8 @@ class AdminMemberIdentifierTest extends TestCase
     {
         $project = Project::factory()->create();
         $other = Project::factory()->create();
-        ShopSettingStore::setValue('member_code_type', 'sequential', 'string', $project->id);
-        ShopSettingStore::setValue('member_code_type', 'random', 'string', $other->id);
+        app(ShopSettingStore::class)->setValue('member_code_type', 'sequential', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('member_code_type', 'random', 'string', $other->id);
         $member = Member::factory()->create(['project_id' => $project->id, 'member_number' => 'M00001234', 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
         $random = Member::factory()->create(['project_id' => $other->id, 'member_number' => 'XYZ987654', 'user_id' => User::factory()->create(['project_id' => $other->id])->id]);
         $this->assertSame((string) $member->id, app(AdminMemberIdentifier::class)->value($member));

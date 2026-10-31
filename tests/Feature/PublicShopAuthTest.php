@@ -43,7 +43,7 @@ class PublicShopAuthTest extends TestCase
     {
         $project = $this->enableShop();
 
-        ShopSettingStore::setValue('shop_hero_headline', 'サンプルショップ見出し', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_hero_headline', 'サンプルショップ見出し', 'string', $project->id);
 
         $this->get(route('shop.show', ['project_key' => $project->project_key]))
             ->assertOk()
@@ -158,7 +158,7 @@ class PublicShopAuthTest extends TestCase
         $project->custom_shop_domain = 'shop.test';
         $project->save();
 
-        ShopSettingStore::setValue('shop_hero_headline', '独自ドメインショップ', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_hero_headline', '独自ドメインショップ', 'string', $project->id);
 
         $this->get('http://shop.test/shop')->assertOk()->assertSee('独自ドメインショップ');
         $this->get('http://shop.test/')->assertRedirect('/shop');
@@ -187,7 +187,7 @@ class PublicShopAuthTest extends TestCase
     {
         config(['smaregi.contract_id' => '']);
         $project = $this->enableShop();
-        ShopSettingStore::setValue('member_registration_mode', 'force', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('member_registration_mode', 'force', 'string', $project->id);
         $email = 'new-web@example.com';
         $url = URL::temporarySignedRoute(
             'shop.email.consume',
@@ -396,8 +396,8 @@ class PublicShopAuthTest extends TestCase
     private function enableShop(): Project
     {
         $project = Project::factory()->create(['is_active' => true, 'service_status' => 'active']);
-        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $project->id);
-        ShopSettingStore::setValue('shop_shipping_fee', 300, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_shop_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_shipping_fee', 300, 'integer', $project->id);
 
         return $project;
     }

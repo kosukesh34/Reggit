@@ -39,7 +39,7 @@ class MemberWithdrawTest extends TestCase
     {
         $project = $this->createProject();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'smaregi_customer_id' => 'current-customer']);
         $user->load('member');
@@ -81,7 +81,7 @@ class MemberWithdrawTest extends TestCase
     public function test_withdraw_スマレジ会員が既に無い404でも退会できること(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         config([
             'smaregi.client_id' => 'test_client_id',
             'smaregi.client_secret' => 'test_client_secret',
@@ -160,7 +160,7 @@ class MemberWithdrawTest extends TestCase
     public function test_withdraw_外部連携失敗時は内部情報を返さずローカル会員を保持すること(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         config([
             'smaregi.client_id' => 'test_client_id',
             'smaregi.client_secret' => 'test_client_secret',

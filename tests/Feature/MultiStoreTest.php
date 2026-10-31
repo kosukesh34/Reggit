@@ -136,7 +136,7 @@ class MultiStoreTest extends TestCase
         $this->assertSame(6, $branch['reservation_max_party_size']);
         $this->assertSame(24, $branch['reservation_change_deadline_hours']);
         $this->assertArrayNotHasKey('reservation_same_day', $this->b->fresh()->settings ?? []);
-        $this->assertFalse((bool) ShopSettingStore::getValue('reservation_same_day', false, $this->project->id));
+        $this->assertFalse((bool) app(ShopSettingStore::class)->getValue('reservation_same_day', false, $this->project->id));
     }
 
     public function test_headquarters_can_create_and_update_shared_reservation_courses(): void

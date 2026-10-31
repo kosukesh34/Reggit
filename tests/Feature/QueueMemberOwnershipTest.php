@@ -25,7 +25,7 @@ class QueueMemberOwnershipTest extends TestCase
     {
         $project = Project::factory()->create(['is_active' => true]);
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('queue_require_membership', $required, 'boolean', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('queue_require_membership', $required, 'boolean', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U11111111111111111111111111111111']);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         $user->load('member');

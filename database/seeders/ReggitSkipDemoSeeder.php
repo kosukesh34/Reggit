@@ -32,7 +32,7 @@ class ReggitSkipDemoSeeder extends Seeder
                 ['feature_gallery_enabled' => true, 'feature_queue_enabled' => true, 'feature_members_enabled' => true]
             );
 
-            $menuItems = ShopSettingStore::getValue('frontend_menu_items', [], $projectId);
+            $menuItems = app(ShopSettingStore::class)->getValue('frontend_menu_items', [], $projectId);
             $menuItems = is_array($menuItems) ? array_values($menuItems) : [];
             if (! collect($menuItems)->contains(fn ($item) => is_array($item) && ($item['tab'] ?? null) === 'gallery')) {
                 $menuItems[] = [
@@ -42,7 +42,7 @@ class ReggitSkipDemoSeeder extends Seeder
                     'order' => count($menuItems),
                     'enabled' => true,
                 ];
-                ShopSettingStore::setValue('frontend_menu_items', $menuItems, 'json', $projectId);
+                app(ShopSettingStore::class)->setValue('frontend_menu_items', $menuItems, 'json', $projectId);
             }
 
             $catalog = [

@@ -31,8 +31,8 @@ class MemberRankMetricCalculatorTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('member_rank_aggregation_type', RankAggregationType::PERIOD, 'string', (int) $project->id);
-        ShopSettingStore::setValue('member_rank_period_days', 30, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_aggregation_type', RankAggregationType::PERIOD, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_period_days', 30, 'integer', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -55,7 +55,7 @@ class MemberRankMetricCalculatorTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('member_rank_aggregation_type', RankAggregationType::TOTAL, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_aggregation_type', RankAggregationType::TOTAL, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -73,8 +73,8 @@ class MemberRankMetricCalculatorTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('member_rank_aggregation_type', RankAggregationType::PERIOD, 'string', (int) $project->id);
-        ShopSettingStore::setValue('member_rank_period_days', 10, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_aggregation_type', RankAggregationType::PERIOD, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_period_days', 10, 'integer', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -115,7 +115,7 @@ class MemberRankMetricCalculatorTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('member_rank_aggregation_type', RankAggregationType::TOTAL, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('member_rank_aggregation_type', RankAggregationType::TOTAL, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([

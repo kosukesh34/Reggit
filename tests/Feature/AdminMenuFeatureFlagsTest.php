@@ -26,7 +26,7 @@ class AdminMenuFeatureFlagsTest extends TestCase
         $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
         $key = ['project_key' => $project->project_key];
         foreach (['reservations', 'queue', 'coupons', 'announcements', 'stamps', 'orders', 'shop', 'tickets'] as $feature) {
-            ShopSettingStore::setValue('feature_'.$feature.'_enabled', false, 'boolean', $project->id);
+            app(ShopSettingStore::class)->setValue('feature_'.$feature.'_enabled', false, 'boolean', $project->id);
         }
 
         $html = $this->actingAs($admin, 'admin')->get(route('admin.settings.index', $key))->assertOk()->getContent();
@@ -40,7 +40,7 @@ class AdminMenuFeatureFlagsTest extends TestCase
         }
 
         // 回数券だけ有効なら注文と商品は出す
-        ShopSettingStore::setValue('feature_tickets_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_tickets_enabled', true, 'boolean', $project->id);
         $html = $this->actingAs($admin, 'admin')->get(route('admin.settings.index', $key))->assertOk()->getContent();
         $this->assertStringContainsString('href="'.route('admin.orders', $key).'"', $html);
         $this->assertStringContainsString('href="'.route('admin.products', $key).'"', $html);

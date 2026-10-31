@@ -38,10 +38,10 @@ class DefaultDataSeeder extends Seeder
     /** PC向け公開ショップ（/web/{project_key}/shop）をサンプルで使えるようにする。 */
     private function enablePublicShop(int $projectId): void
     {
-        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $projectId);
-        ShopSettingStore::setValue('shop_shipping_fee', 500, 'integer', $projectId);
-        ShopSettingStore::setValue('shop_hero_headline', '自宅で楽しむ、お店の味', 'string', $projectId);
-        ShopSettingStore::setValue('shop_hero_subcopy', '人気メニューをオンラインでお届け。今だけのラインナップをチェック。', 'string', $projectId);
+        app(ShopSettingStore::class)->setValue('feature_shop_enabled', true, 'boolean', $projectId);
+        app(ShopSettingStore::class)->setValue('shop_shipping_fee', 500, 'integer', $projectId);
+        app(ShopSettingStore::class)->setValue('shop_hero_headline', '自宅で楽しむ、お店の味', 'string', $projectId);
+        app(ShopSettingStore::class)->setValue('shop_hero_subcopy', '人気メニューをオンラインでお届け。今だけのラインナップをチェック。', 'string', $projectId);
     }
 
     /** デフォルトのサンプルクーポンのみ投入（既存がある場合はスキップ。$force で上書き） */

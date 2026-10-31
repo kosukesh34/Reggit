@@ -143,7 +143,7 @@ class AdminAnnouncementsTest extends TestCase
         ]);
         $project = $this->createDistributionProject();
         $project->update(['line_plan_enabled' => true]);
-        LineSettingStore::setLineChannelAccessToken('project-token', (int) $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('project-token', (int) $project->id);
 
         $this->actingAs($this->createAdmin($project), 'admin')
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
@@ -158,7 +158,7 @@ class AdminAnnouncementsTest extends TestCase
         Http::preventStrayRequests();
         Http::fake();
         $project = $this->createDistributionProject();
-        LineSettingStore::setLineChannelAccessToken('project-token', (int) $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('project-token', (int) $project->id);
 
         $this->actingAs($this->createAdmin($project), 'admin')
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
@@ -173,7 +173,7 @@ class AdminAnnouncementsTest extends TestCase
         Http::fake(['api.line.me/*' => Http::response(['message' => 'Authentication failed'], 401)]);
         $project = $this->createDistributionProject();
         $project->update(['line_plan_enabled' => true]);
-        LineSettingStore::setLineChannelAccessToken('invalid-token', (int) $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('invalid-token', (int) $project->id);
 
         $this->actingAs($this->createAdmin($project), 'admin')
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
