@@ -22,6 +22,7 @@ class OrderPaymentSessionService
     public function __construct(
         private PaymentGateway $gateway,
         private CurrentMemberPrincipal $principals,
+        private ProjectPaymentGatewayResolver $gateways,
     ) {}
 
     /** @return array<string, string> */
@@ -68,7 +69,7 @@ class OrderPaymentSessionService
 
         try {
             $order = Order::where('project_id', $projectId)->findOrFail($orderId);
-            $gateway = app(ProjectPaymentGatewayResolver::class)->forOrder($order, $this->gateway);
+            $gateway = $this->gateways->forOrder($order, $this->gateway);
             $result = $this->createAtGateway($gateway, $channel, $reservation['amount'], $orderId);
         } catch (Throwable $e) {
             $this->clearReservation($orderId, $projectId, $lease);

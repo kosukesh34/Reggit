@@ -13,6 +13,7 @@ use App\Models\ScheduledDeliveryAttempt;
 use App\Models\ScheduledDeliverySend;
 use App\Services\Admin\MemberBenefitService;
 use App\Util\LogHelper;
+use App\Util\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ class ScheduledDeliverySendService
         private ScheduledDeliveryTargetService $targetService,
         private AnnouncementNotificationService $announcementNotificationService,
         private MemberBenefitService $memberBenefitService,
+        private TenantContext $tenants,
     ) {}
 
     /** @return array{sent: int, failed: int} */
@@ -230,7 +232,7 @@ class ScheduledDeliverySendService
         if ($announcement !== null) {
             DB::afterCommit(function () use ($announcement): void {
                 try {
-                    (new SendAnnouncementNotificationJob((int) $announcement->id))->handle($this->announcementNotificationService);
+                    (new SendAnnouncementNotificationJob((int) $announcement->id))->handle($this->announcementNotificationService, $this->tenants);
                 } catch (\Throwable $exception) {
                     // The persisted pending notification is retried by the scheduler.
                     report($exception);

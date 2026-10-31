@@ -17,6 +17,7 @@ use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\UseCases\Admin\Order\AdminOrderUpdateStatusUseCase;
 use App\UseCases\Payment\PaymentWebhookUseCase;
+use App\Util\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakePaymentGateway;
@@ -116,6 +117,7 @@ class MultiDeviceOrderFlowTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(StoreContext::class),
         );
         $this->assertTrue($webhook->handle('{}', 'sig', 'secret'));
 

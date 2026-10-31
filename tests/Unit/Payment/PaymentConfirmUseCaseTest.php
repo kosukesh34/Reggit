@@ -17,6 +17,7 @@ use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentConfirmUseCase;
+use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\FakePaymentGateway;
@@ -74,6 +75,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(ProjectPaymentGatewayResolver::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
@@ -137,6 +139,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(ProjectPaymentGatewayResolver::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
@@ -172,6 +175,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(ProjectPaymentGatewayResolver::class),
         );
         $result = $useCase->handle('pi_test_123', $order->id, 1, (int) $user->id);
 
@@ -206,6 +210,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(ProjectPaymentGatewayResolver::class),
         );
 
         $this->expectException(ModelNotFoundException::class);
@@ -223,6 +228,7 @@ class PaymentConfirmUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(ProjectPaymentGatewayResolver::class),
         );
 
         $this->expectException(ModelNotFoundException::class);

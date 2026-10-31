@@ -24,6 +24,7 @@ class SystemHelpArticleController extends Controller
         private SystemHelpArticleStoreUseCase $storeUseCase,
         private SystemHelpArticleUpdateUseCase $updateUseCase,
         private SystemHelpArticleDestroyUseCase $destroyUseCase,
+        private HelpMarkdown $markdown,
     ) {}
 
     public function index(): View
@@ -35,7 +36,7 @@ class SystemHelpArticleController extends Controller
     {
         $data = $request->validate(['body' => 'nullable|string|max:100000']);
 
-        return response()->json(['html' => app(HelpMarkdown::class)->toHtml($data['body'] ?? '')]);
+        return response()->json(['html' => $this->markdown->toHtml($data['body'] ?? '')]);
     }
 
     public function showPreview(string $id): View
@@ -44,7 +45,7 @@ class SystemHelpArticleController extends Controller
 
         return view('admin.system-help.preview', [
             'article' => $article,
-            'html' => app(HelpMarkdown::class)->toHtml($article->body),
+            'html' => $this->markdown->toHtml($article->body),
         ]);
     }
 

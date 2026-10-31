@@ -31,8 +31,9 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
     public function handle(
         MemberBenefitService $memberBenefitService,
         CouponDeliveryTargetService $targetService,
+        TenantContext $tenants,
     ): void {
-        DB::transaction(function () use ($memberBenefitService, $targetService): void {
+        DB::transaction(function () use ($memberBenefitService, $targetService, $tenants): void {
             $delivery = CouponDelivery::withoutGlobalScopes()
                 ->whereKey($this->couponDeliveryId)
                 ->lockForUpdate()
@@ -41,7 +42,7 @@ class SendScheduledCouponDeliveryJob implements ShouldQueue
                 return;
             }
 
-            app(TenantContext::class)->runForProject(
+            $tenants->runForProject(
                 Project::query()->findOrFail($delivery->project_id),
                 fn () => $this->send($delivery, $memberBenefitService, $targetService),
             );

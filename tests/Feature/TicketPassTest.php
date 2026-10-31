@@ -21,6 +21,7 @@ use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\UseCases\Payment\PaymentWebhookUseCase;
 use App\Util\AdminContext;
+use App\Util\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakePaymentGateway;
@@ -85,6 +86,7 @@ class TicketPassTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(StoreContext::class),
         ))->handle('{}', 'sig', 'secret');
     }
 

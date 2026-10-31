@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Member\CurrentMemberPrincipal;
 use App\UseCases\Payment\OrderPaymentSessionService;
 use App\UseCases\Payment\PaymentGateway;
+use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -57,7 +58,7 @@ class PaymentPrincipalTest extends TestCase
         }
         $rejected = false;
         try {
-            (new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class)))
+            (new OrderPaymentSessionService($gateway, app(CurrentMemberPrincipal::class), app(ProjectPaymentGatewayResolver::class)))
                 ->create((int) $order->id, (int) $project->id, $user, 'intent');
         } catch (AuthenticationException $exception) {
             $rejected = true;

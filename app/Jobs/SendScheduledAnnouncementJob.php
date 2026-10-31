@@ -27,8 +27,10 @@ class SendScheduledAnnouncementJob implements ShouldQueue
     public function handle(
         AnnouncementNotificationService $announcementNotificationService,
         AnnouncementAdminService $announcementAdminService,
+        TenantContext $tenants,
+        AnnouncementStoreAudience $audience,
     ): void {
-        $announcement = DB::transaction(function () use ($announcementAdminService): ?Announcement {
+        $announcement = DB::transaction(function () use ($announcementAdminService, $tenants, $audience): ?Announcement {
             $locked = Announcement::withoutGlobalScopes()
                 ->whereKey($this->announcementId)
                 ->lockForUpdate()
@@ -37,10 +39,10 @@ class SendScheduledAnnouncementJob implements ShouldQueue
                 return null;
             }
 
-            return app(TenantContext::class)->runForProject(
+            return $tenants->runForProject(
                 Project::query()->findOrFail($locked->project_id),
-                function () use ($locked, $announcementAdminService): ?Announcement {
-                    if (! app(AnnouncementStoreAudience::class)->authorizedForSend($locked)) {
+                function () use ($locked, $announcementAdminService, $audience): ?Announcement {
+                    if (! $audience->authorizedForSend($locked)) {
                         $locked->update(['delivery_status' => 'held']);
                         Log::warning('配信を保留しました。作成者の店舗権限を確認してください。', ['announcement_id' => $locked->id]);
 
@@ -66,6 +68,6 @@ class SendScheduledAnnouncementJob implements ShouldQueue
             return;
         }
 
-        (new SendAnnouncementNotificationJob((int) $announcement->id))->handle($announcementNotificationService);
+        (new SendAnnouncementNotificationJob((int) $announcement->id))->handle($announcementNotificationService, $tenants);
     }
 }

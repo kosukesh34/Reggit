@@ -11,11 +11,13 @@ use App\Util\AdminContext;
 
 class AnnouncementIndexUseCase
 {
+    public function __construct(private AnnouncementVisibility $visibility) {}
+
     public function handle(?User $user): AnnouncementIndexView
     {
         $projectId = AdminContext::requireCurrentProjectId();
 
-        $announcements = app(AnnouncementVisibility::class)->apply(Announcement::where('project_id', $projectId), $user)
+        $announcements = $this->visibility->apply(Announcement::where('project_id', $projectId), $user)
             ->whereNotNull('published_at')
             ->where('published_at', '<=', now())
             ->where(function ($query) {

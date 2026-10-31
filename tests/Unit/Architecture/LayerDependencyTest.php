@@ -235,19 +235,22 @@ class LayerDependencyTest extends TestCase
 
     public function test_services_do_not_hide_collaborators_behind_the_container(): void
     {
-        $directory = dirname(__DIR__, 3).'/app/Services';
+        $root = dirname(__DIR__, 3).'/app/';
+        // AdminBaseController の共通ヘルパーは、全サブクラスのアクションへの注入を避けるため例外とする
+        $allowed = [$root.'Http/Controllers/Admin/AdminBaseController.php'];
         $violations = [];
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory));
 
-        foreach ($files as $file) {
-            if (! $file->isFile() || $file->getExtension() !== 'php') {
-                continue;
-            }
+        foreach (['Services', 'UseCases', 'Http/Controllers', 'Jobs'] as $directory) {
+            foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root.$directory)) as $file) {
+                if (! $file->isFile() || $file->getExtension() !== 'php' || in_array($file->getPathname(), $allowed, true)) {
+                    continue;
+                }
 
-            $source = file_get_contents($file->getPathname());
-            self::assertIsString($source);
-            if (preg_match('/\\b(?:app|resolve)\\s*\\(\\s*[A-Z][A-Za-z0-9_\\\\]*::class/', $source) === 1) {
-                $violations[] = $file->getPathname();
+                $source = file_get_contents($file->getPathname());
+                self::assertIsString($source);
+                if (preg_match('/\\b(?:app|resolve)\\s*\\(\\s*[A-Z][A-Za-z0-9_\\\\]*::class/', $source) === 1) {
+                    $violations[] = $file->getPathname();
+                }
             }
         }
 

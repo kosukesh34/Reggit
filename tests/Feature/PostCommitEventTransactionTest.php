@@ -161,7 +161,7 @@ class PostCommitEventTransactionTest extends TestCase
         $gateway->event = ['type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id], 'amount' => 1000];
         $webhook = new PaymentWebhookUseCase($gateway, app(OrderRepository::class),
-            app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class));
+            app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class), app(StoreContext::class));
         DB::beginTransaction();
         try {
             $this->assertTrue($webhook->handle('{}', 'sig', 'secret'));

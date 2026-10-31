@@ -16,6 +16,7 @@ use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\Support\DailySequenceNumber;
 use App\UseCases\Payment\PaymentWebhookUseCase;
+use App\Util\StoreContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakePaymentGateway;
@@ -58,6 +59,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(StoreContext::class),
         );
         $this->freezeTime();
         $result = $useCase->handle('{}', 'sig', 'secret');
@@ -108,6 +110,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(StoreContext::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
@@ -154,6 +157,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class, ['dispatcher' => $dispatcher]),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(StoreContext::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
@@ -200,6 +204,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             app(PaidOrderRewardApplier::class),
+            app(StoreContext::class),
         );
         $result = $useCase->handle('{}', 'sig', 'secret');
 
@@ -246,6 +251,7 @@ class PaymentWebhookUseCaseTest extends TestCase
             app(PostCommitDomainEventDispatcher::class),
             app(OrderNumberAssigner::class),
             $orderService,
+            app(StoreContext::class),
         );
 
         try {

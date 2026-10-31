@@ -15,6 +15,7 @@ class ProjectController extends Controller
         private ProjectIndexUseCase $indexUseCase,
         private ProjectEditUseCase $editUseCase,
         private ProjectSettings $shopSettingRepository,
+        private ProjectAppLinkRepository $appLinkRepository,
     ) {}
 
     public function index()
@@ -41,7 +42,7 @@ class ProjectController extends Controller
     {
         $project = $this->editUseCase->handle($id);
 
-        $appLinks = app(ProjectAppLinkRepository::class)->find((int) $project->id);
+        $appLinks = $this->appLinkRepository->find((int) $project->id);
 
         return view('admin.projects.edit', ['appLinks' => $appLinks, 'view' => new ProjectFormView(
             $project,
