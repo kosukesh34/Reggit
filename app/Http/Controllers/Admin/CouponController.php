@@ -2,13 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Coupon;
-use App\Models\CouponDelivery;
-use App\Models\CouponRedemption;
-use App\Models\MemberCoupon;
 use App\UseCases\Admin\Coupon\AdminCouponEditFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponRedemptionsUseCase;
+use App\UseCases\Admin\Coupon\AdminCouponShowUseCase;
 
 class CouponController extends AdminBaseController
 {
@@ -36,23 +33,9 @@ class CouponController extends AdminBaseController
         return view('admin.coupons.create');
     }
 
-    public function showCoupon(string $projectKey, int $id)
+    public function showCoupon(string $projectKey, int $id, AdminCouponShowUseCase $show)
     {
-        $projectId = $this->resolveAdminProjectId();
-        $coupon = Coupon::where('project_id', $projectId)->findOrFail($id);
-        $deliveryQuery = CouponDelivery::where('project_id', $projectId)->where('coupon_id', $coupon->id);
-        $memberCouponQuery = MemberCoupon::where('project_id', $projectId)->where('coupon_id', $coupon->id);
-
-        return view('admin.coupons.show', [
-            'coupon' => $coupon,
-            'stats' => [
-                'delivery_count' => (clone $deliveryQuery)->count(),
-                'issued_count' => (clone $memberCouponQuery)->count(),
-                'unused_count' => (clone $memberCouponQuery)->where('status', MemberCoupon::STATUS_UNUSED)->count(),
-                'redeemed_count' => CouponRedemption::where('project_id', $projectId)->where('coupon_id', $coupon->id)->count(),
-            ],
-            'deliveries' => $deliveryQuery->orderByDesc('id')->paginate(10, ['*'], 'deliveries_page'),
-        ]);
+        return view('admin.coupons.show', $show->handle($this->resolveAdminProjectId(), $id));
     }
 
     public function editCoupon(string $projectKey, $id)

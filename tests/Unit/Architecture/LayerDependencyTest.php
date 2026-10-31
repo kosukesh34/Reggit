@@ -85,6 +85,11 @@ class LayerDependencyTest extends TestCase
             'Admin/AdminRootController.php',
             'Admin/Auth/SystemAdminLoginController.php',
             'Member/MemberTransferClaimController.php',
+            'Payment/PaymentReturnController.php',
+            'Admin/MemberTicketController.php',
+            'Admin/CouponController.php',
+            'TicketController.php',
+            'Admin/Settings/PaymentsController.php',
         ];
         $violations = [];
 
