@@ -15,6 +15,8 @@ class PostalCodeSearchUseCase
 {
     private const ZIPCLOUD_URL = 'https://zipcloud.ibsnet.co.jp/api/search';
 
+    public function __construct(private JapanPostApiService $japanPost) {}
+
     public function handle(string $postalCode): PostalCodeSearchOutput
     {
         $digits = preg_replace('/\D/', '', $postalCode);
@@ -26,8 +28,7 @@ class PostalCodeSearchUseCase
         $error = null;
 
         try {
-            $service = JapanPostApiService::fromConfig();
-            $result = $service->searchByPostalCode($digits);
+            $result = $this->japanPost->searchByPostalCode($digits);
             if (isset($result['_error'])) {
                 $error = $result['_error'];
             } else {

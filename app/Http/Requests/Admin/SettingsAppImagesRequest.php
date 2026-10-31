@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\Admin\Data\UpdateHomeImagesInput;
 use App\UseCases\Admin\Settings\Data\UpdateAppImagesInput;
-use App\UseCases\Admin\Settings\Data\UpdateHomeImagesInput;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SettingsAppImagesRequest extends FormRequest

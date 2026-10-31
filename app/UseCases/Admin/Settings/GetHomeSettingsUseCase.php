@@ -3,7 +3,6 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
-use App\Infrastructure\Persistence\Eloquent\Settings\LiffSettingStore;
 use App\Models\Announcement;
 use App\Models\GalleryItem;
 use App\Models\Project;
@@ -28,7 +27,7 @@ class GetHomeSettingsUseCase
             return [
                 'tab' => $item['tab'],
                 'label' => $saved['label'] ?? $item['label'],
-                'icon' => LiffSettingStore::normalizeFrontendMenuIcon($item['tab'], (string) ($saved['icon'] ?? $item['icon'])),
+                'icon' => $this->shopSettingRepository->normalizeFrontendMenuIcon($item['tab'], (string) ($saved['icon'] ?? $item['icon'])),
                 'order' => $saved['order'] ?? $item['order'],
                 'enabled' => $this->normalizeEnabled($saved['enabled'] ?? null),
             ];

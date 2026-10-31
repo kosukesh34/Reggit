@@ -1,16 +1,16 @@
 <?php
 
-namespace App\UseCases\Admin\Settings;
+namespace App\Services\Admin;
 
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
-use App\Services\Admin\PublicImageStorageService;
-use App\UseCases\Admin\Settings\Data\UpdateHomeImagesInput;
+use App\Services\Admin\Data\UpdateHomeImagesInput;
 
-class UpdateHomeImagesUseCase
+/** ホーム画像・ナビゲーションヘッダー画像の保存と削除。 */
+class HomeImagesUpdater
 {
     public function __construct(private HomeSettingsRepository $settings, private PublicImageStorageService $images) {}
 
-    public function handle(UpdateHomeImagesInput $input): void
+    public function update(UpdateHomeImagesInput $input): void
     {
         $urls = null;
         if ($input->galleryPresent) {

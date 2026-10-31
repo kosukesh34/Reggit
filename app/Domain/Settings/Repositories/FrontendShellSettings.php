@@ -10,6 +10,8 @@ interface FrontendShellSettings
 
     public function defaultFrontendMenuItems(): array;
 
+    public function normalizeFrontendMenuIcon(string $tab, string $icon): string;
+
     public function getFeatureFlags(int $projectId): array;
 
     public function getFrontendLogoUrl(int $projectId): ?string;
