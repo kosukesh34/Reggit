@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
 use App\Services\UserService;
 use App\UseCases\Order\Data\OrderFactory;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\UseCases\Payment\PaymentGateway;
+use App\UseCases\Payment\PaymentOrderQuery;
 use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -22,6 +22,7 @@ class PaymentConfirmCheckoutController extends Controller
         private UserService $userService,
         private OrderFactory $orderFactory,
         private ProjectPaymentGatewayResolver $gateways,
+        private PaymentOrderQuery $orders,
     ) {}
 
     public function __invoke(Request $request)
@@ -36,8 +37,7 @@ class PaymentConfirmCheckoutController extends Controller
             return response()->json(['error' => 'ユーザーを特定できません'], 401);
         }
 
-        $order = Order::where('project_id', $projectId)->where('user_id', $user->id)
-            ->find($request->integer('order_id'));
+        $order = $this->orders->forUser($projectId, (int) $user->id, $request->integer('order_id'));
         $sessionId = $order?->payment_session['result']['id'] ?? null;
         if ($order === null || ! in_array($order->payment_session['channel'] ?? null, ['checkout', 'checkout_web', 'card'], true) || ! is_string($sessionId)) {
             return response()->json(['error' => '決済情報が見つかりません'], 404);

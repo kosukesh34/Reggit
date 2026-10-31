@@ -28,6 +28,15 @@ final class MemberPasskeyService
         private GenerateVerificationOptions $generateVerificationOptions,
     ) {}
 
+    /** パスキーでログインする会員をメールアドレスから探す（大文字小文字を区別しない） */
+    public function userForLoginEmail(int $projectId, string $email): ?User
+    {
+        return User::query()
+            ->where('project_id', $projectId)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+    }
+
     /**
      * @return array<array-key, mixed>
      */

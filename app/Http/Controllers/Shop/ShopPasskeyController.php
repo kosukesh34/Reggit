@@ -28,10 +28,7 @@ class ShopPasskeyController extends Controller
         $email = strtolower(trim((string) $request->query('email', '')));
         $user = null;
         if ($email !== '') {
-            $user = User::query()
-                ->where('project_id', AdminContext::requireCurrentProjectId())
-                ->whereRaw('LOWER(email) = ?', [$email])
-                ->first();
+            $user = $this->passkeys->userForLoginEmail(AdminContext::requireCurrentProjectId(), $email);
         }
 
         return response()->json([

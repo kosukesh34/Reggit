@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Payment;
 
 use App\Http\Controllers\Controller;
-use App\Models\Settings\ProjectPaymentSetting;
 use App\Services\Subscription\SubscriptionWebhookHandler;
 use App\UseCases\Payment\PaymentWebhookUseCase;
+use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
@@ -17,6 +17,7 @@ class PaymentWebhookController extends Controller
     public function __construct(
         private PaymentWebhookUseCase $webhookUseCase,
         private SubscriptionWebhookHandler $subscriptionWebhook,
+        private ProjectPaymentGatewayResolver $gateways,
     ) {}
 
     public function __invoke(Request $request)
@@ -27,7 +28,7 @@ class PaymentWebhookController extends Controller
         $projectId = null;
         if ($settingId !== null) {
             $projectId = AdminContext::requireCurrentProjectId();
-            $setting = ProjectPaymentSetting::where('project_id', $projectId)->findOrFail($settingId);
+            $setting = $this->gateways->webhookSetting($projectId, $settingId);
         }
         $endpointSecret = isset($setting) ? $setting->webhook_secret : (string) config('services.stripe.webhook_secret', '');
 

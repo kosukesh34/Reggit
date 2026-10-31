@@ -94,6 +94,19 @@ class LayerDependencyTest extends TestCase
             'Admin/CouponController.php',
             'TicketController.php',
             'Admin/Settings/PaymentsController.php',
+            'Admin/DashboardController.php',
+            'Admin/MemberController.php',
+            'Admin/RfmController.php',
+            'AnnouncementImageController.php',
+            'AnnouncementMediaController.php',
+            'Api/V1/Analysis/AnalysisDeliveryController.php',
+            'Member/ExistingMemberLinkController.php',
+            'Payment/PaymentCardController.php',
+            'Payment/PaymentConfirmCheckoutController.php',
+            'Payment/PaymentMethodsController.php',
+            'Payment/PaymentWebhookController.php',
+            'Shop/ShopReceiptController.php',
+            'StoreListController.php',
         ];
         $violations = [];
 
