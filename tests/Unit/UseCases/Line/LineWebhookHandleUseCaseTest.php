@@ -3,7 +3,7 @@
 namespace Tests\Unit\UseCases\Line;
 
 use App\Domain\Settings\Repositories\LineConnectionSettings;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Models\LineFollowEvent;
 use App\Models\Project;
 use App\Models\User;
@@ -25,8 +25,8 @@ class LineWebhookHandleUseCaseTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default', 'description' => '', 'is_active' => true]
         );
-        ShopSettingStore::setLineChannelSecret('secret-default', (int) $project->id);
-        ShopSettingStore::setLineChannelAccessToken('token-default', (int) $project->id);
+        LineSettingStore::setLineChannelSecret('secret-default', (int) $project->id);
+        LineSettingStore::setLineChannelAccessToken('token-default', (int) $project->id);
 
         $lineUserId = 'U00000000000000000000000000000011';
         $line = $this->mockLineService('secret-default');
@@ -53,8 +53,8 @@ class LineWebhookHandleUseCaseTest extends TestCase
     {
         $projectA = Project::factory()->create(['project_key' => 'shop-a', 'is_active' => true]);
         $projectB = Project::factory()->create(['project_key' => 'shop-b', 'is_active' => true]);
-        ShopSettingStore::setLineChannelSecret('secret-a', (int) $projectA->id);
-        ShopSettingStore::setLineChannelSecret('secret-b', (int) $projectB->id);
+        LineSettingStore::setLineChannelSecret('secret-a', (int) $projectA->id);
+        LineSettingStore::setLineChannelSecret('secret-b', (int) $projectB->id);
 
         $lineUserId = 'U00000000000000000000000000000022';
         $line = $this->mockLineService('secret-b');
@@ -77,7 +77,7 @@ class LineWebhookHandleUseCaseTest extends TestCase
     public function test_署名が不正なら401でユーザーを作らないこと(): void
     {
         $project = Project::factory()->create(['is_active' => true]);
-        ShopSettingStore::setLineChannelSecret('secret-a', (int) $project->id);
+        LineSettingStore::setLineChannelSecret('secret-a', (int) $project->id);
 
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('verifySignatureWithSecret')->andReturn(false);
@@ -118,7 +118,7 @@ class LineWebhookHandleUseCaseTest extends TestCase
     public function test_unfollowでブロック日時を記録しfollowで解除すること(): void
     {
         $project = Project::factory()->create(['project_key' => 'shop-block', 'is_active' => true]);
-        ShopSettingStore::setLineChannelSecret('secret-block', (int) $project->id);
+        LineSettingStore::setLineChannelSecret('secret-block', (int) $project->id);
         $lineUserId = 'U00000000000000000000000000000033';
         $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => $lineUserId]);
         $line = $this->mockLineService('secret-block');
@@ -143,7 +143,7 @@ class LineWebhookHandleUseCaseTest extends TestCase
     public function test_同じunfollowが再送されてもブロックは1回だけ数えること(): void
     {
         $project = Project::factory()->create(['project_key' => 'shop-redelivery', 'is_active' => true]);
-        ShopSettingStore::setLineChannelSecret('secret-redelivery', (int) $project->id);
+        LineSettingStore::setLineChannelSecret('secret-redelivery', (int) $project->id);
         $lineUserId = 'U00000000000000000000000000000044';
         User::factory()->create(['project_id' => $project->id, 'line_user_id' => $lineUserId]);
         $input = new LineWebhookInput(false, 'sig', json_encode([

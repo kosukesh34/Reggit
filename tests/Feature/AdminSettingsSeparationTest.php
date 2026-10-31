@@ -2,6 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\AppearanceSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\FeatureFlagStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberCardSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberCodeSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -41,8 +46,8 @@ class AdminSettingsSeparationTest extends TestCase
     {
         $project = $this->login();
         $ranks = [['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1000, 'is_active' => true, 'order' => 1]];
-        ShopSettingStore::setMemberRankSettings($ranks, $project->id);
-        $existingRanks = ShopSettingStore::getMemberRankSettings($project->id);
+        MemberRankSettingStore::setMemberRankSettings($ranks, $project->id);
+        $existingRanks = MemberRankSettingStore::getMemberRankSettings($project->id);
         ShopSettingStore::setValue('point_earn_rate', 80, 'integer', $project->id);
         ShopSettingStore::setValue('use_points', false, 'boolean', $project->id);
 
@@ -52,10 +57,10 @@ class AdminSettingsSeparationTest extends TestCase
             'show_points_display' => '0',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $this->assertSame('compact', ShopSettingStore::getMemberCardDesign($project->id));
-        $this->assertSame($existingRanks, ShopSettingStore::getMemberRankSettings($project->id));
-        $this->assertSame(80, ShopSettingStore::getPointEarnRate($project->id));
-        $this->assertFalse(ShopSettingStore::getUsePoints($project->id));
+        $this->assertSame('compact', MemberCardSettingStore::getMemberCardDesign($project->id));
+        $this->assertSame($existingRanks, MemberRankSettingStore::getMemberRankSettings($project->id));
+        $this->assertSame(80, MemberRankSettingStore::getPointEarnRate($project->id));
+        $this->assertFalse(MemberRankSettingStore::getUsePoints($project->id));
     }
 
     public function test_rank_rule_save_preserves_card_display_options(): void
@@ -70,28 +75,28 @@ class AdminSettingsSeparationTest extends TestCase
             'point_earn_rate' => 100,
             'points_valid_days' => 365,
         ])->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertFalse(ShopSettingStore::getShowPointsDisplay($project->id));
-        $this->assertFalse(ShopSettingStore::getShowRankProgress($project->id));
-        $this->assertFalse(ShopSettingStore::getShowMemberCardForGuest($project->id));
+        $this->assertFalse(MemberCardSettingStore::getShowPointsDisplay($project->id));
+        $this->assertFalse(MemberCardSettingStore::getShowRankProgress($project->id));
+        $this->assertFalse(MemberCardSettingStore::getShowMemberCardForGuest($project->id));
     }
 
     public function test_branding_and_admin_colors_preserve_features_and_each_other(): void
     {
         $project = $this->login();
-        ShopSettingStore::setFeatureFlags(['feature_orders_enabled' => true], $project->id);
-        $features = ShopSettingStore::getFeatureFlags($project->id);
+        FeatureFlagStore::setFeatureFlags(['feature_orders_enabled' => true], $project->id);
+        $features = FeatureFlagStore::getFeatureFlags($project->id);
         ShopSettingStore::setValue('admin_sidebar_color', '#123456', 'string', $project->id);
         $this->post('/admin/'.$project->project_key.'/settings/app-design/branding', [
             'frontend_header_text' => '新しい店舗名',
         ])->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertSame($features, ShopSettingStore::getFeatureFlags($project->id));
+        $this->assertSame($features, FeatureFlagStore::getFeatureFlags($project->id));
         $this->assertSame('#123456', ShopSettingStore::getValue('admin_sidebar_color', '', $project->id));
 
         $this->post('/admin/'.$project->project_key.'/settings/admin-design', [
             'admin_sidebar_color' => '#654321',
         ])->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertSame('新しい店舗名', ShopSettingStore::getFrontendHeaderText($project->id));
-        $this->assertSame($features, ShopSettingStore::getFeatureFlags($project->id));
+        $this->assertSame('新しい店舗名', AppearanceSettingStore::getFrontendHeaderText($project->id));
+        $this->assertSame($features, FeatureFlagStore::getFeatureFlags($project->id));
     }
 
     public function test_features_page_has_no_branding_or_admin_color_fields(): void
@@ -103,8 +108,8 @@ class AdminSettingsSeparationTest extends TestCase
             ->assertDontSee('name="frontend_header_text"', false)
             ->assertDontSee('name="admin_sidebar_color"', false);
         $this->post('/admin/'.$project->project_key.'/settings/features', [])->assertRedirect();
-        $this->assertSame('店舗名', ShopSettingStore::getFrontendHeaderText($project->id));
-        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_orders_enabled', $project->id));
+        $this->assertSame('店舗名', AppearanceSettingStore::getFrontendHeaderText($project->id));
+        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_orders_enabled', $project->id));
     }
 
     public function test_point_usage_scope_is_saved_and_sent_to_app_config(): void
@@ -135,21 +140,21 @@ class AdminSettingsSeparationTest extends TestCase
             'rank_basis' => 'points', 'rank_aggregation_type' => 'total', 'point_earn_rate' => 100, 'points_valid_days' => 365,
             'member_code_prefix' => 'WRONG', 'use_points' => 0, 'member_card_design' => 'ticket',
         ])->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertSame('ABC', ShopSettingStore::getMemberCodePrefix($project->id));
-        $this->assertTrue(ShopSettingStore::getUsePoints($project->id));
-        $this->assertSame('default', ShopSettingStore::getMemberCardDesign($project->id));
+        $this->assertSame('ABC', MemberCodeSettingStore::getMemberCodePrefix($project->id));
+        $this->assertTrue(MemberRankSettingStore::getUsePoints($project->id));
+        $this->assertSame('default', MemberCardSettingStore::getMemberCardDesign($project->id));
     }
 
     public function test_announcement_defaults_save_preserves_feature_and_saves_unchecked_pinned(): void
     {
         $project = $this->login();
-        ShopSettingStore::setFeatureFlags(['feature_announcements_enabled' => true], $project->id);
+        FeatureFlagStore::setFeatureFlags(['feature_announcements_enabled' => true], $project->id);
         ShopSettingStore::setValue('announcement_default_pinned', true, 'boolean', $project->id);
         $this->post('/admin/'.$project->project_key.'/settings/announcements', [
             'announcement_default_pinned' => 0, 'announcement_default_expiry_days' => 7,
             'feature_announcements_enabled' => 0,
         ])->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_announcements_enabled', $project->id));
+        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_announcements_enabled', $project->id));
         $this->assertFalse((bool) ShopSettingStore::getValue('announcement_default_pinned', true, $project->id));
         $this->assertSame(7, (int) ShopSettingStore::getValue('announcement_default_expiry_days', 0, $project->id));
     }
@@ -180,6 +185,6 @@ class AdminSettingsSeparationTest extends TestCase
             'home_images' => [UploadedFile::fake()->image('extra.png')],
         ])->assertSessionHasErrors('home_images');
         $this->assertSame($urls, ShopSettingStore::getValue('home_image_urls', [], $project->id));
-        $this->assertSame('Before', ShopSettingStore::getFrontendHeaderText($project->id));
+        $this->assertSame('Before', AppearanceSettingStore::getFrontendHeaderText($project->id));
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\AppearanceSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -47,7 +48,7 @@ class AdminFeaturesCouponImageIsolationTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame($imageUrl, ShopSettingStore::getCouponDefaultImageUrl($project->id));
+        $this->assertSame($imageUrl, AppearanceSettingStore::getCouponDefaultImageUrl($project->id));
     }
 
     public function test_features_settings_画面にクーポンデフォルト画像入力がないこと(): void

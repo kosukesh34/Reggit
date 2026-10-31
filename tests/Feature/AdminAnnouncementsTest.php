@@ -7,7 +7,7 @@ use App\Enums\AnnouncementAudienceResolveMode;
 use App\Enums\MemberCouponSource;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\OrderStatus;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Jobs\SendScheduledAnnouncementJob;
 use App\Models\AdminUser;
@@ -143,7 +143,7 @@ class AdminAnnouncementsTest extends TestCase
         ]);
         $project = $this->createDistributionProject();
         $project->update(['line_plan_enabled' => true]);
-        ShopSettingStore::setLineChannelAccessToken('project-token', (int) $project->id);
+        LineSettingStore::setLineChannelAccessToken('project-token', (int) $project->id);
 
         $this->actingAs($this->createAdmin($project), 'admin')
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
@@ -158,7 +158,7 @@ class AdminAnnouncementsTest extends TestCase
         Http::preventStrayRequests();
         Http::fake();
         $project = $this->createDistributionProject();
-        ShopSettingStore::setLineChannelAccessToken('project-token', (int) $project->id);
+        LineSettingStore::setLineChannelAccessToken('project-token', (int) $project->id);
 
         $this->actingAs($this->createAdmin($project), 'admin')
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
@@ -173,7 +173,7 @@ class AdminAnnouncementsTest extends TestCase
         Http::fake(['api.line.me/*' => Http::response(['message' => 'Authentication failed'], 401)]);
         $project = $this->createDistributionProject();
         $project->update(['line_plan_enabled' => true]);
-        ShopSettingStore::setLineChannelAccessToken('invalid-token', (int) $project->id);
+        LineSettingStore::setLineChannelAccessToken('invalid-token', (int) $project->id);
 
         $this->actingAs($this->createAdmin($project), 'admin')
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))

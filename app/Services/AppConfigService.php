@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Domain\Settings\Repositories\AppConfigSettings;
 use App\Domain\Settings\Repositories\RankSettings;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LiffSettingStore;
 use App\Repositories\Contracts\ProjectRepository;
 use App\Support\HomeContent;
 use App\Support\HomeImageUrls;
@@ -295,7 +295,7 @@ class AppConfigService
                 return [
                     'key' => $key,
                     'label' => (string) ($item['label'] ?? $key),
-                    'icon' => ShopSettingStore::normalizeFrontendMenuIcon($key, (string) ($item['icon'] ?? 'fa-circle')),
+                    'icon' => LiffSettingStore::normalizeFrontendMenuIcon($key, (string) ($item['icon'] ?? 'fa-circle')),
                     'sf_symbol' => $this->sfSymbolForTab($key),
                     'url' => isset($item['url']) ? (string) $item['url'] : null,
                     'open' => ($item['open'] ?? 'embed') === 'external' ? 'external' : 'embed',

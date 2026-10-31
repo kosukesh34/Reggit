@@ -6,7 +6,7 @@ The application has several files whose size is a symptom of mixed responsibilit
 
 ## Decomposition order
 
-1. `ShopSettingStore` into business, LIFF, feature flag, member, and wallet setting modules.
+1. Done: `ShopSettingStore` keeps only key-to-table storage and per-store overrides (`getValue` / `setValue`). Per-area reads and writes moved to `BusinessSettingStore`, `LineSettingStore`, `OrderSettingStore`, `LiffSettingStore`, `FeatureFlagStore`, `ProfileSettingStore`, `MemberRankSettingStore`, `MemberCodeSettingStore`, `MemberCardSettingStore`, and `AppearanceSettingStore`. `EloquentShopSettingRepository` still adapts them to the focused `Domain\Settings\Repositories` contracts.
 2. Done: certificate resolution moved to `AppleWallet\PassCertificates`, manifest signing and archive creation to `AppleWallet\PassPackager`, image assets to `AppleWallet\PassAssetWriter`, and pass.json to `AppleWallet\PassJsonWriter`. `WalletPassService` keeps availability checks and member lookup.
 3. Done: credentials and OAuth2 token moved to `GoogleWallet\GoogleWalletCredentials`; LoyaltyClass access checks, creation and label updates moved to `GoogleWallet\GoogleWalletLoyaltyClassApi`, which hands failure reasons back through `takeError()` so `getLastError()` keeps its messages. Loyalty object mapping stays in `GoogleWalletPassService`.
 4. Done: `MemberService` was split into `Member\MemberDataReader` (member card data), `Member\MemberProfileUpdater` (profile and image), `Member\MemberRegistrar` (registration), and `Member\MemberNumberAssigner` (member codes).

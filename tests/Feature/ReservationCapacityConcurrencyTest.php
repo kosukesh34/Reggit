@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\BusinessSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -37,7 +38,7 @@ class ReservationCapacityConcurrencyTest extends TestCase
             $user->load('member');
         }
         ShopSettingStore::setValue('reservation_capacity_per_slot', 1, 'integer', $project->id);
-        $slot = ShopSettingStore::getReservationTimeSlots($project->id)[0];
+        $slot = BusinessSettingStore::getReservationTimeSlots($project->id)[0];
         $payload = ['reserved_at' => now()->addDay()->format('Y-m-d').' '.$slot, 'number_of_people' => 1];
         $directory = sys_get_temp_dir().'/reservation-capacity-'.bin2hex(random_bytes(8));
         mkdir($directory, 0700);
@@ -116,7 +117,7 @@ class ReservationCapacityConcurrencyTest extends TestCase
             $user->load('member');
         }
         ShopSettingStore::setValue('reservation_capacity_per_slot', 1, 'integer', $project->id);
-        $slot = ShopSettingStore::getReservationTimeSlots($project->id)[0];
+        $slot = BusinessSettingStore::getReservationTimeSlots($project->id)[0];
         $payload = ['reserved_at' => now()->addDay()->format('Y-m-d').' '.$slot, 'number_of_people' => 1];
         $directory = sys_get_temp_dir().'/reservation-capacity-'.bin2hex(random_bytes(8));
         mkdir($directory, 0700);

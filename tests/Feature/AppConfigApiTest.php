@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\LiffSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,7 +18,7 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setFrontendMenuItems([
+        LiffSettingStore::setFrontendMenuItems([
             ['tab' => 'gallery', 'label' => 'ギャラリー', 'enabled' => false, 'order' => 10],
         ], $project->id);
 
@@ -181,7 +182,7 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'is_active' => true]
         );
-        ShopSettingStore::setFrontendMenuItems([
+        LiffSettingStore::setFrontendMenuItems([
             ['tab' => 'link_1', 'label' => '外部サイト', 'url' => 'https://example.com', 'open' => 'external', 'enabled' => true, 'order' => 0],
             ['tab' => 'link_2', 'label' => '内部サイト', 'url' => 'https://example.com/internal', 'open' => 'embed', 'enabled' => true, 'order' => 1],
         ], $project->id);
@@ -204,7 +205,7 @@ class AppConfigApiTest extends TestCase
     public function test_web_page_hidden_from_home_can_still_be_used_in_all_navigation_placements(): void
     {
         $project = Project::firstOrCreate(['project_key' => 'default'], ['name' => 'テスト店舗', 'is_active' => true]);
-        ShopSettingStore::setFrontendMenuItems([
+        LiffSettingStore::setFrontendMenuItems([
             ['tab' => 'link_1', 'label' => '公式サイト', 'url' => 'https://example.com', 'open' => 'external', 'enabled' => false, 'order' => 0],
         ], $project->id);
         ShopSettingStore::setValue('native_navigation_items', [
@@ -226,7 +227,7 @@ class AppConfigApiTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setFrontendMenuItems([
+        LiffSettingStore::setFrontendMenuItems([
             ['tab' => 'home', 'label' => 'ホーム', 'enabled' => true, 'order' => 0],
             ['tab' => 'member', 'label' => '会員証', 'enabled' => false, 'order' => 1],
             ['tab' => 'coupons', 'label' => 'クーポン', 'enabled' => false, 'order' => 2],

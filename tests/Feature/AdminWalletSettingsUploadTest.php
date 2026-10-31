@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\AppearanceSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,8 +67,8 @@ class AdminWalletSettingsUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $logoUrl = ShopSettingStore::getWalletGoogleProgramLogoUrl($project->id);
-        $heroUrl = ShopSettingStore::getWalletGoogleHeroImageUrl($project->id);
+        $logoUrl = AppearanceSettingStore::getWalletGoogleProgramLogoUrl($project->id);
+        $heroUrl = AppearanceSettingStore::getWalletGoogleHeroImageUrl($project->id);
         $this->assertNotNull($logoUrl);
         $this->assertNotNull($heroUrl);
         $this->assertStringContainsString('storage/wallet_google/'.$project->id, (string) $logoUrl);
@@ -79,8 +79,8 @@ class AdminWalletSettingsUploadTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        ShopSettingStore::setWalletGoogleProgramLogoUrl('https://example.com/logo.png', $project->id);
-        ShopSettingStore::setWalletGoogleHeroImageUrl('https://example.com/hero.png', $project->id);
+        AppearanceSettingStore::setWalletGoogleProgramLogoUrl('https://example.com/logo.png', $project->id);
+        AppearanceSettingStore::setWalletGoogleHeroImageUrl('https://example.com/hero.png', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.wallet.update', ['project_key' => $project->project_key]), [
@@ -89,7 +89,7 @@ class AdminWalletSettingsUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertNull(ShopSettingStore::getWalletGoogleProgramLogoUrl($project->id));
-        $this->assertNull(ShopSettingStore::getWalletGoogleHeroImageUrl($project->id));
+        $this->assertNull(AppearanceSettingStore::getWalletGoogleProgramLogoUrl($project->id));
+        $this->assertNull(AppearanceSettingStore::getWalletGoogleHeroImageUrl($project->id));
     }
 }

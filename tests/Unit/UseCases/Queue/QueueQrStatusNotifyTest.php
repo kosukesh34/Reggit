@@ -3,7 +3,7 @@
 namespace Tests\Unit\UseCases\Queue;
 
 use App\Domain\Settings\Repositories\LineConnectionSettings;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Models\Project;
 use App\Models\QueueEntry;
 use App\Models\User;
@@ -43,7 +43,7 @@ class QueueQrStatusNotifyTest extends TestCase
     public function test_line_link_sends_completion_with_project_token(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setLineChannelAccessToken('project-link-token', (int) $project->id);
+        LineSettingStore::setLineChannelAccessToken('project-link-token', (int) $project->id);
         $lineUserId = 'U'.str_repeat('e', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,

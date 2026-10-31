@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Order\Exceptions\OrderOperationException;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Order;
@@ -80,7 +81,7 @@ class OrderMemberOwnershipTest extends TestCase
         ShopSettingStore::setValue('use_stamps', true, 'boolean', (int) $project->id);
         ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
         StampCard::factory()->create(['project_id' => $project->id]);
-        $this->assertTrue(ShopSettingStore::getUseStamps((int) $project->id));
+        $this->assertTrue(MemberRankSettingStore::getUseStamps((int) $project->id));
         $this->assertNotNull(app(MemberCurrentStampCardResolver::class)->resolve($member));
         $order = Order::create(['project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 100, 'status' => 'pending']);
         $newOwner = User::factory()->create(['project_id' => $project->id]);

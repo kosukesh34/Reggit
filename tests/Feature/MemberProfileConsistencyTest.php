@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
@@ -25,7 +25,7 @@ class MemberProfileConsistencyTest extends TestCase
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id, 'name' => 'Original']);
         Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'city' => 'Original']);
-        ShopSettingStore::setProfileFieldSettings([
+        ProfileSettingStore::setProfileFieldSettings([
             'smaregi_fields' => [],
             'custom_fields' => [
                 ['key' => 'choice', 'label' => 'Choice', 'input_type' => 'selectbox', 'values' => ['Tokyo, Japan', 'Osaka']],
