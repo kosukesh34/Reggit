@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\AppearanceSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -59,7 +61,7 @@ class AdminProjectControllerTest extends TestCase
         $response->assertRedirect(route('system-admin.projects.index'));
         $project = Project::where('project_key', 'proj-logo')->first();
         $this->assertNotNull($project);
-        $savedUrl = ShopSettingStore::getFrontendLogoUrl((int) $project->id);
+        $savedUrl = AppearanceSettingStore::getFrontendLogoUrl((int) $project->id);
         $this->assertNotNull($savedUrl);
         $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_FRONTEND_LOGO.'/'.$project->id, (string) $savedUrl);
     }
@@ -81,8 +83,8 @@ class AdminProjectControllerTest extends TestCase
     {
         $this->loginSystemAdmin();
         $project = Project::factory()->create();
-        ShopSettingStore::setLineLiffId('existing-liff', $project->id);
-        ShopSettingStore::setLineLiffUrl('https://liff.line.me/existing', $project->id);
+        LineSettingStore::setLineLiffId('existing-liff', $project->id);
+        LineSettingStore::setLineLiffUrl('https://liff.line.me/existing', $project->id);
         ShopSettingStore::setValue('frontend_header_text', '店舗名', 'string', $project->id);
         ShopSettingStore::setValue('frontend_logo_url', '/existing.png', 'string', $project->id);
 
@@ -93,10 +95,10 @@ class AdminProjectControllerTest extends TestCase
             'is_active' => true,
         ])->assertRedirect(route('system-admin.projects.index'));
 
-        $this->assertSame('existing-liff', ShopSettingStore::getLineLiffId($project->id));
-        $this->assertSame('https://liff.line.me/existing', ShopSettingStore::getLineLiffUrl($project->id));
-        $this->assertSame('店舗名', ShopSettingStore::getFrontendHeaderText($project->id));
-        $this->assertSame('/existing.png', ShopSettingStore::getFrontendLogoUrl($project->id));
+        $this->assertSame('existing-liff', LineSettingStore::getLineLiffId($project->id));
+        $this->assertSame('https://liff.line.me/existing', LineSettingStore::getLineLiffUrl($project->id));
+        $this->assertSame('店舗名', AppearanceSettingStore::getFrontendHeaderText($project->id));
+        $this->assertSame('/existing.png', AppearanceSettingStore::getFrontendLogoUrl($project->id));
     }
 
     public function test_index_プロジェクト一覧が表示されること(): void
@@ -147,9 +149,9 @@ class AdminProjectControllerTest extends TestCase
         // 保存時の LIFF モジュールモード切替（LINE API 呼び出し）はここでは行わない
         config(['line.auto_enable_liff_module_mode' => false]);
         $project = Project::factory()->create();
-        ShopSettingStore::setLineLiffId('old-liff', $project->id);
-        ShopSettingStore::setLineLiffUrl('https://liff.line.me/old', $project->id);
-        ShopSettingStore::setLineChannelAccessToken('kept-token', $project->id);
+        LineSettingStore::setLineLiffId('old-liff', $project->id);
+        LineSettingStore::setLineLiffUrl('https://liff.line.me/old', $project->id);
+        LineSettingStore::setLineChannelAccessToken('kept-token', $project->id);
 
         $this->get('/system-admin/projects/'.$project->id.'/edit')->assertOk()
             ->assertSee('LINE接続・通知API')
@@ -166,11 +168,11 @@ class AdminProjectControllerTest extends TestCase
             'line_channel_secret' => 'new-secret',
         ]))->assertSessionHasNoErrors();
 
-        $this->assertSame('new-liff', ShopSettingStore::getLineLiffId($project->id));
-        $this->assertSame('https://line.me/R/ti/p/@shop', ShopSettingStore::getLineFriendAddUrl($project->id));
-        $this->assertSame('new-secret', ShopSettingStore::getLineChannelSecret($project->id));
+        $this->assertSame('new-liff', LineSettingStore::getLineLiffId($project->id));
+        $this->assertSame('https://line.me/R/ti/p/@shop', LineSettingStore::getLineFriendAddUrl($project->id));
+        $this->assertSame('new-secret', LineSettingStore::getLineChannelSecret($project->id));
         // 空欄で送ったトークンは消さない
-        $this->assertSame('kept-token', ShopSettingStore::getLineChannelAccessToken($project->id));
+        $this->assertSame('kept-token', LineSettingStore::getLineChannelAccessToken($project->id));
         $this->get('/system-admin/projects/'.$project->id.'/edit')->assertDontSee('new-secret');
     }
 
@@ -187,7 +189,7 @@ class AdminProjectControllerTest extends TestCase
         ]))->assertRedirect($editUrl)->assertSessionHasErrors('name');
 
         $this->get($editUrl)->assertOk()->assertSee('value="typed-secret"', false);
-        $this->assertSame('', ShopSettingStore::getLineChannelSecret($project->id));
+        $this->assertSame('', LineSettingStore::getLineChannelSecret($project->id));
     }
 
     public function test_update_lineプランのonとoffを保存できること(): void

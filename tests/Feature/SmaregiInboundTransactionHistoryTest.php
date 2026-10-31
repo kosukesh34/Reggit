@@ -12,6 +12,7 @@ use App\Enums\SmaregiEvent;
 use App\Enums\SmaregiReturnSalesDivision;
 use App\Enums\SmaregiTransactionHeadDivision;
 use App\Enums\SmaregiWebhookAction;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SmaregiSyncInboundTransactionsJob;
 use App\Models\Member;
@@ -733,7 +734,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $project = Project::factory()->create();
         ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         ShopSettingStore::setValue('stamp_earn_per_amount', 1000, 'integer', (int) $project->id);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'stamp_earn_per_amount' => 500],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true, 'stamp_earn_per_amount' => 200],
         ], (int) $project->id);
@@ -775,7 +776,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
         ShopSettingStore::setValue('points_valid_days', 365, 'integer', (int) $project->id);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 10, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);

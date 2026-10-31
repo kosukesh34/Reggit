@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\FeatureFlagStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -45,14 +46,14 @@ class AdminLotteryFeatureFlagSourceTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_gacha_enabled', $project->id));
-        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_scratch_enabled', $project->id));
-        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_orders_enabled', $project->id));
+        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_gacha_enabled', $project->id));
+        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_scratch_enabled', $project->id));
+        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_orders_enabled', $project->id));
     }
 
     public function test_feature_flag_labels_にガチャが含まれないこと(): void
     {
-        $labels = ShopSettingStore::featureFlagLabels();
+        $labels = FeatureFlagStore::featureFlagLabels();
         $this->assertArrayNotHasKey('feature_gacha_enabled', $labels);
         $this->assertArrayNotHasKey('feature_scratch_enabled', $labels);
     }

@@ -3,6 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\RankAggregationType;
+use App\Infrastructure\Persistence\Eloquent\Settings\FeatureFlagStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LiffSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberCardSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -118,11 +122,11 @@ class AdminRankSettingsTest extends TestCase
             ->assertRedirect()
             ->assertSessionHasNoErrors();
 
-        $this->assertSame('compact', ShopSettingStore::getMemberCardDesign((int) $project->id));
-        $this->assertSame('sheet', ShopSettingStore::getMemberCardDisplayType((int) $project->id));
-        $this->assertSame('qrcode', ShopSettingStore::getMemberCardCodeType((int) $project->id));
+        $this->assertSame('compact', MemberCardSettingStore::getMemberCardDesign((int) $project->id));
+        $this->assertSame('sheet', MemberCardSettingStore::getMemberCardDisplayType((int) $project->id));
+        $this->assertSame('qrcode', MemberCardSettingStore::getMemberCardCodeType((int) $project->id));
 
-        $tabSettings = ShopSettingStore::getLiffTabSettings((int) $project->id);
+        $tabSettings = LiffSettingStore::getLiffTabSettings((int) $project->id);
         $this->assertSame('compact', $tabSettings['_global']['member_card_design'] ?? null);
         $this->assertSame('sheet', $tabSettings['_global']['member_card_display_type'] ?? null);
         $this->assertSame('qrcode', $tabSettings['_global']['member_card_code_type'] ?? null);
@@ -160,7 +164,7 @@ class AdminRankSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $tabSettings = ShopSettingStore::getLiffTabSettings((int) $project->id);
+        $tabSettings = LiffSettingStore::getLiffTabSettings((int) $project->id);
         $this->assertSame('ticket', $tabSettings['_global']['member_card_design'] ?? null);
         $this->assertSame('ticket', $tabSettings['_global']['app_customization']['membership']['template'] ?? null);
     }
@@ -209,15 +213,15 @@ class AdminRankSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertTrue(ShopSettingStore::getUsePoints((int) $project->id));
-        $this->assertTrue(ShopSettingStore::getUseStamps((int) $project->id));
-        $this->assertTrue(ShopSettingStore::getUseTransactionStamps((int) $project->id));
-        $this->assertSame(RankAggregationType::PERIOD, ShopSettingStore::getRankAggregationType((int) $project->id));
-        $this->assertSame(90, ShopSettingStore::getRankPeriodDays((int) $project->id));
-        $this->assertTrue(ShopSettingStore::getIsRankDownEnabled((int) $project->id));
-        $this->assertSame(50, ShopSettingStore::getPointEarnRateForRank((int) $project->id, 'gold'));
-        $this->assertSame(200, ShopSettingStore::getStampEarnPerAmountForRank((int) $project->id, 'gold'));
-        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', (int) $project->id));
+        $this->assertTrue(MemberRankSettingStore::getUsePoints((int) $project->id));
+        $this->assertTrue(MemberRankSettingStore::getUseStamps((int) $project->id));
+        $this->assertTrue(MemberRankSettingStore::getUseTransactionStamps((int) $project->id));
+        $this->assertSame(RankAggregationType::PERIOD, MemberRankSettingStore::getRankAggregationType((int) $project->id));
+        $this->assertSame(90, MemberRankSettingStore::getRankPeriodDays((int) $project->id));
+        $this->assertTrue(MemberRankSettingStore::getIsRankDownEnabled((int) $project->id));
+        $this->assertSame(50, MemberRankSettingStore::getPointEarnRateForRank((int) $project->id, 'gold'));
+        $this->assertSame(200, MemberRankSettingStore::getStampEarnPerAmountForRank((int) $project->id, 'gold'));
+        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_stamps_enabled', (int) $project->id));
     }
 
     public function test_スタンプ機能オフなら取引連動もオフになり機能フラグも落ちること(): void
@@ -241,9 +245,9 @@ class AdminRankSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertFalse(ShopSettingStore::getUseStamps((int) $project->id));
-        $this->assertFalse(ShopSettingStore::getUseTransactionStamps((int) $project->id));
-        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', (int) $project->id));
+        $this->assertFalse(MemberRankSettingStore::getUseStamps((int) $project->id));
+        $this->assertFalse(MemberRankSettingStore::getUseTransactionStamps((int) $project->id));
+        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_stamps_enabled', (int) $project->id));
     }
 
     public function test_ランク別付与率が未設定ならデフォルト値が保存されること(): void
@@ -277,12 +281,12 @@ class AdminRankSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $ranks = ShopSettingStore::getMemberRankSettings((int) $project->id);
+        $ranks = MemberRankSettingStore::getMemberRankSettings((int) $project->id);
         $this->assertCount(1, $ranks);
         $this->assertSame(120, $ranks[0]['point_earn_rate']);
         $this->assertSame(800, $ranks[0]['stamp_earn_per_amount']);
-        $this->assertSame(120, ShopSettingStore::getPointEarnRateForRank((int) $project->id, 'bronze'));
-        $this->assertSame(800, ShopSettingStore::getStampEarnPerAmountForRank((int) $project->id, 'bronze'));
+        $this->assertSame(120, MemberRankSettingStore::getPointEarnRateForRank((int) $project->id, 'bronze'));
+        $this->assertSame(800, MemberRankSettingStore::getStampEarnPerAmountForRank((int) $project->id, 'bronze'));
     }
 
     public function test_ランク設定画面にデフォルト付与率が表示されること(): void

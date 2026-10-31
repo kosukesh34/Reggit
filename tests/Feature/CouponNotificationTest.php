@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Enums\MemberNotificationPreference;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SendCouponIssuedNotificationJob;
 use App\Models\Coupon;
@@ -68,7 +69,7 @@ class CouponNotificationTest extends TestCase
     public function test_notify_issued_sends_native_push_and_line_message(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('a', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -125,7 +126,7 @@ class CouponNotificationTest extends TestCase
     public function test_notify_issued_attaches_hero_image_for_https_image_url(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('f', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -175,7 +176,7 @@ class CouponNotificationTest extends TestCase
     {
         config(['app.url' => 'http://localhost']);
         $project = $this->createProject();
-        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('e', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -223,7 +224,7 @@ class CouponNotificationTest extends TestCase
     {
         config(['app.url' => 'http://localhost']);
         $project = $this->createProject();
-        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $defaultImageUrl = 'https://cdn.example.com/default-coupon.png';
         ShopSettingStore::setValue('coupon_default_image_url', $defaultImageUrl, 'string', $project->id);
         $lineUserId = 'U'.str_repeat('d', 32);
@@ -273,7 +274,7 @@ class CouponNotificationTest extends TestCase
     {
         $project = $this->createProject();
         ShopSettingStore::setValue('feature_coupons_enabled', '0', 'boolean', $project->id);
-        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
 
         $lineUserId = 'U'.str_repeat('b', 32);
         $user = User::factory()->create([
@@ -313,7 +314,7 @@ class CouponNotificationTest extends TestCase
     public function test_notify_issued_skips_when_notification_preference_is_none(): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('c', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -348,7 +349,7 @@ class CouponNotificationTest extends TestCase
     private function issuedForRetry(): MemberCoupon
     {
         $project = $this->createProject();
-        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat('e', 32)]);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         $coupon = Coupon::factory()->create(['project_id' => $project->id, 'image_url' => null]);

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -204,7 +205,7 @@ class MemberProfileRecoveryTest extends TestCase
     public function test_new_partial_edit_keeps_pending_fields_and_current_values(): void
     {
         $user = $this->user();
-        ShopSettingStore::setProfileFieldSettings(['smaregi_fields' => [], 'custom_fields' => [
+        ProfileSettingStore::setProfileFieldSettings(['smaregi_fields' => [], 'custom_fields' => [
             ['key' => 'choice', 'label' => 'Choice', 'input_type' => 'text', 'smaregi_no' => 1],
             ['key' => 'other', 'label' => 'Other', 'input_type' => 'text', 'smaregi_no' => 2],
         ]], (int) $user->project_id);

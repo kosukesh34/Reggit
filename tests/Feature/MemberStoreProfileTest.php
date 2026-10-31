@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\Store;
@@ -35,12 +35,12 @@ class MemberStoreProfileTest extends TestCase
     /** 項目設定でご利用店舗を無効にし、名前だけを必須にする */
     private function disableStoreField(): void
     {
-        $settings = ShopSettingStore::defaultProfileFieldSettings();
+        $settings = ProfileSettingStore::defaultProfileFieldSettings();
         foreach ($settings['smaregi_fields'] as $key => $field) {
             $settings['smaregi_fields'][$key]['enabled'] = $key === 'name';
             $settings['smaregi_fields'][$key]['required'] = $key === 'name';
         }
-        ShopSettingStore::setProfileFieldSettings($settings, (int) $this->project->id);
+        ProfileSettingStore::setProfileFieldSettings($settings, (int) $this->project->id);
     }
 
     private function member(): Member

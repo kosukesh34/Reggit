@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\MemberStatus;
 use App\Enums\RankAggregationType;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -28,7 +29,7 @@ class RecalculateMemberRanksCommandTest extends TestCase
     {
         $project = Project::factory()->create(['is_active' => true]);
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);
@@ -59,7 +60,7 @@ class RecalculateMemberRanksCommandTest extends TestCase
     {
         $project = Project::factory()->create(['is_active' => true]);
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);

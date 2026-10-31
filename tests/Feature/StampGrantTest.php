@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\StampGrantLimit;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -78,7 +79,7 @@ class StampGrantTest extends TestCase
         [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
         $member->update(['rank' => 'bronze']);
         ShopSettingStore::setValue('member_rank_basis', 'stamps', 'string', (int) $project->id);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);
@@ -217,7 +218,7 @@ class StampGrantTest extends TestCase
         [$project, $member, $card] = $this->createGrantFixtures(self::LINE_USER_ID);
         $member->update(['rank' => 'bronze']);
         ShopSettingStore::setValue('member_rank_basis', 'stamps', 'string', (int) $project->id);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 1, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);

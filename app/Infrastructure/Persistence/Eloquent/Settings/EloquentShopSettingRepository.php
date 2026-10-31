@@ -30,6 +30,7 @@ use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Domain\Settings\Repositories\StampSettings;
 use App\Domain\Settings\Repositories\WalletSettings;
+use App\Domain\Settings\ShopSettingKeys;
 use App\Models\Settings\ProjectBusinessSetting;
 use App\Models\Store;
 
@@ -49,40 +50,40 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
 
     public function getBusinessHours(int $projectId): array
     {
-        return ShopSettingStore::getBusinessHours($projectId);
+        return BusinessSettingStore::getBusinessHours($projectId);
     }
 
     public function getReservationTimeSlots(int $projectId): array
     {
-        return ShopSettingStore::getReservationTimeSlots($projectId);
+        return BusinessSettingStore::getReservationTimeSlots($projectId);
     }
 
     public function getClosedDays(int $projectId): array
     {
-        return ShopSettingStore::getClosedDays($projectId);
+        return BusinessSettingStore::getClosedDays($projectId);
     }
 
     public function getClosedDates(int $projectId): array
     {
-        return ShopSettingStore::getClosedDates($projectId);
+        return BusinessSettingStore::getClosedDates($projectId);
     }
 
     public function getAdvanceBookingDays(int $projectId): int
     {
-        return ShopSettingStore::getAdvanceBookingDays($projectId);
+        return BusinessSettingStore::getAdvanceBookingDays($projectId);
     }
 
     public function getReservationCapacityPerSlot(int $projectId): int
     {
-        return ShopSettingStore::getReservationCapacityPerSlot($projectId);
+        return BusinessSettingStore::getReservationCapacityPerSlot($projectId);
     }
 
     public function getReservationRules(int $projectId): ReservationRules
     {
         return new ReservationRules(
-            ShopSettingStore::getReservationTimeSlots($projectId),
-            ShopSettingStore::getAdvanceBookingDays($projectId),
-            ShopSettingStore::getReservationCapacityPerSlot($projectId),
+            BusinessSettingStore::getReservationTimeSlots($projectId),
+            BusinessSettingStore::getAdvanceBookingDays($projectId),
+            BusinessSettingStore::getReservationCapacityPerSlot($projectId),
             (bool) ShopSettingStore::getValue('reservation_capacity_by_people', false, $projectId),
             (int) ShopSettingStore::getValue('reservation_max_party_size', 10, $projectId),
             (bool) ShopSettingStore::getValue('reservation_same_day', false, $projectId),
@@ -131,36 +132,36 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
 
     public function isDateAvailable(string $date, int $projectId): bool
     {
-        return ShopSettingStore::isDateAvailable($date, $projectId);
+        return BusinessSettingStore::isDateAvailable($date, $projectId);
     }
 
     // ── 順番待ち ──
 
     public function getQueueAvgServeMinutes(int $projectId): int
     {
-        return (int) ShopSettingStore::getQueueAvgServeMinutes($projectId);
+        return (int) BusinessSettingStore::getQueueAvgServeMinutes($projectId);
     }
 
     public function getQueueRequireMembership(int $projectId): bool
     {
-        return ShopSettingStore::getQueueRequireMembership($projectId);
+        return BusinessSettingStore::getQueueRequireMembership($projectId);
     }
 
     public function getQueueChannelLine(int $projectId): bool
     {
-        return ShopSettingStore::getQueueChannelLine($projectId);
+        return BusinessSettingStore::getQueueChannelLine($projectId);
     }
 
     public function getQueueChannelNative(int $projectId): bool
     {
-        return ShopSettingStore::getQueueChannelNative($projectId);
+        return BusinessSettingStore::getQueueChannelNative($projectId);
     }
 
     // ── オーダー ──
 
     public function getOrderMode(int $projectId): string
     {
-        return ShopSettingStore::getOrderMode($projectId);
+        return OrderSettingStore::getOrderMode($projectId);
     }
 
     public function getShopShippingFee(int $projectId): int
@@ -197,494 +198,494 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
 
     public function setOrderMode(string $mode, int $projectId): void
     {
-        ShopSettingStore::setOrderMode($mode, $projectId);
+        OrderSettingStore::setOrderMode($mode, $projectId);
     }
 
     public function isOrderLineNotifyEnabled(int $projectId): bool
     {
-        return ShopSettingStore::isOrderLineNotifyEnabled($projectId);
+        return OrderSettingStore::isOrderLineNotifyEnabled($projectId);
     }
 
     public function setOrderLineNotifyEnabled(bool $enabled, int $projectId): void
     {
-        ShopSettingStore::setOrderLineNotifyEnabled($enabled, $projectId);
+        OrderSettingStore::setOrderLineNotifyEnabled($enabled, $projectId);
     }
 
     public function isOrderReadyLineNotifyEnabled(int $projectId): bool
     {
-        return ShopSettingStore::isOrderReadyLineNotifyEnabled($projectId);
+        return OrderSettingStore::isOrderReadyLineNotifyEnabled($projectId);
     }
 
     public function setOrderReadyLineNotifyEnabled(bool $enabled, int $projectId): void
     {
-        ShopSettingStore::setOrderReadyLineNotifyEnabled($enabled, $projectId);
+        OrderSettingStore::setOrderReadyLineNotifyEnabled($enabled, $projectId);
     }
 
     public function getKitchenAccessToken(int $projectId): string
     {
-        return ShopSettingStore::getKitchenAccessToken($projectId);
+        return OrderSettingStore::getKitchenAccessToken($projectId);
     }
 
     public function setKitchenAccessToken(?string $token, int $projectId): void
     {
-        ShopSettingStore::setKitchenAccessToken($token, $projectId);
+        OrderSettingStore::setKitchenAccessToken($token, $projectId);
     }
 
     // ── LINE / LIFF ──
 
     public function getLineLiffId(int $projectId): string
     {
-        return ShopSettingStore::getLineLiffId($projectId);
+        return LineSettingStore::getLineLiffId($projectId);
     }
 
     public function setLineLiffId(?string $liffId, int $projectId): void
     {
-        ShopSettingStore::setLineLiffId($liffId, $projectId);
+        LineSettingStore::setLineLiffId($liffId, $projectId);
     }
 
     public function getLineLiffUrl(int $projectId): string
     {
-        return ShopSettingStore::getLineLiffUrl($projectId);
+        return LineSettingStore::getLineLiffUrl($projectId);
     }
 
     public function setLineLiffUrl(?string $liffUrl, int $projectId): void
     {
-        ShopSettingStore::setLineLiffUrl($liffUrl, $projectId);
+        LineSettingStore::setLineLiffUrl($liffUrl, $projectId);
     }
 
     public function getLineChannelAccessToken(int $projectId): string
     {
-        return ShopSettingStore::getLineChannelAccessToken($projectId);
+        return LineSettingStore::getLineChannelAccessToken($projectId);
     }
 
     public function setLineChannelAccessToken(?string $token, int $projectId): void
     {
-        ShopSettingStore::setLineChannelAccessToken($token, $projectId);
+        LineSettingStore::setLineChannelAccessToken($token, $projectId);
     }
 
     public function hasLineChannelAccessToken(int $projectId): bool
     {
-        return ShopSettingStore::hasLineChannelAccessToken($projectId);
+        return LineSettingStore::hasLineChannelAccessToken($projectId);
     }
 
     public function getLineChannelSecret(int $projectId): string
     {
-        return ShopSettingStore::getLineChannelSecret($projectId);
+        return LineSettingStore::getLineChannelSecret($projectId);
     }
 
     public function setLineChannelSecret(?string $secret, int $projectId): void
     {
-        ShopSettingStore::setLineChannelSecret($secret, $projectId);
+        LineSettingStore::setLineChannelSecret($secret, $projectId);
     }
 
     public function getLineFriendAddUrl(int $projectId): string
     {
-        return ShopSettingStore::getLineFriendAddUrl($projectId);
+        return LineSettingStore::getLineFriendAddUrl($projectId);
     }
 
     public function setLineFriendAddUrl(?string $url, int $projectId): void
     {
-        ShopSettingStore::setLineFriendAddUrl($url, $projectId);
+        LineSettingStore::setLineFriendAddUrl($url, $projectId);
     }
 
     public function getLineThemeColors(int $projectId): array
     {
-        return ShopSettingStore::getLineThemeColors($projectId);
+        return LineSettingStore::getLineThemeColors($projectId);
     }
 
     // ── LIFF デザイナー ──
 
     public function getLiffTabLayouts(int $projectId): array
     {
-        return ShopSettingStore::getLiffTabLayouts($projectId);
+        return LiffSettingStore::getLiffTabLayouts($projectId);
     }
 
     public function setLiffTabLayouts(array $layouts, int $projectId): void
     {
-        ShopSettingStore::setLiffTabLayouts($layouts, $projectId);
+        LiffSettingStore::setLiffTabLayouts($layouts, $projectId);
     }
 
     public function getLiffDetailLayouts(int $projectId): array
     {
-        return ShopSettingStore::getLiffDetailLayouts($projectId);
+        return LiffSettingStore::getLiffDetailLayouts($projectId);
     }
 
     public function setLiffDetailLayouts(array $layouts, int $projectId): void
     {
-        ShopSettingStore::setLiffDetailLayouts($layouts, $projectId);
+        LiffSettingStore::setLiffDetailLayouts($layouts, $projectId);
     }
 
     public function getLiffCustomCss(int $projectId): string
     {
-        return ShopSettingStore::getLiffCustomCss($projectId);
+        return LiffSettingStore::getLiffCustomCss($projectId);
     }
 
     public function setLiffCustomCss(string $css, int $projectId): void
     {
-        ShopSettingStore::setLiffCustomCss($css, $projectId);
+        LiffSettingStore::setLiffCustomCss($css, $projectId);
     }
 
     public function getLiffTabSettings(int $projectId): array
     {
-        return ShopSettingStore::getLiffTabSettings($projectId);
+        return LiffSettingStore::getLiffTabSettings($projectId);
     }
 
     public function setLiffTabSettings(array $settings, int $projectId): void
     {
-        ShopSettingStore::setLiffTabSettings($settings, $projectId);
+        LiffSettingStore::setLiffTabSettings($settings, $projectId);
     }
 
     public function getLiffSavedScreens(int $projectId): array
     {
-        return ShopSettingStore::getLiffSavedScreens($projectId);
+        return LiffSettingStore::getLiffSavedScreens($projectId);
     }
 
     public function setLiffSavedScreens(array $screens, int $projectId): void
     {
-        ShopSettingStore::setLiffSavedScreens($screens, $projectId);
+        LiffSettingStore::setLiffSavedScreens($screens, $projectId);
     }
 
     public function liffSavedScreensMax(): int
     {
-        return ShopSettingStore::LIFF_SAVED_SCREENS_MAX;
+        return ShopSettingKeys::LIFF_SAVED_SCREENS_MAX;
     }
 
     public function defaultLiffDesignerTemplates(): array
     {
-        return ShopSettingStore::defaultLiffDesignerTemplates();
+        return LiffSettingStore::defaultLiffDesignerTemplates();
     }
 
     public function defaultLiffTabLayouts(): array
     {
-        return ShopSettingStore::defaultLiffTabLayouts();
+        return LiffSettingStore::defaultLiffTabLayouts();
     }
 
     public function defaultLiffDetailLayouts(): array
     {
-        return ShopSettingStore::defaultLiffDetailLayouts();
+        return LiffSettingStore::defaultLiffDetailLayouts();
     }
 
     public function defaultLiffTabSettings(): array
     {
-        return ShopSettingStore::defaultLiffTabSettings();
+        return LiffSettingStore::defaultLiffTabSettings();
     }
 
     public function ensureLiffTabLayouts(array $layouts): array
     {
-        return ShopSettingStore::ensureLiffTabLayouts($layouts);
+        return LiffSettingStore::ensureLiffTabLayouts($layouts);
     }
 
     // ── フロントメニュー ──
 
     public function defaultFrontendMenuItems(): array
     {
-        return ShopSettingStore::defaultFrontendMenuItems();
+        return LiffSettingStore::defaultFrontendMenuItems();
     }
 
     public function getFrontendMenuItems(int $projectId): array
     {
-        return ShopSettingStore::getFrontendMenuItems($projectId);
+        return LiffSettingStore::getFrontendMenuItems($projectId);
     }
 
     public function setFrontendMenuItems(array $items, int $projectId): void
     {
-        ShopSettingStore::setFrontendMenuItems($items, $projectId);
+        LiffSettingStore::setFrontendMenuItems($items, $projectId);
     }
 
     public function normalizeFrontendMenuIcon(string $tab, string $icon): string
     {
-        return ShopSettingStore::normalizeFrontendMenuIcon($tab, $icon);
+        return LiffSettingStore::normalizeFrontendMenuIcon($tab, $icon);
     }
 
     // ── 機能フラグ ──
 
     public function getFeatureFlags(int $projectId): array
     {
-        return ShopSettingStore::getFeatureFlags($projectId);
+        return FeatureFlagStore::getFeatureFlags($projectId);
     }
 
     public function setFeatureFlags(array $flags, int $projectId): void
     {
-        ShopSettingStore::setFeatureFlags($flags, $projectId);
+        FeatureFlagStore::setFeatureFlags($flags, $projectId);
     }
 
     public function isFeatureEnabled(string $featureKey, int $projectId): bool
     {
-        return ShopSettingStore::isFeatureEnabled($featureKey, $projectId);
+        return FeatureFlagStore::isFeatureEnabled($featureKey, $projectId);
     }
 
     public function getFeatureFlagLabels(): array
     {
-        return ShopSettingStore::featureFlagLabels();
+        return FeatureFlagStore::featureFlagLabels();
     }
 
     public function withPreservedLotteryManagedFlags(array $flags, int $projectId): array
     {
-        return ShopSettingStore::withPreservedLotteryManagedFlags($flags, $projectId);
+        return FeatureFlagStore::withPreservedLotteryManagedFlags($flags, $projectId);
     }
 
     // ── ポイント・スタンプ ──
 
     public function getPointEarnRate(int $projectId): int
     {
-        return (int) ShopSettingStore::getPointEarnRate($projectId);
+        return (int) MemberRankSettingStore::getPointEarnRate($projectId);
     }
 
     public function getPointEarnRateForRank(int $projectId, ?string $rankKey): int
     {
-        return (int) ShopSettingStore::getPointEarnRateForRank($projectId, $rankKey);
+        return (int) MemberRankSettingStore::getPointEarnRateForRank($projectId, $rankKey);
     }
 
     public function getPointsPerOrder(int $projectId): int
     {
-        return (int) ShopSettingStore::getPointsPerOrder($projectId);
+        return (int) MemberRankSettingStore::getPointsPerOrder($projectId);
     }
 
     public function getPointsValidDays(int $projectId): int
     {
-        return ShopSettingStore::getPointsValidDays($projectId);
+        return MemberRankSettingStore::getPointsValidDays($projectId);
     }
 
     public function getStampEarnPerAmount(int $projectId): int
     {
-        return (int) ShopSettingStore::getStampEarnPerAmount($projectId);
+        return (int) MemberRankSettingStore::getStampEarnPerAmount($projectId);
     }
 
     public function getStampEarnPerAmountForRank(int $projectId, ?string $rankKey): int
     {
-        return (int) ShopSettingStore::getStampEarnPerAmountForRank($projectId, $rankKey);
+        return (int) MemberRankSettingStore::getStampEarnPerAmountForRank($projectId, $rankKey);
     }
 
     public function getOrderStampCardId(int $projectId): ?int
     {
-        return ShopSettingStore::getOrderStampCardId($projectId);
+        return MemberRankSettingStore::getOrderStampCardId($projectId);
     }
 
     public function getUseStamps(int $projectId): bool
     {
-        return ShopSettingStore::getUseStamps($projectId);
+        return MemberRankSettingStore::getUseStamps($projectId);
     }
 
     public function getUseTransactionStamps(int $projectId): bool
     {
-        return ShopSettingStore::getUseTransactionStamps($projectId);
+        return MemberRankSettingStore::getUseTransactionStamps($projectId);
     }
 
     public function getUsePoints(int $projectId): bool
     {
-        return ShopSettingStore::getUsePoints($projectId);
+        return MemberRankSettingStore::getUsePoints($projectId);
     }
 
     // ── 会員ランク ──
 
     public function getMemberRankSettings(int $projectId): array
     {
-        return ShopSettingStore::getMemberRankSettings($projectId);
+        return MemberRankSettingStore::getMemberRankSettings($projectId);
     }
 
     public function setMemberRankSettings(array $settings, int $projectId): void
     {
-        ShopSettingStore::setMemberRankSettings($settings, $projectId);
+        MemberRankSettingStore::setMemberRankSettings($settings, $projectId);
     }
 
     public function getRankBasis(int $projectId): string
     {
-        return ShopSettingStore::getRankBasis($projectId);
+        return MemberRankSettingStore::getRankBasis($projectId);
     }
 
     public function getRankAggregationType(int $projectId): string
     {
-        return ShopSettingStore::getRankAggregationType($projectId);
+        return MemberRankSettingStore::getRankAggregationType($projectId);
     }
 
     public function getRankPeriodDays(int $projectId): int
     {
-        return ShopSettingStore::getRankPeriodDays($projectId);
+        return MemberRankSettingStore::getRankPeriodDays($projectId);
     }
 
     public function getIsRankDownEnabled(int $projectId): bool
     {
-        return ShopSettingStore::getIsRankDownEnabled($projectId);
+        return MemberRankSettingStore::getIsRankDownEnabled($projectId);
     }
 
     public function defaultMemberRankSettings(): array
     {
-        return ShopSettingStore::defaultMemberRankSettings();
+        return MemberRankSettingStore::defaultMemberRankSettings();
     }
 
     // ── 会員証 ──
 
     public function getShowPointsDisplay(int $projectId): bool
     {
-        return (bool) ShopSettingStore::getShowPointsDisplay($projectId);
+        return (bool) MemberCardSettingStore::getShowPointsDisplay($projectId);
     }
 
     public function getShowRankProgress(int $projectId): bool
     {
-        return (bool) ShopSettingStore::getShowRankProgress($projectId);
+        return (bool) MemberCardSettingStore::getShowRankProgress($projectId);
     }
 
     public function getShowMemberCardForGuest(int $projectId): bool
     {
-        return (bool) ShopSettingStore::getShowMemberCardForGuest($projectId);
+        return (bool) MemberCardSettingStore::getShowMemberCardForGuest($projectId);
     }
 
     public function setShowMemberCardForGuest(bool $value, int $projectId): void
     {
-        ShopSettingStore::setShowMemberCardForGuest($value, $projectId);
+        MemberCardSettingStore::setShowMemberCardForGuest($value, $projectId);
     }
 
     public function getMemberCardDesign(int $projectId): string
     {
-        return (string) ShopSettingStore::getMemberCardDesign($projectId);
+        return (string) MemberCardSettingStore::getMemberCardDesign($projectId);
     }
 
     public function setMemberCardDesign(string $value, int $projectId): void
     {
-        ShopSettingStore::setMemberCardDesign($value, $projectId);
+        MemberCardSettingStore::setMemberCardDesign($value, $projectId);
     }
 
     public function getMemberCardDisplayType(int $projectId): string
     {
-        return (string) ShopSettingStore::getMemberCardDisplayType($projectId);
+        return (string) MemberCardSettingStore::getMemberCardDisplayType($projectId);
     }
 
     public function setMemberCardDisplayType(string $value, int $projectId): void
     {
-        ShopSettingStore::setMemberCardDisplayType($value, $projectId);
+        MemberCardSettingStore::setMemberCardDisplayType($value, $projectId);
     }
 
     public function getMemberCardCodeType(int $projectId): string
     {
-        return (string) ShopSettingStore::getMemberCardCodeType($projectId);
+        return (string) MemberCardSettingStore::getMemberCardCodeType($projectId);
     }
 
     public function setMemberCardCodeType(string $value, int $projectId): void
     {
-        ShopSettingStore::setMemberCardCodeType($value, $projectId);
+        MemberCardSettingStore::setMemberCardCodeType($value, $projectId);
     }
 
     // ── 会員コード ──
 
     public function getMemberCodeType(int $projectId): string
     {
-        return (string) ShopSettingStore::getMemberCodeType($projectId);
+        return (string) MemberCodeSettingStore::getMemberCodeType($projectId);
     }
 
     public function getMemberCodeFormat(int $projectId): string
     {
-        return (string) ShopSettingStore::getMemberCodeFormat($projectId);
+        return (string) MemberCodeSettingStore::getMemberCodeFormat($projectId);
     }
 
     public function getMemberCodeLength(int $projectId): int
     {
-        return (int) ShopSettingStore::getMemberCodeLength($projectId);
+        return (int) MemberCodeSettingStore::getMemberCodeLength($projectId);
     }
 
     public function getMemberCodePrefix(int $projectId): string
     {
-        return (string) ShopSettingStore::getMemberCodePrefix($projectId);
+        return (string) MemberCodeSettingStore::getMemberCodePrefix($projectId);
     }
 
     public function getMemberCodeNextNumber(int $projectId): int
     {
-        return (int) ShopSettingStore::getMemberCodeNextNumber($projectId);
+        return (int) MemberCodeSettingStore::getMemberCodeNextNumber($projectId);
     }
 
     public function setMemberCodeNextNumber(int $nextNumber, int $projectId): void
     {
-        ShopSettingStore::setMemberCodeNextNumber($nextNumber, $projectId);
+        MemberCodeSettingStore::setMemberCodeNextNumber($nextNumber, $projectId);
     }
 
     // ── プロフィール ──
 
     public function getProfileFieldSettings(int $projectId): array
     {
-        return ShopSettingStore::getProfileFieldSettings($projectId);
+        return ProfileSettingStore::getProfileFieldSettings($projectId);
     }
 
     public function setProfileFieldSettings(array $settings, int $projectId): void
     {
-        ShopSettingStore::setProfileFieldSettings($settings, $projectId);
+        ProfileSettingStore::setProfileFieldSettings($settings, $projectId);
     }
 
     public function defaultProfileFieldSettings(): array
     {
-        return ShopSettingStore::defaultProfileFieldSettings();
+        return ProfileSettingStore::defaultProfileFieldSettings();
     }
 
     public function getMemberRegistrationMode(int $projectId): string
     {
-        return ShopSettingStore::getMemberRegistrationMode($projectId);
+        return ProfileSettingStore::getMemberRegistrationMode($projectId);
     }
 
     public function setMemberRegistrationMode(string $mode, int $projectId): void
     {
-        ShopSettingStore::setMemberRegistrationMode($mode, $projectId);
+        ProfileSettingStore::setMemberRegistrationMode($mode, $projectId);
     }
 
     // ── UI カスタマイズ ──
 
     public function getAdminSidebarColor(int $projectId): ?string
     {
-        return ShopSettingStore::getAdminSidebarColor($projectId);
+        return AppearanceSettingStore::getAdminSidebarColor($projectId);
     }
 
     public function getAdminHeaderColor(int $projectId): ?string
     {
-        return ShopSettingStore::getAdminHeaderColor($projectId);
+        return AppearanceSettingStore::getAdminHeaderColor($projectId);
     }
 
     public function getAdminPrimaryColor(int $projectId): ?string
     {
-        return ShopSettingStore::getAdminPrimaryColor($projectId);
+        return AppearanceSettingStore::getAdminPrimaryColor($projectId);
     }
 
     public function getStampDefaultImageUrl(int $projectId): ?string
     {
-        $url = ShopSettingStore::getStampDefaultImageUrl($projectId);
+        $url = AppearanceSettingStore::getStampDefaultImageUrl($projectId);
 
         return $url !== null && $url !== '' ? (string) $url : null;
     }
 
     public function getCouponDefaultImageUrl(int $projectId): ?string
     {
-        $url = ShopSettingStore::getCouponDefaultImageUrl($projectId);
+        $url = AppearanceSettingStore::getCouponDefaultImageUrl($projectId);
 
         return $url !== null && $url !== '' ? (string) $url : null;
     }
 
     public function getFrontendLogoUrl(int $projectId): ?string
     {
-        $url = ShopSettingStore::getFrontendLogoUrl($projectId);
+        $url = AppearanceSettingStore::getFrontendLogoUrl($projectId);
 
         return $url !== null && $url !== '' ? (string) $url : null;
     }
 
     public function getFrontendHeaderText(int $projectId): ?string
     {
-        return ShopSettingStore::getFrontendHeaderText($projectId);
+        return AppearanceSettingStore::getFrontendHeaderText($projectId);
     }
 
     // ── Wallet ──
 
     public function getWalletGoogleProgramLogoUrl(int $projectId): ?string
     {
-        return ShopSettingStore::getWalletGoogleProgramLogoUrl($projectId);
+        return AppearanceSettingStore::getWalletGoogleProgramLogoUrl($projectId);
     }
 
     public function setWalletGoogleProgramLogoUrl(?string $url, int $projectId): void
     {
-        ShopSettingStore::setWalletGoogleProgramLogoUrl($url, $projectId);
+        AppearanceSettingStore::setWalletGoogleProgramLogoUrl($url, $projectId);
     }
 
     public function getWalletGoogleHeroImageUrl(int $projectId): ?string
     {
-        return ShopSettingStore::getWalletGoogleHeroImageUrl($projectId);
+        return AppearanceSettingStore::getWalletGoogleHeroImageUrl($projectId);
     }
 
     public function setWalletGoogleHeroImageUrl(?string $url, int $projectId): void
     {
-        ShopSettingStore::setWalletGoogleHeroImageUrl($url, $projectId);
+        AppearanceSettingStore::setWalletGoogleHeroImageUrl($url, $projectId);
     }
 }

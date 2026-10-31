@@ -5,7 +5,7 @@ namespace Tests\Unit\Services;
 use App\Domain\Queue\Repositories\QueueEntryRepository;
 use App\Domain\Settings\Repositories\QueueAdminSettings;
 use App\Enums\QueueStatus;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Models\Project;
 use App\Models\QueueEntry;
 use App\Models\User;
@@ -48,7 +48,7 @@ class QueueAdminServiceNotifyTest extends TestCase
     public function test_notify_called_sends_native_push_and_line_with_project_token(bool $lineFails): void
     {
         $project = $this->createProject();
-        ShopSettingStore::setLineChannelAccessToken('project-queue-token', (int) $project->id);
+        LineSettingStore::setLineChannelAccessToken('project-queue-token', (int) $project->id);
         $lineUserId = 'U'.str_repeat('c', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,

@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Settings\ShopSettingKeys;
 use App\Enums\MemberRegistrationMode;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,7 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
     private function defaultSmaregiFieldsPayload(): array
     {
         $fields = [];
-        foreach (ShopSettingStore::PROFILE_SMAREGI_FIELDS as $key => $_label) {
+        foreach (ShopSettingKeys::PROFILE_SMAREGI_FIELDS as $key => $_label) {
             $fields[$key] = [
                 'enabled' => '1',
                 'required' => in_array($key, ['name', 'phone'], true) ? '1' : '0',
@@ -84,7 +85,7 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertSame(
             MemberRegistrationMode::FORCE,
-            ShopSettingStore::getMemberRegistrationMode((int) $project->id)
+            ProfileSettingStore::getMemberRegistrationMode((int) $project->id)
         );
     }
 
@@ -102,7 +103,7 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
         $response->assertRedirect(route('admin.settings.profile', ['project_key' => $project->project_key]));
         $this->assertSame(
             MemberRegistrationMode::POPUP,
-            ShopSettingStore::getMemberRegistrationMode((int) $project->id)
+            ProfileSettingStore::getMemberRegistrationMode((int) $project->id)
         );
     }
 }

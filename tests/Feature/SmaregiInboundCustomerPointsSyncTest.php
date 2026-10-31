@@ -6,6 +6,7 @@ use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
 use App\Models\ExistingMemberLinkRequest;
@@ -369,7 +370,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     {
         $project = Project::factory()->create();
         ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setProfileFieldSettings([
+        ProfileSettingStore::setProfileFieldSettings([
             'smaregi_fields' => [],
             'custom_fields' => [
                 [

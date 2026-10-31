@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\MemberNotificationPreference;
 use App\Enums\QueueStatus;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Models\AdminUser;
 use App\Models\Member;
 use App\Models\Project;
@@ -172,7 +172,7 @@ class AdminQueueTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project->id);
-        ShopSettingStore::setLineChannelAccessToken('queue-test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('queue-test-token', $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('a', 32),

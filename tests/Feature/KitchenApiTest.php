@@ -5,7 +5,8 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\OrderSettingStore;
 use App\Models\AdminUser;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -123,8 +124,8 @@ class KitchenApiTest extends TestCase
     {
         $project = $this->createProject();
         $this->authenticate($project);
-        ShopSettingStore::setOrderReadyLineNotifyEnabled(true, (int) $project->id);
-        ShopSettingStore::setLineChannelAccessToken('test-token', (int) $project->id);
+        OrderSettingStore::setOrderReadyLineNotifyEnabled(true, (int) $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat('a', 32)]);
         $order = Order::create([
             'project_id' => $project->id, 'user_id' => $user->id, 'total_amount' => 800,

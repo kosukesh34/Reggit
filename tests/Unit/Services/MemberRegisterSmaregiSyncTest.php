@@ -2,7 +2,8 @@
 
 namespace Tests\Unit\Services;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
@@ -84,7 +85,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
     public function test_register_member_任意項目をスマレジ自由項目として送ること(): void
     {
         $user = User::factory()->create(['project_id' => $this->project->id]);
-        ShopSettingStore::setProfileFieldSettings([
+        ProfileSettingStore::setProfileFieldSettings([
             'smaregi_fields' => [],
             'custom_fields' => [
                 [
@@ -206,7 +207,7 @@ class MemberRegisterSmaregiSyncTest extends TestCase
 
     public function test_register_member_初期ランクは_resolverと同じ判定になること(): void
     {
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'guest', 'label' => 'ゲスト', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 2, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 3, 'is_active' => true],
