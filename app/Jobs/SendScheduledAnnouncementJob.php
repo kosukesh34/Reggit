@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Announcement;
 use App\Models\Project;
-use App\Services\Admin\AnnouncementAdminService;
+use App\Services\Admin\AnnouncementAudienceService;
 use App\Services\AnnouncementNotificationService;
 use App\Services\AnnouncementStoreAudience;
 use App\Util\TenantContext;
@@ -26,11 +26,11 @@ class SendScheduledAnnouncementJob implements ShouldQueue
 
     public function handle(
         AnnouncementNotificationService $announcementNotificationService,
-        AnnouncementAdminService $announcementAdminService,
+        AnnouncementAudienceService $announcementAudience,
         TenantContext $tenants,
         AnnouncementStoreAudience $audience,
     ): void {
-        $announcement = DB::transaction(function () use ($announcementAdminService, $tenants, $audience): ?Announcement {
+        $announcement = DB::transaction(function () use ($announcementAudience, $tenants, $audience): ?Announcement {
             $locked = Announcement::withoutGlobalScopes()
                 ->whereKey($this->announcementId)
                 ->lockForUpdate()
@@ -41,16 +41,16 @@ class SendScheduledAnnouncementJob implements ShouldQueue
 
             return $tenants->runForProject(
                 Project::query()->findOrFail($locked->project_id),
-                function () use ($locked, $announcementAdminService, $audience): ?Announcement {
+                function () use ($locked, $announcementAudience, $audience): ?Announcement {
                     if (! $audience->authorizedForSend($locked)) {
                         $locked->update(['delivery_status' => 'held']);
                         Log::warning('配信を保留しました。作成者の店舗権限を確認してください。', ['announcement_id' => $locked->id]);
 
                         return null;
                     }
-                    $announcementAdminService->finalizeAudienceForSend($locked);
+                    $announcementAudience->finalizeAudienceForSend($locked);
                     $locked = $locked->fresh() ?? $locked;
-                    $announcementAdminService->issueDeliveryCouponIfSet($locked);
+                    $announcementAudience->issueDeliveryCouponIfSet($locked);
                     $shouldNotify = $locked->send_notification !== false;
                     $locked->update([
                         'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
