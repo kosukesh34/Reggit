@@ -23,6 +23,7 @@ use App\Models\QueueEntry;
 use App\Models\Reservation;
 use App\Models\StampCard;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -72,7 +73,7 @@ class DemoPreviewSeeder extends Seeder
             ]
         );
 
-        if ($member->getTotalPointsFromTransactions() === 0) {
+        if (app(MemberPointLedger::class)->total($member) === 0) {
             $repo = app(MemberRepository::class);
             $aggregate = $repo->findById((int) $member->id, (int) $member->project_id);
             if ($aggregate !== null) {

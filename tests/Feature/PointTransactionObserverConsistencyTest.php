@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\Services\MemberWalletSyncService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
@@ -113,7 +114,7 @@ class PointTransactionObserverConsistencyTest extends TestCase
                         });
                         file_put_contents($directory.'/connection-'.$index, (string) DB::selectOne('SELECT CONNECTION_ID() AS id')->id);
                         if ($recalculateFirst && $index === 0) {
-                            $member->recalcLifetimeGrantedPoints();
+                            app(MemberPointLedger::class)->recalculateLifetimeGranted($member);
                         } else {
                             DB::transaction(fn () => $this->earned($member, $points));
                         }

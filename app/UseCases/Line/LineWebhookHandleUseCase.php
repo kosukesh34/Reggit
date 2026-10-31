@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\Line\LineService;
 use App\Services\Line\LineWebhookProjectResolver;
+use App\Services\Member\MemberPointLedger;
 use App\UseCases\Line\Data\LineWebhookInput;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -23,6 +24,7 @@ class LineWebhookHandleUseCase
         private LineService $lineService,
         private LineWebhookProjectResolver $projectResolver,
         private LineConnectionSettings $shopSettingRepository,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     public function handle(LineWebhookInput $input): array
@@ -282,7 +284,7 @@ class LineWebhookHandleUseCase
             $message = $this->lineService->createTextMessage(
                 "会員証情報\n\n".
                 "会員番号: {$member->member_number}\n".
-                "ポイント: {$member->getDisplayPoints()}pt\n".
+                "ポイント: {$this->pointLedger->displayPoints($member)}pt\n".
                 'ステータス: '.($member->status === MemberStatus::ACTIVE ? '有効' : '無効')
             );
         }

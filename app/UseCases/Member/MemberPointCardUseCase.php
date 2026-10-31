@@ -4,6 +4,7 @@ namespace App\UseCases\Member;
 
 use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\UseCases\Member\Data\MemberPointCardView;
@@ -15,6 +16,7 @@ class MemberPointCardUseCase
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberCardPreviewSettings $shopSettingRepository,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     public function handle(User $user): MemberPointCardView
@@ -38,7 +40,7 @@ class MemberPointCardUseCase
 
         return new MemberPointCardView(false, [
             'member_number' => $member->member_number,
-            'points' => $member->getDisplayPoints(),
+            'points' => $this->pointLedger->displayPoints($member),
             'rank' => $rankInfo['current_rank'] ?? null,
             'rank_label' => $rankInfo['current_rank_label'] ?? null,
             'rank_icon' => $rankInfo['current_rank_icon'] ?? null,

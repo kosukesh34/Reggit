@@ -5,12 +5,15 @@ namespace App\Services;
 use App\Models\MemberLotteryEntitlement;
 use App\Models\MemberStamp;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\Util\AdminContext;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class MemberWalletSummaryService
 {
+    public function __construct(private MemberPointLedger $pointLedger) {}
+
     /**
      * @return array{
      *     points: int,
@@ -44,7 +47,7 @@ class MemberWalletSummaryService
                 ->count();
 
             return [
-                'points' => $member->getDisplayPoints(),
+                'points' => $this->pointLedger->displayPoints($member),
                 'stamps_total' => $stampsTotal,
                 'pending_lottery_count' => $pendingLotteryCount,
                 'updated_at' => now()->toIso8601String(),

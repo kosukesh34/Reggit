@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\Line\LineService;
 use App\Services\Line\LineWebhookProjectResolver;
+use App\Services\Member\MemberPointLedger;
 use App\UseCases\Line\Data\LineWebhookInput;
 use App\UseCases\Line\LineWebhookHandleUseCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -161,7 +162,7 @@ class LineWebhookHandleUseCaseTest extends TestCase
     {
         $resolver = new LineWebhookProjectResolver($line, app(LineConnectionSettings::class));
 
-        return new LineWebhookHandleUseCase($line, $resolver, app(LineConnectionSettings::class));
+        return new LineWebhookHandleUseCase($line, $resolver, app(LineConnectionSettings::class), app(MemberPointLedger::class));
     }
 
     private function mockLineService(string $matchingSecret): LineService

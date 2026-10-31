@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Member;
 
 use App\Models\Member;
 use App\Services\Admin\MemberAdminListQueryService;
+use App\Services\Member\MemberPointLedger;
 use App\Support\AdminMemberIdentifier;
 use App\Support\MemberChannel;
 use Illuminate\Support\Collection;
@@ -12,6 +13,7 @@ class AdminMemberExportUseCase
 {
     public function __construct(
         private MemberAdminListQueryService $memberList,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     /**
@@ -30,7 +32,7 @@ class AdminMemberExportUseCase
                     '登録チャネル' => MemberChannel::label($user),
                     'メール' => (string) ($user !== null ? $user->email : ''),
                     '電話番号' => (string) ($user !== null ? $user->phone : ''),
-                    'ポイント' => (string) $m->getDisplayPoints(),
+                    'ポイント' => (string) $this->pointLedger->displayPoints($m),
                     'ランク' => (string) ($m->rank ?? ''),
                     '最終来店' => $m->last_visited_at !== null ? $m->last_visited_at->format('Y/m/d H:i') : '',
                     '登録日' => $m->created_at->format('Y/m/d H:i'),

@@ -20,6 +20,7 @@ use App\Services\Admin\MemberTagAdminService;
 use App\Services\AnnouncementStoreAudience;
 use App\Services\CustomerStoreProfile;
 use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberPointLedger;
 use App\Services\Member\MemberProfileUpdater;
 use App\Services\MemberProfileRules;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
@@ -396,7 +397,7 @@ class MultiStoreTest extends TestCase
             PointTransaction::create(['project_id' => $this->project->id, 'store_id' => $store->id, 'member_id' => $member->id, 'type' => 'earned', 'points' => 100]);
         }
         app(StoreContext::class)->bind(Request::create('/', 'GET', ['store_id' => $this->a->id]), $this->project->id, $this->admin());
-        $this->assertSame(200, $member->getTotalPointsFromTransactions());
+        $this->assertSame(200, app(MemberPointLedger::class)->total($member));
         $this->assertSame(100, (int) $member->pointTransactions()->sum('points'));
     }
 

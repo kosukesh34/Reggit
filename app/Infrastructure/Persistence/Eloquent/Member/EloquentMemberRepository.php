@@ -7,9 +7,12 @@ use App\Domain\Member\Repositories\MemberRepository;
 use App\Models\Member as MemberModel;
 use App\Models\PointTransaction;
 use App\Models\Scopes\ProjectScope;
+use App\Services\Member\MemberPointLedger;
 
 class EloquentMemberRepository implements MemberRepository
 {
+    public function __construct(private MemberPointLedger $pointLedger) {}
+
     public function findById(int $memberId, int $projectId): ?MemberAggregate
     {
         $model = MemberModel::query()
@@ -38,7 +41,7 @@ class EloquentMemberRepository implements MemberRepository
             return null;
         }
 
-        return MemberMapper::toDomain($model, true);
+        return MemberMapper::toDomain($model, $this->pointLedger->total($model, true));
     }
 
     public function findByUserId(int $userId, int $projectId): ?MemberAggregate
@@ -65,7 +68,7 @@ class EloquentMemberRepository implements MemberRepository
             ->lockForUpdate()
             ->first();
 
-        return $model !== null ? MemberMapper::toDomain($model, true) : null;
+        return $model !== null ? MemberMapper::toDomain($model, $this->pointLedger->total($model, true)) : null;
     }
 
     public function save(MemberAggregate $member): void
@@ -91,7 +94,7 @@ class EloquentMemberRepository implements MemberRepository
             ]);
         }
 
-        $model->recalcPointsFromTransactions();
+        $this->pointLedger->recalculate($model);
     }
 
     public function hasPointTransactionForOrder(int $orderId, string $type, ?string $description = null): bool
@@ -118,11 +121,11 @@ class EloquentMemberRepository implements MemberRepository
             return;
         }
 
-        $model->syncPointsLedger();
+        $this->pointLedger->sync($model);
     }
 
     private function loadAsDomain(MemberModel $model): MemberAggregate
     {
-        return MemberMapper::toDomain($model);
+        return MemberMapper::toDomain($model, $this->pointLedger->total($model));
     }
 }

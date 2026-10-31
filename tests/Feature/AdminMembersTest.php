@@ -22,6 +22,7 @@ use App\Models\User;
 use App\Models\WalletPassRegistration;
 use App\Services\AppleWalletPushService;
 use App\Services\GoogleWalletPassService;
+use App\Services\Member\MemberPointLedger;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -317,7 +318,7 @@ class AdminMembersTest extends TestCase
             ->assertOk();
 
         $this->assertSame(250, (int) $member->fresh()->points);
-        $this->assertSame(0, $member->getTotalPointsFromTransactions());
+        $this->assertSame(0, app(MemberPointLedger::class)->total($member));
         Http::assertNothingSent();
     }
 
@@ -571,7 +572,7 @@ class AdminMembersTest extends TestCase
         $response->assertRedirect();
         $member->refresh();
         $this->assertSame(500, $member->points);
-        $this->assertSame(500, $member->getTotalPointsFromTransactions());
+        $this->assertSame(500, app(MemberPointLedger::class)->total($member));
     }
 
     public function test_取引なしでカラムだけ残っている会員でもポイント直接指定が正しく反映されること(): void
@@ -625,7 +626,7 @@ class AdminMembersTest extends TestCase
         $response->assertSessionHasNoErrors();
         $member->refresh();
         $this->assertSame(100, $member->points);
-        $this->assertSame(100, $member->getTotalPointsFromTransactions());
+        $this->assertSame(100, app(MemberPointLedger::class)->total($member));
         $this->assertDatabaseHas('wallet_pass_updates', [
             'member_id' => $member->id,
             'pass_type_identifier' => 'pass.IDNect',
@@ -635,13 +636,13 @@ class AdminMembersTest extends TestCase
     public function test_カラムだけ多いポイント残高は台帳に補完されること(): void
     {
         $member = Member::factory()->create(['points' => 250]);
-        $this->assertSame(0, $member->getTotalPointsFromTransactions());
+        $this->assertSame(0, app(MemberPointLedger::class)->total($member));
 
-        $member->syncPointsLedger();
+        app(MemberPointLedger::class)->sync($member);
         $member->refresh();
 
         $this->assertSame(250, $member->points);
-        $this->assertSame(250, $member->getTotalPointsFromTransactions());
+        $this->assertSame(250, app(MemberPointLedger::class)->total($member));
     }
 
     public function test_members_detail_履歴セクションが表示されること(): void

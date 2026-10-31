@@ -9,6 +9,7 @@ use App\Services\AppleWallet\PassCertificates;
 use App\Services\AppleWallet\PassJsonWriter;
 use App\Services\AppleWallet\PassPackager;
 use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberPointLedger;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
 use App\Util\StrHelper;
@@ -30,6 +31,7 @@ class WalletPassService
         private PassPackager $packager,
         private PassAssetWriter $assets,
         private PassJsonWriter $passJson,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     public function getLastError(): ?string
@@ -132,7 +134,7 @@ class WalletPassService
         $serialNumber = 'member-'.(string) $member->id;
 
         $extraFields = [
-            'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
+            'points' => $data['points'] ?? $this->pointLedger->total($member),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
             'appearance' => $this->memberCardAppearanceService->resolveForMember($member),
@@ -177,7 +179,7 @@ class WalletPassService
         $barcodeMessage = $member->member_number ?? (string) $member->id;
         $serialNumber = 'member-'.(string) $member->id;
         $extraFields = [
-            'points' => $data['points'] ?? $member->getTotalPointsFromTransactions(),
+            'points' => $data['points'] ?? $this->pointLedger->total($member),
             'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
             'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
             'appearance' => $this->memberCardAppearanceService->resolveForMember($member),
@@ -200,7 +202,7 @@ class WalletPassService
         $barcodeMessage = $member->member_number ?? (string) $member->id;
         $serialNumber = 'member-'.(string) $member->id;
         $extraFields = [
-            'points' => $member->getTotalPointsFromTransactions(),
+            'points' => $this->pointLedger->total($member),
             'rank_label' => $appearance['rank_label'],
             'rank_key' => $appearance['rank_key'],
             'appearance' => $appearance,

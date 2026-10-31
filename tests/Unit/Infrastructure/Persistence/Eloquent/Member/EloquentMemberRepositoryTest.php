@@ -9,6 +9,7 @@ use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -54,7 +55,7 @@ class EloquentMemberRepositoryTest extends TestCase
         $this->assertDatabaseHas('point_transactions', [
             'member_id' => $member->id,
             'points' => 80,
-            'description' => Member::POINTS_LEDGER_BACKFILL_DESCRIPTION,
+            'description' => MemberPointLedger::POINTS_LEDGER_BACKFILL_DESCRIPTION,
         ]);
     }
 
@@ -74,7 +75,7 @@ class EloquentMemberRepositoryTest extends TestCase
             'points' => 40,
             'description' => '初期',
         ]);
-        $member->recalcPointsFromTransactions();
+        app(MemberPointLedger::class)->recalculate($member);
 
         $repository = app(EloquentMemberRepository::class);
         $aggregate = $repository->findById((int) $member->id, (int) $project->id);
@@ -99,7 +100,7 @@ class EloquentMemberRepositoryTest extends TestCase
             'points' => 30,
             'description' => '初期',
         ]);
-        $member->recalcPointsFromTransactions();
+        app(MemberPointLedger::class)->recalculate($member);
 
         $repository = app(EloquentMemberRepository::class);
         $aggregate = $repository->findByUserId((int) $user->id, (int) $project->id);
@@ -125,7 +126,7 @@ class EloquentMemberRepositoryTest extends TestCase
             'points' => 50,
             'description' => '初期',
         ]);
-        $member->recalcPointsFromTransactions();
+        app(MemberPointLedger::class)->recalculate($member);
 
         $aggregate = new MemberAggregate(
             new MemberId((int) $member->id),
@@ -139,7 +140,7 @@ class EloquentMemberRepositoryTest extends TestCase
         $repository->save($aggregate);
 
         $member->refresh();
-        $this->assertSame(35, $member->getDisplayPoints());
+        $this->assertSame(35, app(MemberPointLedger::class)->displayPoints($member));
         $this->assertDatabaseHas('point_transactions', [
             'member_id' => $member->id,
             'points' => -15,
@@ -169,7 +170,7 @@ class EloquentMemberRepositoryTest extends TestCase
         $repository->save($aggregate);
 
         $member->refresh();
-        $this->assertSame(25, $member->getDisplayPoints());
+        $this->assertSame(25, app(MemberPointLedger::class)->displayPoints($member));
         $this->assertDatabaseHas('point_transactions', [
             'member_id' => $member->id,
             'points' => 25,
