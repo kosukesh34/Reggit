@@ -8,7 +8,7 @@ use App\Models\Announcement;
 use App\Services\Admin\AnnouncementAdminService;
 use App\Services\Admin\AnnouncementAudienceService;
 use App\Services\Admin\CouponAdminService;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\Services\Admin\MemberSegmentService;
 use App\Services\AnnouncementNotificationService;
 use App\UseCases\Admin\Announcement\Data\StoreDeliveryOutput;
@@ -20,7 +20,7 @@ class AdminAnnouncementStoreDeliveryUseCase
     public function __construct(
         private AnnouncementNotificationService $announcementNotificationService,
         private MemberSegmentService $memberSegmentService,
-        private MemberAdminService $memberAdminService,
+        private MemberAdminQueryService $memberAdminService,
         private AnnouncementAdminService $announcementAdminService,
         private AnnouncementAudienceService $audience,
         private CouponAdminService $couponAdminService

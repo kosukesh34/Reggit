@@ -7,7 +7,7 @@ use App\Models\AdminUser;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\Support\AdminMemberIdentifier;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,7 +35,7 @@ class AdminMemberIdentifierTest extends TestCase
         $this->assertSame('XYZ987654', AdminMemberIdentifier::value($random));
         $this->assertSame('会員ID', AdminMemberIdentifier::label($project->id));
         $this->assertSame('会員番号', AdminMemberIdentifier::label($other->id));
-        $service = app(MemberAdminService::class);
+        $service = app(MemberAdminQueryService::class);
         $this->assertSame((string) $member->id, $service->searchByKeyword($project->id, (string) $member->id)->first()['display_identifier']);
         $this->assertSame($member->id, $service->findByMemberNumbers($project->id, [(string) $member->id])->first()['id']);
         $this->assertSame($random->id, $service->findByMemberNumbers($other->id, ['XYZ987654'])->first()['id']);

@@ -24,7 +24,7 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\StampCard;
 use App\Models\User;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\Services\Smaregi\SmaregiTransactionInboundSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -140,7 +140,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
         $member->refresh();
         $this->assertSame('2026-07-19', $member->last_visited_at?->format('Y-m-d'));
 
-        $summary = app(MemberAdminService::class)->getPurchaseSummary($member->fresh());
+        $summary = app(MemberAdminQueryService::class)->getPurchaseSummary($member->fresh());
         $this->assertSame(2046.0, $summary['total_revenue']);
         $this->assertSame(1, $summary['total_orders']);
 

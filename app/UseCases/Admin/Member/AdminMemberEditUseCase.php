@@ -4,14 +4,14 @@ namespace App\UseCases\Admin\Member;
 
 use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Services\Admin\CouponAdminService;
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\Services\CustomerStoreProfile;
 use App\UseCases\Admin\Member\Data\AdminMemberEditOutput;
 
 class AdminMemberEditUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberAdminQueryService $memberAdminService,
         private CouponAdminService $couponAdminService,
         private ProfileSettings $shopSettingRepository,
         private CustomerStoreProfile $customerStoreProfile,
