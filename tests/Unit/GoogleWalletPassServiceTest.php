@@ -7,13 +7,16 @@ use App\Enums\GoogleWalletApi;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\GoogleWallet\GoogleWalletCredentials;
+use App\Services\GoogleWallet\GoogleWalletLoyaltyClassApi;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Services\GoogleWalletPassService;
 use App\Services\Member\MemberDataReader;
 use App\Services\MemberCardAppearanceService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -32,6 +35,7 @@ class GoogleWalletPassServiceTest extends TestCase
             app(MemberDataReader::class),
             app(MemberCardAppearanceService::class),
             app(GoogleWalletCredentials::class),
+            app(GoogleWalletLoyaltyClassApi::class),
         );
     }
 
@@ -125,5 +129,30 @@ class GoogleWalletPassServiceTest extends TestCase
         $this->assertSame('あいう', $builder->truncateForWallet('あいう', $maxLen));
         $long = str_repeat('あ', $maxLen + 5);
         $this->assertSame($maxLen, mb_strlen($builder->truncateForWallet($long, $maxLen)));
+    }
+
+    public function test_api_の403理由が利用不可理由とlast_errorに残ること(): void
+    {
+        $key = openssl_pkey_new(['private_key_bits' => 2048]);
+        openssl_pkey_export($key, $privateKey);
+        $path = tempnam(sys_get_temp_dir(), 'gw-credentials-');
+        file_put_contents($path, json_encode(['client_email' => 'wallet@example.iam.gserviceaccount.com', 'private_key' => $privateKey]));
+        Config::set('google_wallet.enabled', true);
+        Config::set('google_wallet.issuer_id', '123');
+        Config::set('google_wallet.credentials_path', $path);
+        Cache::flush();
+        Http::fake([
+            'oauth2.googleapis.com/*' => Http::response(['access_token' => 'token']),
+            'walletobjects.googleapis.com/*' => Http::response(['error' => ['errors' => [['reason' => 'permissionDenied']]]], 403),
+        ]);
+        try {
+            $service = $this->createService();
+
+            $this->assertStringContainsString('wallet@example.iam.gserviceaccount.com', $service->getUnavailabilityReasons()[0]);
+            $this->assertFalse($service->ensureLoyaltyClassExists('123.membership', 'Test', 'https://example.test/logo.png'));
+            $this->assertStringContainsString('Pay & Wallet Console', (string) $service->getLastError());
+        } finally {
+            @unlink($path);
+        }
     }
 }
