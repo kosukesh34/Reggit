@@ -106,6 +106,7 @@ use App\Repositories\Eloquent\EloquentAdminUserRepository;
 use App\Repositories\Eloquent\EloquentProjectRepository;
 use App\Repositories\Eloquent\EloquentUserDeviceRepository;
 use App\Repositories\Eloquent\EloquentUserRepository;
+use App\Services\JapanPostApiService;
 use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\Smaregi\SmaregiApiClient;
 use App\Services\Subscription\StripeSubscriptionGateway;
@@ -147,6 +148,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->scoped(TenantContext::class);
         $this->app->scoped(StoreContext::class);
+        $this->app->bind(JapanPostApiService::class, fn () => JapanPostApiService::fromConfig());
         $this->app->bind(ProjectRepository::class, EloquentProjectRepository::class);
         $this->app->bind(AdminUserRepository::class, EloquentAdminUserRepository::class);
         $this->app->bind(UserDeviceRepository::class, EloquentUserDeviceRepository::class);

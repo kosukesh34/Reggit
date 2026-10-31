@@ -3,17 +3,18 @@
 namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\SettingValueWriter;
+use App\Services\Admin\HomeImagesUpdater;
 use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\Settings\Data\UpdateAppImagesInput;
 
 class UpdateAppImagesUseCase
 {
-    public function __construct(private SettingValueWriter $settings, private PublicImageStorageService $images, private UpdateHomeImagesUseCase $homeImages) {}
+    public function __construct(private SettingValueWriter $settings, private PublicImageStorageService $images, private HomeImagesUpdater $homeImages) {}
 
     public function handle(UpdateAppImagesInput $input): void
     {
         if ($input->homeAssets !== null) {
-            $this->homeImages->handle($input->homeAssets);
+            $this->homeImages->update($input->homeAssets);
         }
         if ($input->headerText !== null) {
             $this->settings->setValue('frontend_header_text', $input->headerText, 'string', $input->projectId);

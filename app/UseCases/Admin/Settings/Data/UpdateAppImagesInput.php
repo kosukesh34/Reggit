@@ -2,6 +2,7 @@
 
 namespace App\UseCases\Admin\Settings\Data;
 
+use App\Services\Admin\Data\UpdateHomeImagesInput;
 use Illuminate\Http\UploadedFile;
 
 final readonly class UpdateAppImagesInput

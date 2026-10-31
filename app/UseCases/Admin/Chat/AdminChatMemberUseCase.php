@@ -6,10 +6,10 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberStamp;
 use App\Models\StampCard;
+use App\Services\Admin\MemberStampAdjuster;
 use App\Services\Chat\ChatReplyNotifier;
 use App\Services\Chat\ChatStaffInbox;
 use App\Services\MemberBenefitService;
-use App\UseCases\Admin\Member\AdminMemberAdjustStampsUseCase;
 
 /** チャット画面から会員に対して行う操作。会員は StoreAccessScope で見られる範囲から探す。 */
 class AdminChatMemberUseCase
@@ -18,7 +18,7 @@ class AdminChatMemberUseCase
         private ChatReplyNotifier $notifier,
         private ChatStaffInbox $inbox,
         private MemberBenefitService $benefits,
-        private AdminMemberAdjustStampsUseCase $stamps,
+        private MemberStampAdjuster $stamps,
     ) {}
 
     /**
@@ -79,7 +79,7 @@ class AdminChatMemberUseCase
     public function grantStamps(int $projectId, int $memberId, int $stampCardId, int $count): array
     {
         $target = Member::query()->findOrFail($memberId);
-        $this->stamps->handle($projectId, (int) $target->id, $stampCardId, $count, 0, 'チャットで付与');
+        $this->stamps->adjust($projectId, (int) $target->id, $stampCardId, $count, 0, 'チャットで付与');
         $card = StampCard::query()->findOrFail($stampCardId);
         $current = (int) MemberStamp::query()->where('member_id', $target->id)->where('stamp_card_id', $card->id)->value('current_stamps');
 

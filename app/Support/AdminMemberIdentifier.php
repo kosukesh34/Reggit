@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Domain\Settings\Repositories\MemberCodeSettings;
 use App\Models\Member;
 use App\Util\AdminContext;
 
@@ -12,7 +12,7 @@ class AdminMemberIdentifier
     {
         $projectId ??= AdminContext::getCurrentProjectId();
 
-        return $projectId !== null && ShopSettingStore::getMemberCodeType($projectId) === 'sequential';
+        return $projectId !== null && app(MemberCodeSettings::class)->getMemberCodeType($projectId) === 'sequential';
     }
 
     public static function label(?int $projectId = null): string
