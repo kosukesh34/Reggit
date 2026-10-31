@@ -4,14 +4,14 @@ namespace App\UseCases\Admin\Member;
 
 use App\Models\Member;
 use App\Models\Scopes\ProjectScope;
-use App\UseCases\Member\Data\IssuedTransferCode;
-use App\UseCases\Member\IssueMemberTransferCodeUseCase;
+use App\Services\Member\Data\IssuedTransferCode;
+use App\Services\Member\MemberTransferCodeIssuer;
 use InvalidArgumentException;
 
 class IssueAdminMemberTransferCodeUseCase
 {
     public function __construct(
-        private IssueMemberTransferCodeUseCase $issueMemberTransferCodeUseCase,
+        private MemberTransferCodeIssuer $transferCodes,
     ) {}
 
     public function handle(int $projectId, int $memberId, ?int $adminId): IssuedTransferCode
@@ -27,6 +27,6 @@ class IssueAdminMemberTransferCodeUseCase
             throw new InvalidArgumentException('会員が見つかりません');
         }
 
-        return $this->issueMemberTransferCodeUseCase->handle($member->user, $adminId);
+        return $this->transferCodes->issue($member->user, $adminId);
     }
 }
