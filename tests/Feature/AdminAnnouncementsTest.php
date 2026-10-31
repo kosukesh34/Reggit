@@ -23,7 +23,7 @@ use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
-use App\Services\Admin\AnnouncementAdminService;
+use App\Services\Admin\AnnouncementAudienceService;
 use App\Services\Admin\PublicImageStorageService;
 use App\Services\AnnouncementNotificationService;
 use App\Services\AnnouncementStoreAudience;
@@ -514,7 +514,7 @@ class AdminAnnouncementsTest extends TestCase
         $job = new SendScheduledAnnouncementJob($announcement->id);
         $job->handle(
             app(AnnouncementNotificationService::class),
-            app(AnnouncementAdminService::class),
+            app(AnnouncementAudienceService::class),
             app(TenantContext::class),
             app(AnnouncementStoreAudience::class),
         );
@@ -565,7 +565,7 @@ class AdminAnnouncementsTest extends TestCase
         $job = new SendScheduledAnnouncementJob($announcement->id);
         $job->handle(
             app(AnnouncementNotificationService::class),
-            app(AnnouncementAdminService::class),
+            app(AnnouncementAudienceService::class),
             app(TenantContext::class),
             app(AnnouncementStoreAudience::class),
         );
@@ -595,13 +595,13 @@ class AdminAnnouncementsTest extends TestCase
         $job = new SendScheduledAnnouncementJob($announcement->id);
         $job->handle(
             app(AnnouncementNotificationService::class),
-            app(AnnouncementAdminService::class),
+            app(AnnouncementAudienceService::class),
             app(TenantContext::class),
             app(AnnouncementStoreAudience::class),
         );
         $job->handle(
             app(AnnouncementNotificationService::class),
-            app(AnnouncementAdminService::class),
+            app(AnnouncementAudienceService::class),
             app(TenantContext::class),
             app(AnnouncementStoreAudience::class),
         );
@@ -648,7 +648,7 @@ class AdminAnnouncementsTest extends TestCase
 
         (new SendScheduledAnnouncementJob($announcement->id))->handle(
             app(AnnouncementNotificationService::class),
-            app(AnnouncementAdminService::class),
+            app(AnnouncementAudienceService::class),
             app(TenantContext::class),
             app(AnnouncementStoreAudience::class),
         );
@@ -1132,7 +1132,7 @@ class AdminAnnouncementsTest extends TestCase
             ]);
         }
 
-        $recipients = app(AnnouncementAdminService::class)->getDeliveryRecipients($announcement);
+        $recipients = app(AnnouncementAudienceService::class)->getDeliveryRecipients($announcement);
         $this->assertCount(1, $recipients);
         $this->assertSame(MemberCoupon::STATUS_USED, $recipients[0]['coupon_status']);
         $this->assertNotNull($recipients[0]['coupon_used_at']);

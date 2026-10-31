@@ -6,6 +6,7 @@ use App\Enums\AnnouncementAudienceResolveMode;
 use App\Jobs\SendScheduledAnnouncementJob;
 use App\Models\Announcement;
 use App\Services\Admin\AnnouncementAdminService;
+use App\Services\Admin\AnnouncementAudienceService;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Admin\MemberSegmentService;
@@ -21,6 +22,7 @@ class AdminAnnouncementStoreDeliveryUseCase
         private MemberSegmentService $memberSegmentService,
         private MemberAdminService $memberAdminService,
         private AnnouncementAdminService $announcementAdminService,
+        private AnnouncementAudienceService $audience,
         private CouponAdminService $couponAdminService
     ) {}
 
@@ -191,12 +193,12 @@ class AdminAnnouncementStoreDeliveryUseCase
         }
 
         if ($announcement->send_notification === false) {
-            $this->announcementAdminService->issueDeliveryCouponIfSet($announcement);
+            $this->audience->issueDeliveryCouponIfSet($announcement);
 
             return new StoreDeliveryOutput(false, false, 'お知らせを掲載しました（通知は送信していません）');
         }
 
-        $this->announcementAdminService->issueDeliveryCouponIfSet($announcement);
+        $this->audience->issueDeliveryCouponIfSet($announcement);
         $result = $this->announcementNotificationService->send($announcement);
 
         $sent = $result['sent'];
