@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\AppearanceSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,7 +22,7 @@ class AdminSidebarColorTest extends TestCase
         foreach (['#ffffff' => '#111827', '#00344d' => '#ffffff'] as $background => $text) {
             $this->post(route('admin.settings.admin-design.update', $params), ['admin_sidebar_color' => $background])
                 ->assertRedirect()->assertSessionHasNoErrors();
-            $this->assertSame($background, ShopSettingStore::getAdminSidebarColor($project->id));
+            $this->assertSame($background, AppearanceSettingStore::getAdminSidebarColor($project->id));
             $this->get(route('admin.settings.admin-design', $params))->assertOk()
                 ->assertSee('--sidebar-custom-bg: '.$background, false)
                 ->assertSee('--sidebar-custom-text: '.$text, false);
@@ -30,7 +30,7 @@ class AdminSidebarColorTest extends TestCase
 
         $this->post(route('admin.settings.admin-design.update', $params), ['admin_sidebar_color' => 'red; background: url(example)'])
             ->assertSessionHasErrors('admin_sidebar_color');
-        $this->assertSame('#00344d', ShopSettingStore::getAdminSidebarColor($project->id));
+        $this->assertSame('#00344d', AppearanceSettingStore::getAdminSidebarColor($project->id));
 
         $this->post(route('admin.settings.admin-design.update', $params), ['admin_sidebar_color' => ''])
             ->assertRedirect()->assertSessionHasNoErrors();

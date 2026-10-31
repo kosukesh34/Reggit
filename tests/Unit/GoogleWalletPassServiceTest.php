@@ -11,6 +11,7 @@ use App\Services\GoogleWallet\GoogleWalletLoyaltyClassApi;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Services\GoogleWalletPassService;
 use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberPointLedger;
 use App\Services\MemberCardAppearanceService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,6 +37,7 @@ class GoogleWalletPassServiceTest extends TestCase
             app(MemberCardAppearanceService::class),
             app(GoogleWalletCredentials::class),
             app(GoogleWalletLoyaltyClassApi::class),
+            app(MemberPointLedger::class),
         );
     }
 

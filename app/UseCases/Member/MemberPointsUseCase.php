@@ -4,10 +4,13 @@ namespace App\UseCases\Member;
 
 use App\Models\PointTransaction;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\UseCases\Member\Data\MemberPointsOutput;
 
 class MemberPointsUseCase
 {
+    public function __construct(private MemberPointLedger $pointLedger) {}
+
     public function handle(User $user): MemberPointsOutput
     {
         $member = $user->member;
@@ -22,6 +25,6 @@ class MemberPointsUseCase
             ->take(20)
             ->get();
 
-        return new MemberPointsOutput(true, $member->getDisplayPoints(), $transactions);
+        return new MemberPointsOutput(true, $this->pointLedger->displayPoints($member), $transactions);
     }
 }

@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\LiffSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberCardSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -71,7 +75,7 @@ class LiffDesignerTest extends TestCase
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
-        $stored = ShopSettingStore::getLiffTabLayouts($project->id);
+        $stored = LiffSettingStore::getLiffTabLayouts($project->id);
         $this->assertArrayHasKey('home', $stored);
         $this->assertCount(2, $stored['home']);
         $this->assertSame('text', $stored['home'][0]['type']);
@@ -150,7 +154,7 @@ class LiffDesignerTest extends TestCase
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
         // 新ブロックが保存されている
-        $stored = ShopSettingStore::getLiffTabLayouts($project->id);
+        $stored = LiffSettingStore::getLiffTabLayouts($project->id);
         $types = array_column($stored['home'], 'type');
         $this->assertSame(['hours', 'access', 'social_links', 'faq', 'video', 'button_group'], $types);
         $this->assertSame('timeline', $stored['home'][0]['design']);
@@ -162,7 +166,7 @@ class LiffDesignerTest extends TestCase
         $this->assertSame('instagram', $stored['home'][2]['links'][0]['type']);
 
         // テーマ新キーが保存されている
-        $storedSettings = ShopSettingStore::getLiffTabSettings($project->id);
+        $storedSettings = LiffSettingStore::getLiffTabSettings($project->id);
         $this->assertSame('matcha', $storedSettings['_global']['theme_preset']);
         $this->assertSame('outline', $storedSettings['_global']['card_style']);
         $this->assertSame('square', $storedSettings['_global']['button_shape']);
@@ -189,7 +193,7 @@ class LiffDesignerTest extends TestCase
         $this->assertFalse($raw[2]['enabled']);
 
         // 表示メニュー（enabled のみ）には products が含まれない
-        $visible = ShopSettingStore::getFrontendMenuItems($project->id);
+        $visible = LiffSettingStore::getFrontendMenuItems($project->id);
         $this->assertNotContains('products', array_column($visible, 'tab'));
     }
 
@@ -231,7 +235,7 @@ class LiffDesignerTest extends TestCase
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
-        $stored = ShopSettingStore::getLiffTabLayouts($project->id);
+        $stored = LiffSettingStore::getLiffTabLayouts($project->id);
         $this->assertSame('wallet', $stored['home'][0]['design']);
         $this->assertSame('minimal', $stored['home'][1]['design']);
         $this->assertSame('premium', $stored['home'][2]['design']);
@@ -283,7 +287,7 @@ class LiffDesignerTest extends TestCase
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
-        $stored = ShopSettingStore::getLiffTabLayouts($project->id);
+        $stored = LiffSettingStore::getLiffTabLayouts($project->id);
         $this->assertArrayNotHasKey('action', $stored['home'][0]);
         $this->assertArrayNotHasKey('action', $stored['home'][1]['items'][0]);
         $this->assertSame('#products', $stored['home'][1]['items'][1]['action']);
@@ -336,7 +340,7 @@ class LiffDesignerTest extends TestCase
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
-        $stored = ShopSettingStore::getLiffTabLayouts($project->id);
+        $stored = LiffSettingStore::getLiffTabLayouts($project->id);
         $this->assertSame('friend_add', $stored['home'][0]['type']);
         $this->assertSame('友だちになる', $stored['home'][0]['text']);
         $this->assertSame('https://line.me/R/ti/p/@example', $stored['home'][0]['url']);
@@ -352,8 +356,8 @@ class LiffDesignerTest extends TestCase
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true, 'plan' => 'premium']
         );
 
-        ShopSettingStore::setLineLiffId('existing-liff-id', $project->id);
-        ShopSettingStore::setLineLiffUrl('https://example.com/liff', $project->id);
+        LineSettingStore::setLineLiffId('existing-liff-id', $project->id);
+        LineSettingStore::setLineLiffUrl('https://example.com/liff', $project->id);
 
         $admin = AdminUser::create([
             'login_id' => 'admin7',
@@ -371,8 +375,8 @@ class LiffDesignerTest extends TestCase
 
         $response->assertOk();
         $response->assertJson(['message' => 'LIFFデザインを更新しました']);
-        $this->assertSame('existing-liff-id', ShopSettingStore::getLineLiffId($project->id));
-        $this->assertSame('https://example.com/liff', ShopSettingStore::getLineLiffUrl($project->id));
+        $this->assertSame('existing-liff-id', LineSettingStore::getLineLiffId($project->id));
+        $this->assertSame('https://example.com/liff', LineSettingStore::getLineLiffUrl($project->id));
     }
 
     public function test_liff_designer_詳細レイアウトを保存できること(): void
@@ -409,7 +413,7 @@ class LiffDesignerTest extends TestCase
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
-        $stored = ShopSettingStore::getLiffDetailLayouts($project->id);
+        $stored = LiffSettingStore::getLiffDetailLayouts($project->id);
         $this->assertArrayHasKey('product_detail', $stored);
         $this->assertArrayHasKey('coupon_detail', $stored);
         $this->assertArrayHasKey('announcement_detail', $stored);
@@ -433,14 +437,14 @@ class LiffDesignerTest extends TestCase
             'project_id' => $project->id,
         ]);
 
-        ShopSettingStore::setLiffDetailLayouts([
+        LiffSettingStore::setLiffDetailLayouts([
             'product_detail' => [
                 ['type' => 'heading', 'text' => 'Keep Me'],
                 ['type' => 'data', 'source' => 'product_detail'],
             ],
         ], $project->id);
 
-        $before = ShopSettingStore::getLiffDetailLayouts($project->id);
+        $before = LiffSettingStore::getLiffDetailLayouts($project->id);
 
         $response = $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
@@ -449,7 +453,7 @@ class LiffDesignerTest extends TestCase
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
-        $after = ShopSettingStore::getLiffDetailLayouts($project->id);
+        $after = LiffSettingStore::getLiffDetailLayouts($project->id);
         $this->assertSame('Keep Me', $after['product_detail'][0]['text'] ?? null);
         $this->assertSame($before['product_detail'][0]['text'] ?? null, $after['product_detail'][0]['text'] ?? null);
     }
@@ -531,7 +535,7 @@ class LiffDesignerTest extends TestCase
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
-        $stored = ShopSettingStore::getLiffTabLayouts($project->id);
+        $stored = LiffSettingStore::getLiffTabLayouts($project->id);
         $types = array_column($stored['home'], 'type');
         $this->assertSame(['stats_row', 'member_summary', 'banner', 'collection', 'card'], $types);
         $this->assertSame('tier', $stored['home'][1]['design']);
@@ -542,7 +546,7 @@ class LiffDesignerTest extends TestCase
         $this->assertSame('points', $stored['home'][0]['items'][0]['field']);
         $this->assertArrayNotHasKey('field', $stored['home'][0]['items'][1]);
 
-        $settings = ShopSettingStore::getLiffTabSettings($project->id);
+        $settings = LiffSettingStore::getLiffTabSettings($project->id);
         $this->assertSame('apple_system', $settings['_global']['theme_preset']);
         $this->assertSame('apple', $settings['_global']['member_screen_design']);
         $this->assertSame('glass', $settings['_global']['coupon_screen_design']);
@@ -606,13 +610,13 @@ class LiffDesignerTest extends TestCase
 
         $response->assertRedirect(route('admin.settings.home', ['project_key' => $project->project_key]));
 
-        $stored = ShopSettingStore::getLiffTabLayouts($project->id);
+        $stored = LiffSettingStore::getLiffTabLayouts($project->id);
         $this->assertSame('wallet', $stored['stamps'][0]['stamp_design'] ?? null);
         $this->assertSame('rounded', $stored['stamps'][0]['stamp_slot_style'] ?? null);
         $this->assertSame('solid', $stored['stamps'][0]['stamp_filled_style'] ?? null);
         $this->assertSame('#007aff', $stored['stamps'][0]['stamp_accent_color'] ?? null);
 
-        $settings = ShopSettingStore::getLiffTabSettings($project->id);
+        $settings = LiffSettingStore::getLiffTabSettings($project->id);
         $this->assertSame('split_banner', $settings['_global']['member_card_design']);
         $this->assertSame('#5856d6', $settings['_global']['member_card_accent_color']);
         $this->assertSame('solid', $settings['_global']['member_card_bg_style']);
@@ -657,7 +661,7 @@ class LiffDesignerTest extends TestCase
         $this->assertSame('https://example.com', $raw[1]['url']);
         $this->assertSame('embed', $raw[1]['open']);
 
-        $visible = ShopSettingStore::getFrontendMenuItems($project->id);
+        $visible = LiffSettingStore::getFrontendMenuItems($project->id);
         $link = collect($visible)->firstWhere('tab', 'link_1');
         $this->assertNotNull($link);
         $this->assertSame('公式サイト', $link['label']);
@@ -709,9 +713,9 @@ class LiffDesignerTest extends TestCase
 
         $this->assertSame('反映テスト店', ShopSettingStore::getValue('frontend_header_text', null, $project->id));
         $this->assertSame('#a81612', strtolower((string) ShopSettingStore::getValue('line_primary_color', null, $project->id)));
-        $this->assertSame('force', ShopSettingStore::getMemberRegistrationMode($project->id));
-        $this->assertSame('emblem', ShopSettingStore::getMemberCardDesign($project->id));
-        $this->assertSame('qrcode', ShopSettingStore::getMemberCardCodeType($project->id));
+        $this->assertSame('force', ProfileSettingStore::getMemberRegistrationMode($project->id));
+        $this->assertSame('emblem', MemberCardSettingStore::getMemberCardDesign($project->id));
+        $this->assertSame('qrcode', MemberCardSettingStore::getMemberCardCodeType($project->id));
 
         $withKey = $this->get(route('liff.project', ['project_key' => $project->project_key]));
         $withKey->assertOk();

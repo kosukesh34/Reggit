@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Services\AppleWalletPushService;
 use App\Services\GoogleWalletPassService;
+use App\Services\Member\MemberPointLedger;
 use App\Services\MemberLiffWalletNotifier;
 use App\Services\MemberWalletSummaryService;
 use App\Services\MemberWalletSyncService;
@@ -62,7 +63,7 @@ class MemberWalletSynchronizationConsistencyTest extends TestCase
             $active = false;
             $this->assertTrue($interleaved, 'The concurrent award must happen during notification processing.');
             $this->assertSame(150, (int) $member->fresh()->points);
-            $this->assertSame(150, $member->fresh()->getDisplayPoints());
+            $this->assertSame(150, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         } finally {
             $active = false;
             DB::purge('wallet_writer');
@@ -78,7 +79,7 @@ class MemberWalletSynchronizationConsistencyTest extends TestCase
         app(MemberWalletSyncService::class)->syncAfterMemberChanged($member);
 
         $this->assertSame(70, (int) $member->fresh()->points);
-        $this->assertSame(100, $member->fresh()->getDisplayPoints());
+        $this->assertSame(100, app(MemberPointLedger::class)->displayPoints($member->fresh()));
     }
 
     public function test_wallet_summary_uses_unexpired_unspent_points_without_updating_the_cache(): void

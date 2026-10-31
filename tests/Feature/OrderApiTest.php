@@ -10,6 +10,7 @@ use App\Models\Member;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -143,14 +144,14 @@ class OrderApiTest extends TestCase
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_1, 'project_id' => $project->id]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         $product = Product::factory()->create(['project_id' => $project->id, 'price' => 500, 'stock' => 10]);
-        $pointsBefore = $member->getDisplayPoints();
+        $pointsBefore = app(MemberPointLedger::class)->displayPoints($member);
         $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_1])->postJson('/api/orders?project_key=default', [
             'items' => [['product_id' => $product->id, 'quantity' => 1]],
             'payment_method' => PaymentMethod::STRIPE, 'points_used' => 500, 'order_type' => OrderType::MOBILE,
         ])->assertStatus(400)->assertJson(['error' => 'オンライン決済の金額は1円以上必要です。ポイント利用額を減らしてください']);
         $this->assertDatabaseMissing('orders', ['user_id' => $user->id]);
         $this->assertSame(10, $product->fresh()->stock);
-        $this->assertSame($pointsBefore, $member->fresh()->getDisplayPoints());
+        $this->assertSame($pointsBefore, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id, 'type' => 'used']);
     }
 
@@ -182,7 +183,7 @@ class OrderApiTest extends TestCase
 
         $this->assertDatabaseMissing('orders', ['user_id' => $user->id]);
         $this->assertSame(10, $product->fresh()->stock);
-        $this->assertSame(500, $member->fresh()->getDisplayPoints());
+        $this->assertSame(500, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         $this->assertDatabaseMissing('point_transactions', ['member_id' => $member->id, 'type' => 'used']);
     }
 
@@ -212,7 +213,7 @@ class OrderApiTest extends TestCase
         ])->assertStatus(201);
 
         $this->assertDatabaseHas('orders', ['id' => $response->json('order.id'), 'total_amount' => $price - $pointsUsed, 'points_used' => $pointsUsed]);
-        $this->assertSame(500 - $pointsUsed, $member->fresh()->getDisplayPoints());
+        $this->assertSame(500 - $pointsUsed, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         $this->assertSame(9, $product->fresh()->stock);
         if ($pointsUsed > 0) {
             $this->assertDatabaseHas('point_transactions', ['member_id' => $member->id, 'type' => 'used', 'points' => -$pointsUsed]);

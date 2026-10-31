@@ -6,6 +6,7 @@ use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Jobs\SmaregiSyncInboundCustomerPointsJob;
 use App\Models\ExistingMemberLinkRequest;
@@ -15,6 +16,7 @@ use App\Models\Project;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberPointLedger;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiPointsSyncService;
@@ -98,7 +100,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         $member->refresh();
         $this->assertSame(55, $member->points);
-        $this->assertSame(55, $member->getTotalPointsFromTransactions());
+        $this->assertSame(55, app(MemberPointLedger::class)->total($member));
     }
 
     public function test_outbound_pending中は_webhook取込でポイントを巻き戻さないこと(): void
@@ -130,7 +132,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         $member->refresh();
         $this->assertSame(100, $member->points);
-        $this->assertSame(100, $member->getTotalPointsFromTransactions());
+        $this->assertSame(100, app(MemberPointLedger::class)->total($member));
     }
 
     public function test_another_successful_order_cannot_expose_pending_points_to_inbound(): void
@@ -169,7 +171,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($member);
 
-        $this->assertSame(150, $member->fresh()->getTotalPointsFromTransactions());
+        $this->assertSame(150, app(MemberPointLedger::class)->total($member->fresh()));
         $this->assertSame(0, $member->pointTransactions()->where('description', 'スマレジPOSからの同期')->count());
     }
 
@@ -207,7 +209,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         $this->assertSame('43', $member->fresh()->smaregi_customer_id);
         $this->assertSame('Local', $user->fresh()->name);
-        $this->assertSame(100, $member->fresh()->getTotalPointsFromTransactions());
+        $this->assertSame(100, app(MemberPointLedger::class)->total($member->fresh()));
         $this->assertSame(0, $member->pointTransactions()->where('description', 'スマレジPOSからの同期')->count());
     }
 
@@ -248,7 +250,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         $this->assertTrue($synced);
         $this->assertNotNull($order?->fresh()->smaregi_points_synced_at);
-        $this->assertSame(100, $member->fresh()->getTotalPointsFromTransactions());
+        $this->assertSame(100, app(MemberPointLedger::class)->total($member->fresh()));
         $this->assertSame(0, $member->pointTransactions()->where('description', 'スマレジPOSからの同期')->count());
     }
 
@@ -276,7 +278,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         app(StoreContext::class)->runForStore($first, fn () => app(SmaregiCustomerPointsInboundSyncService::class)
             ->syncMemberFromSmaregi($member));
 
-        $this->assertSame(100, $member->fresh()->getTotalPointsFromTransactions());
+        $this->assertSame(100, app(MemberPointLedger::class)->total($member->fresh()));
     }
 
     public function test_pos_customersの同期でスマレジの会員情報がローカルに反映されること(): void
@@ -368,7 +370,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     {
         $project = Project::factory()->create();
         ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setProfileFieldSettings([
+        ProfileSettingStore::setProfileFieldSettings([
             'smaregi_fields' => [],
             'custom_fields' => [
                 [
@@ -734,7 +736,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         $member->refresh();
         $this->assertSame(0, $member->points);
-        $this->assertSame(0, $member->getTotalPointsFromTransactions());
+        $this->assertSame(0, app(MemberPointLedger::class)->total($member));
     }
 
     public function test_inboundは_sync_points_ledger後に差分計算すること(): void
@@ -750,7 +752,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
             'smaregi_customer_id' => '42',
             'points' => 100,
         ]);
-        $this->assertSame(0, $member->getTotalPointsFromTransactions());
+        $this->assertSame(0, app(MemberPointLedger::class)->total($member));
 
         $this->fakeSmaregiHttpSingleCustomer([
             'customerId' => '42',
@@ -763,10 +765,10 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
 
         $member->refresh();
         $this->assertSame(100, $member->points);
-        $this->assertSame(100, $member->getTotalPointsFromTransactions());
+        $this->assertSame(100, app(MemberPointLedger::class)->total($member));
         $this->assertSame(
             1,
-            $member->pointTransactions()->where('description', Member::POINTS_LEDGER_BACKFILL_DESCRIPTION)->count()
+            $member->pointTransactions()->where('description', MemberPointLedger::POINTS_LEDGER_BACKFILL_DESCRIPTION)->count()
         );
     }
 

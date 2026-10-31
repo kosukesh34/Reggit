@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Member;
+use App\Services\Member\MemberPointLedger;
 use App\Util\LogHelper;
 use Illuminate\Support\Facades\Log;
 
@@ -16,6 +17,7 @@ class MemberWalletSyncService
         private AppleWalletPushService $appleWalletPushService,
         private GoogleWalletPassService $googleWalletPassService,
         private MemberLiffWalletNotifier $liffWalletNotifier,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     public function syncAfterMemberChanged(Member $member, string $reason = 'member_changed'): void
@@ -63,7 +65,7 @@ class MemberWalletSyncService
                 'member_id' => (int) $member->id,
                 'project_id' => (int) $member->project_id,
                 'reason' => $reason,
-                'member_points' => $member->getDisplayPoints(),
+                'member_points' => $this->pointLedger->displayPoints($member),
                 'apple_wallet_sync' => $appleSynced,
                 'google_wallet_synced' => $googleSynced,
             ]);

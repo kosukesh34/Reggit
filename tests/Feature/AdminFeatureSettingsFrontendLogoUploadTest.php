@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\AppearanceSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -49,7 +50,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $savedUrl = ShopSettingStore::getFrontendLogoUrl($project->id);
+        $savedUrl = AppearanceSettingStore::getFrontendLogoUrl($project->id);
         $this->assertNotNull($savedUrl);
         $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_FRONTEND_LOGO.'/'.$project->id, (string) $savedUrl);
         Storage::disk('public')->assertExists(
@@ -73,7 +74,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame('', (string) (ShopSettingStore::getFrontendLogoUrl($project->id) ?? ''));
+        $this->assertSame('', (string) (AppearanceSettingStore::getFrontendLogoUrl($project->id) ?? ''));
     }
 
     public function test_アプリデザインでロゴ未指定なら既存値を維持すること(): void
@@ -92,7 +93,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame($existing, ShopSettingStore::getFrontendLogoUrl($project->id));
+        $this->assertSame($existing, AppearanceSettingStore::getFrontendLogoUrl($project->id));
     }
 
     public function test_アプリデザイン画面にロゴのドロップゾーンがあること(): void
@@ -129,7 +130,7 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $savedUrl = ShopSettingStore::getStampDefaultImageUrl($project->id);
+        $savedUrl = AppearanceSettingStore::getStampDefaultImageUrl($project->id);
         $this->assertNotNull($savedUrl);
         $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_STAMP_DEFAULT.'/'.$project->id, (string) $savedUrl);
         Storage::disk('public')->assertExists(
@@ -153,6 +154,6 @@ class AdminFeatureSettingsFrontendLogoUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame('', (string) (ShopSettingStore::getStampDefaultImageUrl($project->id) ?? ''));
+        $this->assertSame('', (string) (AppearanceSettingStore::getStampDefaultImageUrl($project->id) ?? ''));
     }
 }

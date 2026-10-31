@@ -56,7 +56,7 @@ HTTP 中にプロジェクトが未解決なら `ProjectScope` は検索結果�
 
 ## 設定
 
-設定の読み書きは `app/Domain/Settings/Repositories/*Settings.php` の用途別契約を使います。共通 Eloquent adapter と `ShopSettingStore` が `Project*Setting` モデルへの保存を隠蔽します。旧 EAV・`Models\ShopSetting`・巨大な `ShopSettingRepository` を再導入しません。
+設定の読み書きは `app/Domain/Settings/Repositories/*Settings.php` の用途別契約を使います。共通 Eloquent adapter と分野別の `*SettingStore`（キーと保存先の解決は `ShopSettingStore`）が `Project*Setting` モデルへの保存を隠蔽します。旧 EAV・`Models\ShopSetting`・巨大な `ShopSettingRepository` を再導入しません。
 
 営業時間・予約枠など店舗固有の値は `stores.settings` で上書きし、未設定ならプロジェクト設定を参照します。ブランド・LINE・会員基盤などの共通設定はプロジェクトに保持します。
 

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\OrderType;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\OrderSettingStore;
 use App\Models\AdminUser;
 use App\Models\Order;
 use App\Models\Project;
@@ -38,7 +38,7 @@ class AdminOrdersTest extends TestCase
     {
         $project = $this->createProject();
         $user = User::factory()->create(['project_id' => $project->id]);
-        ShopSettingStore::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
+        OrderSettingStore::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
         $order = Order::create([
             'project_id' => $project->id,
             'user_id' => $user->id,

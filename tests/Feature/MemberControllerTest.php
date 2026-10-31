@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\Project;
@@ -102,7 +102,7 @@ class MemberControllerTest extends TestCase
             ->assertJsonPath('is_member', true)
             ->assertJsonPath('user_id', $user->id);
 
-        ShopSettingStore::setMemberRegistrationMode('prompt', (int) $project->id);
+        ProfileSettingStore::setMemberRegistrationMode('prompt', (int) $project->id);
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
             ->get('/api/member-profile?project_key=default');
         $response->assertStatus(200)
@@ -124,9 +124,9 @@ class MemberControllerTest extends TestCase
             ]);
         $disabled->assertStatus(422);
 
-        $settings = ShopSettingStore::getProfileFieldSettings((int) $project->id);
+        $settings = ProfileSettingStore::getProfileFieldSettings((int) $project->id);
         $settings['smaregi_fields']['profile_image']['enabled'] = true;
-        ShopSettingStore::setProfileFieldSettings($settings, (int) $project->id);
+        ProfileSettingStore::setProfileFieldSettings($settings, (int) $project->id);
 
         $uploaded = $this->withHeaders($headers)
             ->post('/api/members/me/profile-image?project_key=default', [
@@ -152,7 +152,7 @@ class MemberControllerTest extends TestCase
     {
         $project = $this->createProject();
         config(['smaregi.contract_id' => '']);
-        ShopSettingStore::setMemberRegistrationMode('optional', (int) $project->id);
+        ProfileSettingStore::setMemberRegistrationMode('optional', (int) $project->id);
 
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
             ->get('/api/members/me?project_key=default');
@@ -168,7 +168,7 @@ class MemberControllerTest extends TestCase
     {
         $project = $this->createProject();
         config(['smaregi.contract_id' => '']);
-        ShopSettingStore::setMemberRegistrationMode('optional', (int) $project->id);
+        ProfileSettingStore::setMemberRegistrationMode('optional', (int) $project->id);
 
         $response = $this->get('/api/members/me?project_key=default');
 
@@ -183,7 +183,7 @@ class MemberControllerTest extends TestCase
     {
         $project = $this->createProject();
         config(['smaregi.contract_id' => '']);
-        ShopSettingStore::setMemberRegistrationMode('force', (int) $project->id);
+        ProfileSettingStore::setMemberRegistrationMode('force', (int) $project->id);
 
         $response = $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
             ->get('/api/members/me?project_key=default');

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -28,11 +29,11 @@ class RankSettingsRecoveryTest extends TestCase
     {
         $project = Project::factory()->create();
         $projectId = (int) $project->id;
-        ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Old', 'min_points' => 0, 'is_active' => true]], $projectId);
+        MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Old', 'min_points' => 0, 'is_active' => true]], $projectId);
         $this->mock(SmaregiCustomerRankSyncService::class, function ($mock) use ($projectId): void {
             $mock->shouldReceive('hasSmaregiContract')->andReturn(true);
             $mock->shouldReceive('sync')->once()->andReturnUsing(function () use ($projectId): array {
-                ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'New', 'min_points' => 0, 'is_active' => true]], $projectId);
+                MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'New', 'min_points' => 0, 'is_active' => true]], $projectId);
                 app(SmaregiRankSettingsRecoveryService::class)->record($projectId);
                 SmaregiRankSettingsSync::whereKey($projectId)->update(['delivered_at' => now()]);
 
@@ -44,7 +45,7 @@ class RankSettingsRecoveryTest extends TestCase
 
         $this->assertFalse($recovery->retryPending($projectId));
 
-        $rows = ShopSettingStore::getMemberRankSettings($projectId);
+        $rows = MemberRankSettingStore::getMemberRankSettings($projectId);
         $this->assertSame('New', $rows[0]['label']);
         $this->assertNotSame('old-id', $rows[0]['smaregi_rank_id'] ?? null);
         $this->assertNull(SmaregiRankSettingsSync::findOrFail($projectId)->delivered_at);
@@ -53,7 +54,7 @@ class RankSettingsRecoveryTest extends TestCase
     public function test_old_worker_repair_invalidates_new_worker_ack_during_member_fanout(): void
     {
         $projectId = (int) Project::factory()->create()->id;
-        ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
+        MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
         $calls = 0;
         $this->mock(SmaregiCustomerRankSyncService::class, function ($mock) use (&$calls): void {
             $mock->shouldReceive('hasSmaregiContract')->andReturn(true);
@@ -91,7 +92,7 @@ class RankSettingsRecoveryTest extends TestCase
     public function test_settings_write_failure_rolls_back_rank_rows_and_sync_request(): void
     {
         $projectId = (int) Project::factory()->create()->id;
-        ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Original', 'min_points' => 0, 'is_active' => true]], $projectId);
+        MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Original', 'min_points' => 0, 'is_active' => true]], $projectId);
         ShopSettingStore::setValue('points_valid_days', 365, 'integer', $projectId);
         Event::listen('eloquent.saving: '.ProjectMemberPointsSetting::class, function (): void {
             throw new \RuntimeException('settings write failed');
@@ -105,15 +106,15 @@ class RankSettingsRecoveryTest extends TestCase
             $this->assertSame('settings write failed', $exception->getMessage());
         }
 
-        $this->assertSame('Original', ShopSettingStore::getMemberRankSettings($projectId)[0]['label']);
-        $this->assertSame(365, ShopSettingStore::getPointsValidDays($projectId));
+        $this->assertSame('Original', MemberRankSettingStore::getMemberRankSettings($projectId)[0]['label']);
+        $this->assertSame(365, MemberRankSettingStore::getPointsValidDays($projectId));
         $this->assertDatabaseMissing('smaregi_rank_settings_syncs', ['project_id' => $projectId]);
     }
 
     public function test_contract_change_during_http_does_not_save_old_rank_ids(): void
     {
         $projectId = (int) Project::factory()->create()->id;
-        ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
+        MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
         $contract = 'original';
         $this->mock(SmaregiApiService::class, function ($mock) use (&$contract): void {
             $mock->shouldReceive('getContractIdForProject')->andReturnUsing(function () use (&$contract): string {
@@ -133,7 +134,7 @@ class RankSettingsRecoveryTest extends TestCase
 
         $this->assertFalse($recovery->retryPending($projectId));
 
-        $rows = ShopSettingStore::getMemberRankSettings($projectId);
+        $rows = MemberRankSettingStore::getMemberRankSettings($projectId);
         $this->assertNotSame('original-contract-rank', $rows[0]['smaregi_rank_id'] ?? null);
         $this->assertNull(SmaregiRankSettingsSync::findOrFail($projectId)->delivered_at);
     }
@@ -141,7 +142,7 @@ class RankSettingsRecoveryTest extends TestCase
     public function test_contract_change_during_member_fanout_keeps_request_pending(): void
     {
         $projectId = (int) Project::factory()->create()->id;
-        ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
+        MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
         $contract = 'original';
         $this->mock(SmaregiApiService::class, function ($mock) use (&$contract): void {
             $mock->shouldReceive('getContractIdForProject')->andReturnUsing(function () use (&$contract): string {
@@ -167,7 +168,7 @@ class RankSettingsRecoveryTest extends TestCase
     public function test_member_request_failure_keeps_project_request_for_retry(): void
     {
         $projectId = (int) Project::factory()->create()->id;
-        ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
+        MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
         $this->mock(SmaregiCustomerRankSyncService::class, function ($mock): void {
             $mock->shouldReceive('hasSmaregiContract')->andReturn(true);
             $mock->shouldReceive('sync')->twice()->andReturn(['bronze' => 'remote']);
@@ -192,7 +193,7 @@ class RankSettingsRecoveryTest extends TestCase
     public function test_outer_rollback_discards_settings_request_and_external_sync(): void
     {
         $projectId = (int) Project::factory()->create()->id;
-        ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Original', 'min_points' => 0, 'is_active' => true]], $projectId);
+        MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Original', 'min_points' => 0, 'is_active' => true]], $projectId);
         $this->mock(SmaregiCustomerRankSyncService::class, function ($mock): void {
             $mock->shouldReceive('hasSmaregiContract')->never();
             $mock->shouldReceive('sync')->never();
@@ -208,14 +209,14 @@ class RankSettingsRecoveryTest extends TestCase
             $this->assertSame('outer rollback', $exception->getMessage());
         }
 
-        $this->assertSame('Original', ShopSettingStore::getMemberRankSettings($projectId)[0]['label']);
+        $this->assertSame('Original', MemberRankSettingStore::getMemberRankSettings($projectId)[0]['label']);
         $this->assertDatabaseMissing('smaregi_rank_settings_syncs', ['project_id' => $projectId]);
     }
 
     public function test_partial_member_request_writes_are_completed_on_retry(): void
     {
         $projectId = (int) Project::factory()->create()->id;
-        ShopSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
+        MemberRankSettingStore::setMemberRankSettings([['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'is_active' => true]], $projectId);
         $members = [];
         foreach (['customer-one', 'customer-two'] as $customer) {
             $user = User::factory()->create(['project_id' => $projectId]);
@@ -277,13 +278,13 @@ class RankSettingsRecoveryTest extends TestCase
         } catch (\RuntimeException $exception) {
             $this->assertSame('rank master unavailable', $exception->getMessage());
         }
-        $this->assertSame(50, ShopSettingStore::getPointEarnRateForRank((int) $project->id, 'bronze'));
+        $this->assertSame(50, MemberRankSettingStore::getPointEarnRateForRank((int) $project->id, 'bronze'));
 
         $this->travel(61)->seconds();
         $this->artisan('smaregi:retry-member-ranks')->assertSuccessful();
 
         $this->assertSame(2, $calls, 'Saved settings must retain a request to retry rank master synchronization.');
-        $rows = ShopSettingStore::getMemberRankSettings((int) $project->id);
+        $rows = MemberRankSettingStore::getMemberRankSettings((int) $project->id);
         $this->assertSame('remote-bronze', $rows[0]['smaregi_rank_id']);
     }
 }

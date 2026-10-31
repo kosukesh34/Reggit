@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Reservation\Repositories\ReservationReminderRepository;
 use App\Enums\ReservationStatus;
 use App\Http\Requests\Admin\SurveyRequest;
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AcquisitionSource;
 use App\Models\AdminUser;
@@ -123,7 +124,7 @@ class EngagementFeaturesTest extends TestCase
     public function test_遷移先付きのお知らせはlineのボタンからその画面を開くこと(): void
     {
         [$project, , $member] = $this->member();
-        ShopSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
         $push = Mockery::mock(PushNotificationService::class);
         $push->shouldReceive('sendAnnouncement')->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0, 'notification_ids' => []]);
         $this->app->instance(PushNotificationService::class, $push);

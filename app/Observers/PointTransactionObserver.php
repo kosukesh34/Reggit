@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\Scopes\ProjectScope;
+use App\Services\Member\MemberPointLedger;
 use App\Services\MemberWalletSyncService;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
@@ -12,6 +13,7 @@ class PointTransactionObserver implements ShouldHandleEventsAfterCommit
 {
     public function __construct(
         private MemberWalletSyncService $memberWalletSyncService,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     public function created(PointTransaction $pointTransaction): void
@@ -43,7 +45,7 @@ class PointTransactionObserver implements ShouldHandleEventsAfterCommit
             return;
         }
 
-        $member->recalcLifetimeGrantedPoints();
+        $this->pointLedger->recalculateLifetimeGranted($member);
     }
 
     private function syncWallets(PointTransaction $pointTransaction): void

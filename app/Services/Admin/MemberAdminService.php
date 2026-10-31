@@ -7,6 +7,7 @@ use App\Models\MemberRankHistory;
 use App\Models\MemberVisit;
 use App\Models\Scopes\ProjectScope;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\Services\MemberVisitRecorder;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
@@ -24,6 +25,7 @@ class MemberAdminService
         private MemberAdminQueryService $memberQuery,
         private UserService $userService,
         private MemberVisitRecorder $memberVisitRecorder,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     /**
@@ -37,7 +39,7 @@ class MemberAdminService
         }
 
         $member = $query->findOrFail($id);
-        $member->syncPointsLedger();
+        $this->pointLedger->sync($member);
         $member->refresh();
 
         return $member;

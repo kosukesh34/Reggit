@@ -3,7 +3,7 @@
 namespace Tests\Unit\Support;
 
 use App\Exceptions\ProjectContextMissingException;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\BusinessSettingStore;
 use App\Models\Project;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,6 +41,6 @@ class AdminContextTest extends TestCase
     public function test_get_business_hours_店舗未解決なら例外になること(): void
     {
         $this->expectException(ProjectContextMissingException::class);
-        ShopSettingStore::getBusinessHours();
+        BusinessSettingStore::getBusinessHours();
     }
 }

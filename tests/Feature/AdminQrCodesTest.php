@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -19,8 +20,8 @@ class AdminQrCodesTest extends TestCase
     {
         $project = Project::factory()->create();
         $other = Project::factory()->create();
-        ShopSettingStore::setLineLiffUrl('https://liff.line.me/own-app', $project->id);
-        ShopSettingStore::setLineLiffUrl('https://liff.line.me/other-app', $other->id);
+        LineSettingStore::setLineLiffUrl('https://liff.line.me/own-app', $project->id);
+        LineSettingStore::setLineLiffUrl('https://liff.line.me/other-app', $other->id);
         ProjectAppLink::create(['project_id' => $project->id, 'download_url' => 'https://example.com/own-download']);
         ProjectAppLink::create(['project_id' => $other->id, 'download_url' => 'https://example.com/other-download']);
         StampCard::factory()->create(['project_id' => $project->id, 'name' => '自店舗カード', 'is_active' => true]);

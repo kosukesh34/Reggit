@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -51,7 +52,7 @@ class AdminAdvancedThemeColorsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $theme = ShopSettingStore::getLineThemeColors($project->id);
+        $theme = LineSettingStore::getLineThemeColors($project->id);
         $this->assertSame('#111111', $theme['primary']);
         $this->assertSame('#222222', $theme['primary_dark']);
         $this->assertSame('#10b981', $theme['success']);
