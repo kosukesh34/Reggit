@@ -18,7 +18,7 @@
                 <section class="ad-review-card">
                     <h3><i class="fas fa-paper-plane" aria-hidden="true"></i> 配信設定</h3>
                     <dl>
-                        <div><dt>届け先</dt><dd><button type="button" class="ad-review-audience-button" id="deliveryReviewAudienceButton" aria-expanded="false" aria-controls="deliveryReviewAudiencePanel"><span id="deliveryReviewAudienceLabel"></span><i class="fas fa-chevron-down" aria-hidden="true"></i></button></dd></div>
+                        <div><dt>届け先</dt><dd id="deliveryReviewAudienceLabel"></dd></div>
                         <div><dt>配信日時</dt><dd id="deliveryReviewTiming"></dd></div>
                         <div id="deliveryReviewResolveRow" hidden><dt>対象者の確定</dt><dd id="deliveryReviewResolve"></dd></div>
                         <div><dt>クーポン</dt><dd id="deliveryReviewCoupon"></dd></div>

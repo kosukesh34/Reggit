@@ -317,62 +317,8 @@ export function openProfileView(): void {
     document.dispatchEvent(new CustomEvent('liff-member-open-view'));
 }
 
-function detectIosClient(): boolean {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-    const native = window.__MOBILE_DEVICE_INFO__?.platform;
-    if (native === 'ios') {
-        return true;
-    }
-    if (native === 'android') {
-        return false;
-    }
-    if (typeof navigator === 'undefined') {
-        return false;
-    }
-    return /iPad|iPhone|iPod/.test(navigator.userAgent)
-        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
-
-function detectAndroidClient(): boolean {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-    const native = window.__MOBILE_DEVICE_INFO__?.platform;
-    if (native === 'android') {
-        return true;
-    }
-    if (native === 'ios') {
-        return false;
-    }
-    if (typeof navigator === 'undefined') {
-        return false;
-    }
-    return /Android/.test(navigator.userAgent);
-}
-
-export function shouldShowAppleWallet(): boolean {
-    if (typeof window === 'undefined' || window.__WALLET_PASS_ENABLED__ !== true) {
-        return false;
-    }
-    const mgr = getMemberManager() as { constructor?: { shouldShowAppleWallet?: () => boolean } } | undefined;
-    if (typeof mgr?.constructor?.shouldShowAppleWallet === 'function') {
-        return mgr.constructor.shouldShowAppleWallet() === true;
-    }
-    return detectIosClient();
-}
-
-export function shouldShowGoogleWallet(): boolean {
-    if (typeof window === 'undefined' || window.__GOOGLE_WALLET_ENABLED__ !== true) {
-        return false;
-    }
-    const mgr = getMemberManager() as { constructor?: { shouldShowGoogleWallet?: () => boolean } } | undefined;
-    if (typeof mgr?.constructor?.shouldShowGoogleWallet === 'function') {
-        return mgr.constructor.shouldShowGoogleWallet() === true;
-    }
-    return detectAndroidClient();
-}
+// Wallet ボタンの表示判定は旧画面（MemberManager）と同じものを使う
+export { shouldShowAppleWallet, shouldShowGoogleWallet } from '../../member/walletEnvironment';
 
 export function walletPassUrl(): string {
     const projectKey = typeof window !== 'undefined' && window.__PROJECT_KEY__ ? window.__PROJECT_KEY__ : '';
