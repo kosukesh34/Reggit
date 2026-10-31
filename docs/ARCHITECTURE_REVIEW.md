@@ -8,7 +8,7 @@ The application has several files whose size is a symptom of mixed responsibilit
 
 1. `ShopSettingStore` into business, LIFF, feature flag, member, and wallet setting modules.
 2. Partly done: certificate resolution moved to `AppleWallet\PassCertificates`; manifest signing and archive creation moved to `AppleWallet\PassPackager`. Asset building remains in `WalletPassService`.
-3. Partly done: credentials and OAuth2 token moved to `GoogleWallet\GoogleWalletCredentials`. Google API access and loyalty object mapping still report errors through the service's `lastError`, so extracting them needs an explicit error result first.
+3. Done: credentials and OAuth2 token moved to `GoogleWallet\GoogleWalletCredentials`; LoyaltyClass access checks, creation and label updates moved to `GoogleWallet\GoogleWalletLoyaltyClassApi`, which hands failure reasons back through `takeError()` so `getLastError()` keeps its messages. Loyalty object mapping stays in `GoogleWalletPassService`.
 4. Done: `MemberService` was split into `Member\MemberDataReader` (member card data), `Member\MemberProfileUpdater` (profile and image), `Member\MemberRegistrar` (registration), and `Member\MemberNumberAssigner` (member codes).
 5. `LiffAppStudioTemplates` into one catalog plus one file per industry preset.
 6. Done: `OrderService` keeps order placement only. Item validation moved to `OrderItemPreparer`, paid-order rewards to `PaidOrderRewardApplier`, and cancellation reversal to `OrderCancellationReverser`; the unused `applyCashOrderLotteryIfNeeded` pass-through was removed.

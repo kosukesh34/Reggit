@@ -7,12 +7,12 @@ use App\Enums\GoogleWalletApi;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\GoogleWallet\GoogleWalletCredentials;
+use App\Services\GoogleWallet\GoogleWalletLoyaltyClassApi;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Services\Member\MemberDataReader;
 use App\Util\AdminContext;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -34,8 +34,6 @@ class GoogleWalletPassService
 
     private const JWT_ALGORITHM = 'RS256';
 
-    private const API_HEALTH_CACHE_KEY = 'google_wallet_api_health_ok';
-
     /** Google Wallet API が取得できる公開 HTTPS 画像（旧 codelab URL は 2025 以降無効） */
     private const DEFAULT_LOGO_URI = 'https://www.gstatic.com/images/branding/product/2x/wallet_96dp.png';
 
@@ -47,6 +45,7 @@ class GoogleWalletPassService
         private readonly MemberDataReader $memberData,
         private readonly MemberCardAppearanceService $memberCardAppearanceService,
         private readonly GoogleWalletCredentials $credentials,
+        private readonly GoogleWalletLoyaltyClassApi $loyaltyClasses,
     ) {}
 
     public function getLastError(): ?string
@@ -481,89 +480,6 @@ class GoogleWalletPassService
             .($projectId !== null && $projectId > 0 ? '-p'.$projectId : '');
     }
 
-    private function loyaltyClassExistsOnServer(string $classId): bool
-    {
-        $token = $this->credentials->accessToken();
-        if ($token === null) {
-            return false;
-        }
-
-        $response = Http::withToken($token)
-            ->get(self::WALLET_OBJECTS_BASE.'/loyaltyClass/'.$classId);
-
-        return $response->successful();
-    }
-
-    private function verifyWalletApiAccess(): bool
-    {
-        if (Cache::get(self::API_HEALTH_CACHE_KEY) === true) {
-            return true;
-        }
-
-        $token = $this->credentials->accessToken();
-        if ($token === null) {
-            $this->setLastError('OAuth token request failed. credentials.json を確認してください。');
-
-            return false;
-        }
-
-        $issuerId = (string) config('google_wallet.issuer_id', '');
-        $classSuffix = (string) config('google_wallet.class_suffix', 'membership');
-        $classId = $issuerId.'.'.$classSuffix;
-        $response = Http::withToken($token)
-            ->get(self::WALLET_OBJECTS_BASE.'/loyaltyClass/'.$classId);
-
-        if ($response->status() === 404 || $response->successful()) {
-            Cache::put(self::API_HEALTH_CACHE_KEY, true, now()->addMinutes(10));
-
-            return true;
-        }
-
-        if ($response->status() === 403) {
-            $message = $this->parseWallet403Message($response->body());
-            $this->setLastError($message);
-            Log::warning('[GoogleWallet] API access check failed', [
-                'class_id' => $classId,
-                'status' => $response->status(),
-                'service_account' => $this->getServiceAccountEmail(),
-                'message' => $message,
-            ]);
-
-            return false;
-        }
-
-        $this->setLastError('Google Wallet API check failed (HTTP '.$response->status().').');
-
-        return false;
-    }
-
-    private function parseWallet403Message(string $body): string
-    {
-        $decoded = json_decode($body, true);
-        $reason = is_array($decoded)
-            ? (string) ($decoded['error']['errors'][0]['reason'] ?? '')
-            : '';
-        $activationUrl = is_array($decoded)
-            ? ($decoded['error']['details'][0]['metadata']['activationUrl'] ?? null)
-            : null;
-        $serviceAccount = $this->getServiceAccountEmail() ?? 'credentials.json の client_email';
-
-        if ($reason === 'permissionDenied') {
-            return 'Google Wallet のサービスアカウントが Issuer に未登録です。'
-                .'Pay & Wallet Console → Users に '.$serviceAccount
-                .' を Developer として追加してください。'
-                .' あわせて GCP プロジェクトで Google Wallet API を有効化してください。';
-        }
-
-        if (is_string($activationUrl) && $activationUrl !== '') {
-            return 'Google Wallet API が無効です。有効化: '.$activationUrl;
-        }
-
-        return 'Google Wallet API へのアクセスが拒否されました (HTTP 403)。'
-            .' サービスアカウント '.$serviceAccount.' が Issuer ID '
-            .config('google_wallet.issuer_id').' に紐付いているか確認してください。';
-    }
-
     private function resolveProgramLogoUri(?int $projectId): string
     {
         $default = config('google_wallet.program_logo_uri', self::DEFAULT_LOGO_URI);
@@ -629,128 +545,37 @@ class GoogleWalletPassService
         return 'http://localhost';
     }
 
+    private function loyaltyClassExistsOnServer(string $classId): bool
+    {
+        return $this->loyaltyClasses->exists($classId);
+    }
+
+    private function verifyWalletApiAccess(): bool
+    {
+        $ok = $this->loyaltyClasses->verifyAccess();
+        $this->adoptApiError();
+
+        return $ok;
+    }
+
     /**
      * LoyaltyClass が存在すれば true、存在しなければ REST で作成して true、失敗時は false。
      * クラスが既に存在すれば JWT で Object のみ送るため、createSaveUrl 内で毎回呼ぶ。
      */
     public function ensureLoyaltyClassExists(string $classId, string $programName, string $programLogoUri): bool
     {
-        $token = $this->credentials->accessToken();
-        if ($token === null) {
-            return false;
-        }
+        $ok = $this->loyaltyClasses->ensure($classId, $programName, $programLogoUri);
+        $this->adoptApiError();
 
-        $get = Http::withToken($token)
-            ->get(self::WALLET_OBJECTS_BASE.'/loyaltyClass/'.$classId);
-
-        if ($get->successful()) {
-            $cacheKey = 'google_wallet_class_patched:'.$classId;
-            if (Cache::get($cacheKey) !== true) {
-                $this->patchLoyaltyClassDisplayLabels($token, $classId);
-                Cache::put($cacheKey, true, now()->addDay());
-            }
-
-            return true;
-        }
-
-        if ($get->status() !== 404) {
-            $body = $get->body();
-            Log::warning('google-wallet loyaltyClass get failed', [
-                'classId' => $classId,
-                'status' => $get->status(),
-                'body' => $body,
-            ]);
-            if ($get->status() === 403 && is_string($body)) {
-                $message = $this->parseWallet403Message($body);
-                $this->setLastError($message);
-                Log::warning('[GoogleWallet] loyaltyClass access denied', [
-                    'class_id' => $classId,
-                    'service_account' => $this->getServiceAccountEmail(),
-                    'message' => $message,
-                ]);
-            }
-
-            return false;
-        }
-
-        $maxLen = GoogleWalletApi::MAX_DISPLAY_LENGTH;
-        $body = [
-            'id' => $classId,
-            'programName' => $this->payloadBuilder->truncateForWallet($programName, $maxLen),
-            'issuerName' => $this->payloadBuilder->truncateForWallet($programName, $maxLen),
-            'reviewStatus' => GoogleWalletApi::REVIEW_STATUS_UNDER_REVIEW,
-            'programLogo' => [
-                'sourceUri' => ['uri' => $programLogoUri],
-                'contentDescription' => [
-                    'defaultValue' => ['language' => GoogleWalletApi::DEFAULT_LANGUAGE, 'value' => $programName.' logo'],
-                ],
-            ],
-            'accountNameLabel' => GoogleWalletApi::LABEL_ACCOUNT_NAME,
-            'accountIdLabel' => GoogleWalletApi::LABEL_ACCOUNT_ID,
-            'rewardsTierLabel' => GoogleWalletApi::LABEL_RANK,
-        ];
-        $hexBg = config('google_wallet.hex_background_color', '');
-        if ($hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
-            $body['hexBackgroundColor'] = $hexBg;
-        }
-
-        $insert = Http::withToken($token)
-            ->withHeaders(['Content-Type' => 'application/json'])
-            ->post(self::WALLET_OBJECTS_BASE.'/loyaltyClass', $body);
-
-        if (! $insert->successful()) {
-            $insertBody = $insert->body();
-            Log::warning('google-wallet loyaltyClass insert failed', [
-                'classId' => $classId,
-                'status' => $insert->status(),
-                'body' => $insertBody,
-            ]);
-            if ($insert->status() === 403 && is_string($insertBody) && str_contains($insertBody, 'walletobjects.googleapis.com')) {
-                $decoded = json_decode($insertBody, true);
-                $url = $decoded['error']['details'][0]['metadata']['activationUrl'] ?? null;
-                if (is_string($url)) {
-                    Log::warning('google-wallet API が無効です。以下の URL で「Google Wallet API」を有効にしてください: '.$url);
-                }
-            }
-
-            return false;
-        }
-
-        Log::info('google-wallet loyaltyClass created', ['classId' => $classId]);
-
-        return true;
+        return $ok;
     }
 
-    /**
-     * 既存の LoyaltyClass に表示用ラベル（日本語）と背景色を PATCH で反映する。
-     * 既に追加済みのパスは「削除して再度追加」すると更新された表示になる。
-     */
-    private function patchLoyaltyClassDisplayLabels(?string $token, string $classId): void
+    /** API 側で失敗理由が分かったときだけ、この呼び出しのエラーとして残す */
+    private function adoptApiError(): void
     {
-        if ($token === null) {
-            return;
-        }
-        $body = [
-            'accountNameLabel' => GoogleWalletApi::LABEL_ACCOUNT_NAME,
-            'accountIdLabel' => GoogleWalletApi::LABEL_ACCOUNT_ID,
-            'rewardsTierLabel' => GoogleWalletApi::LABEL_RANK,
-        ];
-        $hexBg = config('google_wallet.hex_background_color', '');
-        if ($hexBg !== '' && preg_match('/^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/', $hexBg)) {
-            $body['hexBackgroundColor'] = $hexBg;
-        }
-        $patch = Http::withToken($token)
-            ->withHeaders(['Content-Type' => 'application/json'])
-            ->patch(self::WALLET_OBJECTS_BASE.'/loyaltyClass/'.$classId, $body);
-
-        if ($patch->successful()) {
-            Log::info('google-wallet loyaltyClass display labels patched', ['classId' => $classId]);
-        } else {
-            Log::warning('google-wallet loyaltyClass patch (display labels) failed', [
-                'classId' => $classId,
-                'status' => $patch->status(),
-                'body' => $patch->body(),
-            ]);
+        $error = $this->loyaltyClasses->takeError();
+        if ($error !== null) {
+            $this->setLastError($error);
         }
     }
 }
