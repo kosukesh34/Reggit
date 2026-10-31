@@ -3,10 +3,10 @@
 namespace App\UseCases\Line;
 
 use App\Domain\Settings\Repositories\LineConnectionSettings;
-use App\Enums\MemberStatus;
 use App\Models\LineFollowEvent;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Line\LineReplyMessages;
 use App\Services\Line\LineService;
 use App\Services\Line\LineWebhookProjectResolver;
 use App\UseCases\Line\Data\LineWebhookInput;
@@ -23,6 +23,7 @@ class LineWebhookHandleUseCase
         private LineService $lineService,
         private LineWebhookProjectResolver $projectResolver,
         private LineConnectionSettings $shopSettingRepository,
+        private LineReplyMessages $messages,
     ) {}
 
     public function handle(LineWebhookInput $input): array
@@ -126,15 +127,7 @@ class LineWebhookHandleUseCase
             $user->update($updates);
         }
 
-        $message = $this->lineService->createTextMessage(
-            'ようこそ！'.config('app.name')."へ\n\n".
-            "以下のメニューからお選びください：\n".
-            "・メニューを見る\n".
-            "・会員証を見る\n".
-            '・注文履歴'
-        );
-
-        $this->reply($event['replyToken'] ?? '', $message);
+        $this->reply($event['replyToken'] ?? '', $this->messages->welcome());
     }
 
     /** LINE ではブロックが unfollow として届く。送信は200で成功扱いになるため、ここで記録する */
@@ -212,58 +205,7 @@ class LineWebhookHandleUseCase
 
     private function sendMenu(string $replyToken, string $userId): void
     {
-        $liffUrl = $this->resolveLiffUrl();
-        $message = [
-            'type' => 'flex',
-            'altText' => 'メニューを表示',
-            'contents' => [
-                'type' => 'bubble',
-                'hero' => [
-                    'type' => 'image',
-                    'url' => 'https://via.placeholder.com/1040x1040/FF6D6D/FFFFFF?text=Menu',
-                    'size' => 'full',
-                    'aspectRatio' => '1:1',
-                    'aspectMode' => 'cover',
-                ],
-                'body' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'contents' => [
-                        [
-                            'type' => 'text',
-                            'text' => config('app.name'),
-                            'weight' => 'bold',
-                            'size' => 'xl',
-                        ],
-                        [
-                            'type' => 'text',
-                            'text' => 'LIFFアプリで商品を選択してください',
-                            'wrap' => true,
-                            'margin' => 'md',
-                        ],
-                    ],
-                ],
-                'footer' => [
-                    'type' => 'box',
-                    'layout' => 'vertical',
-                    'spacing' => 'sm',
-                    'contents' => [
-                        [
-                            'type' => 'button',
-                            'style' => 'primary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'uri',
-                                'label' => 'メニューを開く',
-                                'uri' => $liffUrl,
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        $this->reply($replyToken, $message);
+        $this->reply($replyToken, $this->messages->menu($this->resolveLiffUrl()));
     }
 
     private function sendMemberCard(string $replyToken, string $userId): void
@@ -271,23 +213,7 @@ class LineWebhookHandleUseCase
         $user = $this->findUserByLineId($userId);
         $member = $user?->member;
 
-        if ($member === null) {
-            $liffUrl = $this->resolveLiffUrl();
-            $message = $this->lineService->createTextMessage(
-                "会員登録がまだです。\n".
-                "LIFFアプリで会員登録を行ってください。\n\n".
-                $liffUrl
-            );
-        } else {
-            $message = $this->lineService->createTextMessage(
-                "会員証情報\n\n".
-                "会員番号: {$member->member_number}\n".
-                "ポイント: {$member->getDisplayPoints()}pt\n".
-                'ステータス: '.($member->status === MemberStatus::ACTIVE ? '有効' : '無効')
-            );
-        }
-
-        $this->reply($replyToken, $message);
+        $this->reply($replyToken, $this->messages->memberCard($member, $this->resolveLiffUrl()));
     }
 
     private function sendOrderHistory(string $replyToken, string $userId): void
@@ -298,19 +224,7 @@ class LineWebhookHandleUseCase
         }
         $orders = $user->orders()->latest()->take(5)->get();
 
-        if ($orders->isEmpty()) {
-            $message = $this->lineService->createTextMessage('注文履歴はありません。');
-        } else {
-            $text = "最近の注文履歴:\n\n";
-            foreach ($orders as $order) {
-                $text .= "{$order->order_number}\n";
-                $text .= "金額: ¥{$order->total_amount}\n";
-                $text .= "ステータス: {$order->status}\n\n";
-            }
-            $message = $this->lineService->createTextMessage($text);
-        }
-
-        $this->reply($replyToken, $message);
+        $this->reply($replyToken, $this->messages->orderHistory($orders));
     }
 
     private function findUserByLineId(string $userId): ?User
@@ -349,13 +263,6 @@ class LineWebhookHandleUseCase
 
     private function sendDefaultMessage(string $replyToken): void
     {
-        $message = $this->lineService->createTextMessage(
-            "以下のコマンドが利用できます：\n".
-            "・メニュー - 商品メニューを見る\n".
-            "・会員証 - 会員証情報を見る\n".
-            '・注文 - 注文履歴を見る'
-        );
-
-        $this->reply($replyToken, $message);
+        $this->reply($replyToken, $this->messages->help());
     }
 }
