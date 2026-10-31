@@ -9,18 +9,20 @@ use App\Models\Member;
 use App\Models\MemberStampTransaction;
 use App\Models\PointTransaction;
 use App\Models\Scopes\StoreAccessScope;
+use App\Services\Member\MemberPointLedger;
 use Carbon\Carbon;
 
 final class MemberRankMetricCalculator
 {
     public function __construct(
         private RankSettings $shopSettingRepository,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     public function points(Member $member, int $projectId): int
     {
         if (! RankAggregationType::isPeriod($this->shopSettingRepository->getRankAggregationType($projectId))) {
-            return $member->getDisplayPoints();
+            return $this->pointLedger->displayPoints($member);
         }
 
         return $this->sumPeriodPoints($member, $projectId);

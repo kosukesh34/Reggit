@@ -10,6 +10,7 @@ use App\Models\SmaregiMemberProfileSync;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
 use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberPointLedger;
 use App\Services\Member\MemberProfileUpdater;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
@@ -313,7 +314,7 @@ class MemberProfileRecoveryTest extends TestCase
         app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($user->member);
 
         $this->assertSame('Changed', $user->fresh()->name);
-        $this->assertSame(55, $user->member->fresh()->getTotalPointsFromTransactions());
+        $this->assertSame(55, app(MemberPointLedger::class)->total($user->member->fresh()));
     }
 
     public function test_clearing_a_pending_email_never_replays_the_superseded_value(): void

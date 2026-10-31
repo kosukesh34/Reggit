@@ -17,6 +17,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Services\Admin\OrderAdminService;
+use App\Services\Member\MemberPointLedger;
 use App\Services\MemberPointsExpiryCalculator;
 use App\Services\OrderService;
 use App\UseCases\Payment\PaymentGateway;
@@ -106,7 +107,7 @@ class ReviewRegressionTest extends TestCase
         app(OrderAdminService::class)->updateStatus($order->id, OrderStatus::CANCELLED);
         app(OrderAdminService::class)->updateStatus($order->id, OrderStatus::CANCELLED);
         $this->assertSame(10, $product->fresh()->stock);
-        $this->assertSame(100, $member->fresh()->getDisplayPoints());
+        $this->assertSame(100, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         $this->assertCount(1, $gateway->cancelledSessions);
         $this->expectException(OrderOperationException::class);
         app(OrderAdminService::class)->updateStatus($order->id, OrderStatus::CONFIRMED);
@@ -117,8 +118,8 @@ class ReviewRegressionTest extends TestCase
         $project = Project::factory()->create();
         $member = Member::factory()->create(['project_id' => $project->id, 'points' => 100]);
         PointTransaction::create(['project_id' => $project->id, 'member_id' => $member->id, 'type' => 'earned', 'points' => 100, 'expires_at' => now()->subDay()]);
-        $this->assertSame(0, $member->getDisplayPoints());
-        $member->syncPointsLedger();
+        $this->assertSame(0, app(MemberPointLedger::class)->displayPoints($member));
+        app(MemberPointLedger::class)->sync($member);
         $this->assertSame(0, $member->fresh()->points);
         $this->assertDatabaseCount('point_transactions', 1);
         $this->assertNull(app(MemberPointsExpiryCalculator::class)->getExpiryInfo($member));

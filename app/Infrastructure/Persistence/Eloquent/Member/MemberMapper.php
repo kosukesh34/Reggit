@@ -8,7 +8,7 @@ use App\Models\Member as MemberModel;
 
 final class MemberMapper
 {
-    public static function toDomain(MemberModel $model, bool $forUpdate = false): MemberAggregate
+    public static function toDomain(MemberModel $model, int $points): MemberAggregate
     {
         $smaregiCustomerId = $model->smaregi_customer_id ?? '';
         $smaregiCustomerId = is_string($smaregiCustomerId) ? trim($smaregiCustomerId) : '';
@@ -16,7 +16,7 @@ final class MemberMapper
         return new MemberAggregate(
             new MemberId((int) $model->id),
             (int) $model->project_id,
-            $model->getTotalPointsFromTransactions($forUpdate),
+            $points,
             $smaregiCustomerId,
         );
     }

@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\Services\OrderRewardService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
@@ -58,7 +59,7 @@ class MemberPointLedgerConcurrencyTest extends TestCase
                             }
                         });
                         file_put_contents($directory.'/connection-'.$index, (string) DB::selectOne('SELECT CONNECTION_ID() AS id')->id);
-                        $member->syncPointsLedger();
+                        app(MemberPointLedger::class)->sync($member);
                         file_put_contents($directory.'/result-'.$index, 'ok');
                         exit(0);
                     } catch (\Throwable $e) {
@@ -129,13 +130,13 @@ class MemberPointLedgerConcurrencyTest extends TestCase
                 'member_id' => $member->id,
                 'type' => 'earned',
                 'points' => 100,
-                'description' => Member::POINTS_LEDGER_BACKFILL_DESCRIPTION,
+                'description' => MemberPointLedger::POINTS_LEDGER_BACKFILL_DESCRIPTION,
                 'expires_at' => now()->addYear(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
             $this->assertSame(0, PointTransaction::where('member_id', $member->id)->count(), 'The outer transaction still has its old snapshot.');
-            $member->syncPointsLedger();
+            app(MemberPointLedger::class)->sync($member);
             $repository = app(MemberRepository::class);
             $aggregate = $repository->findByIdForUpdate((int) $member->id, (int) $member->project_id);
             $this->assertNotNull($aggregate);
@@ -143,9 +144,9 @@ class MemberPointLedgerConcurrencyTest extends TestCase
             $aggregate->earnPoints(10, 'Snapshot regression award', null, now()->addYear());
             $repository->save($aggregate);
             DB::commit();
-            $this->assertSame(1, PointTransaction::where('member_id', $member->id)->where('description', Member::POINTS_LEDGER_BACKFILL_DESCRIPTION)->count());
+            $this->assertSame(1, PointTransaction::where('member_id', $member->id)->where('description', MemberPointLedger::POINTS_LEDGER_BACKFILL_DESCRIPTION)->count());
             $this->assertSame(110, (int) $member->fresh()->points);
-            $this->assertSame(110, $member->fresh()->getDisplayPoints());
+            $this->assertSame(110, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         } finally {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
@@ -161,7 +162,7 @@ class MemberPointLedgerConcurrencyTest extends TestCase
         }
 
         $member = $this->legacyMember();
-        $member->syncPointsLedger();
+        app(MemberPointLedger::class)->sync($member);
         $user = User::findOrFail($member->user_id);
         $order = new Order(['project_id' => $member->project_id, 'user_id' => $user->id]);
         $default = DB::getDefaultConnection();
@@ -170,7 +171,7 @@ class MemberPointLedgerConcurrencyTest extends TestCase
         DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         DB::beginTransaction();
         try {
-            $this->assertSame(100, $member->getTotalPointsFromTransactions());
+            $this->assertSame(100, app(MemberPointLedger::class)->total($member));
             $writer->table('point_transactions')->insert([
                 'project_id' => $member->project_id,
                 'member_id' => $member->id,
@@ -180,7 +181,7 @@ class MemberPointLedgerConcurrencyTest extends TestCase
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            $this->assertSame(100, $member->getTotalPointsFromTransactions(), 'The ordinary read still sees the earlier balance.');
+            $this->assertSame(100, app(MemberPointLedger::class)->total($member), 'The ordinary read still sees the earlier balance.');
             $aggregate = app(MemberRepository::class)->findByIdForUpdate((int) $member->id, (int) $member->project_id);
             $this->assertNotNull($aggregate);
             $this->assertSame(20, $aggregate->displayPoints());
@@ -193,7 +194,7 @@ class MemberPointLedgerConcurrencyTest extends TestCase
             DB::commit();
             $this->assertSame(2, PointTransaction::where('member_id', $member->id)->count());
             $this->assertSame(20, (int) $member->fresh()->points);
-            $this->assertSame(20, $member->fresh()->getDisplayPoints());
+            $this->assertSame(20, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         } finally {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
@@ -215,9 +216,9 @@ class MemberPointLedgerConcurrencyTest extends TestCase
     {
         $entries = PointTransaction::withoutGlobalScopes()->where('member_id', $member->id)->get();
         $this->assertCount(1, $entries);
-        $this->assertSame(Member::POINTS_LEDGER_BACKFILL_DESCRIPTION, $entries->first()->description);
+        $this->assertSame(MemberPointLedger::POINTS_LEDGER_BACKFILL_DESCRIPTION, $entries->first()->description);
         $this->assertSame(100, (int) $member->fresh()->points);
-        $this->assertSame(100, $member->fresh()->getDisplayPoints());
+        $this->assertSame(100, app(MemberPointLedger::class)->displayPoints($member->fresh()));
     }
 
     private function waitUntil(callable $ready): void

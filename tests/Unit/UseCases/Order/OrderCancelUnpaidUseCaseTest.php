@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Member\CurrentMemberPrincipal;
+use App\Services\Member\MemberPointLedger;
 use App\Services\OrderCancellationReverser;
 use App\Services\Payment\UnpaidPaymentSessionCanceller;
 use App\Services\UnpaidOrderCancellationService;
@@ -222,7 +223,7 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         PointTransaction::create(['project_id' => $project->id, 'member_id' => $member->id, 'type' => 'earned', 'points' => 100]);
         PointTransaction::create(['project_id' => $project->id, 'member_id' => $member->id, 'order_id' => $order->id, 'type' => 'used', 'points' => -20]);
-        $member->recalcPointsFromTransactions();
+        app(MemberPointLedger::class)->recalculate($member);
         OrderItem::create(['order_id' => $order->id, 'product_id' => $product->id, 'quantity' => 2, 'price' => 500]);
         $service = app(OrderCancellationReverser::class);
         $failingService = Mockery::mock(OrderCancellationReverser::class);
@@ -238,15 +239,15 @@ class OrderCancelUnpaidUseCaseTest extends TestCase
         }
         $this->assertSame(OrderStatus::PENDING, $order->fresh()->status);
         $this->assertSame(3, $product->fresh()->stock);
-        $this->assertSame(80, $member->fresh()->getDisplayPoints());
+        $this->assertSame(80, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         $this->assertDatabaseMissing('point_transactions', ['order_id' => $order->id, 'type' => 'refunded']);
         $useCase = new UnpaidOrderCancellationService(app(OrderRepository::class), $service, app(UnpaidPaymentSessionCanceller::class));
         $useCase->cancel($order->id, (int) $user->project_id, (int) $user->id);
         $this->assertSame(OrderStatus::CANCELLED, $order->fresh()->status);
         $this->assertSame(5, $product->fresh()->stock);
-        $this->assertSame(100, $member->fresh()->getDisplayPoints());
+        $this->assertSame(100, app(MemberPointLedger::class)->displayPoints($member->fresh()));
         $useCase->cancel($order->id, (int) $user->project_id, (int) $user->id);
         $this->assertSame(5, $product->fresh()->stock);
-        $this->assertSame(100, $member->fresh()->getDisplayPoints());
+        $this->assertSame(100, app(MemberPointLedger::class)->displayPoints($member->fresh()));
     }
 }

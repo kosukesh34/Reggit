@@ -5,12 +5,16 @@ namespace App\Services\Line;
 use App\Enums\MemberStatus;
 use App\Models\Member;
 use App\Models\Order;
+use App\Services\Member\MemberPointLedger;
 use Illuminate\Support\Collection;
 
 /** LINE Webhook への返信メッセージを組み立てる。 */
 class LineReplyMessages
 {
-    public function __construct(private LineService $lineService) {}
+    public function __construct(
+        private LineService $lineService,
+        private MemberPointLedger $pointLedger,
+    ) {}
 
     /** @return array<string, mixed> */
     public function welcome(): array
@@ -95,7 +99,7 @@ class LineReplyMessages
         return $this->lineService->createTextMessage(
             "会員証情報\n\n".
             "会員番号: {$member->member_number}\n".
-            "ポイント: {$member->getDisplayPoints()}pt\n".
+            "ポイント: {$this->pointLedger->displayPoints($member)}pt\n".
             'ステータス: '.($member->status === MemberStatus::ACTIVE ? '有効' : '無効')
         );
     }

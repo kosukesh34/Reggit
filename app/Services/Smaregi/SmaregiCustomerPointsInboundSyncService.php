@@ -12,6 +12,7 @@ use App\Models\Member;
 use App\Models\MemberRegistrationAttempt;
 use App\Models\Scopes\ProjectScope;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\Services\MemberRankSyncService;
 use App\Util\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,7 @@ class SmaregiCustomerPointsInboundSyncService
         private readonly TenantContext $tenantContext,
         private SmaregiMemberProfileSyncService $profiles,
         private SmaregiInboundCustomerProfileApplier $profileApplier,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     /**
@@ -194,7 +196,7 @@ class SmaregiCustomerPointsInboundSyncService
         foreach ($members as $member) {
             $profileSnapshots[(int) $member->id] = $this->profiles->snapshot((int) $member->id);
             $pointSnapshots[(int) $member->id] = [
-                'points' => $member->getDisplayPoints(),
+                'points' => $this->pointLedger->displayPoints($member),
                 'pending' => $this->pointsSync->hasOutboundPending((int) $member->id)
                     || $this->orderRepository->hasUnsyncedSmaregiPointsForUser((int) $member->user_id, (int) $member->project_id),
             ];

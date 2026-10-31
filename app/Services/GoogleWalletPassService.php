@@ -10,6 +10,7 @@ use App\Services\GoogleWallet\GoogleWalletCredentials;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyClassApi;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberPointLedger;
 use App\Util\AdminContext;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Client\ConnectionException;
@@ -46,6 +47,7 @@ class GoogleWalletPassService
         private readonly MemberCardAppearanceService $memberCardAppearanceService,
         private readonly GoogleWalletCredentials $credentials,
         private readonly GoogleWalletLoyaltyClassApi $loyaltyClasses,
+        private readonly MemberPointLedger $pointLedger,
     ) {}
 
     public function getLastError(): ?string
@@ -89,7 +91,7 @@ class GoogleWalletPassService
         $barcodeValue = $member->member_number ?? (string) $member->id;
         // オブジェクトIDに -b を付与し、既存のQRオブジェクトと区別してバーコードの新オブジェクトとして発行する
         $objectSuffix = 'member-'.(string) $member->id.'-b';
-        $points = $data['points'] ?? $member->getTotalPointsFromTransactions();
+        $points = $data['points'] ?? $this->pointLedger->total($member);
         $rankLabel = $data['current_rank_label'] ?? $member->rank ?? '';
         $accountName = $user->name ?? '';
         $projectId = $project !== null ? $project->id : (isset($user->project_id) ? (int) $user->project_id : null);
@@ -132,7 +134,7 @@ class GoogleWalletPassService
         $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
         $barcodeValue = $member->member_number ?? (string) $member->id;
         $objectSuffix = 'member-'.(string) $member->id.'-b';
-        $points = (int) $member->getTotalPointsFromTransactions();
+        $points = (int) $this->pointLedger->total($member);
         $rankLabel = (string) ($appearance['rank_label'] ?? $member->rank ?? '');
         $accountName = (string) ($user->name ?? '');
 

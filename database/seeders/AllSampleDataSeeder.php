@@ -23,6 +23,7 @@ use App\Models\Project;
 use App\Models\Reservation;
 use App\Models\StampCard;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\Services\Smaregi\SmaregiProductRegisterService;
 use App\Services\Smaregi\SmaregiProductSyncService;
 use Carbon\Carbon;
@@ -216,7 +217,7 @@ class AllSampleDataSeeder extends Seeder
                     'memo' => $i === 0 ? '常連。要フォローなし。' : ($i === 1 ? 'アレルギー確認済み' : null),
                 ]
             );
-            if ($i % 3 === 0 && $member->getTotalPointsFromTransactions() === 0) {
+            if ($i % 3 === 0 && app(MemberPointLedger::class)->total($member) === 0) {
                 $points = rand(50, 500);
                 $repo = app(MemberRepository::class);
                 $aggregate = $repo->findById((int) $member->id, (int) $member->project_id);

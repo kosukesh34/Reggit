@@ -29,6 +29,7 @@ class MemberDataReader
         private MemberSettings $shopSettingRepository,
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberRegistrationRecovery $registrationRecovery,
+        private MemberPointLedger $pointLedger,
     ) {}
 
     public function getMemberData(User $user, bool $syncFromSmaregi = true): array
@@ -61,7 +62,7 @@ class MemberDataReader
                 return $this->getGuestMemberData($user, $projectId);
             }
             $member->refresh();
-            $member->syncPointsLedger();
+            $this->pointLedger->sync($member);
             $member->refresh();
 
             $rankInfo = $this->rankCalculator->getRankInfo($member);
@@ -80,7 +81,7 @@ class MemberDataReader
                 'profile_field_settings' => $profileFormFields,
                 'profile_image_enabled' => self::profileImageEnabled($profileSettings),
                 'profile' => $profileValues,
-                'points' => $member->getTotalPointsFromTransactions(),
+                'points' => $this->pointLedger->total($member),
                 'current_rank' => $rankInfo['current_rank'],
                 'current_rank_label' => $rankInfo['current_rank_label'],
                 'current_rank_icon' => $rankInfo['current_rank_icon'],

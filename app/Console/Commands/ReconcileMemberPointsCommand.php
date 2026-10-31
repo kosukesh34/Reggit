@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Member;
+use App\Services\Member\MemberPointLedger;
 use Illuminate\Console\Command;
 
 class ReconcileMemberPointsCommand extends Command
@@ -12,7 +13,7 @@ class ReconcileMemberPointsCommand extends Command
 
     protected $description = 'members.points と point_transactions の不整合を修復する';
 
-    public function handle(): int
+    public function handle(MemberPointLedger $pointLedger): int
     {
         $projectId = $this->option('project_id');
         $query = Member::query();
@@ -25,11 +26,11 @@ class ReconcileMemberPointsCommand extends Command
         foreach ($query->cursor() as $member) {
             $total++;
             $beforeColumn = (int) $member->points;
-            $beforeLedger = $member->getTotalPointsFromTransactions();
+            $beforeLedger = $pointLedger->total($member);
             if ($beforeColumn === $beforeLedger) {
                 continue;
             }
-            $member->syncPointsLedger();
+            $pointLedger->sync($member);
             $member->refresh();
             $fixed++;
             $this->line(sprintf(
@@ -37,7 +38,7 @@ class ReconcileMemberPointsCommand extends Command
                 $member->id,
                 $beforeColumn,
                 $beforeLedger,
-                $member->getTotalPointsFromTransactions()
+                $pointLedger->total($member)
             ));
         }
 

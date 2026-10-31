@@ -2,12 +2,7 @@
 
 namespace App\Models;
 
-use App\Domain\Member\Services\PointLedgerBalanceCalculator;
-use App\Domain\Settings\Repositories\OrderSettings;
-use App\Enums\PointTransactionType;
 use App\Models\Concerns\BelongsToProject;
-use App\Models\Scopes\ProjectScope;
-use App\Models\Scopes\StoreAccessScope;
 use App\Util\StoreContext;
 use Database\Factories\MemberFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -183,120 +178,5 @@ class Member extends Model
             trim((string) ($this->city ?? '')),
             trim((string) ($this->street ?? '')),
         ], static fn (string $part): bool => $part !== '')));
-    }
-
-    /** @return array{balance: int, expires_at: ?\DateTimeImmutable, points_expiring: int, has_transactions: bool} */
-    public function getPointBalance(bool $forUpdate = false): array
-    {
-        $query = $this->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
-            ->withoutGlobalScope(ProjectScope::class)
-            ->orderBy('created_at')->orderBy('id');
-        if ($forUpdate) {
-            $query->lockForUpdate();
-        }
-        $transactions = $query
-            ->get(['type', 'points', 'expires_at', 'order_id', 'created_at'])
-            ->map(fn (PointTransaction $transaction): array => [
-                'type' => $transaction->type,
-                'points' => $transaction->points,
-                'expires_at' => $transaction->expires_at,
-                'order_id' => $transaction->order_id,
-                'created_at' => $transaction->created_at,
-            ])->all();
-
-        return app(PointLedgerBalanceCalculator::class)->calculate($transactions, now());
-    }
-
-    public function getTotalPointsFromTransactions(bool $forUpdate = false): int
-    {
-        return $this->getPointBalance($forUpdate)['balance'];
-    }
-
-    public const POINTS_LEDGER_BACKFILL_DESCRIPTION = 'ポイント残高の整合';
-
-    /** Backfill only members with no ledger, never resurrect spent or expired points. */
-    public function syncPointsLedger(): void
-    {
-        DB::transaction(function (): void {
-            $member = $this->newQuery()->withoutGlobalScope(ProjectScope::class)
-                ->where('project_id', $this->project_id)->whereKey($this->id)
-                ->lockForUpdate()->firstOrFail();
-            // Current reads also see a competing backfill committed after an outer transaction's snapshot.
-            $balance = $member->getPointBalance(true);
-            if (! $balance['has_transactions'] && (int) $member->points > 0) {
-                $member->backfillEarnedPoints((int) $member->points);
-            } elseif ((int) $member->points !== $balance['balance']) {
-                $member->update(['points' => $balance['balance']]);
-            }
-            $this->points = $member->points;
-            $this->syncOriginalAttribute('points');
-        }, 3);
-    }
-
-    private function backfillEarnedPoints(int $points): void
-    {
-        if ($points <= 0) {
-            return;
-        }
-
-        PointTransaction::create([
-            'project_id' => $this->project_id,
-            'member_id' => $this->id,
-            'type' => 'earned',
-            'points' => $points,
-            'description' => self::POINTS_LEDGER_BACKFILL_DESCRIPTION,
-            'order_id' => null,
-            'expires_at' => now()->addDays(app(OrderSettings::class)->getPointsValidDays((int) $this->project_id)),
-        ]);
-        $this->update(['points' => $this->getTotalPointsFromTransactions(true)]);
-    }
-
-    /** 表示・判定用。既存データに台帳がない場合はカラム値を使い、読み取り時には更新しない。 */
-    public function getDisplayPoints(): int
-    {
-        $balance = $this->getPointBalance();
-
-        return $balance['has_transactions'] ? $balance['balance'] : max(0, (int) $this->points);
-    }
-
-    public function recalcPointsFromTransactions(): void
-    {
-        $this->update(['points' => $this->getTotalPointsFromTransactions(true)]);
-    }
-
-    /**
-     * 累計付与ポイントの増減量（獲得・正の調整は加算、取消は減算）。
-     */
-    public static function lifetimeGrantedDelta(string $type, int $points): int
-    {
-        if ($type === PointTransactionType::EARNED || $type === PointTransactionType::ADJUSTED) {
-            return max(0, $points);
-        }
-
-        if ($type === PointTransactionType::REVERSED) {
-            return -abs($points);
-        }
-
-        return 0;
-    }
-
-    /** 台帳から累計付与ポイントを再計算して保存する */
-    public function recalcLifetimeGrantedPoints(): void
-    {
-        DB::transaction(function (): void {
-            $member = $this->newQuery()->withoutGlobalScope(ProjectScope::class)
-                ->where('project_id', $this->project_id)->whereKey($this->id)
-                ->lockForUpdate()->first();
-            if ($member === null) {
-                return;
-            }
-            $total = (int) $member->pointTransactions()->withoutGlobalScope(StoreAccessScope::class)
-                ->withoutGlobalScope(ProjectScope::class)
-                ->lockForUpdate()->get(['type', 'points'])
-                ->sum(fn (PointTransaction $tx) => self::lifetimeGrantedDelta((string) $tx->type, (int) $tx->points));
-            $member->update(['lifetime_granted_points' => max(0, $total)]);
-            $this->lifetime_granted_points = $member->lifetime_granted_points;
-            $this->syncOriginalAttribute('lifetime_granted_points');
-        }, 3);
     }
 }

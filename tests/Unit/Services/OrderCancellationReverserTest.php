@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Member\MemberPointLedger;
 use App\Services\OrderCancellationReverser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -35,7 +36,7 @@ class OrderCancellationReverserTest extends TestCase
             'points' => 50,
             'description' => '初期',
         ]);
-        $member->recalcPointsFromTransactions();
+        app(MemberPointLedger::class)->recalculate($member);
 
         $order = Order::create([
             'project_id' => $project->id,
@@ -52,7 +53,7 @@ class OrderCancellationReverserTest extends TestCase
         $service->handleOrderCancellation($order);
 
         $member->refresh();
-        $this->assertSame(65, $member->getDisplayPoints());
+        $this->assertSame(65, app(MemberPointLedger::class)->displayPoints($member));
         $this->assertDatabaseHas('point_transactions', [
             'order_id' => $order->id,
             'type' => PointTransactionType::REFUNDED,
@@ -81,7 +82,7 @@ class OrderCancellationReverserTest extends TestCase
             'points' => 50,
             'description' => '初期',
         ]);
-        $member->recalcPointsFromTransactions();
+        app(MemberPointLedger::class)->recalculate($member);
 
         $order = Order::create([
             'project_id' => $project->id,
@@ -99,7 +100,7 @@ class OrderCancellationReverserTest extends TestCase
         $service->handleOrderCancellation($order);
 
         $member->refresh();
-        $this->assertSame(60, $member->getDisplayPoints());
+        $this->assertSame(60, app(MemberPointLedger::class)->displayPoints($member));
         $this->assertSame(1, PointTransaction::query()
             ->where('order_id', $order->id)
             ->where('type', PointTransactionType::REFUNDED)
