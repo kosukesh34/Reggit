@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\Member;
 
-use App\Enums\ExistingMemberLinkField;
 use App\Http\Controllers\Api\V1\BaseApiController;
-use App\Models\ExistingMemberLinkSetting;
 use App\Services\UserService;
 use App\UseCases\Member\ConfirmExistingMemberLinkUseCase;
+use App\UseCases\Member\ExistingMemberLinkFormUseCase;
 use App\UseCases\Member\RequestExistingMemberLinkUseCase;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -20,25 +19,12 @@ class ExistingMemberLinkController extends BaseApiController
         private UserService $userService,
         private RequestExistingMemberLinkUseCase $requestUseCase,
         private ConfirmExistingMemberLinkUseCase $confirmUseCase,
+        private ExistingMemberLinkFormUseCase $formUseCase,
     ) {}
 
     public function show(): JsonResponse
     {
-        $projectId = AdminContext::requireCurrentProjectId();
-        $setting = ExistingMemberLinkSetting::query()->where('project_id', $projectId)->first();
-        $selected = is_array($setting?->identifier_fields) ? $setting->identifier_fields : [];
-        $fields = [];
-        foreach (ExistingMemberLinkField::getValues() as $key => $label) {
-            if (in_array($key, $selected, true)) {
-                $fields[] = ['key' => (string) $key, 'label' => $label];
-            }
-        }
-
-        return $this->success([
-            'is_enabled' => $setting?->is_enabled === true,
-            'description' => (string) ($setting?->description ?? ''),
-            'fields' => $fields,
-        ]);
+        return $this->success($this->formUseCase->form(AdminContext::requireCurrentProjectId()));
     }
 
     public function store(Request $request): JsonResponse
@@ -48,12 +34,12 @@ class ExistingMemberLinkController extends BaseApiController
             return $this->error('ユーザーを特定できません。ログインし直してください。', 401);
         }
         $projectId = AdminContext::requireCurrentProjectId();
-        $setting = ExistingMemberLinkSetting::query()->where('project_id', $projectId)->first();
-        if ($setting === null || $setting->is_enabled === false) {
+        $fields = $this->formUseCase->identifierFields($projectId);
+        if ($fields === null) {
             return $this->error('既存会員連携は利用できません', 422);
         }
         $input = [];
-        foreach ($setting->identifier_fields as $field) {
+        foreach ($fields as $field) {
             $input[$field] = trim((string) $request->input($field, ''));
             if ($input[$field] === '') {
                 return $this->error('必要な項目を入力してください', 422);

@@ -22,6 +22,12 @@ class AdminCouponBulkIssueUseCase
      * @param  array<string, string|string[]|int|bool|null>  $validated
      * @return array{issued: int, scheduled: bool, message: string}
      */
+    /** 配信できる（有効な）クーポンか */
+    public function isDeliverable(int $projectId, int $couponId): bool
+    {
+        return Coupon::where('project_id', $projectId)->whereKey($couponId)->where('is_active', true)->exists();
+    }
+
     public function handle(int $projectId, int $couponId, array $validated): array
     {
         $coupon = Coupon::query()->where('project_id', $projectId)->whereKey($couponId)->first();

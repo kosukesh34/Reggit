@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Settings\ProjectRfmSetting;
 use App\UseCases\Admin\Rfm\AdminRfmIndexUseCase;
+use App\UseCases\Admin\Rfm\AdminRfmSettingsUseCase;
 use Illuminate\Http\Request;
 
 class RfmController extends AdminBaseController
@@ -15,16 +15,16 @@ class RfmController extends AdminBaseController
         $this->indexUseCase = $indexUseCase;
     }
 
-    public function index(Request $request)
+    public function index(Request $request, AdminRfmSettingsUseCase $settings)
     {
         $projectId = $this->resolveAdminProjectId();
         $filterSegment = (string) $request->input('segment', '');
         $view = $this->indexUseCase->handle($projectId, $filterSegment);
 
-        return view('admin.rfm', ['view' => $view, 'settings' => ProjectRfmSetting::forProject($projectId)]);
+        return view('admin.rfm', ['view' => $view, 'settings' => $settings->current($projectId)]);
     }
 
-    public function updateSettings(Request $request)
+    public function updateSettings(Request $request, AdminRfmSettingsUseCase $settings)
     {
         $validated = $request->validate([
             'recency_active_days' => ['required', 'integer', 'min:1', 'max:36500'],
@@ -38,7 +38,7 @@ class RfmController extends AdminBaseController
             'monetary_high' => '高額の累計購買額',
         ]);
 
-        ProjectRfmSetting::updateOrCreate(['project_id' => $this->resolveAdminProjectId()], $validated);
+        $settings->save($this->resolveAdminProjectId(), $validated);
 
         return redirect()->route('admin.rfm', ['project_key' => $request->route('project_key')])
             ->with('success', 'RFMの判定基準を保存しました。');

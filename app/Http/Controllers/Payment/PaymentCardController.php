@@ -6,18 +6,16 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
-use App\Models\Order;
-use App\Models\Scopes\StoreAccessScope;
-use App\Models\Settings\ProjectPaymentSetting;
+use App\UseCases\Payment\PaymentOrderQuery;
+use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use App\Util\AdminContext;
 
 class PaymentCardController extends Controller
 {
-    public function __invoke(int $order)
+    public function __invoke(int $order, PaymentOrderQuery $orders, ProjectPaymentGatewayResolver $gateways)
     {
         // The signed URL grants access to this order independently of a browser login.
-        $paymentOrder = Order::withoutGlobalScope(StoreAccessScope::class)
-            ->where('project_id', AdminContext::requireCurrentProjectId())->findOrFail($order);
+        $paymentOrder = $orders->forCardPayment(AdminContext::requireCurrentProjectId(), $order);
         abort_unless(in_array($paymentOrder->order_type, [OrderType::MOBILE, OrderType::SHIPPING, OrderType::TICKET], true)
             && $paymentOrder->payment_method === PaymentMethod::STRIPE, 404);
         $session = $paymentOrder->payment_session;
@@ -31,8 +29,7 @@ class PaymentCardController extends Controller
 
         return response()->view('payment.card', [
             'amount' => (int) $paymentOrder->total_amount,
-            'stripeKey' => $paymentOrder->payment_setting_id === null ? config('services.stripe.key')
-                : ProjectPaymentSetting::where('project_id', $paymentOrder->project_id)->findOrFail($paymentOrder->payment_setting_id)->publishable_key,
+            'stripeKey' => $gateways->publishableKeyForOrder($paymentOrder),
             'clientSecret' => $clientSecret,
             'successUrl' => $returnUrl.'&status=success',
             'cancelUrl' => $returnUrl.'&status=cancel',

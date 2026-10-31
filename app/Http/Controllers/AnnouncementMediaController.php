@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Announcement;
+use App\UseCases\Announcement\AnnouncementPrivateImageUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class AnnouncementMediaController extends Controller
 {
-    public function __invoke(Request $request, int $id, int $index)
+    public function __invoke(Request $request, int $id, int $index, AnnouncementPrivateImageUseCase $images)
     {
         abort_unless($request->hasValidSignature(), 403);
-        $announcement = Announcement::withoutGlobalScopes()->findOrFail($id);
+        $announcement = $images->findForSignedMedia($id);
         $paths = $announcement->image_paths ?: array_filter([$announcement->private_image_path]);
         $path = $paths[$index] ?? null;
         abort_unless($path && hash_equals(hash('sha256', $path), (string) $request->query('version')), 404);

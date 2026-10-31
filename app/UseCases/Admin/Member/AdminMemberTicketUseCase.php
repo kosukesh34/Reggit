@@ -7,6 +7,7 @@ use App\Models\MemberSubscription;
 use App\Models\MemberTicket;
 use App\Services\Subscription\MemberSubscriptionService;
 use App\Services\Ticket\MemberTicketService;
+use Illuminate\Support\Collection;
 
 /** 会員詳細からの回数券・サブスク操作。店舗スタッフの閲覧範囲（StoreAccessScope）にいる会員の分だけ探す。 */
 class AdminMemberTicketUseCase
@@ -40,6 +41,15 @@ class AdminMemberTicketUseCase
         }
 
         return true;
+    }
+
+    /** @return array{tickets: Collection<int, MemberTicket>, subscriptions: Collection<int, MemberSubscription>} 会員詳細に出す回数券・サブスク（新しい順） */
+    public function forMember(int $memberId): array
+    {
+        return [
+            'tickets' => MemberTicket::query()->with('uses.store')->where('member_id', $memberId)->latest('id')->get(),
+            'subscriptions' => MemberSubscription::query()->where('member_id', $memberId)->latest('id')->get(),
+        ];
     }
 
     private function visibleTicket(int $memberId, int $ticketId): MemberTicket
