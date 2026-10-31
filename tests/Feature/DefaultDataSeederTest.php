@@ -6,8 +6,8 @@ use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Product;
 use App\Models\Project;
 use App\Services\Admin\ProductDeduplicationService;
-use App\Services\Admin\PublicImageStorageService;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Services\Smaregi\SmaregiProductImageImporter;
 use App\Services\Smaregi\SmaregiProductOptionSyncService;
 use App\Services\Smaregi\SmaregiProductRegisterService;
 use App\Services\Smaregi\SmaregiProductSyncService;
@@ -135,7 +135,7 @@ class DefaultDataSeederTest extends TestCase
             Mockery::mock(SmaregiProductRegisterService::class),
             $deduplication,
             $optionSync,
-            app(PublicImageStorageService::class),
+            new SmaregiProductImageImporter($api),
         );
 
         $sync->sync((int) $project->id);

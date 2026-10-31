@@ -5,8 +5,8 @@ namespace Tests\Unit\Services\Smaregi;
 use App\Models\Product;
 use App\Models\Project;
 use App\Services\Admin\ProductDeduplicationService;
-use App\Services\Admin\PublicImageStorageService;
 use App\Services\Smaregi\SmaregiApiService;
+use App\Services\Smaregi\SmaregiProductImageImporter;
 use App\Services\Smaregi\SmaregiProductOptionSyncService;
 use App\Services\Smaregi\SmaregiProductRegisterService;
 use App\Services\Smaregi\SmaregiProductSyncService;
@@ -50,7 +50,7 @@ class SmaregiProductImageSyncTest extends TestCase
         $options = Mockery::mock(SmaregiProductOptionSyncService::class);
         $options->shouldReceive('sync')->andReturn(['failed' => 0, 'errors' => []]);
         $sync = new SmaregiProductSyncService($api, Mockery::mock(SmaregiProductRegisterService::class),
-            app(ProductDeduplicationService::class), $options, app(PublicImageStorageService::class));
+            app(ProductDeduplicationService::class), $options, new SmaregiProductImageImporter($api));
         $sync->sync($project->id);
         $disk->assertExists($victim);
         $disk->assertExists($foreign);
@@ -92,7 +92,7 @@ class SmaregiProductImageSyncTest extends TestCase
             $register,
             Mockery::mock(ProductDeduplicationService::class),
             Mockery::mock(SmaregiProductOptionSyncService::class),
-            app(PublicImageStorageService::class),
+            Mockery::mock(SmaregiProductImageImporter::class),
         );
 
         $result = $sync->syncAllImagesToSmaregi((int) $project->id);
