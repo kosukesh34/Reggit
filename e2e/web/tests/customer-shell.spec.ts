@@ -41,11 +41,12 @@ test.describe('Skip と共通の LIFF UI', () => {
     await expect(page.getByText('×1', { exact: true })).toBeVisible();
   });
   test('実 LIFF は旧テーマ・ビルダーの CSS を読み込まない', async ({ page }) => {
+    // 実 LIFF は LINE ログインへ移動するため、SDK を止めて自前のページの読み込み完了（ログイン案内）まで待つ
+    await page.route('https://static.line-scdn.net/liff/**', (route) => route.abort());
     const response = await page.goto(`${liffPath}#/home`);
     test.skip(response?.status() === 404, 'E2E_LIFF_PATH に有効な店舗 LIFF を指定してください');
-    await expectShell(page);
+    await expect(page.getByRole('button', { name: 'LINEでログインする' })).toBeVisible();
     const hrefs = await page.locator('link[rel="stylesheet"]').evaluateAll((nodes) => nodes.map((node) => (node as HTMLLinkElement).href));
     expect(hrefs.some((href) => /(?:member-card-design|builder-component|system-ui-customization|liff-fixed-ui)\.css/.test(href))).toBe(false);
-    await expect(page.getByRole('combobox', { name: 'ご利用店舗' })).toHaveCount(0);
   });
 });
