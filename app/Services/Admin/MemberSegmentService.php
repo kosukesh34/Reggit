@@ -203,6 +203,21 @@ class MemberSegmentService
      */
     public function getMemberIds(int $projectId, array $criteria): Collection
     {
+        $sets = $this->collectIdSets($projectId, $criteria);
+        if ($sets === []) {
+            return collect();
+        }
+
+        return collect($this->combineInDisplayOrder($sets, $criteria))->map(fn ($id) => (int) $id)->values();
+    }
+
+    /**
+     * 指定された条件ごとに、当てはまる会員IDの集合を作る。
+     *
+     * @return list<array{key: string, ids: list<int>}>
+     */
+    private function collectIdSets(int $projectId, array $criteria): array
+    {
         /** @var list<array{key: string, ids: list<int>}> $sets */
         $sets = [];
         $add = static function (string $key, array $ids) use (&$sets): void {
@@ -329,10 +344,17 @@ class MemberSegmentService
             $add('groups', $groupIds->all());
         }
 
-        if ($sets === []) {
-            return collect();
-        }
+        return $sets;
+    }
 
+    /**
+     * 条件の集合を表示順に並べ、条件ごとの AND / OR で1つにまとめる。
+     *
+     * @param  list<array{key: string, ids: list<int>}>  $sets
+     * @return list<int>
+     */
+    private function combineInDisplayOrder(array $sets, array $criteria): array
+    {
         $displayOrder = ['groups', 'channel', 'birthday', 'sex', 'rfm', 'tags', 'visits', 'rank', 'points', 'last_visit', 'product', 'held_coupon', 'stamp', 'sales'];
         usort($sets, static function (array $left, array $right) use ($displayOrder): int {
             $leftPosition = array_search($left['key'], $displayOrder, true);
@@ -357,7 +379,7 @@ class MemberSegmentService
                 : array_values(array_intersect($resolved, $set['ids']));
         }
 
-        return collect($resolved)->map(fn ($id) => (int) $id)->values();
+        return $resolved;
     }
 
     /**
