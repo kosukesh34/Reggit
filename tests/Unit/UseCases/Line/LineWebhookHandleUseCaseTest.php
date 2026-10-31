@@ -7,6 +7,7 @@ use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\LineFollowEvent;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Line\LineReplyMessages;
 use App\Services\Line\LineService;
 use App\Services\Line\LineWebhookProjectResolver;
 use App\Services\Member\MemberPointLedger;
@@ -162,7 +163,7 @@ class LineWebhookHandleUseCaseTest extends TestCase
     {
         $resolver = new LineWebhookProjectResolver($line, app(LineConnectionSettings::class));
 
-        return new LineWebhookHandleUseCase($line, $resolver, app(LineConnectionSettings::class), app(MemberPointLedger::class));
+        return new LineWebhookHandleUseCase($line, $resolver, app(LineConnectionSettings::class), new LineReplyMessages($line, app(MemberPointLedger::class)));
     }
 
     private function mockLineService(string $matchingSecret): LineService
