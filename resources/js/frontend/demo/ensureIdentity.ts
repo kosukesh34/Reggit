@@ -1,10 +1,7 @@
+import { isMobileAppMode } from '../member/walletEnvironment';
 import { shouldAutoCreateMember } from '../utils/membershipPolicy';
 
 /** LIFF / ネイティブアプリの identity 準備（Manager 間で共有） */
-
-declare const MemberManager: {
-    isMobileAppMode: () => boolean;
-};
 
 type MemberManagerLike = {
     ensureIdentityReady?: (timeoutMs: number) => Promise<void>;
@@ -21,9 +18,7 @@ function getMemberManager(): MemberManagerLike | null {
 }
 
 async function waitForNativeDeviceInfo(maxWaitMs: number): Promise<void> {
-    if (typeof window === 'undefined'
-        || typeof MemberManager === 'undefined'
-        || !MemberManager.isMobileAppMode()) {
+    if (typeof window === 'undefined' || !isMobileAppMode()) {
         return;
     }
     const start = Date.now();
@@ -49,7 +44,7 @@ export async function ensureLiffIdentityForLoad(options?: {
         return true;
     }
 
-    if (typeof MemberManager !== 'undefined' && MemberManager.isMobileAppMode()) {
+    if (isMobileAppMode()) {
         if (options?.waitNativeDevice === true) {
             await waitForNativeDeviceInfo(2500);
         }
