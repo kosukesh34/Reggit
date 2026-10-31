@@ -2,15 +2,11 @@
 
 namespace App\UseCases\Admin\Settings;
 
-use App\Domain\Settings\Repositories\LineAdminSettings;
-use App\Services\Line\LineLiffAdminService;
+use App\Services\Line\LiffConnectionSettingsUpdater;
 
 class UpdateLiffConnectionSettingsUseCase
 {
-    public function __construct(
-        private readonly LineAdminSettings $shopSettingRepository,
-        private readonly LineLiffAdminService $lineLiffAdminService,
-    ) {}
+    public function __construct(private readonly LiffConnectionSettingsUpdater $liffConnectionSettings) {}
 
     /**
      * @param  array{
@@ -23,34 +19,6 @@ class UpdateLiffConnectionSettingsUseCase
      */
     public function handle(int $projectId, array $payload): void
     {
-        $liffId = trim($payload['line_liff_id']);
-        $liffUrl = trim($payload['line_liff_url']);
-        $this->shopSettingRepository->setLineLiffId($liffId, $projectId);
-        $this->shopSettingRepository->setLineLiffUrl($liffUrl, $projectId);
-        $this->shopSettingRepository->setLineFriendAddUrl(
-            isset($payload['line_friend_add_url']) ? (string) $payload['line_friend_add_url'] : '',
-            $projectId
-        );
-
-        $accessToken = isset($payload['line_channel_access_token'])
-            ? trim((string) $payload['line_channel_access_token'])
-            : '';
-        if ($accessToken !== '') {
-            $this->shopSettingRepository->setLineChannelAccessToken($accessToken, $projectId);
-        }
-
-        $channelSecret = isset($payload['line_channel_secret'])
-            ? trim((string) $payload['line_channel_secret'])
-            : '';
-        if ($channelSecret !== '') {
-            $this->shopSettingRepository->setLineChannelSecret($channelSecret, $projectId);
-        }
-
-        if (config('line.auto_enable_liff_module_mode', true) && $liffId !== '') {
-            $this->lineLiffAdminService->hideActionMenu(
-                $liffId,
-                $this->shopSettingRepository->getLineChannelAccessToken($projectId),
-            );
-        }
+        $this->liffConnectionSettings->update($projectId, $payload);
     }
 }

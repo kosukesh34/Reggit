@@ -30,6 +30,7 @@ class LayerDependencyTest extends TestCase
             dirname(__DIR__, 3).'/app/Services',
             [
                 'App\\Http\\Controllers\\',
+                'App\\Infrastructure\\',
                 'App\\UseCases\\',
             ],
         ];
@@ -38,9 +39,37 @@ class LayerDependencyTest extends TestCase
             dirname(__DIR__, 3).'/app/UseCases',
             [
                 'App\\Http\\Controllers\\',
+                'App\\Infrastructure\\',
                 'Illuminate\\Http\\Request',
             ],
         ];
+
+        yield 'support helpers depend on settings contracts, not their adapter' => [
+            dirname(__DIR__, 3).'/app/Support',
+            [
+                'App\\Infrastructure\\',
+            ],
+        ];
+    }
+
+    public function test_use_cases_do_not_depend_on_other_use_cases(): void
+    {
+        $violations = [];
+        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__, 3).'/app/UseCases'));
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $source = file_get_contents($file->getPathname());
+            self::assertIsString($source);
+            if (preg_match('/\\b\\w+UseCase\\s+\\$/', $source) === 1) {
+                $violations[] = $file->getPathname();
+            }
+        }
+
+        self::assertSame([], $violations, implode(PHP_EOL, $violations));
     }
 
     public function test_refactored_admin_controllers_do_not_import_models(): void

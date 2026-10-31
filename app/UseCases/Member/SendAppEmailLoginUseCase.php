@@ -4,6 +4,7 @@ namespace App\UseCases\Member;
 
 use App\Mail\ShopMagicLinkMail;
 use App\Models\User;
+use App\Services\Member\MemberTransferCodeIssuer;
 use App\Util\AdminContext;
 use Illuminate\Support\Facades\Mail;
 
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
 class SendAppEmailLoginUseCase
 {
     public function __construct(
-        private IssueMemberTransferCodeUseCase $issueTransferCode,
+        private MemberTransferCodeIssuer $transferCodes,
     ) {}
 
     /** 登録の有無が分からないよう、該当しないときも何も返さない。 */
@@ -34,7 +35,7 @@ class SendAppEmailLoginUseCase
             return;
         }
 
-        $issued = $this->issueTransferCode->handle($user, null);
+        $issued = $this->transferCodes->issue($user, null);
         $url = route('app-login.open', [
             'project_key' => (string) $project->project_key,
             'member_id' => $issued->memberId,

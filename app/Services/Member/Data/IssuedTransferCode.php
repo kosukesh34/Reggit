@@ -1,6 +1,6 @@
 <?php
 
-namespace App\UseCases\Member\Data;
+namespace App\Services\Member\Data;
 
 class IssuedTransferCode
 {
