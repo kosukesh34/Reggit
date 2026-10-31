@@ -16,7 +16,7 @@ use App\Models\CouponDelivery;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
-use App\Services\Admin\AnnouncementAdminService;
+use App\Services\Admin\AnnouncementAudienceService;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberBenefitService;
 use App\Services\AnnouncementNotificationService;
@@ -55,7 +55,7 @@ class DeliveryRetryTest extends TestCase
         $notifications->shouldReceive('send')->once()->andThrow(new \RuntimeException('Provider unavailable'));
         try {
             (new SendScheduledAnnouncementJob($announcement->id))->handle(
-                $notifications, app(AnnouncementAdminService::class),
+                $notifications, app(AnnouncementAudienceService::class),
                 app(TenantContext::class),
                 app(AnnouncementStoreAudience::class),
             );
@@ -170,7 +170,7 @@ class DeliveryRetryTest extends TestCase
         $notifications->shouldNotReceive('send');
 
         (new SendScheduledAnnouncementJob($announcement->id))->handle(
-            $notifications, app(AnnouncementAdminService::class),
+            $notifications, app(AnnouncementAudienceService::class),
             app(TenantContext::class),
             app(AnnouncementStoreAudience::class),
         );
@@ -286,7 +286,7 @@ class DeliveryRetryTest extends TestCase
         $notifications = Mockery::mock(AnnouncementNotificationService::class);
         $notifications->shouldNotReceive('send');
         (new SendScheduledAnnouncementJob($announcement->id))->handle(
-            $notifications, app(AnnouncementAdminService::class),
+            $notifications, app(AnnouncementAudienceService::class),
             app(TenantContext::class),
             app(AnnouncementStoreAudience::class),
         );

@@ -2,16 +2,16 @@
 
 namespace App\UseCases\Admin\Member;
 
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use App\Services\Admin\MemberTagAdminService;
 
 class AdminMemberDetachTagUseCase
 {
-    private MemberAdminService $memberService;
+    private MemberAdminQueryService $memberService;
 
     private MemberTagAdminService $tagService;
 
-    public function __construct(MemberAdminService $memberService, MemberTagAdminService $tagService)
+    public function __construct(MemberAdminQueryService $memberService, MemberTagAdminService $tagService)
     {
         $this->memberService = $memberService;
         $this->tagService = $tagService;

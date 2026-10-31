@@ -2,13 +2,13 @@
 
 namespace App\UseCases\Admin\Member;
 
-use App\Services\Admin\MemberAdminService;
+use App\Services\Admin\MemberAdminQueryService;
 use Illuminate\Support\Collection;
 
 class AdminMemberSearchByKeywordUseCase
 {
     public function __construct(
-        private MemberAdminService $memberAdminService,
+        private MemberAdminQueryService $memberAdminService,
     ) {}
 
     /**
