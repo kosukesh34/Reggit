@@ -8,7 +8,7 @@ use App\Models\AfterRegistrationDelivery;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\MemberService;
+use App\Services\Member\MemberRegistrar;
 use App\Services\ScheduledDeliverySendService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
@@ -54,7 +54,7 @@ class MemberRegistrationConcurrencyTest extends TestCase
                                 $this->waitForFile($directory.'/release');
                             }
                         });
-                        $result = app(MemberService::class)->registerMember($user, ['name' => 'Registered']);
+                        $result = app(MemberRegistrar::class)->registerMember($user, ['name' => 'Registered']);
                         file_put_contents($directory.'/result-'.$index, $result->member_number);
                         exit(0);
                     } catch (\Throwable $e) {
@@ -112,7 +112,7 @@ class MemberRegistrationConcurrencyTest extends TestCase
             return $delivery->id === $config->id;
         })->andReturn(true);
         $this->app->instance(ScheduledDeliverySendService::class, $sender);
-        app(MemberService::class)->registerMember($user, ['name' => 'Registered']);
+        app(MemberRegistrar::class)->registerMember($user, ['name' => 'Registered']);
     }
 
     private function waitForFile(string $path): void

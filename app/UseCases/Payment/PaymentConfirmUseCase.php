@@ -9,7 +9,7 @@ use App\Domain\Order\Repositories\OrderRepository;
 use App\Enums\PaymentIntentStatus;
 use App\Models\Order;
 use App\Services\OrderNumberAssigner;
-use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\UseCases\Payment\Data\PaymentConfirmOutput;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -22,7 +22,7 @@ class PaymentConfirmUseCase
         private OrderRepository $orderRepository,
         private PostCommitDomainEventDispatcher $postCommitEvents,
         private OrderNumberAssigner $orderNumberAssigner,
-        private OrderService $orderService,
+        private PaidOrderRewardApplier $paidOrderRewards,
     ) {}
 
     public function handle(string $paymentIntentId, int $orderId, int $projectId, int $userId): PaymentConfirmOutput
@@ -94,7 +94,7 @@ class PaymentConfirmUseCase
                 $order->paid_payment_brand = $intent['paid_payment_brand'];
                 $order->save();
             }
-            $this->orderService->applyStripePaymentRewardsIfNeeded($order);
+            $this->paidOrderRewards->applyStripePaymentRewardsIfNeeded($order);
 
             if ($confirmedEvent !== null) {
                 $this->postCommitEvents->record($confirmedEvent);

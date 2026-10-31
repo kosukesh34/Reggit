@@ -2,7 +2,7 @@
 
 namespace App\UseCases\Member\WalletPass;
 
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
 use App\Services\WalletPassService;
 use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueInput;
 use App\UseCases\Member\WalletPass\Data\WalletPassUrlIssueOutput;
@@ -21,7 +21,7 @@ class WalletPassUrlIssueUseCase
 
     public function __construct(
         private WalletPassService $walletPassService,
-        private MemberService $memberService,
+        private MemberDataReader $memberData,
     ) {}
 
     public function handle(WalletPassUrlIssueInput $input): WalletPassUrlIssueOutput
@@ -32,7 +32,7 @@ class WalletPassUrlIssueUseCase
             );
         }
 
-        $memberData = $this->memberService->getMemberData($input->user);
+        $memberData = $this->memberData->getMemberData($input->user);
         if (! isset($memberData['is_member']) || $memberData['is_member'] === false) {
             return WalletPassUrlIssueOutput::notMember();
         }

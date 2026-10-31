@@ -6,7 +6,7 @@ use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\MemberService;
+use App\Services\Member\MemberProfileUpdater;
 use App\Util\AdminContext;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
@@ -62,7 +62,7 @@ class MemberProfileImageLifecycleTest extends TestCase
             throw new RuntimeException('image database save failed');
         });
         try {
-            app(MemberService::class)->saveProfileImage($user, UploadedFile::fake()->image('new.png'));
+            app(MemberProfileUpdater::class)->saveProfileImage($user, UploadedFile::fake()->image('new.png'));
             $this->fail('Expected image database save failure');
         } catch (RuntimeException $exception) {
             $this->assertSame('image database save failed', $exception->getMessage());
@@ -80,7 +80,7 @@ class MemberProfileImageLifecycleTest extends TestCase
         $failingDisk = Mockery::mock(FilesystemAdapter::class, [$disk->getDriver(), $disk->getAdapter(), []])->makePartial();
         $failingDisk->shouldReceive('delete')->once()->with($oldPath)->andThrow(new RuntimeException('old image cleanup failed'));
         Storage::set('public', $failingDisk);
-        app(MemberService::class)->saveProfileImage($user, UploadedFile::fake()->image('new.png'));
+        app(MemberProfileUpdater::class)->saveProfileImage($user, UploadedFile::fake()->image('new.png'));
         $path = $user->fresh()->profile_image_path;
         $this->assertNotSame($oldPath, $path);
         $this->assertNotNull($path);
@@ -97,9 +97,9 @@ class MemberProfileImageLifecycleTest extends TestCase
         DB::beginTransaction();
         try {
             if ($action === 'upload') {
-                app(MemberService::class)->saveProfileImage($user, UploadedFile::fake()->image('new.png'));
+                app(MemberProfileUpdater::class)->saveProfileImage($user, UploadedFile::fake()->image('new.png'));
             } else {
-                app(MemberService::class)->deleteProfileImage($user);
+                app(MemberProfileUpdater::class)->deleteProfileImage($user);
             }
             Storage::disk('public')->assertExists($oldPath);
         } finally {
@@ -113,12 +113,12 @@ class MemberProfileImageLifecycleTest extends TestCase
     {
         $user = $this->imageOwner();
         $oldPath = $user->profile_image_path;
-        app(MemberService::class)->saveProfileImage($user, UploadedFile::fake()->image('new.png'));
+        app(MemberProfileUpdater::class)->saveProfileImage($user, UploadedFile::fake()->image('new.png'));
         $path = $user->fresh()->profile_image_path;
         $this->assertNotNull($path);
         Storage::disk('public')->assertMissing($oldPath);
         Storage::disk('public')->assertExists($path);
-        app(MemberService::class)->deleteProfileImage($user->fresh());
+        app(MemberProfileUpdater::class)->deleteProfileImage($user->fresh());
         $this->assertNull($user->fresh()->profile_image_path);
         Storage::disk('public')->assertMissing($path);
     }

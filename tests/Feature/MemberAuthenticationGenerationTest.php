@@ -8,7 +8,7 @@ use App\Models\Project;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Services\DeviceService;
-use App\Services\MemberService;
+use App\Services\Member\MemberProfileUpdater;
 use App\Services\UserService;
 use App\UseCases\Member\ClaimMemberTransferCodeUseCase;
 use App\UseCases\Member\IssueMemberTransferCodeUseCase;
@@ -50,7 +50,7 @@ class MemberAuthenticationGenerationTest extends TestCase
         if ($action === 'profile') {
             $rejected = false;
             try {
-                app(MemberService::class)->updateProfile($resolved, ['name' => 'Revoked request']);
+                app(MemberProfileUpdater::class)->updateProfile($resolved, ['name' => 'Revoked request']);
             } catch (ValidationException $exception) {
                 $rejected = true;
             }
@@ -73,7 +73,7 @@ class MemberAuthenticationGenerationTest extends TestCase
         $user = User::factory()->create(['project_id' => $project->id, 'authentication_version' => 1]);
         Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         if ($action === 'profile') {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Current generation']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Current generation']);
             $this->assertSame('Current generation', $user->fresh()->name);
         } else {
             $reservation = Reservation::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'status' => ReservationStatus::PENDING]);

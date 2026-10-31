@@ -4,7 +4,7 @@ namespace App\UseCases\Member\GoogleWallet;
 
 use App\Http\Support\RequestOrigin;
 use App\Services\GoogleWalletPassService;
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
 use App\Util\StrHelper;
@@ -21,7 +21,7 @@ class GetGoogleWalletUrlUseCase
 
     public function __construct(
         private readonly GoogleWalletPassService $googleWalletPassService,
-        private readonly MemberService $memberService,
+        private readonly MemberDataReader $memberData,
         private readonly GoogleWalletSaveUrlIssuer $saveUrlIssuer
     ) {}
 
@@ -138,7 +138,7 @@ class GetGoogleWalletUrlUseCase
             return null;
         }
 
-        $memberData = $this->memberService->getMemberData($input->user);
+        $memberData = $this->memberData->getMemberData($input->user);
 
         if (isset($memberData['is_member']) && $memberData['is_member'] === true) {
             return $this->googleWalletPassService->createSaveUrlForUser($input->user);

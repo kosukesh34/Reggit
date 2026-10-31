@@ -8,7 +8,8 @@ use App\Models\Project;
 use App\Models\SmaregiMemberProfileSync;
 use App\Models\User;
 use App\Services\Admin\MemberAdminService;
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberProfileUpdater;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Util\AdminContext;
@@ -146,10 +147,10 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('getLastErrorDetail')->andReturn('offline');
         $api->shouldReceive('getCustomer')->andReturn(['lastName' => 'Original', 'firstName' => '']);
         $api->shouldReceive('getCustomerPoint')->andReturn(['point' => 0]);
-        app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
         config(['smaregi.inbound_sync_on_member_fetch' => true]);
 
-        $response = app(MemberService::class)->getMemberData($user->fresh(['member']));
+        $response = app(MemberDataReader::class)->getMemberData($user->fresh(['member']));
 
         $this->assertSame('Changed', $response['profile']['name']);
         $this->assertSame('Changed', $user->fresh()->name);
@@ -170,7 +171,7 @@ class MemberProfileRecoveryTest extends TestCase
 
             return [];
         });
-        app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
         $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
         $this->assertNull($row->delivered_at);
         $this->assertNull($row->leased_until);
@@ -190,7 +191,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldNotReceive('updateCustomer');
         DB::beginTransaction();
         try {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
             $this->assertSame('Changed', SmaregiMemberProfileSync::findOrFail($user->member->id)->body['lastName']);
         } finally {
             DB::rollBack();
@@ -217,8 +218,8 @@ class MemberProfileRecoveryTest extends TestCase
             'lastName' => 'Changed', 'firstName' => '', 'phoneNumber' => '09012345678',
             'customFields' => [['no' => 1, 'value' => 'New']],
         ])->andReturn([]);
-        app(MemberService::class)->updateProfile($user->fresh(['member']), ['name' => 'Changed', 'choice' => 'New']);
-        app(MemberService::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
+        app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['name' => 'Changed', 'choice' => 'New']);
+        app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
         $this->assertNotNull(SmaregiMemberProfileSync::findOrFail($user->member->id)->delivered_at);
         $this->assertSame('Keep', $user->member->fresh()->profile_extra['other']);
     }
@@ -231,7 +232,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('clearLastErrorDetail')->once();
         $api->shouldReceive('updateCustomer')->once()->andReturn([]);
         $api->shouldReceive('getCustomer')->once()->andReturnUsing(function () use ($user): array {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
             $this->assertNotNull(SmaregiMemberProfileSync::findOrFail($user->member->id)->delivered_at);
 
             return ['lastName' => 'Original', 'firstName' => ''];
@@ -257,11 +258,11 @@ class MemberProfileRecoveryTest extends TestCase
         ])->andReturn([]);
         $api->shouldReceive('getCustomer')->andReturn(['lastName' => 'Remote', 'firstName' => '']);
         $api->shouldReceive('getCustomerPoint')->andReturn(['point' => 0]);
-        app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
         app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($user->member);
         $this->assertSame('Remote', $user->fresh()->name);
 
-        app(MemberService::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
+        app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
 
         $this->assertSame('Remote', $user->fresh()->name);
     }
@@ -275,7 +276,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', [
             'lastName' => 'Old', 'firstName' => '',
         ])->andReturnUsing(function () use ($user): array {
-            app(MemberService::class)->updateProfile($user->fresh(['member']), ['name' => 'Latest']);
+            app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['name' => 'Latest']);
             $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
             $this->assertSame('Latest', $row->body['lastName']);
             $this->assertNull($row->delivered_at);
@@ -286,7 +287,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', [
             'lastName' => 'Latest', 'firstName' => '',
         ])->andReturn([]);
-        app(MemberService::class)->updateProfile($user, ['name' => 'Old']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Old']);
         $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
         $this->assertNull($row->delivered_at);
         $this->assertNull($row->leased_until);
@@ -306,7 +307,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('updateCustomer')->once()->andReturnNull();
         $api->shouldReceive('getCustomer')->andReturn(['lastName' => 'Original', 'firstName' => '']);
         $api->shouldReceive('getCustomerPoint')->andReturn(['point' => 55]);
-        app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
 
         app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($user->member);
 
@@ -325,9 +326,9 @@ class MemberProfileRecoveryTest extends TestCase
         ])->andReturnNull();
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['mailAddress' => null])->andReturnNull();
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['mailAddress' => null])->andReturn([]);
-        app(MemberService::class)->updateProfile($user, ['email' => 'old@example.com']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['email' => 'old@example.com']);
         $token = SmaregiMemberProfileSync::findOrFail($user->member->id)->request_token;
-        app(MemberService::class)->updateProfile($user->fresh(['member']), ['email' => null]);
+        app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['email' => null]);
         $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
         $this->assertNotSame($token, $row->request_token);
         $this->assertSame(['mailAddress' => null], $row->body);
@@ -349,7 +350,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('getCustomer')->andReturn(['mailAddress' => 'old@example.com']);
         $api->shouldReceive('getCustomerPoint')->andReturn(['point' => 0]);
 
-        app(MemberService::class)->updateProfile($user, ['email' => null]);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['email' => null]);
         app(SmaregiCustomerPointsInboundSyncService::class)->syncMemberFromSmaregi($user->member->fresh());
 
         $this->assertNull($user->fresh()->email);
@@ -369,8 +370,8 @@ class MemberProfileRecoveryTest extends TestCase
             'address' => null, 'phoneNumber' => '09012345678',
         ])->andReturn([]);
 
-        app(MemberService::class)->updateProfile($user, ['address' => null]);
-        app(MemberService::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['address' => null]);
+        app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
 
         $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
         $this->assertNull($row->body['address']);
@@ -410,7 +411,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('clearLastErrorDetail')->once();
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', ['address' => 'TokyoNew1'])->andReturn([]);
 
-        app(MemberService::class)->updateProfile($user, ['address' => null, 'city' => 'New']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['address' => null, 'city' => 'New']);
 
         $this->assertSame('TokyoNew1', $user->member->fresh()->displayAddress());
     }
@@ -425,7 +426,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', [
             'address' => 'TokyoNew1',
         ])->andReturn([]);
-        app(MemberService::class)->updateProfile($user->fresh(['member']), ['city' => 'New']);
+        app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['city' => 'New']);
     }
 
     public function test_contract_change_does_not_redirect_a_pending_request(): void
@@ -440,7 +441,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', [
             'lastName' => 'Changed', 'firstName' => '',
         ])->andReturnNull();
-        app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
         $contract = 'different-contract';
         $this->travel(2)->minutes();
         $this->artisan('smaregi:retry-member-profiles')->assertSuccessful();
@@ -456,7 +457,7 @@ class MemberProfileRecoveryTest extends TestCase
             'lastName' => 'Old', 'firstName' => '',
         ])->andReturnUsing(function () use ($user): array {
             SmaregiMemberProfileSync::whereKey($user->member->id)->update(['leased_until' => now()->subMinute()]);
-            app(MemberService::class)->updateProfile($user->fresh(['member']), ['name' => 'Latest']);
+            app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['name' => 'Latest']);
             $this->assertNotNull(SmaregiMemberProfileSync::findOrFail($user->member->id)->delivered_at);
 
             return [];
@@ -464,7 +465,7 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('updateCustomer')->twice()->with('contract', 'external-member', [
             'lastName' => 'Latest', 'firstName' => '',
         ])->andReturn([]);
-        app(MemberService::class)->updateProfile($user, ['name' => 'Old']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Old']);
         $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
         $this->assertNull($row->delivered_at);
         $this->assertSame('Latest', $row->body['lastName']);
@@ -485,8 +486,8 @@ class MemberProfileRecoveryTest extends TestCase
         $api->shouldReceive('updateCustomer')->once()->with('contract', 'external-member', [
             'phoneNumber' => '09012345678', 'address' => 'New formatted',
         ])->andReturn([]);
-        app(MemberService::class)->updateProfile($user, ['address' => 'New formatted']);
-        app(MemberService::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['address' => 'New formatted']);
+        app(MemberProfileUpdater::class)->updateProfile($user->fresh(['member']), ['phone' => '09012345678']);
     }
 
     public function test_late_worker_does_not_reopen_request_for_a_changed_contract(): void
@@ -506,7 +507,7 @@ class MemberProfileRecoveryTest extends TestCase
 
             return [];
         });
-        app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
         $row = SmaregiMemberProfileSync::findOrFail($user->member->id);
         $this->assertSame('contract', $row->contract_id);
         $this->assertNotNull($row->delivered_at);

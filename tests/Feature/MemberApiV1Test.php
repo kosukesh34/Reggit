@@ -8,7 +8,7 @@ use App\Models\Member;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -172,7 +172,7 @@ class MemberApiV1Test extends TestCase
         $other = User::factory()->create(['project_id' => 1, 'name' => 'Private new owner']);
         $member->update(['user_id' => $other->id]);
 
-        $data = app(MemberService::class)->getMemberData($user, syncFromSmaregi: false);
+        $data = app(MemberDataReader::class)->getMemberData($user, syncFromSmaregi: false);
 
         $this->assertFalse($data['is_member']);
         $this->assertArrayNotHasKey('member', $data);
@@ -187,7 +187,7 @@ class MemberApiV1Test extends TestCase
         $user->load('member');
         $member->delete();
 
-        $data = app(MemberService::class)->getMemberData($user, syncFromSmaregi: false);
+        $data = app(MemberDataReader::class)->getMemberData($user, syncFromSmaregi: false);
 
         $this->assertFalse($data['is_member']);
         $this->assertArrayNotHasKey('member', $data);
@@ -222,7 +222,7 @@ class MemberApiV1Test extends TestCase
                 return true;
             });
 
-        $data = app(MemberService::class)->getMemberData($user);
+        $data = app(MemberDataReader::class)->getMemberData($user);
 
         $this->assertFalse($data['is_member']);
         $this->assertArrayNotHasKey('member', $data);

@@ -14,7 +14,7 @@ use App\Models\Order;
 use App\Models\Project;
 use App\Models\Store;
 use App\Models\User;
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Services\Smaregi\SmaregiPointsSyncService;
@@ -465,7 +465,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         ]);
 
         AdminContext::setCurrentProject($project);
-        $data = app(MemberService::class)->getMemberData($user->fresh(['member']));
+        $data = app(MemberDataReader::class)->getMemberData($user->fresh(['member']));
 
         $member->refresh();
         $this->assertTrue($data['is_member']);

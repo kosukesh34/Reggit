@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Rules\ProfileValidationRules;
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
+use App\Services\MemberProfileRules;
 use App\Support\ShopMemberSession;
 use App\UseCases\Member\Data\MemberRegisterInput;
 use App\UseCases\Member\MemberRegisterUseCase;
@@ -20,7 +21,8 @@ class ShopMemberRegistrationController extends Controller
 {
     public function __construct(
         private ShopMemberSession $session,
-        private MemberService $memberService,
+        private MemberDataReader $memberData,
+        private MemberProfileRules $profileRules,
         private MemberRegisterUseCase $registerMember,
     ) {}
 
@@ -30,7 +32,7 @@ class ShopMemberRegistrationController extends Controller
         if ($user === null || $user->member()->exists()) {
             return redirect()->to($this->route('shop.show', $request));
         }
-        $data = $this->memberService->getMemberData($user, false);
+        $data = $this->memberData->getMemberData($user, false);
 
         return view('frontend.shop-member-register', [
             'projectName' => (string) (AdminContext::getCurrentProject()?->name ?? ''),
@@ -48,7 +50,7 @@ class ShopMemberRegistrationController extends Controller
             return redirect()->to($this->route('shop.show', $request));
         }
         $validated = $request->validate(
-            $this->memberService->getProfileValidationRules((int) $user->project_id),
+            $this->profileRules->getProfileValidationRules((int) $user->project_id),
             ProfileValidationRules::messages(),
         );
         $validated = $this->withVerifiedEmail($validated, $user);

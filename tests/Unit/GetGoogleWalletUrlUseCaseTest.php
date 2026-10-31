@@ -6,7 +6,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\GoogleWalletPassService;
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlInput;
 use App\UseCases\Member\GoogleWallet\Data\GetGoogleWalletUrlOutput;
 use App\UseCases\Member\GoogleWallet\GetGoogleWalletUrlUseCase;
@@ -38,7 +38,7 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
         $walletService->shouldReceive('isAvailable')->once()->andReturn(false);
         $walletService->shouldReceive('getUnavailabilityReasons')->once()->andReturn(['disabled']);
 
-        $memberService = $this->app->make(MemberService::class);
+        $memberService = $this->app->make(MemberDataReader::class);
         $saveUrlIssuer = Mockery::mock(GoogleWalletSaveUrlIssuer::class);
         $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService, $saveUrlIssuer);
         $input = new GetGoogleWalletUrlInput(null, null, 1, 'default', null);
@@ -62,7 +62,7 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
         $walletService = Mockery::mock(GoogleWalletPassService::class);
         $walletService->shouldReceive('isAvailable')->once()->andReturn(true);
 
-        $memberService = Mockery::mock(MemberService::class);
+        $memberService = Mockery::mock(MemberDataReader::class);
         $memberService->shouldReceive('getMemberData')
             ->once()
             ->with(Mockery::on(fn ($u) => $u->id === $user->id))
@@ -83,7 +83,7 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
         $walletService->shouldReceive('isAvailable')->once()->andReturn(true);
         $walletService->shouldReceive('getLastError')->andReturn(null);
 
-        $memberService = $this->app->make(MemberService::class);
+        $memberService = $this->app->make(MemberDataReader::class);
         $saveUrlIssuer = Mockery::mock(GoogleWalletSaveUrlIssuer::class);
         $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService, $saveUrlIssuer);
         $input = new GetGoogleWalletUrlInput('invalid-token', null, 1, 'default', null);
@@ -120,7 +120,7 @@ class GetGoogleWalletUrlUseCaseTest extends TestCase
             ->with($expectedUrl, 'default', Mockery::type('string'))
             ->andReturn($wrappedUrl);
 
-        $memberService = $this->app->make(MemberService::class);
+        $memberService = $this->app->make(MemberDataReader::class);
         $useCase = new GetGoogleWalletUrlUseCase($walletService, $memberService, $saveUrlIssuer);
         $input = new GetGoogleWalletUrlInput(null, $user, $project->id, 'default', null, 'https://example.test');
 

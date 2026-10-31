@@ -10,7 +10,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\CouponNotificationService;
-use App\Services\MemberService;
+use App\Services\Member\MemberRegistrar;
 use App\Services\ScheduledDeliverySendService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,7 +39,7 @@ class MemberRegistrationConsistencyTest extends TestCase
         $user = $this->user();
         ShopSettingStore::setMemberCodeNextNumber(10, $user->project_id);
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Test']);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
             $this->fail('Expected exhausted code to fail');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('member_number', $exception->errors());
@@ -53,7 +53,7 @@ class MemberRegistrationConsistencyTest extends TestCase
         $user = $this->user();
         $old = Member::factory()->create(['project_id' => $user->project_id, 'member_number' => '1']);
         $old->delete();
-        $member = app(MemberService::class)->registerMember($user, ['name' => 'Test']);
+        $member = app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
         $this->assertSame('2', $member->member_number);
     }
 
@@ -64,7 +64,7 @@ class MemberRegistrationConsistencyTest extends TestCase
             Member::factory()->create(['project_id' => $user->project_id, 'member_number' => (string) $number]);
         }
         $this->expectException(ValidationException::class);
-        app(MemberService::class)->registerMember($user, ['name' => 'Test']);
+        app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
     }
 
     public function test_rolled_back_coupon_issue_never_notifies_the_member(): void
@@ -81,7 +81,7 @@ class MemberRegistrationConsistencyTest extends TestCase
             throw new \RuntimeException('profile write failed');
         });
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Changed']);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Changed']);
             $this->fail('Expected registration to fail');
         } catch (\RuntimeException $exception) {
             $this->assertSame('profile write failed', $exception->getMessage());
@@ -103,7 +103,7 @@ class MemberRegistrationConsistencyTest extends TestCase
             throw new \RuntimeException('profile write failed');
         });
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Changed']);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Changed']);
             $this->fail('Expected registration to fail');
         } catch (\RuntimeException $exception) {
             $this->assertSame('profile write failed', $exception->getMessage());

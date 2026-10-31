@@ -7,7 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\UseCases\Payment\PaymentConfirmUseCase;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\PaymentWebhookUseCase;
@@ -44,7 +44,7 @@ class PaymentCurrencyTest extends TestCase
         $gateway->intent = $payment;
         $gateway->event = ['type' => 'payment_intent.succeeded'] + $payment;
         $this->app->instance(PaymentGateway::class, $gateway);
-        $this->mock(OrderService::class)->shouldNotReceive('applyStripePaymentRewardsIfNeeded');
+        $this->mock(PaidOrderRewardApplier::class)->shouldNotReceive('applyStripePaymentRewardsIfNeeded');
 
         if ($path === 'confirm') {
             $result = app(PaymentConfirmUseCase::class)->handle('pi_fixture', (int) $order->id, (int) $project->id, (int) $user->id);

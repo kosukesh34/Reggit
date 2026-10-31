@@ -6,7 +6,7 @@ use App\Enums\ProfileCustomFieldInputType;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Project;
 use App\Rules\ProfileValidationRules;
-use App\Services\MemberService;
+use App\Services\MemberProfileRules;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
@@ -45,7 +45,7 @@ class ProfileValidationRulesTest extends TestCase
             ],
         ], $project->id);
 
-        $rules = app(MemberService::class)->getProfileValidationRules((int) $project->id);
+        $rules = app(MemberProfileRules::class)->getProfileValidationRules((int) $project->id);
 
         $this->assertContains('max:'.ProfileValidationRules::POSTAL_CODE_MAX, $rules['postal_code']);
         $this->assertContains('max:'.ProfileValidationRules::ADDRESS_MAX, $rules['address']);

@@ -6,10 +6,11 @@ use App\Domain\Settings\Repositories\WalletSettings;
 use App\Enums\GoogleWalletApi;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\GoogleWallet\GoogleWalletCredentials;
 use App\Services\GoogleWallet\GoogleWalletLoyaltyPayloadBuilder;
 use App\Services\GoogleWalletPassService;
+use App\Services\Member\MemberDataReader;
 use App\Services\MemberCardAppearanceService;
-use App\Services\MemberService;
 use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -28,8 +29,9 @@ class GoogleWalletPassServiceTest extends TestCase
         return new GoogleWalletPassService(
             new GoogleWalletLoyaltyPayloadBuilder,
             app(WalletSettings::class),
-            app(MemberService::class),
+            app(MemberDataReader::class),
             app(MemberCardAppearanceService::class),
+            app(GoogleWalletCredentials::class),
         );
     }
 

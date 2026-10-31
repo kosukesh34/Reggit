@@ -6,7 +6,7 @@ use App\Models\Member;
 use App\Models\Project;
 use App\Models\Store;
 use App\Models\User;
-use App\Services\MemberService;
+use App\Services\Member\MemberProfileUpdater;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Util\AdminContext;
@@ -54,7 +54,7 @@ class MemberProfileExternalSyncTest extends TestCase
         $api->shouldReceive('updateCustomer')->never();
         DB::beginTransaction();
         try {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
             $this->assertSame('Changed', $user->fresh()->name);
         } finally {
             DB::rollBack();
@@ -78,7 +78,7 @@ class MemberProfileExternalSyncTest extends TestCase
             return [];
         });
         DB::transaction(function () use ($user, &$sent): void {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
             $this->assertFalse($sent);
         });
         $this->assertTrue($sent);
@@ -92,7 +92,7 @@ class MemberProfileExternalSyncTest extends TestCase
         $api->shouldReceive('clearLastErrorDetail')->once();
         $api->shouldReceive('updateCustomer')->once()->andThrow(new \RuntimeException('offline'));
 
-        $result = app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+        $result = app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
 
         $this->assertSame('Changed', $result['profile']['name']);
         $this->assertSame('Changed', $user->fresh()->name);
@@ -116,7 +116,7 @@ class MemberProfileExternalSyncTest extends TestCase
             ->with('contract', 'external-member', ['storeId' => 'external-store'])->andReturn([]);
 
         DB::transaction(function () use ($user, $store, $other): void {
-            app(MemberService::class)->updateProfile($user, ['customer_store_id' => (string) $store->id]);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['customer_store_id' => (string) $store->id]);
             AdminContext::setCurrentProject($other);
         });
 
@@ -135,7 +135,7 @@ class MemberProfileExternalSyncTest extends TestCase
         $api->shouldReceive('updateCustomer')->once()->andReturn([]);
 
         DB::transaction(function () use ($user): void {
-            $result = app(MemberService::class)->updateProfile($user, ['name' => 'Changed']);
+            $result = app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
             $this->assertSame('Changed', $result['profile']['name']);
         });
     }

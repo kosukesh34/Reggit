@@ -7,8 +7,8 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
+use App\Services\OrderCancellationReverser;
 use App\Services\OrderNotificationService;
-use App\Services\OrderService;
 use App\UseCases\Payment\PaymentGateway;
 use App\UseCases\Payment\ProjectPaymentGatewayResolver;
 use App\Util\LogHelper;
@@ -20,7 +20,7 @@ class RefundShopOrderUseCase
     public function __construct(
         private PaymentGateway $gateway,
         private ProjectPaymentGatewayResolver $resolver,
-        private OrderService $orderService,
+        private OrderCancellationReverser $cancellations,
         private OrderNotificationService $notifications,
     ) {}
 
@@ -45,7 +45,7 @@ class RefundShopOrderUseCase
             return $order;
         });
 
-        $this->orderService->handleOrderCancellation($order);
+        $this->cancellations->handleOrderCancellation($order);
         try {
             $this->notifications->emailShopOrder((int) $order->id, (int) $order->project_id, 'refunded');
         } catch (\Throwable $e) {

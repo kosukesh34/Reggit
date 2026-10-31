@@ -3,19 +3,21 @@
 namespace App\UseCases\Member;
 
 use App\Models\User;
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberRegistrar;
 use App\UseCases\Member\Data\MemberData;
 
 class MemberMeUseCase
 {
     public function __construct(
-        private MemberService $memberService,
+        private MemberRegistrar $memberRegistrar,
+        private MemberDataReader $memberData,
     ) {}
 
     public function handle(User $user): MemberData
     {
-        $this->memberService->ensureMemberWhenRegistrationOptional($user);
+        $this->memberRegistrar->ensureMemberWhenRegistrationOptional($user);
 
-        return new MemberData($this->memberService->getMemberData($user));
+        return new MemberData($this->memberData->getMemberData($user));
     }
 }

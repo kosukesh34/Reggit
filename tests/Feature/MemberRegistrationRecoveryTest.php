@@ -7,8 +7,8 @@ use App\Models\MemberRegistrationAttempt;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\CouponIssueService;
+use App\Services\Member\MemberRegistrar;
 use App\Services\MemberRegistrationRecovery;
-use App\Services\MemberService;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerPointsInboundSyncService;
 use App\Util\AdminContext;
@@ -85,14 +85,14 @@ class MemberRegistrationRecoveryTest extends TestCase
         });
         $this->app->instance(CouponIssueService::class, $coupon);
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Test']);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
             $this->fail('Expected local rollback');
         } catch (\RuntimeException $exception) {
             $this->assertSame('local rollback', $exception->getMessage());
         }
         $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
         $attempt = MemberRegistrationAttempt::where('user_id', $user->id)->firstOrFail();
-        $member = app(MemberService::class)->registerMember($user, ['name' => 'Test']);
+        $member = app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
         $this->assertSame($attempt->member_number, $member->member_number);
         $this->assertSame('remote-1', $member->smaregi_customer_id);
         $this->assertDatabaseMissing('member_registration_attempts', ['user_id' => $user->id]);
@@ -108,7 +108,7 @@ class MemberRegistrationRecoveryTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('同じ会員コード');
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Test']);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
         } finally {
             $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
         }
@@ -127,7 +127,7 @@ class MemberRegistrationRecoveryTest extends TestCase
 
             return null;
         });
-        $member = app(MemberService::class)->registerMember($user, ['name' => 'Test'], false);
+        $member = app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test'], false);
         $this->assertNull($member->smaregi_customer_id);
         app(MemberRegistrationRecovery::class)->recoverForMember($member);
         $this->assertSame('remote-2', $member->fresh()->smaregi_customer_id);
@@ -144,7 +144,7 @@ class MemberRegistrationRecoveryTest extends TestCase
         $api->shouldNotReceive('createCustomer');
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('登録状態を確認できません');
-        app(MemberService::class)->registerMember($user, ['name' => 'Test']);
+        app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
     }
 
     public function test_contract_change_preserves_pending_attempt_and_refuses_external_writes(): void
@@ -161,7 +161,7 @@ class MemberRegistrationRecoveryTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('契約が変更');
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Test']);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
         } finally {
             $this->assertDatabaseHas('member_registration_attempts', ['id' => $attempt->id, 'contract_id' => 'old-contract']);
         }
@@ -255,7 +255,7 @@ class MemberRegistrationRecoveryTest extends TestCase
         });
         $rejected = false;
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Changed'], $requireSmaregi);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Changed'], $requireSmaregi);
         } catch (\RuntimeException) {
             $rejected = true;
         }
@@ -281,7 +281,7 @@ class MemberRegistrationRecoveryTest extends TestCase
         });
         $rejected = false;
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Changed']);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Changed']);
         } catch (\RuntimeException) {
             $rejected = true;
         }
@@ -305,7 +305,7 @@ class MemberRegistrationRecoveryTest extends TestCase
         });
         $rejected = false;
         try {
-            app(MemberService::class)->registerMember($user, ['name' => 'Changed']);
+            app(MemberRegistrar::class)->registerMember($user, ['name' => 'Changed']);
         } catch (\RuntimeException) {
             $rejected = true;
         }

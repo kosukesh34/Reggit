@@ -11,11 +11,11 @@ use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\OrderService;
+use App\Services\OrderCancellationReverser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class OrderServiceCancellationTest extends TestCase
+class OrderCancellationReverserTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -48,7 +48,7 @@ class OrderServiceCancellationTest extends TestCase
             'order_type' => 'mobile',
         ]);
 
-        $service = app(OrderService::class);
+        $service = app(OrderCancellationReverser::class);
         $service->handleOrderCancellation($order);
 
         $member->refresh();
@@ -94,7 +94,7 @@ class OrderServiceCancellationTest extends TestCase
             'order_type' => 'mobile',
         ]);
 
-        $service = app(OrderService::class);
+        $service = app(OrderCancellationReverser::class);
         $service->handleOrderCancellation($order);
         $service->handleOrderCancellation($order);
 

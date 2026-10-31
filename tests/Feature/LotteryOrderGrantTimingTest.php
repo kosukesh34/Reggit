@@ -18,6 +18,7 @@ use App\Models\Settings\ProjectLotterySetting;
 use App\Models\User;
 use App\Services\Admin\OrderAdminService;
 use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -181,7 +182,7 @@ class LotteryOrderGrantTimingTest extends TestCase
         $order->status = OrderStatus::CONFIRMED;
         $order->save();
 
-        resolve(OrderService::class)->applyStripePaymentRewardsIfNeeded($order->fresh());
+        resolve(PaidOrderRewardApplier::class)->applyStripePaymentRewardsIfNeeded($order->fresh());
 
         $this->assertDatabaseHas('member_lottery_entitlements', [
             'member_id' => $member->id,

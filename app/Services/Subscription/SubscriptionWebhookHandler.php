@@ -17,7 +17,7 @@ use App\Models\Product;
 use App\Models\Project;
 use App\Models\Store;
 use App\Services\OrderNumberAssigner;
-use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
@@ -37,7 +37,7 @@ class SubscriptionWebhookHandler
     public function __construct(
         private OrderRepository $orders,
         private OrderNumberAssigner $orderNumberAssigner,
-        private OrderService $orderService,
+        private PaidOrderRewardApplier $paidOrderRewards,
         private PostCommitDomainEventDispatcher $postCommitEvents,
         private StoreContext $storeContext,
     ) {}
@@ -143,7 +143,7 @@ class SubscriptionWebhookHandler
         ]);
         $subscription->forceFill(['status' => 'active', 'current_period_end' => $expiresAt])->save();
 
-        $this->orderService->applyStripePaymentRewardsIfNeeded($order->refresh());
+        $this->paidOrderRewards->applyStripePaymentRewardsIfNeeded($order->refresh());
 
         return $order;
     }

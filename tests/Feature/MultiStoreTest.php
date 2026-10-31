@@ -19,7 +19,9 @@ use App\Models\User;
 use App\Services\Admin\MemberTagAdminService;
 use App\Services\AnnouncementStoreAudience;
 use App\Services\CustomerStoreProfile;
-use App\Services\MemberService;
+use App\Services\Member\MemberDataReader;
+use App\Services\Member\MemberProfileUpdater;
+use App\Services\MemberProfileRules;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
 use App\UseCases\Announcement\AnnouncementIndexUseCase;
 use App\Util\AdminContext;
@@ -279,17 +281,17 @@ class MultiStoreTest extends TestCase
     public function test_customer_profile_selects_named_project_store_and_preserves_visit_memberships(): void
     {
         $member = $this->member($this->a);
-        $service = app(MemberService::class);
-        $service->updateProfile($member->user, ['customer_store_id' => (string) $this->b->id]);
+        $profiles = app(MemberProfileUpdater::class);
+        $profiles->updateProfile($member->user, ['customer_store_id' => (string) $this->b->id]);
         $member->refresh();
         $this->assertSame($this->b->id, (int) $member->customer_store_id);
         $this->assertCount(2, $member->stores);
-        $data = $service->getMemberData($member->user);
+        $data = app(MemberDataReader::class)->getMemberData($member->user);
         $field = collect($data['profile_field_settings'])->firstWhere('key', 'customer_store_id');
         $this->assertSame('ご利用店舗', $field['label']);
         $this->assertContains(['value' => (string) $this->b->id, 'label' => '支店B'], $field['options']);
         $this->assertSame((string) $this->b->id, $data['profile']['customer_store_id']);
-        $service->updateProfile($member->user, ['customer_store_id' => null]);
+        $profiles->updateProfile($member->user, ['customer_store_id' => null]);
         $this->assertNull($member->fresh()->customer_store_id);
         $this->assertCount(2, $member->fresh()->stores);
     }
@@ -297,7 +299,7 @@ class MultiStoreTest extends TestCase
     public function test_customer_store_rejects_other_project_and_maps_only_configured_smaregi_ids(): void
     {
         $other = Project::create(['project_key' => 'outside', 'name' => 'Outside', 'is_active' => true]);
-        $rules = app(MemberService::class)->getProfileValidationRules($this->project->id);
+        $rules = app(MemberProfileRules::class)->getProfileValidationRules($this->project->id);
         $validator = Validator::make(['customer_store_id' => $other->stores()->first()->id], ['customer_store_id' => $rules['customer_store_id']]);
         $this->assertTrue($validator->fails());
         $mapping = app(CustomerStoreProfile::class);

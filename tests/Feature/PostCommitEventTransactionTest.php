@@ -13,7 +13,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Services\OrderNotificationOutbox;
 use App\Services\OrderNumberAssigner;
-use App\Services\OrderService;
+use App\Services\PaidOrderRewardApplier;
 use App\Services\PostCommitDomainEventDispatcher;
 use App\Services\Smaregi\SmaregiPointsSyncService;
 use App\UseCases\Payment\PaymentWebhookUseCase;
@@ -161,7 +161,7 @@ class PostCommitEventTransactionTest extends TestCase
         $gateway->event = ['type' => 'payment_intent.succeeded', 'currency' => 'jpy',
             'metadata' => ['order_id' => $order->id], 'amount' => 1000];
         $webhook = new PaymentWebhookUseCase($gateway, app(OrderRepository::class),
-            app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class), app(OrderService::class));
+            app(PostCommitDomainEventDispatcher::class), app(OrderNumberAssigner::class), app(PaidOrderRewardApplier::class));
         DB::beginTransaction();
         try {
             $this->assertTrue($webhook->handle('{}', 'sig', 'secret'));

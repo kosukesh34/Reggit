@@ -6,7 +6,8 @@ use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
-use App\Services\MemberService;
+use App\Services\Member\MemberProfileUpdater;
+use App\Services\MemberProfileRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -42,7 +43,7 @@ class MemberProfileConsistencyTest extends TestCase
             throw new \RuntimeException('member write failed');
         });
         try {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
             $this->fail('Expected the member write to fail');
         } catch (\RuntimeException $exception) {
             $this->assertSame('member write failed', $exception->getMessage());
@@ -55,8 +56,8 @@ class MemberProfileConsistencyTest extends TestCase
     {
         $user = $this->user();
         $staleUser = $user->fresh(['member']);
-        app(MemberService::class)->updateProfile($user, ['choice' => 'Osaka']);
-        app(MemberService::class)->updateProfile($staleUser, ['checks' => ['C']]);
+        app(MemberProfileUpdater::class)->updateProfile($user, ['choice' => 'Osaka']);
+        app(MemberProfileUpdater::class)->updateProfile($staleUser, ['checks' => ['C']]);
         $this->assertEquals(['choice' => 'Osaka', 'checks' => ['C']], $user->member->fresh()->profile_extra);
     }
 
@@ -69,7 +70,7 @@ class MemberProfileConsistencyTest extends TestCase
         $member->update(['user_id' => $newOwner->id]);
 
         try {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
             $this->fail('Expected the previous owner to be rejected');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('member', $exception->errors());
@@ -95,7 +96,7 @@ class MemberProfileConsistencyTest extends TestCase
         });
 
         try {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
             $this->fail('Expected the transferred member to be rejected');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('member', $exception->errors());
@@ -121,7 +122,7 @@ class MemberProfileConsistencyTest extends TestCase
         });
 
         try {
-            app(MemberService::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
+            app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed', 'city' => 'Changed']);
             $this->fail('Expected the deleted member to be rejected');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('member', $exception->errors());
@@ -136,7 +137,7 @@ class MemberProfileConsistencyTest extends TestCase
     public function test_choices_with_commas_are_validated_as_complete_values(): void
     {
         $user = $this->user();
-        $rules = array_intersect_key(app(MemberService::class)->getProfileValidationRules((int) $user->project_id), array_flip(['choice', 'checks', 'checks.*']));
+        $rules = array_intersect_key(app(MemberProfileRules::class)->getProfileValidationRules((int) $user->project_id), array_flip(['choice', 'checks', 'checks.*']));
         $valid = Validator::make(['choice' => 'Tokyo, Japan', 'checks' => ['A,B', 'C']], $rules);
         $this->assertFalse($valid->fails(), json_encode($valid->errors()->all()));
         foreach (['Tokyo', ' Japan'] as $fragment) {
