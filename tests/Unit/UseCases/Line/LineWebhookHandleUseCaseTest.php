@@ -7,6 +7,7 @@ use App\Infrastructure\Persistence\Eloquent\Settings\LineSettingStore;
 use App\Models\LineFollowEvent;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\Line\LineReplyMessages;
 use App\Services\Line\LineService;
 use App\Services\Line\LineWebhookProjectResolver;
 use App\UseCases\Line\Data\LineWebhookInput;
@@ -161,7 +162,7 @@ class LineWebhookHandleUseCaseTest extends TestCase
     {
         $resolver = new LineWebhookProjectResolver($line, app(LineConnectionSettings::class));
 
-        return new LineWebhookHandleUseCase($line, $resolver, app(LineConnectionSettings::class));
+        return new LineWebhookHandleUseCase($line, $resolver, app(LineConnectionSettings::class), new LineReplyMessages($line));
     }
 
     private function mockLineService(string $matchingSecret): LineService
