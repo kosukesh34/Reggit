@@ -90,7 +90,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_通常販売取引が来店履歴と購入額として取り込まれること(bool $inline): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
             'project_id' => $project->id,
@@ -169,8 +169,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_reggit起点の取引は来店もポイントも二重に取り込まないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('point_earn_rate', 1, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 1, 'integer', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
             'project_id' => $project->id,
@@ -221,8 +221,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_通常販売取引でスタンプ設定がある場合はスタンプが付与されること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
         $stampCard = StampCard::factory()->create([
             'project_id' => $project->id,
             'required_stamps' => 10,
@@ -267,9 +267,9 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_通常販売取引でポイント付与レートがある場合はポイントが付与されること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('points_valid_days', 365, 'integer', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -316,8 +316,8 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_スタンプ未設定の場合はスタンプを付与しないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 0, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 0, 'integer', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
@@ -344,7 +344,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_同一取引は冪等で二重登録されないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -371,7 +371,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_ポイント加算取引は来店履歴に取り込まないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -398,7 +398,7 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_会員なし取引は来店履歴に取り込まないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $this->fakeTransactionHttp([
             'transactionHeadId' => '40',
@@ -419,10 +419,10 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_取消取引で来店とポイントとスタンプが巻き戻されること(bool $inline): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('points_valid_days', 365, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
         $stampCard = StampCard::factory()->create([
             'project_id' => $project->id,
             'required_stamps' => 10,
@@ -492,10 +492,10 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_返品取引でポイントとスタンプが減算され来店が負金額で残ること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('points_valid_days', 365, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
         $stampCard = StampCard::factory()->create([
             'project_id' => $project->id,
             'required_stamps' => 10,
@@ -565,9 +565,9 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_sales_head_divisionが1でも通常販売としてポイント付与されること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('points_valid_days', 365, 'integer', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -607,10 +607,10 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_返品でnew_pointがある場合はローカルポイントを減算しないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('points_valid_days', 365, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
         $stampCard = StampCard::factory()->create([
             'project_id' => $project->id,
             'required_stamps' => 10,
@@ -668,9 +668,9 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_取引連動スタンプオフならスタンプを付与しないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('use_transaction_stamps', false, 'boolean', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('use_transaction_stamps', false, 'boolean', (int) $project->id);
         StampCard::factory()->create([
             'project_id' => $project->id,
             'required_stamps' => 10,
@@ -701,9 +701,9 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_ポイント機能オフならポイントを付与しないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('use_points', false, 'boolean', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('use_points', false, 'boolean', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -732,9 +732,9 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_ランク別スタンプ付与レートで付与すること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 1000, 'integer', (int) $project->id);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 1000, 'integer', (int) $project->id);
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'stamp_earn_per_amount' => 500],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true, 'stamp_earn_per_amount' => 200],
         ], (int) $project->id);
@@ -773,10 +773,10 @@ class SmaregiInboundTransactionHistoryTest extends TestCase
     public function test_取引付与後にランクが上がること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ShopSettingStore::setValue('point_earn_rate', 100, 'integer', (int) $project->id);
-        ShopSettingStore::setValue('points_valid_days', 365, 'integer', (int) $project->id);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('point_earn_rate', 100, 'integer', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('points_valid_days', 365, 'integer', (int) $project->id);
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 10, 'order' => 2, 'is_active' => true],
         ], (int) $project->id);

@@ -34,9 +34,9 @@ class AdminAdvancedThemeColorsTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        ShopSettingStore::setValue('line_primary_color', '#111111', 'string', $project->id);
-        ShopSettingStore::setValue('line_primary_dark', '#222222', 'string', $project->id);
-        ShopSettingStore::setValue('line_success_color', '#059669', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('line_primary_color', '#111111', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('line_primary_dark', '#222222', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('line_success_color', '#059669', 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->get(route('admin.settings.advanced', ['project_key' => $project->project_key]))
@@ -52,7 +52,7 @@ class AdminAdvancedThemeColorsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $theme = LineSettingStore::getLineThemeColors($project->id);
+        $theme = app(LineSettingStore::class)->getLineThemeColors($project->id);
         $this->assertSame('#111111', $theme['primary']);
         $this->assertSame('#222222', $theme['primary_dark']);
         $this->assertSame('#10b981', $theme['success']);

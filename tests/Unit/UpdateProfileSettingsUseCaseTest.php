@@ -49,7 +49,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             memberRegistrationMode: 'prompt',
         ));
 
-        $settings = ProfileSettingStore::getProfileFieldSettings((int) $project->id);
+        $settings = app(ProfileSettingStore::class)->getProfileFieldSettings((int) $project->id);
         $this->assertTrue($settings['smaregi_fields']['name']['enabled']);
         $this->assertTrue($settings['smaregi_fields']['name']['required']);
         $this->assertFalse($settings['smaregi_fields']['phone']['required']);
@@ -61,7 +61,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
         $this->assertArrayNotHasKey('city', $settings['smaregi_fields']);
         $this->assertArrayNotHasKey('street', $settings['smaregi_fields']);
         $this->assertArrayHasKey('address', $settings['smaregi_fields']);
-        $this->assertSame('prompt', ProfileSettingStore::getMemberRegistrationMode((int) $project->id));
+        $this->assertSame('prompt', app(ProfileSettingStore::class)->getMemberRegistrationMode((int) $project->id));
     }
 
     public function test_handle_カスタム項目の入力タイプと選択肢を保存できること(): void
@@ -86,7 +86,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             memberRegistrationMode: 'optional',
         ));
 
-        $settings = ProfileSettingStore::getProfileFieldSettings((int) $project->id);
+        $settings = app(ProfileSettingStore::class)->getProfileFieldSettings((int) $project->id);
         $this->assertSame(ProfileCustomFieldInputType::RADIO, $settings['custom_fields'][0]['input_type']);
         $this->assertSame(['赤', '青', '緑'], $settings['custom_fields'][0]['values']);
         $this->assertSame('任意の説明', $settings['custom_fields'][0]['description']);
@@ -109,7 +109,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             memberRegistrationMode: 'optional',
         ));
 
-        $settings = ProfileSettingStore::getProfileFieldSettings((int) $project->id);
+        $settings = app(ProfileSettingStore::class)->getProfileFieldSettings((int) $project->id);
         $this->assertSame(4, $settings['custom_fields'][0]['smaregi_no']);
         $this->assertFalse($settings['custom_fields'][0]['required']);
     }
@@ -131,7 +131,7 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             memberRegistrationMode: 'optional',
         ));
 
-        $settings = ProfileSettingStore::getProfileFieldSettings((int) $project->id);
+        $settings = app(ProfileSettingStore::class)->getProfileFieldSettings((int) $project->id);
         $this->assertCount(99, $settings['custom_fields']);
         $this->assertSame('f1', $settings['custom_fields'][0]['key']);
         $this->assertSame('f99', $settings['custom_fields'][98]['key']);
@@ -151,6 +151,6 @@ class UpdateProfileSettingsUseCaseTest extends TestCase
             memberRegistrationMode: 'force',
         ));
 
-        $this->assertSame('force', ProfileSettingStore::getMemberRegistrationMode((int) $project->id));
+        $this->assertSame('force', app(ProfileSettingStore::class)->getMemberRegistrationMode((int) $project->id));
     }
 }

@@ -65,7 +65,7 @@ class SubscriptionTest extends TestCase
     private function setUpShop(): array
     {
         $project = Project::factory()->create(['is_active' => true]);
-        ShopSettingStore::setValue('feature_tickets_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_tickets_enabled', true, 'boolean', $project->id);
         $setting = ProjectPaymentSetting::create([
             'project_id' => $project->id, 'account_id' => 'acct_fixture',
             'publishable_key' => 'pk_test_fixture', 'secret_key' => 'sk_test_fixture',

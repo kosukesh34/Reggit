@@ -28,7 +28,7 @@ class AdminMemberProfilePatchTest extends TestCase
         AdminContext::setCurrentProject($project);
         $user = User::factory()->create(['project_id' => $project->id, 'name' => 'Original', 'email' => 'old@example.com']);
         $this->mock(SmaregiApiService::class)->shouldReceive('getContractIdForProject')->andReturnNull();
-        ProfileSettingStore::setProfileFieldSettings(['smaregi_fields' => [], 'custom_fields' => [
+        app(ProfileSettingStore::class)->setProfileFieldSettings(['smaregi_fields' => [], 'custom_fields' => [
             ['key' => 'note', 'label' => 'Note', 'input_type' => ProfileCustomFieldInputType::TEXT, 'smaregi_no' => 1],
             ['key' => 'other', 'label' => 'Other', 'input_type' => ProfileCustomFieldInputType::TEXT, 'smaregi_no' => 2],
             ['key' => 'choices', 'label' => 'Choices', 'input_type' => ProfileCustomFieldInputType::CHECKBOX, 'values' => ['Tea', 'Coffee'], 'smaregi_no' => 3],
@@ -106,7 +106,7 @@ class AdminMemberProfilePatchTest extends TestCase
     public function test_raw_json_without_definitions_keeps_replacement_and_empty_clear_behavior(): void
     {
         $member = $this->member();
-        ProfileSettingStore::setProfileFieldSettings(['smaregi_fields' => [], 'custom_fields' => []], (int) $member->project_id);
+        app(ProfileSettingStore::class)->setProfileFieldSettings(['smaregi_fields' => [], 'custom_fields' => []], (int) $member->project_id);
         $this->updateThroughHttp($member, ['profile_extra' => '{"note":"Changed"}']);
         $this->assertSame(['note' => 'Changed'], $member->fresh()->profile_extra);
 

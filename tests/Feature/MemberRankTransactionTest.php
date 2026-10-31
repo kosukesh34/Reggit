@@ -60,7 +60,7 @@ class MemberRankTransactionTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'Gold', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);

@@ -39,7 +39,7 @@ class ReservationMemberOwnershipTest extends TestCase
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id]);
         $user->load('member');
-        $slot = BusinessSettingStore::getReservationTimeSlots($project->id)[0];
+        $slot = app(BusinessSettingStore::class)->getReservationTimeSlots($project->id)[0];
         $payload = ['reserved_at' => now()->addDay()->format('Y-m-d').' '.$slot, 'number_of_people' => 1];
         $reservation = $action === 'update' ? Reservation::factory()->create(['project_id' => $project->id, 'store_id' => $store->id, 'user_id' => $user->id, 'number_of_people' => 2]) : null;
         if ($change === 'delete') {

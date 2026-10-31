@@ -7,9 +7,13 @@ use App\Domain\Settings\ShopSettingKeys;
 /** 注文モード・注文通知・キッチン画面アクセスの設定。 */
 class OrderSettingStore
 {
-    public static function getOrderMode(?int $projectId = null): string
+    public function __construct(
+        private ShopSettingStore $values,
+    ) {}
+
+    public function getOrderMode(?int $projectId = null): string
     {
-        $value = (string) ShopSettingStore::getValue('order_mode', ShopSettingKeys::ORDER_MODE_BOTH, $projectId);
+        $value = (string) $this->values->getValue('order_mode', ShopSettingKeys::ORDER_MODE_BOTH, $projectId);
         if (in_array($value, [ShopSettingKeys::ORDER_MODE_BOTH, ShopSettingKeys::ORDER_MODE_MOBILE_ONLY, ShopSettingKeys::ORDER_MODE_IN_STORE_ONLY], true)) {
             return $value;
         }
@@ -17,41 +21,41 @@ class OrderSettingStore
         return ShopSettingKeys::ORDER_MODE_BOTH;
     }
 
-    public static function setOrderMode(string $mode, ?int $projectId = null): void
+    public function setOrderMode(string $mode, ?int $projectId = null): void
     {
         if (! in_array($mode, [ShopSettingKeys::ORDER_MODE_BOTH, ShopSettingKeys::ORDER_MODE_MOBILE_ONLY, ShopSettingKeys::ORDER_MODE_IN_STORE_ONLY], true)) {
             $mode = ShopSettingKeys::ORDER_MODE_BOTH;
         }
-        ShopSettingStore::setValue('order_mode', $mode, 'string', $projectId);
+        $this->values->setValue('order_mode', $mode, 'string', $projectId);
     }
 
-    public static function isOrderLineNotifyEnabled(?int $projectId = null): bool
+    public function isOrderLineNotifyEnabled(?int $projectId = null): bool
     {
-        return (bool) ShopSettingStore::getValue('order_line_notify_enabled', true, $projectId);
+        return (bool) $this->values->getValue('order_line_notify_enabled', true, $projectId);
     }
 
-    public static function setOrderLineNotifyEnabled(bool $enabled, ?int $projectId = null): void
+    public function setOrderLineNotifyEnabled(bool $enabled, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('order_line_notify_enabled', $enabled, 'boolean', $projectId);
+        $this->values->setValue('order_line_notify_enabled', $enabled, 'boolean', $projectId);
     }
 
-    public static function isOrderReadyLineNotifyEnabled(?int $projectId = null): bool
+    public function isOrderReadyLineNotifyEnabled(?int $projectId = null): bool
     {
-        return (bool) ShopSettingStore::getValue('order_ready_line_notify_enabled', true, $projectId);
+        return (bool) $this->values->getValue('order_ready_line_notify_enabled', true, $projectId);
     }
 
-    public static function setOrderReadyLineNotifyEnabled(bool $enabled, ?int $projectId = null): void
+    public function setOrderReadyLineNotifyEnabled(bool $enabled, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('order_ready_line_notify_enabled', $enabled, 'boolean', $projectId);
+        $this->values->setValue('order_ready_line_notify_enabled', $enabled, 'boolean', $projectId);
     }
 
-    public static function getKitchenAccessToken(?int $projectId = null): string
+    public function getKitchenAccessToken(?int $projectId = null): string
     {
-        return trim((string) ShopSettingStore::getValue('kitchen_access_token', '', $projectId));
+        return trim((string) $this->values->getValue('kitchen_access_token', '', $projectId));
     }
 
-    public static function setKitchenAccessToken(?string $token, ?int $projectId = null): void
+    public function setKitchenAccessToken(?string $token, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('kitchen_access_token', $token !== null ? trim($token) : '', 'string', $projectId);
+        $this->values->setValue('kitchen_access_token', $token !== null ? trim($token) : '', 'string', $projectId);
     }
 }

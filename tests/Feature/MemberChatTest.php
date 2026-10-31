@@ -45,7 +45,7 @@ class MemberChatTest extends TestCase
         $this->b = Store::create(['project_id' => $this->project->id, 'store_key' => 'branch', 'name' => '支店B', 'is_active' => true]);
         $this->withHeader('X-Project-Key', 'brand');
         AdminContext::setCurrentProject($this->project);
-        ShopSettingStore::setValue('feature_chat_enabled', true, 'boolean', $this->project->id);
+        app(ShopSettingStore::class)->setValue('feature_chat_enabled', true, 'boolean', $this->project->id);
 
         $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
         openssl_pkey_export($key, $privateKey);
@@ -137,7 +137,7 @@ class MemberChatTest extends TestCase
         config(['services.firebase.storage_bucket' => '']);
         $this->assertArrayNotHasKey('storageBucket', $this->postJson('/api/member-chat/token')->assertOk()->json('data.firebase'));
 
-        ShopSettingStore::setValue('feature_chat_enabled', false, 'boolean', $this->project->id);
+        app(ShopSettingStore::class)->setValue('feature_chat_enabled', false, 'boolean', $this->project->id);
         $this->postJson('/api/member-chat/token')->assertNotFound();
     }
 
@@ -165,7 +165,7 @@ class MemberChatTest extends TestCase
         $this->get('/admin/brand/chats')->assertOk()->assertSee('adminChatConfig', false);
         $this->postJson('/admin/brand/chats/token')->assertOk();
 
-        ShopSettingStore::setValue('feature_chat_enabled', false, 'boolean', $this->project->id);
+        app(ShopSettingStore::class)->setValue('feature_chat_enabled', false, 'boolean', $this->project->id);
         $this->get('/admin/brand/chats')->assertNotFound();
         $this->postJson('/admin/brand/chats/token')->assertNotFound();
     }
@@ -173,7 +173,7 @@ class MemberChatTest extends TestCase
     public function test_返信通知は本文を載せず担当外の会員には送らない(): void
     {
         config(['line.channel_access_token' => 'line-token']);
-        ShopSettingStore::setValue('feature_chat_liff_enabled', true, 'boolean', $this->project->id);
+        app(ShopSettingStore::class)->setValue('feature_chat_liff_enabled', true, 'boolean', $this->project->id);
         $this->mock(PushNotificationService::class)->shouldReceive('sendToUser')->once()
             ->withArgs(fn (int $projectId, int $userId, string $title, string $body, array $data, ?string $collapseId, ?int $badge) => $title === 'お店からメッセージが届きました' && $body === 'チャットを開いてご確認ください' && $badge === 1)
             ->andReturn(['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0]);
@@ -211,7 +211,7 @@ class MemberChatTest extends TestCase
         $this->postJson('/api/member-chat/token')->assertOk();
         $this->getJson('/api/member-chat/unread')->assertJsonPath('data.count', 0);
 
-        ShopSettingStore::setValue('feature_chat_enabled', false, 'boolean', $this->project->id);
+        app(ShopSettingStore::class)->setValue('feature_chat_enabled', false, 'boolean', $this->project->id);
         Cache::put(ChatReplyNotifier::unreadKey($this->project->id, $member->id), 3);
         $this->getJson('/api/member-chat/unread')->assertJsonPath('data.count', 0);
     }
@@ -272,7 +272,7 @@ class MemberChatTest extends TestCase
         $this->actingAs($this->admin(AdminUser::ROLE_PROJECT_ADMIN), 'admin');
         $this->postJson("/admin/brand/chats/{$member->id}/notify")->assertOk();
 
-        ShopSettingStore::setValue('feature_chat_liff_enabled', true, 'boolean', $this->project->id);
+        app(ShopSettingStore::class)->setValue('feature_chat_liff_enabled', true, 'boolean', $this->project->id);
         $this->actingAs($member->user);
         $this->assertContains('chat', $tabs('&surface=liff'));
         $this->postJson('/api/member-chat/token', ['surface' => 'liff'])->assertOk();
@@ -316,7 +316,7 @@ class MemberChatTest extends TestCase
         $this->assertStringEndsWith('/storage/profiles/me.jpg', $members[$mine->id]['avatar_url']);
         $this->assertSame('山田 花子', $members[$mine->id]['name']);
 
-        ShopSettingStore::setValue('frontend_logo_url', '/storage/logo.png', 'string', $this->project->id);
+        app(ShopSettingStore::class)->setValue('frontend_logo_url', '/storage/logo.png', 'string', $this->project->id);
         $this->actingAs($mine->user);
         $this->assertSame('/storage/logo.png', $this->postJson('/api/member-chat/token')->json('data.store_icon_url'));
     }

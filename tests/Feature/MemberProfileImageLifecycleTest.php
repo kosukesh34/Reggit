@@ -43,9 +43,9 @@ class MemberProfileImageLifecycleTest extends TestCase
         Storage::fake('public');
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        $settings = ProfileSettingStore::getProfileFieldSettings((int) $project->id);
+        $settings = app(ProfileSettingStore::class)->getProfileFieldSettings((int) $project->id);
         $settings['smaregi_fields']['profile_image']['enabled'] = true;
-        ProfileSettingStore::setProfileFieldSettings($settings, (int) $project->id);
+        app(ProfileSettingStore::class)->setProfileFieldSettings($settings, (int) $project->id);
         $path = 'member-profile-images/'.$project->id.'/old.png';
         Storage::disk('public')->put($path, 'old image');
         $user = User::factory()->create(['project_id' => $project->id, 'profile_image_path' => $path, 'authentication_version' => 1]);

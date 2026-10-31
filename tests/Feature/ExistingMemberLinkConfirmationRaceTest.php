@@ -43,7 +43,7 @@ class ExistingMemberLinkConfirmationRaceTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract-1', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         $pending = ExistingMemberLinkRequest::create([
             'project_id' => $project->id, 'user_id' => $user->id,
@@ -75,7 +75,7 @@ class ExistingMemberLinkConfirmationRaceTest extends TestCase
         $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
         $this->assertNull($pending->fresh()->confirmed_at);
         $this->assertTrue($rejected);
-        $this->assertSame('contract-2', ShopSettingStore::getValue('smaregi_contract_id', null, (int) $project->id));
+        $this->assertSame('contract-2', app(ShopSettingStore::class)->getValue('smaregi_contract_id', null, (int) $project->id));
     }
 
     #[TestWith(['expires_at'])]

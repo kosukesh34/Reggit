@@ -171,7 +171,7 @@ class OrderApiTest extends TestCase
         string $orderType, string $paymentMethod, bool $enabled, int $price, int $pointsUsed, string $error,
     ): void {
         $project = $this->createProject();
-        ShopSettingStore::setValue('use_points', $enabled, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('use_points', $enabled, 'boolean', $project->id);
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_1, 'project_id' => $project->id]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id, 'points' => 500]);
         $product = Product::factory()->create(['project_id' => $project->id, 'price' => $price, 'stock' => 10]);
@@ -202,7 +202,7 @@ class OrderApiTest extends TestCase
         string $paymentMethod, bool $enabled, int $price, int $pointsUsed,
     ): void {
         $project = $this->createProject();
-        ShopSettingStore::setValue('use_points', $enabled, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('use_points', $enabled, 'boolean', $project->id);
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_1, 'project_id' => $project->id]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id, 'points' => 500]);
         $product = Product::factory()->create(['project_id' => $project->id, 'price' => $price, 'stock' => 10]);

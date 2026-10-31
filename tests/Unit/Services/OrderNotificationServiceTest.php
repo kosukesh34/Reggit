@@ -34,7 +34,7 @@ class OrderNotificationServiceTest extends TestCase
     public function test_設定_of_fのとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
-        OrderSettingStore::setOrderLineNotifyEnabled(false, (int) $project->id);
+        app(OrderSettingStore::class)->setOrderLineNotifyEnabled(false, (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('a', 32),
@@ -64,7 +64,7 @@ class OrderNotificationServiceTest extends TestCase
     public function test_店内注文では_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
-        OrderSettingStore::setOrderLineNotifyEnabled(true, (int) $project->id);
+        app(OrderSettingStore::class)->setOrderLineNotifyEnabled(true, (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('b', 32),
@@ -94,8 +94,8 @@ class OrderNotificationServiceTest extends TestCase
     public function test_line_user_idがないとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
-        OrderSettingStore::setOrderLineNotifyEnabled(true, (int) $project->id);
-        LineSettingStore::setLineChannelAccessToken('test-token', (int) $project->id);
+        app(OrderSettingStore::class)->setOrderLineNotifyEnabled(true, (int) $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => '',
@@ -134,7 +134,7 @@ class OrderNotificationServiceTest extends TestCase
     public function test_受取可通知_設定_of_fのとき_lin_eを送らないこと(): void
     {
         $project = $this->createProject();
-        OrderSettingStore::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
+        app(OrderSettingStore::class)->setOrderReadyLineNotifyEnabled(false, (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('c', 32),
@@ -167,8 +167,8 @@ class OrderNotificationServiceTest extends TestCase
     public function test_発送通知は受取可設定に関係なく配送注文へ_lin_eとプッシュを送ること(): void
     {
         $project = $this->createProject();
-        OrderSettingStore::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
-        LineSettingStore::setLineChannelAccessToken('test-token', (int) $project->id);
+        app(OrderSettingStore::class)->setOrderReadyLineNotifyEnabled(false, (int) $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', (int) $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('d', 32),

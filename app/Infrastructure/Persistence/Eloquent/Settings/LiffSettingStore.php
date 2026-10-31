@@ -11,8 +11,13 @@ use App\Util\StrHelper;
 /** フロントのメニュー項目と LIFF 画面（タブ・詳細・保存画面・CSS）の設定。 */
 class LiffSettingStore
 {
+    public function __construct(
+        private ShopSettingStore $values,
+        private MemberCardSettingStore $memberCardSettingStore,
+    ) {}
+
     /** フロント（ユーザー向け）のヘッダー・フッターに表示するメニュー項目のデフォルト */
-    public static function defaultFrontendMenuItems(): array
+    public function defaultFrontendMenuItems(): array
     {
         return [
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-house', 'order' => 0],
@@ -34,11 +39,11 @@ class LiffSettingStore
     }
 
     /** フロントメニュー項目を取得（ホーム設定で「表示する」にしたもののみ・order でソート） */
-    public static function getFrontendMenuItems(?int $projectId = null): array
+    public function getFrontendMenuItems(?int $projectId = null): array
     {
         $projectId = AdminContext::resolveProjectId($projectId);
-        $items = ShopSettingStore::getValue('frontend_menu_items', null, $projectId);
-        $defaults = collect(self::defaultFrontendMenuItems())->keyBy('tab');
+        $items = $this->values->getValue('frontend_menu_items', null, $projectId);
+        $defaults = collect($this->defaultFrontendMenuItems())->keyBy('tab');
         $merged = [];
         $saved = is_array($items) ? collect($items)->keyBy('tab') : collect();
         foreach ($defaults as $tab => $default) {
@@ -47,7 +52,7 @@ class LiffSettingStore
             if (array_key_exists('enabled', $row) && ! filter_var($row['enabled'], FILTER_VALIDATE_BOOLEAN)) {
                 continue;
             }
-            $row['icon'] = self::normalizeFrontendMenuIcon((string) $tab, (string) ($row['icon'] ?? ''));
+            $row['icon'] = $this->normalizeFrontendMenuIcon((string) $tab, (string) ($row['icon'] ?? ''));
             $row['label'] = (string) ($row['label'] ?? $default['label']);
             $merged[] = $row;
         }
@@ -70,7 +75,7 @@ class LiffSettingStore
             }
         }
         if ($merged === [] && ! is_array($items)) {
-            return self::defaultFrontendMenuItems();
+            return $this->defaultFrontendMenuItems();
         }
         usort($merged, fn ($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));
 
@@ -78,9 +83,9 @@ class LiffSettingStore
     }
 
     /** 旧アイコン名を現行デフォルトへ寄せ、デザイナー／本番の見た目差を防ぐ */
-    public static function normalizeFrontendMenuIcon(string $tab, string $icon): string
+    public function normalizeFrontendMenuIcon(string $tab, string $icon): string
     {
-        $defaults = collect(self::defaultFrontendMenuItems())->keyBy('tab');
+        $defaults = collect($this->defaultFrontendMenuItems())->keyBy('tab');
         $fallback = (string) ($defaults->get($tab)['icon'] ?? 'fa-circle');
         if ($icon === '') {
             return $fallback;
@@ -107,20 +112,20 @@ class LiffSettingStore
     }
 
     /** フロントメニュー項目を保存 */
-    public static function setFrontendMenuItems(array $items, ?int $projectId = null): void
+    public function setFrontendMenuItems(array $items, ?int $projectId = null): void
     {
         $projectId = AdminContext::resolveProjectId($projectId);
-        ShopSettingStore::setValue('frontend_menu_items', $items, 'json', $projectId);
+        $this->values->setValue('frontend_menu_items', $items, 'json', $projectId);
     }
 
-    public static function defaultLiffDesignerTemplates(): array
+    public function defaultLiffDesignerTemplates(): array
     {
         return ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
     }
 
-    public static function getLiffTabLayouts(?int $projectId = null): array
+    public function getLiffTabLayouts(?int $projectId = null): array
     {
-        $layouts = ShopSettingStore::getValue('liff_tab_layouts', null, $projectId);
+        $layouts = $this->values->getValue('liff_tab_layouts', null, $projectId);
         if (! is_array($layouts) || $layouts === []) {
             return ShopSettingLiffDefaults::defaultLiffTabLayouts();
         }
@@ -128,24 +133,24 @@ class LiffSettingStore
         return ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
     }
 
-    public static function getLiffCustomCss(?int $projectId = null): string
+    public function getLiffCustomCss(?int $projectId = null): string
     {
-        return (string) ShopSettingStore::getValue('liff_custom_css', '', $projectId);
+        return (string) $this->values->getValue('liff_custom_css', '', $projectId);
     }
 
-    public static function setLiffCustomCss(string $css, ?int $projectId = null): void
+    public function setLiffCustomCss(string $css, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('liff_custom_css', $css, 'string', $projectId);
+        $this->values->setValue('liff_custom_css', $css, 'string', $projectId);
     }
 
-    public static function getLiffTabSettings(?int $projectId = null): array
+    public function getLiffTabSettings(?int $projectId = null): array
     {
-        $settings = ShopSettingStore::getValue('liff_tab_settings', null, $projectId);
+        $settings = $this->values->getValue('liff_tab_settings', null, $projectId);
         $settings = is_array($settings) && $settings !== []
             ? $settings
             : ShopSettingLiffDefaults::defaultLiffTabSettings();
 
-        return self::applyMemberCardRuntimeToTabSettings($settings, $projectId);
+        return $this->applyMemberCardRuntimeToTabSettings($settings, $projectId);
     }
 
     /**
@@ -154,13 +159,13 @@ class LiffSettingStore
      * @param  array<string, mixed>  $settings
      * @return array<string, mixed>
      */
-    public static function applyMemberCardRuntimeToTabSettings(array $settings, ?int $projectId = null): array
+    public function applyMemberCardRuntimeToTabSettings(array $settings, ?int $projectId = null): array
     {
         $global = isset($settings['_global']) && is_array($settings['_global']) ? $settings['_global'] : [];
-        $design = MemberCardSettingStore::getMemberCardDesign($projectId);
+        $design = $this->memberCardSettingStore->getMemberCardDesign($projectId);
         $global['member_card_design'] = $design;
-        $global['member_card_display_type'] = MemberCardSettingStore::getMemberCardDisplayType($projectId);
-        $global['member_card_code_type'] = MemberCardSettingStore::getMemberCardCodeType($projectId);
+        $global['member_card_display_type'] = $this->memberCardSettingStore->getMemberCardDisplayType($projectId);
+        $global['member_card_code_type'] = $this->memberCardSettingStore->getMemberCardCodeType($projectId);
 
         $template = MemberCardDesignMap::templateForDesign($design);
         if ($template !== null) {
@@ -185,22 +190,22 @@ class LiffSettingStore
         return $settings;
     }
 
-    public static function setLiffTabSettings(array $settings, ?int $projectId = null): void
+    public function setLiffTabSettings(array $settings, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('liff_tab_settings', $settings, 'json', $projectId);
+        $this->values->setValue('liff_tab_settings', $settings, 'json', $projectId);
     }
 
-    public static function setLiffTabLayouts(array $layouts, ?int $projectId = null): void
+    public function setLiffTabLayouts(array $layouts, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('liff_tab_layouts', ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts), 'json', $projectId);
+        $this->values->setValue('liff_tab_layouts', ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts), 'json', $projectId);
     }
 
     /**
      * @return array<string, array<int, array<string, mixed>>>
      */
-    public static function getLiffDetailLayouts(?int $projectId = null): array
+    public function getLiffDetailLayouts(?int $projectId = null): array
     {
-        $layouts = ShopSettingStore::getValue('liff_detail_layouts', null, $projectId);
+        $layouts = $this->values->getValue('liff_detail_layouts', null, $projectId);
         if (! is_array($layouts) || $layouts === []) {
             return ShopSettingLiffDefaults::defaultLiffDetailLayouts();
         }
@@ -211,24 +216,24 @@ class LiffSettingStore
     /**
      * @param  array<string, mixed>  $layouts
      */
-    public static function setLiffDetailLayouts(array $layouts, ?int $projectId = null): void
+    public function setLiffDetailLayouts(array $layouts, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('liff_detail_layouts', ShopSettingLiffDefaults::ensureLiffDetailLayouts($layouts), 'json', $projectId);
+        $this->values->setValue('liff_detail_layouts', ShopSettingLiffDefaults::ensureLiffDetailLayouts($layouts), 'json', $projectId);
     }
 
-    public static function getLiffSavedScreens(?int $projectId = null): array
+    public function getLiffSavedScreens(?int $projectId = null): array
     {
-        $screens = ShopSettingStore::getValue('liff_saved_screens', [], $projectId);
+        $screens = $this->values->getValue('liff_saved_screens', [], $projectId);
 
         return is_array($screens) ? $screens : [];
     }
 
-    public static function setLiffSavedScreens(array $screens, ?int $projectId = null): void
+    public function setLiffSavedScreens(array $screens, ?int $projectId = null): void
     {
-        ShopSettingStore::setValue('liff_saved_screens', $screens, 'json', $projectId);
+        $this->values->setValue('liff_saved_screens', $screens, 'json', $projectId);
     }
 
-    public static function defaultLiffTabLayouts(): array
+    public function defaultLiffTabLayouts(): array
     {
         return ShopSettingLiffDefaults::defaultLiffTabLayouts();
     }
@@ -236,7 +241,7 @@ class LiffSettingStore
     /**
      * @return array<string, array<int, array<string, mixed>>>
      */
-    public static function defaultLiffDetailLayouts(): array
+    public function defaultLiffDetailLayouts(): array
     {
         return ShopSettingLiffDefaults::defaultLiffDetailLayouts();
     }
@@ -251,12 +256,12 @@ class LiffSettingStore
      * @param  array<string, mixed>  $layouts
      * @return array<string, array<int, array<string, mixed>>>
      */
-    public static function ensureLiffTabLayouts(array $layouts): array
+    public function ensureLiffTabLayouts(array $layouts): array
     {
         return ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
     }
 
-    public static function defaultLiffTabSettings(): array
+    public function defaultLiffTabSettings(): array
     {
         return ShopSettingLiffDefaults::defaultLiffTabSettings();
     }

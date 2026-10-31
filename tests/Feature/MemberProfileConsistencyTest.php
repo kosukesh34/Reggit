@@ -25,7 +25,7 @@ class MemberProfileConsistencyTest extends TestCase
         $project = Project::factory()->create();
         $user = User::factory()->create(['project_id' => $project->id, 'name' => 'Original']);
         Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id, 'city' => 'Original']);
-        ProfileSettingStore::setProfileFieldSettings([
+        app(ProfileSettingStore::class)->setProfileFieldSettings([
             'smaregi_fields' => [],
             'custom_fields' => [
                 ['key' => 'choice', 'label' => 'Choice', 'input_type' => 'selectbox', 'values' => ['Tokyo, Japan', 'Osaka']],

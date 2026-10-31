@@ -213,7 +213,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_スマレジ取引キャンセルで未使用達成クーポンを取り消すこと(): void
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $member->project_id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 100, 'integer', (int) $member->project_id);
         resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 9);
 
         $applier = resolve(SmaregiInboundAwardApplier::class);
@@ -330,7 +330,7 @@ class StampMilestoneRewardTest extends TestCase
     public function test_同じ取引のキャンセルを繰り返しても未使用クーポン取消は冪等であること(): void
     {
         [$member, $card, $coupon] = $this->createRewardFixtures(StampCycleMode::REPEAT, 10);
-        ShopSettingStore::setValue('stamp_earn_per_amount', 100, 'integer', (int) $member->project_id);
+        app(ShopSettingStore::class)->setValue('stamp_earn_per_amount', 100, 'integer', (int) $member->project_id);
         resolve(MemberBenefitService::class)->addStampsToMember($member, (int) $card->id, 9);
 
         $applier = resolve(SmaregiInboundAwardApplier::class);

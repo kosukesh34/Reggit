@@ -156,7 +156,7 @@ class DefaultDataSeederTest extends TestCase
         ]);
 
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', 'test_contract_sb', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'test_contract_sb', 'string', (int) $project->id);
         Product::withoutGlobalScopes()->create([
             'project_id' => $project->id,
             'name' => 'フリーライト ハンバーガー',

@@ -36,7 +36,7 @@ class MemberRankHistoryTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'Gold', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -73,7 +73,7 @@ class MemberRankHistoryTest extends TestCase
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
         AdminContext::setCurrentProject($project);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -111,7 +111,7 @@ class MemberRankHistoryTest extends TestCase
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
         AdminContext::setCurrentProject($project);
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -137,7 +137,7 @@ class MemberRankHistoryTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -167,7 +167,7 @@ class MemberRankHistoryTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        MemberRankSettingStore::setMemberRankSettings([
+        app(MemberRankSettingStore::class)->setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '11'],
             ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true, 'smaregi_rank_id' => '22'],
         ], $project->id);

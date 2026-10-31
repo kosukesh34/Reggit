@@ -38,7 +38,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        FeatureFlagStore::setFeatureFlags([
+        app(FeatureFlagStore::class)->setFeatureFlags([
             'feature_home_enabled' => true,
             'feature_orders_enabled' => true,
             'feature_reservations_enabled' => false,
@@ -59,12 +59,12 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
             ])
             ->assertRedirect(route('admin.settings.features', ['project_key' => $project->project_key]));
 
-        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_coupons_enabled', $project->id));
-        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_orders_enabled', $project->id));
-        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_reservations_enabled', $project->id));
-        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
-        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_announcements_enabled', $project->id));
-        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_stamps_enabled', $project->id));
+        $this->assertFalse(app(FeatureFlagStore::class)->isFeatureEnabled('feature_coupons_enabled', $project->id));
+        $this->assertTrue(app(FeatureFlagStore::class)->isFeatureEnabled('feature_orders_enabled', $project->id));
+        $this->assertFalse(app(FeatureFlagStore::class)->isFeatureEnabled('feature_reservations_enabled', $project->id));
+        $this->assertTrue(app(FeatureFlagStore::class)->isFeatureEnabled('feature_gallery_enabled', $project->id));
+        $this->assertFalse(app(FeatureFlagStore::class)->isFeatureEnabled('feature_announcements_enabled', $project->id));
+        $this->assertTrue(app(FeatureFlagStore::class)->isFeatureEnabled('feature_stamps_enabled', $project->id));
     }
 
     public function test_クーポン設定画面にドロップゾーンがあること(): void
@@ -94,7 +94,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
             ])
             ->assertRedirect();
 
-        $savedUrl = AppearanceSettingStore::getCouponDefaultImageUrl($project->id);
+        $savedUrl = app(AppearanceSettingStore::class)->getCouponDefaultImageUrl($project->id);
         $this->assertNotNull($savedUrl);
         $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_COUPON_DEFAULT.'/'.$project->id, (string) $savedUrl);
     }
@@ -103,7 +103,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        ShopSettingStore::setValue('coupon_default_image_url', 'https://example.com/old-coupon.png', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('coupon_default_image_url', 'https://example.com/old-coupon.png', 'string', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.app-branding.update', ['project_key' => $project->project_key]), [
@@ -112,6 +112,6 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame('', (string) (AppearanceSettingStore::getCouponDefaultImageUrl($project->id) ?? ''));
+        $this->assertSame('', (string) (app(AppearanceSettingStore::class)->getCouponDefaultImageUrl($project->id) ?? ''));
     }
 }

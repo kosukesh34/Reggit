@@ -43,7 +43,7 @@ class QueueQrStatusNotifyTest extends TestCase
     public function test_line_link_sends_completion_with_project_token(): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('project-link-token', (int) $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('project-link-token', (int) $project->id);
         $lineUserId = 'U'.str_repeat('e', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,

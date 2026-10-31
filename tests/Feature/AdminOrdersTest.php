@@ -38,7 +38,7 @@ class AdminOrdersTest extends TestCase
     {
         $project = $this->createProject();
         $user = User::factory()->create(['project_id' => $project->id]);
-        OrderSettingStore::setOrderReadyLineNotifyEnabled(false, (int) $project->id);
+        app(OrderSettingStore::class)->setOrderReadyLineNotifyEnabled(false, (int) $project->id);
         $order = Order::create([
             'project_id' => $project->id,
             'user_id' => $user->id,

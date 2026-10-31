@@ -16,7 +16,7 @@ class LineIdTokenVerifierTest extends TestCase
     public function test_verifyはsubを返すこと(): void
     {
         $project = Project::factory()->create(['is_active' => true]);
-        LineSettingStore::setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
+        app(LineSettingStore::class)->setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
         Http::fake([
             'https://api.line.me/oauth2/v2.1/verify' => Http::response([
                 'sub' => 'U00000000000000000000000000000011',
@@ -37,7 +37,7 @@ class LineIdTokenVerifierTest extends TestCase
     public function test_verifyは不正なsubならnullであること(): void
     {
         $project = Project::factory()->create(['is_active' => true]);
-        LineSettingStore::setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
+        app(LineSettingStore::class)->setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
         Http::fake([
             'https://api.line.me/oauth2/v2.1/verify' => Http::response([
                 'sub' => 'not-a-line-id',
@@ -50,7 +50,7 @@ class LineIdTokenVerifierTest extends TestCase
     public function test_verifyは通信エラーならnullであること(): void
     {
         $project = Project::factory()->create(['is_active' => true]);
-        LineSettingStore::setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
+        app(LineSettingStore::class)->setLineLiffId('1234567890-AbCdEfGh', (int) $project->id);
         Http::fake([
             'https://api.line.me/oauth2/v2.1/verify' => Http::response([
                 'error_description' => 'Invalid IdToken.',

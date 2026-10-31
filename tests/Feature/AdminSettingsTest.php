@@ -111,8 +111,8 @@ class AdminSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertFalse(OrderSettingStore::isOrderLineNotifyEnabled((int) $project->id));
-        $this->assertFalse(OrderSettingStore::isOrderReadyLineNotifyEnabled((int) $project->id));
+        $this->assertFalse(app(OrderSettingStore::class)->isOrderLineNotifyEnabled((int) $project->id));
+        $this->assertFalse(app(OrderSettingStore::class)->isOrderReadyLineNotifyEnabled((int) $project->id));
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.basic.update', ['project_key' => $project->project_key]), [
@@ -124,8 +124,8 @@ class AdminSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertTrue(OrderSettingStore::isOrderLineNotifyEnabled((int) $project->id));
-        $this->assertTrue(OrderSettingStore::isOrderReadyLineNotifyEnabled((int) $project->id));
+        $this->assertTrue(app(OrderSettingStore::class)->isOrderLineNotifyEnabled((int) $project->id));
+        $this->assertTrue(app(OrderSettingStore::class)->isOrderReadyLineNotifyEnabled((int) $project->id));
     }
 
     public function test_settings_詳細設定ページにアクセスできること(): void
@@ -177,7 +177,7 @@ class AdminSettingsTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        LiffSettingStore::setFrontendMenuItems([
+        app(LiffSettingStore::class)->setFrontendMenuItems([
             ['tab' => 'gallery', 'label' => 'ギャラリー', 'enabled' => false, 'order' => 10],
         ], $project->id);
 

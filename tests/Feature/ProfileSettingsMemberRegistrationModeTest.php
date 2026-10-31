@@ -85,7 +85,7 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertSame(
             MemberRegistrationMode::FORCE,
-            ProfileSettingStore::getMemberRegistrationMode((int) $project->id)
+            app(ProfileSettingStore::class)->getMemberRegistrationMode((int) $project->id)
         );
     }
 
@@ -103,7 +103,7 @@ class ProfileSettingsMemberRegistrationModeTest extends TestCase
         $response->assertRedirect(route('admin.settings.profile', ['project_key' => $project->project_key]));
         $this->assertSame(
             MemberRegistrationMode::POPUP,
-            ProfileSettingStore::getMemberRegistrationMode((int) $project->id)
+            app(ProfileSettingStore::class)->getMemberRegistrationMode((int) $project->id)
         );
     }
 }

@@ -48,7 +48,7 @@ class QueueAdminServiceNotifyTest extends TestCase
     public function test_notify_called_sends_native_push_and_line_with_project_token(bool $lineFails): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('project-queue-token', (int) $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('project-queue-token', (int) $project->id);
         $lineUserId = 'U'.str_repeat('c', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,

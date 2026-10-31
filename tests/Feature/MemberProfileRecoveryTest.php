@@ -43,7 +43,7 @@ class MemberProfileRecoveryTest extends TestCase
         config(['smaregi.inbound_sync_on_member_fetch' => false]);
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('smaregi_contract_id', 'contract', 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'contract', 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id, 'name' => 'Original']);
         Member::factory()->create(['project_id' => $project->id, 'user_id' => $user->id,
             'smaregi_customer_id' => 'external-member', 'points' => 0]);
@@ -205,7 +205,7 @@ class MemberProfileRecoveryTest extends TestCase
     public function test_new_partial_edit_keeps_pending_fields_and_current_values(): void
     {
         $user = $this->user();
-        ProfileSettingStore::setProfileFieldSettings(['smaregi_fields' => [], 'custom_fields' => [
+        app(ProfileSettingStore::class)->setProfileFieldSettings(['smaregi_fields' => [], 'custom_fields' => [
             ['key' => 'choice', 'label' => 'Choice', 'input_type' => 'text', 'smaregi_no' => 1],
             ['key' => 'other', 'label' => 'Other', 'input_type' => 'text', 'smaregi_no' => 2],
         ]], (int) $user->project_id);

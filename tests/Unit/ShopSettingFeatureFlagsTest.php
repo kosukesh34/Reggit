@@ -23,51 +23,51 @@ class ShopSettingFeatureFlagsTest extends TestCase
     public function test_set_feature_flags_falseの値は無効として保存されること(): void
     {
         $project = $this->createProject();
-        $flags = FeatureFlagStore::getFeatureFlags($project->id);
+        $flags = app(FeatureFlagStore::class)->getFeatureFlags($project->id);
         $flags['feature_coupons_enabled'] = false;
         $flags['feature_orders_enabled'] = true;
 
-        FeatureFlagStore::setFeatureFlags($flags, $project->id);
+        app(FeatureFlagStore::class)->setFeatureFlags($flags, $project->id);
 
-        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_coupons_enabled', $project->id));
-        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_orders_enabled', $project->id));
+        $this->assertFalse(app(FeatureFlagStore::class)->isFeatureEnabled('feature_coupons_enabled', $project->id));
+        $this->assertTrue(app(FeatureFlagStore::class)->isFeatureEnabled('feature_orders_enabled', $project->id));
     }
 
     public function test_set_feature_flags_未指定キーは無効になること(): void
     {
         $project = $this->createProject();
 
-        FeatureFlagStore::setFeatureFlags([
+        app(FeatureFlagStore::class)->setFeatureFlags([
             'feature_orders_enabled' => '1',
             'feature_members_enabled' => true,
         ], $project->id);
 
-        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_orders_enabled', $project->id));
-        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_members_enabled', $project->id));
-        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_coupons_enabled', $project->id));
-        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_gacha_enabled', $project->id));
+        $this->assertTrue(app(FeatureFlagStore::class)->isFeatureEnabled('feature_orders_enabled', $project->id));
+        $this->assertTrue(app(FeatureFlagStore::class)->isFeatureEnabled('feature_members_enabled', $project->id));
+        $this->assertFalse(app(FeatureFlagStore::class)->isFeatureEnabled('feature_coupons_enabled', $project->id));
+        $this->assertFalse(app(FeatureFlagStore::class)->isFeatureEnabled('feature_gacha_enabled', $project->id));
     }
 
     public function test_ギャラリーの公開状態はホームメニューだけで決まること(): void
     {
         $project = $this->createProject();
-        $flags = FeatureFlagStore::getFeatureFlags($project->id);
+        $flags = app(FeatureFlagStore::class)->getFeatureFlags($project->id);
         $flags['feature_gallery_enabled'] = '0';
 
-        FeatureFlagStore::setFeatureFlags($flags, $project->id);
+        app(FeatureFlagStore::class)->setFeatureFlags($flags, $project->id);
 
-        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
+        $this->assertTrue(app(FeatureFlagStore::class)->isFeatureEnabled('feature_gallery_enabled', $project->id));
 
-        LiffSettingStore::setFrontendMenuItems([
+        app(LiffSettingStore::class)->setFrontendMenuItems([
             ['tab' => 'gallery', 'label' => 'ギャラリー', 'enabled' => false, 'order' => 10],
         ], $project->id);
 
-        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
-        $this->assertFalse(FeatureFlagStore::getFeatureFlags($project->id)['feature_gallery_enabled']);
+        $this->assertFalse(app(FeatureFlagStore::class)->isFeatureEnabled('feature_gallery_enabled', $project->id));
+        $this->assertFalse(app(FeatureFlagStore::class)->getFeatureFlags($project->id)['feature_gallery_enabled']);
 
         $flags['feature_gallery_enabled'] = true;
-        FeatureFlagStore::setFeatureFlags($flags, $project->id);
+        app(FeatureFlagStore::class)->setFeatureFlags($flags, $project->id);
 
-        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
+        $this->assertFalse(app(FeatureFlagStore::class)->isFeatureEnabled('feature_gallery_enabled', $project->id));
     }
 }

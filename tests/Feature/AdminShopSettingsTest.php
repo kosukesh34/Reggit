@@ -39,14 +39,14 @@ class AdminShopSettingsTest extends TestCase
             ])
             ->assertRedirect(route('admin.settings.shop', ['project_key' => $project->project_key]));
 
-        $this->assertTrue((bool) ShopSettingStore::getValue('feature_shop_enabled', false, $project->id));
-        $this->assertSame(800, (int) ShopSettingStore::getValue('shop_shipping_fee', 0, $project->id));
+        $this->assertTrue((bool) app(ShopSettingStore::class)->getValue('feature_shop_enabled', false, $project->id));
+        $this->assertSame(800, (int) app(ShopSettingStore::class)->getValue('shop_shipping_fee', 0, $project->id));
         $this->assertSame([
             '東京都' => 800,
             '沖縄県' => 1500,
-        ], ShopSettingStore::getValue('shop_shipping_fees_by_prefecture', [], $project->id));
-        $this->assertSame('春の配送キャンペーン', ShopSettingStore::getValue('shop_hero_headline', '', $project->id));
-        $this->assertSame([$product->id], ShopSettingStore::getValue('shop_featured_product_ids', [], $project->id));
+        ], app(ShopSettingStore::class)->getValue('shop_shipping_fees_by_prefecture', [], $project->id));
+        $this->assertSame('春の配送キャンペーン', app(ShopSettingStore::class)->getValue('shop_hero_headline', '', $project->id));
+        $this->assertSame([$product->id], app(ShopSettingStore::class)->getValue('shop_featured_product_ids', [], $project->id));
 
         $this->withoutVite()
             ->get(route('admin.settings.shop', ['project_key' => $project->project_key]))
@@ -63,7 +63,7 @@ class AdminShopSettingsTest extends TestCase
     public function test_ショップ注文一覧は配送のみ表示すること(): void
     {
         [$admin, $project] = $this->seedShopAdmin();
-        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_shop_enabled', true, 'boolean', $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'U'.str_repeat('b', 32),

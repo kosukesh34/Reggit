@@ -67,8 +67,8 @@ class AdminWalletSettingsUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $logoUrl = AppearanceSettingStore::getWalletGoogleProgramLogoUrl($project->id);
-        $heroUrl = AppearanceSettingStore::getWalletGoogleHeroImageUrl($project->id);
+        $logoUrl = app(AppearanceSettingStore::class)->getWalletGoogleProgramLogoUrl($project->id);
+        $heroUrl = app(AppearanceSettingStore::class)->getWalletGoogleHeroImageUrl($project->id);
         $this->assertNotNull($logoUrl);
         $this->assertNotNull($heroUrl);
         $this->assertStringContainsString('storage/wallet_google/'.$project->id, (string) $logoUrl);
@@ -79,8 +79,8 @@ class AdminWalletSettingsUploadTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        AppearanceSettingStore::setWalletGoogleProgramLogoUrl('https://example.com/logo.png', $project->id);
-        AppearanceSettingStore::setWalletGoogleHeroImageUrl('https://example.com/hero.png', $project->id);
+        app(AppearanceSettingStore::class)->setWalletGoogleProgramLogoUrl('https://example.com/logo.png', $project->id);
+        app(AppearanceSettingStore::class)->setWalletGoogleHeroImageUrl('https://example.com/hero.png', $project->id);
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.wallet.update', ['project_key' => $project->project_key]), [
@@ -89,7 +89,7 @@ class AdminWalletSettingsUploadTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertNull(AppearanceSettingStore::getWalletGoogleProgramLogoUrl($project->id));
-        $this->assertNull(AppearanceSettingStore::getWalletGoogleHeroImageUrl($project->id));
+        $this->assertNull(app(AppearanceSettingStore::class)->getWalletGoogleProgramLogoUrl($project->id));
+        $this->assertNull(app(AppearanceSettingStore::class)->getWalletGoogleHeroImageUrl($project->id));
     }
 }

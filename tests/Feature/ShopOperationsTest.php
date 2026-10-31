@@ -46,8 +46,8 @@ class ShopOperationsTest extends TestCase
             'project_id' => $project->id, 'account_id' => 'acct_test', 'publishable_key' => 'pk_test',
             'secret_key' => 'sk_test', 'webhook_secret' => 'whsec_test', 'methods' => ['card'],
         ]);
-        ShopSettingStore::setValue('feature_shop_enabled', true, 'boolean', $project->id);
-        ShopSettingStore::setValue('shop_shipping_fee', 800, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('feature_shop_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_shipping_fee', 800, 'integer', $project->id);
         if ($legal) {
             $this->completeShopLegalNotice($project->id);
         }
@@ -97,11 +97,11 @@ class ShopOperationsTest extends TestCase
     public function test_送料無料ラインとお届け日時を検証して保存すること(): void
     {
         [$project, $user, $product] = $this->shop();
-        ShopSettingStore::setValue('shop_free_shipping_threshold', 4000, 'integer', $project->id);
-        ShopSettingStore::setValue('shop_delivery_date_enabled', true, 'boolean', $project->id);
-        ShopSettingStore::setValue('shop_delivery_lead_days', 2, 'integer', $project->id);
-        ShopSettingStore::setValue('shop_delivery_range_days', 7, 'integer', $project->id);
-        ShopSettingStore::setValue('shop_delivery_time_slots', ['午前中', '14〜16時'], 'json', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_free_shipping_threshold', 4000, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_delivery_date_enabled', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_delivery_lead_days', 2, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_delivery_range_days', 7, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_delivery_time_slots', ['午前中', '14〜16時'], 'json', $project->id);
 
         $this->assertSame(800, (int) $this->order($user, $product)->shipping_fee);
         $order = $this->order($user, $product, 2, ['delivery_date' => today()->addDays(2)->toDateString(), 'delivery_time_slot' => '午前中']);
@@ -124,7 +124,7 @@ class ShopOperationsTest extends TestCase
     public function test_注文確認と発送をメールで知らせ領収書を署名付きリンクで開けること(): void
     {
         [$project, $user, $product] = $this->shop();
-        ShopSettingStore::setValue('shop_invoice_registration_number', 'T1234567890123', 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('shop_invoice_registration_number', 'T1234567890123', 'string', $project->id);
         $order = $this->order($user, $product);
         $this->markPaid($order);
         $outbox = app(OrderNotificationOutbox::class);
@@ -189,9 +189,9 @@ class ShopOperationsTest extends TestCase
             'shop_invoice_registration_number' => 'T1234567890123',
         ])->assertSessionHasNoErrors();
 
-        $this->assertSame('株式会社テスト', ShopSettingStore::getValue('shop_legal_notice', [], $project->id)['seller']);
-        $this->assertSame(5000, (int) ShopSettingStore::getValue('shop_free_shipping_threshold', null, $project->id));
-        $this->assertSame(['午前中', '14〜16時'], ShopSettingStore::getValue('shop_delivery_time_slots', [], $project->id));
+        $this->assertSame('株式会社テスト', app(ShopSettingStore::class)->getValue('shop_legal_notice', [], $project->id)['seller']);
+        $this->assertSame(5000, (int) app(ShopSettingStore::class)->getValue('shop_free_shipping_threshold', null, $project->id));
+        $this->assertSame(['午前中', '14〜16時'], app(ShopSettingStore::class)->getValue('shop_delivery_time_slots', [], $project->id));
         $this->actingAs($admin, 'admin')->get(route('admin.settings.shop', ['project_key' => $project->project_key]))->assertOk()
             ->assertSee('特定商取引法に基づく表記')->assertSee('value="T1234567890123"', false);
     }

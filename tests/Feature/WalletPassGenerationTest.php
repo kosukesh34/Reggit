@@ -184,7 +184,7 @@ class WalletPassGenerationTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default', 'description' => '', 'is_active' => true]
         );
-        LineSettingStore::setLineLiffId('2008962885-AbCdEfGh', (int) $project->id);
+        app(LineSettingStore::class)->setLineLiffId('2008962885-AbCdEfGh', (int) $project->id);
         $walletUrl = 'https://wallet-test.example.test/api/member-wallet/pass?project_key=default&token=test';
 
         $response = $this->withServerVariables(['HTTP_HOST' => 'wallet-test.example.test'])

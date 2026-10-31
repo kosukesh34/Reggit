@@ -66,7 +66,7 @@ class ReviewRegressionTest extends TestCase
     public function test_v1_queue_cannot_bypass_membership_with_a_client_header(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('queue_require_membership', true, 'boolean', $project->id);
+        app(ShopSettingStore::class)->setValue('queue_require_membership', true, 'boolean', $project->id);
         $token = ApiToken::issue($project, 'regression')['plain'];
         $this->withToken($token)->withHeader('X-Queue-Client', 'waiting-system')
             ->postJson('/api/v1/'.$project->project_key.'/queue', ['party_size' => 2])->assertForbidden();

@@ -20,6 +20,10 @@ use App\Util\StoreContext;
  */
 class ShopSettingStore
 {
+    public function __construct(
+        private StoreContext $storeContext,
+    ) {}
+
     /** キー → 設定モデルクラス（キーごとにテーブルが分かれている） */
     private const KEY_TO_MODEL = [
         'business_hours_start' => ProjectBusinessSetting::class,
@@ -150,7 +154,7 @@ class ShopSettingStore
         'announcement_default_expiry_days' => ProjectAnnouncementSetting::class,
     ];
 
-    public static function getValue(string $key, $default = null, ?int $projectId = null)
+    public function getValue(string $key, $default = null, ?int $projectId = null)
     {
         $projectId = AdminContext::resolveProjectId($projectId);
         $modelClass = self::KEY_TO_MODEL[$key] ?? null;
@@ -158,7 +162,7 @@ class ShopSettingStore
             return $default;
         }
 
-        $store = app(StoreContext::class)->store;
+        $store = $this->storeContext->store;
         if (($modelClass === ProjectBusinessSetting::class || in_array($key, ['order_mode', 'order_line_notify_enabled', 'order_ready_line_notify_enabled'], true)) && $store !== null && (int) $store->project_id === $projectId && array_key_exists($key, $store->settings ?? [])) {
             return $store->settings[$key];
         }
@@ -176,7 +180,7 @@ class ShopSettingStore
         return $value;
     }
 
-    public static function setValue(string $key, $value, string $type = 'string', ?int $projectId = null): void
+    public function setValue(string $key, $value, string $type = 'string', ?int $projectId = null): void
     {
         $projectId = AdminContext::resolveProjectId($projectId);
         $modelClass = self::KEY_TO_MODEL[$key] ?? null;
@@ -184,7 +188,7 @@ class ShopSettingStore
             return;
         }
 
-        $context = app(StoreContext::class);
+        $context = $this->storeContext;
         if (($modelClass === ProjectBusinessSetting::class || in_array($key, ['order_mode', 'order_line_notify_enabled', 'order_ready_line_notify_enabled'], true)) && $context->projectStoreCount > 1 && $context->store !== null && (int) $context->store->project_id === $projectId) {
             if ($type === 'json' && is_string($value)) {
                 $value = json_decode($value, true) ?? $value;

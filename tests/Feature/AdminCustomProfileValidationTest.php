@@ -22,7 +22,7 @@ class AdminCustomProfileValidationTest extends TestCase
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
         $member = Member::factory()->create(['project_id' => $project->id]);
-        ProfileSettingStore::setProfileFieldSettings([
+        app(ProfileSettingStore::class)->setProfileFieldSettings([
             'smaregi_fields' => [],
             'custom_fields' => [
                 ['key' => 'city', 'label' => 'City', 'input_type' => ProfileCustomFieldInputType::SELECTBOX, 'values' => ['Tokyo, Japan', 'Kyoto'], 'required' => false],

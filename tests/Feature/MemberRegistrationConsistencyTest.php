@@ -29,8 +29,8 @@ class MemberRegistrationConsistencyTest extends TestCase
         config(['smaregi.contract_id' => '']);
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setValue('member_code_type', $type, 'string', $project->id);
-        ShopSettingStore::setValue('member_code_length', 1, 'integer', $project->id);
+        app(ShopSettingStore::class)->setValue('member_code_type', $type, 'string', $project->id);
+        app(ShopSettingStore::class)->setValue('member_code_length', 1, 'integer', $project->id);
 
         return User::factory()->create(['project_id' => $project->id]);
     }
@@ -38,7 +38,7 @@ class MemberRegistrationConsistencyTest extends TestCase
     public function test_sequential_code_exhaustion_does_not_wrap_or_advance_counter(): void
     {
         $user = $this->user();
-        MemberCodeSettingStore::setMemberCodeNextNumber(10, $user->project_id);
+        app(MemberCodeSettingStore::class)->setMemberCodeNextNumber(10, $user->project_id);
         try {
             app(MemberRegistrar::class)->registerMember($user, ['name' => 'Test']);
             $this->fail('Expected exhausted code to fail');
@@ -46,7 +46,7 @@ class MemberRegistrationConsistencyTest extends TestCase
             $this->assertArrayHasKey('member_number', $exception->errors());
         }
         $this->assertDatabaseMissing('members', ['user_id' => $user->id]);
-        $this->assertSame(10, MemberCodeSettingStore::getMemberCodeNextNumber($user->project_id));
+        $this->assertSame(10, app(MemberCodeSettingStore::class)->getMemberCodeNextNumber($user->project_id));
     }
 
     public function test_soft_deleted_codes_remain_reserved_by_the_unique_constraint(): void

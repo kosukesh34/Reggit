@@ -77,7 +77,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_pos_customersの同期でスマレジのポイントがローカルに反映されること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -106,7 +106,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_outbound_pending中は_webhook取込でポイントを巻き戻さないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -138,7 +138,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_another_successful_order_cannot_expose_pending_points_to_inbound(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         AdminContext::setCurrentProject($project);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -188,7 +188,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_customer_relinked_during_fetch_keeps_local_profile_and_points(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         AdminContext::setCurrentProject($project);
         $user = User::factory()->create(['project_id' => $project->id, 'name' => 'Local']);
         $member = Member::factory()->create([
@@ -216,7 +216,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     private function assertRemoteFetchCannotUndoOrderAcknowledgedDuringFetch(bool $existingOrder): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         AdminContext::setCurrentProject($project);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -257,7 +257,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_pending_points_in_another_store_survive_cache_eviction(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         AdminContext::setCurrentProject($project);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -284,7 +284,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_pos_customersの同期でスマレジの会員情報がローカルに反映されること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $store = $project->stores()->firstOrFail();
         $store->update(['smaregi_store_id' => 'smaregi-store-12']);
@@ -343,7 +343,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_pos_customersの同期で登録時の氏名プレースホルダは取り込まないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id, 'name' => null, 'kana' => 'ヤマダ']);
         Member::factory()->create([
             'project_id' => $project->id,
@@ -369,8 +369,8 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_pos_customersの同期で任意項目がprofile_extraに反映されること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
-        ProfileSettingStore::setProfileFieldSettings([
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ProfileSettingStore::class)->setProfileFieldSettings([
             'smaregi_fields' => [],
             'custom_fields' => [
                 [
@@ -411,7 +411,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     {
         $project = Project::factory()->create();
         $otherProject = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $otherUser = User::factory()->create(['project_id' => $otherProject->id]);
         Member::factory()->create([
@@ -448,7 +448,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
         config(['smaregi.inbound_sync_on_member_fetch' => true, 'smaregi.inbound_sync_on_member_fetch_ttl_seconds' => 0]);
 
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -478,7 +478,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_sync_member_from_smaregiで会員番号からスマレジidを紐付けて同期できること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -655,7 +655,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_取引total_pointヒントがあれば会員ポイント_a_p_i失敗でも同期できること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -688,7 +688,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_deletedアクションでは同期しないこと(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -711,7 +711,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_point_nullの場合は0として同期されること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -742,7 +742,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_inboundは_sync_points_ledger後に差分計算すること(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
@@ -815,7 +815,7 @@ class SmaregiInboundCustomerPointsSyncTest extends TestCase
     public function test_old_code_lookup_does_not_overwrite_confirmed_existing_member_link(): void
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([
             'project_id' => $project->id, 'user_id' => $user->id,

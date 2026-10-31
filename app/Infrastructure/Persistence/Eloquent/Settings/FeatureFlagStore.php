@@ -7,35 +7,39 @@ use App\Domain\Settings\ShopSettingKeys;
 /** 機能フラグの設定。 */
 class FeatureFlagStore
 {
+    public function __construct(
+        private ShopSettingStore $values,
+    ) {}
+
     /** config/native_app.php を反映した機能フラグ表示名 */
-    public static function featureFlagLabels(): array
+    public function featureFlagLabels(): array
     {
         return ShopSettingKeys::FEATURE_FLAG_LABELS;
     }
 
     /** 全機能フラグを取得 */
-    public static function getFeatureFlags(?int $projectId = null): array
+    public function getFeatureFlags(?int $projectId = null): array
     {
         $flags = [];
         foreach (ShopSettingKeys::FEATURE_FLAGS as $key => $default) {
             $flags[$key] = $key === 'feature_gallery_enabled'
-                ? self::galleryEnabledInHomeMenu($projectId)
-                : (bool) ShopSettingStore::getValue($key, $default, $projectId);
+                ? $this->galleryEnabledInHomeMenu($projectId)
+                : (bool) $this->values->getValue($key, $default, $projectId);
         }
 
         return $flags;
     }
 
     /** 指定機能が有効か */
-    public static function isFeatureEnabled(string $featureKey, ?int $projectId = null): bool
+    public function isFeatureEnabled(string $featureKey, ?int $projectId = null): bool
     {
         if ($featureKey === 'feature_gallery_enabled') {
-            return self::galleryEnabledInHomeMenu($projectId);
+            return $this->galleryEnabledInHomeMenu($projectId);
         }
 
         $default = ShopSettingKeys::FEATURE_FLAGS[$featureKey] ?? true;
 
-        return (bool) ShopSettingStore::getValue($featureKey, $default, $projectId);
+        return (bool) $this->values->getValue($featureKey, $default, $projectId);
     }
 
     /**
@@ -45,9 +49,9 @@ class FeatureFlagStore
      * @param  array<string, bool|string|int|null>  $flags
      * @return array<string, bool|string|int|null>
      */
-    public static function withPreservedLotteryManagedFlags(array $flags, ?int $projectId = null): array
+    public function withPreservedLotteryManagedFlags(array $flags, ?int $projectId = null): array
     {
-        $current = self::getFeatureFlags($projectId);
+        $current = $this->getFeatureFlags($projectId);
         foreach (ShopSettingKeys::LOTTERY_MANAGED_FEATURE_FLAGS as $key) {
             if (array_key_exists($key, $flags)) {
                 continue;
@@ -61,20 +65,20 @@ class FeatureFlagStore
     }
 
     /** 機能フラグを一括更新（未指定キーは OFF。false も OFF として扱う） */
-    public static function setFeatureFlags(array $flags, ?int $projectId = null): void
+    public function setFeatureFlags(array $flags, ?int $projectId = null): void
     {
         foreach (ShopSettingKeys::FEATURE_FLAGS as $key => $default) {
             $enabled = $key === 'feature_gallery_enabled'
-                ? self::galleryEnabledInHomeMenu($projectId)
-                : (array_key_exists($key, $flags) && self::isTruthyFeatureFlag($flags[$key]));
-            ShopSettingStore::setValue($key, $enabled ? '1' : '0', 'boolean', $projectId);
+                ? $this->galleryEnabledInHomeMenu($projectId)
+                : (array_key_exists($key, $flags) && $this->isTruthyFeatureFlag($flags[$key]));
+            $this->values->setValue($key, $enabled ? '1' : '0', 'boolean', $projectId);
         }
     }
 
     /** ギャラリーの公開状態はホームメニューの「表示」だけで決まる。 */
-    private static function galleryEnabledInHomeMenu(?int $projectId): bool
+    private function galleryEnabledInHomeMenu(?int $projectId): bool
     {
-        $items = ShopSettingStore::getValue('frontend_menu_items', null, $projectId);
+        $items = $this->values->getValue('frontend_menu_items', null, $projectId);
         if (! is_array($items)) {
             return true;
         }
@@ -91,7 +95,7 @@ class FeatureFlagStore
     /**
      * @param  bool|int|float|string|null  $value
      */
-    private static function isTruthyFeatureFlag($value): bool
+    private function isTruthyFeatureFlag($value): bool
     {
         if (is_bool($value)) {
             return $value;

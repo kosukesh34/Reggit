@@ -173,7 +173,7 @@ class SmaregiWebhookWalletSyncTest extends TestCase
         $first = $this->createLinkedMember(10, '77');
         $second = $this->createLinkedMember(11, '77');
         $other = $this->createLinkedMember(12, '77');
-        ShopSettingStore::setValue('smaregi_contract_id', 'other-contract', 'string', (int) $other->project_id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', 'other-contract', 'string', (int) $other->project_id);
         $this->fakeSmaregiHttpSingleCustomer(['customerId' => '77', 'point' => '25']);
         $this->postJson('/api/smaregi/webhook', [
             'contractId' => self::CONTRACT_ID,
@@ -250,7 +250,7 @@ class SmaregiWebhookWalletSyncTest extends TestCase
     private function createLinkedMember(int $initialPoints, string $smaregiCustomerId): Member
     {
         $project = Project::factory()->create();
-        ShopSettingStore::setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
+        app(ShopSettingStore::class)->setValue('smaregi_contract_id', self::CONTRACT_ID, 'string', (int) $project->id);
 
         $user = User::factory()->create(['project_id' => $project->id]);
         $member = Member::factory()->create([

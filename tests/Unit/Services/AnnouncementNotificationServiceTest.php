@@ -48,7 +48,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_delivers_native_push_and_line_message(): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('a', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -102,7 +102,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_attaches_hero_image_for_https_image_url(): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('c', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -157,7 +157,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     {
         config(['app.url' => 'http://localhost']);
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('d', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -208,7 +208,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_drops_hero_for_remaining_members_after_image_retry_succeeds(): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $lineUserId1 = 'U'.str_repeat('1', 32);
         $lineUserId2 = 'U'.str_repeat('2', 32);
         $user1 = User::factory()->create([
@@ -282,7 +282,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_skips_line_when_member_has_no_line_user_id(): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $user = User::factory()->create([
             'project_id' => $project->id,
             'line_user_id' => 'guest-no-line',
@@ -323,7 +323,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_ターゲット配信で対象が空なら誰にも送らないこと(): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $lineUserId = 'U'.str_repeat('a', 32);
         $user = User::factory()->create([
             'project_id' => $project->id,
@@ -367,7 +367,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_line_respects_member_notification_preference(): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $couponOnlyLineId = 'U'.str_repeat('e', 32);
         $noneLineId = 'U'.str_repeat('f', 32);
         $couponOnlyUser = User::factory()->create([
@@ -440,7 +440,7 @@ class AnnouncementNotificationServiceTest extends TestCase
     public function test_send_ブロック中の会員には送らず送信エラーと合わせて履歴に残すこと(): void
     {
         $project = $this->createProject();
-        LineSettingStore::setLineChannelAccessToken('test-token', $project->id);
+        app(LineSettingStore::class)->setLineChannelAccessToken('test-token', $project->id);
         $blocked = Member::factory()->create([
             'project_id' => $project->id,
             'user_id' => User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat('b', 32), 'line_blocked_at' => now()])->id,
