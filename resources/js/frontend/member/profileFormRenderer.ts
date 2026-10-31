@@ -1,4 +1,4 @@
-import type { HtmlEscaper } from './memberStateTemplates';
+export type HtmlEscaper = (value: string) => string;
 
 export type ProfileField = {
     key?: unknown;
