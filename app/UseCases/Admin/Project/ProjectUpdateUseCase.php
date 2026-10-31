@@ -4,13 +4,13 @@ namespace App\UseCases\Admin\Project;
 
 use App\Models\Project;
 use App\Services\Admin\ProjectProvisioningService;
-use App\UseCases\Admin\Settings\UpdateLiffConnectionSettingsUseCase;
+use App\Services\Line\LiffConnectionSettingsUpdater;
 
 class ProjectUpdateUseCase
 {
     public function __construct(
         private readonly ProjectProvisioningService $projectProvisioningService,
-        private readonly UpdateLiffConnectionSettingsUseCase $updateLiffConnectionSettingsUseCase,
+        private readonly LiffConnectionSettingsUpdater $liffConnectionSettings,
     ) {}
 
     /**
@@ -28,7 +28,7 @@ class ProjectUpdateUseCase
         $project->update($payload);
         $this->projectProvisioningService->syncSmaregiSettings((int) $project->id, $settingsPayload);
         if ($lineConnectionPayload !== null) {
-            $this->updateLiffConnectionSettingsUseCase->handle((int) $project->id, $lineConnectionPayload);
+            $this->liffConnectionSettings->update((int) $project->id, $lineConnectionPayload);
         }
 
         return $project;

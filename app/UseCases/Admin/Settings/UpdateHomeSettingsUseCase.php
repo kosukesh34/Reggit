@@ -4,8 +4,9 @@ namespace App\UseCases\Admin\Settings;
 
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
 use App\Models\GalleryItem;
+use App\Services\Admin\Data\UpdateHomeImagesInput;
+use App\Services\Admin\HomeImagesUpdater;
 use App\Support\LiffDesignerSanitizer;
-use App\UseCases\Admin\Settings\Data\UpdateHomeImagesInput;
 use App\UseCases\Admin\Settings\Data\UpdateHomeSettingsInput;
 use App\Util\StrHelper;
 
@@ -13,7 +14,7 @@ class UpdateHomeSettingsUseCase
 {
     public function __construct(
         private HomeSettingsRepository $shopSettingRepository,
-        private UpdateHomeImagesUseCase $images,
+        private HomeImagesUpdater $images,
     ) {}
 
     public function handle(UpdateHomeSettingsInput $input): void
@@ -40,7 +41,7 @@ class UpdateHomeSettingsUseCase
         $productDisplayLayout = $input->productLayout;
         $nativeChromeColors = $input->nativeColors;
         $navigationHeaderBackgroundColor = $input->headerBackground;
-        $this->images->handle(new UpdateHomeImagesInput($projectId, $input->headerImage, $input->clearHeaderImage, $input->homeImage, $input->clearHomeImage, $input->homeImages, $input->removedHomeImages, $input->homeImagesPresent));
+        $this->images->update(new UpdateHomeImagesInput($projectId, $input->headerImage, $input->clearHeaderImage, $input->homeImage, $input->clearHomeImage, $input->homeImages, $input->removedHomeImages, $input->homeImagesPresent));
         if ($nativeChromeColors !== null) {
             $this->shopSettingRepository->setValue('native_chrome_colors', array_map('strtoupper', array_intersect_key($nativeChromeColors, array_flip(['header_icon', 'footer_background', 'footer_icon', 'footer_active_icon', 'footer_active_background', 'primary_button_background', 'primary_button_text', 'secondary_button_background', 'secondary_button_text']))), 'json', $projectId);
         }

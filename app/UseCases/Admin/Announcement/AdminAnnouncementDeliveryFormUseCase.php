@@ -4,6 +4,7 @@ namespace App\UseCases\Admin\Announcement;
 
 use App\Domain\Settings\Repositories\LineConnectionSettings;
 use App\Domain\Settings\Repositories\ProfileSettings;
+use App\Models\MemberAudienceGroup;
 use App\Models\Product;
 use App\Models\Project;
 use App\Services\Admin\CouponAdminService;
@@ -21,7 +22,6 @@ class AdminAnnouncementDeliveryFormUseCase
         private MemberTagAdminService $memberTagAdminService,
         private RfmAnalysisService $rfmAnalysisService,
         private ProfileSettings $profileSettings,
-        private AdminMemberAudienceGroupUseCase $audienceGroupUseCase,
         private LineService $lineService,
         private LineConnectionSettings $lineSettings,
     ) {}
@@ -41,7 +41,7 @@ class AdminAnnouncementDeliveryFormUseCase
             $this->memberTagAdminService->getListByProject($projectId),
             $this->rfmAnalysisService->segmentOptions(),
             array_values($this->profileSettings->getProfileFieldSettings($projectId)['custom_fields'] ?? []),
-            $this->audienceGroupUseCase->list($projectId),
+            MemberAudienceGroup::query()->where('project_id', $projectId)->orderBy('name')->get(),
             $linePlanEnabled,
             // 送信時と同じく、店舗のトークンが無ければ共通設定のトークンで数える
             $linePlanEnabled ? $this->lineService->getMessageQuota($this->lineSettings->getLineChannelAccessToken($projectId)) : null,
