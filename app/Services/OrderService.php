@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Domain\Order\Events\OrderPointsSyncRequested;
 use App\Domain\Order\Events\OrderTransactionSyncRequested;
 use App\Domain\Order\Exceptions\OrderOperationException;
+use App\Domain\Order\Policies\OrderPaymentPolicy;
 use App\Domain\Order\Policies\OrderPlacementPolicy;
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Domain\Order\Repositories\ProductStockRepository;
@@ -18,9 +19,7 @@ use App\Models\Project;
 use App\Models\Settings\ProjectPaymentSetting;
 use App\Models\User;
 use App\Services\Member\CurrentMemberPrincipal;
-use App\Services\Shop\ShopOperations;
-use App\Support\JapanPrefectures;
-use App\Support\MemberChannel;
+use App\Services\Shop\ShippingOrderPreparer;
 use App\Util\AdminContext;
 use App\Util\StoreContext;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +37,8 @@ class OrderService
         private OrderPlacementPolicy $orderPlacementPolicy,
         private OrderNumberAssigner $orderNumberAssigner,
         private CurrentMemberPrincipal $principals,
-        private ShopOperations $shopOperations,
+        private ShippingOrderPreparer $shipping,
+        private OrderPaymentPolicy $paymentPolicy,
         private OrderItemPreparer $items,
     ) {}
 
@@ -63,11 +63,8 @@ class OrderService
             if ($orderType === OrderType::TICKET && $user->member === null) {
                 throw new OrderOperationException('回数券の購入には会員登録が必要です');
             }
-            if ($orderType === OrderType::SHIPPING && ! $this->hasShopBuyerIdentity($user)) {
-                throw new OrderOperationException('ショップでのご注文にはログインが必要です。');
-            }
-            if ($orderType === OrderType::SHIPPING && ! $this->shopOperations->isLegalNoticeComplete($projectId)) {
-                throw new OrderOperationException('特定商取引法に基づく表記の準備中のため、現在ご注文いただけません。');
+            if ($orderType === OrderType::SHIPPING) {
+                $this->shipping->assertCanOrder($user, $projectId);
             }
 
             $orderItems = $this->items->validateAndPrepareOrderItems($orderData['items'], $projectId, $orderType === OrderType::TICKET);
@@ -76,51 +73,26 @@ class OrderService
             $shippingFee = 0;
             $shippingPrefecture = '';
             if ($orderType === OrderType::SHIPPING) {
-                foreach (['shipping_name', 'shipping_phone', 'shipping_postal_code', 'shipping_prefecture', 'shipping_address'] as $field) {
-                    if (trim((string) ($orderData[$field] ?? '')) === '') {
-                        throw new OrderOperationException('配送先情報を入力してください');
-                    }
-                }
-                $shippingPrefecture = trim((string) $orderData['shipping_prefecture']);
-                if (! JapanPrefectures::isValid($shippingPrefecture)) {
-                    throw new OrderOperationException('都道府県を選択してください');
-                }
-                $freeShippingThreshold = $this->shopOperations->freeShippingThreshold($projectId);
-                $shippingFee = $freeShippingThreshold !== null && $totalAmount >= $freeShippingThreshold
-                    ? 0
-                    : $this->shopSettingRepository->getShopShippingFeeForPrefecture($projectId, $shippingPrefecture);
+                $shippingDetails = $this->shipping->prepare($orderData, $projectId, $totalAmount);
+                $shippingPrefecture = $shippingDetails['prefecture'];
+                $shippingFee = $shippingDetails['fee'];
                 $totalAmount += $shippingFee;
-                [$deliveryDate, $deliveryTimeSlot] = $this->validatedDelivery($orderData, $projectId);
+                $deliveryDate = $shippingDetails['delivery_date'];
+                $deliveryTimeSlot = $shippingDetails['delivery_time_slot'];
             }
 
             $paymentSetting = ProjectPaymentSetting::current($projectId);
-            $brand = $paymentMethod === PaymentMethod::STRIPE ? ($orderData['payment_brand'] ?? 'card') : 'cash';
-            if (in_array($orderType, [OrderType::MOBILE, OrderType::SHIPPING], true)
-                && $paymentSetting !== null
-                && ! in_array($brand, $paymentSetting->methods, true)) {
-                throw new OrderOperationException('このお支払い方法は現在利用できません');
-            }
-            if ($paymentSetting === null && ($brand !== 'card' && $brand !== 'cash')) {
-                throw new OrderOperationException('このお支払い方法は現在利用できません');
-            }
-            if ($paymentMethod === PaymentMethod::STRIPE && $paymentSetting === null
-                && Project::find($projectId)?->project_key !== (config('app.default_project_key') ?: 'default')) {
-                throw new OrderOperationException('このプロジェクトの決済設定を登録してください');
-            }
             $pointsUsed = (int) ($orderData['points_used'] ?? 0);
-            if ($pointsUsed > $totalAmount) {
-                throw new OrderOperationException('ポイント利用額は注文金額以下にしてください');
-            }
-            if ($pointsUsed > 0 && ! $this->shopSettingRepository->getUsePoints($projectId)) {
-                throw new OrderOperationException('ポイントは現在利用できません');
-            }
-            $finalAmount = max(0, $totalAmount - $pointsUsed);
-            if ($paymentMethod === PaymentMethod::STRIPE && $finalAmount < 1) {
-                throw new OrderOperationException('オンライン決済の金額は1円以上必要です。ポイント利用額を減らしてください');
-            }
-            if ($brand === 'paypay' && ($finalAmount < 50 || $finalAmount > 1000000)) {
-                throw new OrderOperationException('PayPayのお支払い金額は50円〜100万円です');
-            }
+            ['brand' => $brand, 'final_amount' => $finalAmount] = $this->paymentPolicy->resolve(
+                $orderType,
+                $paymentMethod,
+                $orderData['payment_brand'] ?? null,
+                $paymentSetting?->methods,
+                fn (): bool => Project::find($projectId)?->project_key === (config('app.default_project_key') ?: 'default'),
+                $totalAmount,
+                $pointsUsed,
+                fn (): bool => $this->shopSettingRepository->getUsePoints($projectId),
+            );
 
             $orderId = $this->orderRepository->persistPending(
                 new PendingOrder(
@@ -204,41 +176,5 @@ class OrderService
                 (int) $item['quantity'],
             );
         }
-    }
-
-    /**
-     * お届け希望日・時間帯（任意）。設定の範囲外は受け付けない。
-     *
-     * @return array{0: ?string, 1: ?string}
-     */
-    private function validatedDelivery(array $orderData, int $projectId): array
-    {
-        $date = trim((string) ($orderData['delivery_date'] ?? ''));
-        $slot = trim((string) ($orderData['delivery_time_slot'] ?? ''));
-        if ($date === '' && $slot === '') {
-            return [null, null];
-        }
-        $options = $this->shopOperations->deliveryOptions($projectId);
-        if (! $options['enabled']) {
-            throw new OrderOperationException('お届け日時の指定は現在受け付けていません');
-        }
-        if ($date !== '' && ($date < $options['earliest'] || $date > $options['latest'])) {
-            throw new OrderOperationException('お届け希望日は'.$options['earliest'].'から'.$options['latest'].'の間で選択してください');
-        }
-        if ($slot !== '' && ! in_array($slot, $options['time_slots'], true)) {
-            throw new OrderOperationException('お届け時間帯を選択し直してください');
-        }
-
-        return [$date !== '' ? $date : null, $slot !== '' ? $slot : null];
-    }
-
-    private function hasShopBuyerIdentity(User $user): bool
-    {
-        if (MemberChannel::hasLine($user)) {
-            return true;
-        }
-        $email = is_string($user->email) ? trim($user->email) : '';
-
-        return $email !== '' && $user->email_verified_at !== null;
     }
 }
