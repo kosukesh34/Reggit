@@ -6,7 +6,7 @@ use App\Domain\Order\Exceptions\OrderOperationException;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
-class StripePaymentGateway implements PaymentGateway
+class StripePaymentGateway implements PaymentGateway, ProjectCredentialedGateway
 {
     private StripeClient $client;
 
@@ -16,6 +16,11 @@ class StripePaymentGateway implements PaymentGateway
             'api_key' => $secretKey ?: null,
             'stripe_version' => '2026-02-25.clover',
         ]);
+    }
+
+    public function withProjectCredentials(string $secretKey, string $brand, array $metadata): PaymentGateway
+    {
+        return new self($secretKey, $brand, $metadata);
     }
 
     public function createPaymentIntent(int $amount, ?int $orderId): array
