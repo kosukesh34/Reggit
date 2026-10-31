@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
 use App\Models\Member;
 use App\Models\Project;
 use App\Models\User;
@@ -43,9 +43,9 @@ class MemberProfileImageLifecycleTest extends TestCase
         Storage::fake('public');
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        $settings = ShopSettingStore::getProfileFieldSettings((int) $project->id);
+        $settings = ProfileSettingStore::getProfileFieldSettings((int) $project->id);
         $settings['smaregi_fields']['profile_image']['enabled'] = true;
-        ShopSettingStore::setProfileFieldSettings($settings, (int) $project->id);
+        ProfileSettingStore::setProfileFieldSettings($settings, (int) $project->id);
         $path = 'member-profile-images/'.$project->id.'/old.png';
         Storage::disk('public')->put($path, 'old image');
         $user = User::factory()->create(['project_id' => $project->id, 'profile_image_path' => $path, 'authentication_version' => 1]);

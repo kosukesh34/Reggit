@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\LiffSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -36,7 +37,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        ShopSettingStore::setFrontendMenuItems([
+        LiffSettingStore::setFrontendMenuItems([
             ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-home', 'order' => 0, 'enabled' => true],
             ['tab' => 'products', 'label' => 'オーダー', 'icon' => 'fa-utensils', 'order' => 1, 'enabled' => true],
             [
@@ -109,7 +110,7 @@ class AdminHomeSettingsPreserveLinkTabsTest extends TestCase
         $view = app(GetHomeSettingsUseCase::class)->handle($project->id);
         $this->assertSame('https://example.com/new', collect($view['tabs'])->firstWhere('tab', 'link_1')['url']);
         $this->assertSame('external', collect($view['tabs'])->firstWhere('tab', 'link_1')['open']);
-        $this->assertSame('external', collect(ShopSettingStore::getFrontendMenuItems($project->id))->firstWhere('tab', 'link_1')['open']);
+        $this->assertSame('external', collect(LiffSettingStore::getFrontendMenuItems($project->id))->firstWhere('tab', 'link_1')['open']);
 
         $payload['tabs'][0]['open'] = 'invalid';
         $this->post($endpoint, $payload)->assertSessionHasErrors('tabs.0.open');

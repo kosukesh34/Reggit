@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ReservationStatus;
+use App\Infrastructure\Persistence\Eloquent\Settings\BusinessSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -61,7 +62,7 @@ class ReservationControllerTest extends TestCase
         $project = $this->createDefaultProject();
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
-        $timeSlots = ShopSettingStore::getReservationTimeSlots($project->id);
+        $timeSlots = BusinessSettingStore::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
         $reservedAt = now()->addDay()->format('Y-m-d').'T'.$timeSlot;
 
@@ -89,7 +90,7 @@ class ReservationControllerTest extends TestCase
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         $course = ReservationCourse::create(['project_id' => $project->id, 'name' => 'ディナーコース', 'price' => 4200, 'is_active' => true]);
-        $timeSlot = ShopSettingStore::getReservationTimeSlots($project->id)[0];
+        $timeSlot = BusinessSettingStore::getReservationTimeSlots($project->id)[0];
 
         $this->withSession($this->sessionForUser($project, $user))
             ->withHeaders(['X-Line-User-Id' => self::TEST_USER_ID])
@@ -179,7 +180,7 @@ class ReservationControllerTest extends TestCase
     {
         $project = $this->createDefaultProject();
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
-        $timeSlots = ShopSettingStore::getReservationTimeSlots($project->id);
+        $timeSlots = BusinessSettingStore::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
         $reservedAt = now()->addDay()->format('Y-m-d').'T'.$timeSlot;
 
@@ -200,7 +201,7 @@ class ReservationControllerTest extends TestCase
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
         $closedDate = now()->addDay()->format('Y-m-d');
-        $timeSlots = ShopSettingStore::getReservationTimeSlots($project->id);
+        $timeSlots = BusinessSettingStore::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
         ShopSettingStore::setValue('closed_dates', [$closedDate], 'json', $project->id);
 
@@ -220,7 +221,7 @@ class ReservationControllerTest extends TestCase
         $project = $this->createDefaultProject();
         $user = User::factory()->create(['line_user_id' => self::TEST_USER_ID, 'project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
-        $timeSlots = ShopSettingStore::getReservationTimeSlots($project->id);
+        $timeSlots = BusinessSettingStore::getReservationTimeSlots($project->id);
         $timeSlot = $timeSlots[0];
         $reservedAt = Carbon::parse(now()->addDay()->format('Y-m-d').' '.$timeSlot);
 
@@ -247,7 +248,7 @@ class ReservationControllerTest extends TestCase
         $project = $this->createDefaultProject();
         $user = User::factory()->create(['project_id' => $project->id]);
         Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
-        $local = Carbon::parse(now()->addDays(2)->format('Y-m-d').' '.ShopSettingStore::getReservationTimeSlots($project->id)[0], 'Asia/Tokyo');
+        $local = Carbon::parse(now()->addDays(2)->format('Y-m-d').' '.BusinessSettingStore::getReservationTimeSlots($project->id)[0], 'Asia/Tokyo');
         $this->withSession($this->sessionForUser($project, $user))->postJson($this->reservationUrl(), [
             'reserved_at' => $local->copy()->utc()->toIso8601String(), 'number_of_people' => 2,
         ])->assertCreated();
@@ -295,7 +296,7 @@ class ReservationControllerTest extends TestCase
         $project = $this->createDefaultProject();
         $this->memberSession($project);
         ShopSettingStore::setValue('reservation_max_party_size', 20, 'integer', $project->id);
-        $slot = now()->addDay()->format('Y-m-d').'T'.ShopSettingStore::getReservationTimeSlots($project->id)[0];
+        $slot = now()->addDay()->format('Y-m-d').'T'.BusinessSettingStore::getReservationTimeSlots($project->id)[0];
 
         $this->postJson($this->reservationUrl(), ['reserved_at' => $slot, 'number_of_people' => 21])
             ->assertStatus(Response::HTTP_BAD_REQUEST)->assertJson(['error' => '1回の予約は20名までです']);

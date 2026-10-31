@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Smaregi;
 
 use App\Domain\Settings\Repositories\RankSettings;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\Member;
 use App\Models\Project;
@@ -21,7 +22,7 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
     {
         $project = Project::factory()->create();
         ShopSettingStore::setValue('point_earn_rate', 100, 'integer', $project->id);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '1', 'point_earn_rate' => 100],
             ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true, 'smaregi_rank_id' => '2', 'point_earn_rate' => 50],
         ], $project->id);
@@ -81,7 +82,7 @@ class SmaregiCustomerRankAssignmentServiceTest extends TestCase
     {
         $project = Project::factory()->create();
         ShopSettingStore::setValue('point_earn_rate', 100, 'integer', $project->id);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 1, 'is_active' => true, 'smaregi_rank_id' => '9', 'point_earn_rate' => 80],
         ], $project->id);
 

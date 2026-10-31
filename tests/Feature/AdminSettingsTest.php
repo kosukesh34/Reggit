@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\LiffSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\OrderSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
 use App\Models\StoreAppCredential;
@@ -110,8 +111,8 @@ class AdminSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertFalse(ShopSettingStore::isOrderLineNotifyEnabled((int) $project->id));
-        $this->assertFalse(ShopSettingStore::isOrderReadyLineNotifyEnabled((int) $project->id));
+        $this->assertFalse(OrderSettingStore::isOrderLineNotifyEnabled((int) $project->id));
+        $this->assertFalse(OrderSettingStore::isOrderReadyLineNotifyEnabled((int) $project->id));
 
         $this->actingAs($admin, 'admin')
             ->post(route('admin.settings.basic.update', ['project_key' => $project->project_key]), [
@@ -123,8 +124,8 @@ class AdminSettingsTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertTrue(ShopSettingStore::isOrderLineNotifyEnabled((int) $project->id));
-        $this->assertTrue(ShopSettingStore::isOrderReadyLineNotifyEnabled((int) $project->id));
+        $this->assertTrue(OrderSettingStore::isOrderLineNotifyEnabled((int) $project->id));
+        $this->assertTrue(OrderSettingStore::isOrderReadyLineNotifyEnabled((int) $project->id));
     }
 
     public function test_settings_詳細設定ページにアクセスできること(): void
@@ -176,7 +177,7 @@ class AdminSettingsTest extends TestCase
     {
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
-        ShopSettingStore::setFrontendMenuItems([
+        LiffSettingStore::setFrontendMenuItems([
             ['tab' => 'gallery', 'label' => 'ギャラリー', 'enabled' => false, 'order' => 10],
         ], $project->id);
 

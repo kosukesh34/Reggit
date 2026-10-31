@@ -4,7 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
@@ -26,7 +26,7 @@ class IssueCouponOnRankUpServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -68,7 +68,7 @@ class IssueCouponOnRankUpServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -102,7 +102,7 @@ class IssueCouponOnRankUpServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'silver', 'label' => 'シルバー', 'min_points' => 50, 'order' => 2, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 3, 'is_active' => true],
@@ -135,7 +135,7 @@ class IssueCouponOnRankUpServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -167,7 +167,7 @@ class IssueCouponOnRankUpServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -199,7 +199,7 @@ class IssueCouponOnRankUpServiceTest extends TestCase
             ['project_key' => 'default'],
             ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true]
         );
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'ブロンズ', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'ゴールド', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);
@@ -228,7 +228,7 @@ class IssueCouponOnRankUpServiceTest extends TestCase
     public function test_interleaved_rank_up_preserves_both_delivery_recipients(): void
     {
         $project = Project::firstOrCreate(['project_key' => 'default'], ['name' => 'Default Project', 'is_active' => true]);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'min_points' => 0, 'is_active' => true],
             ['key' => 'gold', 'min_points' => 100, 'is_active' => true],
         ], $project->id);

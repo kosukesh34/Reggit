@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\AppearanceSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\FeatureFlagStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Project;
@@ -36,7 +38,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
         $project = $this->createProject();
         $admin = $this->createAdmin($project);
 
-        ShopSettingStore::setFeatureFlags([
+        FeatureFlagStore::setFeatureFlags([
             'feature_home_enabled' => true,
             'feature_orders_enabled' => true,
             'feature_reservations_enabled' => false,
@@ -57,12 +59,12 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
             ])
             ->assertRedirect(route('admin.settings.features', ['project_key' => $project->project_key]));
 
-        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_coupons_enabled', $project->id));
-        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_orders_enabled', $project->id));
-        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_reservations_enabled', $project->id));
-        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
-        $this->assertFalse(ShopSettingStore::isFeatureEnabled('feature_announcements_enabled', $project->id));
-        $this->assertTrue(ShopSettingStore::isFeatureEnabled('feature_stamps_enabled', $project->id));
+        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_coupons_enabled', $project->id));
+        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_orders_enabled', $project->id));
+        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_reservations_enabled', $project->id));
+        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_gallery_enabled', $project->id));
+        $this->assertFalse(FeatureFlagStore::isFeatureEnabled('feature_announcements_enabled', $project->id));
+        $this->assertTrue(FeatureFlagStore::isFeatureEnabled('feature_stamps_enabled', $project->id));
     }
 
     public function test_クーポン設定画面にドロップゾーンがあること(): void
@@ -92,7 +94,7 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
             ])
             ->assertRedirect();
 
-        $savedUrl = ShopSettingStore::getCouponDefaultImageUrl($project->id);
+        $savedUrl = AppearanceSettingStore::getCouponDefaultImageUrl($project->id);
         $this->assertNotNull($savedUrl);
         $this->assertStringContainsString('storage/'.PublicImageStorageService::DIR_COUPON_DEFAULT.'/'.$project->id, (string) $savedUrl);
     }
@@ -110,6 +112,6 @@ class AdminCouponsSettingsFeatureFlagTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame('', (string) (ShopSettingStore::getCouponDefaultImageUrl($project->id) ?? ''));
+        $this->assertSame('', (string) (AppearanceSettingStore::getCouponDefaultImageUrl($project->id) ?? ''));
     }
 }

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ScheduledDeliveryType;
-use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
+use App\Infrastructure\Persistence\Eloquent\Settings\MemberRankSettingStore;
 use App\Models\AfterRegistrationDelivery;
 use App\Models\Announcement;
 use App\Models\Coupon;
@@ -60,7 +60,7 @@ class MemberRankTransactionTest extends TestCase
     {
         $project = Project::factory()->create();
         AdminContext::setCurrentProject($project);
-        ShopSettingStore::setMemberRankSettings([
+        MemberRankSettingStore::setMemberRankSettings([
             ['key' => 'bronze', 'label' => 'Bronze', 'min_points' => 0, 'order' => 1, 'is_active' => true],
             ['key' => 'gold', 'label' => 'Gold', 'min_points' => 100, 'order' => 2, 'is_active' => true],
         ], $project->id);

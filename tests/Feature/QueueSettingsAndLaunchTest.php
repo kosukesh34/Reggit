@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\BusinessSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
 use App\Models\AdminUser;
 use App\Models\Member;
@@ -65,10 +66,10 @@ class QueueSettingsAndLaunchTest extends TestCase
         $response->assertRedirect(route('admin.settings.queue', ['project_key' => $project->project_key]));
         $response->assertSessionHas('success');
 
-        $this->assertSame(15, ShopSettingStore::getQueueAvgServeMinutes((int) $project->id));
-        $this->assertTrue(ShopSettingStore::getQueueRequireMembership((int) $project->id));
-        $this->assertTrue(ShopSettingStore::getQueueChannelLine((int) $project->id));
-        $this->assertTrue(ShopSettingStore::getQueueChannelNative((int) $project->id));
+        $this->assertSame(15, BusinessSettingStore::getQueueAvgServeMinutes((int) $project->id));
+        $this->assertTrue(BusinessSettingStore::getQueueRequireMembership((int) $project->id));
+        $this->assertTrue(BusinessSettingStore::getQueueChannelLine((int) $project->id));
+        $this->assertTrue(BusinessSettingStore::getQueueChannelNative((int) $project->id));
     }
 
     public function test_store_会員必須のとき非会員は403になること(): void
