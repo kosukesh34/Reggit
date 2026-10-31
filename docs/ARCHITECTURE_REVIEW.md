@@ -12,6 +12,7 @@ The application has several files whose size is a symptom of mixed responsibilit
 4. Done: `MemberService` was split into `Member\MemberDataReader` (member card data), `Member\MemberProfileUpdater` (profile and image), `Member\MemberRegistrar` (registration), and `Member\MemberNumberAssigner` (member codes).
 5. `LiffAppStudioTemplates` into one catalog plus one file per industry preset.
 6. Done: `OrderService` keeps order placement only. Item validation moved to `OrderItemPreparer`, paid-order rewards to `PaidOrderRewardApplier`, and cancellation reversal to `OrderCancellationReverser`; the unused `applyCashOrderLotteryIfNeeded` pass-through was removed.
+7. Done: `SmaregiInboundAwardApplier` delegates points to `SmaregiInboundPointAwarder` and stamps to `SmaregiInboundStampAwarder` (12 collaborators to 4; the unused `MemberAdminService` was dropped). `SmaregiCustomerPointsInboundSyncService` moved customer field mapping to `SmaregiInboundCustomerProfileApplier`.
 
 ## Rules for each extraction
 
