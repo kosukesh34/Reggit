@@ -10,6 +10,8 @@ use App\UseCases\Stamp\Data\StampGrantOpenOutput;
 
 class StampGrantOpenUseCase
 {
+    public function __construct(private LiffTabUrlBuilder $liffTabUrls) {}
+
     public function handle(string $token): StampGrantOpenOutput
     {
         $code = StampGrantCode::withoutGlobalScope(ProjectScope::class)->where('token', $token)->first();
@@ -29,7 +31,7 @@ class StampGrantOpenUseCase
             true,
             302,
             '',
-            LiffTabUrlBuilder::build((int) $project->id, (string) $project->project_key, 'stamps', [
+            $this->liffTabUrls->build((int) $project->id, (string) $project->project_key, 'stamps', [
                 'g' => $code->token,
             ]),
         );

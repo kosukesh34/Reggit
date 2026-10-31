@@ -41,7 +41,7 @@ class MemberUpdateRequest extends FormRequest
         }
     }
 
-    public function rules(): array
+    public function rules(ProfileSettings $profileSettings): array
     {
         $memberId = (int) $this->route('id');
         $format = ProfileValidationRules::formatRulesByField();
@@ -81,7 +81,7 @@ class MemberUpdateRequest extends FormRequest
             'custom_profile_form' => ['sometimes', 'boolean'],
         ];
 
-        foreach ($this->customProfileFieldDefinitions() as $cf) {
+        foreach ($this->customFieldDefinitions($profileSettings) as $cf) {
             $key = (string) ($cf['key'] ?? '');
             if ($key === '') {
                 continue;
@@ -123,7 +123,7 @@ class MemberUpdateRequest extends FormRequest
     /**
      * @return list<array<string, mixed>>
      */
-    private function customProfileFieldDefinitions(): array
+    private function customFieldDefinitions(ProfileSettings $profileSettings): array
     {
         $member = Member::query()
             ->withoutGlobalScope(ProjectScope::class)
@@ -131,7 +131,7 @@ class MemberUpdateRequest extends FormRequest
         if ($member === null) {
             return [];
         }
-        $settings = resolve(ProfileSettings::class)->getProfileFieldSettings((int) $member->project_id);
+        $settings = $profileSettings->getProfileFieldSettings((int) $member->project_id);
 
         return array_values($settings['custom_fields'] ?? []);
     }
@@ -181,9 +181,9 @@ class MemberUpdateRequest extends FormRequest
      *
      * @return array<string, mixed>|null
      */
-    public function getProfileExtraArray(): ?array
+    public function getProfileExtraArray(ProfileSettings $profileSettings): ?array
     {
-        $definitions = $this->customProfileFieldDefinitions();
+        $definitions = $this->customFieldDefinitions($profileSettings);
         if ($definitions === []) {
             $raw = $this->input('profile_extra');
             if ($raw === null || $raw === '') {

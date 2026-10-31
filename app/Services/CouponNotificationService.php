@@ -9,7 +9,7 @@ use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
 use App\Services\Line\LineService;
-use App\Support\CouponLiffUrlBuilder;
+use App\Support\LiffTabUrlBuilder;
 use App\Support\MemberChannel;
 use App\Support\NotificationImageUrl;
 use App\Util\LogHelper;
@@ -20,6 +20,7 @@ class CouponNotificationService
         private PushNotificationService $pushNotificationService,
         private LineService $lineService,
         private CouponNotificationSettings $shopSettingRepository,
+        private LiffTabUrlBuilder $liffTabUrls,
     ) {}
 
     public function notifyIssued(MemberCoupon $memberCoupon): void
@@ -100,7 +101,7 @@ class CouponNotificationService
             'クーポンが届きました',
             $name.'を受け取りました。クーポンタブからご確認ください。',
             $name,
-            CouponLiffUrlBuilder::buildCouponsTabUrl($projectId, $projectKey),
+            $this->liffTabUrls->build($projectId, $projectKey, 'coupons'),
             $includeImage ? $this->resolveLineImageUrl($coupon, $projectId) : null,
         );
     }

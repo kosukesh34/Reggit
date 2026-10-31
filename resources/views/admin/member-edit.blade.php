@@ -1,12 +1,13 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @extends('admin.layout')
 @section('title', '会員編集')
-@section('page-title', '会員編集 ' . \App\Support\AdminMemberIdentifier::value($view->member))
+@section('page-title', '会員編集 ' . $memberIdentifier->value($view->member))
 
 @section('content')
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.members') }}">会員一覧</a>
     <span class="breadcrumb-sep">/</span>
-    <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}">{{ $view->member->user->name ?? ('会員 '.\App\Support\AdminMemberIdentifier::value($view->member)) }}</a>
+    <a href="{{ admin_route('admin.members.detail', ['id' => $view->member->id]) }}">{{ $view->member->user->name ?? ('会員 '.$memberIdentifier->value($view->member)) }}</a>
     <span class="breadcrumb-sep">/</span>
     <span>編集</span>
 </nav>
@@ -93,7 +94,7 @@
                 <h4 class="form-section-title">会員情報</h4>
                 <div class="row">
                     <div class="col-md-6 form-group">
-                        @if(\App\Support\AdminMemberIdentifier::usesId($view->member->project_id))
+                        @if($memberIdentifier->usesId($view->member->project_id))
                         <label class="form-label">会員ID</label>
                         <input type="text" class="form-control" value="{{ $view->member->id }}" readonly>
                         <input type="hidden" name="member_number" value="{{ $view->member->member_number }}">

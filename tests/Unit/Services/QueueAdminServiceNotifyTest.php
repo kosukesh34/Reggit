@@ -13,6 +13,7 @@ use App\Models\UserDevice;
 use App\Services\Admin\QueueAdminService;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
+use App\Support\QueueLiffUrlBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -97,6 +98,7 @@ class QueueAdminServiceNotifyTest extends TestCase
             $pushMock,
             app(QueueEntryRepository::class),
             app(QueueAdminSettings::class),
+            app(QueueLiffUrlBuilder::class),
         );
         $service->notifyCalled((int) $entry->id);
 

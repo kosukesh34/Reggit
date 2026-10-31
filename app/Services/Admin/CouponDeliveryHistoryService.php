@@ -12,6 +12,8 @@ use Illuminate\Support\Collection;
 
 class CouponDeliveryHistoryService
 {
+    public function __construct(private AdminMemberIdentifier $memberIdentifier) {}
+
     /**
      * @return list<array{
      *     id: int,
@@ -115,7 +117,7 @@ class CouponDeliveryHistoryService
             $name = $member->user !== null && trim((string) $member->user->name) !== ''
                 ? (string) $member->user->name
                 : '—';
-            $number = AdminMemberIdentifier::value($member);
+            $number = $this->memberIdentifier->value($member);
             $labels[(int) $member->id] = $number !== '' ? $name.'（'.$number.'）' : $name;
         }
 

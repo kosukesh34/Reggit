@@ -11,6 +11,7 @@ use App\Models\UserDevice;
 use App\Services\DeviceService;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
+use App\Support\QueueLiffUrlBuilder;
 use App\UseCases\Queue\Data\QueueEntryFactory;
 use App\UseCases\Queue\Data\QueueQrStatusInput;
 use App\UseCases\Queue\QueueQrStatusUseCase;
@@ -76,6 +77,7 @@ class QueueQrStatusNotifyTest extends TestCase
             $pushMock,
             app(DeviceService::class),
             app(LineConnectionSettings::class),
+            app(QueueLiffUrlBuilder::class),
         );
 
         $output = $useCase->handle(new QueueQrStatusInput(
@@ -134,6 +136,7 @@ class QueueQrStatusNotifyTest extends TestCase
             $pushMock,
             app(DeviceService::class),
             app(LineConnectionSettings::class),
+            app(QueueLiffUrlBuilder::class),
         );
 
         $output = $useCase->handle(new QueueQrStatusInput(

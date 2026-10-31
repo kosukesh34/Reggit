@@ -1,3 +1,4 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @extends('admin.layout')
 
 @section('title', '利用履歴')
@@ -39,7 +40,7 @@
                 <thead>
                     <tr>
                         <th>会員名</th>
-                        <th>{{ \App\Support\AdminMemberIdentifier::label() }}</th>
+                        <th>{{ $memberIdentifier->label() }}</th>
                         <th>利用日時</th>
                         <th></th>
                     </tr>
@@ -54,7 +55,7 @@
                                 {{ $redemption['member_name'] }}
                             @endif
                         </td>
-                        <td>{{ \App\Support\AdminMemberIdentifier::fromValues($redemption['member_id'] ?? $redemption['id'] ?? null, $redemption['member_number']) }}</td>
+                        <td>{{ $memberIdentifier->fromValues($redemption['member_id'] ?? $redemption['id'] ?? null, $redemption['member_number']) }}</td>
                         <td>{{ $redemption['used_at'] }}</td>
                         <td class="table-actions-cell">
                             @if($redemption['member_id'] !== null)

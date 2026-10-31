@@ -10,7 +10,10 @@ use App\UseCases\Admin\AcquisitionSource\Data\AcquisitionSourceRow;
 
 class AdminAcquisitionSourceIndexUseCase
 {
-    public function __construct(private readonly AcquisitionSourceAdminService $sources) {}
+    public function __construct(
+        private readonly AcquisitionSourceAdminService $sources,
+        private LiffTabUrlBuilder $liffTabUrls,
+    ) {}
 
     /** @return list<AcquisitionSourceRow> */
     public function handle(int $projectId, string $projectKey): array
@@ -20,7 +23,7 @@ class AdminAcquisitionSourceIndexUseCase
             name: (string) $source->name,
             code: (string) $source->code,
             // 経路QRは選んだ画面を開き、会員登録のときに src を送る
-            url: LiffTabUrlBuilder::build($projectId, $projectKey, (string) $source->landing_tab, ['src' => (string) $source->code]),
+            url: $this->liffTabUrls->build($projectId, $projectKey, (string) $source->landing_tab, ['src' => (string) $source->code]),
             landingLabel: AppScreenCatalog::tabs()[(string) $source->landing_tab] ?? 'ホーム',
             membersCount: (int) $source->members_count,
             recentMembersCount: (int) $source->recent_members_count,

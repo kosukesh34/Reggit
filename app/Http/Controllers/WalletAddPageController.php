@@ -20,7 +20,8 @@ use Illuminate\View\View;
 class WalletAddPageController extends Controller
 {
     public function __construct(
-        private WalletPassUrlIssueUseCase $walletPassUrlIssueUseCase
+        private WalletPassUrlIssueUseCase $walletPassUrlIssueUseCase,
+        private QueueLiffUrlBuilder $queueLiffUrls,
     ) {}
 
     public function __invoke(Request $request): View
@@ -190,7 +191,7 @@ class WalletAddPageController extends Controller
         }
 
         return $this->sanitizeReturnUrl(
-            QueueLiffUrlBuilder::buildEntryUrl((int) $projectId, $projectKey)
+            $this->queueLiffUrls->buildEntryUrl((int) $projectId, $projectKey)
         );
     }
 }

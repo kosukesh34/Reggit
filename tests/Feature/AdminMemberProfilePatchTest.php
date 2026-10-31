@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Http\Requests\Admin\MemberUpdateRequest;
@@ -121,7 +122,7 @@ class AdminMemberProfilePatchTest extends TestCase
         $route = new Route('PUT', 'admin/member/{id}', fn () => null);
         $route->bind($request);
         $request->setRouteResolver(fn () => $route);
-        $patch = $request->getProfileExtraArray();
+        $patch = $request->getProfileExtraArray(app(ProfileSettings::class));
         $member->fresh()->update(['smaregi_customer_id' => '42', 'profile_extra' => ['note' => 'Old', 'other' => 'Concurrent', 'choices' => ['Coffee']]]);
         $this->mock(SmaregiApiService::class)->shouldReceive('getContractIdForProject')->andReturn('contract');
 

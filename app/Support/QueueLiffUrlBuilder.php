@@ -10,13 +10,15 @@ use App\Domain\Settings\Repositories\LineConnectionSettings;
  */
 class QueueLiffUrlBuilder
 {
-    public static function build(int $projectId, string $projectKey, ?string $qrToken, ?int $queueId = null): string
+    public function __construct(private LineConnectionSettings $lineSettings) {}
+
+    public function build(int $projectId, string $projectKey, ?string $qrToken, ?int $queueId = null): string
     {
         $projectKey = ProjectKey::require($projectKey);
         $token = trim((string) ($qrToken ?? ''));
         $id = $queueId !== null && $queueId > 0 ? $queueId : null;
 
-        $baseUrl = self::resolveBaseUrl($projectId, $projectKey);
+        $baseUrl = $this->resolveBaseUrl($projectId, $projectKey);
 
         if ($token !== '') {
             return self::appendQueueParams($baseUrl, $projectKey, 'queue_token', $token);
@@ -28,18 +30,17 @@ class QueueLiffUrlBuilder
     /**
      * Wallet 追加後など、アプリの LIFF エントリ URL（project_key のみ）を返す。
      */
-    public static function buildEntryUrl(int $projectId, string $projectKey): string
+    public function buildEntryUrl(int $projectId, string $projectKey): string
     {
         $projectKey = ProjectKey::require($projectKey);
-        $repo = app(LineConnectionSettings::class);
-        $liffId = trim($repo->getLineLiffId($projectId));
+        $liffId = trim($this->lineSettings->getLineLiffId($projectId));
         if ($liffId !== '') {
             return 'https://liff.line.me/'.$liffId.'?'.http_build_query([
                 'liff.state' => http_build_query(['project_key' => $projectKey]),
             ]);
         }
 
-        $baseUrl = self::resolveBaseUrl($projectId, $projectKey);
+        $baseUrl = $this->resolveBaseUrl($projectId, $projectKey);
         $parts = parse_url($baseUrl);
         if ($parts !== false) {
             $host = isset($parts['host']) ? strtolower((string) $parts['host']) : '';
@@ -56,16 +57,15 @@ class QueueLiffUrlBuilder
         return url('/liff/'.$projectKey);
     }
 
-    public static function resolveBaseUrl(int $projectId, string $projectKey): string
+    public function resolveBaseUrl(int $projectId, string $projectKey): string
     {
         $projectKey = ProjectKey::require($projectKey);
-        $repo = app(LineConnectionSettings::class);
-        $liffUrl = trim($repo->getLineLiffUrl($projectId));
+        $liffUrl = trim($this->lineSettings->getLineLiffUrl($projectId));
         if ($liffUrl !== '') {
             return self::normalizeLiffWebBase($liffUrl) ?? $liffUrl;
         }
 
-        $liffId = trim($repo->getLineLiffId($projectId));
+        $liffId = trim($this->lineSettings->getLineLiffId($projectId));
         if ($liffId !== '') {
             return 'https://liff.line.me/'.$liffId;
         }

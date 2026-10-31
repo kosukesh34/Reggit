@@ -7,14 +7,16 @@ namespace App\Support;
  */
 class LiffTabUrlBuilder
 {
+    public function __construct(private QueueLiffUrlBuilder $queueUrls) {}
+
     /**
      * @param  array<string, string>  $extra
      */
-    public static function build(int $projectId, string $projectKey, string $tab, array $extra = []): string
+    public function build(int $projectId, string $projectKey, string $tab, array $extra = []): string
     {
         $projectKey = ProjectKey::require($projectKey);
         $tab = trim($tab) !== '' ? trim($tab) : 'home';
-        $baseUrl = QueueLiffUrlBuilder::resolveBaseUrl($projectId, $projectKey);
+        $baseUrl = $this->queueUrls->resolveBaseUrl($projectId, $projectKey);
 
         return self::appendTabParams($baseUrl, $projectKey, $tab, $extra);
     }

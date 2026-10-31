@@ -13,6 +13,7 @@ class AdminCouponDeliveryPreviewMembersUseCase
 
     public function __construct(
         private CouponDeliveryTargetService $couponDeliveryTargetService,
+        private AdminMemberIdentifier $memberIdentifier,
     ) {}
 
     /**
@@ -44,7 +45,7 @@ class AdminCouponDeliveryPreviewMembersUseCase
                     'member_name' => $user !== null && trim((string) $user->name) !== ''
                         ? (string) $user->name
                         : '—',
-                    'display_identifier' => AdminMemberIdentifier::value($member),
+                    'display_identifier' => $this->memberIdentifier->value($member),
                     'member_number' => $member !== null && trim((string) $member->member_number) !== ''
                             ? (string) $member->member_number
                             : '—',

@@ -31,6 +31,7 @@ class QueueAdminService
         PushNotificationService $pushNotificationService,
         QueueEntryRepository $queueEntryRepository,
         QueueAdminSettings $shopSettingRepository,
+        private QueueLiffUrlBuilder $queueLiffUrls,
     ) {
         $this->lineService = $lineService;
         $this->pushNotificationService = $pushNotificationService;
@@ -192,7 +193,7 @@ class QueueAdminService
 
                 return;
             }
-            $liffUri = QueueLiffUrlBuilder::build(
+            $liffUri = $this->queueLiffUrls->build(
                 $projectId,
                 $projectKey,
                 (string) ($entry->qr_token ?? ''),

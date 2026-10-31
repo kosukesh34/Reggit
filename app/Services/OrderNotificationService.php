@@ -21,6 +21,7 @@ class OrderNotificationService
         private OrderNotificationSettings $shopSettingRepository,
         private PushNotificationService $pushNotificationService,
         private ShopOperations $shopOperations,
+        private LiffTabUrlBuilder $liffTabUrls,
     ) {}
 
     public function notifyConfirmed(int $orderId, int $projectId, string $channel = 'all'): void
@@ -236,7 +237,7 @@ class OrderNotificationService
         $refNumber = $order->formattedOrderNumber();
 
         try {
-            $ordersUrl = LiffTabUrlBuilder::build($projectId, $projectKey, 'orders');
+            $ordersUrl = $this->liffTabUrls->build($projectId, $projectKey, 'orders');
             $flex = [
                 'type' => 'flex',
                 'altText' => $title.($refNumber !== '' ? '（'.($order->order_type === OrderType::SHIPPING ? '注文番号' : '引換番号').': '.$refNumber.'）' : ''),
