@@ -7,7 +7,7 @@ The application has several files whose size is a symptom of mixed responsibilit
 ## Decomposition order
 
 1. `ShopSettingStore` into business, LIFF, feature flag, member, and wallet setting modules.
-2. Partly done: certificate resolution moved to `AppleWallet\PassCertificates`; manifest signing and archive creation moved to `AppleWallet\PassPackager`. Asset building remains in `WalletPassService`.
+2. Done: certificate resolution moved to `AppleWallet\PassCertificates`; manifest signing and archive creation moved to `AppleWallet\PassPackager`; icon, logo and strip images (including rank-colour placeholders) moved to `AppleWallet\PassAssets`. `WalletPassService` keeps pass.json and the build flow.
 3. Done: credentials and OAuth2 token moved to `GoogleWallet\GoogleWalletCredentials`; LoyaltyClass access checks, creation and label updates moved to `GoogleWallet\GoogleWalletLoyaltyClassApi`, which hands failure reasons back through `takeError()` so `getLastError()` keeps its messages. Loyalty object mapping stays in `GoogleWalletPassService`.
 4. Done: `MemberService` was split into `Member\MemberDataReader` (member card data), `Member\MemberProfileUpdater` (profile and image), `Member\MemberRegistrar` (registration), and `Member\MemberNumberAssigner` (member codes).
 5. `LiffAppStudioTemplates` into one catalog plus one file per industry preset.
