@@ -14,6 +14,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateStoreApp
 {
+    public function __construct(
+        private StoreContext $storeContext,
+    ) {}
+
     public function handle(Request $request, Closure $next, string $app): Response
     {
         $admin = $request->user();
@@ -51,8 +55,8 @@ class AuthenticateStoreApp
             $request->merge(['store_id' => $credential->store_id]);
         }
         AdminContext::setCurrentProject($project);
-        app(StoreContext::class)->bind($request, (int) $project->id, $admin);
-        app(StoreContext::class)->resolveForWrite((int) $project->id);
+        $this->storeContext->bind($request, (int) $project->id, $admin);
+        $this->storeContext->resolveForWrite((int) $project->id);
         $request->attributes->set('currentProject', $project);
         $request->attributes->set('authenticated_store_app', $app);
 

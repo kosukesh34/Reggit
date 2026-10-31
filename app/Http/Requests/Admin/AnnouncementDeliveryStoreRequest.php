@@ -145,14 +145,15 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
         ];
     }
 
-    public function withValidator(Validator $validator): void
+    /** @return list<callable(Validator): void> */
+    public function after(MemberSegmentService $segments): array
     {
-        $validator->after(function (Validator $validator): void {
+        return [function (Validator $validator) use ($segments): void {
             if ((string) $this->input('audience_type') !== Announcement::DELIVERY_TYPE_SEGMENT) {
                 return;
             }
 
-            $criteria = app(MemberSegmentService::class)->buildCriteriaFromInput($this->all());
+            $criteria = $segments->buildCriteriaFromInput($this->all());
             if ($criteria === null) {
                 $validator->errors()->add('segment_channel', 'セグメント配信では1つ以上の絞り込み条件を指定してください');
             }
@@ -169,7 +170,7 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
                 && (int) $pointsMin > (int) $pointsMax) {
                 $validator->errors()->add('segment_lifetime_points_max', '累計付与ポイントの上限は下限以上にしてください');
             }
-        });
+        }];
     }
 
     public function messages(): array

@@ -15,6 +15,7 @@ class QueueOpenUseCase
     public function __construct(
         private QueueSettings $shopSettingRepository,
         private ProjectRepository $projectRepository,
+        private QueueLiffUrlBuilder $queueLiffUrls,
     ) {}
 
     public function handle(string $projectKey, string $token): QueueOpenView
@@ -56,7 +57,7 @@ class QueueOpenUseCase
         $channelLine = $this->shopSettingRepository->getQueueChannelLine($projectId);
         $channelNative = $this->shopSettingRepository->getQueueChannelNative($projectId);
 
-        $lineUrl = QueueLiffUrlBuilder::build(
+        $lineUrl = $this->queueLiffUrls->build(
             $projectId,
             $projectKey,
             (string) ($entry->qr_token ?? ''),

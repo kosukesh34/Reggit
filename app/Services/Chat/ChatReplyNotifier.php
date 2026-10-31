@@ -30,6 +30,7 @@ class ChatReplyNotifier
         private LineService $line,
         private LineConnectionSettings $lineSettings,
         private FeatureSettings $features,
+        private LiffTabUrlBuilder $liffTabUrls,
     ) {}
 
     public function notify(Member $member, string $projectKey): void
@@ -65,7 +66,7 @@ class ChatReplyNotifier
         }
         try {
             $this->line->pushMessage($lineUserId, [
-                $this->line->createTextMessage(self::TITLE."\n".LiffTabUrlBuilder::build($projectId, $projectKey, 'chat')),
+                $this->line->createTextMessage(self::TITLE."\n".$this->liffTabUrls->build($projectId, $projectKey, 'chat')),
             ], $this->lineSettings->getLineChannelAccessToken($projectId));
         } catch (\Throwable $e) {
             LogHelper::error('[Chat] LINE push failed', ['member_id' => $member->id, 'project_id' => $projectId, 'error' => $e->getMessage()]);

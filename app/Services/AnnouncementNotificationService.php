@@ -23,6 +23,7 @@ class AnnouncementNotificationService
         private LineService $lineService,
         private LineConnectionSettings $shopSettingRepository,
         private CouponNotificationService $couponNotificationService,
+        private LiffTabUrlBuilder $liffTabUrls,
     ) {}
 
     /**
@@ -79,8 +80,8 @@ class AnnouncementNotificationService
             return ['line_sent' => 0, 'line_failed' => 0, 'line_skipped' => $members->count()];
         }
         $announcementsUrl = $announcement->action_path !== null && $announcement->action_path !== ''
-            ? self::appPathUrl($projectId, $projectKey, $announcement->action_path)
-            : LiffTabUrlBuilder::build($projectId, $projectKey, 'announcements');
+            ? $this->appPathUrl($projectId, $projectKey, $announcement->action_path)
+            : $this->liffTabUrls->build($projectId, $projectKey, 'announcements');
         $title = trim((string) $announcement->title);
         $body = trim((string) ($announcement->body ?? ''));
         $imageUrls = array_values(array_filter(array_map(
@@ -295,12 +296,12 @@ class AnnouncementNotificationService
     }
 
     /** アプリ内パス（/survey?survey=1）を、そのタブを開く LIFF URL にする */
-    private static function appPathUrl(int $projectId, string $projectKey, string $path): string
+    private function appPathUrl(int $projectId, string $projectKey, string $path): string
     {
         $tab = trim((string) parse_url($path, PHP_URL_PATH), '/');
         parse_str((string) parse_url($path, PHP_URL_QUERY), $extra);
 
-        return LiffTabUrlBuilder::build($projectId, $projectKey, $tab, array_map('strval', array_filter($extra, 'is_scalar')));
+        return $this->liffTabUrls->build($projectId, $projectKey, $tab, array_map('strval', array_filter($extra, 'is_scalar')));
     }
 
     /**

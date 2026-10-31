@@ -291,7 +291,7 @@ class LayerDependencyTest extends TestCase
         $allowed = [$root.'Http/Controllers/Admin/AdminBaseController.php'];
         $violations = [];
 
-        foreach (['Services', 'UseCases', 'Http/Controllers', 'Jobs'] as $directory) {
+        foreach (['Services', 'UseCases', 'Http/Controllers', 'Http/Middleware', 'Http/Requests', 'Jobs', 'Support'] as $directory) {
             foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root.$directory)) as $file) {
                 if (! $file->isFile() || $file->getExtension() !== 'php' || in_array($file->getPathname(), $allowed, true)) {
                     continue;

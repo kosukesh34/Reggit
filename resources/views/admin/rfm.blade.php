@@ -1,3 +1,4 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @extends('admin.layout')
 @section('title', 'RFM分析')
 @section('page-title', 'RFM分析')
@@ -80,7 +81,7 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>{{ \App\Support\AdminMemberIdentifier::label() }}</th>
+                    <th>{{ $memberIdentifier->label() }}</th>
                     <th>ユーザー名</th>
                     <th>セグメント</th>
                     <th>最終購買（日前）</th>
@@ -92,7 +93,7 @@
             <tbody>
                 @forelse($view->rows as $row)
                 <tr>
-                    <td><code class="member-number">{{ \App\Support\AdminMemberIdentifier::fromValues($row['member_id'] ?? $row['id'] ?? null, $row['member_number']) }}</code></td>
+                    <td><code class="member-number">{{ $memberIdentifier->fromValues($row['member_id'] ?? $row['id'] ?? null, $row['member_number']) }}</code></td>
                     <td>{{ $row['name'] }}</td>
                     <td>
                         <span class="rfm-badge" style="background: {{ $view->segmentSummary[$row['segment']]['color'] ?? '#6b7280' }}">

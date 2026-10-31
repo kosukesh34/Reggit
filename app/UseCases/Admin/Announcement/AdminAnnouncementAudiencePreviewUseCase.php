@@ -18,6 +18,7 @@ class AdminAnnouncementAudiencePreviewUseCase
     public function __construct(
         private MemberAdminQueryService $memberAdminService,
         private MemberSegmentService $memberSegmentService,
+        private AdminMemberIdentifier $memberIdentifier,
     ) {}
 
     /**
@@ -61,7 +62,7 @@ class AdminAnnouncementAudiencePreviewUseCase
 
             return [
                 'id' => (int) $member->id,
-                'display_identifier' => AdminMemberIdentifier::value($member),
+                'display_identifier' => $this->memberIdentifier->value($member),
                 'member_number' => trim((string) $member->member_number) !== '' ? (string) $member->member_number : '—',
                 'name' => trim((string) ($member->user?->name ?? '')) !== '' ? (string) $member->user->name : '名前未登録',
                 'rank' => trim((string) $member->rank) !== '' ? (string) $member->rank : '—',

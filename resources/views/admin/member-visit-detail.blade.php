@@ -1,3 +1,4 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @extends('admin.layout')
 
 @section('title', '取引詳細')
@@ -7,7 +8,7 @@
 <nav class="breadcrumb" aria-label="パンくず">
     <a href="{{ admin_route('admin.members') }}">会員一覧</a>
     <span class="breadcrumb-sep">/</span>
-    <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}">{{ $member->user->name ?? ('会員 '.\App\Support\AdminMemberIdentifier::value($member)) }}</a>
+    <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}">{{ $member->user->name ?? ('会員 '.$memberIdentifier->value($member)) }}</a>
     <span class="breadcrumb-sep">/</span>
     <span>取引詳細</span>
 </nav>
@@ -22,7 +23,7 @@
                 <div class="info-label">会員</div>
                 <div class="info-value">
                     <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}">
-                        {{ $member->user->name ?? ('会員 '.\App\Support\AdminMemberIdentifier::value($member)) }}
+                        {{ $member->user->name ?? ('会員 '.$memberIdentifier->value($member)) }}
                     </a>
                 </div>
             </div>

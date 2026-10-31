@@ -14,6 +14,7 @@ class AdminMemberExportUseCase
     public function __construct(
         private MemberAdminListQueryService $memberList,
         private MemberPointLedger $pointLedger,
+        private AdminMemberIdentifier $memberIdentifier,
     ) {}
 
     /**
@@ -27,7 +28,7 @@ class AdminMemberExportUseCase
                 $user = $m->user;
 
                 return [
-                    AdminMemberIdentifier::label($m->project_id) => AdminMemberIdentifier::value($m),
+                    $this->memberIdentifier->label($m->project_id) => $this->memberIdentifier->value($m),
                     'ユーザー名' => (string) ($user !== null ? $user->name : ''),
                     '登録チャネル' => MemberChannel::label($user),
                     'メール' => (string) ($user !== null ? $user->email : ''),

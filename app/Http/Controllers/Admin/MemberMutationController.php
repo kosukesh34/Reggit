@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Http\Requests\Admin\MemberUpdateRequest;
 use App\UseCases\Admin\Member\AdminMemberDeleteUseCase;
 use App\UseCases\Admin\Member\AdminMemberUpdateUseCase;
@@ -16,7 +17,7 @@ class MemberMutationController extends AdminBaseController
         private AdminMemberDeleteUseCase $deleteUseCase,
     ) {}
 
-    public function update(MemberUpdateRequest $request, string $projectKey, int $id): RedirectResponse
+    public function update(MemberUpdateRequest $request, ProfileSettings $profileSettings, string $projectKey, int $id): RedirectResponse
     {
         $memberData = $request->only([
             'member_number', 'status', 'rank', 'birthday', 'address', 'postal_code',
@@ -27,7 +28,7 @@ class MemberMutationController extends AdminBaseController
                 $memberData[$key] = null;
             }
         }
-        $profileExtra = $request->getProfileExtraArray();
+        $profileExtra = $request->getProfileExtraArray($profileSettings);
         if ($profileExtra !== null) {
             $memberData['profile_extra'] = $profileExtra;
         }

@@ -25,6 +25,7 @@ class QueueQrStatusUseCase
         private PushNotificationService $pushNotificationService,
         private DeviceService $deviceService,
         private LineConnectionSettings $shopSettingRepository,
+        private QueueLiffUrlBuilder $queueLiffUrls,
     ) {}
 
     public function handle(QueueQrStatusInput $input): ?QueueQrStatusOutput
@@ -127,7 +128,7 @@ class QueueQrStatusUseCase
 
                 return;
             }
-            $uri = QueueLiffUrlBuilder::build(
+            $uri = $this->queueLiffUrls->build(
                 $projectId,
                 $projectKey,
                 (string) ($entry->qr_token ?? ''),

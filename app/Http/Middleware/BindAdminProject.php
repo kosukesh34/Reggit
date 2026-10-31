@@ -15,6 +15,7 @@ class BindAdminProject
 {
     public function __construct(
         private ProjectRepository $projectRepository,
+        private StoreContext $storeContext,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -36,11 +37,11 @@ class BindAdminProject
         }
 
         AdminContext::setCurrentProject($project);
-        app(StoreContext::class)->bind($request, (int) $project->id, $admin);
+        $this->storeContext->bind($request, (int) $project->id, $admin);
         if ($this->requiresStoreSelection($request)) {
-            app(StoreContext::class)->useDefaultForOperation();
+            $this->storeContext->useDefaultForOperation();
         }
-        if (app(StoreContext::class)->projectStoreCount > 1 && ! $request->isMethod('GET') && ! $admin->isSystemAdmin() && ! $admin->isProjectAdmin()) {
+        if ($this->storeContext->projectStoreCount > 1 && ! $request->isMethod('GET') && ! $admin->isSystemAdmin() && ! $admin->isProjectAdmin()) {
             $path = (string) $request->route()?->uri();
             $commonSettings = $request->routeIs('admin.rfm.settings.update')
                 || ($request->routeIs('admin.settings.*')
