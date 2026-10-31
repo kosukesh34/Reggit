@@ -1,3 +1,4 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @extends('admin.layout')
 
 @section('title', '会員詳細')
@@ -10,7 +11,7 @@
     $canManage = $adminUser === null || $adminUser->hasPermission('members.manage');
     $user = $view->member->user;
     $hasName = admin_person_name($user?->name) !== '氏名未登録';
-    $memberName = $hasName ? $user->name : \App\Support\AdminMemberIdentifier::value($view->member);
+    $memberName = $hasName ? $user->name : $memberIdentifier->value($view->member);
     $lineName = trim((string) ($user?->line_name ?? ''));
     $kana = trim((string) ($user?->kana ?? ''));
     $phone = trim((string) ($user?->phone ?? ''));
@@ -94,8 +95,8 @@
     </div>
     <dl class="member-identity-facts">
         <div>
-            <dt>{{ \App\Support\AdminMemberIdentifier::label() }}</dt>
-            <dd><code class="member-number">{{ \App\Support\AdminMemberIdentifier::value($view->member) }}</code></dd>
+            <dt>{{ $memberIdentifier->label() }}</dt>
+            <dd><code class="member-number">{{ $memberIdentifier->value($view->member) }}</code></dd>
         </div>
         <div>
             <dt>登録日</dt>

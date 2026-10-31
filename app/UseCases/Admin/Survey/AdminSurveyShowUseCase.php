@@ -13,6 +13,7 @@ class AdminSurveyShowUseCase
     public function __construct(
         private readonly SurveyAdminService $surveys,
         private readonly SurveyResultPolicy $results,
+        private readonly LiffTabUrlBuilder $liffTabUrls,
     ) {}
 
     public function handle(int $projectId, string $projectKey, int $surveyId): AdminSurveyShowView
@@ -29,7 +30,7 @@ class AdminSurveyShowUseCase
             stats: $this->results->summarize($survey->toDefinition()->questions, $responses->pluck('answers')->all()),
             invitedCount: $invitations['invited'],
             invitedAnsweredCount: $invitations['answered'],
-            shareUrl: LiffTabUrlBuilder::build($projectId, $projectKey, 'survey', ['survey' => (string) $survey->id]),
+            shareUrl: $this->liffTabUrls->build($projectId, $projectKey, 'survey', ['survey' => (string) $survey->id]),
             npsTagIds: array_intersect_key($tagIds, array_flip(SurveyAnswerPolicy::NPS_TAGS)),
         );
     }

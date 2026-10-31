@@ -1,3 +1,4 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @php
     $isCouponDelivery = ($isCouponDelivery ?? false) === true;
     $oldAudienceType = $oldAudienceType ?? 'immediate_bulk';
@@ -30,16 +31,16 @@
     <div id="personalTargetBlock" class="ad-context-panel ad-context-panel--stack" hidden>
         <div class="ad-context-title">
             <span class="ad-context-icon"><i class="fas fa-user-plus" aria-hidden="true"></i></span>
-            <div><strong>配信する会員を選択</strong><small>{{ \App\Support\AdminMemberIdentifier::label() }}または名前で検索できます</small></div>
+            <div><strong>配信する会員を選択</strong><small>{{ $memberIdentifier->label() }}または名前で検索できます</small></div>
         </div>
         <div class="ad-member-search">
             <i class="fas fa-search" aria-hidden="true"></i>
-            <input type="search" id="memberSearch" class="form-control" placeholder="{{ \App\Support\AdminMemberIdentifier::label() }}・名前で検索" autocomplete="off">
+            <input type="search" id="memberSearch" class="form-control" placeholder="{{ $memberIdentifier->label() }}・名前で検索" autocomplete="off">
         </div>
         <div class="ad-member-csv">
             <label for="memberCsv" class="btn btn-secondary">CSVから追加</label>
             <input type="file" id="memberCsv" accept=".csv,text/csv" hidden>
-            <button type="button" class="admin-help" data-tooltip="1列目に{{ \App\Support\AdminMemberIdentifier::label() }}を入れてください。1行目が「{{ \App\Support\AdminMemberIdentifier::label() }}」でも読み込めます。&#10;&#10;{{ \App\Support\AdminMemberIdentifier::label() }}&#10;{{ \App\Support\AdminMemberIdentifier::usesId() ? '1234' : 'M00001234' }}&#10;{{ \App\Support\AdminMemberIdentifier::usesId() ? '5678' : 'M00005678' }}" aria-label="CSVの形式を見る">?</button>
+            <button type="button" class="admin-help" data-tooltip="1列目に{{ $memberIdentifier->label() }}を入れてください。1行目が「{{ $memberIdentifier->label() }}」でも読み込めます。&#10;&#10;{{ $memberIdentifier->label() }}&#10;{{ $memberIdentifier->usesId() ? '1234' : 'M00001234' }}&#10;{{ $memberIdentifier->usesId() ? '5678' : 'M00005678' }}" aria-label="CSVの形式を見る">?</button>
             <p id="memberCsvMessage" class="ad-field-help" hidden></p>
         </div>
         <div id="memberSearchResults" class="ad-member-results" hidden></div>
@@ -59,7 +60,7 @@
         <div id="audiencePreviewPanel">
             <div class="ad-audience-preview-table-wrap">
                 <table class="ad-audience-preview-table">
-                    <thead><tr><th>会員名</th><th>タグ</th><th>{{ \App\Support\AdminMemberIdentifier::label() }}</th><th>通知可否</th><th>チャネル</th><th>ランク</th></tr></thead>
+                    <thead><tr><th>会員名</th><th>タグ</th><th>{{ $memberIdentifier->label() }}</th><th>通知可否</th><th>チャネル</th><th>ランク</th></tr></thead>
                     <tbody id="audiencePreviewRows"><tr><td colspan="6" class="ad-audience-loading">対象者を読み込んでいます…</td></tr></tbody>
                 </table>
             </div>

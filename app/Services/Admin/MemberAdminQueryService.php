@@ -23,6 +23,7 @@ class MemberAdminQueryService
         private MemberRankCalculator $rankCalculator,
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberSettings $shopSettingRepository,
+        private AdminMemberIdentifier $memberIdentifier,
     ) {}
 
     public function findOrFail(int $id, ?int $projectId = null): Member
@@ -164,7 +165,7 @@ class MemberAdminQueryService
 
         if ($keyword !== '') {
             $query->where(function ($inner) use ($keyword, $projectId) {
-                $inner->where(AdminMemberIdentifier::usesId($projectId) ? 'id' : 'member_number', 'like', '%'.$keyword.'%')
+                $inner->where($this->memberIdentifier->usesId($projectId) ? 'id' : 'member_number', 'like', '%'.$keyword.'%')
                     ->orWhereHas('user', function ($userQuery) use ($keyword) {
                         $userQuery->where('name', 'like', '%'.$keyword.'%');
                     });
@@ -177,7 +178,7 @@ class MemberAdminQueryService
             ->get()
             ->map(fn (Member $member) => [
                 'id' => (int) $member->id,
-                'display_identifier' => AdminMemberIdentifier::value($member),
+                'display_identifier' => $this->memberIdentifier->value($member),
                 'member_number' => (string) ($member->member_number ?? ''),
                 'name' => (string) ($member->user?->name ?? ''),
             ])
@@ -202,12 +203,12 @@ class MemberAdminQueryService
 
         return Member::query()
             ->where('project_id', $projectId)
-            ->whereIn(AdminMemberIdentifier::usesId($projectId) ? 'id' : 'member_number', $normalized->all())
+            ->whereIn($this->memberIdentifier->usesId($projectId) ? 'id' : 'member_number', $normalized->all())
             ->with(['user:id,name'])
             ->get()
             ->map(fn (Member $member) => [
                 'id' => (int) $member->id,
-                'display_identifier' => AdminMemberIdentifier::value($member),
+                'display_identifier' => $this->memberIdentifier->value($member),
                 'member_number' => (string) ($member->member_number ?? ''),
                 'name' => (string) ($member->user?->name ?? ''),
             ])

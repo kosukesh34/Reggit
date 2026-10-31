@@ -1,3 +1,4 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @extends('admin.layout')
 
 @section('title', '配信詳細')
@@ -61,7 +62,7 @@
                 <thead>
                     <tr>
                         <th>会員名</th>
-                        <th>{{ \App\Support\AdminMemberIdentifier::label() }}</th>
+                        <th>{{ $memberIdentifier->label() }}</th>
                         <th>状態</th>
                         <th></th>
                     </tr>
@@ -76,7 +77,7 @@
                                 {{ $member['member_name'] }}
                             @endif
                         </td>
-                        <td>{{ \App\Support\AdminMemberIdentifier::fromValues($member['member_id'] ?? $member['id'] ?? null, $member['member_number']) }}</td>
+                        <td>{{ $memberIdentifier->fromValues($member['member_id'] ?? $member['id'] ?? null, $member['member_number']) }}</td>
                         <td>
                             <span class="badge badge-{{ $member['is_issued'] ? 'success' : 'secondary' }}">{{ $member['status_label'] }}</span>
                         </td>

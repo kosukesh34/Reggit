@@ -20,7 +20,7 @@ class AdminMemberIdentifierTest extends TestCase
     public function test_identifier_label_can_render_without_a_selected_project(): void
     {
         AdminContext::setCurrentProject(null);
-        $this->assertSame('会員番号', AdminMemberIdentifier::label());
+        $this->assertSame('会員番号', app(AdminMemberIdentifier::class)->label());
     }
 
     public function test_identifier_and_search_follow_each_tenants_numbering_setting(): void
@@ -31,10 +31,10 @@ class AdminMemberIdentifierTest extends TestCase
         app(ShopSettingStore::class)->setValue('member_code_type', 'random', 'string', $other->id);
         $member = Member::factory()->create(['project_id' => $project->id, 'member_number' => 'M00001234', 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
         $random = Member::factory()->create(['project_id' => $other->id, 'member_number' => 'XYZ987654', 'user_id' => User::factory()->create(['project_id' => $other->id])->id]);
-        $this->assertSame((string) $member->id, AdminMemberIdentifier::value($member));
-        $this->assertSame('XYZ987654', AdminMemberIdentifier::value($random));
-        $this->assertSame('会員ID', AdminMemberIdentifier::label($project->id));
-        $this->assertSame('会員番号', AdminMemberIdentifier::label($other->id));
+        $this->assertSame((string) $member->id, app(AdminMemberIdentifier::class)->value($member));
+        $this->assertSame('XYZ987654', app(AdminMemberIdentifier::class)->value($random));
+        $this->assertSame('会員ID', app(AdminMemberIdentifier::class)->label($project->id));
+        $this->assertSame('会員番号', app(AdminMemberIdentifier::class)->label($other->id));
         $service = app(MemberAdminQueryService::class);
         $this->assertSame((string) $member->id, $service->searchByKeyword($project->id, (string) $member->id)->first()['display_identifier']);
         $this->assertSame($member->id, $service->findByMemberNumbers($project->id, [(string) $member->id])->first()['id']);
@@ -49,8 +49,8 @@ class AdminMemberIdentifierTest extends TestCase
                     $params['id'] = $target->id;
                 }
                 $this->actingAs($admin, 'admin')->get(route($routeName, $params))
-                    ->assertOk()->assertSee(AdminMemberIdentifier::label($tenant->id))
-                    ->assertSee(AdminMemberIdentifier::value($target));
+                    ->assertOk()->assertSee(app(AdminMemberIdentifier::class)->label($tenant->id))
+                    ->assertSee(app(AdminMemberIdentifier::class)->value($target));
             }
         }
     }

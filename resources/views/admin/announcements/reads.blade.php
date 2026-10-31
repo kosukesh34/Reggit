@@ -1,3 +1,4 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @extends('admin.layout')
 
 @section('title', '配信結果')
@@ -92,7 +93,7 @@
                         <thead>
                             <tr>
                                 <th>会員</th>
-                                <th>{{ \App\Support\AdminMemberIdentifier::label() }}</th>
+                                <th>{{ $memberIdentifier->label() }}</th>
                                 <th>配信チャネル</th>
                                 <th>既読</th>
                                 @if($announcement->delivery_coupon_id !== null)<th>クーポン</th>@endif
@@ -103,7 +104,7 @@
                             @foreach($view->recipients as $recipient)
                                 <tr>
                                     <td><a href="{{ admin_route('admin.members.detail', ['id' => $recipient['member_id']]) }}"><strong>{{ $recipient['member_name'] }}</strong></a></td>
-                                    <td>{{ \App\Support\AdminMemberIdentifier::fromValues($recipient['member_id'] ?? $recipient['id'] ?? null, $recipient['member_number']) }}</td>
+                                    <td>{{ $memberIdentifier->fromValues($recipient['member_id'] ?? $recipient['id'] ?? null, $recipient['member_number']) }}</td>
                                     <td>{{ $recipient['channel'] }}</td>
                                     <td>
                                         @if($recipient['read_at'])

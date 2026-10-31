@@ -16,6 +16,7 @@ class BindProjectFromRequest
 {
     public function __construct(
         private ProjectRepository $projectRepository,
+        private StoreContext $storeContext,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -72,7 +73,7 @@ class BindProjectFromRequest
         }
 
         AdminContext::setCurrentProject($project);
-        app(StoreContext::class)->bind($request, (int) $project->id);
+        $this->storeContext->bind($request, (int) $project->id);
         $request->attributes->set('currentProject', $project);
         View::share('currentProject', $project);
         View::share('currentProjectId', $project->id);

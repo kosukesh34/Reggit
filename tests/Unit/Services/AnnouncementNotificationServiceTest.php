@@ -15,6 +15,7 @@ use App\Services\AnnouncementNotificationService;
 use App\Services\CouponNotificationService;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
+use App\Support\LiffTabUrlBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -91,7 +92,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class), app(LiffTabUrlBuilder::class));
         $result = $service->send($announcement);
 
         $this->assertSame(1, $result['sent']);
@@ -147,7 +148,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class), app(LiffTabUrlBuilder::class));
         $result = $service->send($announcement);
 
         $this->assertSame(1, $result['line_sent']);
@@ -199,7 +200,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class), app(LiffTabUrlBuilder::class));
         $result = $service->send($announcement);
 
         $this->assertSame(1, $result['line_sent']);
@@ -270,7 +271,7 @@ class AnnouncementNotificationServiceTest extends TestCase
                 return [];
             });
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class), app(LiffTabUrlBuilder::class));
         $result = $service->send($announcement);
 
         $this->assertSame(2, $result['line_sent']);
@@ -313,7 +314,7 @@ class AnnouncementNotificationServiceTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class), app(LiffTabUrlBuilder::class));
         $result = $service->send($announcement);
 
         $this->assertSame(0, $result['line_sent']);
@@ -356,7 +357,7 @@ class AnnouncementNotificationServiceTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class), app(LiffTabUrlBuilder::class));
         $result = $service->send($announcement);
 
         $this->assertSame(0, $result['line_sent']);
@@ -432,7 +433,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class), app(LiffTabUrlBuilder::class));
         $this->assertSame(0, $service->send($withoutCoupon)['line_sent']);
         $this->assertSame(1, $service->send($withCoupon)['line_sent']);
     }
@@ -464,7 +465,7 @@ class AnnouncementNotificationServiceTest extends TestCase
             ->with('U'.str_repeat('e', 32), Mockery::any(), 'test-token')
             ->andThrow(new \RuntimeException('400 Bad Request'));
 
-        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class));
+        $service = new AnnouncementNotificationService($pushMock, $lineMock, app(LineConnectionSettings::class), app(CouponNotificationService::class), app(LiffTabUrlBuilder::class));
         $result = $service->send($announcement);
 
         $this->assertSame(0, $result['line_sent']);

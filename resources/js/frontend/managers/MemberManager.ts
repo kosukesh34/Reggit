@@ -2,32 +2,17 @@ import { AppConstants } from '../../shared/constants';
 import { DomHelper } from '../../shared/utils/domHelper';
 import { ToastManager } from '../../shared/utils/toast';
 import { clearAcquisitionSource, getAcquisitionSource } from '../../shared/utils/acquisitionSource';
-import { getGuestRegisterMessage, getMemberRegistrationMode, isMembershipRequired, shouldAutoCreateMember, shouldShowRegistrationForm, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
-import { isDemoDataMode, isFixedUiShell } from '../demo/demoMode';
-import { buildBuiltinSampleMemberData } from '../demo/sampleData';
-import { isReactOwnedMount } from '../utils/reactOwnedMount';
+import { getMemberRegistrationMode, shouldAutoCreateMember, syncMemberRegistrationModeFromPayload } from '../utils/membershipPolicy';
+import { isDemoDataMode } from '../demo/demoMode';
 import { getLiffEcho } from '../realtime/liffEcho';
 import { MemberWalletActions } from '../member/MemberWalletActions';
-import { generateBarcode, generateQR, setupCardFlip, setupCodeEnlargeButton } from '../member/memberCodeDisplay';
 import {
     isMobileAppMode,
-    resolveLiffOs,
-    shouldShowAppleWallet,
-    shouldShowGoogleWallet,
 } from '../member/walletEnvironment';
 import { normalizeMemberPayload, normalizeWalletSummary, walletSummariesEqual } from '../member/memberPayload';
 import { buildProfilePayload } from '../member/profilePayload';
 import { renderProfileForm } from '../member/profileFormRenderer';
 import { resolvePostalAddress, validatePostalCode } from '../member/postalAddressPolicy';
-import { formatPointHistoryHtml } from '../member/pointHistoryFormatter';
-import { formatRankUpHistoryHtml } from '../member/rankHistoryFormatter';
-import {
-    renderGuestNoCardTemplate,
-    renderGuestRegisterTemplate,
-    renderLoginOptionalTemplate,
-    renderMemberErrorTemplate,
-    renderMemberSkeleton,
-} from '../member/memberStateTemplates';
 
 declare const liff: any;
 
@@ -49,11 +34,6 @@ export class MemberManager {
     _autoRegisterAttempted: boolean;
     _isRegisterSubmitting: boolean;
     _lastMemberFetchWasNonMember: boolean;
-    _walletVisibilityRefreshRegistered?: boolean;
-    _appleWalletOpenUrl?: string | null;
-    _appleWalletOpenUrlAt?: number;
-    _appleWalletPassDownloadUrl?: string | null;
-    _appleWalletPassDownloadUrlAt?: number;
     _walletEchoChannelName: string | null = null;
     _walletSummaryLast: { points: number; stamps_total: number; pending_lottery_count: number } | null = null;
     _walletVisibilityBound = false;
@@ -374,20 +354,6 @@ export class MemberManager {
         document.addEventListener('liff-profile-ready', retry, { once: true });
     }
 
-    _registerWalletVisibilityRefresh() {
-        if (this._walletVisibilityRefreshRegistered || typeof document === 'undefined') return;
-        this._walletVisibilityRefreshRegistered = true;
-
-        document.addEventListener('liff-ready', () => {
-            resolveLiffOs();
-            if (!this.memberData || this.memberData.is_member !== true) return;
-            const shouldShow = shouldShowAppleWallet() || shouldShowGoogleWallet();
-            if (shouldShow && !document.querySelector('.member-card-add-to-wallet-btn')) {
-                this.render(this.memberData);
-            }
-        }, { once: true });
-    }
-
     preload(_unused: any = null) {
         if (!this.canUseMemberFeature()) return;
         if (!window.__LINE_USER_ID__ && !isMobileAppMode()) return;
@@ -427,125 +393,6 @@ export class MemberManager {
             }
             if (this._getLineUserIdForMemberApi()) break;
             await new Promise(function (resolve) { setTimeout(resolve, 50); });
-        }
-    }
-
-    async _handleGuestContext(payload: any) {
-        syncMemberRegistrationModeFromPayload(payload);
-        const container = this.getContainer();
-        if (!container) return;
-
-        if (payload && payload.is_member === true) {
-            this.render(payload);
-            return;
-        }
-        if (this.memberData && this.memberData.is_member === true) {
-            this.render(this.memberData);
-            return;
-        }
-        if (shouldShowRegistrationForm()) {
-            await this.ensureRegistrationFormShown();
-            return;
-        }
-        if (payload && payload.show_member_card_for_guest === false && isMembershipRequired()) {
-            if (this._isReactOwnedMemberMount(container)) {
-                this._emitMemberReactEvent('liff-member-reload');
-                return;
-            }
-            container.innerHTML = this.getGuestNoCardTemplate();
-            this._attachRegisterTrigger(container);
-            return;
-        }
-        if (this.canAutoRegister() && !this._autoRegisterAttempted) {
-            await this.autoRegister();
-            return;
-        }
-        this.renderSampleMemberCard();
-    }
-
-    /** ゲスト向け会員登録誘導を描画 */
-    renderGuestCard(): void {
-        const container = this.getContainer();
-        if (!container) return;
-        if (this._isReactOwnedMemberMount(container)) {
-            this._emitMemberReactEvent('liff-member-reload');
-            return;
-        }
-        container.innerHTML = this.getGuestRegisterTemplate();
-        this._attachRegisterTrigger(container);
-    }
-
-    /** サンプル会員証を描画（デモ／会員任意時。会員必須時はゲスト登録導線） */
-    renderSampleMemberCard(): void {
-        if (isDemoDataMode() || !isMembershipRequired()) {
-            const app = typeof window !== 'undefined'
-                ? (window.app as { getDesignerSampleMemberData?: () => Record<string, unknown> } | undefined)
-                : undefined;
-            const sample = (app && typeof app.getDesignerSampleMemberData === 'function')
-                ? app.getDesignerSampleMemberData()
-                : buildBuiltinSampleMemberData();
-            this.render({
-                ...sample,
-                is_sample_preview: true,
-            });
-            return;
-        }
-        this.renderGuestCard();
-    }
-
-    isRegisterFullScreenActive(): boolean {
-        return this._registerFullScreen === true;
-    }
-
-    async ensureRegistrationFormShown(options: any = {}) {
-        if (this.memberData && this.memberData.is_member === true) {
-            this._forcedRegister = false;
-            return;
-        }
-        if (!shouldShowRegistrationForm() && options.forced !== true) {
-            return;
-        }
-        const forced = options.forced === true || getMemberRegistrationMode() === 'force';
-        try {
-            await this.ensureGuestMemberContext();
-        } catch (e) {
-            console.warn('ensureGuestMemberContext failed', e);
-        }
-        if (this.memberData && this.memberData.is_member === true) {
-            this._forcedRegister = false;
-            return;
-        }
-        if (this._registerFullScreen) {
-            return;
-        }
-        let container = this.getContainer();
-        if (!container) {
-            await new Promise((resolve) => { window.setTimeout(resolve, 100); });
-            container = this.getContainer();
-        }
-        if (!container) {
-            return;
-        }
-        if (this._isReactOwnedMemberMount(container)) {
-            this._forcedRegister = forced;
-            this._registerFullScreen = true;
-            this._emitMemberReactEvent('liff-member-open-register', { forced });
-            return;
-        }
-        await this.openRegisterFullScreen({
-            forced,
-            skipHistory: true,
-        });
-    }
-
-    _isMemberRegistrationPromptDismissed() {
-        if (typeof window === 'undefined') {
-            return false;
-        }
-        try {
-            return window.sessionStorage.getItem('member_registration_prompt_dismissed') === '1';
-        } catch (e) {
-            return false;
         }
     }
 
@@ -617,10 +464,6 @@ export class MemberManager {
         );
     }
 
-    _isReactOwnedMemberMount(container?: Element | null): boolean {
-        return isReactOwnedMount(container || this.getContainer());
-    }
-
     _emitMemberReactEvent(name: string, detail?: Record<string, unknown>): void {
         if (typeof document === 'undefined') {
             return;
@@ -628,84 +471,10 @@ export class MemberManager {
         document.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
     }
 
-    getLoginOptionalTemplate(title, message) {
-        return renderLoginOptionalTemplate(DomHelper.escapeHtml, title, message);
-    }
-
-    /** 会員未登録（ゲスト）で会員証を表示しない設定のときの表示 */
-    getGuestNoCardTemplate() {
-        return renderGuestNoCardTemplate();
-    }
-
-    getGuestRegisterTemplate() {
-        return renderGuestRegisterTemplate(DomHelper.escapeHtml, getGuestRegisterMessage());
-    }
-
-    getErrorTemplate(error) {
-        return renderMemberErrorTemplate(DomHelper.escapeHtml, error);
-    }
-
-    getSkeletonHtml() {
-        return renderMemberSkeleton();
-    }
-
     async load() {
         const container = this.getContainer();
         if (!container) return;
-        if (this._isReactOwnedMemberMount(container)) {
-            this._emitMemberReactEvent('liff-member-reload');
-            return;
-        }
-
-        if (this._registerFullScreen && !(this.memberData && this.memberData.is_member)) {
-            return;
-        }
-
-        if (typeof window !== 'undefined' && window.__IS_LIFF__) {
-            await this.ensureIdentityReady();
-        } else if (!window.__LINE_USER_ID__) {
-            await this.resolveLineUserIdForClient();
-        }
-
-        if (!this.canUseMemberFeature()) {
-            if (typeof window !== 'undefined' && window.__IS_LIFF__) {
-                this._registerLiffIdentityRetry();
-                container.innerHTML = this.getSkeletonHtml();
-                return;
-            }
-            if (!isMembershipRequired()) {
-                this.renderSampleMemberCard();
-                return;
-            }
-            container.innerHTML = this.getLoginOptionalTemplate('会員証', 'ログインすると会員証をご利用いただけます。');
-            this.memberData = null;
-            return;
-        }
-
-        if (this.memberData && this.memberData.is_member) {
-            this.render(this.memberData);
-            this.refreshWalletSummaryOnLaunch();
-            this.preload();
-            return;
-        }
-
-        container.innerHTML = this.getSkeletonHtml();
-
-        try {
-            const payload = await this._fetchMemberContextWithIdentityRetry({ force: true });
-            if (payload.is_member) {
-                this.render(payload);
-                return;
-            }
-            await this._handleGuestContext(payload);
-        } catch (error) {
-            console.error('Failed to load member card:', error);
-            if (this.memberData && this.memberData.is_member) {
-                this.render(this.memberData);
-                return;
-            }
-            container.innerHTML = this.getErrorTemplate(error);
-        }
+        this._emitMemberReactEvent('liff-member-reload');
     }
 
     async autoRegister() {
@@ -762,27 +531,12 @@ export class MemberManager {
             }
             this._autoRegisterAttempted = false;
             const container = this.getContainer();
-            if (container && this._isReactOwnedMemberMount(container)) {
+            if (container) {
                 this._emitMemberReactEvent('liff-member-reload');
-            } else if (container) {
-                container.innerHTML = this.getGuestRegisterTemplate();
-                this._attachRegisterTrigger(container);
             }
             if (typeof ToastManager !== 'undefined') {
                 ToastManager.info('会員情報を入力して登録してください');
             }
-        }
-    }
-
-    /** 会員登録ボタンにクリックを付与（Android WebView で onclick が効かない場合の対策） */
-    _attachRegisterTrigger(container) {
-        if (!container) return;
-        const btn = container.querySelector('.member-register-trigger, [data-action="member-open-register"]');
-        if (btn) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.navigateToRegisterPage();
-            });
         }
     }
 
@@ -822,263 +576,17 @@ export class MemberManager {
             window.app.switchTab(AppConstants.TABS.MEMBER);
         }
         this._updateMemberScreenUrl('register', false);
-        if (this._isReactOwnedMemberMount()) {
-            this._forcedRegister = getMemberRegistrationMode() === 'force';
-            this._registerFullScreen = true;
-            this._emitMemberReactEvent('liff-member-open-register', { forced: this._forcedRegister });
-            return;
-        }
-        this.openRegisterFullScreen({ skipHistory: true });
+        this._forcedRegister = getMemberRegistrationMode() === 'force';
+        this._registerFullScreen = true;
+        this._emitMemberReactEvent('liff-member-open-register', { forced: this._forcedRegister });
     }
 
     render(data) {
         const container = this.getContainer();
         if (!container) return;
         if (!data || typeof data !== 'object') return;
-        if (this._isReactOwnedMemberMount(container)) {
-            this.memberData = data;
-            this._emitMemberReactEvent('liff-member-reload');
-            return;
-        }
-        // Wallet サマリーは起動／フォアグラウンド時のみ更新（render のたびに叩かない）
-
-        if (isFixedUiShell()) {
-            this._renderIosWalletMember(container, data);
-            this._renderLotteryCta(container, this._walletSummaryLast?.pending_lottery_count ?? 0);
-            this._maybeOpenGachaPopupForPending(
-                this._walletSummaryLast?.pending_lottery_count ?? 0,
-            );
-            return;
-        }
-
-        const member = data.member && typeof data.member === 'object' ? data.member : null;
-        const user = data.user || (member && member.user) || null;
-        const displayName = (user && typeof user.name === 'string' && user.name.trim() !== '')
-            ? user.name.trim()
-            : (data.is_member === true ? '会員' : '');
-        const points = data.points != null ? data.points : (member && member.points != null ? member.points : 0);
-        const memberNumber = (member && member.member_number) ? member.member_number : '';
-        const currentRankLabel = data.current_rank_label || 'ブロンズ';
-        const currentRankIcon = data.current_rank_icon || null;
-        const currentRankColor = data.current_rank_color || null;
-        const nextRankLabel = data.next_rank_label || null;
-        const pointsToNextRank = data.points_to_next_rank != null ? data.points_to_next_rank : null;
-        const daysToNextRank = data.days_to_next_rank != null ? data.days_to_next_rank : null;
-        const daysRequiredForNextRank = data.days_required_for_next_rank != null ? data.days_required_for_next_rank : null;
-        const rankUpHistory = Array.isArray(data.rank_up_history) ? data.rank_up_history : [];
-        const pointsExpiry = data.points_expiry || null;
-        const currentRankKey = data.current_rank || 'bronze';
-        const showPointsDisplay = data.show_points_display !== false;
-        const showRankProgress = data.show_rank_progress !== false;
-        const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
-        const periodDays = data.days_required_for_next_rank != null ? Number(data.days_required_for_next_rank) : null;
-        const availableDesigns = ['default', 'logo_top', 'logo_center', 'logo_header', 'compact', 'split_banner', 'minimal_line', 'emblem', 'ticket', 'wallet'];
-        const blockOverride = container.closest('[data-card-design]')
-            ? container.closest('[data-card-design]').getAttribute('data-card-design')
-            : '';
-        const designerMemberCardDesign = DomHelper.getLiffGlobalSetting('member_card_design', '');
-        let memberCardDesign = designerMemberCardDesign || data.member_card_design || 'default';
-        if (blockOverride && availableDesigns.indexOf(blockOverride) >= 0) {
-            memberCardDesign = blockOverride;
-        }
-        // ticket / wallet は新LIFF向けキー。旧カード描画は近いデザインにフォールバック
-        const memberCardCssDesign = memberCardDesign === 'ticket'
-            ? 'split_banner'
-            : (memberCardDesign === 'wallet' ? 'emblem' : memberCardDesign);
-        const memberCardLogoUrl = data.member_card_logo_url || null;
-        const memberCardDisplayType =
-            DomHelper.getLiffGlobalSetting('member_card_display_type', '') ||
-            data.member_card_display_type ||
-            'card';
-        const memberCardCodeType =
-            DomHelper.getLiffGlobalSetting('member_card_code_type', '') ||
-            data.member_card_code_type ||
-            'barcode';
-        const memberCardAccent =
-            DomHelper.getLiffGlobalSetting('member_card_accent_color', '') ||
-            '';
-        const memberCardBgStyle =
-            DomHelper.getLiffGlobalSetting('member_card_bg_style', '') ||
-            'gradient';
-
-        let expiryText = '';
-        if (pointsExpiry && pointsExpiry.expires_at_label) {
-            expiryText =
-                'ポイント有効期限: ' +
-                pointsExpiry.expires_at_label +
-                (pointsExpiry.points_expiring ? ' (' + pointsExpiry.points_expiring + ' pt)' : '');
-        }
-
-        const codeId = `member-code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const isQR = memberCardCodeType === 'qrcode';
-        const codeBlock = isQR
-            ? `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--qrcode"><div id="${codeId}" class="idnect-card-qrcode-wrap" aria-label="会員番号QRコード"></div></div>`
-            : `<div class="idnect-card-barcode-wrap idnect-card-code-wrap--barcode"><svg id="${codeId}" class="idnect-card-barcode-svg"></svg></div>`;
-        const cardStyleParts = [];
-        if (currentRankColor) {
-            cardStyleParts.push('--idnect-card-rank-color: ' + DomHelper.escapeHtml(currentRankColor));
-        }
-        if (memberCardAccent !== '') {
-            cardStyleParts.push('--member-card-accent-color: ' + DomHelper.escapeHtml(memberCardAccent));
-        }
-        const cardStyle = cardStyleParts.length > 0
-            ? ` data-rank-color="true" style="${cardStyleParts.join('; ')}"`
-            : '';
-        const cardDesignClass = 'idnect-card-wrapper--design-' + (availableDesigns.indexOf(memberCardCssDesign) >= 0 ? memberCardCssDesign : 'default')
-            + ' idnect-card-wrapper--bg-' + (['solid', 'gradient', 'image'].indexOf(memberCardBgStyle) >= 0 ? memberCardBgStyle : 'gradient');
-        const showLogoOnCard = (memberCardCssDesign === 'logo_top' || memberCardCssDesign === 'logo_center' || memberCardCssDesign === 'logo_header' || memberCardCssDesign === 'split_banner' || memberCardCssDesign === 'emblem') && memberCardLogoUrl;
-        const logoBlock = showLogoOnCard
-            ? `<div class="idnect-card-logo-wrap"><img src="${DomHelper.escapeHtml(memberCardLogoUrl)}" class="idnect-card-logo" alt="" onerror="this.parentElement.style.display='none'"></div>`
-            : '';
-        const isSheet = memberCardDisplayType === 'sheet';
-        const cardBlock = isSheet
-            ? `<div class="member-card-sheet-wrap"><div class="idnect-card-wrapper idnect-card-wrapper--sheet ${cardDesignClass}"${cardStyle}>
-                <div class="idnect-card idnect-card--sheet" data-rank="${DomHelper.escapeHtml(currentRankKey)}">
-                    <div class="idnect-card-shimmer" aria-hidden="true"></div>
-                    <div class="idnect-card-face idnect-card-face--front">
-                        <div class="idnect-card-front-inner">
-                            ${logoBlock}
-                            ${displayName ? '<p class="idnect-card-display-name">' + DomHelper.escapeHtml(displayName) + '</p>' : ''}
-                            <div class="idnect-card-meta-row">
-                                <div class="idnect-card-rank-wrap">
-                                    ${currentRankIcon ? `<img src="${DomHelper.escapeHtml(currentRankIcon)}" class="idnect-card-rank-icon" alt="ランク">` : ''}
-                                    <span class="idnect-card-rank-badge" data-rank="${DomHelper.escapeHtml(currentRankKey)}">${DomHelper.escapeHtml(currentRankLabel)}</span>
-                                </div>
-                                ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--front"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">pt</span></div>' : ''}
-                            </div>
-                            ${codeBlock}
-                        </div>
-                    </div>
-                </div>
-            </div></div>`
-            : `<div class="idnect-card-wrapper ${cardDesignClass}" role="button" tabindex="0" aria-label="カードをタップで裏返します"${cardStyle}>
-                <div class="idnect-card" data-rank="${DomHelper.escapeHtml(currentRankKey)}">
-                    <div class="idnect-card-shimmer" aria-hidden="true"></div>
-                    <div class="idnect-card-face idnect-card-face--front">
-                        <div class="idnect-card-front-inner">
-                            ${logoBlock}
-                            ${displayName ? '<p class="idnect-card-display-name">' + DomHelper.escapeHtml(displayName) + '</p>' : ''}
-                            <div class="idnect-card-meta-row">
-                                <div class="idnect-card-rank-wrap">
-                                    ${currentRankIcon ? `<img src="${DomHelper.escapeHtml(currentRankIcon)}" class="idnect-card-rank-icon" alt="ランク">` : ''}
-                                    <span class="idnect-card-rank-badge" data-rank="${DomHelper.escapeHtml(currentRankKey)}">${DomHelper.escapeHtml(currentRankLabel)}</span>
-                                </div>
-                                ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--front"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">pt</span></div>' : ''}
-                            </div>
-                            ${codeBlock}
-                            <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで裏面を見る</p>
-                        </div>
-                    </div>
-                    <div class="idnect-card-face idnect-card-face--back">
-                        <div class="idnect-card-back-inner">
-                            <p class="idnect-card-back-title">会員情報</p>
-                            ${showPointsDisplay ? '<div class="idnect-card-points idnect-card-points--large"><span class="idnect-card-points-value">' + points.toLocaleString() + '</span><span class="idnect-card-points-label">ポイント</span></div>' : ''}
-                            ${showPointsDisplay && expiryText ? '<p class="idnect-card-expiry">' + DomHelper.escapeHtml(expiryText) + '</p>' : ''}
-                            ${showRankProgress && nextRankLabel && pointsToNextRank !== null ? '<p class="idnect-card-next-rank">次のランク（' + DomHelper.escapeHtml(nextRankLabel) + '）まで <strong>' + pointsToNextRank.toLocaleString() + '</strong> ' + rankUnit + '</p>' : ''}
-                            ${showRankProgress && periodDays !== null && !isNaN(periodDays) ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">集計期間: 過去 <strong>' + periodDays + '</strong> 日</p>' : ''}
-                            ${showRankProgress && daysRequiredForNextRank !== null && daysToNextRank !== null ? '<p class="idnect-card-next-rank idnect-card-days-to-rank">次のランクまで あと <strong>' + daysToNextRank + '</strong> 日</p>' : ''}
-                            <p class="idnect-card-tap-hint"><i class="fas fa-sync-alt idnect-card-tap-hint-icon" aria-hidden="true"></i> タップで表に戻る</p>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-        const enlargeBtnLabel = isQR ? '会員証（QRコード）を拡大' : '会員証（バーコード）を拡大';
-        const cardVisualBlock =
-            '<div class="member-card-visual-wrap">' +
-            cardBlock +
-            '<button type="button" class="member-card-enlarge-code-btn" data-member-number="' + DomHelper.escapeHtml(memberNumber) + '" data-code-type="' + DomHelper.escapeHtml(memberCardCodeType) + '" aria-label="' + DomHelper.escapeHtml(enlargeBtnLabel) + '"><i class="fas fa-search-plus" aria-hidden="true"></i> 会員証拡大</button>' +
-            '</div>';
-        const permissionDeniedNotice =
-            typeof window !== 'undefined' && window.__LIFF_PERMISSION_DENIED__
-                ? '<p class="member-card-profile-notice">LINEの表示名は取得していません。<button type="button" class="link-btn" onclick="location.reload()">再読み込み</button></p>'
-                : '';
-        const showAddToAppleWallet = shouldShowAppleWallet();
-        const showAddToGoogleWallet = shouldShowGoogleWallet();
-        const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : '';
-        const walletPassUrl = AppConstants.API_ENDPOINTS.MEMBER_WALLET_PASS + '?project_key=' + encodeURIComponent(projectKey);
-        let addToWalletBlock = '';
-        if (showAddToAppleWallet) {
-            addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
-                <button type="button" class="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--apple" data-wallet-pass-url="${DomHelper.escapeHtml(walletPassUrl)}" aria-label="Apple Walletに追加">
-                    <span class="member-card-add-to-wallet-text"><i class="fab fa-apple" aria-hidden="true"></i> Apple Walletに追加</span>
-                </button>
-            </div>`;
-        }
-        if (showAddToGoogleWallet) {
-            addToWalletBlock += `<div class="member-card-add-to-wallet-wrap">
-                <button type="button" class="member-card-add-to-wallet-btn member-card-add-to-wallet-btn--google" data-google-wallet aria-label="Google Walletに追加">
-                    <span class="member-card-add-to-wallet-text"><i class="fab fa-google" aria-hidden="true"></i> Google Walletに追加</span>
-                </button>
-            </div>`;
-        }
-
-        container.innerHTML = `
-            <div class="member-card-container${data.is_sample_preview === true ? ' member-card-container--demo' : ''}">
-                <div class="member-card-idnect-header">
-                    <h2 class="member-card-title">会員証</h2>
-                    ${data.is_sample_preview === true
-                        ? ''
-                        : '<button type="button" class="member-card-edit-btn" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>'}
-                </div>
-                ${permissionDeniedNotice}
-                ${cardVisualBlock}
-                ${data.is_sample_preview === true ? '' : addToWalletBlock}
-                ${data.is_sample_preview === true ? `
-                    <div class="member-demo-actions">
-                        <button type="button" class="btn btn-primary member-register-trigger" data-action="member-open-register">
-                            会員パスを発行
-                        </button>
-                    </div>
-                ` : `
-                <div class="member-purchase-history">
-                    <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPurchaseHistoryList" id="memberPurchaseHistoryToggle">
-                        <span class="member-purchase-history-toggle-label">購入履歴</span>
-                        <i class="fas fa-chevron-down member-purchase-history-toggle-icon" aria-hidden="true"></i>
-                    </button>
-                    <div id="memberPurchaseHistoryList" class="member-purchase-history-list" hidden aria-labelledby="memberPurchaseHistoryToggle"></div>
-                </div>
-                <div class="member-point-history">
-                    <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPointHistoryList" id="memberPointHistoryToggle">
-                        <span class="member-purchase-history-toggle-label">ポイント履歴</span>
-                        <i class="fas fa-chevron-down member-purchase-history-toggle-icon" aria-hidden="true"></i>
-                    </button>
-                    <div id="memberPointHistoryList" class="member-purchase-history-list" hidden aria-labelledby="memberPointHistoryToggle"></div>
-                </div>
-                <div class="member-rank-history">
-                    <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberRankHistoryList" id="memberRankHistoryToggle">
-                        <span class="member-purchase-history-toggle-label">ランクアップ履歴</span>
-                        <i class="fas fa-chevron-down member-purchase-history-toggle-icon" aria-hidden="true"></i>
-                    </button>
-                    <div id="memberRankHistoryList" class="member-purchase-history-list member-rank-history-list" hidden aria-labelledby="memberRankHistoryToggle">${this._formatRankUpHistoryHtml(rankUpHistory)}</div>
-                </div>
-                <div class="member-withdraw-wrap">
-                    <button type="button" class="member-withdraw-btn" id="memberWithdrawBtn" aria-label="退会する">退会する</button>
-                </div>
-                `}
-            </div>
-        `;
-
-        if (isQR) {
-            generateQR(codeId, memberNumber);
-        } else {
-            generateBarcode(codeId, memberNumber);
-        }
-        if (!isSheet) setupCardFlip();
-        setupCodeEnlargeButton();
-        if (data.is_sample_preview === true) {
-            this._attachRegisterTrigger(container);
-            return;
-        }
-        this._setupAddToWallet();
-        this._registerWalletVisibilityRefresh();
-        this._setupPurchaseHistoryToggle();
-        this._setupPointHistoryToggle();
-        this._setupRankHistoryToggle();
-        this._setupWithdrawButton();
-        this._renderLotteryCta(container, this._walletSummaryLast?.pending_lottery_count ?? 0);
-        this._maybeOpenGachaPopupForPending(
-            this._walletSummaryLast?.pending_lottery_count ?? 0,
-        );
+        this.memberData = data;
+        this._emitMemberReactEvent('liff-member-reload');
     }
 
     /**
@@ -1110,314 +618,8 @@ export class MemberManager {
         }, 300);
     }
 
-    /** 固定UI向け: LP会員証スクショ相当のウォレット型レイアウト */
-    _renderIosWalletMember(container, data) {
-        const member = data.member && typeof data.member === 'object' ? data.member : null;
-        const user = data.user || (member && member.user) || null;
-        const displayName = (user && typeof user.name === 'string' && user.name.trim() !== '')
-            ? user.name.trim()
-            : (data.is_member === true ? '会員' : 'ゲスト');
-        const points = data.points != null ? data.points : (member && member.points != null ? member.points : 0);
-        const memberNumber = (member && member.member_number) ? String(member.member_number) : '';
-        const currentRankLabel = data.current_rank_label || 'MEMBER';
-        const nextRankLabel = data.next_rank_label || null;
-        const pointsToNextRank = data.points_to_next_rank != null ? Number(data.points_to_next_rank) : null;
-        const showPointsDisplay = data.show_points_display !== false;
-        const showRankProgress = data.show_rank_progress !== false;
-        const rankUnit = data.rank_basis === 'stamps' ? '個' : 'pt';
-        const isSample = data.is_sample_preview === true;
-        const rankMetricRaw = data.rank_metric != null ? Number(data.rank_metric) : points;
-        const rankMetric = Number.isFinite(rankMetricRaw) ? rankMetricRaw : points;
-        const codeId = `member-code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const progressTotal = pointsToNextRank !== null ? rankMetric + pointsToNextRank : Math.max(rankMetric, 1);
-        const progressPct = pointsToNextRank !== null
-            ? Math.max(8, Math.min(100, Math.round((rankMetric / progressTotal) * 100)))
-            : 100;
-        const progressText = nextRankLabel && pointsToNextRank !== null
-            ? `${nextRankLabel}まであと ${pointsToNextRank.toLocaleString('ja-JP')} ${rankUnit}`
-            : '最高ランクに到達しています';
-
-        container.innerHTML = `
-            <div class="ios-wallet-member${isSample ? ' ios-wallet-member--demo' : ''}">
-                <header class="ios-wallet-member__hello">
-                    <span class="ios-wallet-member__avatar" aria-hidden="true">${DomHelper.escapeHtml(String(displayName).slice(0, 1))}</span>
-                    <div class="ios-wallet-member__hello-copy">
-                        <p class="ios-wallet-member__hello-title">Hello, ${DomHelper.escapeHtml(displayName)}</p>
-                        <p class="ios-wallet-member__hello-sub">いつもご来店ありがとうございます</p>
-                    </div>
-                    ${isSample ? '' : '<button type="button" class="ios-wallet-member__edit" onclick="window.app.memberManager.openProfileEdit()" aria-label="プロフィール編集"><i class="fas fa-pen"></i></button>'}
-                </header>
-
-                <article class="ios-wallet-card" aria-label="会員証">
-                    <div class="ios-wallet-card__top">
-                        <div class="ios-wallet-card__brand">
-                            <span class="ios-wallet-card__logo" aria-hidden="true">R</span>
-                            <div>
-                                <p class="ios-wallet-card__brand-name">Reggit Rewards</p>
-                                <p class="ios-wallet-card__brand-sub">MEMBER</p>
-                            </div>
-                        </div>
-                        <span class="ios-wallet-card__tier">${DomHelper.escapeHtml(currentRankLabel)}</span>
-                    </div>
-                    ${showPointsDisplay ? `
-                    <div class="ios-wallet-card__points">
-                        <p class="ios-wallet-card__points-label">Available Points</p>
-                        <p class="ios-wallet-card__points-value">${points.toLocaleString('ja-JP')} <small>Points</small></p>
-                    </div>` : ''}
-                    ${showRankProgress ? `
-                    <div class="ios-wallet-card__progress">
-                        <div class="ios-wallet-card__progress-bar" aria-hidden="true">
-                            <span style="width:${progressPct}%"></span>
-                        </div>
-                        <p class="ios-wallet-card__progress-text">${DomHelper.escapeHtml(progressText)}</p>
-                    </div>` : ''}
-                    <div class="ios-wallet-card__scan">
-                        <p class="ios-wallet-card__scan-label">SCAN TO EARN OR REDEEM</p>
-                        <div class="ios-wallet-card__code-wrap">
-                            <svg id="${codeId}" class="ios-wallet-card__barcode" aria-label="会員番号バーコード"></svg>
-                        </div>
-                        <p class="ios-wallet-card__number">${DomHelper.escapeHtml(memberNumber.replace(/(.{4})/g, '$1 ').trim())}</p>
-                    </div>
-                </article>
-
-            <div class="ios-wallet-member__meta">
-                ${showPointsDisplay ? '<p>ポイント有効期限は店舗設定に従います</p>' : '<p></p>'}
-                    <button type="button" class="ios-wallet-member__enlarge" data-member-number="${DomHelper.escapeHtml(memberNumber)}" data-code-type="barcode">会員証を拡大</button>
-                </div>
-
-                <nav class="ios-wallet-member__quick" aria-label="会員メニュー">
-                    <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="coupons">
-                        <span class="ios-wallet-member__quick-icon" aria-hidden="true"><i class="fas fa-ticket-alt"></i></span>クーポン
-                    </button>
-                    <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="stamps">
-                        <span class="ios-wallet-member__quick-icon" aria-hidden="true"><i class="fas fa-stamp"></i></span>スタンプ
-                    </button>
-                    <button type="button" class="ios-wallet-member__quick-item" data-ios-member-nav="orders">
-                        <span class="ios-wallet-member__quick-icon" aria-hidden="true"><i class="fas fa-receipt"></i></span>履歴
-                    </button>
-                    <button type="button" class="ios-wallet-member__quick-item" data-action="member-open-register">
-                        <span class="ios-wallet-member__quick-icon" aria-hidden="true"><i class="fas fa-user-plus"></i></span>登録
-                    </button>
-                </nav>
-
-                <button type="button" class="member-card-enlarge-code-btn is-visually-hidden" data-member-number="${DomHelper.escapeHtml(memberNumber)}" data-code-type="barcode" tabindex="-1" aria-hidden="true">会員証拡大</button>
-
-                ${isSample ? `
-                    <div class="member-demo-actions">
-                        <button type="button" class="btn btn-primary member-register-trigger" data-action="member-open-register">
-                            会員パスを発行
-                        </button>
-                    </div>
-                ` : `
-                    <div class="member-purchase-history">
-                        <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPurchaseHistoryList" id="memberPurchaseHistoryToggle">
-                            <span class="member-purchase-history-toggle-label">購入履歴</span>
-                            <i class="fas fa-chevron-down member-purchase-history-toggle-icon" aria-hidden="true"></i>
-                        </button>
-                        <div id="memberPurchaseHistoryList" class="member-purchase-history-list" hidden aria-labelledby="memberPurchaseHistoryToggle"></div>
-                    </div>
-                    <div class="member-point-history">
-                        <button type="button" class="member-purchase-history-toggle" aria-expanded="false" aria-controls="memberPointHistoryList" id="memberPointHistoryToggle">
-                            <span class="member-purchase-history-toggle-label">ポイント履歴</span>
-                            <i class="fas fa-chevron-down member-purchase-history-toggle-icon" aria-hidden="true"></i>
-                        </button>
-                        <div id="memberPointHistoryList" class="member-purchase-history-list" hidden aria-labelledby="memberPointHistoryToggle"></div>
-                    </div>
-                    <div class="member-withdraw-wrap">
-                        <button type="button" class="member-withdraw-btn" id="memberWithdrawBtn" aria-label="退会する">退会する</button>
-                    </div>
-                `}
-            </div>
-        `;
-
-        generateBarcode(codeId, memberNumber);
-        setupCodeEnlargeButton();
-        const enlargeBtn = container.querySelector('.ios-wallet-member__enlarge') as HTMLElement | null;
-        const hiddenEnlarge = container.querySelector('.member-card-enlarge-code-btn') as HTMLElement | null;
-        if (enlargeBtn !== null && hiddenEnlarge !== null) {
-            enlargeBtn.addEventListener('click', () => hiddenEnlarge.click());
-        }
-        container.querySelectorAll('[data-ios-member-nav]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const tab = (btn as HTMLElement).getAttribute('data-ios-member-nav');
-                if (tab && typeof window.app?.switchTab === 'function') {
-                    void window.app.switchTab(tab);
-                }
-            });
-        });
-        if (isSample) {
-            this._attachRegisterTrigger(container);
-            return;
-        }
-        this._setupPurchaseHistoryToggle();
-        this._setupPointHistoryToggle();
-        this._setupWithdrawButton();
-    }
-
-    _formatRankUpHistoryHtml(history) {
-        return formatRankUpHistoryHtml(history);
-    }
-
-    _setupRankHistoryToggle() {
-        const toggle = document.getElementById('memberRankHistoryToggle');
-        const listEl = document.getElementById('memberRankHistoryList');
-        const icon = toggle ? toggle.querySelector('.member-purchase-history-toggle-icon') : null;
-        if (!toggle || !listEl) return;
-        toggle.addEventListener('click', function () {
-            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-            if (isExpanded) {
-                toggle.setAttribute('aria-expanded', 'false');
-                listEl.hidden = true;
-                if (icon) {
-                    icon.classList.remove('fa-chevron-up');
-                    icon.classList.add('fa-chevron-down');
-                }
-                return;
-            }
-            toggle.setAttribute('aria-expanded', 'true');
-            listEl.hidden = false;
-            if (icon) {
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            }
-        });
-    }
-
-    _setupWithdrawButton() {
-        const btn = document.getElementById('memberWithdrawBtn');
-        if (!btn) return;
-        const self = this;
-        btn.addEventListener('click', function () {
-            self.requestWithdraw();
-        });
-    }
-
-    /**
-     * 退会確認ダイアログを表示し、了承されたら退会APIを呼び出す。
-     */
-    async requestWithdraw() {
-        const message = '退会すると会員情報・ポイント・スタンプ等のデータは復元できません。本当に退会しますか？';
-        if (typeof window !== 'undefined' && window.confirm && !window.confirm(message)) {
-            return;
-        }
-        const btn = document.getElementById('memberWithdrawBtn') as HTMLButtonElement | null;
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = '処理中...';
-        }
-        try {
-            const result = await this.apiClient.post(AppConstants.API_ENDPOINTS.MEMBERS_WITHDRAW, {});
-            if (result && result.success) {
-                this.memberData = null;
-                this._memberContextFetchedAt = 0;
-                this._memberContextLineUserId = null;
-                this._trackedLineUserIdForMemberContext = null;
-                this._memberContextFetchGeneration += 1;
-                if (typeof ToastManager !== 'undefined') ToastManager.success(result.message || '退会が完了しました');
-                window.setTimeout(function () {
-                    window.location.reload();
-                }, 800);
-            } else {
-                throw new Error(result && result.message ? result.message : '退会に失敗しました');
-            }
-        } catch (error) {
-            console.error('Withdraw error:', error);
-            if (typeof ToastManager !== 'undefined') ToastManager.error(error.message || '退会処理に失敗しました');
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = '退会する';
-            }
-        }
-    }
-
     _setupAddToWallet() {
         this.walletActions.setup();
-    }
-
-    _setupPurchaseHistoryToggle() {
-        const toggle = document.getElementById('memberPurchaseHistoryToggle');
-        const listEl = document.getElementById('memberPurchaseHistoryList');
-        const icon = document.querySelector('.member-purchase-history-toggle-icon');
-        if (!toggle || !listEl) return;
-
-        toggle.addEventListener('click', () => {
-            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-            if (isExpanded) {
-                toggle.setAttribute('aria-expanded', 'false');
-                listEl.hidden = true;
-                if (icon) {
-                    icon.classList.remove('fa-chevron-up');
-                    icon.classList.add('fa-chevron-down');
-                }
-                return;
-            }
-            toggle.setAttribute('aria-expanded', 'true');
-            listEl.hidden = false;
-            if (icon) {
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            }
-            if (!listEl.hasAttribute('data-loaded')) {
-                this._loadPurchaseHistory(listEl);
-            }
-        });
-    }
-
-    _setupPointHistoryToggle() {
-        const toggle = document.getElementById('memberPointHistoryToggle');
-        const listEl = document.getElementById('memberPointHistoryList');
-        const icon = toggle ? toggle.querySelector('.member-purchase-history-toggle-icon') : null;
-        if (!toggle || !listEl) return;
-
-        toggle.addEventListener('click', () => {
-            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
-            if (isExpanded) {
-                toggle.setAttribute('aria-expanded', 'false');
-                listEl.hidden = true;
-                if (icon) {
-                    icon.classList.remove('fa-chevron-up');
-                    icon.classList.add('fa-chevron-down');
-                }
-                return;
-            }
-            toggle.setAttribute('aria-expanded', 'true');
-            listEl.hidden = false;
-            if (icon) {
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-            }
-            if (!listEl.hasAttribute('data-loaded')) {
-                this._loadPointHistory(listEl);
-            }
-        });
-    }
-
-    async _loadPointHistory(listEl) {
-        listEl.innerHTML =
-            '<div class="loading member-purchase-history-loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
-        try {
-            const result = await this.apiClient.get(AppConstants.API_ENDPOINTS.MEMBERS_POINTS);
-            listEl.setAttribute('data-loaded', 'true');
-            const transactions = (result.data && result.data.transactions) ? result.data.transactions : [];
-            listEl.innerHTML = formatPointHistoryHtml(transactions, DomHelper.escapeHtml);
-        } catch (error) {
-            console.error('Failed to load point history:', error);
-            listEl.innerHTML = '<div class="member-purchase-history-error"><p>ポイント履歴の読み込みに失敗しました</p></div>';
-        }
-    }
-
-    async _loadPurchaseHistory(listEl) {
-        listEl.innerHTML =
-            '<div class="loading member-purchase-history-loading"><i class="fas fa-spinner fa-spin"></i><p>読み込み中...</p></div>';
-        try {
-            const orders = await this.orderManager.fetchOrders();
-            listEl.setAttribute('data-loaded', 'true');
-            this.orderManager.renderOrderListOnly(listEl, orders);
-        } catch (error) {
-            console.error('Failed to load purchase history:', error);
-            listEl.innerHTML =
-                '<div class="member-purchase-history-error"><p>購入履歴の読み込みに失敗しました</p></div>';
-        }
     }
 
     async openProfileEdit(options: any = {}) {
@@ -1431,39 +633,9 @@ export class MemberManager {
         if (!options.skipHistory && !this.isEditPageMode()) {
             this._updateMemberScreenUrl('edit', false);
         }
-        if (this._isReactOwnedMemberMount()) {
-            this._registerFullScreen = false;
-            this._profileEditFullScreen = true;
-            this._emitMemberReactEvent('liff-member-open-edit');
-            return;
-        }
-        const container = this.getContainer();
-        if (!container) return;
-        void this.paintProfileEditInto(container as HTMLElement);
-    }
-
-    async paintProfileEditInto(container: HTMLElement): Promise<void> {
-        try {
-            await this.fetchMemberContext({ force: true });
-        } catch (error) {
-            console.warn('fetchMemberContext for profile edit paint failed', error);
-        }
-        if (!this.memberData) return;
-        const user = this.memberData.user || (this.memberData.member && this.memberData.member.user);
-        const member = this.memberData.member;
         this._registerFullScreen = false;
         this._profileEditFullScreen = true;
-        container.innerHTML = this._getProfileEditFormHtml(user, member, { fullScreen: true, isRegister: false });
-        container.scrollTop = 0;
-        const form = container.querySelector('#profileEditForm') || document.getElementById('profileEditForm');
-        if (form) {
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                window.app.memberManager.saveProfileEdit(e);
-            });
-        }
-        this._setupPostalCodeLookup(container);
-        this._syncMemberScreenOverlay();
+        this._emitMemberReactEvent('liff-member-open-edit');
     }
 
     closeProfileEdit(options: any = {}) {
@@ -1594,10 +766,6 @@ export class MemberManager {
         );
     }
 
-    async openRegisterModal() {
-        await this.openRegisterFullScreen();
-    }
-
     async openRegisterFullScreen(options: any = {}) {
         options = options || {};
         try {
@@ -1612,7 +780,7 @@ export class MemberManager {
         if (!options.skipHistory && !this.isRegisterPageMode()) {
             this._updateMemberScreenUrl('register', false);
         }
-        if (this._isReactOwnedMemberMount() && options.into == null) {
+        if (options.into == null) {
             this._registerFullScreen = true;
             this._forcedRegister = options.forced === true;
             this._profileEditFullScreen = false;
@@ -1861,10 +1029,6 @@ export class MemberManager {
         }
     }
 
-    stopWalletSummaryPolling(): void {
-        this._leaveWalletEchoChannel();
-    }
-
     _walletMemberId(): number {
         const raw = this.memberData?.member?.id ?? this.memberData?.id;
         const memberId = Number(raw);
@@ -1957,10 +1121,6 @@ export class MemberManager {
 
         if (this.memberData !== null && pointsDifferFromUi) {
             this.memberData.points = normalized.points;
-            if (!this._isReactOwnedMemberMount()
-                && (window.app as any)?.currentTab === AppConstants.TABS.MEMBER) {
-                this.render(this.memberData);
-            }
         }
 
         const container = this.getContainer();

@@ -16,6 +16,7 @@ use App\Models\UserDevice;
 use App\Services\CouponNotificationService;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
+use App\Support\LiffTabUrlBuilder;
 use App\Util\AdminContext;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -117,7 +118,7 @@ class CouponNotificationTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class), app(LiffTabUrlBuilder::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -166,7 +167,7 @@ class CouponNotificationTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class), app(LiffTabUrlBuilder::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -214,7 +215,7 @@ class CouponNotificationTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class), app(LiffTabUrlBuilder::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -264,7 +265,7 @@ class CouponNotificationTest extends TestCase
             )
             ->andReturn([]);
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class), app(LiffTabUrlBuilder::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -305,7 +306,7 @@ class CouponNotificationTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class), app(LiffTabUrlBuilder::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -340,7 +341,7 @@ class CouponNotificationTest extends TestCase
         $lineMock = Mockery::mock(LineService::class);
         $lineMock->shouldNotReceive('pushMessage');
 
-        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class));
+        $service = new CouponNotificationService($pushMock, $lineMock, app(CouponNotificationSettings::class), app(LiffTabUrlBuilder::class));
         $service->notifyIssued($memberCoupon);
 
         $this->addToAssertionCount(2);
@@ -367,7 +368,7 @@ class CouponNotificationTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->once()->andReturn([]);
         $this->expectException(\RuntimeException::class);
-        (new CouponNotificationService($push, $line, app(CouponNotificationSettings::class)))->notifyIssued($issued);
+        (new CouponNotificationService($push, $line, app(CouponNotificationSettings::class), app(LiffTabUrlBuilder::class)))->notifyIssued($issued);
     }
 
     public function test_failed_line_delivery_is_reported_for_retry(): void
@@ -378,7 +379,7 @@ class CouponNotificationTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('pushMessage')->once()->andThrow(new \RuntimeException('Temporary LINE outage'));
         $this->expectException(\RuntimeException::class);
-        (new CouponNotificationService($push, $line, app(CouponNotificationSettings::class)))->notifyIssued($issued);
+        (new CouponNotificationService($push, $line, app(CouponNotificationSettings::class), app(LiffTabUrlBuilder::class)))->notifyIssued($issued);
     }
 
     public function test_pending_notification_survives_failure_and_recovers_in_its_saved_project(): void

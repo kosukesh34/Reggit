@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Settings\Repositories\ProfileSettings;
 use App\Enums\ProfileCustomFieldInputType;
 use App\Http\Requests\Admin\MemberUpdateRequest;
 use App\Infrastructure\Persistence\Eloquent\Settings\ProfileSettingStore;
@@ -34,7 +35,7 @@ class AdminCustomProfileValidationTest extends TestCase
         $route = new Route('PUT', 'admin/member/{id}', fn () => null);
         $route->bind($request);
         $request->setRouteResolver(fn () => $route);
-        $adminRules = array_filter($request->rules(), fn ($key) => str_starts_with($key, 'custom_profile.'), ARRAY_FILTER_USE_KEY);
+        $adminRules = array_filter($request->rules(app(ProfileSettings::class)), fn ($key) => str_starts_with($key, 'custom_profile.'), ARRAY_FILTER_USE_KEY);
 
         $valid = ['city' => 'Tokyo, Japan', 'choices' => ['Tea, cake'], 'radio' => 'Yes, please'];
         $invalid = ['city' => 'Tokyo', 'choices' => ['Tea'], 'radio' => 'Yes'];

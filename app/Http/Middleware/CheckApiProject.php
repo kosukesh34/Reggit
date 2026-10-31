@@ -13,6 +13,10 @@ use Symfony\Component\HttpFoundation\Response;
 /** URL の project_key と API トークンのプロジェクトが一致することを保証する。 */
 class CheckApiProject
 {
+    public function __construct(
+        private StoreContext $storeContext,
+    ) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $projectKey = trim((string) $request->route('project_key'));
@@ -33,7 +37,7 @@ class CheckApiProject
 
         AdminContext::setCurrentProject($project);
         $admin = $request->user();
-        app(StoreContext::class)->bind($request, (int) $project->id, $admin instanceof AdminUser ? $admin : null);
+        $this->storeContext->bind($request, (int) $project->id, $admin instanceof AdminUser ? $admin : null);
         $request->attributes->set('currentProject', $project);
 
         return $next($request);

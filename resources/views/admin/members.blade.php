@@ -1,3 +1,4 @@
+@inject('memberIdentifier', 'App\Support\AdminMemberIdentifier')
 @extends('admin.layout')
 
 @section('title', '会員管理')
@@ -48,7 +49,7 @@
         <div class="filter-grid filter-grid--members">
             <div class="form-group">
                 <label class="form-label" for="member-keyword">キーワード</label>
-                <input type="text" name="keyword" id="member-keyword" class="form-control" placeholder="名前・{{ \App\Support\AdminMemberIdentifier::label() }}・電話・メール・フリガナ" value="{{ $view->filters['keyword'] ?? '' }}">
+                <input type="text" name="keyword" id="member-keyword" class="form-control" placeholder="名前・{{ $memberIdentifier->label() }}・電話・メール・フリガナ" value="{{ $view->filters['keyword'] ?? '' }}">
             </div>
             <div class="form-group">
                 <label class="form-label" for="member-rank">ランク</label>
@@ -97,8 +98,8 @@
             <thead>
                 <tr>
                     <th>
-                        <a href="{{ $view->sortHref(\App\Support\AdminMemberIdentifier::usesId() ? 'id' : 'member_number') }}" class="th-sort{{ $view->isSortedBy(\App\Support\AdminMemberIdentifier::usesId() ? 'id' : 'member_number') ? ' is-active' : '' }}">
-                            {{ \App\Support\AdminMemberIdentifier::label() }} <i class="{{ $view->sortIconClass(\App\Support\AdminMemberIdentifier::usesId() ? 'id' : 'member_number') }}" aria-hidden="true"></i>
+                        <a href="{{ $view->sortHref($memberIdentifier->usesId() ? 'id' : 'member_number') }}" class="th-sort{{ $view->isSortedBy($memberIdentifier->usesId() ? 'id' : 'member_number') ? ' is-active' : '' }}">
+                            {{ $memberIdentifier->label() }} <i class="{{ $view->sortIconClass($memberIdentifier->usesId() ? 'id' : 'member_number') }}" aria-hidden="true"></i>
                         </a>
                     </th>
                     <th>
@@ -133,7 +134,7 @@
             <tbody>
                 @forelse($view->members as $member)
                 <tr>
-                    <td><span class="id-badge">{{ \App\Support\AdminMemberIdentifier::value($member) }}</span></td>
+                    <td><span class="id-badge">{{ $memberIdentifier->value($member) }}</span></td>
                     <td>
                         <a href="{{ admin_route('admin.members.detail', ['id' => $member->id]) }}"><strong>{{ admin_person_name($member->user?->name) }}</strong></a>
                         @if($member->tags->isNotEmpty())

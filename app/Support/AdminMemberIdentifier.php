@@ -6,27 +6,30 @@ use App\Domain\Settings\Repositories\MemberCodeSettings;
 use App\Models\Member;
 use App\Util\AdminContext;
 
+/** 管理画面で会員を示す識別子（連番設定なら会員ID、それ以外は会員番号）。 */
 class AdminMemberIdentifier
 {
-    public static function usesId(?int $projectId = null): bool
+    public function __construct(private MemberCodeSettings $memberCodeSettings) {}
+
+    public function usesId(?int $projectId = null): bool
     {
         $projectId ??= AdminContext::getCurrentProjectId();
 
-        return $projectId !== null && app(MemberCodeSettings::class)->getMemberCodeType($projectId) === 'sequential';
+        return $projectId !== null && $this->memberCodeSettings->getMemberCodeType($projectId) === 'sequential';
     }
 
-    public static function label(?int $projectId = null): string
+    public function label(?int $projectId = null): string
     {
-        return self::usesId($projectId) ? '会員ID' : '会員番号';
+        return $this->usesId($projectId) ? '会員ID' : '会員番号';
     }
 
-    public static function value(?Member $member): string
+    public function value(?Member $member): string
     {
-        return $member === null ? '—' : self::fromValues($member->id, $member->member_number, $member->project_id);
+        return $member === null ? '—' : $this->fromValues($member->id, $member->member_number, $member->project_id);
     }
 
-    public static function fromValues(?int $id, ?string $number, ?int $projectId = null): string
+    public function fromValues(?int $id, ?string $number, ?int $projectId = null): string
     {
-        return self::usesId($projectId) ? ($id === null ? '—' : (string) $id) : (trim((string) $number) ?: '—');
+        return $this->usesId($projectId) ? ($id === null ? '—' : (string) $id) : (trim((string) $number) ?: '—');
     }
 }
