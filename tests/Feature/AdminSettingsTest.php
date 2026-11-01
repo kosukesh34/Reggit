@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Infrastructure\Persistence\Eloquent\Settings\BusinessSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\LiffSettingStore;
 use App\Infrastructure\Persistence\Eloquent\Settings\OrderSettingStore;
 use App\Models\AdminUser;
@@ -126,6 +127,28 @@ class AdminSettingsTest extends TestCase
 
         $this->assertTrue(app(OrderSettingStore::class)->isOrderLineNotifyEnabled((int) $project->id));
         $this->assertTrue(app(OrderSettingStore::class)->isOrderReadyLineNotifyEnabled((int) $project->id));
+    }
+
+    public function test_settings_日またぎと24時間営業の営業時間を保存できること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+
+        foreach ([['18:00', '03:00'], ['00:00', '00:00']] as [$start, $end]) {
+            $this->actingAs($admin, 'admin')
+                ->post(route('admin.settings.basic.update', ['project_key' => $project->project_key]), [
+                    'business_hours_start' => $start,
+                    'business_hours_end' => $end,
+                    'order_mode' => 'both',
+                ])
+                ->assertSessionHasNoErrors()
+                ->assertRedirect();
+
+            $this->assertSame(
+                ['start' => $start, 'end' => $end],
+                app(BusinessSettingStore::class)->getBusinessHours((int) $project->id),
+            );
+        }
     }
 
     public function test_settings_詳細設定ページにアクセスできること(): void
