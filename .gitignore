@@ -38,6 +38,7 @@ storage/app/firebase/
 /e2e/web/test-results/
 /e2e/web/playwright-report/
 /e2e/web/blob-report/
+/e2e/web/.auth/
 /playwright-report/
 /test-results/
 

@@ -1,18 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { adminPrefix, adminStorageState } from './support/adminAuth';
 
-const loginId = process.env.E2E_ADMIN_LOGIN_ID ?? 'demo_store';
-const password = process.env.E2E_ADMIN_PASSWORD ?? 'DemoStore#2026';
+test.use({ storageState: adminStorageState('store') });
 
 test('店舗管理のメニューと設定配下の画面を開ける', async ({ page }) => {
   test.skip(process.env.E2E_SKIP_ADMIN === '1', 'E2E_SKIP_ADMIN=1');
 
-  await page.goto('/admin/login');
-  await page.locator('#login_id').fill(loginId);
-  await page.locator('#password').fill(password);
-  await page.getByRole('button', { name: 'ログイン' }).click();
-  await expect(page).toHaveURL(/\/admin\/[^/]+\/dashboard/);
-
-  const projectPrefix = new URL(page.url()).pathname.replace(/\/dashboard$/, '');
+  const projectPrefix = await adminPrefix(page);
   const menuScreens = await page.locator('.sidebar-nav a.nav-item').evaluateAll((links, prefix) =>
     links
       .map((link) => ({ label: link.textContent?.trim() ?? '', path: new URL((link as HTMLAnchorElement).href).pathname }))

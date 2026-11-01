@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
+import { adminStorageState } from './support/adminAuth';
 
 async function checkBack(control: Locator) {
   await expect(control).toBeVisible();
@@ -8,21 +9,17 @@ async function checkBack(control: Locator) {
   await expect(control).toHaveCSS('border-radius', '12px');
 }
 
-async function login(page: Page, system = false) {
-  await page.goto(system ? '/system-admin/login' : '/admin/default/login');
-  await page.getByLabel('ID', { exact: true }).fill(system ? 'demo_sys' : 'demo_proj');
-  await page.getByLabel('パスワード', { exact: true }).fill(system ? 'DemoSys#2026' : 'DemoProj#2026');
-  await page.getByRole('button', { name: 'ログイン', exact: true }).click();
-  await page.waitForURL(url => !url.pathname.endsWith('/login'));
-}
-
 for (const width of [1280, 390]) {
   test(`公開ページの戻る操作・キーボード操作・表示幅 ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
-    for (const path of ['/help', '/help/existing-member-link', '/lp/register/email', '/admin/login', '/admin/default/login', '/admin/login/form', '/system-admin/login', '/admin/forgot-password', '/onboarding', '/legal/default/terms', '/legal/default/privacy']) {
+    // ログイン画面は戻る導線を置かない（パスキー必須化で外した）
+    const loginPaths = ['/admin/login', '/admin/default/login', '/admin/login/form', '/system-admin/login'];
+    for (const path of ['/help', '/help/existing-member-link', '/lp/register/email', ...loginPaths, '/admin/forgot-password', '/onboarding', '/legal/default/terms', '/legal/default/privacy']) {
       const response = await page.goto(path);
       expect(response?.status(), path).toBe(200);
-      await checkBack(page.getByRole('navigation', { name: 'ページの移動' }).locator('.web-back'));
+      const back = page.getByRole('navigation', { name: 'ページの移動' }).locator('.web-back');
+      if (loginPaths.includes(path)) await expect(back).toHaveCount(0);
+      else await checkBack(back);
       expect(await page.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(width);
     }
     await page.goto('/help/existing-member-link');
@@ -73,62 +70,68 @@ for (const width of [1280, 390]) {
   });
 }
 
-test('店舗管理の全機能・設定・作成・詳細画面で戻り先と共通デザインを確認', async ({ page }) => {
-  test.setTimeout(240_000);
-  await login(page);
-  const paths = ['orders', 'products', 'products/create', 'members', 'member-tags', 'rfm', 'reservations', 'reservations/create', 'stamps', 'stamps/create', 'coupons', 'coupons/create', 'coupons/bulk-issue', 'announcements', 'announcements/create', 'announcements/delivery', 'after-registration-deliveries', 'after-registration-deliveries/create', 'queue', 'qr-codes', 'stores', 'audit-logs', 'analytics', 'analysis-deliveries', 'gallery/items', 'gallery/categories', 'help', 'help/existing-member-link', 'settings'];
-  const settings = ['basic', 'features', 'profile', 'ranks', 'app-design/member-card', 'admin-design', 'home', 'menu', 'advanced', 'reservations', 'queue', 'coupons', 'lottery', 'announcements', 'wallet', 'payments', 'existing-member-link', 'staff', 'liff-connection', 'liff-designer', 'app-design/branding'];
-  const details = new Set<string>();
-  for (const path of [...paths, ...settings.map(path => `settings/${path}`)]) {
-    const response = await page.goto(`/admin/default/${path}`);
-    expect(response?.status(), path).toBe(200);
-    const back = page.getByRole('navigation', { name: 'ページの移動' }).first().locator('.web-back');
-    await checkBack(back);
-    expect(await back.getAttribute('href')).toContain('/admin/default/');
-    if (['orders', 'products', 'members', 'reservations', 'coupons', 'stamps', 'accounts'].includes(path)) {
-      for (const href of await page.locator('.content-body a[href]').evaluateAll(nodes => nodes.map(node => (node as HTMLAnchorElement).href))) {
-        if (/\/admin\/default\/(orders|products|members|reservations|coupons|stamps|accounts)\/\d+(\/edit|\/redemptions|\/grant-qr)?$/.test(href)) details.add(href);
+test.describe('プロジェクト管理者', () => {
+  test.use({ storageState: adminStorageState('project') });
+
+  test('店舗管理の全機能・設定・作成・詳細画面で戻り先と共通デザインを確認', async ({ page }) => {
+    test.setTimeout(240_000);
+    const paths = ['orders', 'products', 'products/create', 'members', 'member-tags', 'rfm', 'reservations', 'reservations/create', 'stamps', 'stamps/create', 'coupons', 'coupons/create', 'coupons/bulk-issue', 'announcements', 'announcements/create', 'announcements/delivery', 'after-registration-deliveries', 'after-registration-deliveries/create', 'queue', 'qr-codes', 'stores', 'audit-logs', 'analytics', 'analysis-deliveries', 'gallery/items', 'gallery/categories', 'help', 'help/existing-member-link', 'settings'];
+    const settings = ['basic', 'features', 'profile', 'ranks', 'app-design/member-card', 'admin-design', 'home', 'menu', 'advanced', 'reservations', 'queue', 'coupons', 'lottery', 'announcements', 'wallet', 'payments', 'existing-member-link', 'staff', 'liff-connection', 'liff-designer', 'app-design/branding'];
+    const details = new Set<string>();
+    for (const path of [...paths, ...settings.map(path => `settings/${path}`)]) {
+      const response = await page.goto(`/admin/default/${path}`);
+      expect(response?.status(), path).toBe(200);
+      const back = page.getByRole('navigation', { name: 'ページの移動' }).first().locator('.web-back');
+      await checkBack(back);
+      expect(await back.getAttribute('href')).toContain('/admin/default/');
+      if (['orders', 'products', 'members', 'reservations', 'coupons', 'stamps', 'accounts'].includes(path)) {
+        for (const href of await page.locator('.content-body a[href]').evaluateAll(nodes => nodes.map(node => (node as HTMLAnchorElement).href))) {
+          if (/\/admin\/default\/(orders|products|members|reservations|coupons|stamps|accounts)\/\d+(\/edit|\/redemptions|\/grant-qr)?$/.test(href)) details.add(href);
+        }
       }
     }
-  }
-  expect(details.size).toBeGreaterThan(5);
-  for (const href of details) {
-    const response = await page.goto(href);
-    expect(response?.status(), href).toBe(200);
-    await checkBack(page.getByRole('navigation', { name: 'ページの移動' }).first().locator('.web-back'));
-  }
-  await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ['settings/basic', 'products/create', 'coupons/create', 'members', 'help']) {
-    await page.goto(`/admin/default/${path}`, { waitUntil: 'domcontentloaded' });
-    const back = page.getByRole('navigation', { name: 'ページの移動' }).first().locator('.web-back');
-    await checkBack(back);
-    await expect(page.locator('#sidebarOverlay')).toHaveCSS('pointer-events', 'none');
-    if (path === 'settings/basic') {
-      await page.getByRole('button', { name: 'メニューを開く', exact: true }).click();
-      await expect(page.locator('#sidebarOverlay')).toHaveCSS('pointer-events', 'auto');
-      await page.locator('#sidebarOverlay').click({ position: { x: 380, y: 100 } });
+    expect(details.size).toBeGreaterThan(5);
+    for (const href of details) {
+      const response = await page.goto(href);
+      expect(response?.status(), href).toBe(200);
+      await checkBack(page.getByRole('navigation', { name: 'ページの移動' }).first().locator('.web-back'));
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const path of ['settings/basic', 'products/create', 'coupons/create', 'members', 'help']) {
+      await page.goto(`/admin/default/${path}`, { waitUntil: 'domcontentloaded' });
+      const back = page.getByRole('navigation', { name: 'ページの移動' }).first().locator('.web-back');
+      await checkBack(back);
       await expect(page.locator('#sidebarOverlay')).toHaveCSS('pointer-events', 'none');
-      await back.click();
-      await expect(page).toHaveURL(/\/admin\/default\/settings$/);
-    } else await back.click({ trial: true });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(390);
-  }
+      if (path === 'settings/basic') {
+        await page.getByRole('button', { name: 'メニューを開く', exact: true }).click();
+        await expect(page.locator('#sidebarOverlay')).toHaveCSS('pointer-events', 'auto');
+        await page.locator('#sidebarOverlay').click({ position: { x: 380, y: 100 } });
+        await expect(page.locator('#sidebarOverlay')).toHaveCSS('pointer-events', 'none');
+        await back.click();
+        await expect(page).toHaveURL(/\/admin\/default\/settings$/);
+      } else await back.click({ trial: true });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), path).toBeLessThanOrEqual(390);
+    }
+  });
 });
 
-test('システム管理の全機能・編集・プレビュー画面を統一', async ({ page }) => {
-  test.setTimeout(120_000);
-  await login(page, true);
-  const details = new Set<string>();
-  for (const path of ['projects', 'accounts', 'accounts/create', 'audit-logs', 'notices', 'help-articles', 'help-articles/create']) {
-    const response = await page.goto(`/system-admin/${path}`);
-    expect(response?.status(), path).toBe(200);
-    await checkBack(page.getByRole('navigation', { name: 'ページの移動' }).locator('.web-back'));
-    const links = await page.locator('.content-body a[href]').evaluateAll(nodes => nodes.map(node => (node as HTMLAnchorElement).href));
-    for (const href of links) if (/\/system-admin\/(projects|accounts|help-articles)\/\d+\/(edit|preview)$/.test(href)) details.add(href);
-  }
-  for (const href of details) {
-    const response = await page.goto(href);
-    expect(response?.status(), href).toBe(200);
-    await checkBack(page.getByRole('navigation', { name: 'ページの移動' }).locator('.web-back'));
-  }
+test.describe('システム管理者', () => {
+  test.use({ storageState: adminStorageState('system') });
+
+  test('システム管理の全機能・編集・プレビュー画面を統一', async ({ page }) => {
+    test.setTimeout(120_000);
+    const details = new Set<string>();
+    for (const path of ['projects', 'accounts', 'accounts/create', 'audit-logs', 'notices', 'help-articles', 'help-articles/create']) {
+      const response = await page.goto(`/system-admin/${path}`);
+      expect(response?.status(), path).toBe(200);
+      await checkBack(page.getByRole('navigation', { name: 'ページの移動' }).locator('.web-back'));
+      const links = await page.locator('.content-body a[href]').evaluateAll(nodes => nodes.map(node => (node as HTMLAnchorElement).href));
+      for (const href of links) if (/\/system-admin\/(projects|accounts|help-articles)\/\d+\/(edit|preview)$/.test(href)) details.add(href);
+    }
+    for (const href of details) {
+      const response = await page.goto(href);
+      expect(response?.status(), href).toBe(200);
+      await checkBack(page.getByRole('navigation', { name: 'ページの移動' }).locator('.web-back'));
+    }
+  });
 });

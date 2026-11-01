@@ -1,40 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-
-const loginId = process.env.E2E_ADMIN_LOGIN_ID ?? 'demo_store';
-const password = process.env.E2E_ADMIN_PASSWORD ?? 'DemoStore#2026';
-
-// 管理画面はパスワードの後にパスキーが必須。仮想認証器で登録・確認する（RP ID がホスト名になるため localhost で開く）
-async function loginAdmin(page: Page): Promise<string> {
-  const client = await page.context().newCDPSession(page);
-  await client.send('WebAuthn.enable');
-  await client.send('WebAuthn.addVirtualAuthenticator', {
-    options: {
-      protocol: 'ctap2',
-      transport: 'internal',
-      hasResidentKey: true,
-      hasUserVerification: true,
-      isUserVerified: true,
-      automaticPresenceSimulation: true,
-    },
-  });
-
-  await page.goto('/admin/login');
-  await page.locator('#login_id').fill(loginId);
-  await page.locator('#password').fill(password);
-  await page.getByRole('button', { name: 'ログイン' }).click();
-  await page.waitForURL(/\/admin\/(passkey\/(enroll|verify)|[^/]+\/dashboard)/);
-  if (page.url().includes('/passkey/enroll')) {
-    await page.getByLabel('端末名').fill('E2E');
-    await page.getByRole('button', { name: 'パスキーを作成して続行' }).click();
-  } else if (page.url().includes('/passkey/verify')) {
-    // 確認画面は開くと自動でパスキー認証を始める。進まないときだけボタンを押す
-    await page.waitForURL(/\/admin\/[^/]+\/dashboard/, { timeout: 3000 })
-      .catch(() => page.getByRole('button', { name: 'パスキーで続行' }).click());
-  }
-  await expect(page).toHaveURL(/\/admin\/[^/]+\/dashboard/);
-
-  return new URL(page.url()).pathname.replace(/\/dashboard$/, '');
-}
+import { adminPrefix, adminStorageState } from './support/adminAuth';
 
 // 見た目用のカードで覆われたラジオは、ラベルを押して選ぶ
 async function choose(page: Page, name: string, value: string): Promise<void> {
@@ -101,12 +66,12 @@ test.describe('お知らせ・クーポン配信画面', () => {
   test.describe.configure({ mode: 'serial' });
   test.skip(process.env.E2E_SKIP_ADMIN === '1', 'E2E_SKIP_ADMIN=1');
 
-  // パスキー確認には回数制限があるため、ログインは1回だけにしてページを使い回す
+  // 画面の状態を引き継いで確認するため、ページを使い回す
   let page: Page;
   let prefix: string;
   test.beforeAll(async ({ browser }, testInfo) => {
-    page = await browser.newPage({ baseURL: testInfo.project.use.baseURL });
-    prefix = await loginAdmin(page);
+    page = await browser.newPage({ baseURL: testInfo.project.use.baseURL, storageState: adminStorageState('store') });
+    prefix = await adminPrefix(page);
   });
   test.afterAll(async () => {
     await page.close();

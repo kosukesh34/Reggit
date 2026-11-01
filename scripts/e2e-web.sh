@@ -15,6 +15,7 @@ compose=(docker compose --profile e2e)
 mysql_root=(docker compose exec -T db mysql -uroot -proot)
 
 cleanup() {
+  rm -rf e2e/web/.auth
   "${compose[@]}" rm -sf e2e >/dev/null 2>&1 || true
   "${mysql_root[@]}" -e 'DROP DATABASE IF EXISTS reggit_e2e' 2>/dev/null || true
 }
@@ -23,6 +24,8 @@ trap cleanup EXIT
 "${mysql_root[@]}" -e "DROP DATABASE IF EXISTS reggit_e2e; CREATE DATABASE reggit_e2e; GRANT ALL PRIVILEGES ON reggit_e2e.* TO 'reggit_user'@'%';" 2>/dev/null
 E2E_APP_KEY="base64:$(openssl rand -base64 32)" "${compose[@]}" up -d e2e
 "${compose[@]}" exec -T e2e php artisan migrate --seed --force
+# プランで制限される画面（お知らせ配信など）も確認できるよう、最上位プランにする
+"${mysql_root[@]}" -e "UPDATE reggit_e2e.projects SET plan = 'premium'" 2>/dev/null
 
 for _ in $(seq 60); do curl -fs -o /dev/null "$base_url/health" && break; sleep 1; done
 curl -fsS -o /dev/null "$base_url/health"

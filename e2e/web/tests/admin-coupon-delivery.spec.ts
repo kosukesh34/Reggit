@@ -1,18 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { adminPrefix, adminStorageState } from './support/adminAuth';
 
-const loginId = process.env.E2E_ADMIN_LOGIN_ID ?? 'demo_store';
-const password = process.env.E2E_ADMIN_PASSWORD ?? 'DemoStore#2026';
+test.use({ storageState: adminStorageState('store') });
 
 test('クーポン配信画面と対象者プレビューAPIが連携する', async ({ page }) => {
   test.skip(process.env.E2E_SKIP_ADMIN === '1', 'E2E_SKIP_ADMIN=1');
 
-  await page.goto('/admin/login');
-  await page.locator('#login_id').fill(loginId);
-  await page.locator('#password').fill(password);
-  await page.getByRole('button', { name: 'ログイン' }).click();
-  await expect(page).toHaveURL(/\/admin\/[^/]+\/dashboard/);
-
-  const projectPrefix = new URL(page.url()).pathname.replace(/\/dashboard$/, '');
+  const projectPrefix = await adminPrefix(page);
   const response = await page.goto(`${projectPrefix}/coupons/bulk-issue`);
   expect(response?.ok()).toBe(true);
 
