@@ -18,6 +18,7 @@ use App\Domain\Reservation\Repositories\ReservationReminderRepository;
 use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Settings\Repositories\AdminAppearanceSettings;
 use App\Domain\Settings\Repositories\AppConfigSettings;
+use App\Domain\Settings\Repositories\BusinessHoursSettings;
 use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Domain\Settings\Repositories\FrontendShellSettings;
@@ -187,6 +188,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MemberCardPreviewSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(MemberSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(OperationalSettings::class, EloquentShopSettingRepository::class);
+        $this->app->bind(BusinessHoursSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(OrderNotificationSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(OrderSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(ProfileSettings::class, EloquentShopSettingRepository::class);

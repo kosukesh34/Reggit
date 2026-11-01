@@ -69,7 +69,7 @@ class CouponBulkIssueRequest extends FormRequest
             'audience_type' => ['nullable', Rule::in(['immediate_bulk', 'personal', 'segment'])],
             'delivery_timing' => ['nullable', Rule::in(['immediate', 'scheduled'])],
             'coupon_id' => ['required', 'integer', $couponExists],
-            'delivery_type' => ['required', Rule::in(array_keys(CouponDeliveryType::getValues()))],
+            'delivery_type' => ['required', Rule::in(array_diff(array_keys(CouponDeliveryType::getValues()), [CouponDeliveryType::EVENT_WEATHER_RAIN]))],
             'target_member_ids' => [
                 Rule::requiredIf(in_array($deliveryType, CouponDeliveryType::personalValues(), true)),
                 'nullable',

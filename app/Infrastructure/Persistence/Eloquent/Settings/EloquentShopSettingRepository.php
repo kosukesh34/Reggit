@@ -6,6 +6,7 @@ use App\Domain\Reservation\ValueObjects\ReservationReminderConfig;
 use App\Domain\Reservation\ValueObjects\ReservationRules;
 use App\Domain\Settings\Repositories\AdminAppearanceSettings;
 use App\Domain\Settings\Repositories\AppConfigSettings;
+use App\Domain\Settings\Repositories\BusinessHoursSettings;
 use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Domain\Settings\Repositories\FrontendShellSettings;
@@ -34,7 +35,7 @@ use App\Domain\Settings\ShopSettingKeys;
 use App\Models\Settings\ProjectBusinessSetting;
 use App\Models\Store;
 
-class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, CouponNotificationSettings, FeatureSettings, FrontendShellSettings, HomeSettingsRepository, KitchenAccessSettings, LiffDesignerSettings, LineAdminSettings, LineConnectionSettings, MemberCardPreviewSettings, MemberCardSettings, MemberCodeSettings, MemberSettings, OperationalSettings, OrderNotificationSettings, OrderSettings, ProfileSettings, ProjectSettings, QueueAdminSettings, QueueSettings, RankSettings, ReservationSettings, SmaregiSettings, StampSettings, WalletSettings
+class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, BusinessHoursSettings, CouponNotificationSettings, FeatureSettings, FrontendShellSettings, HomeSettingsRepository, KitchenAccessSettings, LiffDesignerSettings, LineAdminSettings, LineConnectionSettings, MemberCardPreviewSettings, MemberCardSettings, MemberCodeSettings, MemberSettings, OperationalSettings, OrderNotificationSettings, OrderSettings, ProfileSettings, ProjectSettings, QueueAdminSettings, QueueSettings, RankSettings, ReservationSettings, SmaregiSettings, StampSettings, WalletSettings
 {
     public function __construct(
         private ShopSettingStore $values,

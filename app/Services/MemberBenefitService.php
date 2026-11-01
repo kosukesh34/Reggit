@@ -74,8 +74,9 @@ class MemberBenefitService
         ?string $issueSourceType = null,
         ?string $issueSourceId = null,
         bool $shouldNotify = true,
+        ?\DateTimeInterface $validUntil = null,
     ): array {
-        return DB::transaction(function () use ($projectId, $couponId, $memberIds, $issueSourceType, $issueSourceId, $shouldNotify): array {
+        return DB::transaction(function () use ($projectId, $couponId, $memberIds, $issueSourceType, $issueSourceId, $shouldNotify, $validUntil): array {
             $coupon = Coupon::where('project_id', $projectId)->findOrFail($couponId);
             $query = Member::where('project_id', $projectId);
             if ($memberIds !== []) {
@@ -85,7 +86,10 @@ class MemberBenefitService
             if ($coupon->end_at !== null && $coupon->end_at->lt(now())) {
                 throw new \InvalidArgumentException('このクーポンは期限切れです');
             }
-            $validUntil = $coupon->end_at;
+            // 指定の期限はクーポン自体の終了日を超えない
+            if ($validUntil === null || ($coupon->end_at !== null && $coupon->end_at->lt($validUntil))) {
+                $validUntil = $coupon->end_at;
+            }
             $now = now();
             $issuedMemberIds = [];
             foreach ($members as $member) {
