@@ -105,6 +105,29 @@ services:
       db:
         condition: service_healthy
 
+  # Web E2E 専用（scripts/e2e-web.sh から起動）。開発用の .env・DB・storage を使わない
+  e2e:
+    image: reggit-app
+    container_name: reggit_e2e
+    profiles: ["e2e"]
+    environment:
+      APP_KEY: ${E2E_APP_KEY:-}
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./env.e2e.example:/var/www/html/.env:ro
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    tmpfs:
+      - /var/www/html/storage:uid=33,gid=33,mode=0775
+    command: ["sh", "-c", "mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs && cd public && PHP_CLI_SERVER_WORKERS=4 php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
+    ports:
+      - "8090:8000"
+    networks:
+      - reggit_network
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   reggit_node_modules:
     driver: local

@@ -56,13 +56,12 @@ Docker では PHP / Composer のコマンドに `docker compose exec app`、npm 
 
 ## E2E
 
-Web は起動済みの開発アプリへ接続します。Playwright のブラウザは初回だけ `npx playwright install chromium` で準備します。
-
-Docker 内で実行する場合は `make e2e-web` を使います。Node コンテナ内で Chromium と必要な OS ライブラリを準備し、`http://nginx` に接続します。
+Web は `make e2e-web`（`scripts/e2e-web.sh`）で実行します。開発用の `.env`・DB `reggit`・`storage/logs` は使わず、E2E 専用コンテナ（`http://localhost:8090`）と使い捨て DB `reggit_e2e` を作り、終了時に両方を削除します。ログはコンテナの標準エラーに出し、アップロード画像などの storage もコンテナ内の一時領域に置くため、テストの痕跡は残りません。設定は `env.e2e.example` です。Playwright のブラウザは初回だけ `npx playwright install chromium` で準備します。
 
 ```bash
-E2E_BASE_URL=http://localhost:8080 npm run test:e2e
-E2E_BROWSER_CHANNEL=chrome npx playwright test --config=e2e/web/security-review.config.ts
+make e2e-web
+./scripts/e2e-web.sh tests/customer-shell.spec.ts   # spec を絞る
+E2E_CONFIG=e2e/web/security-review.config.ts E2E_BROWSER_CHANNEL=chrome ./scripts/e2e-web.sh
 ```
 
 接続先は `E2E_BASE_URL`、ログインは `E2E_ADMIN_LOGIN_ID` / `E2E_ADMIN_PASSWORD` で指定できます。管理画面、顧客画面、画像設定、ダイアログなどの具体的な対象は `e2e/web/` の spec を参照します。
