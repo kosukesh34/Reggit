@@ -164,6 +164,9 @@ class AdminAuthService
 
     private function completeLoginGate(AdminUser $user, AdminRedirectResult $intended): AdminRedirectResult
     {
+        if (AdminPasskeyGate::isPasskeyVerified()) {
+            return $intended;
+        }
         AdminPasskeyGate::rememberIntended($intended);
 
         return AdminPasskeyGate::nextStep($user);
