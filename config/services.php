@@ -42,6 +42,10 @@ return [
     ],
 
     // チャットは Firestore/Storage に直接読み書きする。サービスアカウントは FCM と共用。storage_bucket が空なら画像なし
+    'openweather' => [
+        'key' => env('OPENWEATHER_API_KEY'),
+    ],
+
     'firebase' => [
         'project_id' => env('FIREBASE_PROJECT_ID', env('PUSH_FCM_PROJECT_ID')),
         'credentials' => env('FIREBASE_CREDENTIALS', env('PUSH_FCM_CREDENTIALS')),
