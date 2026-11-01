@@ -93,6 +93,7 @@ use App\Http\Controllers\Admin\SurveyController as AdminSurveyController;
 use App\Http\Controllers\Admin\SystemAdminDashboardController;
 use App\Http\Controllers\Admin\SystemHelpArticleController;
 use App\Http\Controllers\Admin\SystemNoticeController;
+use App\Http\Controllers\Admin\WeatherCouponController;
 use App\Http\Controllers\ApiInfoController;
 use App\Http\Controllers\AppLoginOpenController;
 use App\Http\Controllers\ExistingMemberLinkConfirmController;
@@ -391,6 +392,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/coupons', [AdminCouponController::class, 'coupons'])->name('admin.coupons')->middleware('admin.permission:coupons.view');
         Route::get('/coupons/create', [AdminCouponController::class, 'createCoupon'])->name('admin.coupons.create')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons', [CouponMutationController::class, 'store'])->name('admin.coupons.store')->middleware('admin.permission:coupons.manage');
+        Route::get('/weather-coupons', [WeatherCouponController::class, 'index'])->name('admin.weather-coupons.index')->middleware('admin.permission:coupons.view');
+        Route::post('/weather-coupons/runs/{id}/approve', [WeatherCouponController::class, 'approve'])->whereNumber('id')->name('admin.weather-coupons.approve')->middleware('admin.permission:coupons.manage');
+        Route::post('/weather-coupons/runs/{id}/decline', [WeatherCouponController::class, 'decline'])->whereNumber('id')->name('admin.weather-coupons.decline')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/bulk-issue', [CouponBulkIssueController::class, 'create'])->name('admin.coupons.bulk-issue')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/bulk-issue', [CouponBulkIssueController::class, 'store'])->name('admin.coupons.bulk-issue.store')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons/quick-create', [CouponBulkIssueController::class, 'quickCreate'])->name('admin.coupons.quick-create')->middleware('admin.permission:coupons.manage');

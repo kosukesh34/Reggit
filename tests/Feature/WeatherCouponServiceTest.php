@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Domain\Weather\ValueObjects\HourlyForecast;
 use App\Enums\CouponDeliveryType;
+use App\Mail\WeatherCouponApprovalMail;
+use App\Models\AdminUser;
 use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
@@ -16,6 +18,7 @@ use App\Services\Weather\OpenWeatherClient;
 use App\Services\WeatherCouponService;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class WeatherCouponServiceTest extends TestCase
@@ -172,12 +175,9 @@ class WeatherCouponServiceTest extends TestCase
         $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
     }
 
-    public function test_承認制のルールと利用停止の店舗と座標のない店舗は判定しないこと(): void
+    public function test_利用停止の店舗と座標のない店舗は判定しないこと(): void
     {
-        $this->rule(['requires_approval' => true]);
         $this->forecast([], 0);
-        $this->assertSame([], $this->runAt('2026-11-02 09:30'));
-
         $inactive = $this->rule();
         $this->store->update(['is_active' => false]);
         $this->assertSame([], $this->runAt('2026-11-02 09:30'));
@@ -187,5 +187,99 @@ class WeatherCouponServiceTest extends TestCase
         $this->rule();
         $this->store->update(['latitude' => null, 'longitude' => null]);
         $this->assertSame([], $this->runAt('2026-11-02 09:30'));
+    }
+
+    private function admin(?Store $store = null): AdminUser
+    {
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $this->project->id, 'email' => 'store'.uniqid().'@example.com']);
+        $admin->projects()->sync([$this->project->id]);
+        $admin->stores()->sync([($store ?? $this->store)->id => ['project_id' => $this->project->id]]);
+
+        return $admin;
+    }
+
+    private function awaitingRun(): WeatherCouponRun
+    {
+        $this->rule(['requires_approval' => true]);
+        $this->runAt('2026-11-02 09:30');
+
+        return WeatherCouponRun::withoutGlobalScopes()->sole();
+    }
+
+    public function test_承認制なら配らずに店舗の担当者へ承認のメールを送ること(): void
+    {
+        Mail::fake();
+        $this->member();
+        $storeAdmin = $this->admin();
+        $otherAdmin = $this->admin(Store::where('store_key', 'other')->firstOrFail());
+        $this->rule(['requires_approval' => true]);
+        $this->forecast([12 => 80, 13 => 80]);
+
+        $this->assertSame([WeatherCouponRun::STATUS_AWAITING_APPROVAL => 1], $this->runAt('2026-11-02 09:30'));
+
+        $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
+        Mail::assertSent(WeatherCouponApprovalMail::class, fn ($mail) => $mail->hasTo($storeAdmin->email) && $mail->expiresAt === '11月2日 10:00');
+        Mail::assertNotSent(WeatherCouponApprovalMail::class, fn ($mail) => $mail->hasTo($otherAdmin->email));
+    }
+
+    public function test_期限内に承認するとすぐに配ること(): void
+    {
+        Mail::fake();
+        $member = $this->member();
+        $this->forecast([12 => 80, 13 => 80]);
+        $run = $this->awaitingRun();
+        $this->travelTo(CarbonImmutable::parse('2026-11-02 09:50'));
+
+        $this->actingAs($this->admin(), 'admin')
+            ->post('/admin/rain/weather-coupons/runs/'.$run->id.'/approve')
+            ->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame(WeatherCouponRun::STATUS_SENT, $run->fresh()->status);
+        $this->assertSame($member->id, MemberCoupon::withoutGlobalScopes()->sole()->member_id);
+    }
+
+    public function test_期限切れや他店舗の担当者は承認できないこと(): void
+    {
+        Mail::fake();
+        $this->member();
+        $this->forecast([12 => 80, 13 => 80]);
+        $run = $this->awaitingRun();
+
+        $this->actingAs($this->admin(Store::where('store_key', 'other')->firstOrFail()), 'admin')
+            ->post('/admin/rain/weather-coupons/runs/'.$run->id.'/approve')->assertNotFound();
+        $this->travelTo(CarbonImmutable::parse('2026-11-02 10:00'));
+        $this->actingAs($this->admin(), 'admin')
+            ->post('/admin/rain/weather-coupons/runs/'.$run->id.'/approve')->assertSessionHas('error');
+
+        $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
+    }
+
+    public function test_今日は配らないを選ぶとその日は判定もメールも止めること(): void
+    {
+        Mail::fake();
+        $this->forecast([12 => 80, 13 => 80]);
+        $run = $this->awaitingRun();
+
+        $this->actingAs($this->admin(), 'admin')
+            ->post('/admin/rain/weather-coupons/runs/'.$run->id.'/decline')->assertSessionHas('success');
+        $this->assertSame([], $this->runAt('2026-11-02 11:00'));
+
+        $this->assertSame(WeatherCouponRun::STATUS_DECLINED, $run->fresh()->status);
+        Mail::assertSentCount(0);
+    }
+
+    public function test_承認されないまま期限が切れたら次の判定で再び承認を求めること(): void
+    {
+        Mail::fake();
+        $admin = $this->admin();
+        $this->forecast([12 => 80, 13 => 80], 2);
+        $run = $this->awaitingRun();
+
+        $this->assertSame([], $this->runAt('2026-11-02 10:05'));
+        $this->assertSame(WeatherCouponRun::STATUS_EXPIRED, $run->fresh()->status);
+        $this->assertSame([WeatherCouponRun::STATUS_AWAITING_APPROVAL => 1], $this->runAt('2026-11-02 10:30'));
+
+        Mail::assertSent(WeatherCouponApprovalMail::class, 2);
+        $this->actingAs($admin, 'admin')->get('/admin/rain/weather-coupons')->assertOk()->assertSee('承認して配る');
     }
 }
