@@ -87,9 +87,9 @@ audit:
 test-security: test-env test-db
 	docker-compose exec -e DB_DATABASE=reggit_test app php artisan test tests/Feature/SecurityTest.php
 
-# Web E2E（Playwright）。前提: make setup-dev 済み・:8080 で起動中
+# Web E2E（Playwright）。開発用 DB・ログを使わない使い捨て環境（:8090・reggit_e2e）で実行し、終了時に消す
 e2e-web:
-	docker compose run --rm -T -e E2E_BASE_URL=http://nginx node sh -c 'npx playwright install --with-deps chromium && npm run test:e2e'
+	./scripts/e2e-web.sh
 
 # Native E2E（Maestro / Android）。前提: APK インストール済み・adb 接続あり
 e2e-mobile:

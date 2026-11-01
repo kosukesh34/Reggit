@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8080';
+// 既定は scripts/e2e-web.sh が起動する E2E 専用環境。開発用の :8080 には向けない
+const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:8090';
 
 export default defineConfig({
   testDir: './tests',

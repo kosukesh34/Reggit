@@ -26,6 +26,9 @@ trait CreatesApplication
 
         $app->make(Kernel::class)->bootstrap();
 
+        // テストのログを開発・本番と同じ storage/logs に残さない（Docker の env_file の LOG_CHANNEL より優先する）
+        $app['config']->set('logging.default', 'null');
+
         return $app;
     }
 }
