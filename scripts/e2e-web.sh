@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # Web E2E（Playwright）を開発用 DB・ログから切り離した使い捨て環境で実行する。
-# 前提: make up 済み（db コンテナが起動中）、ホストに npm install 済み。
-# 引数はそのまま playwright test に渡す（例: scripts/e2e-web.sh tests/customer-shell.spec.ts）。設定ファイルは E2E_CONFIG で切り替える。
+# 前提: make up 済み（db コンテナが起動中）。Playwright はパスキーの確認に localhost が必要なためホストで動かす。
+# 引数はそのまま playwright test に渡す（例: scripts/e2e-web.sh customer-shell）。設定ファイルは E2E_CONFIG で切り替える。
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+if [ ! -d node_modules/@playwright/test ]; then
+  echo 'ホストに Playwright がありません。先に npm ci && npx playwright install chromium を実行してください。' >&2
+  exit 1
+fi
 
 base_url=http://localhost:8090
 compose=(docker compose --profile e2e)

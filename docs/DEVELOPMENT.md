@@ -56,11 +56,11 @@ Docker では PHP / Composer のコマンドに `docker compose exec app`、npm 
 
 ## E2E
 
-Web は `make e2e-web`（`scripts/e2e-web.sh`）で実行します。開発用の `.env`・DB `reggit`・`storage/logs` は使わず、E2E 専用コンテナ（`http://localhost:8090`）と使い捨て DB `reggit_e2e` を作り、終了時に両方を削除します。ログはコンテナの標準エラーに出し、アップロード画像などの storage もコンテナ内の一時領域に置くため、テストの痕跡は残りません。設定は `env.e2e.example` です。Playwright のブラウザは初回だけ `npx playwright install chromium` で準備します。
+Web は `make e2e-web`（`scripts/e2e-web.sh`）で実行します。開発用の `.env`・DB `reggit`・`storage/logs` は使わず、E2E 専用コンテナ（`http://localhost:8090`）と使い捨て DB `reggit_e2e` を作り、終了時に両方を削除します。ログはコンテナの標準エラーに出し、アップロード画像などの storage もコンテナ内の一時領域に置くため、テストの痕跡は残りません。設定は `env.e2e.example` です。管理画面のパスキー確認に `localhost` が必要なため、Playwright は Node コンテナではなくホストで動かします。初回だけホストで `npm ci && npx playwright install chromium` を実行します。
 
 ```bash
 make e2e-web
-./scripts/e2e-web.sh tests/customer-shell.spec.ts   # spec を絞る
+./scripts/e2e-web.sh customer-shell   # spec を絞る
 E2E_CONFIG=e2e/web/security-review.config.ts E2E_BROWSER_CHANNEL=chrome ./scripts/e2e-web.sh
 ```
 
