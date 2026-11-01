@@ -32,6 +32,33 @@ class CouponApiV1Test extends TestCase
             ->assertJsonStructure(['success', 'data' => ['coupons']]);
     }
 
+    public function test_my_coupons_利用可能なクーポンだけコードを返すこと(): void
+    {
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $coupon = Coupon::factory()->create(['project_id' => 1, 'code' => 'SHARED300']);
+        $states = [
+            'available' => ['status' => MemberCoupon::STATUS_UNUSED, 'valid_until' => now()->addDay()],
+            'expired' => ['status' => MemberCoupon::STATUS_UNUSED, 'valid_until' => now()->subMinute()],
+            'upcoming' => ['status' => MemberCoupon::STATUS_UNUSED, 'valid_from' => now()->addDay()],
+            'used' => ['status' => MemberCoupon::STATUS_USED, 'used_at' => now()],
+        ];
+        foreach ($states as $attributes) {
+            MemberCoupon::factory()->create(['member_id' => $member->id, 'project_id' => 1, 'coupon_id' => $coupon->id] + $attributes);
+        }
+
+        $coupons = $this->withoutMiddleware(AuthenticateApiToken::class)
+            ->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->get('/api/v1/members/me/coupons')
+            ->assertOk()
+            ->json('data.coupons');
+
+        $this->assertEqualsCanonicalizing(
+            ['available' => 'SHARED300', 'expired' => null, 'upcoming' => null, 'used' => null],
+            collect($coupons)->mapWithKeys(fn (array $coupon) => [$coupon['status'] => $coupon['code']])->all(),
+        );
+    }
+
     public function test_use_coupon_使用後にコードを返すこと(): void
     {
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
