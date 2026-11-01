@@ -144,11 +144,22 @@ class WeatherCouponServiceTest extends TestCase
     {
         $this->member();
         $rule = $this->rule(['weekly_limit' => 1]);
-        WeatherCouponRun::withoutGlobalScopes()->create(['project_id' => $this->project->id, 'weather_coupon_rule_id' => $rule->id, 'business_date' => '2026-11-02', 'status' => 'sent']);
+        WeatherCouponRun::withoutGlobalScopes()->create(['project_id' => $this->project->id, 'weather_coupon_rule_id' => $rule->id, 'business_date' => '2026-11-02', 'status' => 'sent', 'issued_count' => 3]);
         $this->forecast([12 => 80, 13 => 80], 0);
 
         $this->assertSame([WeatherCouponRun::STATUS_LIMIT_REACHED => 1], $this->runAt('2026-11-03 09:30'));
         $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
+    }
+
+    public function test_対象が0人だった日は週の上限に数えないこと(): void
+    {
+        $this->member();
+        $rule = $this->rule(['weekly_limit' => 1]);
+        WeatherCouponRun::withoutGlobalScopes()->create(['project_id' => $this->project->id, 'weather_coupon_rule_id' => $rule->id, 'business_date' => '2026-11-01', 'status' => 'sent', 'issued_count' => 0]);
+        $this->forecast([12 => 80, 13 => 80]);
+
+        $this->assertSame([WeatherCouponRun::STATUS_SENT => 1], $this->runAt('2026-11-02 09:30'));
+        $this->assertSame(1, MemberCoupon::withoutGlobalScopes()->count());
     }
 
     public function test_対象の会員がいなければ誰にも配らないこと(): void
@@ -161,11 +172,17 @@ class WeatherCouponServiceTest extends TestCase
         $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
     }
 
-    public function test_承認制のルールと座標のない店舗は判定しないこと(): void
+    public function test_承認制のルールと利用停止の店舗と座標のない店舗は判定しないこと(): void
     {
         $this->rule(['requires_approval' => true]);
         $this->forecast([], 0);
         $this->assertSame([], $this->runAt('2026-11-02 09:30'));
+
+        $inactive = $this->rule();
+        $this->store->update(['is_active' => false]);
+        $this->assertSame([], $this->runAt('2026-11-02 09:30'));
+        $inactive->delete();
+        $this->store->update(['is_active' => true]);
 
         $this->rule();
         $this->store->update(['latitude' => null, 'longitude' => null]);

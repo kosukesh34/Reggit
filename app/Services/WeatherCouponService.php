@@ -41,6 +41,7 @@ class WeatherCouponService
         WeatherCouponRule::withoutGlobalScopes()
             ->where('is_active', true)
             ->where('requires_approval', false)
+            ->whereHas('store', fn ($store) => $store->where('is_active', true))
             ->with(['project', 'store'])
             ->orderBy('id')
             ->each(function (WeatherCouponRule $rule) use ($now, &$counts): void {
@@ -108,6 +109,8 @@ class WeatherCouponService
         $sentThisWeek = WeatherCouponRun::withoutGlobalScopes()
             ->where('weather_coupon_rule_id', $rule->id)
             ->where('status', WeatherCouponRun::STATUS_SENT)
+            // 対象が0人だった日は上限に数えない
+            ->where('issued_count', '>', 0)
             ->whereBetween('business_date', [$date->startOfWeek()->toDateString(), $date->toDateString()])
             ->count();
         if ($sentThisWeek >= $rule->weekly_limit) {
