@@ -19,6 +19,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('coupons:send-scheduled')->everyMinute()->withoutOverlapping();
         $schedule->command('deliveries:send-scheduled')->everyMinute()->withoutOverlapping();
         $schedule->command('coupons:issue-birthday')->daily();
+        $schedule->command('coupons:issue-weather')->everyFifteenMinutes()->withoutOverlapping();
         $schedule->command('crm:point-expiry-reminder')->daily();
         $schedule->command('crm:coupon-expiry-reminder')->daily();
         $schedule->command('reservations:send-reminders')->everyFifteenMinutes()->withoutOverlapping();
