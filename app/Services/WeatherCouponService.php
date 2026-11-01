@@ -241,16 +241,16 @@ class WeatherCouponService
             ->filter(fn (AdminUser $admin) => $admin->hasPermission('coupons.manage'))
             ->pluck('email')
             ->unique();
-        $mail = new WeatherCouponApprovalMail(
-            (string) $rule->store->name,
-            (string) $rule->coupon?->name,
-            (int) $run->max_precipitation_probability,
-            $run->approval_expires_at->format('n月j日 H:i'),
-            route('admin.weather-coupons.index', ['project_key' => $rule->project->project_key]),
-        );
         foreach ($emails as $email) {
             try {
-                Mail::to($email)->send($mail);
+                // 宛先が他の担当者に見えないよう、1人ずつ新しいメールを作る
+                Mail::to($email)->send(new WeatherCouponApprovalMail(
+                    (string) $rule->store->name,
+                    (string) $rule->coupon?->name,
+                    (int) $run->max_precipitation_probability,
+                    $run->approval_expires_at->format('n月j日 H:i'),
+                    route('admin.weather-coupons.index', ['project_key' => $rule->project->project_key]),
+                ));
             } catch (\Throwable $exception) {
                 // 1人に届かなくても、他の担当者には送る
                 report($exception);

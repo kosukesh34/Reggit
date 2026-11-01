@@ -211,6 +211,7 @@ class WeatherCouponServiceTest extends TestCase
         Mail::fake();
         $this->member();
         $storeAdmin = $this->admin();
+        $this->admin();
         $otherAdmin = $this->admin(Store::where('store_key', 'other')->firstOrFail());
         $this->rule(['requires_approval' => true]);
         $this->forecast([12 => 80, 13 => 80]);
@@ -219,6 +220,8 @@ class WeatherCouponServiceTest extends TestCase
 
         $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
         Mail::assertSent(WeatherCouponApprovalMail::class, fn ($mail) => $mail->hasTo($storeAdmin->email) && $mail->expiresAt === '11月2日 10:00');
+        Mail::assertSent(WeatherCouponApprovalMail::class, 2);
+        Mail::assertNotSent(WeatherCouponApprovalMail::class, fn ($mail) => count($mail->to) !== 1);
         Mail::assertNotSent(WeatherCouponApprovalMail::class, fn ($mail) => $mail->hasTo($otherAdmin->email));
     }
 
@@ -281,5 +284,15 @@ class WeatherCouponServiceTest extends TestCase
 
         Mail::assertSent(WeatherCouponApprovalMail::class, 2);
         $this->actingAs($admin, 'admin')->get('/admin/rain/weather-coupons')->assertOk()->assertSee('承認して配る');
+    }
+
+    public function test_クーポンの管理権限だけのスタッフも一覧を開けること(): void
+    {
+        $staff = AdminUser::factory()->create(['role' => AdminUser::ROLE_STAFF, 'project_id' => $this->project->id]);
+        $staff->projects()->sync([$this->project->id]);
+        $staff->stores()->sync([$this->store->id => ['project_id' => $this->project->id]]);
+        $staff->permissions()->create(['permission' => 'coupons.manage']);
+
+        $this->actingAs($staff, 'admin')->get('/admin/rain/weather-coupons')->assertOk();
     }
 }
