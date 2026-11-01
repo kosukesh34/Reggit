@@ -58,6 +58,8 @@ Docker では PHP / Composer のコマンドに `docker compose exec app`、npm 
 
 Web は `make e2e-web`（`scripts/e2e-web.sh`）で実行します。開発用の `.env`・DB `reggit`・`storage/logs` は使わず、E2E 専用コンテナ（`http://localhost:8090`）と使い捨て DB `reggit_e2e` を作り、終了時に両方を削除します。ログはコンテナの標準エラーに出し、アップロード画像などの storage もコンテナ内の一時領域に置くため、テストの痕跡は残りません。設定は `env.e2e.example` です。管理画面のパスキー確認に `localhost` が必要なため、Playwright は Node コンテナではなくホストで動かします。初回だけホストで `npm ci && npx playwright install chromium` を実行します。
 
+管理画面はパスワードの後にパスキーが必須です。`e2e/web/tests/auth.setup.ts` が店舗・プロジェクト・システムの各管理者で一度だけ仮想パスキーを使ってログインし、その状態（`e2e/web/.auth/`、終了時に削除）を各テストで使い回します。ログイン手順は `e2e/web/tests/support/adminAuth.ts` にまとめています。E2E 専用環境のプロジェクトは、プランで制限される画面も確認できるよう最上位プランにします。
+
 ```bash
 make e2e-web
 ./scripts/e2e-web.sh customer-shell   # spec を絞る
