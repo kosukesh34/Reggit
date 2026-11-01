@@ -51,9 +51,10 @@ class RainyPeriodPolicyTest extends TestCase
         $this->assertFalse($this->isRainy([8 => 100, 9 => 100, 10 => 100, 22 => 100, 23 => 100]));
     }
 
-    public function test_判定開始時刻を含む1時間は数えること(): void
+    public function test_判定範囲に入る分だけを数えること(): void
     {
-        $this->assertTrue($this->isRainy([13 => 90, 14 => 90], '13:30'));
-        $this->assertFalse($this->isRainy([13 => 90, 14 => 90], '14:00'));
+        $this->assertFalse($this->isRainy([13 => 90, 14 => 90], '13:30'));
+        $this->assertTrue($this->isRainy([13 => 90, 14 => 90, 15 => 90], '13:30'));
+        $this->assertFalse($this->isRainy([13 => 90, 14 => 90, 15 => 90], '13:30', '15:15'));
     }
 }

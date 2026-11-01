@@ -15,17 +15,19 @@ final class RainyPeriodPolicy
      */
     public function isRainy(array $forecasts, CarbonImmutable $from, CarbonImmutable $to, int $minProbability, int $minHours): bool
     {
-        $consecutive = 0;
+        $rainyMinutes = 0;
         $previous = null;
         foreach ($forecasts as $forecast) {
             if ($forecast->at >= $to || $forecast->at->addHour() <= $from) {
                 continue;
             }
             $continues = $previous !== null && $previous->addHour()->equalTo($forecast->at);
-            $consecutive = $forecast->precipitationProbability >= $minProbability
-                ? ($continues ? $consecutive + 1 : 1)
+            // 判定範囲からはみ出す部分は数えない（13:30 開始なら 13時台は30分）
+            $overlap = (int) $forecast->at->max($from)->diffInMinutes($forecast->at->addHour()->min($to));
+            $rainyMinutes = $forecast->precipitationProbability >= $minProbability
+                ? ($continues ? $rainyMinutes : 0) + $overlap
                 : 0;
-            if ($consecutive >= $minHours) {
+            if ($rainyMinutes >= $minHours * 60) {
                 return true;
             }
             $previous = $forecast->at;
