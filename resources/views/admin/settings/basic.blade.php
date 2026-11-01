@@ -78,6 +78,7 @@
             <div class="form-group">
                 <label class="form-label">終了時間</label>
                 <input type="time" name="business_hours_end" class="form-control" value="{{ old('business_hours_end', $businessHours['end']) }}" required>
+                <small class="form-text">開始時間より前の時刻は翌日の閉店として扱います（例：18:00〜03:00）。開始と同じ時刻なら24時間営業です。</small>
             </div>
         </div>
     </div>
