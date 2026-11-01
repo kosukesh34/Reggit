@@ -66,7 +66,8 @@ class CouponMyCouponsUseCase
                     $themeColor,
                     $memberCoupon->coupon?->description,
                     $useDisplay,
-                    $code,
+                    // コードは全会員共通のため、使えないクーポンでは返さない
+                    $displayStatus === CouponDisplayStatusPolicy::AVAILABLE ? $code : null,
                     (string) ($memberCoupon->coupon?->image_fit ?? Coupon::IMAGE_FIT_COVER)
                 );
             })
