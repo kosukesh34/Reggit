@@ -304,6 +304,7 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/qr-codes', QrController::class)->name('admin.qr-codes')->middleware('admin.permission:members.view,members.manage,stamps.manage');
         Route::get('/stores', [StoreController::class, 'index'])->name('admin.stores.index');
         Route::put('/stores/active', [StoreController::class, 'updateActiveStores'])->name('admin.stores.active')->middleware('admin.permission:settings.manage');
+        Route::put('/stores/{id}', [StoreController::class, 'updateInfo'])->whereNumber('id')->name('admin.stores.update')->middleware('admin.permission:settings.manage');
         Route::post('/stores/select', [StoreController::class, 'select'])->name('admin.stores.select');
         Route::get('/', AdminProjectHomeController::class)
             ->name('admin.project.home')->middleware('admin.permission:dashboard.view');

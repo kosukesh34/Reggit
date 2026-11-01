@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Store extends Model
 {
-    protected $fillable = ['project_id', 'store_key', 'name', 'address', 'phone', 'smaregi_store_id', 'smaregi_terminal_id', 'is_active', 'settings'];
+    protected $fillable = ['project_id', 'store_key', 'name', 'address', 'phone', 'latitude', 'longitude', 'smaregi_store_id', 'smaregi_terminal_id', 'is_active', 'settings'];
 
-    protected $casts = ['is_active' => 'boolean', 'settings' => 'array'];
+    protected $casts = ['is_active' => 'boolean', 'settings' => 'array', 'latitude' => 'float', 'longitude' => 'float'];
 
     public function project(): BelongsTo
     {

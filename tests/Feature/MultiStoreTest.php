@@ -319,6 +319,33 @@ class MultiStoreTest extends TestCase
         $this->assertArrayNotHasKey('business_hours_start', $this->b->fresh()->settings ?? []);
     }
 
+    public function test_branch_admin_saves_own_store_info_and_public_list_returns_coordinates(): void
+    {
+        $this->actingAs($this->admin(), 'admin')
+            ->put('/admin/brand/stores/'.$this->a->id, ['address' => '福岡市南区1-1', 'phone' => '092-000-0000', 'coordinates' => '(33.54940322163531, 130.4241976266792'])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $store = $this->a->fresh();
+        $this->assertSame(['福岡市南区1-1', '092-000-0000', 33.5494032, 130.4241976], [$store->address, $store->phone, $store->latitude, $store->longitude]);
+        $this->getJson('/api/v1/stores?project_key=brand')->assertOk()
+            ->assertJsonPath('stores.0.latitude', 33.5494032)->assertJsonPath('stores.0.longitude', 130.4241976);
+        $this->get('/admin/brand/stores')->assertOk()->assertSee('33.5494032, 130.4241976')->assertDontSee($this->b->name.' の店舗情報');
+
+        $this->put('/admin/brand/stores/'.$this->a->id, ['coordinates' => ''])->assertSessionHasNoErrors();
+        $this->assertNull($this->a->fresh()->latitude);
+        $this->put('/admin/brand/stores/'.$this->b->id, ['address' => '他店舗'])->assertNotFound();
+        $this->assertNull($this->b->fresh()->address);
+    }
+
+    public function test_store_info_rejects_invalid_coordinates(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+        foreach (['福岡市', '33.5', '95.0, 130.4', '33.5, 181'] as $coordinates) {
+            $this->put('/admin/brand/stores/'.$this->a->id, ['coordinates' => $coordinates])->assertSessionHasErrors('coordinates');
+        }
+        $this->put('/admin/brand/stores/'.$this->a->id, ['phone' => '電話'])->assertSessionHasErrors('phone');
+        $this->assertNull($this->a->fresh()->latitude);
+    }
+
     public function test_unassigned_branch_admin_sees_no_members(): void
     {
         $this->member($this->a);

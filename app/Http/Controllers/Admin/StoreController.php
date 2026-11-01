@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Requests\Admin\StoreInfoUpdateRequest;
 use App\UseCases\Admin\Store\AdminActiveStoresUpdateUseCase;
 use App\UseCases\Admin\Store\AdminStoreIndexUseCase;
+use App\UseCases\Admin\Store\AdminStoreInfoUpdateUseCase;
 use App\Util\StoreContext;
 use Illuminate\Http\Request;
 
@@ -12,6 +14,7 @@ class StoreController extends AdminBaseController
     public function __construct(
         private AdminStoreIndexUseCase $indexUseCase,
         private AdminActiveStoresUpdateUseCase $activeStoresUseCase,
+        private AdminStoreInfoUpdateUseCase $infoUseCase,
     ) {}
 
     public function index(Request $request)
@@ -40,6 +43,19 @@ class StoreController extends AdminBaseController
         $this->activeStoresUseCase->handle($projectId, array_map('intval', $data['store_ids']));
 
         return back()->with('success', '利用する店舗を更新しました。');
+    }
+
+    public function updateInfo(StoreInfoUpdateRequest $request, string $projectKey, int $id)
+    {
+        $this->infoUseCase->handle(
+            $this->resolveAdminProjectId(),
+            $request->user('admin'),
+            $this->isHeadquarters($request),
+            $id,
+            $request->info(),
+        );
+
+        return back()->with('success', '店舗情報を更新しました。');
     }
 
     public function select(Request $request, StoreContext $context)
