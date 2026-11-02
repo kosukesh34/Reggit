@@ -7,7 +7,7 @@ import { CenterPopup } from "../components/ui/CenterPopup";
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { MembershipQr } from "../components/membership/MembershipQr";
 import { useAdminFormPreview } from "../hooks/useAdminFormPreview";
-import { couponBadges, couponCombineNotice, couponConditionRows } from "./couponConditions";
+import { couponBadges, couponCombineNotice, couponConditionRows, couponUsageTimeLabel } from "./couponConditions";
 type DeviceCoupon = { id: number; name: string; description?: string; image_url?: string };
 type Redemption = { code?: string; use_display?: string; coupon_name?: string; combine_notice?: string | null };
 export function NativeCouponsPage() {
@@ -25,7 +25,7 @@ export function NativeCouponsPage() {
   const coupons = draft ? [draft] : resource.data.coupons ?? [];
   const archived = coupons.filter((coupon) => ["used", "expired"].includes(coupon.status ?? ""));
   const list = selected === 0 ? coupons.filter((coupon) => !archived.includes(coupon)) : archived;
-  const labels: Record<string, string> = { available: "利用可能", unused: "利用可能", upcoming: "まもなく利用可能", used: "利用済み", expired: "期限切れ" };
+  const labels: Record<string, string> = { available: "利用可能", unused: "利用可能", upcoming: "まもなく利用可能", outside_usage_time: "利用時間外", used: "利用済み", expired: "期限切れ" };
   async function redeem() {
     if (!pending || busy) return;
     const coupon = pending;
@@ -67,7 +67,7 @@ export function NativeCouponsPage() {
           const status = coupon.status ?? "available";
           const usable = ["available", "unused", "issued"].includes(status);
           const badges = couponBadges(coupon);
-          return <article className={`native-coupon-card${usable ? "" : " is-inactive"}`} key={coupon.id}><div className="native-coupon-card__image">{coupon.image_url ? <img src={coupon.image_url} alt="" /> : <i className="fa-solid fa-ticket" aria-hidden="true" />}<span className={`native-badge${usable ? " is-emphasized" : ""}`}>{labels[status] ?? status}</span></div><div className="native-coupon-card__body"><div className="native-coupon-card__title"><h2>{coupon.coupon_name}</h2><button type="button" className="native-coupon-info" aria-label={`「${coupon.coupon_name ?? "クーポン"}」の詳細と対象商品`} onClick={() => setDetail(coupon)}><i className="fa-solid fa-circle-info" aria-hidden="true" /></button></div>{badges.length ? <ul className="native-coupon-badges" aria-label="利用条件">{badges.map((badge) => <li key={badge}>{badge}</li>)}</ul> : null}{coupon.description ? <p>{coupon.description}</p> : null}<div className="native-coupon-dates">{coupon.valid_from ? <span><i className="fa-solid fa-calendar" /> 利用開始 {nativeDate(coupon.valid_from)}</span> : null}{coupon.valid_until ? <span><i className="fa-solid fa-calendar" /> 利用終了 {nativeDate(coupon.valid_until)}</span> : null}{!coupon.valid_from && !coupon.valid_until ? <span>∞ 期間中いつでも利用できます</span> : null}</div>{selected === 0 && usable ? <div className="native-coupon-actions"><button className="native-button native-button--ink" disabled={busy} onClick={() => setPending(coupon)}>使う</button></div> : null}</div></article>;
+          return <article className={`native-coupon-card${usable ? "" : " is-inactive"}${status === "outside_usage_time" ? " is-outside-time" : ""}`} key={coupon.id}><div className="native-coupon-card__image">{coupon.image_url ? <img src={coupon.image_url} alt="" /> : <i className="fa-solid fa-ticket" aria-hidden="true" />}<span className={`native-badge${usable ? " is-emphasized" : ""}`}>{labels[status] ?? status}</span></div><div className="native-coupon-card__body"><div className="native-coupon-card__title"><h2>{coupon.coupon_name}</h2><button type="button" className="native-coupon-info" aria-label={`「${coupon.coupon_name ?? "クーポン"}」の詳細と対象商品`} onClick={() => setDetail(coupon)}><i className="fa-solid fa-circle-info" aria-hidden="true" /></button></div>{badges.length ? <ul className="native-coupon-badges" aria-label="利用条件">{badges.map((badge) => <li key={badge}>{badge}</li>)}</ul> : null}{coupon.description ? <p>{coupon.description}</p> : null}{status === "outside_usage_time" && couponUsageTimeLabel(coupon) ? <p className="native-coupon-usage-time"><i className="fa-solid fa-clock" aria-hidden="true" /> {couponUsageTimeLabel(coupon)}に使えます</p> : null}<div className="native-coupon-dates">{coupon.valid_from ? <span><i className="fa-solid fa-calendar" /> 利用開始 {nativeDate(coupon.valid_from)}</span> : null}{coupon.valid_until ? <span><i className="fa-solid fa-calendar" /> 利用終了 {nativeDate(coupon.valid_until)}</span> : null}{!coupon.valid_from && !coupon.valid_until ? <span>∞ 期間中いつでも利用できます</span> : null}</div>{selected === 0 && usable ? <div className="native-coupon-actions"><button className="native-button native-button--ink" disabled={busy} onClick={() => setPending(coupon)}>使う</button></div> : null}</div></article>;
         })}
       </div>
     </NativeState>

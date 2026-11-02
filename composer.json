@@ -6,6 +6,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
+        "azuyalabs/yasumi": "^2.12",
         "firebase/php-jwt": "^7.0",
         "guzzlehttp/guzzle": "^7.0",
         "laravel/framework": "^13.0",

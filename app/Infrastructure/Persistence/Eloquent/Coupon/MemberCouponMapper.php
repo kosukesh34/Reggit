@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Persistence\Eloquent\Coupon;
 
 use App\Domain\Coupon\Aggregates\MemberCoupon as MemberCouponAggregate;
+use App\Domain\Coupon\ValueObjects\CouponUsageWindow;
 use App\Domain\Coupon\ValueObjects\MemberCouponId;
 use App\Models\Coupon;
 use App\Models\MemberCoupon as MemberCouponModel;
@@ -31,6 +32,7 @@ final class MemberCouponMapper
             $coupon?->name,
             $code,
             $useDisplay,
+            CouponUsageWindow::fromArrays($coupon?->usable_days, $coupon?->usable_time_ranges),
         );
     }
 }

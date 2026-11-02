@@ -3,6 +3,7 @@
 namespace App\UseCases\Coupon;
 
 use App\Domain\Coupon\Repositories\MemberCouponRepository;
+use App\Domain\Shared\Calendar\HolidayCalendar;
 use App\Models\User;
 use App\Services\Member\CurrentMemberPrincipal;
 use App\UseCases\Coupon\Data\CouponUseMemberCouponOutput;
@@ -14,6 +15,7 @@ class CouponUseMemberCouponUseCase
     public function __construct(
         private MemberCouponRepository $memberCouponRepository,
         private CurrentMemberPrincipal $principals,
+        private HolidayCalendar $holidays,
     ) {}
 
     public function handle(User $user, int $memberCouponId): CouponUseMemberCouponOutput
@@ -52,7 +54,8 @@ class CouponUseMemberCouponUseCase
             }
 
             try {
-                $aggregate->markAsUsed(now());
+                $now = now();
+                $aggregate->markAsUsed($now, $this->holidays->isHoliday($now));
             } catch (\Exception $e) {
                 throw ValidationException::withMessages([
                     'member_coupon_id' => [$e->getMessage()],

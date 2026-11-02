@@ -25,6 +25,8 @@ class MemberCoupon
         public string $combineDivision = '3',
         /** @var list<string> 対象商品が含まれる場合のみ使えるクーポンの商品名 */
         public array $targetProducts = [],
+        /** 使える曜日・時間帯（例「平日（祝日を除く） 10:00〜12:00」）。制限なしは null */
+        public ?string $usageTimeLabel = null,
     ) {}
 
     /** @return array<string, mixed> */
@@ -49,6 +51,7 @@ class MemberCoupon
             'max_order_amount' => $this->maxOrderAmount,
             'combine_division' => $this->combineDivision,
             'target_products' => $this->targetProducts,
+            'usage_time_label' => $this->usageTimeLabel,
         ];
     }
 }

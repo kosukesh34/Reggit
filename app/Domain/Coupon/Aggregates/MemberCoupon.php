@@ -2,6 +2,7 @@
 
 namespace App\Domain\Coupon\Aggregates;
 
+use App\Domain\Coupon\ValueObjects\CouponUsageWindow;
 use App\Domain\Coupon\ValueObjects\MemberCouponId;
 
 final class MemberCoupon
@@ -25,6 +26,7 @@ final class MemberCoupon
         private ?string $couponName,
         private ?string $couponCode,
         private string $useDisplay,
+        private CouponUsageWindow $usageWindow = new CouponUsageWindow,
     ) {}
 
     public function id(): MemberCouponId
@@ -81,7 +83,8 @@ final class MemberCoupon
         return $this->useDisplay;
     }
 
-    public function markAsUsed(\DateTimeInterface $now): void
+    /** @param bool $isHoliday $now が日本の祝日か（利用できる曜日の判定に使う） */
+    public function markAsUsed(\DateTimeInterface $now, bool $isHoliday = false): void
     {
         if ($this->status === self::STATUS_USED) {
             throw new \Exception('このクーポンは使用済みです');
@@ -93,6 +96,10 @@ final class MemberCoupon
 
         if ($this->validUntil !== null && $this->validUntil < $now) {
             throw new \Exception('このクーポンは期限切れです');
+        }
+
+        if (! $this->usageWindow->allows($now, $isHoliday)) {
+            throw new \Exception('このクーポンは'.$this->usageWindow->label().'のみ使えます');
         }
 
         $this->status = self::STATUS_USED;

@@ -85,6 +85,34 @@ class CouponApiV1Test extends TestCase
             ->assertJsonPath('data.status', 'used');
     }
 
+    public function test_使える曜日と時間帯の外ではグレーアウト用の状態を返し使えないこと(): void
+    {
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $coupon = Coupon::factory()->create([
+            'project_id' => 1,
+            'code' => 'MORNING',
+            'usable_days' => ['1', '2', '3', '4', '5'],
+            'usable_time_ranges' => [['start' => '10:00', 'end' => '12:00']],
+        ]);
+        $memberCoupon = MemberCoupon::factory()->create(['member_id' => $member->id, 'project_id' => 1, 'coupon_id' => $coupon->id, 'status' => MemberCoupon::STATUS_UNUSED, 'valid_until' => now()->addYear()]);
+        $api = $this->withoutMiddleware(AuthenticateApiToken::class)->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID]);
+
+        // 2026-11-03 は文化の日（火）
+        $this->travelTo('2026-11-03 10:30');
+        $api->get('/api/v1/members/me/coupons')->assertOk()
+            ->assertJsonPath('data.coupons.0.status', 'outside_usage_time')
+            ->assertJsonPath('data.coupons.0.code', null)
+            ->assertJsonPath('data.coupons.0.usage_time_label', '平日（祝日を除く） 10:00〜12:00');
+        $api->postJson('/api/v1/members/me/coupons/'.$memberCoupon->id.'/use')->assertStatus(422)
+            ->assertJsonFragment(['このクーポンは平日（祝日を除く） 10:00〜12:00のみ使えます']);
+        $this->assertSame(MemberCoupon::STATUS_UNUSED, $memberCoupon->fresh()->status);
+
+        $this->travelTo('2026-11-04 10:30');
+        $api->get('/api/v1/members/me/coupons')->assertOk()->assertJsonPath('data.coupons.0.status', 'available')->assertJsonPath('data.coupons.0.code', 'MORNING');
+        $api->post('/api/v1/members/me/coupons/'.$memberCoupon->id.'/use')->assertOk()->assertJsonPath('data.status', 'used');
+    }
+
     public function test_cached_deleted_member_cannot_use_a_coupon(): void
     {
         $this->assertStaleMemberCannotUseCoupon('delete');

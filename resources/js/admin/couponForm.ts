@@ -8,6 +8,30 @@ function initCouponForm(): void {
     const codeInput = document.getElementById('code') as HTMLInputElement | null;
     const generateCodeButton = document.getElementById('generateCouponCode');
 
+    const usageRanges = document.getElementById('usageTimeRanges');
+    const usageRangeTemplate = document.getElementById('usageTimeRangeTemplate') as HTMLTemplateElement | null;
+    const addUsageRange = document.getElementById('addUsageTimeRange') as HTMLButtonElement | null;
+    const maxUsageRanges = 5;
+
+    function syncUsageRangeButton(): void {
+        if (addUsageRange && usageRanges) addUsageRange.disabled = usageRanges.children.length >= maxUsageRanges;
+    }
+
+    addUsageRange?.addEventListener('click', () => {
+        if (!usageRanges || !usageRangeTemplate || usageRanges.children.length >= maxUsageRanges) return;
+        const index = Number(usageRanges.dataset.nextIndex ?? usageRanges.children.length);
+        usageRanges.dataset.nextIndex = String(index + 1);
+        usageRanges.insertAdjacentHTML('beforeend', usageRangeTemplate.innerHTML.replace(/__INDEX__/g, String(index)));
+        syncUsageRangeButton();
+    });
+    usageRanges?.addEventListener('click', (event) => {
+        const remove = (event.target as HTMLElement).closest('[data-remove-range]');
+        if (!remove) return;
+        remove.closest('.cp-usage-range')?.remove();
+        syncUsageRangeButton();
+    });
+    syncUsageRangeButton();
+
     function selectedValue(name: string): string {
         const el = document.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement | null;
         return el ? el.value : '';

@@ -4,6 +4,7 @@ export type CouponConditionSource = {
   min_order_amount?: unknown;
   max_order_amount?: unknown;
   target_products?: unknown;
+  usage_time_label?: unknown;
 };
 
 export type CouponConditionRow = { label: string; value: string };
@@ -31,8 +32,14 @@ export function couponTargetProducts(coupon: CouponConditionSource): string[] {
     : [];
 }
 
+/** 使える曜日・時間帯。制限なしは null */
+export function couponUsageTimeLabel(coupon: CouponConditionSource): string | null {
+  return typeof coupon.usage_time_label === "string" && coupon.usage_time_label !== "" ? coupon.usage_time_label : null;
+}
+
 export function couponBadges(coupon: CouponConditionSource): string[] {
   const badges: string[] = [];
+  if (couponUsageTimeLabel(coupon)) badges.push("日時限定");
   const combine = combineLabels[String(coupon.combine_division ?? "")];
   if (combine) badges.push(combine.badge);
   if (couponTargetProducts(coupon).length > 0) badges.push("対象商品あり");
@@ -53,6 +60,8 @@ export function couponConditionRows(coupon: CouponConditionSource): CouponCondit
   }
   const combine = combineLabels[String(coupon.combine_division ?? "")];
   if (combine) rows.push({ label: "併用", value: combine.detail });
+  const usageTime = couponUsageTimeLabel(coupon);
+  if (usageTime) rows.push({ label: "使える日時", value: `${usageTime}に使えます` });
   return rows;
 }
 
