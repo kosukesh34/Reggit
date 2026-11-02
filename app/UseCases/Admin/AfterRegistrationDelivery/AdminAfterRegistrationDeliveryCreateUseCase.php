@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberTagAdminService;
 use App\Services\Admin\RfmAnalysisService;
+use App\Services\WeatherCouponService;
 use App\UseCases\Admin\AfterRegistrationDelivery\Data\AfterRegistrationDeliveryFormView;
 
 class AdminAfterRegistrationDeliveryCreateUseCase
@@ -19,6 +20,7 @@ class AdminAfterRegistrationDeliveryCreateUseCase
         private MemberTagAdminService $memberTagAdminService,
         private RfmAnalysisService $rfmAnalysisService,
         private ProfileSettings $profileSettings,
+        private WeatherCouponService $weatherCoupons,
     ) {}
 
     public function handle(int $projectId): AfterRegistrationDeliveryFormView
@@ -32,6 +34,7 @@ class AdminAfterRegistrationDeliveryCreateUseCase
             $this->rfmAnalysisService->segmentOptions(),
             array_values($this->profileSettings->getProfileFieldSettings($projectId)['custom_fields'] ?? []),
             MemberAudienceGroup::query()->where('project_id', $projectId)->orderBy('name')->get(),
+            $this->weatherCoupons->selectableStores($projectId),
         );
     }
 

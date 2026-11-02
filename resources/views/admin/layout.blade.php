@@ -290,10 +290,6 @@
                             <i class="fas fa-ticket-alt"></i>
                             <span>クーポン</span>
                         </a>
-                        <a href="{{ admin_route('admin.weather-coupons.index') }}" class="nav-item {{ request()->routeIs('admin.weather-coupons*') ? 'active' : '' }}">
-                            <i class="fas fa-cloud-rain"></i>
-                            <span>雨の日クーポン</span>
-                        </a>
                         @endif
                         @if($showAnnouncements)
                         <a href="{{ admin_route('admin.announcements') }}" class="nav-item {{ (request()->routeIs('admin.announcements*') && ! request()->routeIs('admin.settings.announcements*')) || request()->routeIs('admin.after-registration-deliveries*') ? 'active' : '' }}">

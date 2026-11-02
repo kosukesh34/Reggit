@@ -7,6 +7,7 @@ use App\Models\Coupon;
 use App\Models\MemberAudienceGroup;
 use App\Models\MemberTag;
 use App\Models\Product;
+use App\Models\Store;
 use Illuminate\Support\Collection;
 
 class AfterRegistrationDeliveryFormView
@@ -19,6 +20,7 @@ class AfterRegistrationDeliveryFormView
      * @param  array<string, array{label: string, color: string}>  $rfmSegments
      * @param  list<array<string, mixed>>  $profileFields
      * @param  Collection<int, MemberAudienceGroup>  $audienceGroups
+     * @param  Collection<int, Store>  $weatherStores  雨の日で選べる店舗
      */
     public function __construct(
         public readonly Collection $coupons,
@@ -29,5 +31,6 @@ class AfterRegistrationDeliveryFormView
         public readonly array $rfmSegments = [],
         public readonly array $profileFields = [],
         public readonly Collection $audienceGroups = new Collection,
+        public readonly Collection $weatherStores = new Collection,
     ) {}
 }

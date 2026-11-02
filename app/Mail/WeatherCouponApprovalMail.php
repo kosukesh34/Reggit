@@ -22,7 +22,7 @@ class WeatherCouponApprovalMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "【承認のお願い】{$this->storeName} の雨の日クーポン");
+        return new Envelope(subject: "【承認のお願い】{$this->storeName} の雨の日の配信");
     }
 
     public function content(): Content
