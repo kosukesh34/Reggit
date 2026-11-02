@@ -8,6 +8,8 @@ use App\Domain\Weather\Policies\RainyPeriodPolicy;
 use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Enums\MemberCouponSource;
+use App\Mail\WeatherCouponApprovalMail;
+use App\Models\AdminUser;
 use App\Models\CouponDelivery;
 use App\Models\Member;
 use App\Models\WeatherCouponRule;
@@ -16,13 +18,18 @@ use App\Services\Weather\OpenWeatherClient;
 use App\Util\StoreContext;
 use App\Util\TenantContext;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 /** 雨の予報が出た店舗の会員に、その営業日だけ使えるクーポンを配る */
 class WeatherCouponService
 {
     /** 営業中は1時間ごとに判定し直す（15分ごとの実行に合わせて少し短くする） */
     private const RECHECK_MINUTES = 55;
+
+    private const APPROVAL_MINUTES = 30;
 
     public function __construct(
         private OpenWeatherClient $weather,
@@ -37,12 +44,10 @@ class WeatherCouponService
     public function runDue(CarbonImmutable $now): array
     {
         $counts = [];
-        // ponytail: 承認制のルールは承認メールの実装（次の PR）まで配らない
         WeatherCouponRule::withoutGlobalScopes()
             ->where('is_active', true)
-            ->where('requires_approval', false)
             ->whereHas('store', fn ($store) => $store->where('is_active', true))
-            ->with(['project', 'store'])
+            ->with(['project', 'store', 'coupon'])
             ->orderBy('id')
             ->each(function (WeatherCouponRule $rule) use ($now, &$counts): void {
                 try {
@@ -60,36 +65,82 @@ class WeatherCouponService
         return $counts;
     }
 
+    /** @return Collection<int, WeatherCouponRun> 管理画面で選択中の店舗の最近の判定結果 */
+    public function recentRuns(): Collection
+    {
+        return $this->visibleRuns()
+            ->with(['rule.store', 'rule.coupon'])
+            ->orderByDesc('business_date')
+            ->orderByDesc('id')
+            ->limit(30)
+            ->get();
+    }
+
+    /** 承認待ちの配布を承認して、すぐに配る */
+    public function approve(int $runId, CarbonImmutable $now): void
+    {
+        DB::transaction(function () use ($runId, $now): void {
+            $run = $this->visibleRuns()->lockForUpdate()->findOrFail($runId);
+            if ($run->status !== WeatherCouponRun::STATUS_AWAITING_APPROVAL) {
+                throw new \DomainException('この配布はすでに処理済みです。');
+            }
+            if ($run->approval_expires_at === null || $run->approval_expires_at->lte($now)) {
+                throw new \DomainException('承認の期限（30分）を過ぎたため、この回は配れません。');
+            }
+            $rule = $run->rule()->with('store')->firstOrFail();
+            $date = CarbonImmutable::parse($run->business_date->toDateString());
+            [, $closesAt] = $this->businessHours($rule)->windowOn($date);
+            if ($now >= $closesAt->subHours($rule->cutoff_hours_before_close)) {
+                throw new \DomainException('配る締め切りを過ぎています。');
+            }
+            $this->issue($rule, $run, $date, $now, $closesAt);
+        });
+    }
+
+    /** 今日は配らない。その営業日はもう判定せず、承認のメールも送らない */
+    public function decline(int $runId, CarbonImmutable $now): void
+    {
+        DB::transaction(function () use ($runId, $now): void {
+            $run = $this->visibleRuns()->lockForUpdate()->findOrFail($runId);
+            if (! in_array($run->status, [WeatherCouponRun::STATUS_AWAITING_APPROVAL, WeatherCouponRun::STATUS_EXPIRED], true)) {
+                throw new \DomainException('この配布はすでに処理済みです。');
+            }
+            $run->update(['status' => WeatherCouponRun::STATUS_DECLINED, 'checked_at' => $now]);
+        });
+    }
+
     private function runRule(WeatherCouponRule $rule, CarbonImmutable $now): ?string
     {
         $store = $rule->store;
         if ($store->latitude === null || $store->longitude === null) {
             return null;
         }
-        $projectId = (int) $rule->project_id;
-        [$hours, $date, $isOpenDay] = $this->storeContext->runForStore($store, function () use ($projectId, $now): array {
-            $range = $this->businessSettings->getBusinessHours($projectId);
-            $hours = new BusinessHours((string) $range['start'], (string) $range['end']);
-            $date = $hours->businessDateAt($now);
-
-            return [$hours, $date, $this->businessSettings->isDateAvailable($date->toDateString(), $projectId)];
-        });
+        $hours = $this->businessHours($rule);
+        $date = $hours->businessDateAt($now);
         [$opensAt, $closesAt] = $hours->windowOn($date);
-        if (! $isOpenDay || $now < $opensAt->subHours($rule->check_hours_before_open) || $now >= $closesAt->subHours($rule->cutoff_hours_before_close)) {
+        if ($now < $opensAt->subHours($rule->check_hours_before_open)
+            || $now >= $closesAt->subHours($rule->cutoff_hours_before_close)
+            || ! $this->storeContext->runForStore($store, fn () => $this->businessSettings->isDateAvailable($date->toDateString(), (int) $rule->project_id))) {
             return null;
         }
 
         $run = WeatherCouponRun::withoutGlobalScopes()->firstOrCreate(
             ['weather_coupon_rule_id' => $rule->id, 'business_date' => $date->toDateString()],
-            ['project_id' => $projectId, 'status' => WeatherCouponRun::STATUS_PENDING],
+            ['project_id' => $rule->project_id, 'status' => WeatherCouponRun::STATUS_PENDING],
         );
+        if ($run->status === WeatherCouponRun::STATUS_AWAITING_APPROVAL) {
+            if ($run->approval_expires_at !== null && $run->approval_expires_at->gt($now)) {
+                return null;
+            }
+            $run->update(['status' => WeatherCouponRun::STATUS_EXPIRED]);
+        }
         if (in_array($run->status, WeatherCouponRun::FINAL_STATUSES, true)
             || ($run->checked_at !== null && $run->checked_at->gt($now->subMinutes(self::RECHECK_MINUTES)))) {
             return null;
         }
 
         try {
-            return $this->judgeAndIssue($rule, $run, $date, $now, $opensAt, $closesAt);
+            return $this->judge($rule, $run, $date, $now, $opensAt, $closesAt);
         } catch (\Throwable $exception) {
             report($exception);
             $run->update(['status' => WeatherCouponRun::STATUS_FAILED, 'checked_at' => $now, 'error_message' => $exception->getMessage()]);
@@ -98,7 +149,7 @@ class WeatherCouponService
         }
     }
 
-    private function judgeAndIssue(
+    private function judge(
         WeatherCouponRule $rule,
         WeatherCouponRun $run,
         CarbonImmutable $date,
@@ -130,8 +181,22 @@ class WeatherCouponService
             return WeatherCouponRun::STATUS_NO_RAIN;
         }
 
+        $run->update(['checked_at' => $now, 'max_precipitation_probability' => $maxProbability, 'error_message' => null]);
+        if ($rule->requires_approval) {
+            $run->update(['status' => WeatherCouponRun::STATUS_AWAITING_APPROVAL, 'approval_expires_at' => $now->addMinutes(self::APPROVAL_MINUTES)]);
+            $this->requestApproval($rule, $run);
+
+            return WeatherCouponRun::STATUS_AWAITING_APPROVAL;
+        }
+        $this->issue($rule, $run, $date, $now, $closesAt);
+
+        return WeatherCouponRun::STATUS_SENT;
+    }
+
+    private function issue(WeatherCouponRule $rule, WeatherCouponRun $run, CarbonImmutable $date, CarbonImmutable $now, CarbonImmutable $closesAt): void
+    {
         $memberIds = $this->targetMemberIds($rule);
-        DB::transaction(function () use ($rule, $run, $date, $now, $closesAt, $memberIds, $maxProbability): void {
+        DB::transaction(function () use ($rule, $run, $date, $now, $closesAt, $memberIds): void {
             // 空配列は「全会員」を意味するため、対象がいないときは発行しない
             $result = $memberIds === [] ? ['count' => 0, 'member_ids' => []] : $this->memberBenefit->issueCouponToMembers(
                 (int) $rule->project_id,
@@ -156,15 +221,56 @@ class WeatherCouponService
             ]);
             $run->update([
                 'status' => WeatherCouponRun::STATUS_SENT,
-                'checked_at' => $now,
-                'max_precipitation_probability' => $maxProbability,
                 'coupon_delivery_id' => $delivery->id,
                 'issued_count' => $result['count'],
-                'error_message' => null,
             ]);
         });
+    }
 
-        return WeatherCouponRun::STATUS_SENT;
+    /** 店舗の担当者とプロジェクトの管理者のうち、クーポンを管理できる人にメールで承認を求める */
+    private function requestApproval(WeatherCouponRule $rule, WeatherCouponRun $run): void
+    {
+        $emails = AdminUser::query()
+            ->where(fn ($query) => $query
+                ->whereHas('stores', fn ($stores) => $stores->whereKey($rule->store_id))
+                ->orWhere(fn ($admins) => $admins
+                    ->where('role', AdminUser::ROLE_PROJECT_ADMIN)
+                    ->where(fn ($project) => $project->where('project_id', $rule->project_id)->orWhereHas('projects', fn ($projects) => $projects->whereKey($rule->project_id)))))
+            ->whereNotNull('email')
+            ->get()
+            ->filter(fn (AdminUser $admin) => $admin->hasPermission('coupons.manage'))
+            ->pluck('email')
+            ->unique();
+        foreach ($emails as $email) {
+            try {
+                // 宛先が他の担当者に見えないよう、1人ずつ新しいメールを作る
+                Mail::to($email)->send(new WeatherCouponApprovalMail(
+                    (string) $rule->store->name,
+                    (string) $rule->coupon?->name,
+                    (int) $run->max_precipitation_probability,
+                    $run->approval_expires_at->format('n月j日 H:i'),
+                    route('admin.weather-coupons.index', ['project_key' => $rule->project->project_key]),
+                ));
+            } catch (\Throwable $exception) {
+                // 1人に届かなくても、他の担当者には送る
+                report($exception);
+            }
+        }
+    }
+
+    private function businessHours(WeatherCouponRule $rule): BusinessHours
+    {
+        $range = $this->storeContext->runForStore($rule->store, fn () => $this->businessSettings->getBusinessHours((int) $rule->project_id));
+
+        return new BusinessHours((string) $range['start'], (string) $range['end']);
+    }
+
+    /** @return Builder<WeatherCouponRun> */
+    private function visibleRuns(): Builder
+    {
+        $storeIds = $this->storeContext->visibleStoreIds;
+
+        return WeatherCouponRun::query()->when($storeIds !== null, fn ($query) => $query->whereHas('rule', fn ($rule) => $rule->whereIn('store_id', $storeIds)));
     }
 
     /** @return list<int> */
