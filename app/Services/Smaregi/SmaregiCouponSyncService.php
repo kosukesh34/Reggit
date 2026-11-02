@@ -5,6 +5,7 @@ namespace App\Services\Smaregi;
 use App\Enums\CouponApplyConditionDivision;
 use App\Enums\CouponCombineDivision;
 use App\Models\Coupon;
+use App\Models\Product;
 use App\Util\StrHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -95,6 +96,7 @@ class SmaregiCouponSyncService
 
     /**
      * 適用条件の対象商品（商品ID指定）をスマレジと一致させる。部門・グループ指定と商品付与には触れない。
+     * Reggit に取り込んでいない商品は管理画面で選べないため、対象商品を指定する間はスマレジに残す（空なら全て外す）。
      *
      * @param  list<string>  $smaregiProductIds
      */
@@ -114,7 +116,12 @@ class SmaregiCouponSyncService
                 return false;
             }
         }
-        foreach (array_diff($current, $smaregiProductIds) as $itemId) {
+        $removed = array_values(array_diff($current, $smaregiProductIds));
+        if ($smaregiProductIds !== [] && $removed !== []) {
+            $removed = Product::withoutGlobalScopes()->where('project_id', $projectId)->whereIn('smaregi_product_id', $removed)
+                ->pluck('smaregi_product_id')->map(fn ($id) => (string) $id)->unique()->values()->all();
+        }
+        foreach ($removed as $itemId) {
             if ($this->smaregiApi->deleteCouponProduct($contractId, $smaregiCouponId, self::ITEM_TYPE_APPLY_CONDITION, self::ITEM_DIVISION_PRODUCT, $itemId) === null) {
                 return false;
             }
