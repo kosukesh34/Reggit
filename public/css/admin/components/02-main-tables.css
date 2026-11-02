@@ -124,6 +124,18 @@
     gap: 5px;
 }
 
+.main-content .btn-sm,
+.main-content .btn-action {
+    min-height: 36px;
+}
+
+@media (max-width: 640px) {
+    .main-content .btn-sm,
+    .main-content .btn-action {
+        min-height: 44px;
+    }
+}
+
 .btn-large {
     padding: 12px 24px;
     font-size: 15px;

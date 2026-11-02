@@ -377,8 +377,6 @@
     grid-template-columns: minmax(0, 1.42fr) minmax(360px, 0.58fr);
     gap: 24px;
 }
-.stamp-studio-form-card,
-.stamp-studio-preview-card { border-radius: 14px; border: 1px solid var(--studio-border); background: #fff; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06); }
 .stamp-studio-banner { margin: 0 0 12px; padding: 20px 22px; border: 1px solid #d6e2ff; border-radius: 12px; background: radial-gradient(circle at 90% 12%, rgba(29, 78, 216, 0.16) 0%, rgba(29, 78, 216, 0) 50%), linear-gradient(180deg, #f7faff 0%, #eef4ff 100%); }
 .stamp-studio-kicker { margin: 0 0 8px; color: #335aa6; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .stamp-studio-title { margin: 0 0 6px; color: var(--studio-ink); font-size: 24px; font-weight: 700; line-height: 1.35; }

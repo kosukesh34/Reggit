@@ -44,15 +44,15 @@
 /* ===== カード ===== */
 .card {
     background: var(--bg-primary);
-    border-radius: 4px;
+    border-radius: 14px;
     padding: 24px;
-    box-shadow: 0 1px 3px #233c4814;
+    box-shadow: 0 2px 8px #183d4b05;
     margin-bottom: 26px;
     border: 1px solid var(--border);
 }
 
 .card:hover {
-    box-shadow: 0 1px 3px #233c4814;
+    box-shadow: 0 2px 8px #183d4b05;
     transform: none;
 }
 
@@ -65,6 +65,7 @@
     margin-bottom: 20px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
 }
 .card-header--stack {
     flex-direction: column;
@@ -151,6 +152,13 @@
     white-space: nowrap;
     position: relative;
     font-family: var(--font-sans);
+}
+
+/* 本文とログイン画面のボタンは押しやすい大きさにする（上部バーとサイドバーは除く） */
+.main-content .btn,
+.admin-login-page .btn {
+    min-height: 44px;
+    border-radius: 10px;
 }
 
 .btn:hover {
