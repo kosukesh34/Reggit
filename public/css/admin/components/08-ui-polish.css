@@ -13,12 +13,7 @@
     letter-spacing: var(--letter-spacing-tight);
 }
 
-.card-title {
-    letter-spacing: var(--letter-spacing-tight);
-}
-
 .nav-item,
-.btn,
 .form-control,
 .form-select,
 table,
@@ -67,31 +62,6 @@ pre,
     font-size: var(--font-size-xs);
 }
 
-/* カードはボーダーだけで立体にしない */
-.card {
-    border-radius: var(--radius-lg);
-    box-shadow: none;
-}
-
-.card:hover {
-    box-shadow: none;
-    transform: none;
-}
-
-.card-header {
-    gap: 14px;
-}
-
-.card-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.card-title i {
-    color: var(--text-secondary);
-}
-
 /* 統計カード */
 .stat-card {
     border: 1px solid var(--border);
@@ -105,7 +75,6 @@ pre,
 }
 
 /* ボタン：色は抑えめ、影なし */
-.btn,
 .btn-action {
     border-radius: var(--radius);
     font-weight: 500;
@@ -117,43 +86,17 @@ pre,
         color var(--transition-fast);
 }
 
-.btn:hover,
 .btn-action:hover {
     filter: none;
     box-shadow: none;
 }
 
-.btn:active,
 .btn-action:active {
     transform: none;
 }
 
-.btn:focus,
 .btn-action:focus {
     box-shadow: var(--primary-ring);
-}
-
-/* テーブルの可読性 */
-.table thead th {
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
-    font-size: 12px;
-    letter-spacing: 0.02em;
-    border-bottom: 1px solid var(--border);
-}
-
-.table tbody tr {
-    transition: background var(--transition-fast);
-}
-
-.table tbody tr:hover {
-    background: var(--primary-bg);
-}
-
-.table td,
-.table th {
-    padding-top: 12px;
-    padding-bottom: 12px;
 }
 
 /* フォームフォーカス */
