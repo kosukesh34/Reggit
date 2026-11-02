@@ -274,7 +274,7 @@ function segmentConditionChips(form: HTMLFormElement): SegmentConditionChip[] {
         ? `${formattedNumber(visitMin)}〜${formattedNumber(visitMax)}回`
         : visitMin !== '' ? `${formattedNumber(visitMin)}回以上` : visitMax !== '' ? `${formattedNumber(visitMax)}回以下` : '', () => clearIds(['segment_visit_count_min', 'segment_visit_count_max']));
 
-    add('会員ランク', '=', fieldValue('segment_rank'), () => clearIds(['segment_rank']));
+    add('会員ランク', '=', selectedOptionText('segment_rank'), () => clearIds(['segment_rank']));
     const pointsMin = fieldValue('segment_lifetime_points_min');
     const pointsMax = fieldValue('segment_lifetime_points_max');
     add('累計付与ポイント', '=', pointsMin !== '' && pointsMax !== ''
@@ -303,7 +303,7 @@ function segmentConditionChips(form: HTMLFormElement): SegmentConditionChip[] {
         () => clearIds(['segment_coupon_id', 'segment_coupon_status']),
     );
     if (field<HTMLInputElement>('event_rank_up')?.checked === true) {
-        add('ランクアップ達成', '=', fieldValue('segment_rank') || '対象ランクを指定', () => clearIds(['event_rank_up', 'segment_rank']));
+        add('ランクアップ達成', '=', selectedOptionText('segment_rank') || '対象ランクを指定', () => clearIds(['event_rank_up', 'segment_rank']));
     }
     add('スタンプカード', '=', selectedOptionText('stamp_card_id'), () => clearIds(['stamp_card_id']));
     const stampMin = fieldValue('stamp_count_min');
@@ -484,7 +484,7 @@ export function initScheduledSegmentUi(): void {
         push('来店回数', '=', visitMin !== '' && visitMax !== ''
             ? `${visitMin}〜${visitMax}回`
             : visitMin !== '' ? `${visitMin}回以上` : visitMax !== '' ? `${visitMax}回以下` : '');
-        push('会員ランク', '=', fieldValue('segment_rank'));
+        push('会員ランク', '=', selectedOptionText('segment_rank'));
         const pointsMin = fieldValue('segment_lifetime_points_min');
         const pointsMax = fieldValue('segment_lifetime_points_max');
         push('累計付与ポイント', '=', pointsMin !== '' && pointsMax !== ''

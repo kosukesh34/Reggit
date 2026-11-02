@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Settings\Repositories\RankSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\MemberStatus;
 use App\Enums\MemberVisitSource;
@@ -841,5 +842,27 @@ class AdminMembersTest extends TestCase
         $user->refresh();
         $this->assertNull($user->email);
         $this->assertSame('更新後 名前', $user->name);
+    }
+
+    public function test_members_会員ランクの絞り込みは登録済みのランクから選べること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        app(RankSettings::class)->setMemberRankSettings([
+            ['key' => 'regular', 'label' => 'レギュラー'],
+            ['key' => 'vip', 'label' => 'VIP会員'],
+        ], (int) $project->id);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.members', ['project_key' => $project->project_key, 'segment_rank' => 'vip']))
+            ->assertOk()
+            ->assertSee('<select name="segment_rank" id="segment_rank"', false)
+            ->assertSee('<option value="vip" selected>VIP会員</option>', false)
+            ->assertSeeInOrder(['value="regular"', 'レギュラー'], false);
+
+        // 以前に手入力した、今は存在しないランクも選択を保つ
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.members', ['project_key' => $project->project_key, 'segment_rank' => 'legacy']))
+            ->assertSee('legacy（登録されていないランク）');
     }
 }
