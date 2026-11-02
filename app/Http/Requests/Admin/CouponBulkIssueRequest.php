@@ -159,6 +159,7 @@ class CouponBulkIssueRequest extends FormRequest
             'segment_more.*' => ['array'],
             'segment_blocks' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_BLOCKS],
             'segment_blocks.*' => ['array'],
+            'segment_blocks.*.segment_more' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_CONDITIONS],
             'segment_stamp_card_id' => ['nullable', 'integer', 'min:1'],
             'segment_stamp_count_min' => ['nullable', 'integer', 'min:0'],
             'segment_stamp_completed' => ['nullable'],

@@ -77,6 +77,7 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'segment_more.*' => ['array'],
             'segment_blocks' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_BLOCKS],
             'segment_blocks.*' => ['array'],
+            'segment_blocks.*.segment_more' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_CONDITIONS],
             'segment_period_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'segment_condition' => ['nullable', Rule::in(['min_amount', 'no_orders'])],
             'segment_min_amount' => ['nullable', 'numeric', 'min:0'],

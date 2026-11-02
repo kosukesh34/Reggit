@@ -115,6 +115,7 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             'segment_more.*' => ['array'],
             'segment_blocks' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_BLOCKS],
             'segment_blocks.*' => ['array'],
+            'segment_blocks.*.segment_more' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_CONDITIONS],
             'segment_operators' => ['nullable', 'array'],
             'segment_match_mode' => ['nullable', Rule::in(SegmentCombineMode::keys())],
             'segment_value_mode' => ['nullable', 'array'],

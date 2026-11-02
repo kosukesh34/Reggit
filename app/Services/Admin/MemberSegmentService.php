@@ -43,6 +43,7 @@ class MemberSegmentService
      */
     public function buildCriteriaFromInput(array $input): ?array
     {
+        // 上限を超えた分は切り捨てる。保存する入口では exceedsConditionLimits() で先に入力エラーにする
         $criteria = [];
 
         $matchMode = $input['segment_match_mode'] ?? null;
@@ -232,6 +233,27 @@ class MemberSegmentService
         }
 
         return array_diff_key($criteria, ['operators' => true, 'match_mode' => true]) === [] ? null : $criteria;
+    }
+
+    /**
+     * 同じ種類の条件・まとまりの数が上限を超えているか。超えた分を黙って捨てると、選んだより広い対象になるため。
+     *
+     * @param  array<string, mixed>  $input
+     */
+    public function exceedsConditionLimits(array $input): bool
+    {
+        $tooMany = static fn (mixed $list, int $max): bool => is_array($list) && count($list) > $max;
+        if ($tooMany($input['segment_more'] ?? null, self::MAX_EXTRA_CONDITIONS)
+            || $tooMany($input['segment_blocks'] ?? null, self::MAX_EXTRA_BLOCKS)) {
+            return true;
+        }
+        foreach ((array) ($input['segment_blocks'] ?? []) as $block) {
+            if (is_array($block) && $tooMany($block['segment_more'] ?? null, self::MAX_EXTRA_CONDITIONS)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

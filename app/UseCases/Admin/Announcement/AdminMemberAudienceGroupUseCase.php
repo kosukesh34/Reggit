@@ -37,6 +37,12 @@ class AdminMemberAudienceGroupUseCase
             ]);
         }
 
+        if ($this->memberSegmentService->exceedsConditionLimits($input)) {
+            throw ValidationException::withMessages([
+                'audience_group_name' => '条件は1つのまとまりにつき'.(MemberSegmentService::MAX_EXTRA_CONDITIONS + 1).'個、まとまりは'.(MemberSegmentService::MAX_EXTRA_BLOCKS + 1).'個までにしてください',
+            ]);
+        }
+
         $criteria = $this->memberSegmentService->buildCriteriaFromInput($input);
         if (is_array($criteria)) {
             unset($criteria['audience_group_ids']);

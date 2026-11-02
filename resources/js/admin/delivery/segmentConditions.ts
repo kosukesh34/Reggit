@@ -114,6 +114,9 @@ export function syncConditionPicker(form: HTMLFormElement): void {
 
 type ConditionTarget = { list: HTMLElement; button: HTMLButtonElement; prefix: string };
 
+/** MemberSegmentService::MAX_EXTRA_BLOCKS と同じ。まとまり1を除いた数 */
+const MAX_EXTRA_BLOCKS = 10;
+
 export function bindConditionPicker(form: HTMLFormElement): void {
     const list = form.querySelector<HTMLElement>('#segmentConditionRows');
     const template = form.querySelector<HTMLTemplateElement>('#segmentConditionRowTemplate');
@@ -233,6 +236,7 @@ export function bindConditionPicker(form: HTMLFormElement): void {
             if (title) title.textContent = `まとまり${index + 2}`;
         });
         if (matchLegend) matchLegend.textContent = blocks.length > 0 ? `まとまり1の${matchLegendText}` : matchLegendText;
+        addBlockButton.disabled = blocks.length >= MAX_EXTRA_BLOCKS;
     };
     const createBlock = (mode: string): ConditionTarget => {
         const prefix = `segment_blocks[${blockCount++}]`;

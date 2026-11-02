@@ -76,6 +76,18 @@ class AdminAnnouncementsTest extends TestCase
         );
     }
 
+    public function test_audience_group_too_many_condition_blocks_is_rejected_instead_of_truncated(): void
+    {
+        $project = $this->createDistributionProject();
+        $this->actingAs($this->createAdmin($project), 'admin')
+            ->post(route('admin.announcements.audience-groups.store', ['project_key' => $project->project_key]), [
+                'audience_group_name' => '多すぎる条件',
+                'segment_sex' => '2',
+                'segment_blocks' => array_fill(0, 11, ['segment_more' => [['segment_sex' => '1']]]),
+            ])->assertSessionHasErrors('audience_group_name');
+        $this->assertDatabaseCount('member_audience_groups', 0);
+    }
+
     public function test_audience_group_delete_uses_route_id_and_preserves_other_projects(): void
     {
         $project = $this->createDistributionProject();
