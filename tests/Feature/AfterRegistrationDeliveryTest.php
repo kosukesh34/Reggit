@@ -290,7 +290,7 @@ class AfterRegistrationDeliveryTest extends TestCase
         ]);
     }
 
-    public function test_配信期間を保存でき終了日が開始日より前なら保存しないこと(): void
+    public function test_配信期間を日時で保存でき終了日時が開始日時以前なら保存しないこと(): void
     {
         $project = $this->createProject();
         $this->actingAs($this->createAdmin($project), 'admin');
@@ -301,13 +301,13 @@ class AfterRegistrationDeliveryTest extends TestCase
             'is_active' => 1,
         ];
 
-        $this->post(route('admin.after-registration-deliveries.store', ['project_key' => $project->project_key]), $input + ['starts_on' => '2026-10-31', 'ends_on' => '2026-10-01'])
-            ->assertSessionHasErrors('ends_on');
-        $this->post(route('admin.after-registration-deliveries.store', ['project_key' => $project->project_key]), $input + ['starts_on' => '2026-10-01', 'ends_on' => '2026-10-31'])
+        $this->post(route('admin.after-registration-deliveries.store', ['project_key' => $project->project_key]), $input + ['starts_at' => '2026-10-31T10:00', 'ends_at' => '2026-10-31T10:00'])
+            ->assertSessionHasErrors('ends_at');
+        $this->post(route('admin.after-registration-deliveries.store', ['project_key' => $project->project_key]), $input + ['starts_at' => '2026-10-01T09:30', 'ends_at' => '2026-10-31T23:59'])
             ->assertSessionHasNoErrors();
 
         $delivery = AfterRegistrationDelivery::query()->sole();
-        $this->assertSame(['2026-10-01', '2026-10-31'], [$delivery->starts_on->format('Y-m-d'), $delivery->ends_on->format('Y-m-d')]);
+        $this->assertSame(['2026-10-01 09:30:00', '2026-10-31 23:59:59'], [$delivery->starts_at->format('Y-m-d H:i:s'), $delivery->ends_at->format('Y-m-d H:i:s')]);
     }
 
     public function test_配信期間の外では送らず期間内だけ送ること(): void
@@ -315,10 +315,10 @@ class AfterRegistrationDeliveryTest extends TestCase
         $project = $this->createProject();
         $coupon = Coupon::factory()->create(['project_id' => $project->id, 'end_at' => '2026-12-31 23:59:59']);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
-        $this->weeklyCouponDelivery($project, $coupon, ['starts_on' => '2026-10-01', 'ends_on' => '2026-10-31']);
+        $this->weeklyCouponDelivery($project, $coupon, ['starts_at' => '2026-10-05 10:00:00', 'ends_at' => '2026-10-31 23:59:59']);
 
         try {
-            // 2026-09-28・2026-11-02 は期間外、2026-10-05 は期間内の月曜
+            // 2026-09-28・2026-11-02 は期間外、2026-10-05 10:00 は開始ちょうどで期間内の月曜
             foreach (['2026-09-28 10:00:00' => 0, '2026-10-05 10:00:00' => 1, '2026-11-02 10:00:00' => 1] as $moment => $expected) {
                 Carbon::setTestNow(Carbon::parse($moment));
                 $this->artisan('deliveries:send-scheduled')->assertSuccessful();
@@ -335,7 +335,7 @@ class AfterRegistrationDeliveryTest extends TestCase
         $project = $this->createProject();
         $coupon = Coupon::factory()->create(['project_id' => $project->id, 'end_at' => '2026-12-31 23:59:59']);
         $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
-        $delivery = $this->weeklyCouponDelivery($project, $coupon, ['starts_on' => '2026-11-01']);
+        $delivery = $this->weeklyCouponDelivery($project, $coupon, ['starts_at' => '2026-10-05 10:30:00']);
         $this->actingAs($this->createAdmin($project), 'admin');
         $index = route('admin.after-registration-deliveries.index', ['project_key' => $project->project_key]);
 
@@ -345,7 +345,7 @@ class AfterRegistrationDeliveryTest extends TestCase
             $this->assertFalse($delivery->fresh()->is_active);
             $this->get($index)->assertSee('一時停止中')->assertSee('再開');
 
-            $delivery->update(['starts_on' => null]);
+            $delivery->update(['starts_at' => null]);
             $this->artisan('deliveries:send-scheduled')->assertSuccessful();
             $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
 

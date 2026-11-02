@@ -144,7 +144,7 @@ class ScheduledDeliveryRetryTest extends TestCase
     public function test_配信期間の終了後に回ってきた再送は送らずに取りやめること(): void
     {
         $delivery = $this->delivery();
-        $delivery->update(['ends_on' => '2026-10-01']);
+        $delivery->update(['ends_at' => '2026-10-01 23:59:59']);
         $delivery->coupon->update(['end_at' => now()->subDay()]);
         $this->artisan('deliveries:send-scheduled')->assertExitCode(1);
 

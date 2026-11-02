@@ -422,7 +422,7 @@ class WeatherCouponServiceTest extends TestCase
     public function test_配信期間の外では雨の日も判定しないこと(): void
     {
         $this->member();
-        $this->rule([], ['starts_on' => '2026-11-03']);
+        $this->rule([], ['starts_at' => '2026-11-02 09:45:00']);
         $this->forecast([12 => 80, 13 => 80], 0);
 
         $this->assertSame([], $this->runAt('2026-11-02 09:30'));

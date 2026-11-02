@@ -37,8 +37,8 @@ class AfterRegistrationDelivery extends Model
         'push_minute',
         'params',
         'is_active',
-        'starts_on',
-        'ends_on',
+        'starts_at',
+        'ends_at',
     ];
 
     /** @var array<string, mixed> */
@@ -58,8 +58,8 @@ class AfterRegistrationDelivery extends Model
         'is_active' => 'boolean',
         'send_notification' => 'boolean',
         'params' => 'array',
-        'starts_on' => 'date',
-        'ends_on' => 'date',
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
     ];
 
     public function project(): BelongsTo
@@ -77,24 +77,20 @@ class AfterRegistrationDelivery extends Model
         return $this->hasMany(ScheduledDeliverySend::class, 'after_registration_delivery_id');
     }
 
-    /** 配信期間（開始日・終了日を含む）内か。未設定の側は制限しない */
-    public function isInPeriod(\DateTimeInterface $date): bool
+    /** 配信期間（開始日時・終了日時を含む）内か。未設定の側は制限しない */
+    public function isInPeriod(\DateTimeInterface $at): bool
     {
-        $day = $date->format('Y-m-d');
-
-        return ($this->starts_on === null || $this->starts_on->format('Y-m-d') <= $day)
-            && ($this->ends_on === null || $day <= $this->ends_on->format('Y-m-d'));
+        return ($this->starts_at === null || $this->starts_at <= $at)
+            && ($this->ends_at === null || $at <= $this->ends_at);
     }
 
     /** 一覧に出す状態 */
     public function statusLabel(\DateTimeInterface $now): string
     {
-        $day = $now->format('Y-m-d');
-
         return match (true) {
             ! $this->is_active => '一時停止中',
-            $this->starts_on !== null && $day < $this->starts_on->format('Y-m-d') => '開始前',
-            $this->ends_on !== null && $this->ends_on->format('Y-m-d') < $day => '期間終了',
+            $this->starts_at !== null && $now < $this->starts_at => '開始前',
+            $this->ends_at !== null && $this->ends_at < $now => '期間終了',
             default => '配信中',
         };
     }
