@@ -20,6 +20,9 @@
     <div class="card-header card-header-with-action">
         <h2 class="card-title">一覧</h2>
         <div class="table-actions">
+            @if($deliveries->contains(fn ($d) => $d->isWeatherRain()))
+                <a href="{{ admin_route('admin.weather-coupons.index') }}" class="btn btn-secondary"><i class="fas fa-cloud-rain"></i> 雨の日の判定結果</a>
+            @endif
             <a href="{{ admin_route('admin.after-registration-deliveries.create') }}" class="btn btn-primary"><i class="fas fa-plus"></i> 追加</a>
         </div>
     </div>

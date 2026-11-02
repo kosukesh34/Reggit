@@ -66,6 +66,7 @@ class ScheduledDeliveryTargetService
             ScheduledDeliveryType::LAST_MONTH_VISITS => $this->onDayOfMonth($delivery, $now)
                 ? $this->lastMonthVisits($projectId, $delivery->intParam('last_month_visit_min', 1), $now)
                 : [],
+            ScheduledDeliveryType::WEATHER_RAIN => $this->weatherRainTargets($projectId, $delivery),
             default => [],
         };
 
@@ -82,6 +83,23 @@ class ScheduledDeliveryTargetService
     /**
      * @return list<int>
      */
+    /** @return list<int> 店舗の会員（member_stores）か全会員 */
+    private function weatherRainTargets(int $projectId, AfterRegistrationDelivery $delivery): array
+    {
+        if ($delivery->param('target') === AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS) {
+            return $this->targetRepository->findAllIds($projectId);
+        }
+
+        return Member::query()
+            ->where('project_id', $projectId)
+            ->whereHas('stores', fn ($stores) => $stores->whereKey($delivery->intParam('store_id', 0)))
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
     private function newUserMinutes(int $projectId, AfterRegistrationDelivery $delivery, Carbon $now): array
     {
         $delay = $delivery->resolvedDelayMinutes();

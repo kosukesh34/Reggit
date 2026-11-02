@@ -6,9 +6,10 @@ const CONDITION_TYPES = [
     'rank_up_arrival',
     'total_point_push',
     'total_stamp_push',
+    'weather_rain',
 ];
 
-const NO_CLOCK_TYPES = ['new_user_push_1', 'rank_up_arrival'];
+const NO_CLOCK_TYPES = ['new_user_push_1', 'rank_up_arrival', 'weather_rain'];
 
 function initScheduledDeliveryForm(): void {
     if (document.body.dataset.pageKind !== 'scheduled-delivery-form') {

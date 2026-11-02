@@ -6,6 +6,7 @@ use App\Enums\RfmSegment;
 use App\Enums\ScheduledDeliveryContentType;
 use App\Enums\ScheduledDeliveryType;
 use App\Enums\SegmentCombineMode;
+use App\Models\AfterRegistrationDelivery;
 use App\Support\MemberChannel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -42,6 +43,15 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'day_of_week' => ['nullable', 'integer', 'min:0', 'max:6'],
             'day_of_month' => ['nullable'],
             'last_month_visit_min' => ['nullable', 'integer', 'min:1', 'max:100'],
+            // 雨の日の設定。閾値は初期値を持たず必須。営業時間との整合は保存時に確かめる
+            'store_id' => ['nullable', 'integer', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            'min_precipitation_probability' => ['nullable', 'integer', 'between:10,100', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            'min_rain_hours' => ['nullable', 'integer', 'between:1,24', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            'check_hours_before_open' => ['nullable', 'integer', 'between:0,3', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            'cutoff_hours_before_close' => ['nullable', 'integer', 'between:0,23', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            'weekly_limit' => ['nullable', 'integer', 'between:1,7', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            'weather_target' => ['nullable', Rule::in([AfterRegistrationDelivery::WEATHER_TARGET_STORE_MEMBERS, AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS]), 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            'requires_approval' => ['nullable', 'boolean'],
             'segment_channel' => ['nullable', Rule::in([MemberChannel::LINE, MemberChannel::APP, MemberChannel::BOTH])],
             'segment_birthday_months' => ['nullable', 'array', 'max:12'],
             'segment_birthday_months.*' => ['integer', 'min:1', 'max:12', 'distinct'],
@@ -105,6 +115,21 @@ class AfterRegistrationDeliveryRequest extends FormRequest
         return [
             'schedule_type.required' => '配信タイプを選択してください',
             'content_type.required' => '配信内容を選択してください',
+            'required_if' => ':attributeを入力してください',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return [
+            'store_id' => '店舗',
+            'min_precipitation_probability' => '降水確率',
+            'min_rain_hours' => '雨が続く時間',
+            'check_hours_before_open' => '判定を始める時刻',
+            'cutoff_hours_before_close' => '送る締め切り',
+            'weekly_limit' => '週の上限',
+            'weather_target' => '送る相手',
         ];
     }
 }

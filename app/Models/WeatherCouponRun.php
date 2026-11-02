@@ -44,7 +44,7 @@ class WeatherCouponRun extends Model
 
     protected $fillable = [
         'project_id',
-        'weather_coupon_rule_id',
+        'after_registration_delivery_id',
         'business_date',
         'status',
         'max_precipitation_probability',
@@ -64,8 +64,8 @@ class WeatherCouponRun extends Model
         'issued_count' => 'integer',
     ];
 
-    public function rule(): BelongsTo
+    public function delivery(): BelongsTo
     {
-        return $this->belongsTo(WeatherCouponRule::class, 'weather_coupon_rule_id');
+        return $this->belongsTo(AfterRegistrationDelivery::class, 'after_registration_delivery_id');
     }
 }
