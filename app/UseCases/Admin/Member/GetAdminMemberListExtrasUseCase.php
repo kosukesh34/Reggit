@@ -9,6 +9,7 @@ use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberTagAdminService;
 use App\Services\Admin\RfmAnalysisService;
 use App\UseCases\Admin\Member\Data\AdminMemberListExtras;
+use Illuminate\Support\Collection;
 
 class GetAdminMemberListExtrasUseCase
 {
@@ -19,7 +20,8 @@ class GetAdminMemberListExtrasUseCase
         private RfmAnalysisService $rfmAnalysisService,
     ) {}
 
-    public function handle(int $projectId): AdminMemberListExtras
+    /** @param  bool  $withAudienceGroups  配信グループの作成では、グループの中にグループは入れられないため false */
+    public function handle(int $projectId, bool $withAudienceGroups = true): AdminMemberListExtras
     {
         return new AdminMemberListExtras(
             $this->memberTagAdminService->getListByProject($projectId),
@@ -27,7 +29,9 @@ class GetAdminMemberListExtrasUseCase
             $this->couponAdminService->getActiveCouponsForSelect($projectId),
             $this->rfmAnalysisService->segmentOptions(),
             array_values($this->profileSettings->getProfileFieldSettings($projectId)['custom_fields'] ?? []),
-            MemberAudienceGroup::query()->where('project_id', $projectId)->orderBy('name')->get(),
+            $withAudienceGroups
+                ? MemberAudienceGroup::query()->where('project_id', $projectId)->orderBy('name')->get()
+                : new Collection,
         );
     }
 }

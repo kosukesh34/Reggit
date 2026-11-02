@@ -7,8 +7,6 @@ use App\Models\MemberAudienceGroup;
 use App\Services\Admin\AnnouncementAdminService;
 use App\Services\Admin\MemberSegmentCriteriaDescriber;
 use App\UseCases\Admin\Announcement\Data\AdminAnnouncementIndexOutput;
-use App\UseCases\Admin\Member\Data\AdminMemberListExtras;
-use App\UseCases\Admin\Member\GetAdminMemberListExtrasUseCase;
 use App\Util\AdminContext;
 
 class AdminAnnouncementIndexUseCase
@@ -34,7 +32,6 @@ class AdminAnnouncementIndexUseCase
     public function __construct(
         private AnnouncementAdminService $announcementAdminService,
         private MemberSegmentCriteriaDescriber $criteriaDescriber,
-        private GetAdminMemberListExtrasUseCase $segmentOptionsUseCase,
     ) {}
 
     /** @param  array<string, string|null>  $input */
@@ -49,7 +46,6 @@ class AdminAnnouncementIndexUseCase
                 $segmentConditions[$announcement->id] = $this->criteriaDescriber->describe($projectId, $announcement->segment_criteria);
             }
         }
-        $segmentOptions = $this->segmentOptionsUseCase->handle($projectId);
 
         return new AdminAnnouncementIndexOutput(
             $announcements,
@@ -62,14 +58,6 @@ class AdminAnnouncementIndexUseCase
                 ->orderBy('name')
                 ->get(),
             $segmentConditions,
-            // グループの中にグループは入れられない（保存時に除外される）ため、保存済みグループは選択肢に出さない
-            new AdminMemberListExtras(
-                $segmentOptions->memberTags,
-                $segmentOptions->products,
-                $segmentOptions->coupons,
-                $segmentOptions->rfmSegments,
-                $segmentOptions->profileFields,
-            ),
         );
     }
 }

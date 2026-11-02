@@ -184,7 +184,7 @@
         </div>
         <div class="card-body">
             <p class="text-muted">条件を保存したグループです。お知らせ配信の「条件で絞る」から、条件として追加できます。同じ名前で保存すると条件を上書きします。</p>
-            @if($view->segmentOptions !== null && auth('admin')->user()?->hasPermission('announcements.manage'))
+            @if(auth('admin')->user()?->hasPermission('announcements.manage'))
             <details class="ad-details" id="audienceGroupCreate" @if(session()->hasOldInput('audience_group_name') || $errors->has('audience_group_name')) open @endif>
                 <summary><span><i class="fas fa-plus" aria-hidden="true"></i> 配信グループを作成</span></summary>
                 <form method="POST" action="{{ admin_route('admin.announcements.audience-groups.store') }}" data-segment-form>
@@ -196,7 +196,7 @@
                     </div>
                     <div class="announcement-delivery-admin member-segment-wrap">
                         <div id="segmentBlock" class="ad-segment-panel member-segment-panel">
-                            @include('admin.partials._delivery_segment_filters', ['view' => $view->segmentOptions, 'isDeliveryForm' => false])
+                            @include('admin.partials._delivery_segment_filters', ['view' => $segmentOptions, 'isDeliveryForm' => false])
                         </div>
                     </div>
                     <div class="form-actions">
