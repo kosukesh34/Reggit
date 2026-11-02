@@ -32,6 +32,9 @@ class ScheduledDeliveryType extends EnumBase
 
     public const LAST_MONTH_VISITS = 'last_month_stamp_push';
 
+    /** 雨の予報が出た日。判定と送信は coupons:issue-weather が行う */
+    public const WEATHER_RAIN = 'weather_rain';
+
     /** @var array<string, string> */
     protected static array $values = [
         self::NEW_USER_MINUTES => '新規入会後（分）',
@@ -47,6 +50,7 @@ class ScheduledDeliveryType extends EnumBase
         self::WEEKLY => '週刊配信',
         self::MONTHLY => '月刊配信',
         self::LAST_MONTH_VISITS => '前月来店回数',
+        self::WEATHER_RAIN => '雨の日',
     ];
 
     /** @return list<string> */
@@ -66,6 +70,7 @@ class ScheduledDeliveryType extends EnumBase
             self::RANK_UP_ARRIVAL,
             self::TOTAL_POINTS,
             self::TOTAL_STAMPS,
+            self::WEATHER_RAIN,
         ];
     }
 
@@ -91,7 +96,7 @@ class ScheduledDeliveryType extends EnumBase
 
     public static function runsOnCron(string $type): bool
     {
-        return ! in_array($type, [self::NEW_USER_MINUTES, self::RANK_UP_ARRIVAL], true);
+        return ! in_array($type, [self::NEW_USER_MINUTES, self::RANK_UP_ARRIVAL, self::WEATHER_RAIN], true);
     }
 
     public static function needsClock(string $type): bool
