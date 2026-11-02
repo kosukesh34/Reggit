@@ -20,8 +20,10 @@ use App\Services\MemberRegistrationRecovery;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCustomerRankAssignmentService;
 use App\Services\Smaregi\SmaregiCustomerUpdatePayloadBuilder;
+use App\Services\WeatherCouponService;
 use App\Util\AdminContext;
 use App\Util\LogHelper;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -38,6 +40,7 @@ class MemberRegistrar
         private MemberSettings $shopSettingRepository,
         private MemberRegistrationRecovery $registrationRecovery,
         private MemberNumberAssigner $memberNumbers,
+        private WeatherCouponService $weatherCoupons,
     ) {}
 
     public function ensureMemberWhenRegistrationOptional(User $user): void
@@ -180,6 +183,14 @@ class MemberRegistrar
             ]);
 
             $this->couponIssueService->issueForFirstRegistration($member);
+            // 雨の日クーポンを配った営業日のうちに登録した会員にも配る。失敗しても登録は止めない
+            DB::afterCommit(function () use ($member): void {
+                try {
+                    $this->weatherCoupons->issueForNewMember($member, CarbonImmutable::now());
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            });
 
             AfterRegistrationDelivery::where('project_id', $projectId)
                 ->where('is_active', true)

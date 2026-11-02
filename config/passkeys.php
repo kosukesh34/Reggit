@@ -16,6 +16,9 @@ return [
         explode(',', (string) env('PASSKEYS_ALLOWED_ORIGINS', config('app.url'))),
     ))),
 
+    // 管理画面のパスワード後のパスキー。APP_ENV=local のときだけ false で省ける（本番では常に必須）
+    'admin_required' => (bool) env('ADMIN_PASSKEY_REQUIRED', true),
+
     'user_handle_secret' => env('PASSKEYS_USER_HANDLE_SECRET', config('app.key')),
 
     'timeout' => 60000,

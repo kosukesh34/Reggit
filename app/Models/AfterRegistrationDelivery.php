@@ -14,6 +14,10 @@ class AfterRegistrationDelivery extends Model
 {
     use BelongsToProject;
 
+    public const WEATHER_TARGET_STORE_MEMBERS = 'store_members';
+
+    public const WEATHER_TARGET_ALL_MEMBERS = 'all_members';
+
     /** @var array<int, string> */
     public const NEW_USER_MINUTE_OPTIONS = [
         0, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 360, 480, 600, 720,
@@ -67,6 +71,11 @@ class AfterRegistrationDelivery extends Model
     public function sends(): HasMany
     {
         return $this->hasMany(ScheduledDeliverySend::class, 'after_registration_delivery_id');
+    }
+
+    public function isWeatherRain(): bool
+    {
+        return $this->schedule_type === ScheduledDeliveryType::WEATHER_RAIN;
     }
 
     public function isCouponOnly(): bool
@@ -124,6 +133,7 @@ class AfterRegistrationDelivery extends Model
             ScheduledDeliveryType::BIRTHDAY_NEXT_MONTH => '毎月'.$this->dayOfMonthLabel($this->param('day_of_month', 1)).'に来月誕生日の人',
             ScheduledDeliveryType::WEEKLY => '毎週'.$this->weekdayLabel($this->intParam('day_of_week', 1)),
             ScheduledDeliveryType::MONTHLY => '毎月'.$this->dayOfMonthLabel($this->param('day_of_month', 1)),
+            ScheduledDeliveryType::WEATHER_RAIN => '降水確率'.$this->intParam('min_precipitation_probability', 0).'%以上が'.$this->intParam('min_rain_hours', 0).'時間続く日',
             ScheduledDeliveryType::LAST_MONTH_VISITS => '前月'.$this->intParam('last_month_visit_min', 1).'回来店以上の人に毎月'.$this->dayOfMonthLabel($this->param('day_of_month', 1)),
             default => ScheduledDeliveryType::getLabel((string) $this->schedule_type),
         };
