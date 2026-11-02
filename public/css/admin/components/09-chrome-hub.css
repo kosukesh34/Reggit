@@ -341,16 +341,12 @@ a.settings-hub-card:focus-visible {
 }
 
 /* Shared settings and system administration navigation */
-.settings-overview { margin-bottom: 24px; }
-.settings-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--primary); }
-.settings-overview h1 { margin: 8px 0; font-size: 26px; color: #18273a; }
-.settings-overview p { margin: 0; color: var(--text-secondary); line-height: 1.7; }
 .settings-category-tabs { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px; margin-bottom: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-secondary); }
 .settings-category-tabs[hidden], .settings-tab-panel[hidden] { display: none !important; }
 .settings-category-tabs button { border: 0; background: transparent; padding: 11px 16px; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
 .settings-category-tabs button[aria-selected="true"] { background: #fff; color: var(--primary); box-shadow: 0 1px 4px #0f172a1a; }
 .settings-category-tabs button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-@media (max-width: 600px) { .settings-category-tabs { flex-wrap: nowrap; overflow-x: auto; } .settings-category-tabs button { white-space: nowrap; } .settings-overview h1 { font-size: 22px; } }
+@media (max-width: 600px) { .settings-category-tabs { flex-wrap: nowrap; overflow-x: auto; } .settings-category-tabs button { white-space: nowrap; } }
 
 .settings-hub-sections { display: grid; gap: 28px; }
 

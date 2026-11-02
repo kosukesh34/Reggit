@@ -44,9 +44,9 @@
 </div>
 <style>
 .stamp-cycle-options { display: grid; gap: 8px; }
-.stamp-cycle-option { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--studio-border, #e2e8f0); border-radius: 12px; background: #fff; cursor: pointer; }
+.stamp-cycle-option { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--studio-border, var(--border)); border-radius: 12px; background: #fff; cursor: pointer; }
 .stamp-cycle-option strong { display: block; font-size: 14px; }
-.stamp-cycle-option small { display: block; margin-top: 4px; color: #64748b; line-height: 1.5; }
+.stamp-cycle-option small { display: block; margin-top: 4px; color: var(--text-secondary); line-height: 1.5; }
 .stamp-cycle-next { margin-top: 12px; }
 </style>
 <script>

@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="{{ asset('css/admin/components/14-publishing.css') }}">
 <style>
 .help-admin-cover { width: 150px; }
-.help-admin-cover img { width: 130px; height: 90px; object-fit: contain; background: #f1f5f9; border: 1px solid #dbe3e8; border-radius: 6px; }
-.help-admin-count { display: inline-block; padding: 4px 8px; font-size: 12px; color: #475569; background: #f1f5f9; border-radius: 6px; }
+.help-admin-cover img { width: 130px; height: 90px; object-fit: contain; background: var(--bg-tertiary); border: 1px solid #dbe3e8; border-radius: 6px; }
+.help-admin-count { display: inline-block; padding: 4px 8px; font-size: 12px; color: var(--text-secondary); background: var(--bg-tertiary); border-radius: 6px; }
 </style>
 @endpush

@@ -8,27 +8,27 @@
     .stamp-grant-form { margin-bottom: 24px; }
     .stamp-grant-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     .stamp-grant-limit { grid-column: 1 / -1; }
-    .stamp-grant-daily { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px 16px; border: 1px solid #dbe4ee; border-radius: 14px; background: #f8fafc; }
+    .stamp-grant-daily { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-secondary); }
     .stamp-grant-daily strong { display: block; font-size: 14px; }
-    .stamp-grant-daily p { margin: 4px 0 0; color: #64748b; font-size: 13px; line-height: 1.55; }
+    .stamp-grant-daily p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.55; }
     .stamp-grant-switch { position: relative; display: inline-block; width: 48px; height: 28px; flex-shrink: 0; }
     .stamp-grant-switch input { opacity: 0; width: 0; height: 0; }
-    .stamp-grant-switch span { position: absolute; inset: 0; cursor: pointer; background: #cbd5e1; border-radius: 999px; transition: background .15s; }
+    .stamp-grant-switch span { position: absolute; inset: 0; cursor: pointer; background: var(--border); border-radius: 999px; transition: background .15s; }
     .stamp-grant-switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; background: #fff; border-radius: 50%; transition: transform .15s; }
-    .stamp-grant-switch input:checked + span { background: #0f766e; }
+    .stamp-grant-switch input:checked + span { background: var(--primary-hover); }
     .stamp-grant-switch input:checked + span::after { transform: translateX(20px); }
     .stamp-grant-other { display: grid; gap: 8px; margin-top: 12px; }
-    .stamp-grant-limit-option { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; cursor: pointer; }
+    .stamp-grant-limit-option { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff; cursor: pointer; }
     .stamp-grant-limit-option strong { display: block; font-size: 14px; }
-    .stamp-grant-limit-option small { display: block; margin-top: 4px; color: #64748b; line-height: 1.5; }
-    .stamp-grant-quota { width: 4.8em; margin: 0 4px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-weight: 700; }
+    .stamp-grant-limit-option small { display: block; margin-top: 4px; color: var(--text-secondary); line-height: 1.5; }
+    .stamp-grant-quota { width: 4.8em; margin: 0 4px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 700; }
     .stamp-grant-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
     .stamp-grant-issued { display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 20px; align-items: start; }
-    .stamp-grant-qr { display: grid; place-items: center; min-height: 240px; padding: 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; }
+    .stamp-grant-qr { display: grid; place-items: center; min-height: 240px; padding: 16px; background: #fff; border: 1px solid var(--border); border-radius: 16px; }
     .stamp-grant-qr canvas { width: min(100%, 240px) !important; height: auto !important; }
     .stamp-grant-url { width: 100%; min-height: 72px; resize: vertical; word-break: break-all; }
-    .stamp-grant-note { margin-top: 12px; padding: 12px; color: #475569; background: #f8fafc; border-radius: 10px; line-height: 1.65; }
-    .stamp-grant-empty { padding: 24px; color: #64748b; }
+    .stamp-grant-note { margin-top: 12px; padding: 12px; color: var(--text-secondary); background: var(--bg-secondary); border-radius: 10px; line-height: 1.65; }
+    .stamp-grant-empty { padding: 24px; color: var(--text-secondary); }
     .stamp-grant-history { width: 100%; }
     @media (max-width: 800px) {
         .stamp-grant-settings { grid-template-columns: 1fr; }

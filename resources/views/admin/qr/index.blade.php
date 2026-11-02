@@ -177,8 +177,8 @@
 .qr-card { margin:0; }
 [data-issued-qr] { display:grid; place-items:center; min-height:240px; padding:16px; background:white; }
 [data-issued-qr] canvas { max-width:100%; height:auto!important; }
-.qr-url { overflow-wrap:anywhere; color:#64748b; font-size:13px; }
-.qr-empty { padding:48px 16px; background:#f8fafc; border-radius:12px; text-align:center; margin:16px 0; }
+.qr-url { overflow-wrap:anywhere; color:var(--text-secondary); font-size:13px; }
+.qr-empty { padding:48px 16px; background:var(--bg-secondary); border-radius:12px; text-align:center; margin:16px 0; }
 .qr-section-title { margin:32px 0 8px; font-size:18px; font-weight:700; }
 .qr-stamp-link { display:block; margin:10px 0; }
 </style>

@@ -227,7 +227,7 @@
                        value="{{ old('entitlement_expires_hours', $view->settings->entitlement_expires_hours) }}" placeholder="空欄で無期限">
                 <p class="form-text text-muted">未設定の場合は無期限です。例: 24 = 付与から24時間以内にプレイ。</p>
             </div>
-            <div class="card mt-3" style="background:#f8fafc; border:1px solid #e2e8f0; box-shadow:none;">
+            <div class="card mt-3" style="background: var(--bg-secondary); box-shadow: none;">
                 <div class="card-body" style="padding:16px;">
                     <div class="text-muted" style="font-size:12px; font-weight:700; margin-bottom:5px;">お客様への表示イメージ</div>
                     <strong id="lotteryEligibilityPreview">購入特典の条件を設定してください</strong>
@@ -324,7 +324,7 @@
             });
             const el = sumEl(type);
             el.textContent = String(sum);
-            el.style.color = sum === 100 ? '#0d9488' : '#dc3545';
+            el.style.color = sum === 100 ? 'var(--success)' : 'var(--danger)';
         });
     }
 

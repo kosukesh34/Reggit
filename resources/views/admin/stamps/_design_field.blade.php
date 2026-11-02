@@ -18,8 +18,8 @@
 <style>
 .stamp-design-field { margin: 0; padding: 0; border: 0; }
 .stamp-design-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.stamp-design-option { display: grid; gap: 8px; padding: 10px; border: 1px solid #dbe4ee; border-radius: 12px; background: #fff; font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; }
-.stamp-design-option:has(input:checked) { border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29, 78, 216, .15); }
+.stamp-design-option { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: #fff; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+.stamp-design-option:has(input:checked) { border-color: var(--primary-hover); box-shadow: 0 0 0 3px rgba(29, 78, 216, .15); }
 .stamp-design-option:has(input:focus-visible) { outline: 3px solid rgba(29, 78, 216, .35); outline-offset: 2px; }
 .stamp-design-option input { position: absolute; opacity: 0; pointer-events: none; }
 .stamp-design-thumb { position: relative; display: flex; flex-wrap: wrap; align-content: flex-end; gap: 4px; height: 64px; padding: 6px; border-radius: 8px; background: #f1f5f9; }

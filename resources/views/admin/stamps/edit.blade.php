@@ -352,11 +352,11 @@
 @push('styles')
 <style>
 .stamp-studio {
-    --studio-bg: #f4f7fb;
-    --studio-border: #dbe4ee;
-    --studio-ink: #0f172a;
-    --studio-muted: #5b6472;
-    --studio-brand: #1d4ed8;
+    --studio-bg: var(--bg-secondary);
+    --studio-border: var(--border);
+    --studio-ink: var(--text-primary);
+    --studio-muted: var(--text-secondary);
+    --studio-brand: var(--primary-hover);
     --studio-brand-soft: rgba(29, 78, 216, 0.08);
     --studio-success: #047857;
     --studio-danger: #b91c1c;
@@ -371,23 +371,23 @@
 .stamp-form-section-head-with-action { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .stamp-form-grid { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
 .stamp-form-col-span-2 { grid-column: 1 / -1; }
-.stamp-form-check-wrap { display: flex; align-items: center; min-height: 66px; padding: 0 12px; border: 1px dashed #cad5e2; border-radius: 10px; background: #fbfdff; }
+.stamp-form-check-wrap { display: flex; align-items: center; min-height: 66px; padding: 0 12px; border: 1px dashed var(--border); border-radius: 10px; background: #fbfdff; }
 .stamp-form-note-group { margin-top: 12px; }
 .stamp-form-actions { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--studio-border); }
-.stamp-studio .form-label { color: #111827; font-size: 13px; font-weight: 600; }
-.stamp-studio .form-control { border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02); }
-.stamp-studio .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12); }
+.stamp-studio .form-label { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+.stamp-studio .form-control { border-radius: 10px; border: 1px solid var(--border); background: #fff; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02); }
+.stamp-studio .form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12); }
 .stamp-studio .form-text { margin-top: 6px; font-size: 12px; }
 
-.btn-outline-primary { border: 1px solid #b6ccff; background: #fff; color: #1d4ed8; }
-.btn-outline-primary:hover { background: #eff6ff; border-color: #7ea6ff; }
+.btn-outline-primary { border: 1px solid color-mix(in srgb, var(--primary) 30%, #fff); background: #fff; color: var(--primary-hover); }
+.btn-outline-primary:hover { background: var(--primary-bg); border-color: #7ea6ff; }
 .btn-outline-danger { border: 1px solid #fecaca; background: #fff; color: #b91c1c; }
 .btn-outline-danger:hover { background: #fef2f2; border-color: #fda4af; }
 
 .stamp-milestones { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-.stamp-milestone-row { display: grid; grid-template-columns: 110px 148px minmax(0, 1fr) auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid #d7e0ea; border-radius: 11px; background: var(--studio-bg); }
+.stamp-milestone-row { display: grid; grid-template-columns: 110px 148px minmax(0, 1fr) auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--studio-bg); }
 .stamp-milestone-action-wrap { display: flex; align-items: flex-end; }
-.stamp-milestone-gacha-note { margin: 0; font-size: 13px; color: #64748b; padding: 8px 0; }
+.stamp-milestone-gacha-note { margin: 0; font-size: 13px; color: var(--text-secondary); padding: 8px 0; }
 .mt-3 { margin-top: 12px; }
 
 .stamp-visual-subsection { margin-top: 14px; }
