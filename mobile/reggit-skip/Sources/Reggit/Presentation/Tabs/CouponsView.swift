@@ -12,6 +12,7 @@ final class CouponsViewModel {
     var actionMessage: String?
     var selectedSegment = 0
     var pendingUse: CouponItem?
+    var detail: CouponItem?
     var redemptionResult: CouponRedemptionResult?
     var isUsing = false
 
@@ -74,7 +75,9 @@ final class CouponsViewModel {
         do {
             let result = try await apiClient.redeemCoupon(id: coupon.id)
             if result.shouldShowBarcode {
-                redemptionResult = result
+                var shown = result
+                shown.combineNotice = coupon.combineNotice
+                redemptionResult = shown
             } else {
                 actionMessage = "「\(coupon.name)」を利用しました"
             }
@@ -148,6 +151,12 @@ struct CouponsView: View {
                     }
                 } message: {
                     Text("スタッフにご確認のうえ利用してください。利用後は元に戻せません。\n" + (viewModel.pendingUse?.name ?? ""))
+                }
+                .sheet(item: Binding(
+                    get: { viewModel.detail },
+                    set: { viewModel.detail = $0 }
+                )) { coupon in
+                    CouponDetailSheet(coupon: coupon) { viewModel.detail = nil }
                 }
                 .navigationDestination(item: Binding(
                     get: { viewModel.redemptionResult },
@@ -270,10 +279,31 @@ struct CouponsView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(coupon.name)
-                        .font(.system(size: 19, weight: .bold))
-                        .foregroundStyle(AppDesign.ink)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(coupon.name)
+                            .font(.system(size: 19, weight: .bold))
+                            .foregroundStyle(AppDesign.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                        Button {
+                            viewModel.detail = coupon
+                        } label: {
+                            FontAwesomeIcon(systemName: "info.circle")
+                                .foregroundStyle(AppDesign.inkSecondary)
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, -10)
+                        .padding(.trailing, -10)
+                        .accessibilityLabel("「\(coupon.name)」の詳細と対象商品")
+                    }
+                    if !coupon.conditionBadges.isEmpty {
+                        HStack(spacing: 6) {
+                            ForEach(coupon.conditionBadges, id: \.self) { badge in
+                                StatusBadge(text: badge)
+                            }
+                        }
+                    }
                     if !coupon.description.isEmpty {
                         Text(coupon.description)
                             .font(.system(size: 14))
@@ -397,6 +427,13 @@ struct CouponBarcodeView: View {
                     Text("表示終了まで \(remainingLabel)")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(remainingSeconds <= 60 ? AppDesign.danger : AppDesign.inkSecondary)
+                    if let notice = result.combineNotice {
+                        FontAwesomeLabel(notice, systemImage: "exclamationmark.triangle.fill")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(AppDesign.danger)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .padding(24)
                 .background(AppDesign.surface)
@@ -414,6 +451,60 @@ struct CouponBarcodeView: View {
                 remainingSeconds -= 1
             }
             if remainingSeconds <= 0 { onClose() }
+        }
+    }
+}
+
+/// クーポンの利用条件（対象商品・金額・併用）と利用期間を確認するシート
+struct CouponDetailSheet: View {
+    let coupon: CouponItem
+    let onClose: () -> Void
+
+    private var periodText: String {
+        if coupon.validFrom.isEmpty, coupon.validUntil.isEmpty { return "期間中いつでも利用できます" }
+        let from = coupon.validFrom.isEmpty ? "" : AppFormat.dateTime(coupon.validFrom)
+        let until = coupon.validUntil.isEmpty ? "" : AppFormat.dateTime(coupon.validUntil)
+        return "\(from)〜\(until)"
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(coupon.name)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(AppDesign.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !coupon.description.isEmpty {
+                        Text(coupon.description)
+                            .font(.body)
+                            .foregroundStyle(AppDesign.inkSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    ForEach(coupon.conditionRows) { row in
+                        conditionRow(label: row.label, value: row.value)
+                    }
+                    conditionRow(label: "利用期間", value: periodText)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
+            }
+            .background(AppDesign.canvas.ignoresSafeArea())
+            .navigationTitle("クーポンの詳細")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("閉じる", action: onClose) } }
+        }
+    }
+
+    private func conditionRow(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AppDesign.inkSecondary)
+            Text(value)
+                .font(.body)
+                .foregroundStyle(AppDesign.ink)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
