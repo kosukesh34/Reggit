@@ -277,7 +277,7 @@ class QueueApiTest extends TestCase
             ->assertJsonPath('queue_entry.status', QueueStatus::CALLED);
     }
 
-    public function test_call_指定した待機客をスワイプ操作で呼び出せること(): void
+    public function test_call_指定した待機客を呼び出せること(): void
     {
         $project = $this->createProject();
         $this->authenticateWaiting($project);

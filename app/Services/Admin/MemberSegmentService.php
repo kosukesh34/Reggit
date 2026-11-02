@@ -21,6 +21,15 @@ class MemberSegmentService
 
     public const LAST_VISIT_DAYS_AFTER = 'days_after';
 
+    /** 保有クーポンの使用状態。expired=未使用のまま期限切れ、not_issued=未配布 */
+    public const HELD_COUPON_STATUSES = ['unused', 'used', 'expired', 'not_issued'];
+
+    /** 同じ種類の条件を重ねて追加する入力（segment_more[n][segment_*]）の上限 */
+    public const MAX_EXTRA_CONDITIONS = 20;
+
+    /** 1つ目以外の「条件のまとまり」（segment_blocks[k][segment_*]）の上限。まとまり同士は常にすべて一致 */
+    public const MAX_EXTRA_BLOCKS = 10;
+
     public function __construct(
         private CouponDeliveryTargetRepository $targetRepository,
         private RfmAnalysisService $rfmAnalysisService,
@@ -129,7 +138,7 @@ class MemberSegmentService
 
         $heldCouponId = $input['segment_coupon_id'] ?? $input['held_coupon_id'] ?? null;
         $heldCouponStatus = trim((string) ($input['segment_coupon_status'] ?? $input['coupon_status'] ?? ''));
-        if ($heldCouponId !== null && $heldCouponId !== '' && in_array($heldCouponStatus, ['unused', 'used'], true)) {
+        if ($heldCouponId !== null && $heldCouponId !== '' && in_array($heldCouponStatus, self::HELD_COUPON_STATUSES, true)) {
             $parsedHeldCouponId = (int) $heldCouponId;
             if ($parsedHeldCouponId > 0) {
                 $criteria['held_coupon_id'] = $parsedHeldCouponId;
@@ -194,6 +203,34 @@ class MemberSegmentService
             $criteria['audience_group_ids'] = $groupIds;
         }
 
+        // 2つ目以降の同じ種類の条件。組み合わせ方は1つ目と同じ「すべて一致／いずれか一致」に従う
+        $more = [];
+        foreach (array_slice((array) ($input['segment_more'] ?? []), 0, self::MAX_EXTRA_CONDITIONS) as $extraInput) {
+            $extra = is_array($extraInput)
+                ? $this->buildCriteriaFromInput(array_diff_key($extraInput, array_flip(['segment_more', 'segment_blocks', 'segment_match_mode', 'segment_operators', 'segment_audience_group_ids'])))
+                : null;
+            if ($extra !== null) {
+                $more[] = $extra;
+            }
+        }
+        if ($more !== []) {
+            $criteria['more'] = $more;
+        }
+
+        $blocks = [];
+        foreach (array_slice((array) ($input['segment_blocks'] ?? []), 0, self::MAX_EXTRA_BLOCKS) as $blockInput) {
+            $block = is_array($blockInput)
+                // 保存したグループは まとまり1 だけで扱う（グループ同士の循環参照を防ぐ）
+                ? $this->buildCriteriaFromInput(array_diff_key($blockInput, ['segment_blocks' => true, 'segment_audience_group_ids' => true]))
+                : null;
+            if ($block !== null) {
+                $blocks[] = $block;
+            }
+        }
+        if ($blocks !== []) {
+            $criteria['blocks'] = $blocks;
+        }
+
         return array_diff_key($criteria, ['operators' => true, 'match_mode' => true]) === [] ? null : $criteria;
     }
 
@@ -204,11 +241,15 @@ class MemberSegmentService
     public function getMemberIds(int $projectId, array $criteria): Collection
     {
         $sets = $this->collectIdSets($projectId, $criteria);
-        if ($sets === []) {
-            return collect();
+        $resolved = $sets === [] ? null : $this->combineInDisplayOrder($sets, $criteria);
+        foreach ((array) ($criteria['blocks'] ?? []) as $block) {
+            if (is_array($block)) {
+                $blockIds = $this->getMemberIds($projectId, $block)->all();
+                $resolved = $resolved === null ? $blockIds : array_values(array_intersect($resolved, $blockIds));
+            }
         }
 
-        return collect($this->combineInDisplayOrder($sets, $criteria))->map(fn ($id) => (int) $id)->values();
+        return collect($resolved ?? [])->map(fn ($id) => (int) $id)->values();
     }
 
     /**
@@ -342,6 +383,12 @@ class MemberSegmentService
         if (isset($criteria['audience_group_ids']) && is_array($criteria['audience_group_ids'])) {
             $groupIds = collect($this->memberIdsForAudienceGroups($projectId, $criteria['audience_group_ids']));
             $add('groups', $groupIds->all());
+        }
+
+        foreach ((array) ($criteria['more'] ?? []) as $extra) {
+            if (is_array($extra)) {
+                array_push($sets, ...$this->collectIdSets($projectId, $extra));
+            }
         }
 
         return $sets;

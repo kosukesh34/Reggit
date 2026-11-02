@@ -331,16 +331,16 @@ function initAnnouncementDelivery(): void {
     timingRadios.forEach((radio) => radio.addEventListener('change', syncDeliveryTiming));
     resolveRadios.forEach((radio) => radio.addEventListener('change', syncAudienceResolve));
 
-    document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.segment-filter').forEach((control) => {
-        const sync = (): void => {
-            toggleSegmentMinAmount();
-            renderSegmentConditionSummary(form, selectedAudienceType() === 'segment');
-            updateSegmentPreview();
-            updateAudiencePreview(1);
-        };
-        control.addEventListener('change', sync);
-        control.addEventListener('input', sync);
-    });
+    // 後から追加した同じ種類の条件カードの入力も拾えるよう、フォームでまとめて受ける
+    const syncSegment = (event: Event): void => {
+        if (!(event.target instanceof Element) || !event.target.matches('.segment-filter')) return;
+        toggleSegmentMinAmount();
+        renderSegmentConditionSummary(form, selectedAudienceType() === 'segment');
+        updateSegmentPreview();
+        updateAudiencePreview(1);
+    };
+    form.addEventListener('change', syncSegment);
+    form.addEventListener('input', syncSegment);
 
     syncValueModes(form);
 

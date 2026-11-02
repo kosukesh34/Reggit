@@ -52,6 +52,30 @@ class AdminAnnouncementsTest extends TestCase
         $this->assertDatabaseCount('member_audience_groups', 0);
     }
 
+    public function test_announcements_配信グループタブで条件を選んでグループを作成できること(): void
+    {
+        $project = $this->createDistributionProject();
+        $index = route('admin.announcements', ['project_key' => $project->project_key]);
+        $this->actingAs($this->createAdmin($project), 'admin');
+
+        $this->get($index)
+            ->assertOk()
+            ->assertSee('配信グループを作成')
+            ->assertSee('action="'.route('admin.announcements.audience-groups.store', ['project_key' => $project->project_key]).'"', false)
+            ->assertSee('id="segmentConditionRows"', false);
+
+        $this->from($index)
+            ->post(route('admin.announcements.audience-groups.store', ['project_key' => $project->project_key]), [
+                'audience_group_name' => '女性会員',
+                'segment_sex' => '2',
+                'segment_more' => [['segment_sex' => '1']],
+            ])->assertRedirect($index);
+        $this->assertSame(
+            ['sex' => '2', 'more' => [['sex' => '1']]],
+            MemberAudienceGroup::query()->where('project_id', $project->id)->value('criteria'),
+        );
+    }
+
     public function test_audience_group_delete_uses_route_id_and_preserves_other_projects(): void
     {
         $project = $this->createDistributionProject();
@@ -248,6 +272,39 @@ class AdminAnnouncementsTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('セグメントのみ');
         $response->assertDontSee('一斉のみ');
+    }
+
+    public function test_announcements_一覧で条件指定の配信条件を確認できること(): void
+    {
+        $project = $this->createProject();
+        $other = Project::factory()->create();
+        $admin = $this->createAdmin($project);
+        $tag = MemberTag::create(['project_id' => $project->id, 'name' => 'VIP', 'color' => '#0f766e']);
+        $otherTag = MemberTag::create(['project_id' => $other->id, 'name' => '他店のタグ', 'color' => '#0f766e']);
+
+        Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '夏の誕生月',
+            'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+            'delivery_status' => Announcement::DELIVERY_STATUS_SENT,
+            'segment_criteria' => [
+                'tag_ids' => [$tag->id, $otherTag->id],
+                'birthday_months' => [7, 8],
+                'last_visit_mode' => 'inactive_days',
+                'last_visit_days' => 30,
+                'operators' => ['tags' => 'or'],
+            ],
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSeeInOrder([
+                '誕生月：7月、8月（いずれか）',
+                'または 会員タグ：VIP、（削除済み）（いずれか）',
+                'かつ 最終来店：30日以上来店なし',
+            ])
+            ->assertDontSee('他店のタグ');
     }
 
     public function test_announcements_期間とキーワードで検索できること(): void

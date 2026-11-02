@@ -25,8 +25,6 @@ class AdminMemberListView
     public function __construct(
         public LengthAwarePaginator $members,
         public array $filters,
-        public string $lineInviteUrl,
-        public string $lineInviteLabel,
         public array $rankOptions,
         public Collection $memberTags,
         public Collection $products,

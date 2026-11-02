@@ -120,7 +120,7 @@
         <div class="form-group">
             <label for="line_friend_add_url" class="form-label">LINE友だち追加URL</label>
             <input type="url" name="line_friend_add_url" id="line_friend_add_url" class="form-control" value="{{ old('line_friend_add_url', $view->projectSettings['line_friend_add_url'] ?? '') }}" maxlength="2048" placeholder="例: https://line.me/R/ti/p/@xxxx">
-            <p class="form-text text-muted">アプリ起動時の友だち追加の案内と、会員管理の招待QRに使います。</p>
+            <p class="form-text text-muted">アプリ起動時の友だち追加の案内に使います。</p>
             @error('line_friend_add_url')<span class="invalid-feedback">{{ $message }}</span>@enderror
         </div>
         @foreach([

@@ -20,6 +20,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Services\Admin\CouponAdminService;
+use App\Services\Admin\MemberSegmentCriteriaDescriber;
 use App\Services\Admin\MemberSegmentService;
 use App\Services\Smaregi\SmaregiCouponSyncService;
 use App\Support\MemberChannel;
@@ -516,6 +517,125 @@ class MemberSegmentAndChannelTest extends TestCase
 
         $this->assertEqualsCanonicalizing([$unusedMember->id], $unusedIds->all());
         $this->assertEqualsCanonicalizing([$usedMember->id], $usedIds->all());
+    }
+
+    public function test_保有クーポンの期限切れと未配布で会員を絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        $validMember = Member::factory()->create(['project_id' => $project->id]);
+        $expiredMember = Member::factory()->create(['project_id' => $project->id]);
+        $usedMember = Member::factory()->create(['project_id' => $project->id]);
+        $notIssuedMember = Member::factory()->create(['project_id' => $project->id]);
+        foreach ([
+            [$validMember, MemberCoupon::STATUS_UNUSED, now()->addDay()],
+            [$expiredMember, MemberCoupon::STATUS_UNUSED, now()->subDay()],
+            [$usedMember, MemberCoupon::STATUS_USED, now()->subDay()],
+        ] as [$member, $status, $validUntil]) {
+            MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'status' => $status,
+                'valid_until' => $validUntil,
+            ]);
+        }
+
+        $segment = app(MemberSegmentService::class);
+        $ids = fn (string $status): array => $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput([
+            'segment_coupon_id' => (string) $coupon->id,
+            'segment_coupon_status' => $status,
+        ]) ?? [])->all();
+
+        $this->assertEqualsCanonicalizing([$validMember->id], $ids('unused'));
+        $this->assertEqualsCanonicalizing([$expiredMember->id], $ids('expired'));
+        $this->assertEqualsCanonicalizing([$usedMember->id], $ids('used'));
+        $this->assertEqualsCanonicalizing([$notIssuedMember->id], $ids('not_issued'));
+    }
+
+    public function test_同じ種類の条件を複数追加して絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $couponA = Coupon::factory()->create(['project_id' => $project->id, 'name' => 'クーポンA']);
+        $couponB = Coupon::factory()->create(['project_id' => $project->id, 'name' => 'クーポンB']);
+        $target = Member::factory()->create(['project_id' => $project->id]);
+        $hasBoth = Member::factory()->create(['project_id' => $project->id]);
+        $hasNeither = Member::factory()->create(['project_id' => $project->id]);
+        foreach ([[$target, $couponA], [$hasBoth, $couponA], [$hasBoth, $couponB]] as [$member, $coupon]) {
+            MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'status' => MemberCoupon::STATUS_UNUSED,
+                'valid_until' => now()->addDay(),
+            ]);
+        }
+
+        $segment = app(MemberSegmentService::class);
+        $input = [
+            'segment_coupon_id' => (string) $couponA->id,
+            'segment_coupon_status' => 'unused',
+            'segment_more' => [
+                ['segment_coupon_id' => (string) $couponB->id, 'segment_coupon_status' => 'not_issued'],
+                ['segment_coupon_id' => '', 'segment_coupon_status' => ''],
+            ],
+        ];
+        $criteria = $segment->buildCriteriaFromInput($input);
+
+        $this->assertCount(1, $criteria['more']);
+        $this->assertSame([$target->id], $segment->getMemberIds($project->id, $criteria)->all());
+        $this->assertEqualsCanonicalizing(
+            [$target->id, $hasBoth->id, $hasNeither->id],
+            $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput($input + ['segment_match_mode' => 'any']))->all(),
+        );
+        $this->assertSame(
+            ['保有クーポン：クーポンA（未使用）', 'かつ 保有クーポン：クーポンB（未配布）'],
+            app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $criteria),
+        );
+        $this->assertNotNull($segment->buildCriteriaFromInput(['segment_more' => [['segment_sex' => '2']]]));
+    }
+
+    public function test_条件のまとまりごとに組み合わせ方を選べること(): void
+    {
+        $project = $this->createProject();
+        $couponA = Coupon::factory()->create(['project_id' => $project->id, 'name' => 'クーポンA']);
+        $couponB = Coupon::factory()->create(['project_id' => $project->id, 'name' => 'クーポンB']);
+        $womanWithA = Member::factory()->create(['project_id' => $project->id, 'sex' => 2]);
+        $womanWithB = Member::factory()->create(['project_id' => $project->id, 'sex' => 2]);
+        $manWithA = Member::factory()->create(['project_id' => $project->id, 'sex' => 1]);
+        Member::factory()->create(['project_id' => $project->id, 'sex' => 2]);
+        foreach ([[$womanWithA, $couponA], [$womanWithB, $couponB], [$manWithA, $couponA]] as [$member, $coupon]) {
+            MemberCoupon::factory()->create([
+                'project_id' => $project->id,
+                'member_id' => $member->id,
+                'coupon_id' => $coupon->id,
+                'status' => MemberCoupon::STATUS_UNUSED,
+                'valid_until' => now()->addDay(),
+            ]);
+        }
+
+        $segment = app(MemberSegmentService::class);
+        // 女性 かつ（クーポンA未使用 または クーポンB未使用）
+        $criteria = $segment->buildCriteriaFromInput([
+            'segment_sex' => '2',
+            'segment_blocks' => [
+                [
+                    'segment_match_mode' => 'any',
+                    'segment_more' => [
+                        ['segment_coupon_id' => (string) $couponA->id, 'segment_coupon_status' => 'unused'],
+                        ['segment_coupon_id' => (string) $couponB->id, 'segment_coupon_status' => 'unused'],
+                    ],
+                ],
+                ['segment_match_mode' => 'all', 'segment_audience_group_ids' => ['1']],
+            ],
+        ]);
+
+        $this->assertCount(1, $criteria['blocks']);
+        $this->assertEqualsCanonicalizing([$womanWithA->id, $womanWithB->id], $segment->getMemberIds($project->id, $criteria)->all());
+        $this->assertSame(
+            ['性別：女性', 'かつ （保有クーポン：クーポンA（未使用） または 保有クーポン：クーポンB（未使用））'],
+            app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $criteria),
+        );
     }
 
     public function test_購入商品でアプリ注文とpos来店の会員を絞り込めること(): void

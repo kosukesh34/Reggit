@@ -3,6 +3,7 @@
 namespace App\UseCases\Admin\Announcement\Data;
 
 use App\Models\MemberAudienceGroup;
+use App\UseCases\Admin\Member\Data\AdminMemberListExtras;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -19,6 +20,8 @@ class AdminAnnouncementIndexOutput
      * @param  array<string, string>  $deliveryTypeLabels
      * @param  array<string, string>  $deliveryStatusLabels
      * @param  Collection<int, MemberAudienceGroup>  $audienceGroups
+     * @param  array<int, list<string>>  $segmentConditions  条件指定のお知らせID => 条件の文
+     * @param  AdminMemberListExtras|null  $segmentOptions  配信グループ作成フォームの条件の選択肢
      */
     public function __construct(
         public LengthAwarePaginator $announcements,
@@ -27,5 +30,7 @@ class AdminAnnouncementIndexOutput
         public array $deliveryTypeLabels,
         public array $deliveryStatusLabels,
         public Collection $audienceGroups,
+        public array $segmentConditions = [],
+        public ?AdminMemberListExtras $segmentOptions = null,
     ) {}
 }

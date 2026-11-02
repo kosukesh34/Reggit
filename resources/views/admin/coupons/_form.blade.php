@@ -30,8 +30,7 @@
             <div class="cp-card-head">
                 <span class="cp-card-icon"><i class="fas fa-pen-nib" aria-hidden="true"></i></span>
                 <div>
-                    <p class="cp-card-step">STEP 01</p>
-                    <h2 id="coupon-basic-title">クーポンの顔をつくる</h2>
+                    <h2 id="coupon-basic-title">基本情報</h2>
                 </div>
             </div>
 
@@ -115,8 +114,7 @@
             <div class="cp-card-head">
                 <span class="cp-card-icon cp-card-icon--warm"><i class="fas fa-tags" aria-hidden="true"></i></span>
                 <div>
-                    <p class="cp-card-step">STEP 02</p>
-                    <h2 id="coupon-benefit-title">特典を決める</h2>
+                    <h2 id="coupon-benefit-title">割引内容</h2>
                     <p>お会計に対して、割合または固定金額で割引できます。</p>
                 </div>
             </div>
@@ -162,8 +160,7 @@
             <div class="cp-card-head">
                 <span class="cp-card-icon cp-card-icon--green"><i class="fas fa-calendar-check" aria-hidden="true"></i></span>
                 <div>
-                    <p class="cp-card-step">STEP 03</p>
-                    <h2 id="coupon-conditions-title">発行条件を整える</h2>
+                    <h2 id="coupon-conditions-title">利用条件</h2>
                 </div>
             </div>
 

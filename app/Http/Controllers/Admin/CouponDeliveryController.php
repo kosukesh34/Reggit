@@ -38,6 +38,8 @@ class CouponDeliveryController extends AdminBaseController
         'segment_rfm_segments',
         'segment_tag_ids',
         'segment_birthday_months',
+        'segment_more',
+        'segment_blocks',
         'birthday_month',
         'new_member_days',
         'inactive_days',

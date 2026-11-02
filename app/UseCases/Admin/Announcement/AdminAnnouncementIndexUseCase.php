@@ -5,7 +5,10 @@ namespace App\UseCases\Admin\Announcement;
 use App\Models\Announcement;
 use App\Models\MemberAudienceGroup;
 use App\Services\Admin\AnnouncementAdminService;
+use App\Services\Admin\MemberSegmentCriteriaDescriber;
 use App\UseCases\Admin\Announcement\Data\AdminAnnouncementIndexOutput;
+use App\UseCases\Admin\Member\Data\AdminMemberListExtras;
+use App\UseCases\Admin\Member\GetAdminMemberListExtrasUseCase;
 use App\Util\AdminContext;
 
 class AdminAnnouncementIndexUseCase
@@ -30,23 +33,43 @@ class AdminAnnouncementIndexUseCase
 
     public function __construct(
         private AnnouncementAdminService $announcementAdminService,
+        private MemberSegmentCriteriaDescriber $criteriaDescriber,
+        private GetAdminMemberListExtrasUseCase $segmentOptionsUseCase,
     ) {}
 
     /** @param  array<string, string|null>  $input */
     public function handle(array $input): AdminAnnouncementIndexOutput
     {
         $filters = $this->announcementAdminService->normalizeIndexFilters($input);
+        $projectId = AdminContext::resolveProjectId(null);
+        $announcements = $this->announcementAdminService->getPaginatedList($filters, self::PER_PAGE);
+        $segmentConditions = [];
+        foreach ($announcements as $announcement) {
+            if ($announcement->delivery_type === Announcement::DELIVERY_TYPE_SEGMENT && is_array($announcement->segment_criteria)) {
+                $segmentConditions[$announcement->id] = $this->criteriaDescriber->describe($projectId, $announcement->segment_criteria);
+            }
+        }
+        $segmentOptions = $this->segmentOptionsUseCase->handle($projectId);
 
         return new AdminAnnouncementIndexOutput(
-            $this->announcementAdminService->getPaginatedList($filters, self::PER_PAGE),
+            $announcements,
             $filters,
             $this->announcementAdminService->getDeliveryTypeCounts($filters),
             self::DELIVERY_TYPE_LABELS,
             self::DELIVERY_STATUS_LABELS,
             MemberAudienceGroup::query()
-                ->where('project_id', AdminContext::resolveProjectId(null))
+                ->where('project_id', $projectId)
                 ->orderBy('name')
                 ->get(),
+            $segmentConditions,
+            // グループの中にグループは入れられない（保存時に除外される）ため、保存済みグループは選択肢に出さない
+            new AdminMemberListExtras(
+                $segmentOptions->memberTags,
+                $segmentOptions->products,
+                $segmentOptions->coupons,
+                $segmentOptions->rfmSegments,
+                $segmentOptions->profileFields,
+            ),
         );
     }
 }

@@ -164,7 +164,7 @@ class AfterRegistrationDeliveryAdminService
                 'segment_last_visit_days', 'segment_product_id', 'segment_coupon_id', 'segment_coupon_status',
                 'segment_period_days', 'segment_condition',
                 'segment_min_amount', 'segment_profile', 'segment_value_mode', 'segment_match_mode',
-                'segment_audience_group_ids',
+                'segment_audience_group_ids', 'segment_more', 'segment_blocks',
             ] as $key) {
                 if (array_key_exists($key, $data)) {
                     $segmentInput[$key] = $data[$key];

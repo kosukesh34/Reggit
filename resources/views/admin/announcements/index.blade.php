@@ -119,7 +119,16 @@
                                 <span class="badge badge-success"><i class="fas fa-bolt"></i> 即時</span>
                             @endif
                         </td>
-                        <td><span class="badge badge-info">{{ $view->deliveryTypeLabels[$a->delivery_type] ?? '—' }}</span></td>
+                        <td>
+                            <span class="badge badge-info">{{ $view->deliveryTypeLabels[$a->delivery_type] ?? '—' }}</span>
+                            @if(($view->segmentConditions[$a->id] ?? []) !== [])
+                            <ul class="announcement-conditions" aria-label="配信条件">
+                                @foreach($view->segmentConditions[$a->id] as $condition)
+                                <li>{{ $condition }}</li>
+                                @endforeach
+                            </ul>
+                            @endif
+                        </td>
                         <td>
                             @if($a->delivery_status === 'sent')
                                 <span class="badge badge-success">{{ $view->deliveryStatusLabels['sent'] }}</span>
@@ -175,11 +184,32 @@
         </div>
         <div class="card-body">
             <p class="text-muted">条件を保存したグループです。お知らせ配信の「条件で絞る」から、条件として追加できます。同じ名前で保存すると条件を上書きします。</p>
+            @if($view->segmentOptions !== null && auth('admin')->user()?->hasPermission('announcements.manage'))
+            <details class="ad-details" id="audienceGroupCreate" @if(session()->hasOldInput('audience_group_name') || $errors->has('audience_group_name')) open @endif>
+                <summary><span><i class="fas fa-plus" aria-hidden="true"></i> 配信グループを作成</span></summary>
+                <form method="POST" action="{{ admin_route('admin.announcements.audience-groups.store') }}" data-segment-form>
+                    @csrf
+                    <div class="form-group">
+                        <label for="audience_group_name" class="form-label">グループ名</label>
+                        <input type="text" name="audience_group_name" id="audience_group_name" class="form-control" maxlength="40" required placeholder="例: 休眠の常連" value="{{ old('audience_group_name') }}">
+                        @error('audience_group_name')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="announcement-delivery-admin member-segment-wrap">
+                        <div id="segmentBlock" class="ad-segment-panel member-segment-panel">
+                            @include('admin.partials._delivery_segment_filters', ['view' => $view->segmentOptions, 'isDeliveryForm' => false])
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> グループを保存</button>
+                    </div>
+                </form>
+            </details>
+            @endif
             @if($view->audienceGroups->isEmpty())
             <div class="empty-state">
                 <i class="fas fa-layer-group"></i>
                 <p>配信グループはまだありません</p>
-                <p class="empty-state-hint">「お知らせを配信」で条件を選び、「グループとして保存」してください</p>
+                <p class="empty-state-hint">「配信グループを作成」で条件を選んで保存してください</p>
             </div>
             @else
             <div class="table-responsive">
@@ -234,9 +264,12 @@
     buttons.forEach((button) => {
         button.addEventListener('click', () => activate(button.getAttribute('aria-controls')));
     });
-    if (window.location.hash === '#groups') {
+    if (window.location.hash === '#groups' || document.getElementById('audienceGroupCreate')?.open) {
         activate('announcement-panel-groups');
     }
 })();
 </script>
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/admin/announcement-delivery.css') }}?v={{ (int) @filemtime(public_path('css/admin/announcement-delivery.css')) }}">
+@endpush
 @endsection

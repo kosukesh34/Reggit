@@ -317,14 +317,37 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
 
     public function findIdsByCouponStatus(int $projectId, int $couponId, string $status): array
     {
-        if ($couponId <= 0 || ! in_array($status, [MemberCoupon::STATUS_UNUSED, MemberCoupon::STATUS_USED], true)) {
+        if ($couponId <= 0) {
             return [];
         }
 
-        return MemberCoupon::query()
+        $holders = MemberCoupon::query()
             ->where('project_id', $projectId)
             ->where('coupon_id', $couponId)
-            ->where('status', $status)
+            ->select('member_id');
+        if ($status === 'not_issued') {
+            return Member::query()
+                ->where('project_id', $projectId)
+                ->whereNotIn('id', $holders)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+        }
+
+        $now = now();
+        $query = match ($status) {
+            MemberCoupon::STATUS_USED => $holders->where('status', MemberCoupon::STATUS_USED),
+            MemberCoupon::STATUS_UNUSED => $holders->where('status', MemberCoupon::STATUS_UNUSED)
+                ->where(fn ($q) => $q->whereNull('valid_until')->orWhere('valid_until', '>=', $now)),
+            'expired' => $holders->where('status', MemberCoupon::STATUS_UNUSED)->where('valid_until', '<', $now),
+            default => null,
+        };
+        if ($query === null) {
+            return [];
+        }
+
+        return $query
             ->distinct()
             ->pluck('member_id')
             ->map(fn ($id) => (int) $id)

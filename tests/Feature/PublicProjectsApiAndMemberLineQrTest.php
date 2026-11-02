@@ -39,7 +39,7 @@ class PublicProjectsApiAndMemberLineQrTest extends TestCase
         ]);
     }
 
-    public function test_members_lin_e招待_q_rの_ur_lが表示されること(): void
+    public function test_members_会員一覧に_lin_e招待_q_rを表示しないこと(): void
     {
         $project = Project::create([
             'project_key' => 'shop_qr',
@@ -57,9 +57,8 @@ class PublicProjectsApiAndMemberLineQrTest extends TestCase
             ->get(route('admin.members', ['project_key' => $project->project_key]));
 
         $response->assertOk();
-        $response->assertSee('LINE招待QR', false);
-        $response->assertSee('QRを表示', false);
-        $response->assertSee('member-line-qr-toggle', false);
-        $response->assertSee('https://line.me/R/ti/p/@example', false);
+        $response->assertDontSee('LINE招待QR', false);
+        $response->assertDontSee('member-line-qr-toggle', false);
+        $response->assertDontSee('https://line.me/R/ti/p/@example', false);
     }
 }
