@@ -174,7 +174,14 @@ class WeatherCouponService
             if ($now >= $closesAt->subHours($delivery->intParam('cutoff_hours_before_close', 0))) {
                 throw new \DomainException('配る締め切りを過ぎています。');
             }
-            $this->send($delivery, $run, $this->targets->memberIds($delivery, Carbon::instance($now)), $date, $now, $closesAt);
+            $send = fn () => $this->send($delivery, $run, $this->targets->memberIds($delivery, Carbon::instance($now)), $date, $now, $closesAt);
+            // 本部は選択中の店舗に関係なく設定どおりに送る。店舗の担当者は担当店舗の会員だけに送る
+            $admin = $this->storeContext->admin;
+            if ($admin === null || $admin->isSystemAdmin() || $admin->isProjectAdmin()) {
+                $this->storeContext->runWithContext(new StoreContext, $send);
+            } else {
+                $send();
+            }
         });
     }
 
