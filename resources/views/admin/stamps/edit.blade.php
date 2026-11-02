@@ -364,8 +364,6 @@
     grid-template-columns: minmax(0, 1.42fr) minmax(360px, 0.58fr);
     gap: 24px;
 }
-.stamp-studio-form-card,
-.stamp-studio-preview-card { border-radius: 14px; border: 1px solid var(--studio-border); background: #fff; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06); }
 
 .stamp-form-section { padding: 18px; border: 1px solid var(--studio-border); border-radius: 12px; background: #fff; }
 .stamp-form-section + .stamp-form-section { margin-top: 14px; }

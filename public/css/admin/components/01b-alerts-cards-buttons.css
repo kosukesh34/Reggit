@@ -44,15 +44,16 @@
 /* ===== カード ===== */
 .card {
     background: var(--bg-primary);
-    border-radius: var(--radius-md);
+    border-radius: 14px;
     padding: 24px;
-    box-shadow: none;
-    margin-bottom: 20px;
+    box-shadow: 0 2px 8px #183d4b05;
+    margin-bottom: 26px;
     border: 1px solid var(--border);
 }
 
 .card:hover {
-    box-shadow: none;
+    box-shadow: 0 2px 8px #183d4b05;
+    transform: none;
 }
 
 .card-header {
@@ -60,10 +61,11 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 14px;
     margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
 }
 .card-header--stack {
     flex-direction: column;
@@ -114,16 +116,17 @@
 }
 
 .card-title {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 17px;
+    font-weight: 700;
     color: var(--text-primary);
+    letter-spacing: var(--letter-spacing-tight);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .card-title i {
-    color: var(--primary);
+    color: var(--text-secondary);
     font-size: 15px;
 }
 
@@ -131,19 +134,36 @@
 .btn {
     padding: 8px 16px;
     border: 1px solid transparent;
-    border-radius: var(--radius);
+    border-radius: 4px;
     cursor: pointer;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
+    letter-spacing: 0.01em;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: all var(--transition-fast);
+    box-shadow: none;
+    transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast),
+        color var(--transition-fast);
     line-height: 1.5;
     white-space: nowrap;
     position: relative;
-    font-family: inherit;
+    font-family: var(--font-sans);
+}
+
+/* 本文とログイン画面のボタンは押しやすい大きさにする（上部バーとサイドバーは除く） */
+.main-content .btn,
+.admin-login-page .btn {
+    min-height: 44px;
+    border-radius: 10px;
+}
+
+.btn:hover {
+    filter: none;
+    box-shadow: none;
 }
 
 .btn:focus {
@@ -257,14 +277,12 @@
     }
 
     .card {
-        padding: 16px;
-        border-radius: var(--radius-md);
+        padding: 18px;
     }
 
     .card-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 10px;
     }
 
     .card-header-actions {

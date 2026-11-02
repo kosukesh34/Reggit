@@ -298,10 +298,6 @@ a.settings-hub-card:focus-visible {
     text-decoration: none;
 }
 .settings-back-link:hover { text-decoration: underline; }
-.settings-page-content .card {
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, .045);
-}
 .settings-page-content .card-header {
     background: var(--bg-tertiary);
     border-bottom: 1px solid var(--border);
