@@ -10,18 +10,23 @@ use App\Enums\CouponDeliveryType;
 use App\Enums\MemberCouponSource;
 use App\Mail\WeatherCouponApprovalMail;
 use App\Models\AdminUser;
+use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Models\Member;
+use App\Models\Store;
 use App\Models\WeatherCouponRule;
 use App\Models\WeatherCouponRun;
 use App\Services\Weather\OpenWeatherClient;
+use App\Util\AdminContext;
 use App\Util\StoreContext;
 use App\Util\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 /** 雨の予報が出た店舗の会員に、その営業日だけ使えるクーポンを配る */
 class WeatherCouponService
@@ -74,6 +79,99 @@ class WeatherCouponService
             ->orderByDesc('id')
             ->limit(30)
             ->get();
+    }
+
+    /** @return Collection<int, WeatherCouponRule> 管理画面で選択中の店舗の配布ルール */
+    public function rules(): Collection
+    {
+        return WeatherCouponRule::query()
+            ->when($this->storeContext->visibleStoreIds !== null, fn ($query) => $query->whereIn('store_id', $this->storeContext->visibleStoreIds))
+            ->with(['store', 'coupon'])
+            ->orderBy('store_id')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /** @return array{stores: Collection<int, Store>, coupons: Collection<int, Coupon>} ルールの入力欄の選択肢 */
+    public function ruleOptions(): array
+    {
+        return [
+            'stores' => Store::query()
+                ->where('project_id', AdminContext::requireCurrentProjectId())
+                ->where('is_active', true)
+                ->when($this->storeContext->visibleStoreIds !== null, fn ($query) => $query->whereIn('id', $this->storeContext->visibleStoreIds))
+                ->orderBy('id')
+                ->get(),
+            'coupons' => Coupon::query()->where('is_active', true)->orderBy('name')->get(),
+        ];
+    }
+
+    /**
+     * 営業時間に収まらない閾値は保存しない。
+     *
+     * @param  array{store_id: int, coupon_id: int, min_precipitation_probability: int, min_rain_hours: int, check_hours_before_open: int, cutoff_hours_before_close: int, weekly_limit: int, target: string, requires_approval: bool, is_active: bool}  $data
+     */
+    public function saveRule(?int $ruleId, array $data): void
+    {
+        $rule = $ruleId === null ? new WeatherCouponRule : $this->visibleRule($ruleId);
+        $rule->fill($data);
+        $rule->project_id ??= AdminContext::requireCurrentProjectId();
+        $rule->setRelation('store', $this->ruleOptions()['stores']->firstWhere('id', $data['store_id'])
+            ?? throw ValidationException::withMessages(['store_id' => '選択できない店舗です。']));
+        [$opensAt, $closesAt] = $this->businessHours($rule)->windowOn(CarbonImmutable::today());
+        $openHours = (int) $opensAt->diffInHours($closesAt);
+        $errors = array_filter([
+            'min_rain_hours' => $rule->min_rain_hours > $openHours ? "営業時間（{$openHours}時間）以内で入力してください。" : null,
+            'cutoff_hours_before_close' => $rule->cutoff_hours_before_close >= $openHours ? "営業時間（{$openHours}時間）より短くしてください。" : null,
+        ]);
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+        $rule->save();
+    }
+
+    public function deleteRule(int $ruleId): void
+    {
+        $this->visibleRule($ruleId)->delete();
+    }
+
+    /**
+     * 雨の日クーポンを配った営業日のうちに登録した会員にも、同じクーポンを配る。
+     * 発行キーが同じなので、すでに受け取っていれば重ねて配らない。
+     */
+    public function issueForNewMember(Member $member, CarbonImmutable $now): void
+    {
+        $storeIds = $member->stores()->pluck('stores.id')->map(fn ($id) => (int) $id)->all();
+        WeatherCouponRun::withoutGlobalScopes()
+            ->where('project_id', $member->project_id)
+            ->where('status', WeatherCouponRun::STATUS_SENT)
+            // 日をまたぐ営業では前日が営業日になる
+            ->whereBetween('business_date', [$now->subDay()->toDateString(), $now->toDateString()])
+            ->whereHas('rule', fn ($rule) => $rule->where('is_active', true))
+            ->with('rule.store')
+            ->get()
+            ->filter(fn (WeatherCouponRun $run) => $run->rule->target === WeatherCouponRule::TARGET_ALL_MEMBERS || in_array((int) $run->rule->store_id, $storeIds, true))
+            ->each(function (WeatherCouponRun $run) use ($member, $now): void {
+                $hours = $this->businessHours($run->rule);
+                $date = $hours->businessDateAt($now);
+                if (! $date->isSameDay($run->business_date)) {
+                    return;
+                }
+                [, $closesAt] = $hours->windowOn($date);
+                $result = $this->memberBenefit->issueCouponToMembers(
+                    (int) $run->project_id,
+                    (int) $run->rule->coupon_id,
+                    [(int) $member->id],
+                    MemberCouponSource::WEATHER_RAIN,
+                    $date->toDateString(),
+                    true,
+                    $date->endOfDay()->max($closesAt->subSecond()),
+                );
+                if ($result['count'] > 0) {
+                    $run->increment('issued_count', $result['count']);
+                    CouponDelivery::withoutGlobalScopes()->whereKey($run->coupon_delivery_id)->increment('issued_count', $result['count']);
+                }
+            });
     }
 
     /** 承認待ちの配布を承認して、すぐに配る */
@@ -263,6 +361,11 @@ class WeatherCouponService
         $range = $this->storeContext->runForStore($rule->store, fn () => $this->businessSettings->getBusinessHours((int) $rule->project_id));
 
         return new BusinessHours((string) $range['start'], (string) $range['end']);
+    }
+
+    private function visibleRule(int $ruleId): WeatherCouponRule
+    {
+        return $this->rules()->find($ruleId) ?? throw (new ModelNotFoundException)->setModel(WeatherCouponRule::class, [$ruleId]);
     }
 
     /** @return Builder<WeatherCouponRun> */

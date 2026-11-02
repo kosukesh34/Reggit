@@ -295,4 +295,89 @@ class WeatherCouponServiceTest extends TestCase
 
         $this->actingAs($staff, 'admin')->get('/admin/rain/weather-coupons')->assertOk();
     }
+
+    /** @return array<string, int|string> */
+    private function ruleInput(array $overrides = []): array
+    {
+        return $overrides + [
+            'store_id' => $this->store->id,
+            'coupon_id' => $this->coupon->id,
+            'min_precipitation_probability' => 60,
+            'min_rain_hours' => 3,
+            'check_hours_before_open' => 1,
+            'cutoff_hours_before_close' => 2,
+            'weekly_limit' => 2,
+            'target' => WeatherCouponRule::TARGET_STORE_MEMBERS,
+            'requires_approval' => '1',
+            'is_active' => '1',
+        ];
+    }
+
+    public function test_管理画面で配布ルールを登録して編集と削除ができること(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin, 'admin')->post('/admin/rain/weather-coupons/rules', $this->ruleInput())
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $rule = WeatherCouponRule::withoutGlobalScopes()->sole();
+        $this->assertSame([60, 3, true, true], [$rule->min_precipitation_probability, $rule->min_rain_hours, $rule->requires_approval, $rule->is_active]);
+        $this->get('/admin/rain/weather-coupons')->assertOk()->assertSee('雨の日クーポン')->assertSee('降水確率 60% 以上が 3時間続く');
+
+        $this->put('/admin/rain/weather-coupons/rules/'.$rule->id, $this->ruleInput(['weekly_limit' => 5, 'requires_approval' => null]))
+            ->assertSessionHasNoErrors();
+        $this->assertSame([5, false], [$rule->fresh()->weekly_limit, $rule->fresh()->requires_approval]);
+
+        $this->delete('/admin/rain/weather-coupons/rules/'.$rule->id)->assertRedirect();
+        $this->assertSame(0, WeatherCouponRule::withoutGlobalScopes()->count());
+    }
+
+    public function test_閾値は必須で営業時間に収まらなければ保存しないこと(): void
+    {
+        $this->actingAs($this->admin(), 'admin');
+
+        $this->post('/admin/rain/weather-coupons/rules', $this->ruleInput(['min_precipitation_probability' => '', 'weekly_limit' => 8]))
+            ->assertSessionHasErrors(['min_precipitation_probability', 'weekly_limit']);
+        // 初期設定の営業時間は 10:00〜22:00 の12時間
+        $this->post('/admin/rain/weather-coupons/rules', $this->ruleInput(['min_rain_hours' => 13, 'cutoff_hours_before_close' => 12]))
+            ->assertSessionHasErrors(['min_rain_hours', 'cutoff_hours_before_close']);
+
+        $this->assertSame(0, WeatherCouponRule::withoutGlobalScopes()->count());
+    }
+
+    public function test_他店舗の担当者はルールを登録も編集もできないこと(): void
+    {
+        $rule = $this->rule();
+        $other = Store::where('store_key', 'other')->firstOrFail();
+        $this->actingAs($this->admin($other), 'admin');
+
+        $this->post('/admin/rain/weather-coupons/rules', $this->ruleInput())->assertForbidden();
+        $this->put('/admin/rain/weather-coupons/rules/'.$rule->id, $this->ruleInput(['store_id' => $other->id]))->assertNotFound();
+        $this->delete('/admin/rain/weather-coupons/rules/'.$rule->id)->assertNotFound();
+
+        $this->assertSame(1, WeatherCouponRule::withoutGlobalScopes()->count());
+    }
+
+    public function test_配った営業日のうちに登録した店舗の会員にも配ること(): void
+    {
+        $this->member();
+        $this->rule();
+        $this->forecast([12 => 80, 13 => 80]);
+        $this->runAt('2026-11-02 09:30');
+        $newcomer = $this->member();
+        $elsewhere = $this->member(false);
+        $service = app(WeatherCouponService::class);
+
+        $this->travelTo(CarbonImmutable::parse('2026-11-02 15:00'));
+        $service->issueForNewMember($newcomer, CarbonImmutable::now());
+        $service->issueForNewMember($newcomer, CarbonImmutable::now());
+        $service->issueForNewMember($elsewhere, CarbonImmutable::now());
+        $nextDay = $this->member();
+        $service->issueForNewMember($nextDay, CarbonImmutable::parse('2026-11-03 09:00'));
+
+        $issued = MemberCoupon::withoutGlobalScopes()->where('member_id', $newcomer->id)->sole();
+        $this->assertSame('2026-11-02 23:59:59', $issued->valid_until->format('Y-m-d H:i:s'));
+        $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->whereIn('member_id', [$elsewhere->id, $nextDay->id])->count());
+        $this->assertSame(2, WeatherCouponRun::withoutGlobalScopes()->sole()->issued_count);
+        $this->assertSame(2, CouponDelivery::withoutGlobalScopes()->sole()->issued_count);
+    }
 }

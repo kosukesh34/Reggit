@@ -393,6 +393,9 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::get('/coupons/create', [AdminCouponController::class, 'createCoupon'])->name('admin.coupons.create')->middleware('admin.permission:coupons.manage');
         Route::post('/coupons', [CouponMutationController::class, 'store'])->name('admin.coupons.store')->middleware('admin.permission:coupons.manage');
         Route::get('/weather-coupons', [WeatherCouponController::class, 'index'])->name('admin.weather-coupons.index')->middleware('admin.permission:coupons.view,coupons.manage');
+        Route::post('/weather-coupons/rules', [WeatherCouponController::class, 'storeRule'])->name('admin.weather-coupons.rules.store')->middleware('admin.permission:coupons.manage');
+        Route::put('/weather-coupons/rules/{id}', [WeatherCouponController::class, 'updateRule'])->whereNumber('id')->name('admin.weather-coupons.rules.update')->middleware('admin.permission:coupons.manage');
+        Route::delete('/weather-coupons/rules/{id}', [WeatherCouponController::class, 'destroyRule'])->whereNumber('id')->name('admin.weather-coupons.rules.destroy')->middleware('admin.permission:coupons.manage');
         Route::post('/weather-coupons/runs/{id}/approve', [WeatherCouponController::class, 'approve'])->whereNumber('id')->name('admin.weather-coupons.approve')->middleware('admin.permission:coupons.manage');
         Route::post('/weather-coupons/runs/{id}/decline', [WeatherCouponController::class, 'decline'])->whereNumber('id')->name('admin.weather-coupons.decline')->middleware('admin.permission:coupons.manage');
         Route::get('/coupons/bulk-issue', [CouponBulkIssueController::class, 'create'])->name('admin.coupons.bulk-issue')->middleware('admin.permission:coupons.manage');
