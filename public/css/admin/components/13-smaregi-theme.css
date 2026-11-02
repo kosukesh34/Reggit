@@ -1,16 +1,5 @@
 /* Reference-inspired administration chrome, shared by store and system screens. */
 body:has(.admin-container) {
-    --primary: #0085c7;
-    --primary-hover: #006fa7;
-    --primary-light: #209cdb;
-    --primary-bg: #edf7fc;
-    --primary-bg-hover: #dceffa;
-    --bg-secondary: #f2f5f6;
-    --text-primary: #4c575e;
-    --text-secondary: #606b73;
-    --text-tertiary: #869ba9;
-    --border: #dce3e7;
-    --border-light: #e8edef;
     --radius: 4px;
     --radius-md: 4px;
     --radius-lg: 5px;

@@ -1,6 +1,7 @@
 /* ===================================================================
-   管理画面デザイントークン（クリーンSaaS / ブルー基調）
+   管理画面デザイントークン（スカイブルー基調）
    ここが唯一の :root トークン定義。他ファイルは var() 参照のみ。
+   色は直書きせず、ここのトークンを使う（会員アプリのプレビューを除く）。
    =================================================================== */
 
 * {
@@ -10,13 +11,13 @@
 }
 
 :root {
-    /* アクセント（ブルー単色） */
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: #3b82f6;
-    --primary-bg: #eff6ff;
-    --primary-bg-hover: #dbeafe;
-    --primary-ring: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    /* アクセント（スカイブルー単色） */
+    --primary: #0085c7;
+    --primary-hover: #006fa7;
+    --primary-light: #209cdb;
+    --primary-bg: #edf7fc;
+    --primary-bg-hover: #dceffa;
+    --primary-ring: 0 0 0 3px rgba(0, 133, 199, 0.12);
     /* セマンティックカラー */
     --secondary: #64748b;
     --success: #059669;
@@ -31,15 +32,15 @@
     --info: #0284c7;
     --info-hover: #0369a1;
     --info-bg: #f0f9ff;
-    /* ニュートラル（スレート系） */
+    /* ニュートラル（ブルーグレー系） */
     --bg-primary: #ffffff;
-    --bg-secondary: #f8fafc;
+    --bg-secondary: #f2f5f6;
     --bg-tertiary: #f1f5f9;
-    --border: #e2e8f0;
-    --border-light: #f1f5f9;
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-tertiary: #64748b;
+    --border: #dce3e7;
+    --border-light: #e8edef;
+    --text-primary: #4c575e;
+    --text-secondary: #606b73;
+    --text-tertiary: #869ba9;
     /* シャドウ（控えめ） */
     --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
     --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);

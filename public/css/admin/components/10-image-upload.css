@@ -42,9 +42,9 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    border: 2px dashed var(--border, #cbd5e1);
+    border: 2px dashed var(--border);
     border-radius: var(--radius-lg, 12px);
-    background: var(--bg-secondary, #f8fafc);
+    background: var(--bg-secondary);
     cursor: pointer;
     text-align: center;
     overflow: hidden;
@@ -55,27 +55,27 @@
 .coupon-image-dropzone.is-dragover,
 .si-dropzone:hover,
 .si-dropzone.is-dragover {
-    border-color: var(--primary, #2563eb);
-    background: var(--primary-bg, rgba(37, 99, 235, 0.04));
+    border-color: var(--primary);
+    background: var(--primary-bg, color-mix(in srgb, var(--primary) 4%, transparent));
 }
 
 .coupon-image-dropzone-icon,
 .si-dropzone-icon {
     font-size: 1.75rem;
-    color: var(--primary, #2563eb);
+    color: var(--primary);
     margin-bottom: 6px;
 }
 
 .coupon-image-dropzone-text,
 .si-dropzone-text {
     font-size: 13px;
-    color: var(--text-primary, #334155);
+    color: var(--text-primary, var(--text-secondary));
 }
 
 .coupon-image-dropzone-hint,
 .si-dropzone-hint {
     font-size: 11px;
-    color: var(--text-tertiary, #94a3b8);
+    color: var(--text-tertiary);
     margin-top: 2px;
 }
 
@@ -111,9 +111,9 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 1px solid var(--border, #e2e8f0);
+    border: 1px solid var(--border);
     background: #fff;
-    color: var(--text-secondary, #64748b);
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     justify-content: center;

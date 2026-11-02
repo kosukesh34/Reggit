@@ -47,7 +47,7 @@
 }
 
 .ld-btn--primary {
-    box-shadow: 0 6px 16px rgba(13, 148, 136, 0.28);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 28%, transparent);
 }
 
 .ld-screens,

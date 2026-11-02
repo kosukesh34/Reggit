@@ -101,6 +101,16 @@
     border-radius: var(--radius);
 }
 
+/* --primary は白地の文字だとコントラスト不足（約4.0:1）のため濃い方を使う */
+.admin-login-box a:not(.btn) {
+    color: var(--primary-hover);
+    text-underline-offset: 3px;
+}
+
+.admin-login-box a:not(.btn):hover {
+    text-decoration-thickness: 2px;
+}
+
 .admin-login-lead {
     font-size: 14px;
     color: var(--text-secondary);
@@ -202,7 +212,7 @@
 }
 
 .admin-project-login-link:hover {
-    border-color: #c7d2fe;
+    border-color: color-mix(in srgb, var(--primary) 30%, #fff);
     background: var(--primary-bg);
 }
 
