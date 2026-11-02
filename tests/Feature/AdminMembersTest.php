@@ -864,5 +864,13 @@ class AdminMembersTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('admin.members', ['project_key' => $project->project_key, 'segment_rank' => 'legacy']))
             ->assertSee('legacy（登録されていないランク）');
+
+        // 同じ絞り込みを使うスケジュール配信の作成画面でも選べる
+        $projectAdmin = AdminUser::factory()->create(['role' => AdminUser::ROLE_PROJECT_ADMIN, 'project_id' => $project->id]);
+        $projectAdmin->projects()->sync([$project->id]);
+        $this->actingAs($projectAdmin, 'admin')
+            ->get(route('admin.after-registration-deliveries.create', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSeeInOrder(['<select name="segment_rank" id="segment_rank"', 'value="vip"', 'VIP会員'], false);
     }
 }
