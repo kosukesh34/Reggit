@@ -59,7 +59,7 @@
                         @endif
                     </td>
                     <td>{{ $d->coupon ? $d->coupon->name : '—' }}</td>
-                    <td>@if($d->starts_on || $d->ends_on){{ $d->starts_on?->format('Y/m/d') ?? '' }}〜{{ $d->ends_on?->format('Y/m/d') ?? '' }}@else期限なし@endif</td>
+                    <td>@if($d->starts_at || $d->ends_at){{ $d->starts_at?->format('Y/m/d H:i') ?? '' }}〜{{ $d->ends_at?->format('Y/m/d H:i') ?? '' }}@else期限なし@endif</td>
                     @php $status = $d->statusLabel(now()); @endphp
                     <td><span class="badge {{ $status === '配信中' ? 'badge-success' : 'badge-secondary' }}">{{ $status }}</span></td>
                     <td class="table-actions-cell">
