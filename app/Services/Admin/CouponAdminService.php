@@ -11,6 +11,7 @@ use App\Services\Smaregi\SmaregiCouponSyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CouponAdminService
 {
@@ -152,7 +153,8 @@ class CouponAdminService
         if ($this->smaregiCouponSync->hasSmaregiContract($projectId)) {
             $smaregiProductIds = $this->smaregiProductIds($projectId, $productIds);
             $smaregiId = $coupon->smaregi_coupon_id;
-            if ($smaregiId !== null && $smaregiId !== '') {
+            $registeredNow = $smaregiId === null || $smaregiId === '';
+            if (! $registeredNow) {
                 $ok = $this->smaregiCouponSync->updateOnSmaregi($projectId, $smaregiId, $data);
                 if (! $ok) {
                     throw new \RuntimeException('スマレジのクーポン更新に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
@@ -166,6 +168,7 @@ class CouponAdminService
                 $smaregiId = $result['smaregi_coupon_id'];
             }
             if (! $this->smaregiCouponSync->syncTargetProducts($projectId, $smaregiId, $smaregiProductIds)) {
+                $this->revertSmaregiCoupon($coupon, $projectId, $smaregiId, $registeredNow);
                 throw new \RuntimeException('スマレジの対象商品の更新に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
             }
         }
@@ -175,6 +178,31 @@ class CouponAdminService
         });
 
         return $coupon;
+    }
+
+    /**
+     * 対象商品の同期に失敗したとき、POS を保存前の Reggit の状態に戻す（DB は更新しないため）。
+     * 今回登録したクーポンは、ID を保存できず再試行で重複するため削除する。
+     */
+    private function revertSmaregiCoupon(Coupon $coupon, int $projectId, string $smaregiId, bool $registeredNow): void
+    {
+        $reverted = $registeredNow
+            ? $this->smaregiCouponSync->deleteOnSmaregi($projectId, $smaregiId)
+            : $this->smaregiCouponSync->updateOnSmaregi($projectId, $smaregiId, $coupon->getAttributes())
+                && $this->smaregiCouponSync->syncTargetProducts(
+                    $projectId,
+                    $smaregiId,
+                    $coupon->apply_condition_division === CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT
+                        ? $coupon->targetProducts()->pluck('smaregi_product_id')->filter()->map(fn ($id) => (string) $id)->values()->all()
+                        : [],
+                );
+        if (! $reverted) {
+            Log::warning('[Smaregi] coupon revert after target products sync failure failed', [
+                'project_id' => $projectId,
+                'coupon_id' => $coupon->id,
+                'smaregi_coupon_id' => $smaregiId,
+            ]);
+        }
     }
 
     /**

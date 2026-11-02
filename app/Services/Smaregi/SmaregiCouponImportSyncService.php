@@ -7,6 +7,7 @@ use App\Enums\CouponCombineDivision;
 use App\Models\Coupon;
 use App\Models\Product;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -57,8 +58,13 @@ class SmaregiCouponImportSyncService
                 }
                 try {
                     $attrs = $this->mapSmaregiCouponToAttributes($row);
-                    $coupon = $this->upsertCouponFromSmaregi($projectId, $smaregiCouponId, $attrs);
-                    $this->importTargetProducts($coupon, $smaregiCouponId);
+                    $productIds = $this->targetProductIdsFromSmaregi($projectId, $smaregiCouponId, (string) $attrs['apply_condition_division']);
+                    $coupon = DB::transaction(function () use ($projectId, $smaregiCouponId, $attrs, $productIds): Coupon {
+                        $coupon = $this->upsertCouponFromSmaregi($projectId, $smaregiCouponId, $attrs);
+                        $coupon->targetProducts()->sync($productIds);
+
+                        return $coupon;
+                    });
                     if ($coupon->wasRecentlyCreated) {
                         $created++;
                     } else {
@@ -207,21 +213,25 @@ class SmaregiCouponImportSyncService
         return $contractId;
     }
 
-    /** スマレジの対象商品（商品ID指定）を、取り込み済みの商品に紐づける */
-    private function importTargetProducts(Coupon $coupon, string $smaregiCouponId): void
+    /**
+     * スマレジの対象商品（商品ID指定）に当たる、取り込み済みの商品ID
+     *
+     * @return list<int>
+     */
+    private function targetProductIdsFromSmaregi(int $projectId, string $smaregiCouponId, string $applyConditionDivision): array
     {
-        $productIds = [];
-        if ($coupon->apply_condition_division === CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT) {
-            $smaregiProductIds = $this->smaregiCouponSync->fetchTargetProductIds($coupon->project_id, $smaregiCouponId);
-            if ($smaregiProductIds === null) {
-                throw new \RuntimeException('スマレジAPI（クーポンの対象商品）の取得に失敗しました。');
-            }
-            $productIds = Product::where('project_id', $coupon->project_id)
-                ->whereIn('smaregi_product_id', $smaregiProductIds)
-                ->pluck('id')
-                ->all();
+        if ($applyConditionDivision !== CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT) {
+            return [];
         }
-        $coupon->targetProducts()->sync($productIds);
+        $smaregiProductIds = $this->smaregiCouponSync->fetchTargetProductIds($projectId, $smaregiCouponId);
+        if ($smaregiProductIds === null) {
+            throw new \RuntimeException('スマレジAPI（クーポンの対象商品）の取得に失敗しました。');
+        }
+
+        return Product::where('project_id', $projectId)
+            ->whereIn('smaregi_product_id', $smaregiProductIds)
+            ->pluck('id')
+            ->all();
     }
 
     /**

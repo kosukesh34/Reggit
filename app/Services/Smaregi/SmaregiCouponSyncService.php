@@ -180,6 +180,7 @@ class SmaregiCouponSyncService
         if ($body === []) {
             return false;
         }
+        $targetProductIds = $this->targetProductIdsForPush($coupon);
 
         $smaregiId = $coupon->smaregi_coupon_id ?? '';
         if (! StrHelper::isEmptyStringOrNull($smaregiId)) {
@@ -214,16 +215,39 @@ class SmaregiCouponSyncService
 
             return false;
         }
+        if ($targetProductIds !== [] && ! $this->syncTargetProducts($coupon->project_id, $newId, $targetProductIds)) {
+            // 対象商品なしのクーポンをPOSに残さない
+            $this->deleteOnSmaregi($coupon->project_id, $newId);
+            Log::warning('[Smaregi] coupon target products sync failed', [
+                'project_id' => $coupon->project_id,
+                'coupon_id' => $coupon->id,
+            ]);
+
+            return false;
+        }
         $coupon->smaregi_coupon_id = $newId;
         $coupon->save();
 
-        if ($coupon->apply_condition_division === CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT) {
-            $productIds = $coupon->targetProducts()->pluck('smaregi_product_id')->filter()->map(fn ($id) => (string) $id)->values()->all();
+        return true;
+    }
 
-            return $this->syncTargetProducts($coupon->project_id, $newId, $productIds);
+    /**
+     * POS に送る対象商品のスマレジ商品ID。スマレジ未連携の商品が含まれる場合は送らずに止める。
+     *
+     * @return list<string>
+     */
+    private function targetProductIdsForPush(Coupon $coupon): array
+    {
+        if ($coupon->apply_condition_division !== CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT) {
+            return [];
+        }
+        $products = $coupon->targetProducts()->get(['products.name', 'products.smaregi_product_id']);
+        $unlinked = $products->filter(fn ($product) => (string) $product->smaregi_product_id === '');
+        if ($unlinked->isNotEmpty()) {
+            throw new \RuntimeException('スマレジ未連携の商品は対象商品にできません：'.$unlinked->pluck('name')->implode('、'));
         }
 
-        return true;
+        return $products->pluck('smaregi_product_id')->map(fn ($id) => (string) $id)->values()->all();
     }
 
     /**

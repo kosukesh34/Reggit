@@ -66,6 +66,28 @@ class SmaregiCouponImportSyncServiceTest extends TestCase
         $this->assertSame([$product->id], $coupon->targetProducts->pluck('id')->all());
     }
 
+    public function test_sync_from_smaregi_対象商品の取得に失敗したらクーポンを保存しないこと(): void
+    {
+        $project = Project::factory()->create();
+        $api = Mockery::mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract-1');
+        $api->shouldReceive('getCoupons')->once()->andReturn(['coupons' => [[
+            'couponId' => 'sm-coupon-2',
+            'serialNumber' => 'IMPORT-NG',
+            'couponName' => '対象商品つき',
+            'awardType' => '1',
+            'awardValue' => '100',
+            'applyConditionDivision' => '1',
+        ]]]);
+        $sync = Mockery::mock(SmaregiCouponSyncService::class);
+        $sync->shouldReceive('fetchTargetProductIds')->once()->andReturn(null);
+
+        $result = (new SmaregiCouponImportSyncService($api, $sync))->syncFromSmaregi($project->id);
+
+        $this->assertSame(1, $result['failed']);
+        $this->assertDatabaseMissing('coupons', ['smaregi_coupon_id' => 'sm-coupon-2']);
+    }
+
     public function test_push_unlinked_to_smaregi_未連携クーポンを_po_sへ登録すること(): void
     {
         $project = Project::firstOrCreate(
