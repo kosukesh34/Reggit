@@ -30,6 +30,8 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'coupon_id' => ['nullable', 'integer', 'min:1'],
             'send_notification' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
+            'starts_on' => ['nullable', 'date_format:Y-m-d'],
+            'ends_on' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:starts_on'],
             'push_hour' => ['nullable', 'integer', 'min:0', 'max:23'],
             'push_minute' => ['nullable', 'integer', 'min:0', 'max:59'],
             'delay_minutes' => ['nullable', 'integer', 'min:0', 'max:1260'],
@@ -123,6 +125,8 @@ class AfterRegistrationDeliveryRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'starts_on' => '開始日',
+            'ends_on' => '終了日',
             'store_id' => '店舗',
             'min_precipitation_probability' => '降水確率',
             'min_rain_hours' => '雨が続く時間',

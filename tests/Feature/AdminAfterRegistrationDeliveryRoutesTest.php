@@ -17,6 +17,8 @@ class AdminAfterRegistrationDeliveryRoutesTest extends TestCase
             'admin.after-registration-deliveries.store' => AfterRegistrationDeliveryMutationController::class.'@store',
             'admin.after-registration-deliveries.update' => AfterRegistrationDeliveryMutationController::class.'@update',
             'admin.after-registration-deliveries.destroy' => AfterRegistrationDeliveryMutationController::class.'@destroy',
+            'admin.after-registration-deliveries.pause' => AfterRegistrationDeliveryMutationController::class.'@pause',
+            'admin.after-registration-deliveries.resume' => AfterRegistrationDeliveryMutationController::class.'@resume',
         ];
 
         foreach ($expectedActions as $routeName => $action) {

@@ -434,6 +434,8 @@ Route::prefix('admin')->middleware(['web', 'auth:admin', 'admin.auth.session', '
         Route::post('/after-registration-deliveries', [AfterRegistrationDeliveryMutationController::class, 'store'])->name('admin.after-registration-deliveries.store')->middleware('admin.permission:announcements.manage');
         Route::get('/after-registration-deliveries/{id}/edit', [AdminAfterRegistrationDeliveryController::class, 'edit'])->name('admin.after-registration-deliveries.edit')->middleware('admin.permission:announcements.manage');
         Route::put('/after-registration-deliveries/{id}', [AfterRegistrationDeliveryMutationController::class, 'update'])->name('admin.after-registration-deliveries.update')->middleware('admin.permission:announcements.manage');
+        Route::post('/after-registration-deliveries/{id}/pause', [AfterRegistrationDeliveryMutationController::class, 'pause'])->whereNumber('id')->name('admin.after-registration-deliveries.pause')->middleware('admin.permission:announcements.manage');
+        Route::post('/after-registration-deliveries/{id}/resume', [AfterRegistrationDeliveryMutationController::class, 'resume'])->whereNumber('id')->name('admin.after-registration-deliveries.resume')->middleware('admin.permission:announcements.manage');
         Route::delete('/after-registration-deliveries/{id}', [AfterRegistrationDeliveryMutationController::class, 'destroy'])->name('admin.after-registration-deliveries.destroy')->middleware('admin.permission:announcements.manage');
 
         Route::get('/surveys', [AdminSurveyController::class, 'index'])->name('admin.surveys.index')->middleware('admin.permission:announcements.view');

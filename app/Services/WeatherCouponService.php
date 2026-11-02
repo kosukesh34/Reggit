@@ -145,7 +145,7 @@ class WeatherCouponService
                 }
                 $hours = $this->businessHours($store, (int) $delivery->project_id);
                 $date = $hours->businessDateAt($now);
-                if (! $date->isSameDay($run->business_date)) {
+                if (! $date->isSameDay($run->business_date) || ! $delivery->isInPeriod($date)) {
                     return;
                 }
                 [, $closesAt] = $hours->windowOn($date);
@@ -200,7 +200,8 @@ class WeatherCouponService
         $hours = $this->businessHours($store, $projectId);
         $date = $hours->businessDateAt($now);
         [$opensAt, $closesAt] = $hours->windowOn($date);
-        if ($now < $opensAt->subHours($delivery->intParam('check_hours_before_open', 0))
+        if (! $delivery->isInPeriod($date)
+            || $now < $opensAt->subHours($delivery->intParam('check_hours_before_open', 0))
             || $now >= $closesAt->subHours($delivery->intParam('cutoff_hours_before_close', 0))
             || ! $this->storeContext->runForStore($store, fn () => $this->businessSettings->isDateAvailable($date->toDateString(), $projectId))) {
             return null;
