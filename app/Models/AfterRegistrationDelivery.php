@@ -37,6 +37,8 @@ class AfterRegistrationDelivery extends Model
         'push_minute',
         'params',
         'is_active',
+        'starts_on',
+        'ends_on',
     ];
 
     /** @var array<string, mixed> */
@@ -56,6 +58,8 @@ class AfterRegistrationDelivery extends Model
         'is_active' => 'boolean',
         'send_notification' => 'boolean',
         'params' => 'array',
+        'starts_on' => 'date',
+        'ends_on' => 'date',
     ];
 
     public function project(): BelongsTo
@@ -71,6 +75,28 @@ class AfterRegistrationDelivery extends Model
     public function sends(): HasMany
     {
         return $this->hasMany(ScheduledDeliverySend::class, 'after_registration_delivery_id');
+    }
+
+    /** 配信期間（開始日・終了日を含む）内か。未設定の側は制限しない */
+    public function isInPeriod(\DateTimeInterface $date): bool
+    {
+        $day = $date->format('Y-m-d');
+
+        return ($this->starts_on === null || $this->starts_on->format('Y-m-d') <= $day)
+            && ($this->ends_on === null || $day <= $this->ends_on->format('Y-m-d'));
+    }
+
+    /** 一覧に出す状態 */
+    public function statusLabel(\DateTimeInterface $now): string
+    {
+        $day = $now->format('Y-m-d');
+
+        return match (true) {
+            ! $this->is_active => '一時停止中',
+            $this->starts_on !== null && $day < $this->starts_on->format('Y-m-d') => '開始前',
+            $this->ends_on !== null && $this->ends_on->format('Y-m-d') < $day => '期間終了',
+            default => '配信中',
+        };
     }
 
     public function isWeatherRain(): bool

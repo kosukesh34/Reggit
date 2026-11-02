@@ -51,6 +51,12 @@ class AfterRegistrationDeliveryAdminService
         return $delivery;
     }
 
+    /** 一時停止・再開。期間や内容は変えない */
+    public function setActive(int $projectId, int $id, bool $active): void
+    {
+        $this->findOrFail($projectId, $id)->update(['is_active' => $active]);
+    }
+
     public function delete(int $projectId, int $id): void
     {
         $this->findOrFail($projectId, $id)->delete();
@@ -87,6 +93,8 @@ class AfterRegistrationDeliveryAdminService
             'push_minute' => (int) ($data['push_minute'] ?? 0),
             'params' => $params,
             'is_active' => $this->asBool($data['is_active'] ?? true),
+            'starts_on' => ($data['starts_on'] ?? '') !== '' ? $data['starts_on'] : null,
+            'ends_on' => ($data['ends_on'] ?? '') !== '' ? $data['ends_on'] : null,
         ];
     }
 

@@ -272,4 +272,90 @@ class AfterRegistrationDeliveryTest extends TestCase
         $this->assertSame(1, ScheduledDeliverySend::query()->count());
         $this->assertSame(1, MemberCoupon::query()->where('member_id', $member->id)->count());
     }
+
+    /** 毎週月曜10時の「クーポンのみ」配信 */
+    private function weeklyCouponDelivery(Project $project, Coupon $coupon, array $attributes = []): AfterRegistrationDelivery
+    {
+        return AfterRegistrationDelivery::create($attributes + [
+            'project_id' => $project->id,
+            'category' => ScheduledDeliveryCategory::RESERVATION,
+            'schedule_type' => ScheduledDeliveryType::WEEKLY,
+            'content_type' => ScheduledDeliveryContentType::COUPON_ONLY,
+            'coupon_id' => $coupon->id,
+            'send_notification' => false,
+            'push_hour' => 10,
+            'push_minute' => 0,
+            'params' => ['day_of_week' => 1],
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_配信期間を保存でき終了日が開始日より前なら保存しないこと(): void
+    {
+        $project = $this->createProject();
+        $this->actingAs($this->createAdmin($project), 'admin');
+        $input = [
+            'schedule_type' => ScheduledDeliveryType::NEW_USER_MINUTES,
+            'content_type' => ScheduledDeliveryContentType::ANNOUNCEMENT,
+            'title' => '10月限定',
+            'is_active' => 1,
+        ];
+
+        $this->post(route('admin.after-registration-deliveries.store', ['project_key' => $project->project_key]), $input + ['starts_on' => '2026-10-31', 'ends_on' => '2026-10-01'])
+            ->assertSessionHasErrors('ends_on');
+        $this->post(route('admin.after-registration-deliveries.store', ['project_key' => $project->project_key]), $input + ['starts_on' => '2026-10-01', 'ends_on' => '2026-10-31'])
+            ->assertSessionHasNoErrors();
+
+        $delivery = AfterRegistrationDelivery::query()->sole();
+        $this->assertSame(['2026-10-01', '2026-10-31'], [$delivery->starts_on->format('Y-m-d'), $delivery->ends_on->format('Y-m-d')]);
+    }
+
+    public function test_配信期間の外では送らず期間内だけ送ること(): void
+    {
+        $project = $this->createProject();
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'end_at' => '2026-12-31 23:59:59']);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
+        $this->weeklyCouponDelivery($project, $coupon, ['starts_on' => '2026-10-01', 'ends_on' => '2026-10-31']);
+
+        try {
+            // 2026-09-28・2026-11-02 は期間外、2026-10-05 は期間内の月曜
+            foreach (['2026-09-28 10:00:00' => 0, '2026-10-05 10:00:00' => 1, '2026-11-02 10:00:00' => 1] as $moment => $expected) {
+                Carbon::setTestNow(Carbon::parse($moment));
+                $this->artisan('deliveries:send-scheduled')->assertSuccessful();
+                $this->assertSame($expected, MemberCoupon::query()->where('member_id', $member->id)->count(), $moment);
+            }
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_一覧から一時停止と再開ができ停止中は送らないこと(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-05 10:00:00'));
+        $project = $this->createProject();
+        $coupon = Coupon::factory()->create(['project_id' => $project->id, 'end_at' => '2026-12-31 23:59:59']);
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
+        $delivery = $this->weeklyCouponDelivery($project, $coupon, ['starts_on' => '2026-11-01']);
+        $this->actingAs($this->createAdmin($project), 'admin');
+        $index = route('admin.after-registration-deliveries.index', ['project_key' => $project->project_key]);
+
+        try {
+            $this->get($index)->assertSee('開始前')->assertSee('一時停止');
+            $this->post(route('admin.after-registration-deliveries.pause', ['project_key' => $project->project_key, 'id' => $delivery->id]))->assertRedirect($index);
+            $this->assertFalse($delivery->fresh()->is_active);
+            $this->get($index)->assertSee('一時停止中')->assertSee('再開');
+
+            $delivery->update(['starts_on' => null]);
+            $this->artisan('deliveries:send-scheduled')->assertSuccessful();
+            $this->assertSame(0, MemberCoupon::query()->where('member_id', $member->id)->count());
+
+            $this->post(route('admin.after-registration-deliveries.resume', ['project_key' => $project->project_key, 'id' => $delivery->id]))->assertRedirect($index);
+            $this->assertTrue($delivery->fresh()->is_active);
+            $this->get($index)->assertSee('配信中');
+            $this->artisan('deliveries:send-scheduled')->assertSuccessful();
+            $this->assertSame(1, MemberCoupon::query()->where('member_id', $member->id)->count());
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
 }

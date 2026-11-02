@@ -141,6 +141,21 @@ class ScheduledDeliveryRetryTest extends TestCase
         $this->assertDatabaseCount('member_coupons', 0);
     }
 
+    public function test_配信期間の終了後に回ってきた再送は送らずに取りやめること(): void
+    {
+        $delivery = $this->delivery();
+        $delivery->update(['ends_on' => '2026-10-01']);
+        $delivery->coupon->update(['end_at' => now()->subDay()]);
+        $this->artisan('deliveries:send-scheduled')->assertExitCode(1);
+
+        $delivery->coupon->update(['end_at' => null]);
+        $this->travel(2)->minutes();
+        $this->artisan('deliveries:send-scheduled')->assertSuccessful();
+
+        $this->assertDatabaseCount('scheduled_delivery_attempts', 0);
+        $this->assertDatabaseCount('member_coupons', 0);
+    }
+
     public function test_an_old_once_delivery_attempt_does_not_block_the_next_days_members(): void
     {
         foreach ([false, true] as $terminal) {

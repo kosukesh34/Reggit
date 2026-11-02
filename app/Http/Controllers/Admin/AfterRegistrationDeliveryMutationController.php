@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\AfterRegistrationDeliveryRequest;
+use App\UseCases\Admin\AfterRegistrationDelivery\AdminAfterRegistrationDeliveryActivationUseCase;
 use App\UseCases\Admin\AfterRegistrationDelivery\AdminAfterRegistrationDeliveryDestroyUseCase;
 use App\UseCases\Admin\AfterRegistrationDelivery\AdminAfterRegistrationDeliveryStoreUseCase;
 use App\UseCases\Admin\AfterRegistrationDelivery\AdminAfterRegistrationDeliveryUpdateUseCase;
@@ -14,6 +15,7 @@ class AfterRegistrationDeliveryMutationController extends AdminBaseController
         private AdminAfterRegistrationDeliveryStoreUseCase $storeUseCase,
         private AdminAfterRegistrationDeliveryUpdateUseCase $updateUseCase,
         private AdminAfterRegistrationDeliveryDestroyUseCase $destroyUseCase,
+        private AdminAfterRegistrationDeliveryActivationUseCase $activationUseCase,
     ) {}
 
     public function store(AfterRegistrationDeliveryRequest $request): RedirectResponse
@@ -28,6 +30,20 @@ class AfterRegistrationDeliveryMutationController extends AdminBaseController
         $this->updateUseCase->handle($this->resolveAdminProjectId(), $id, $request->validated());
 
         return $this->redirectToIndex()->with('success', 'スケジュール配信を更新しました');
+    }
+
+    public function pause(string $projectKey, int $id): RedirectResponse
+    {
+        $this->activationUseCase->handle($this->resolveAdminProjectId(), $id, false);
+
+        return $this->redirectToIndex()->with('success', 'スケジュール配信を一時停止しました');
+    }
+
+    public function resume(string $projectKey, int $id): RedirectResponse
+    {
+        $this->activationUseCase->handle($this->resolveAdminProjectId(), $id, true);
+
+        return $this->redirectToIndex()->with('success', 'スケジュール配信を再開しました');
     }
 
     public function destroy(string $projectKey, int $id): RedirectResponse

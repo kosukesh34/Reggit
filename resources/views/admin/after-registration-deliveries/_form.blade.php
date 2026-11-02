@@ -210,6 +210,26 @@
                 </div>
             </div>
 
+            <div class="andel-card" id="sd-period" role="region" aria-labelledby="sdPeriodTitle">
+                <header class="andel-card-head">
+                    <span class="andel-card-icon" aria-hidden="true"><i class="fas fa-calendar-alt"></i></span>
+                    <div><h2 id="sdPeriodTitle">配信期間</h2></div>
+                </header>
+                <p class="form-text">この期間だけ配信します（開始日・終了日を含む）。空欄なら期限なしです。例：9月中に 10/1〜10/31 を設定すると、10月だけ配信されます。</p>
+                <div class="ad-filter-grid ad-filter-grid--2">
+                    <div class="form-group mb-0">
+                        <label class="form-label" for="starts_on">開始日 <span class="ad-optional">任意</span></label>
+                        <input type="date" name="starts_on" id="starts_on" class="form-control" value="{{ old('starts_on', $delivery?->starts_on?->format('Y-m-d')) }}">
+                        @error('starts_on')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="form-label" for="ends_on">終了日 <span class="ad-optional">任意</span></label>
+                        <input type="date" name="ends_on" id="ends_on" class="form-control" value="{{ old('ends_on', $delivery?->ends_on?->format('Y-m-d')) }}">
+                        @error('ends_on')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+            </div>
+
             <div class="andel-card" id="sd-audience" role="region" aria-labelledby="sdAudienceTitle">
                 <header class="andel-card-head">
                     <span class="andel-card-icon" aria-hidden="true"><i class="fas fa-filter"></i></span>
