@@ -4,7 +4,9 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\CouponApplyConditionDivision;
 use App\Enums\CouponCombineDivision;
+use App\Util\AdminContext;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class CouponStoreRequest extends FormRequest
@@ -49,11 +51,21 @@ class CouponStoreRequest extends FormRequest
             'max_order_amount' => 'nullable|numeric|min:0',
             'apply_condition_division' => 'nullable|string|in:'.implode(',', CouponApplyConditionDivision::keys()),
             'combine_division' => 'nullable|string|in:'.implode(',', CouponCombineDivision::keys()),
+            'target_product_ids' => 'required_if:apply_condition_division,'.CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT.'|array',
+            'target_product_ids.*' => ['integer', 'distinct', Rule::exists('products', 'id')->where('project_id', AdminContext::requireCurrentProjectId())],
             'usage_limit' => 'nullable|integer|min:0',
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date|after_or_equal:start_at',
             'is_active' => 'nullable|boolean',
             'device_once_enabled' => 'nullable|boolean',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'target_product_ids.required_if' => '対象商品を1つ以上選択してください',
         ];
     }
 

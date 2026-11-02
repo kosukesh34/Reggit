@@ -167,6 +167,14 @@ progress::-moz-progress-bar { background: var(--skip-accent); }
 .native-badge.is-emphasized { background: #daf58f; color: var(--skip-forest); }
 .native-coupon-card__body { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
 .native-coupon-card__body h2 { font-size: 19px; font-weight: 700; }
+.native-coupon-card__title { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.native-coupon-info { flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin: -10px -10px 0 0; border: 0; border-radius: 999px; background: transparent; color: var(--skip-ink-secondary); font-size: 18px; }
+.native-coupon-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.native-coupon-badges li { padding: 4px 8px; border-radius: 7px; font-size: 11px; font-weight: 600; background: var(--skip-surface-muted); color: var(--skip-ink-secondary); }
+.native-coupon-conditions { display: flex; flex-direction: column; gap: 12px; margin: 12px 0 0; }
+.native-coupon-conditions dt { font-size: 12px; font-weight: 600; color: var(--skip-ink-secondary); }
+.native-coupon-conditions dd { margin: 2px 0 0; font-size: 14px; }
+.native-coupon-combine-notice { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: #fff4e5; color: #8a4b00; font-size: 14px; font-weight: 700; text-align: center; }
 .native-coupon-card__body p { font-size: 14px; color: var(--skip-ink-secondary); }
 .native-coupon-dates { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 500; color: var(--skip-ink-secondary); }
 .native-coupon-actions { display: flex; justify-content: flex-end; }

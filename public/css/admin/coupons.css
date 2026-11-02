@@ -82,6 +82,20 @@
     margin-bottom: 8px;
 }
 
+.cp-target-products[hidden],
+.cp-target-product-list .checkbox-label[hidden] {
+    display: none;
+}
+
+.cp-target-product-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    max-height: 280px;
+    margin-top: 8px;
+    overflow-y: auto;
+}
+
 .cp-choice-grid--triggers {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }

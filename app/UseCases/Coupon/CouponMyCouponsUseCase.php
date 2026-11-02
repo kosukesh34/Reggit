@@ -4,6 +4,8 @@ namespace App\UseCases\Coupon;
 
 use App\Domain\Coupon\Policies\CouponDisplayStatusPolicy;
 use App\Domain\Settings\Repositories\CouponNotificationSettings;
+use App\Enums\CouponApplyConditionDivision;
+use App\Enums\CouponCombineDivision;
 use App\Models\Coupon;
 use App\Models\User;
 use App\UseCases\Coupon\Data\CouponListView;
@@ -30,7 +32,7 @@ class CouponMyCouponsUseCase
 
         $now = now();
         $coupons = $member->memberCoupons()
-            ->with('coupon')
+            ->with('coupon.targetProducts')
             ->orderBy('issued_at', 'desc')
             ->get()
             ->map(function ($memberCoupon) use ($now) {
@@ -68,7 +70,13 @@ class CouponMyCouponsUseCase
                     $useDisplay,
                     // コードは全会員共通のため、使えないクーポンでは返さない
                     $displayStatus === CouponDisplayStatusPolicy::AVAILABLE ? $code : null,
-                    (string) ($memberCoupon->coupon?->image_fit ?? Coupon::IMAGE_FIT_COVER)
+                    (string) ($memberCoupon->coupon?->image_fit ?? Coupon::IMAGE_FIT_COVER),
+                    $this->positiveAmount($memberCoupon->coupon?->min_order_amount),
+                    $this->positiveAmount($memberCoupon->coupon?->max_order_amount),
+                    (string) ($memberCoupon->coupon?->combine_division ?? CouponCombineDivision::ALLOWED),
+                    $memberCoupon->coupon?->apply_condition_division === CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT
+                        ? $memberCoupon->coupon->targetProducts->pluck('name')->all()
+                        : [],
                 );
             })
             ->all();
@@ -76,6 +84,12 @@ class CouponMyCouponsUseCase
         $defaultImageUrl = $this->shopSettingRepository->getCouponDefaultImageUrl($member->project_id);
 
         return new CouponListView($coupons, $defaultImageUrl, false);
+    }
+
+    /** 0円・未設定は「条件なし」 */
+    private function positiveAmount(mixed $value): ?int
+    {
+        return $value !== null && (float) $value > 0 ? (int) $value : null;
     }
 
     private function toIsoString($value): ?string

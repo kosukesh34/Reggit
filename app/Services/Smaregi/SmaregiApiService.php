@@ -509,10 +509,22 @@ class SmaregiApiService
         return $this->request($contractId, 'GET', 'pos/coupons', $query);
     }
 
-    /** クーポン1件取得（pos.transactions:read） */
-    public function getCoupon(string $contractId, string $couponId): ?array
+    /** クーポン1件取得（pos.transactions:read）。対象商品も要るときは ['with_items' => 'all'] */
+    public function getCoupon(string $contractId, string $couponId, array $query = []): ?array
     {
-        return $this->request($contractId, 'GET', 'pos/coupons/'.$couponId);
+        return $this->request($contractId, 'GET', 'pos/coupons/'.$couponId, $query);
+    }
+
+    /** クーポン商品登録（pos.transactions:write） */
+    public function createCouponProduct(string $contractId, string $couponId, array $body): ?array
+    {
+        return $this->request($contractId, 'POST', 'pos/coupons/'.$couponId.'/products', $body);
+    }
+
+    /** クーポン商品削除（pos.transactions:write） */
+    public function deleteCouponProduct(string $contractId, string $couponId, string $type, string $division, string $itemId): ?array
+    {
+        return $this->request($contractId, 'DELETE', 'pos/coupons/'.$couponId.'/type/'.$type.'/division/'.$division.'/products/'.rawurlencode($itemId));
     }
 
     /**

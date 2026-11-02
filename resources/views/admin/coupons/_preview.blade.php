@@ -44,6 +44,15 @@
         }
         return urlInput && urlInput.value ? urlInput.value.trim() : '';
     }
+    function targetProductNames() {
+        var applyCondition = document.querySelector('input[name="apply_condition_division"]:checked');
+        // '1' = 対象商品が含まれる場合のみ適用
+        if (!applyCondition || applyCondition.value !== '1') return [];
+        return Array.prototype.map.call(document.querySelectorAll('input[name="target_product_ids[]"]:checked'), function(input) {
+            var label = input.closest('[data-product-name]');
+            return label ? label.getAttribute('data-product-name') : '';
+        });
+    }
     function currentPreviewCoupon() {
         var nameInput = field('name');
         var codeInput = field('code');
@@ -66,7 +75,11 @@
             valid_until: endInput ? endInput.value : '',
             issued_at: new Date().toISOString(),
             status: Number.isFinite(startsAt) && startsAt > now ? 'upcoming' : 'available',
-            use_display: useDisplayInput ? useDisplayInput.value : 'barcode'
+            use_display: useDisplayInput ? useDisplayInput.value : 'barcode',
+            combine_division: field('combine_division') ? field('combine_division').value : '3',
+            min_order_amount: field('min_order_amount') ? field('min_order_amount').value : null,
+            max_order_amount: field('max_order_amount') ? field('max_order_amount').value : null,
+            target_products: targetProductNames()
         };
     }
     function updateSummary() {
@@ -92,7 +105,7 @@
     function onReady() {
         [
             'name', 'code', 'description', 'image_url', 'start_at', 'end_at',
-            'value', 'is_active', 'use_display'
+            'value', 'is_active', 'use_display', 'combine_division', 'min_order_amount', 'max_order_amount'
         ].forEach(function(id) {
             var el = field(id);
             if (el) {
@@ -103,7 +116,7 @@
         document.querySelectorAll('input[name="type"]').forEach(function(input) {
             input.addEventListener('change', sendPreview);
         });
-        document.querySelectorAll('input[name="image_fit"]').forEach(function(input) {
+        document.querySelectorAll('input[name="image_fit"], input[name="apply_condition_division"], input[name="target_product_ids[]"]').forEach(function(input) {
             input.addEventListener('change', sendPreview);
         });
         var imageFile = field('coupon_image');

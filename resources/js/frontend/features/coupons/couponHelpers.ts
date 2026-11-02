@@ -15,6 +15,10 @@ export type CouponRecord = {
     image_fit?: string;
     code?: string;
     use_display?: string;
+    combine_division?: string;
+    min_order_amount?: number | null;
+    max_order_amount?: number | null;
+    target_products?: string[];
     [key: string]: unknown;
 };
 

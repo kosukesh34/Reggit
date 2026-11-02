@@ -16,6 +16,7 @@ use App\Models\CouponRedemption;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\Smaregi\SmaregiCouponImportSyncService;
@@ -549,6 +550,7 @@ class AdminCouponsTest extends TestCase
                 'value' => 10,
                 'is_active' => '1',
                 'apply_condition_division' => CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT,
+                'target_product_ids' => [Product::factory()->create(['project_id' => $project->id])->id],
                 'min_order_amount' => 1000,
                 'max_order_amount' => 5000,
                 'combine_division' => CouponCombineDivision::FORBIDDEN,
@@ -563,6 +565,69 @@ class AdminCouponsTest extends TestCase
         $this->assertSame('1000.00', (string) $coupon->min_order_amount);
         $this->assertSame('5000.00', (string) $coupon->max_order_amount);
         $this->assertSame(CouponCombineDivision::FORBIDDEN, $coupon->combine_division);
+    }
+
+    public function test_create_対象商品を選んで保存し_編集画面で選択済みになること(): void
+    {
+        config(['smaregi.contract_id' => '']);
+
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $target = Product::factory()->create(['project_id' => $project->id, 'name' => '対象のカフェラテ']);
+        Product::factory()->create(['project_id' => $project->id, 'name' => '対象外のスコーン']);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.coupons.create', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('name="target_product_ids[]"', false)
+            ->assertSee('対象のカフェラテ')
+            ->assertDontSee('スマレジと同じ項目です')
+            ->assertDontSee('会員がひと目で内容を理解できる');
+
+        $response = $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.store', ['project_key' => $project->project_key]), [
+                'code' => 'TARGET-PRODUCT',
+                'name' => '対象商品クーポン',
+                'type' => 'fixed',
+                'value' => 100,
+                'apply_condition_division' => CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT,
+                'target_product_ids' => [$target->id],
+                'combine_division' => CouponCombineDivision::ALLOWED,
+            ]);
+
+        $response->assertRedirect(route('admin.coupons', ['project_key' => $project->project_key]));
+        $coupon = Coupon::where('code', 'TARGET-PRODUCT')->firstOrFail();
+        $this->assertSame([$target->id], $coupon->targetProducts->pluck('id')->all());
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.coupons.edit', ['project_key' => $project->project_key, 'id' => $coupon->id]))
+            ->assertOk()
+            ->assertSee('value="'.$target->id.'" checked', false);
+    }
+
+    public function test_create_対象商品のみ適用で商品未選択や他店舗の商品は保存できないこと(): void
+    {
+        config(['smaregi.contract_id' => '']);
+
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $otherProject = Project::create(['project_key' => 'other', 'name' => 'Other', 'description' => 'Test', 'is_active' => true]);
+        $otherProduct = Product::factory()->create(['project_id' => $otherProject->id]);
+        $base = [
+            'code' => 'TARGET-NG',
+            'name' => '対象商品クーポン',
+            'type' => 'fixed',
+            'value' => 100,
+            'apply_condition_division' => CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT,
+        ];
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.store', ['project_key' => $project->project_key]), $base)
+            ->assertSessionHasErrors(['target_product_ids' => '対象商品を1つ以上選択してください']);
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.coupons.store', ['project_key' => $project->project_key]), $base + ['target_product_ids' => [$otherProduct->id]])
+            ->assertSessionHasErrors('target_product_ids.0');
+        $this->assertDatabaseMissing('coupons', ['code' => 'TARGET-NG']);
     }
 
     public function test_coupon_redemptions_利用者一覧を表示できること(): void

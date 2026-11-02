@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Coupon extends Model
@@ -128,5 +129,10 @@ class Coupon extends Model
     public function memberCoupons(): HasMany
     {
         return $this->hasMany(MemberCoupon::class);
+    }
+
+    public function targetProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'coupon_target_products')->withTimestamps();
     }
 }

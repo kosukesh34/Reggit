@@ -19,7 +19,12 @@ class MemberCoupon
         public ?string $description = null,
         public string $useDisplay = 'barcode',
         public ?string $code = null,
-        public string $imageFit = 'cover'
+        public string $imageFit = 'cover',
+        public ?int $minOrderAmount = null,
+        public ?int $maxOrderAmount = null,
+        public string $combineDivision = '3',
+        /** @var list<string> 対象商品が含まれる場合のみ使えるクーポンの商品名 */
+        public array $targetProducts = [],
     ) {}
 
     /** @return array<string, mixed> */
@@ -40,6 +45,10 @@ class MemberCoupon
             'use_display' => $this->useDisplay,
             'code' => $this->code,
             'image_fit' => $this->imageFit,
+            'min_order_amount' => $this->minOrderAmount,
+            'max_order_amount' => $this->maxOrderAmount,
+            'combine_division' => $this->combineDivision,
+            'target_products' => $this->targetProducts,
         ];
     }
 }

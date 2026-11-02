@@ -14,6 +14,8 @@
     $minOrderAmount = old('min_order_amount', $coupon?->min_order_amount);
     $maxOrderAmount = old('max_order_amount', $coupon?->max_order_amount);
     $applyConditionDivision = old('apply_condition_division', $coupon?->apply_condition_division ?? \App\Enums\CouponApplyConditionDivision::ALL);
+    $products = $products ?? collect();
+    $targetProductIds = array_map('strval', (array) old('target_product_ids', $coupon?->targetProducts->pluck('id')->all() ?? []));
     $combineDivision = old('combine_division', $coupon?->combine_division ?? \App\Enums\CouponCombineDivision::ALLOWED);
     $usageLimit = old('usage_limit', $coupon?->usage_limit);
     $startAt = old('start_at', $coupon?->start_at?->format('Y-m-d\TH:i'));
@@ -30,7 +32,6 @@
                 <div>
                     <p class="cp-card-step">STEP 01</p>
                     <h2 id="coupon-basic-title">クーポンの顔をつくる</h2>
-                    <p>会員がひと目で内容を理解できる、名前とビジュアルを設定します。</p>
                 </div>
             </div>
 
@@ -163,7 +164,6 @@
                 <div>
                     <p class="cp-card-step">STEP 03</p>
                     <h2 id="coupon-conditions-title">発行条件を整える</h2>
-                    <p>スマレジと同じ項目です。未入力の期間・金額は制限なしとして扱われます。</p>
                 </div>
             </div>
 
@@ -197,6 +197,29 @@
                 </div>
                 @error('apply_condition_division')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
             </fieldset>
+
+            <div class="form-group cp-target-products" id="targetProducts" @if((string) $applyConditionDivision !== \App\Enums\CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT) hidden @endif>
+                <div class="cp-label-row">
+                    <span class="form-label" id="targetProductsLabel">対象商品 <span class="cp-required">必須</span></span>
+                    <span class="cp-char-count" id="targetProductsCount" aria-live="polite">{{ count($targetProductIds) }}件選択中</span>
+                </div>
+                @if($products->isEmpty())
+                    <p class="cp-field-help">選択できる商品がありません。先に商品を登録してください。</p>
+                @else
+                    <input type="search" class="form-control" id="targetProductSearch" placeholder="商品名で絞り込み" aria-label="対象商品を商品名で絞り込み" autocomplete="off">
+                    <div class="cp-target-product-list" role="group" aria-labelledby="targetProductsLabel">
+                        @foreach($products as $product)
+                            <label class="checkbox-label" data-product-name="{{ $product->name }}">
+                                <input type="checkbox" name="target_product_ids[]" value="{{ $product->id }}" {{ in_array((string) $product->id, $targetProductIds, true) ? 'checked' : '' }}>
+                                <span>{{ $product->name }}（¥{{ number_format((float) $product->price) }}）</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="cp-field-help">選んだ商品のどれかがお会計に含まれるときだけ使えます。</p>
+                @endif
+                @error('target_product_ids')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                @error('target_product_ids.*')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+            </div>
 
             <div class="cp-grid-2">
                 <div class="form-group">

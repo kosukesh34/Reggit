@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Coupon;
+use App\Models\Product;
 use App\Models\Project;
 use App\Services\Smaregi\SmaregiApiService;
 use App\Services\Smaregi\SmaregiCouponImportSyncService;
@@ -44,7 +45,9 @@ class SmaregiCouponImportSyncServiceTest extends TestCase
             ]],
         ]);
 
+        $product = Product::factory()->create(['project_id' => $project->id, 'smaregi_product_id' => 'sm-product-1']);
         $sync = Mockery::mock(SmaregiCouponSyncService::class);
+        $sync->shouldReceive('fetchTargetProductIds')->once()->with($project->id, 'sm-coupon-1')->andReturn(['sm-product-1', 'sm-product-unknown']);
         $service = new SmaregiCouponImportSyncService($api, $sync);
 
         $result = $service->syncFromSmaregi($project->id);
@@ -59,6 +62,8 @@ class SmaregiCouponImportSyncServiceTest extends TestCase
             'apply_condition_division' => '1',
             'combine_division' => '1',
         ]);
+        $coupon = Coupon::where('smaregi_coupon_id', 'sm-coupon-1')->firstOrFail();
+        $this->assertSame([$product->id], $coupon->targetProducts->pluck('id')->all());
     }
 
     public function test_push_unlinked_to_smaregi_未連携クーポンを_po_sへ登録すること(): void

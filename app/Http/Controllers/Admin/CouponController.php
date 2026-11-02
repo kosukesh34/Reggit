@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Services\Admin\CouponAdminService;
 use App\UseCases\Admin\Coupon\AdminCouponEditFormUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponIndexUseCase;
 use App\UseCases\Admin\Coupon\AdminCouponRedemptionsUseCase;
@@ -26,11 +27,11 @@ class CouponController extends AdminBaseController
         ]);
     }
 
-    public function createCoupon()
+    public function createCoupon(CouponAdminService $couponAdminService)
     {
-        $this->resolveAdminProjectId();
+        $projectId = $this->resolveAdminProjectId();
 
-        return view('admin.coupons.create');
+        return view('admin.coupons.create', ['products' => $couponAdminService->getProductsForSelect($projectId)]);
     }
 
     public function showCoupon(string $projectKey, int $id, AdminCouponShowUseCase $show)
@@ -46,6 +47,7 @@ class CouponController extends AdminBaseController
         return view('admin.coupons.edit', [
             'coupon' => $output->coupon,
             'stampCards' => $output->stampCards,
+            'products' => $output->products,
         ]);
     }
 

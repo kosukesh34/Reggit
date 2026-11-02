@@ -19,6 +19,6 @@ class AdminCouponEditFormUseCase
         $coupon = $this->couponAdminService->findOrFail($couponId, $projectId);
         $stampCards = $this->couponAdminService->getActiveStampCardsForSelect($projectId);
 
-        return new AdminCouponFormOutput($coupon, $stampCards);
+        return new AdminCouponFormOutput($coupon, $stampCards, $this->couponAdminService->getProductsForSelect($projectId));
     }
 }
