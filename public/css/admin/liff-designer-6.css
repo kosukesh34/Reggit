@@ -5,14 +5,14 @@
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%) translateY(20px);
-    background: #4f46e5;
+    background: var(--primary);
     color: #fff;
     padding: 12px 24px;
     border-radius: 12px;
     font-size: 14px;
     font-weight: 600;
     z-index: 99999;
-    box-shadow: 0 10px 32px rgba(79, 70, 229, 0.35);
+    box-shadow: 0 10px 32px color-mix(in srgb, var(--primary) 35%, transparent);
     opacity: 0;
     transition: all 0.3s ease;
     pointer-events: none;
@@ -62,15 +62,15 @@
 }
 
 .ld-theme-card:hover {
-    border-color: #4f46e5;
+    border-color: var(--primary);
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.12);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 12%, transparent);
 }
 
 .ld-theme-card.is-active {
-    border-color: #4f46e5;
-    background: #eef2ff;
-    box-shadow: 0 0 0 1px #4f46e5 inset;
+    border-color: var(--primary);
+    background: var(--primary-bg);
+    box-shadow: 0 0 0 1px var(--primary) inset;
 }
 
 .ld-theme-card__head {
@@ -172,9 +172,9 @@
 }
 
 .ld-bg-style-tab.is-active {
-    border-color: #4f46e5;
-    background: #eef2ff;
-    color: #4f46e5;
+    border-color: var(--primary);
+    background: var(--primary-bg);
+    color: var(--primary);
 }
 
 .ld-bg-panel[hidden] {

@@ -46,7 +46,7 @@
 .notice-markdown a { text-decoration: underline; }
 .notice-markdown img { max-width: 100%; height: auto; }
 .notice-markdown pre { overflow-x: auto; white-space: pre; }
-.notice-markdown blockquote { border-left: 3px solid #cbd5e1; padding-left: 1rem; margin-left: 0; }
+.notice-markdown blockquote { border-left: 3px solid var(--border); padding-left: 1rem; margin-left: 0; }
 .notice-editor > label { display: block; }
 
 

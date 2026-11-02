@@ -1,7 +1,7 @@
 /* ===== ボタンバリエーション ===== */
 .btn-primary {
     background: color-mix(in srgb, var(--primary) 7%, #fff);
-    color: color-mix(in srgb, var(--primary) 62%, #475569);
+    color: color-mix(in srgb, var(--primary) 62%, var(--text-secondary));
     border-color: color-mix(in srgb, var(--primary) 14%, var(--border));
 }
 
@@ -12,12 +12,12 @@
 
 .btn-primary,
 .btn-primary i {
-    color: color-mix(in srgb, var(--primary) 62%, #475569) !important;
+    color: color-mix(in srgb, var(--primary) 62%, var(--text-secondary)) !important;
 }
 
 .btn-success {
     background: color-mix(in srgb, var(--success) 7%, #fff);
-    color: color-mix(in srgb, var(--success) 62%, #475569);
+    color: color-mix(in srgb, var(--success) 62%, var(--text-secondary));
     border-color: color-mix(in srgb, var(--success) 14%, var(--border));
 }
 
@@ -28,12 +28,12 @@
 
 .btn-success,
 .btn-success i {
-    color: color-mix(in srgb, var(--success) 62%, #475569) !important;
+    color: color-mix(in srgb, var(--success) 62%, var(--text-secondary)) !important;
 }
 
 .btn-danger {
     background: color-mix(in srgb, var(--danger) 6%, #fff);
-    color: color-mix(in srgb, var(--danger) 58%, #64748b);
+    color: color-mix(in srgb, var(--danger) 58%, var(--text-secondary));
     border-color: color-mix(in srgb, var(--danger) 12%, var(--border));
     font-weight: 500;
 }
@@ -45,7 +45,7 @@
 
 .btn-danger,
 .btn-danger i {
-    color: color-mix(in srgb, var(--danger) 58%, #64748b) !important;
+    color: color-mix(in srgb, var(--danger) 58%, var(--text-secondary)) !important;
 }
 
 .btn-secondary {
@@ -57,7 +57,7 @@
 .btn-secondary:hover {
     background: var(--bg-secondary);
     color: var(--text-primary);
-    border-color: #cbd5e1;
+    border-color: var(--border);
 }
 
 .btn-secondary i {
@@ -66,7 +66,7 @@
 
 .btn-info {
     background: color-mix(in srgb, var(--info) 7%, #fff);
-    color: color-mix(in srgb, var(--info) 62%, #475569);
+    color: color-mix(in srgb, var(--info) 62%, var(--text-secondary));
     border-color: color-mix(in srgb, var(--info) 14%, var(--border));
 }
 
@@ -77,12 +77,12 @@
 
 .btn-info,
 .btn-info i {
-    color: color-mix(in srgb, var(--info) 62%, #475569) !important;
+    color: color-mix(in srgb, var(--info) 62%, var(--text-secondary)) !important;
 }
 
 .btn-warning {
     background: color-mix(in srgb, var(--warning) 8%, #fff);
-    color: color-mix(in srgb, var(--warning) 62%, #475569);
+    color: color-mix(in srgb, var(--warning) 62%, var(--text-secondary));
     border-color: color-mix(in srgb, var(--warning) 16%, var(--border));
 }
 
@@ -93,13 +93,13 @@
 
 .btn-warning,
 .btn-warning i {
-    color: color-mix(in srgb, var(--warning) 62%, #475569) !important;
+    color: color-mix(in srgb, var(--warning) 62%, var(--text-secondary)) !important;
 }
 
 .btn-outline-primary {
     background: transparent;
     color: var(--primary);
-    border: 1px solid #c7d2fe;
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, #fff);
 }
 
 .btn-outline-primary:hover {
@@ -116,7 +116,7 @@
 .btn-outline-secondary:hover {
     background: var(--bg-tertiary);
     color: var(--text-primary);
-    border-color: #cbd5e1;
+    border-color: var(--border);
 }
 
 .btn-sm {
@@ -273,7 +273,7 @@
 
 .btn-action.btn-edit {
     background: color-mix(in srgb, var(--primary) 7%, #fff);
-    color: color-mix(in srgb, var(--primary) 62%, #475569);
+    color: color-mix(in srgb, var(--primary) 62%, var(--text-secondary));
     border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--border));
 }
 
@@ -290,12 +290,12 @@
 
 .btn-action.btn-outline:hover {
     background: var(--bg-tertiary);
-    border-color: #cbd5e1;
+    border-color: var(--border);
 }
 
 .btn-action.btn-success {
     background: color-mix(in srgb, var(--success) 7%, #fff);
-    color: color-mix(in srgb, var(--success) 62%, #475569);
+    color: color-mix(in srgb, var(--success) 62%, var(--text-secondary));
     border: 1px solid color-mix(in srgb, var(--success) 14%, var(--border));
 }
 
@@ -306,7 +306,7 @@
 
 .btn-action.btn-info {
     background: color-mix(in srgb, var(--info) 7%, #fff);
-    color: color-mix(in srgb, var(--info) 62%, #475569);
+    color: color-mix(in srgb, var(--info) 62%, var(--text-secondary));
     border: 1px solid color-mix(in srgb, var(--info) 14%, var(--border));
 }
 
@@ -317,7 +317,7 @@
 
 .btn-action.btn-danger {
     background: color-mix(in srgb, var(--danger) 6%, #fff);
-    color: color-mix(in srgb, var(--danger) 58%, #64748b);
+    color: color-mix(in srgb, var(--danger) 58%, var(--text-secondary));
     border: 1px solid color-mix(in srgb, var(--danger) 12%, var(--border));
 }
 
@@ -343,7 +343,7 @@
 
 .info-box--system {
     background: var(--primary-bg);
-    border-color: #c7d2fe;
+    border-color: color-mix(in srgb, var(--primary) 30%, #fff);
     color: #3730a3;
 }
 

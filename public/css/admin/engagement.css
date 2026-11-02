@@ -4,7 +4,7 @@
     --eg-muted: #5b6474;
     --eg-line: #e5e8ef;
     --eg-soft: #f6f8fb;
-    --eg-primary: var(--primary, #2563eb);
+    --eg-primary: var(--primary);
     --eg-primary-soft: var(--primary-bg, #eef3ff);
     --eg-success: #16a34a;
     --eg-warning: #d97706;

@@ -28,7 +28,7 @@
 .member-chip--line { color: #167342; background: #edf8f0; }
 .member-rank-chip[data-rank="gold"] { color: #8a6010; background: #fff5d6; }
 .member-rank-chip[data-rank="platinum"] { color: #5143a0; background: #f0edff; }
-.member-rank-chip[data-rank="silver"] { color: #475569; background: #f3f5f8; }
+.member-rank-chip[data-rank="silver"] { color: var(--text-secondary); background: #f3f5f8; }
 .member-rank-chip[data-rank="bronze"] { color: #945020; background: #fff0e6; }
 .member-identity-name--empty { color: var(--text-tertiary); }
 .member-identity-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 20px; margin: 16px 0 0; padding-top: 16px; border-top: 1px solid var(--border-light); }

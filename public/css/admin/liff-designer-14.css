@@ -15,7 +15,7 @@
 
 .ld-modal__dialog--templates .ld-btn--primary,
 .ld-modal__dialog--templates .ld-tab-template-card__actions .ld-btn--primary {
-    background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%) !important;
+    background: linear-gradient(135deg, var(--primary-hover) 0%, #134e4a 100%) !important;
     color: #ffffff !important;
     border-color: rgba(15, 118, 110, 0.86) !important;
     box-shadow: 0 12px 26px rgba(15, 118, 110, 0.28) !important;
@@ -23,7 +23,7 @@
 }
 
 .ld-modal__dialog--templates .ld-btn--primary:hover {
-    background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%) !important;
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-hover) 100%) !important;
     color: #ffffff !important;
     transform: translateY(-1px);
 }
@@ -157,13 +157,13 @@
 }
 
 .ld-template-card.is-applied {
-    border-color: #0f766e;
+    border-color: var(--primary-hover);
     box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2), 0 22px 52px rgba(15, 118, 110, 0.13);
 }
 
 .ld-template-card__applied {
     border-radius: 999px;
-    background: #0f766e;
+    background: var(--primary-hover);
     color: #fff;
     box-shadow: 0 8px 20px rgba(15, 118, 110, 0.26);
 }

@@ -100,7 +100,7 @@
 }
 
 .stat-card--link:hover {
-    border-color: #c7d2fe;
+    border-color: color-mix(in srgb, var(--primary) 30%, #fff);
 }
 
 .stat-card--link .stat-content {
@@ -209,7 +209,7 @@
 }
 
 .quick-menu-item:hover {
-    border-color: #c7d2fe;
+    border-color: color-mix(in srgb, var(--primary) 30%, #fff);
     background: var(--primary-bg);
     color: var(--primary);
 }
@@ -286,7 +286,7 @@
 
 .status-filter:hover {
     background: var(--primary-bg);
-    border-color: #c7d2fe;
+    border-color: color-mix(in srgb, var(--primary) 30%, #fff);
     color: var(--primary);
 }
 
