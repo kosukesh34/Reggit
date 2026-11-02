@@ -55,6 +55,23 @@ class AdminPasskeyRemoteEnrollTest extends TestCase
             ->assertSee('パスキー登録');
     }
 
+    public function test_remote_enroll_ローカルでパスキーを省いていても遠隔登録のリンクからは登録へ進むこと(): void
+    {
+        [$admin] = $this->adminWithPasskey(['login_id' => 'store_admin', 'password' => 'password']);
+        $this->app['env'] = 'local';
+        config(['passkeys.admin_required' => false]);
+        $url = URL::temporarySignedRoute(
+            'admin.passkey.remote-enroll.confirm',
+            now()->addMinutes(30),
+            ['admin' => $admin->id, 'hash' => sha1((string) $admin->email)],
+        );
+
+        $this->get($url)->assertRedirect(route('admin.login'));
+        $this->post(route('admin.login.submit'), ['login_id' => 'store_admin', 'password' => 'password'])
+            ->assertRedirect(route('admin.passkey.enroll'));
+        $this->get(route('admin.passkey.enroll'))->assertOk()->assertSee('パスキー登録');
+    }
+
     public function test_remote_enroll_確認済みセッションで自分のリンクから登録へ進むこと(): void
     {
         [$admin] = $this->adminWithPasskey();

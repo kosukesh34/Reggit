@@ -164,7 +164,9 @@ class AdminAuthService
 
     private function completeLoginGate(AdminUser $user, AdminRedirectResult $intended): AdminRedirectResult
     {
-        if (AdminPasskeyGate::isPasskeyVerified()) {
+        // パスキーを省いたログインでも、遠隔登録のリンクから来た場合は登録画面へ進める
+        AdminPasskeyGate::consumeRemoteEnrollPending($user);
+        if (AdminPasskeyGate::isPasskeyVerified() && ! AdminPasskeyGate::isRemoteEnroll()) {
             return $intended;
         }
         AdminPasskeyGate::rememberIntended($intended);
