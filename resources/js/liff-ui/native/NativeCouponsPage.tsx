@@ -7,8 +7,9 @@ import { CenterPopup } from "../components/ui/CenterPopup";
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { MembershipQr } from "../components/membership/MembershipQr";
 import { useAdminFormPreview } from "../hooks/useAdminFormPreview";
+import { couponBadges, couponCombineNotice, couponConditionRows } from "./couponConditions";
 type DeviceCoupon = { id: number; name: string; description?: string; image_url?: string };
-type Redemption = { code?: string; use_display?: string; coupon_name?: string };
+type Redemption = { code?: string; use_display?: string; coupon_name?: string; combine_notice?: string | null };
 export function NativeCouponsPage() {
   const runtime = useRuntimeData();
   const samples: CouponRecord[] = runtime.coupons.map((coupon) => ({ id: coupon.id, coupon_name: coupon.title, description: coupon.description, image_url: coupon.image, valid_from: coupon.validFrom, valid_until: coupon.validUntil, status: runtime.usedCouponIds.includes(coupon.id) ? "used" : "available" }));
@@ -16,6 +17,7 @@ export function NativeCouponsPage() {
   const claimable = useNativeResource("/api/device-coupons", { coupons: [] as DeviceCoupon[] });
   const [selected, setSelected] = useState(0);
   const [pending, setPending] = useState<CouponRecord>();
+  const [detail, setDetail] = useState<CouponRecord>();
   const [redemption, setRedemption] = useState<Redemption>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -42,7 +44,7 @@ export function NativeCouponsPage() {
         result = payload.data ?? payload;
         await resource.reload();
       }
-      if (result.code && result.use_display !== "none") setRedemption(result);
+      if (result.code && result.use_display !== "none") setRedemption({ ...result, combine_notice: couponCombineNotice(coupon) });
       else setMessage(`「${coupon.coupon_name}」を利用しました`);
       setPending(undefined);
     } catch (caught) { setMessage(caught instanceof Error ? caught.message : "利用できませんでした"); }
@@ -64,11 +66,13 @@ export function NativeCouponsPage() {
         {list.map((coupon) => {
           const status = coupon.status ?? "available";
           const usable = ["available", "unused", "issued"].includes(status);
-          return <article className={`native-coupon-card${usable ? "" : " is-inactive"}`} key={coupon.id}><div className="native-coupon-card__image">{coupon.image_url ? <img src={coupon.image_url} alt="" /> : <i className="fa-solid fa-ticket" aria-hidden="true" />}<span className={`native-badge${usable ? " is-emphasized" : ""}`}>{labels[status] ?? status}</span></div><div className="native-coupon-card__body"><h2>{coupon.coupon_name}</h2>{coupon.description ? <p>{coupon.description}</p> : null}<div className="native-coupon-dates">{coupon.valid_from ? <span><i className="fa-solid fa-calendar" /> 利用開始 {nativeDate(coupon.valid_from)}</span> : null}{coupon.valid_until ? <span><i className="fa-solid fa-calendar" /> 利用終了 {nativeDate(coupon.valid_until)}</span> : null}{!coupon.valid_from && !coupon.valid_until ? <span>∞ 期間中いつでも利用できます</span> : null}</div>{selected === 0 && usable ? <div className="native-coupon-actions"><button className="native-button native-button--ink" disabled={busy} onClick={() => setPending(coupon)}>使う</button></div> : null}</div></article>;
+          const badges = couponBadges(coupon);
+          return <article className={`native-coupon-card${usable ? "" : " is-inactive"}`} key={coupon.id}><div className="native-coupon-card__image">{coupon.image_url ? <img src={coupon.image_url} alt="" /> : <i className="fa-solid fa-ticket" aria-hidden="true" />}<span className={`native-badge${usable ? " is-emphasized" : ""}`}>{labels[status] ?? status}</span></div><div className="native-coupon-card__body"><div className="native-coupon-card__title"><h2>{coupon.coupon_name}</h2><button type="button" className="native-coupon-info" aria-label={`「${coupon.coupon_name ?? "クーポン"}」の詳細と対象商品`} onClick={() => setDetail(coupon)}><i className="fa-solid fa-circle-info" aria-hidden="true" /></button></div>{badges.length ? <ul className="native-coupon-badges" aria-label="利用条件">{badges.map((badge) => <li key={badge}>{badge}</li>)}</ul> : null}{coupon.description ? <p>{coupon.description}</p> : null}<div className="native-coupon-dates">{coupon.valid_from ? <span><i className="fa-solid fa-calendar" /> 利用開始 {nativeDate(coupon.valid_from)}</span> : null}{coupon.valid_until ? <span><i className="fa-solid fa-calendar" /> 利用終了 {nativeDate(coupon.valid_until)}</span> : null}{!coupon.valid_from && !coupon.valid_until ? <span>∞ 期間中いつでも利用できます</span> : null}</div>{selected === 0 && usable ? <div className="native-coupon-actions"><button className="native-button native-button--ink" disabled={busy} onClick={() => setPending(coupon)}>使う</button></div> : null}</div></article>;
         })}
       </div>
     </NativeState>
     <CenterPopup open={!!pending} onClose={() => { if (!busy) setPending(undefined); }} title="クーポンを使いますか？"><p>スタッフにご確認のうえ利用してください。利用後は元に戻せません。</p><p>{pending?.coupon_name}</p><div className="native-dialog-actions"><button className="native-button native-button--secondary" disabled={busy} onClick={() => setPending(undefined)}>キャンセル</button><button className="native-button" disabled={busy} onClick={() => void redeem()}>使用する</button></div></CenterPopup>
-    <CenterPopup open={!!redemption} onClose={() => setRedemption(undefined)} title={redemption?.coupon_name ?? "クーポン"}>{redemption?.use_display === "qr" ? <MembershipQr value={redemption.code ?? ""} /> : <MembershipBarcode value={redemption?.code} enlarged />}</CenterPopup>
+    <CenterPopup open={!!detail} onClose={() => setDetail(undefined)} title={detail?.coupon_name ?? "クーポンの詳細"}>{detail?.description ? <p>{detail.description}</p> : null}<dl className="native-coupon-conditions">{detail ? couponConditionRows(detail).map((row) => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>) : null}<div><dt>利用期間</dt><dd>{detail?.valid_from || detail?.valid_until ? `${detail.valid_from ? nativeDate(detail.valid_from) : ""}〜${detail.valid_until ? nativeDate(detail.valid_until) : ""}` : "期間中いつでも利用できます"}</dd></div></dl></CenterPopup>
+    <CenterPopup open={!!redemption} onClose={() => setRedemption(undefined)} title={redemption?.coupon_name ?? "クーポン"}>{redemption?.use_display === "qr" ? <MembershipQr value={redemption.code ?? ""} /> : <MembershipBarcode value={redemption?.code} enlarged />}{redemption?.combine_notice ? <p className="native-coupon-combine-notice" role="note"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {redemption.combine_notice}</p> : null}</CenterPopup>
   </div>;
 }

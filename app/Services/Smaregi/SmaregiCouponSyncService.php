@@ -15,6 +15,10 @@ class SmaregiCouponSyncService
 
     private const AWARD_TYPE_AMOUNT = '1';
 
+    private const ITEM_TYPE_APPLY_CONDITION = '1';
+
+    private const ITEM_DIVISION_PRODUCT = '2';
+
     private const SERIAL_NUMBER_MAX_LENGTH = 20;
 
     private const COUPON_NAME_MAX_LENGTH = 85;
@@ -90,6 +94,68 @@ class SmaregiCouponSyncService
     }
 
     /**
+     * 適用条件の対象商品（商品ID指定）をスマレジと一致させる。部門・グループ指定と商品付与には触れない。
+     *
+     * @param  list<string>  $smaregiProductIds
+     */
+    public function syncTargetProducts(int $projectId, string $smaregiCouponId, array $smaregiProductIds): bool
+    {
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
+            return true;
+        }
+        $current = $this->fetchTargetProductIds($projectId, $smaregiCouponId);
+        if ($current === null) {
+            return false;
+        }
+        foreach (array_diff($smaregiProductIds, $current) as $itemId) {
+            $body = ['type' => self::ITEM_TYPE_APPLY_CONDITION, 'division' => self::ITEM_DIVISION_PRODUCT, 'itemId' => $itemId];
+            if ($this->smaregiApi->createCouponProduct($contractId, $smaregiCouponId, $body) === null) {
+                return false;
+            }
+        }
+        foreach (array_diff($current, $smaregiProductIds) as $itemId) {
+            if ($this->smaregiApi->deleteCouponProduct($contractId, $smaregiCouponId, self::ITEM_TYPE_APPLY_CONDITION, self::ITEM_DIVISION_PRODUCT, $itemId) === null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * スマレジに登録済みの適用条件の対象商品ID。取得失敗時は null。
+     *
+     * @return list<string>|null
+     */
+    public function fetchTargetProductIds(int $projectId, string $smaregiCouponId): ?array
+    {
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+        if (StrHelper::isEmptyStringOrNull($contractId)) {
+            return [];
+        }
+        $coupon = $this->smaregiApi->getCoupon($contractId, $smaregiCouponId, ['with_items' => 'all']);
+        if ($coupon === null) {
+            return null;
+        }
+        $items = is_array($coupon['items'] ?? null) ? $coupon['items'] : [];
+        if (isset($items['itemId'])) {
+            $items = [$items];
+        }
+        $ids = [];
+        foreach ($items as $item) {
+            if (is_array($item)
+                && (string) ($item['type'] ?? '') === self::ITEM_TYPE_APPLY_CONDITION
+                && (string) ($item['division'] ?? '') === self::ITEM_DIVISION_PRODUCT
+                && (string) ($item['itemId'] ?? '') !== '') {
+                $ids[] = (string) $item['itemId'];
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * プロジェクトにスマレジ契約が紐づいているか
      */
     public function hasSmaregiContract(int $projectId): bool
@@ -114,6 +180,7 @@ class SmaregiCouponSyncService
         if ($body === []) {
             return false;
         }
+        $targetProductIds = $this->targetProductIdsForPush($coupon);
 
         $smaregiId = $coupon->smaregi_coupon_id ?? '';
         if (! StrHelper::isEmptyStringOrNull($smaregiId)) {
@@ -148,10 +215,39 @@ class SmaregiCouponSyncService
 
             return false;
         }
+        if ($targetProductIds !== [] && ! $this->syncTargetProducts($coupon->project_id, $newId, $targetProductIds)) {
+            // 対象商品なしのクーポンをPOSに残さない
+            $this->deleteOnSmaregi($coupon->project_id, $newId);
+            Log::warning('[Smaregi] coupon target products sync failed', [
+                'project_id' => $coupon->project_id,
+                'coupon_id' => $coupon->id,
+            ]);
+
+            return false;
+        }
         $coupon->smaregi_coupon_id = $newId;
         $coupon->save();
 
         return true;
+    }
+
+    /**
+     * POS に送る対象商品のスマレジ商品ID。スマレジ未連携の商品が含まれる場合は送らずに止める。
+     *
+     * @return list<string>
+     */
+    private function targetProductIdsForPush(Coupon $coupon): array
+    {
+        if ($coupon->apply_condition_division !== CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT) {
+            return [];
+        }
+        $products = $coupon->targetProducts()->get(['products.name', 'products.smaregi_product_id']);
+        $unlinked = $products->filter(fn ($product) => (string) $product->smaregi_product_id === '');
+        if ($unlinked->isNotEmpty()) {
+            throw new \RuntimeException('スマレジ未連携の商品は対象商品にできません：'.$unlinked->pluck('name')->implode('、'));
+        }
+
+        return $products->pluck('smaregi_product_id')->map(fn ($id) => (string) $id)->values()->all();
     }
 
     /**

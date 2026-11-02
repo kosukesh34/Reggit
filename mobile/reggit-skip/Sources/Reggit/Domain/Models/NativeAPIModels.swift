@@ -369,6 +369,12 @@ struct CouponItem: Identifiable, Equatable {
     let usedAt: String
     let useDisplay: String
     let imageURL: String?
+    /// スマレジの併用区分（1: 併用不可、2: 「3」とだけ併用可、3: 併用可能）
+    let combineDivision: String
+    let minOrderAmount: Int?
+    let maxOrderAmount: Int?
+    /// 対象商品が含まれる場合のみ使えるクーポンの商品名
+    let targetProducts: [String]
 
     init(
         id: Int,
@@ -380,7 +386,11 @@ struct CouponItem: Identifiable, Equatable {
         issuedAt: String = "",
         usedAt: String = "",
         useDisplay: String,
-        imageURL: String?
+        imageURL: String?,
+        combineDivision: String = "3",
+        minOrderAmount: Int? = nil,
+        maxOrderAmount: Int? = nil,
+        targetProducts: [String] = []
     ) {
         self.id = id
         self.name = name
@@ -392,6 +402,65 @@ struct CouponItem: Identifiable, Equatable {
         self.usedAt = usedAt
         self.useDisplay = useDisplay
         self.imageURL = imageURL
+        self.combineDivision = combineDivision
+        self.minOrderAmount = minOrderAmount
+        self.maxOrderAmount = maxOrderAmount
+        self.targetProducts = targetProducts
+    }
+
+    /// 一覧のカードに出す利用条件
+    var conditionBadges: [String] {
+        var badges: [String] = []
+        if let badge = combineBadge { badges.append(badge) }
+        if !targetProducts.isEmpty { badges.append("対象商品あり") }
+        if let min = minOrderAmount { badges.append("\(AppFormat.yen(min))以上") }
+        return badges
+    }
+
+    /// 詳細シートに出す利用条件（見出し, 説明）
+    var conditionRows: [CouponConditionRow] {
+        var rows: [CouponConditionRow] = []
+        if !targetProducts.isEmpty {
+            rows.append(CouponConditionRow(label: "対象商品", value: "\(targetProducts.joined(separator: "、"))のいずれかを含むお会計で使えます"))
+        }
+        if let min = minOrderAmount, let max = maxOrderAmount {
+            rows.append(CouponConditionRow(label: "お会計金額", value: "\(AppFormat.yen(min))〜\(AppFormat.yen(max))のお会計で使えます"))
+        } else if let min = minOrderAmount {
+            rows.append(CouponConditionRow(label: "お会計金額", value: "\(AppFormat.yen(min))以上のお会計で使えます"))
+        } else if let max = maxOrderAmount {
+            rows.append(CouponConditionRow(label: "お会計金額", value: "\(AppFormat.yen(max))以下のお会計で使えます"))
+        }
+        if let detail = combineDetail {
+            rows.append(CouponConditionRow(label: "併用", value: detail))
+        }
+        return rows
+    }
+
+    /// バーコード表示中の併用の注意。併用可能（既定）のときは出さない
+    var combineNotice: String? {
+        switch combineDivision {
+        case "1": return "このクーポンは他のクーポンと併用できません"
+        case "2": return "「併用OK」のクーポンとだけ併用できます"
+        default: return nil
+        }
+    }
+
+    private var combineBadge: String? {
+        switch combineDivision {
+        case "1": return "併用不可"
+        case "2": return "一部併用可"
+        case "3": return "併用OK"
+        default: return nil
+        }
+    }
+
+    private var combineDetail: String? {
+        switch combineDivision {
+        case "1": return "他のクーポンと一緒には使えません"
+        case "2": return "「併用OK」のクーポンとだけ一緒に使えます"
+        case "3": return "「併用不可」以外のクーポンと一緒に使えます"
+        default: return nil
+        }
     }
 
     var isUsable: Bool {
@@ -416,6 +485,12 @@ struct CouponItem: Identifiable, Equatable {
     }
 }
 
+struct CouponConditionRow: Identifiable, Equatable {
+    let label: String
+    let value: String
+    var id: String { label }
+}
+
 struct CouponListResponse {
     let coupons: [CouponItem]
 
@@ -438,10 +513,20 @@ struct CouponListResponse {
                 issuedAt: item["issued_at"] as? String ?? "",
                 usedAt: item["used_at"] as? String ?? "",
                 useDisplay: item["use_display"] as? String ?? "",
-                imageURL: image
+                imageURL: image,
+                combineDivision: item["combine_division"] as? String ?? "3",
+                minOrderAmount: Self.positiveAmount(item["min_order_amount"]),
+                maxOrderAmount: Self.positiveAmount(item["max_order_amount"]),
+                targetProducts: item["target_products"] as? [String] ?? []
             )
         }
         return CouponListResponse(coupons: coupons)
+    }
+
+    /// 0円・未設定は「条件なし」
+    private static func positiveAmount(_ raw: Any?) -> Int? {
+        let amount = raw as? Int ?? Int((raw as? Double) ?? 0)
+        return amount > 0 ? amount : nil
     }
 }
 
@@ -478,6 +563,8 @@ struct CouponRedemptionResult: Identifiable, Equatable, Hashable {
     let usedAt: String
     let useDisplay: String
     let code: String
+    /// 使ったクーポンの併用の注意（一覧の情報から付ける）
+    var combineNotice: String? = nil
 
     var shouldShowBarcode: Bool {
         useDisplay.lowercased() == "barcode" && !code.isEmpty

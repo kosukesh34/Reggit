@@ -411,7 +411,9 @@ struct MembershipView: View {
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, minHeight: 64)
+        #if !os(Android)
         .contentShape(Rectangle())
+        #endif
     }
 
     private func walletButton(_ member: MemberProfileSnapshot) -> some View {

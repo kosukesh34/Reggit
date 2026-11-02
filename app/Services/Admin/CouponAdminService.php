@@ -2,12 +2,16 @@
 
 namespace App\Services\Admin;
 
+use App\Enums\CouponApplyConditionDivision;
 use App\Models\Coupon;
 use App\Models\CouponRedemption;
+use App\Models\Product;
 use App\Models\StampCard;
 use App\Services\Smaregi\SmaregiCouponSyncService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CouponAdminService
 {
@@ -42,15 +46,33 @@ class CouponAdminService
     public function create(int $projectId, array $data): Coupon
     {
         $data['project_id'] = $projectId;
+        $productIds = $this->pullTargetProductIds($data);
         if ($this->smaregiCouponSync->hasSmaregiContract($projectId)) {
+            $smaregiProductIds = $this->smaregiProductIds($projectId, $productIds);
             $result = $this->smaregiCouponSync->registerToSmaregi($projectId, $data);
             if ($result === null) {
                 throw new \RuntimeException('スマレジへのクーポン登録に失敗しました。契約ID・スコープ(pos.transactions:write)・ログ(storage/logs/laravel.log)を確認してください。');
             }
             $data['smaregi_coupon_id'] = $result['smaregi_coupon_id'];
+            if ($smaregiProductIds !== [] && ! $this->smaregiCouponSync->syncTargetProducts($projectId, $result['smaregi_coupon_id'], $smaregiProductIds)) {
+                // 対象商品なしのクーポンをPOSに残さない
+                $this->smaregiCouponSync->deleteOnSmaregi($projectId, $result['smaregi_coupon_id']);
+                throw new \RuntimeException('スマレジへの対象商品の登録に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
+            }
         }
 
-        return Coupon::create($data);
+        return DB::transaction(function () use ($data, $productIds): Coupon {
+            $coupon = Coupon::create($data);
+            $coupon->targetProducts()->sync($productIds);
+
+            return $coupon;
+        });
+    }
+
+    /** @return Collection<int, Product> */
+    public function getProductsForSelect(int $projectId): Collection
+    {
+        return Product::where('project_id', $projectId)->orderBy('name')->get(['id', 'name', 'price', 'smaregi_product_id']);
     }
 
     public function existsForProject(int $projectId, int $couponId): bool
@@ -127,9 +149,12 @@ class CouponAdminService
     {
         $coupon = $this->findOrFail($id, $projectId);
         $projectId = $projectId ?? $coupon->project_id;
+        $productIds = $this->pullTargetProductIds($data);
         if ($this->smaregiCouponSync->hasSmaregiContract($projectId)) {
+            $smaregiProductIds = $this->smaregiProductIds($projectId, $productIds);
             $smaregiId = $coupon->smaregi_coupon_id;
-            if ($smaregiId !== null && $smaregiId !== '') {
+            $registeredNow = $smaregiId === null || $smaregiId === '';
+            if (! $registeredNow) {
                 $ok = $this->smaregiCouponSync->updateOnSmaregi($projectId, $smaregiId, $data);
                 if (! $ok) {
                     throw new \RuntimeException('スマレジのクーポン更新に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
@@ -140,11 +165,76 @@ class CouponAdminService
                     throw new \RuntimeException('スマレジへのクーポン登録に失敗しました。契約ID・スコープ(pos.transactions:write)・ログ(storage/logs/laravel.log)を確認してください。');
                 }
                 $data['smaregi_coupon_id'] = $result['smaregi_coupon_id'];
+                $smaregiId = $result['smaregi_coupon_id'];
+            }
+            if (! $this->smaregiCouponSync->syncTargetProducts($projectId, $smaregiId, $smaregiProductIds)) {
+                $this->revertSmaregiCoupon($coupon, $projectId, $smaregiId, $registeredNow);
+                throw new \RuntimeException('スマレジの対象商品の更新に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
             }
         }
-        $coupon->update($data);
+        DB::transaction(function () use ($coupon, $data, $productIds): void {
+            $coupon->update($data);
+            $coupon->targetProducts()->sync($productIds);
+        });
 
         return $coupon;
+    }
+
+    /**
+     * 対象商品の同期に失敗したとき、POS を保存前の Reggit の状態に戻す（DB は更新しないため）。
+     * 今回登録したクーポンは、ID を保存できず再試行で重複するため削除する。
+     */
+    private function revertSmaregiCoupon(Coupon $coupon, int $projectId, string $smaregiId, bool $registeredNow): void
+    {
+        $reverted = $registeredNow
+            ? $this->smaregiCouponSync->deleteOnSmaregi($projectId, $smaregiId)
+            : $this->smaregiCouponSync->updateOnSmaregi($projectId, $smaregiId, $coupon->getAttributes())
+                && $this->smaregiCouponSync->syncTargetProducts(
+                    $projectId,
+                    $smaregiId,
+                    $coupon->apply_condition_division === CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT
+                        ? $coupon->targetProducts()->pluck('smaregi_product_id')->filter()->map(fn ($id) => (string) $id)->values()->all()
+                        : [],
+                );
+        if (! $reverted) {
+            Log::warning('[Smaregi] coupon revert after target products sync failure failed', [
+                'project_id' => $projectId,
+                'coupon_id' => $coupon->id,
+                'smaregi_coupon_id' => $smaregiId,
+            ]);
+        }
+    }
+
+    /**
+     * 対象商品IDをフォームデータから取り出す。全適用なら対象商品は持たない。
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<int>
+     */
+    private function pullTargetProductIds(array &$data): array
+    {
+        $ids = $data['target_product_ids'] ?? [];
+        unset($data['target_product_ids']);
+        if (($data['apply_condition_division'] ?? null) !== CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT) {
+            return [];
+        }
+
+        return array_values(array_map('intval', (array) $ids));
+    }
+
+    /**
+     * @param  list<int>  $productIds
+     * @return list<string>
+     */
+    private function smaregiProductIds(int $projectId, array $productIds): array
+    {
+        $products = Product::where('project_id', $projectId)->whereIn('id', $productIds)->get(['name', 'smaregi_product_id']);
+        $unlinked = $products->filter(fn (Product $product) => (string) $product->smaregi_product_id === '');
+        if ($unlinked->isNotEmpty()) {
+            throw new \RuntimeException('スマレジ未連携の商品は対象商品にできません：'.$unlinked->pluck('name')->implode('、'));
+        }
+
+        return $products->pluck('smaregi_product_id')->map(fn ($id) => (string) $id)->values()->all();
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Models\Product;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,6 +46,30 @@ class CouponControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure(['coupons', 'default_image_url'])
             ->assertJsonPath('coupons.0.image_fit', Coupon::IMAGE_FIT_CONTAIN);
+    }
+
+    public function test_my_coupons_併用区分と金額条件と対象商品を返すこと(): void
+    {
+        $this->createProject();
+        $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
+        $coupon = Coupon::factory()->create([
+            'project_id' => 1,
+            'apply_condition_division' => '1',
+            'combine_division' => '1',
+            'min_order_amount' => 1000,
+            'max_order_amount' => null,
+        ]);
+        $coupon->targetProducts()->sync([Product::factory()->create(['project_id' => 1, 'name' => 'カフェラテ'])->id]);
+        MemberCoupon::factory()->create(['member_id' => $member->id, 'project_id' => 1, 'coupon_id' => $coupon->id]);
+
+        $this->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID])
+            ->get('/api/member-coupons?project_key=default')
+            ->assertOk()
+            ->assertJsonPath('coupons.0.combine_division', '1')
+            ->assertJsonPath('coupons.0.min_order_amount', 1000)
+            ->assertJsonPath('coupons.0.max_order_amount', null)
+            ->assertJsonPath('coupons.0.target_products', ['カフェラテ']);
     }
 
     public function test_use_coupon_使用後にバーコード情報を返し使用済みにすること(): void

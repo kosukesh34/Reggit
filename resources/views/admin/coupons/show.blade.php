@@ -30,6 +30,9 @@
                 <dt>最低注文金額</dt><dd>{{ (float) $coupon->min_order_amount > 0 ? '¥'.number_format((float) $coupon->min_order_amount) : '指定なし' }}</dd>
                 <dt>最高注文金額</dt><dd>{{ $coupon->max_order_amount !== null ? '¥'.number_format((float) $coupon->max_order_amount) : '指定なし' }}</dd>
                 <dt>適用条件</dt><dd>{{ \App\Enums\CouponApplyConditionDivision::getValues()[$coupon->apply_condition_division] ?? '—' }}</dd>
+                @if($coupon->apply_condition_division === \App\Enums\CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT)
+                <dt>対象商品</dt><dd>{{ $coupon->targetProducts->pluck('name')->implode('、') ?: '未設定' }}</dd>
+                @endif
                 <dt>併用</dt><dd>{{ \App\Enums\CouponCombineDivision::getValues()[$coupon->combine_division] ?? '—' }}</dd>
                 <dt>利用上限</dt><dd>{{ $coupon->usage_limit !== null ? number_format($coupon->usage_limit).'回' : '制限なし' }}</dd>
                 <dt>スマレジ</dt><dd>{{ $coupon->smaregi_coupon_id ? '連携済み（ID: '.$coupon->smaregi_coupon_id.'）' : '未連携' }}</dd>

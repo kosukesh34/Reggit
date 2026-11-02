@@ -5,7 +5,9 @@ namespace App\Services\Smaregi;
 use App\Enums\CouponApplyConditionDivision;
 use App\Enums\CouponCombineDivision;
 use App\Models\Coupon;
+use App\Models\Product;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -56,7 +58,13 @@ class SmaregiCouponImportSyncService
                 }
                 try {
                     $attrs = $this->mapSmaregiCouponToAttributes($row);
-                    $coupon = $this->upsertCouponFromSmaregi($projectId, $smaregiCouponId, $attrs);
+                    $productIds = $this->targetProductIdsFromSmaregi($projectId, $smaregiCouponId, (string) $attrs['apply_condition_division']);
+                    $coupon = DB::transaction(function () use ($projectId, $smaregiCouponId, $attrs, $productIds): Coupon {
+                        $coupon = $this->upsertCouponFromSmaregi($projectId, $smaregiCouponId, $attrs);
+                        $coupon->targetProducts()->sync($productIds);
+
+                        return $coupon;
+                    });
                     if ($coupon->wasRecentlyCreated) {
                         $created++;
                     } else {
@@ -203,6 +211,27 @@ class SmaregiCouponImportSyncService
         }
 
         return $contractId;
+    }
+
+    /**
+     * スマレジの対象商品（商品ID指定）に当たる、取り込み済みの商品ID
+     *
+     * @return list<int>
+     */
+    private function targetProductIdsFromSmaregi(int $projectId, string $smaregiCouponId, string $applyConditionDivision): array
+    {
+        if ($applyConditionDivision !== CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT) {
+            return [];
+        }
+        $smaregiProductIds = $this->smaregiCouponSync->fetchTargetProductIds($projectId, $smaregiCouponId);
+        if ($smaregiProductIds === null) {
+            throw new \RuntimeException('スマレジAPI（クーポンの対象商品）の取得に失敗しました。');
+        }
+
+        return Product::where('project_id', $projectId)
+            ->whereIn('smaregi_product_id', $smaregiProductIds)
+            ->pluck('id')
+            ->all();
     }
 
     /**

@@ -66,9 +66,36 @@ function initCouponForm(): void {
     document.querySelectorAll('input[name="image_fit"]').forEach((input) => {
         input.addEventListener('change', () => syncChoiceCards('image_fit'));
     });
+    const targetProducts = document.getElementById('targetProducts');
+    const targetProductsCount = document.getElementById('targetProductsCount');
+    const targetProductSearch = document.getElementById('targetProductSearch') as HTMLInputElement | null;
+
+    function syncTargetProducts(): void {
+        // 値 '1' = 対象商品が含まれる場合のみ適用（CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT）
+        if (targetProducts) targetProducts.hidden = selectedValue('apply_condition_division') !== '1';
+        if (targetProductsCount) {
+            const count = document.querySelectorAll('input[name="target_product_ids[]"]:checked').length;
+            targetProductsCount.textContent = `${count}件選択中`;
+        }
+    }
+
+    function filterTargetProducts(): void {
+        const keyword = targetProductSearch?.value.trim().toLowerCase() ?? '';
+        document.querySelectorAll<HTMLElement>('[data-product-name]').forEach((label) => {
+            label.hidden = keyword !== '' && !(label.dataset.productName ?? '').toLowerCase().includes(keyword);
+        });
+    }
+
     document.querySelectorAll('input[name="apply_condition_division"]').forEach((input) => {
-        input.addEventListener('change', () => syncChoiceCards('apply_condition_division'));
+        input.addEventListener('change', () => {
+            syncChoiceCards('apply_condition_division');
+            syncTargetProducts();
+        });
     });
+    document.querySelectorAll('input[name="target_product_ids[]"]').forEach((input) => {
+        input.addEventListener('change', syncTargetProducts);
+    });
+    targetProductSearch?.addEventListener('input', filterTargetProducts);
     valueInput?.addEventListener('input', syncValueExample);
     nameInput?.addEventListener('input', () => syncCounter(nameInput, 'nameCounter', 255));
     descriptionInput?.addEventListener('input', () => syncCounter(descriptionInput, 'descriptionCounter', 2000));
@@ -77,6 +104,7 @@ function initCouponForm(): void {
     syncValueUnit();
     syncChoiceCards('image_fit');
     syncChoiceCards('apply_condition_division');
+    syncTargetProducts();
     syncCounter(nameInput, 'nameCounter', 255);
     syncCounter(descriptionInput, 'descriptionCounter', 2000);
 }
