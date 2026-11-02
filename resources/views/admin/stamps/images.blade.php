@@ -191,17 +191,17 @@
 .stamp-images-page { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
 .sim-preview { position: sticky; top: 90px; }
 .sim-actions { grid-column: 1 / -1; }
-.sim-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 16px; font-size: 13px; color: #475569; }
+.sim-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 16px; font-size: 13px; color: var(--text-secondary); }
 .sim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
-.sim-tile { padding: 10px; border: 1px solid #dbe4ee; border-radius: 12px; background: #fff; }
-.sim-tile-head { display: flex; align-items: center; gap: 4px; margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #0f172a; }
+.sim-tile { padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.sim-tile-head { display: flex; align-items: center; gap: 4px; margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .sim-tile-head .fa-gift { color: #f97316; }
 .sim-wells { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .sim-well { position: relative; display: grid; justify-items: center; gap: 4px; }
-.sim-well small { color: #64748b; font-size: 11px; }
-.sim-well-pick { display: grid; place-items: center; width: 64px; height: 64px; padding: 0; overflow: hidden; border: 2px dashed #cbd5e1; border-radius: 50%; background: #f8fafc; color: #94a3b8; font-size: 14px; font-weight: 700; cursor: pointer; }
-.sim-well-pick:hover, .sim-well.is-dragover .sim-well-pick { border-color: #3b82f6; background: #eff6ff; }
-.sim-well-pick:focus-visible { outline: 3px solid rgba(37, 99, 235, .35); outline-offset: 2px; }
+.sim-well small { color: var(--text-secondary); font-size: 11px; }
+.sim-well-pick { display: grid; place-items: center; width: 64px; height: 64px; padding: 0; overflow: hidden; border: 2px dashed var(--border); border-radius: 50%; background: var(--bg-secondary); color: var(--text-tertiary); font-size: 14px; font-weight: 700; cursor: pointer; }
+.sim-well-pick:hover, .sim-well.is-dragover .sim-well-pick { border-color: var(--primary-light); background: var(--primary-bg); }
+.sim-well-pick:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 35%, transparent); outline-offset: 2px; }
 .sim-well-pick img { width: 100%; height: 100%; object-fit: cover; }
 .sim-well-pick:has(img) { border-style: solid; border-color: #22c55e; }
 .sim-well-clear { position: absolute; top: -4px; right: 6px; width: 22px; height: 22px; padding: 0; border: 1px solid #fff; border-radius: 50%; background: #ef4444; color: #fff; font-size: 14px; line-height: 1; cursor: pointer; }

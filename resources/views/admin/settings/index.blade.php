@@ -18,7 +18,7 @@
 @endphp
 
 <div class="settings-hub" data-settings-hub>
-    <div class="settings-overview"><span class="settings-eyebrow">STORE SETTINGS</span><h1>店舗設定</h1><p>店舗の運用からお客様向けアプリまで、目的に合わせて設定できます。</p></div>
+    <div class="page-header"><h1 class="page-header-title">店舗設定</h1><p class="page-header-desc">店舗の運用からお客様向けアプリまで、目的に合わせて設定できます。</p></div>
     <div class="settings-hub-toolbar">
         <label class="settings-hub-search-wrap">
             <i class="fas fa-search" aria-hidden="true"></i>

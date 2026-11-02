@@ -187,7 +187,7 @@
 @endsection
 @push('styles')
 <style>
-.shop-settings-qr { display:grid; place-items:center; width:max-content; max-width:100%; margin-top:12px; padding:12px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; }
+.shop-settings-qr { display:grid; place-items:center; width:max-content; max-width:100%; margin-top:12px; padding:12px; background:#fff; border:1px solid var(--border); border-radius:12px; }
 .shop-settings-qr canvas { max-width:100%; height:auto!important; }
 </style>
 @endpush

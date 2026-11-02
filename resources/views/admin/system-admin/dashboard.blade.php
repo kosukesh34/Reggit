@@ -4,7 +4,7 @@
 @section('page-title', 'システム管理')
 
 @section('content')
-<div class="settings-overview"><span class="settings-eyebrow">SYSTEM ADMINISTRATION</span><h1>システム管理</h1><p>契約・アカウントと、全店舗に共通する案内を管理します。</p></div>
+<div class="page-header"><h1 class="page-header-title">システム管理</h1><p class="page-header-desc">契約・アカウントと、全店舗に共通する案内を管理します。</p></div>
 
 <div class="stats-grid stats-grid--system">
     <a href="{{ route('system-admin.projects.index') }}" class="stat-card stat-card--link stat-card-primary">

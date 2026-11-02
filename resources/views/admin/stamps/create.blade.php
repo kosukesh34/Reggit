@@ -10,16 +10,10 @@
     @php($oldMilestones = [['stamp_count' => '']])
 @endif
 
+<div class="page-header"><h1 class="page-header-title">スタンプカード追加</h1><p class="page-header-desc">入力内容は右側のプレビューへ即時反映されます。達成特典は複数設定できます。</p></div>
+
 <div class="stamp-studio">
     <section class="card stamp-studio-form-card">
-        <div class="stamp-studio-banner">
-            <div>
-                <p class="stamp-studio-kicker">Stamp Card Studio</p>
-                <h3 class="stamp-studio-title">体験に直結するスタンプカードを設計</h3>
-                <p class="stamp-studio-desc">入力内容は右側のプレビューへ即時反映されます。達成特典は複数設定できます。</p>
-            </div>
-        </div>
-
         <div class="card-body">
             <form action="{{ admin_route('admin.stamps.store') }}" method="POST" data-stamp-create-form>
                 @csrf
@@ -365,11 +359,11 @@
 @push('styles')
 <style>
 .stamp-studio {
-    --studio-bg: #f4f7fb;
-    --studio-border: #dbe4ee;
-    --studio-ink: #0f172a;
-    --studio-muted: #5b6472;
-    --studio-brand: #1d4ed8;
+    --studio-bg: var(--bg-secondary);
+    --studio-border: var(--border);
+    --studio-ink: var(--text-primary);
+    --studio-muted: var(--text-secondary);
+    --studio-brand: var(--primary-hover);
     --studio-brand-soft: rgba(29, 78, 216, 0.08);
     --studio-success: #047857;
     --studio-danger: #b91c1c;
@@ -377,10 +371,6 @@
     grid-template-columns: minmax(0, 1.42fr) minmax(360px, 0.58fr);
     gap: 24px;
 }
-.stamp-studio-banner { margin: 0 0 12px; padding: 20px 22px; border: 1px solid #d6e2ff; border-radius: 12px; background: radial-gradient(circle at 90% 12%, rgba(29, 78, 216, 0.16) 0%, rgba(29, 78, 216, 0) 50%), linear-gradient(180deg, #f7faff 0%, #eef4ff 100%); }
-.stamp-studio-kicker { margin: 0 0 8px; color: #335aa6; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.stamp-studio-title { margin: 0 0 6px; color: var(--studio-ink); font-size: 24px; font-weight: 700; line-height: 1.35; }
-.stamp-studio-desc { margin: 0; color: var(--studio-muted); font-size: 13px; line-height: 1.7; }
 
 .stamp-form-section { padding: 18px; border: 1px solid var(--studio-border); border-radius: 12px; background: #fff; }
 .stamp-form-section + .stamp-form-section { margin-top: 14px; }
@@ -388,23 +378,23 @@
 .stamp-form-section-head-with-action { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .stamp-form-grid { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
 .stamp-form-col-span-2 { grid-column: 1 / -1; }
-.stamp-form-check-wrap { display: flex; align-items: center; min-height: 66px; padding: 0 12px; border: 1px dashed #cad5e2; border-radius: 10px; background: #fbfdff; }
+.stamp-form-check-wrap { display: flex; align-items: center; min-height: 66px; padding: 0 12px; border: 1px dashed var(--border); border-radius: 10px; background: #fbfdff; }
 .stamp-form-note-group { margin-top: 12px; }
 .stamp-form-actions { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--studio-border); }
-.stamp-studio .form-label { color: #111827; font-size: 13px; font-weight: 600; }
-.stamp-studio .form-control { border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02); }
-.stamp-studio .form-control:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12); }
+.stamp-studio .form-label { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+.stamp-studio .form-control { border-radius: 10px; border: 1px solid var(--border); background: #fff; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02); }
+.stamp-studio .form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12); }
 .stamp-studio .form-text { margin-top: 6px; font-size: 12px; }
 
-.btn-outline-primary { border: 1px solid #b6ccff; background: #fff; color: #1d4ed8; }
-.btn-outline-primary:hover { background: #eff6ff; border-color: #7ea6ff; }
+.btn-outline-primary { border: 1px solid color-mix(in srgb, var(--primary) 30%, #fff); background: #fff; color: var(--primary-hover); }
+.btn-outline-primary:hover { background: var(--primary-bg); border-color: #7ea6ff; }
 .btn-outline-danger { border: 1px solid #fecaca; background: #fff; color: #b91c1c; }
 .btn-outline-danger:hover { background: #fef2f2; border-color: #fda4af; }
 
 .stamp-milestones { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-.stamp-milestone-row { display: grid; grid-template-columns: 110px 148px minmax(0, 1fr) auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid #d7e0ea; border-radius: 11px; background: var(--studio-bg); }
+.stamp-milestone-row { display: grid; grid-template-columns: 110px 148px minmax(0, 1fr) auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--studio-bg); }
 .stamp-milestone-action-wrap { display: flex; align-items: flex-end; }
-.stamp-milestone-gacha-note { margin: 0; font-size: 13px; color: #64748b; padding: 8px 0; }
+.stamp-milestone-gacha-note { margin: 0; font-size: 13px; color: var(--text-secondary); padding: 8px 0; }
 
 /* ── Visual / Dropzone ── */
 .stamp-visual-subsection { margin-top: 14px; }

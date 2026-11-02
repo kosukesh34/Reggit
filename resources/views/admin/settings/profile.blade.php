@@ -231,7 +231,7 @@
         .profile-switch-legend {
             margin: 0 0 16px;
             font-size: 13px;
-            color: #64748b;
+            color: var(--text-secondary);
             line-height: 1.6;
         }
         .profile-switch-cell {
@@ -247,7 +247,7 @@
         .custom-field-count {
             font-size: 13px;
             font-weight: 600;
-            color: #64748b;
+            color: var(--text-secondary);
             white-space: nowrap;
         }
         .custom-field-empty {
@@ -363,10 +363,10 @@
             justify-content: space-between;
             gap: 12px;
             padding: 16px 20px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--border);
         }
         .custom-field-modal__footer {
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid var(--border);
             border-bottom: 0;
         }
         .custom-field-modal__body {
@@ -392,8 +392,8 @@
             width: 34px;
             height: 34px;
             border-radius: 10px;
-            background: #f1f5f9;
-            color: #475569;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
             font-size: 12px;
             font-weight: 700;
         }
@@ -417,8 +417,8 @@
             width: 68px;
             height: 28px;
             border-radius: 999px;
-            background: #64748b;
-            border: 1px solid #64748b;
+            background: var(--text-secondary);
+            border: 1px solid var(--text-secondary);
             transition: background-color .15s ease, border-color .15s ease;
             flex-shrink: 0;
         }
@@ -454,7 +454,7 @@
             color: #fff;
         }
         .profile-switch:hover .profile-switch-ui {
-            border-color: #475569;
+            border-color: var(--text-secondary);
         }
         .profile-switch input:checked + .profile-switch-ui {
             background: #16a34a;
@@ -493,7 +493,7 @@
         .profile-switch-label {
             font-size: 14px;
             font-weight: 600;
-            color: #334155;
+            color: var(--text-secondary);
         }
         .profile-saving {
             display: flex;
@@ -503,7 +503,7 @@
             padding: 24px 32px;
             border-radius: 12px;
             background: #fff;
-            color: #172033;
+            color: var(--text-primary);
             font-size: 14px;
             font-weight: 700;
         }
