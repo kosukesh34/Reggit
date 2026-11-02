@@ -150,6 +150,47 @@
                         <label class="form-label" for="last_month_visit_min">前月の最低来店回数</label>
                         <input type="number" name="last_month_visit_min" id="last_month_visit_min" class="form-control" min="1" max="100" value="{{ $param('last_month_visit_min', 1) }}">
                     </div>
+                    <div class="sd-param mb-0" data-types="{{ ScheduledDeliveryType::WEATHER_RAIN }}">
+                        <p class="form-text">店舗の座標の天気予報で、営業時間内に雨が続くと判定した日に送ります。15分ごとに判定し、営業中は1時間ごとに判定し直します。クーポンはその営業日だけ使えます。</p>
+                        <div class="form-group">
+                            <label class="form-label" for="store_id">店舗 <span class="ad-required">必須</span></label>
+                            <select name="store_id" id="store_id" class="form-control">
+                                <option value="">選択してください</option>
+                                @foreach($view->weatherStores as $store)
+                                    <option value="{{ $store->id }}" {{ (int) $param('store_id') === $store->id ? 'selected' : '' }}>{{ $store->name }}{{ $store->latitude === null ? '（座標が未設定のため判定しません）' : '' }}</option>
+                                @endforeach
+                            </select>
+                            <small class="form-text">座標は「利用店舗」で設定します。</small>
+                            @error('store_id')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                        </div>
+                        @foreach([
+                            'min_precipitation_probability' => ['降水確率（%）', 10, 100, '1時間ごとの降水確率がこの値以上の時間を「雨」とします。'],
+                            'min_rain_hours' => ['雨が続く時間（時間）', 1, 24, 'にわか雨で送らないよう、雨がこの時間以上続くときだけ送ります。'],
+                            'check_hours_before_open' => ['判定を始める時刻（開店の何時間前）', 0, 3, ''],
+                            'cutoff_hours_before_close' => ['送る締め切り（閉店の何時間前）', 0, 23, '届いても使う時間がないため、この時刻を過ぎたら送りません。'],
+                            'weekly_limit' => ['週の上限（回）', 1, 7, '月曜〜日曜で数えます。'],
+                        ] as $name => [$label, $min, $max, $hint])
+                            <div class="form-group">
+                                <label class="form-label" for="{{ $name }}">{{ $label }} <span class="ad-required">必須</span></label>
+                                <input type="number" name="{{ $name }}" id="{{ $name }}" class="form-control" min="{{ $min }}" max="{{ $max }}" value="{{ $param($name) }}">
+                                @if($hint !== '')<small class="form-text">{{ $hint }}</small>@endif
+                                @error($name)<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                            </div>
+                        @endforeach
+                        <fieldset class="form-group">
+                            <legend class="form-label">送る相手</legend>
+                            <label><input type="radio" name="weather_target" value="{{ AfterRegistrationDelivery::WEATHER_TARGET_STORE_MEMBERS }}" {{ $param('weather_target', $params['target'] ?? '') !== AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS ? 'checked' : '' }}> その店舗の会員</label>
+                            <label><input type="radio" name="weather_target" value="{{ AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS }}" {{ $param('weather_target', $params['target'] ?? '') === AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS ? 'checked' : '' }}> 全会員</label>
+                        </fieldset>
+                        @php $requiresApproval = old('requires_approval', $params['requires_approval'] ?? 1); @endphp
+                        <label class="ad-pin-option">
+                            <input type="hidden" name="requires_approval" value="0">
+                            <input type="checkbox" name="requires_approval" value="1" {{ (string) $requiresApproval === '1' ? 'checked' : '' }}>
+                            <span class="ad-pin-icon" aria-hidden="true"><i class="fas fa-envelope"></i></span>
+                            <span><strong>送る前にメールで承認を求める</strong></span>
+                            <span class="ad-check-ui" aria-hidden="true"><i class="fas fa-check"></i></span>
+                        </label>
+                    </div>
                     <div class="form-group sd-param mb-0" id="pushClockFields" data-types="cron">
                         <span class="form-label" id="pushClockLabel">配信時刻</span>
                         <div class="sd-clock" role="group" aria-labelledby="pushClockLabel">

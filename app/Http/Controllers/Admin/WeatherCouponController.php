@@ -18,7 +18,7 @@ class WeatherCouponController extends AdminBaseController
 
     public function approve(string $projectKey, int $id)
     {
-        return $this->decide(fn () => $this->weatherCoupons->approve($id, CarbonImmutable::now()), '承認しました。雨の日クーポンを配りました。');
+        return $this->decide(fn () => $this->weatherCoupons->approve($id, CarbonImmutable::now()), '承認しました。雨の日の配信を送りました。');
     }
 
     public function decline(string $projectKey, int $id)

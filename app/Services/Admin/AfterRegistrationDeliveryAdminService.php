@@ -5,12 +5,14 @@ namespace App\Services\Admin;
 use App\Enums\ScheduledDeliveryContentType;
 use App\Enums\ScheduledDeliveryType;
 use App\Models\AfterRegistrationDelivery;
+use App\Services\WeatherCouponService;
 use Illuminate\Support\Collection;
 
 class AfterRegistrationDeliveryAdminService
 {
     public function __construct(
         private MemberSegmentService $memberSegmentService,
+        private WeatherCouponService $weatherCoupons,
     ) {}
 
     /** @return Collection<int, AfterRegistrationDelivery> */
@@ -65,6 +67,9 @@ class AfterRegistrationDeliveryAdminService
         $couponId = isset($data['coupon_id']) ? (int) $data['coupon_id'] : 0;
         $delayMinutes = (int) ($data['delay_minutes'] ?? 0);
         $params = $this->buildParams($scheduleType, $data, $delayMinutes);
+        if ($scheduleType === ScheduledDeliveryType::WEATHER_RAIN) {
+            $this->weatherCoupons->assertSettings($projectId, $params);
+        }
 
         return [
             'project_id' => $projectId,
@@ -102,6 +107,7 @@ class AfterRegistrationDeliveryAdminService
             ScheduledDeliveryType::WEEKLY => ['day_of_week'],
             ScheduledDeliveryType::MONTHLY, ScheduledDeliveryType::BIRTHDAY_NEXT_MONTH => ['day_of_month'],
             ScheduledDeliveryType::LAST_MONTH_VISITS => ['day_of_month', 'last_month_visit_min'],
+            ScheduledDeliveryType::WEATHER_RAIN => ['store_id', 'min_precipitation_probability', 'min_rain_hours', 'check_hours_before_open', 'cutoff_hours_before_close', 'weekly_limit', 'weather_target', 'requires_approval'],
             default => [],
         };
 
@@ -113,6 +119,16 @@ class AfterRegistrationDeliveryAdminService
                 continue;
             }
             if (! isset($data[$key]) || $data[$key] === '') {
+                continue;
+            }
+            if ($key === 'weather_target') {
+                $params['target'] = (string) $data[$key];
+
+                continue;
+            }
+            if ($key === 'requires_approval') {
+                $params[$key] = $this->asBool($data[$key]) ? 1 : 0;
+
                 continue;
             }
             if ($key === 'reach_rank') {
