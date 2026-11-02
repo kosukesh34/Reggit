@@ -149,7 +149,16 @@
                                         <div class="form-group mb-0"><label for="segment_visit_count_max" class="form-label">来店回数（以下）</label><input type="number" name="segment_visit_count_max" id="segment_visit_count_max" class="form-control segment-filter" value="{{ $segmentOld('segment_visit_count_max') }}" min="0" placeholder="例：10"></div>
                                     </div>
                                     <div class="form-group mb-0 ad-condition-item" data-condition="rank" hidden>
-                                        <div class="ad-filter-label"><label for="segment_rank" class="form-label">会員ランク</label></div><input type="text" name="segment_rank" id="segment_rank" class="form-control segment-filter" value="{{ $segmentOld('segment_rank') }}" maxlength="64" placeholder="例：gold">
+                                        <div class="ad-filter-label"><label for="segment_rank" class="form-label">会員ランク</label></div>@php $selectedRank = (string) $segmentOld('segment_rank', ''); @endphp<select name="segment_rank" id="segment_rank" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            @foreach($segmentRankOptions ?? [] as $rankKey => $rankLabel)
+                                                <option value="{{ $rankKey }}" @selected($selectedRank === (string) $rankKey)>{{ $rankLabel }}</option>
+                                            @endforeach
+                                            {{-- 以前に手入力した、今は存在しないランクも選択を保つ --}}
+                                            @if($selectedRank !== '' && ! array_key_exists($selectedRank, $segmentRankOptions ?? []))
+                                                <option value="{{ $selectedRank }}" selected>{{ $selectedRank }}（登録されていないランク）</option>
+                                            @endif
+                                        </select>
                                         @if($isCouponDelivery)
                                             <label class="checkbox-label"><input type="checkbox" name="event_rank_up" id="event_rank_up" value="1" class="segment-filter" @checked($segmentOld('event_rank_up') || $segmentOld('delivery_type') === \App\Enums\CouponDeliveryType::EVENT_RANK_UP_ARRIVAL)> このランクへ昇格したときに自動で配布する</label>
                                         @endif
