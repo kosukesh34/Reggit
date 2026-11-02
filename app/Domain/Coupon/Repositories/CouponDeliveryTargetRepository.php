@@ -93,9 +93,9 @@ interface CouponDeliveryTargetRepository
     public function findIdsByPurchasedProduct(int $projectId, int $productId): array;
 
     /**
-     * 指定クーポンを保有し、使用状態が一致する会員。
+     * 指定クーポンの使用状態が一致する会員。unused は期限内のみ、not_issued は未保有の会員。
      *
-     * @param  string  $status  unused|used
+     * @param  string  $status  unused|used|expired|not_issued
      * @return list<int>
      */
     public function findIdsByCouponStatus(int $projectId, int $couponId, string $status): array;

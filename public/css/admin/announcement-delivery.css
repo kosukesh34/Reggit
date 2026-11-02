@@ -3627,6 +3627,73 @@ details.ad-segment-details[hidden] {
     font-weight: 700;
 }
 
+.ad-cond-blocks {
+    display: grid;
+    gap: 12px;
+}
+
+.ad-cond-blocks:empty {
+    display: none;
+}
+
+.ad-cond-block {
+    display: grid;
+    gap: 10px;
+    padding: 12px 14px 14px;
+    border: 1px dashed #b8c2d1;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.ad-cond-block-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+
+.ad-cond-block-join {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--ad-primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ad-cond-block-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #4b5563;
+    font-size: 13px;
+}
+
+.ad-cond-block-mode .form-control {
+    width: auto;
+}
+
+.ad-cond-add-block {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 18px;
+    border: 1px solid #d8dde6;
+    border-radius: 10px;
+    background: #fff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.ad-cond-add-block:focus-visible {
+    outline: 3px solid var(--ad-primary);
+    outline-offset: 2px;
+}
+
 .ad-cond-menu {
     position: absolute;
     z-index: 30;

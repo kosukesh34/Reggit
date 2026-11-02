@@ -37,41 +37,6 @@ function submitQueueForm(form: HTMLFormElement): void {
   });
 }
 
-function bindSwipeRows(): void {
-  document.querySelectorAll<HTMLTableRowElement>('[data-queue-swipe-row]').forEach((row) => {
-    let startX = 0;
-    let deltaX = 0;
-    let tracking = false;
-    row.addEventListener('pointerdown', (event) => {
-      if ((event.target as HTMLElement).closest('button, a, input, form')) return;
-      startX = event.clientX;
-      deltaX = 0;
-      tracking = true;
-      row.setPointerCapture(event.pointerId);
-    });
-    row.addEventListener('pointermove', (event) => {
-      if (!tracking) return;
-      deltaX = Math.max(-120, Math.min(120, event.clientX - startX));
-      row.style.transform = `translateX(${deltaX}px)`;
-      row.classList.toggle('is-swipe-right', deltaX > 25);
-      row.classList.toggle('is-swipe-left', deltaX < -25);
-    });
-    const finish = (): void => {
-      if (!tracking) return;
-      tracking = false;
-      row.style.transform = '';
-      row.classList.remove('is-swipe-right', 'is-swipe-left');
-      const selector = deltaX > 80 ? '[data-swipe-primary]' : deltaX < -80 ? '[data-swipe-secondary]' : '';
-      deltaX = 0;
-      if (selector === '') return;
-      const form = row.querySelector<HTMLFormElement>(selector);
-      if (form !== null) submitQueueForm(form);
-    };
-    row.addEventListener('pointerup', finish);
-    row.addEventListener('pointercancel', finish);
-  });
-}
-
 function bindAjaxForms(): void {
   document.querySelectorAll<HTMLFormElement>('[data-queue-action-form]').forEach((form) => {
     form.addEventListener('submit', (event) => {
@@ -100,7 +65,6 @@ function connectRealtime(config: QueueRealtimeConfig): void {
 document.addEventListener('DOMContentLoaded', () => {
   const config = readConfig();
   if (config === null) return;
-  bindSwipeRows();
   bindAjaxForms();
   connectRealtime(config);
 });

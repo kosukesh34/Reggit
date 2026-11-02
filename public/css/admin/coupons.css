@@ -1314,14 +1314,6 @@ body[data-page-kind="coupon-edit"] .content-body,
     color: #12815d;
 }
 
-.cp-card-step {
-    margin: 0 0 2px;
-    color: var(--cp-accent);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-}
-
 .cp-card-head h2 {
     margin: 0;
     color: var(--cp-ink);

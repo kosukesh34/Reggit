@@ -11,25 +11,6 @@
     <h1 class="page-header-title"><i class="fas fa-users"></i> 会員管理</h1>
 </div>
 
-@if(!empty($view->lineInviteUrl))
-<div class="card card-mb-16" id="member-line-qr-card">
-    <div class="card-header member-line-qr-header">
-        <h3 class="card-title"><i class="fab fa-line"></i> LINE招待QR</h3>
-        <button type="button" class="btn btn-sm btn-primary" id="member-line-qr-toggle" aria-expanded="false" aria-controls="member-line-qr-panel">
-            QRを表示
-        </button>
-    </div>
-    <div id="member-line-qr-panel" class="card-body member-line-qr-body" hidden>
-        <div id="member-line-qr" class="member-line-qr" data-url="{{ $view->lineInviteUrl }}" aria-label="LINE招待QRコード"></div>
-        <div class="member-line-qr-meta">
-            <p class="form-label">{{ $view->lineInviteLabel ?? 'LINE URL' }}</p>
-            <code class="smaregi-url">{{ $view->lineInviteUrl }}</code>
-            <p class="form-text text-muted mt-2">来店客にこのQRを読み取ってもらい、LINEアプリへ誘導できます。友だち追加URLはシステム管理の「契約・連携設定」で変更できます。</p>
-        </div>
-    </div>
-</div>
-@endif
-
 <div class="card card-mb-16">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-search"></i> 検索・絞り込み</h3>

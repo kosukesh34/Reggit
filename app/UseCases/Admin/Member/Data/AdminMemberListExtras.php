@@ -9,7 +9,7 @@ use App\Models\Product;
 use Illuminate\Support\Collection;
 
 /**
- * 会員一覧画面の付帯表示データ（LINE招待QR、配信と共通の絞り込み条件の選択肢など）。
+ * 会員一覧画面・配信グループ作成の付帯表示データ（配信と共通の絞り込み条件の選択肢など）。
  */
 class AdminMemberListExtras
 {
@@ -22,8 +22,6 @@ class AdminMemberListExtras
      * @param  Collection<int, MemberAudienceGroup>  $audienceGroups
      */
     public function __construct(
-        public readonly string $lineInviteUrl,
-        public readonly string $lineInviteLabel,
         public readonly Collection $memberTags = new Collection,
         public readonly Collection $products = new Collection,
         public readonly Collection $coupons = new Collection,

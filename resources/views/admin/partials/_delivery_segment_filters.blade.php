@@ -28,7 +28,7 @@
                             <span id="segmentPreview">人数を確認中</span>
                         </div>
                         @endif
-                        <div class="ad-cond-builder">
+                        <div class="ad-cond-builder" data-segment-more="{{ json_encode((array) $segmentOld('segment_more', []), JSON_UNESCAPED_UNICODE) }}" data-segment-blocks="{{ json_encode((array) $segmentOld('segment_blocks', []), JSON_UNESCAPED_UNICODE) }}">
                             <div class="ad-cond-list" id="segmentConditionRows"></div>
                             <div class="ad-cond-add">
                                 <button type="button" class="ad-cond-add-btn" id="segmentAddCondition" aria-expanded="false" aria-controls="segmentConditionMenu"><i class="fas fa-plus" aria-hidden="true"></i>条件を追加</button>
@@ -197,7 +197,6 @@
                                             <option value="{{ $product->id }}" {{ (string) $segmentOld('segment_product_id') === (string) $product->id ? 'selected' : '' }}>{{ $product->name }}</option>
                                         @endforeach
                                     </select>
-                                    <p class="ad-field-help">アプリ注文・スマレジPOSで購入した会員に絞り込みます。</p>
                                 </div>
                                 <div class="ad-filter-grid ad-condition-item" data-condition="held_coupon" hidden>
                                     <div class="form-group mb-0">
@@ -213,11 +212,11 @@
                                         <label for="segment_coupon_status" class="form-label">使用状態</label>
                                         <select name="segment_coupon_status" id="segment_coupon_status" class="form-control segment-filter">
                                             <option value="">指定しない</option>
-                                            <option value="unused" {{ $segmentOld('segment_coupon_status') === 'unused' ? 'selected' : '' }}>未使用</option>
-                                            <option value="used" {{ $segmentOld('segment_coupon_status') === 'used' ? 'selected' : '' }}>使用済み</option>
+                                            @foreach(['unused' => '未使用（期限内）', 'used' => '使用済み', 'expired' => '期限切れ（未使用）', 'not_issued' => '未配布'] as $statusValue => $statusLabel)
+                                                <option value="{{ $statusValue }}" {{ $segmentOld('segment_coupon_status') === $statusValue ? 'selected' : '' }}>{{ $statusLabel }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
-                                    <p class="ad-field-help">指定クーポンを保有し、使用状態が一致する会員に絞り込みます。</p>
                                 </div>
                                 <div class="ad-sales-filter ad-condition-item" data-condition="sales" hidden>
                                     <div class="form-group mb-0">

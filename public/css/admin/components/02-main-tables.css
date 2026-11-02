@@ -523,3 +523,14 @@
         font-size: 11px;
     }
 }
+
+/* お知らせ一覧: 条件指定の配信条件 */
+.announcement-conditions {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    max-width: 280px;
+}

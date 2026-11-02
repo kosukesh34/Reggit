@@ -11,6 +11,7 @@ use App\UseCases\Admin\Announcement\AdminAnnouncementIndexUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementReadsUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementUpdateUseCase;
 use App\UseCases\Admin\Announcement\AdminLineDeliveryFailureIndexUseCase;
+use App\UseCases\Admin\Member\GetAdminMemberListExtrasUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 
@@ -23,6 +24,7 @@ class AnnouncementController extends AdminBaseController
         private AdminAnnouncementDeleteUseCase $deleteUseCase,
         private PublicImageStorageService $publicImageStorage,
         private AdminAnnouncementReadsUseCase $readsUseCase,
+        private GetAdminMemberListExtrasUseCase $segmentOptionsUseCase,
     ) {}
 
     public function announcements(Request $request)
@@ -35,7 +37,10 @@ class AnnouncementController extends AdminBaseController
         ]);
         $output->announcements->appends($request->query());
 
-        return view('admin.announcements.index', ['view' => $output]);
+        return view('admin.announcements.index', [
+            'view' => $output,
+            'segmentOptions' => $this->segmentOptionsUseCase->handle($this->resolveAdminProjectId(), withAudienceGroups: false),
+        ]);
     }
 
     public function createAnnouncement()

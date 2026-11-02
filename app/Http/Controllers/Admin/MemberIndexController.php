@@ -48,8 +48,6 @@ class MemberIndexController extends AdminBaseController
         return view('admin.members', ['view' => new AdminMemberListView(
             $output->members,
             $filters,
-            $extras->lineInviteUrl,
-            $extras->lineInviteLabel,
             $output->rankOptions,
             $extras->memberTags,
             $extras->products,

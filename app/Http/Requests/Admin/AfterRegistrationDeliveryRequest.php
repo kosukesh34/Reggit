@@ -7,6 +7,7 @@ use App\Enums\ScheduledDeliveryContentType;
 use App\Enums\ScheduledDeliveryType;
 use App\Enums\SegmentCombineMode;
 use App\Models\AfterRegistrationDelivery;
+use App\Services\Admin\MemberSegmentService;
 use App\Support\MemberChannel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -71,7 +72,12 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'segment_rank' => ['nullable', 'string', 'max:64'],
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
             'segment_coupon_id' => ['nullable', 'integer', 'min:1'],
-            'segment_coupon_status' => ['nullable', Rule::in(['unused', 'used'])],
+            'segment_coupon_status' => ['nullable', Rule::in(MemberSegmentService::HELD_COUPON_STATUSES)],
+            'segment_more' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_CONDITIONS],
+            'segment_more.*' => ['array'],
+            'segment_blocks' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_BLOCKS],
+            'segment_blocks.*' => ['array'],
+            'segment_blocks.*.segment_more' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_CONDITIONS],
             'segment_period_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'segment_condition' => ['nullable', Rule::in(['min_amount', 'no_orders'])],
             'segment_min_amount' => ['nullable', 'numeric', 'min:0'],
