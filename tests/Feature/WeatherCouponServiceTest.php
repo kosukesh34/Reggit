@@ -175,7 +175,7 @@ class WeatherCouponServiceTest extends TestCase
         $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
     }
 
-    public function test_利用停止の店舗と座標のない店舗は判定しないこと(): void
+    public function test_利用停止の店舗と停止中のクーポンと座標のない店舗は判定しないこと(): void
     {
         $this->forecast([], 0);
         $inactive = $this->rule();
@@ -185,6 +185,10 @@ class WeatherCouponServiceTest extends TestCase
         $this->store->update(['is_active' => true]);
 
         $this->rule();
+        $this->coupon->update(['is_active' => false]);
+        $this->assertSame([], $this->runAt('2026-11-02 09:30'));
+        $this->coupon->update(['is_active' => true]);
+
         $this->store->update(['latitude' => null, 'longitude' => null]);
         $this->assertSame([], $this->runAt('2026-11-02 09:30'));
     }

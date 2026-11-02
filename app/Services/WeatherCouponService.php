@@ -52,6 +52,8 @@ class WeatherCouponService
         WeatherCouponRule::withoutGlobalScopes()
             ->where('is_active', true)
             ->whereHas('store', fn ($store) => $store->where('is_active', true))
+            // 管理者が停止したクーポンは配らない
+            ->whereHas('coupon', fn ($coupon) => $coupon->where('is_active', true))
             ->with(['project', 'store', 'coupon'])
             ->orderBy('id')
             ->each(function (WeatherCouponRule $rule) use ($now, &$counts): void {
@@ -147,7 +149,7 @@ class WeatherCouponService
             ->where('status', WeatherCouponRun::STATUS_SENT)
             // 日をまたぐ営業では前日が営業日になる
             ->whereBetween('business_date', [$now->subDay()->toDateString(), $now->toDateString()])
-            ->whereHas('rule', fn ($rule) => $rule->where('is_active', true))
+            ->whereHas('rule', fn ($rule) => $rule->where('is_active', true)->whereHas('coupon', fn ($coupon) => $coupon->where('is_active', true)))
             ->with('rule.store')
             ->get()
             ->filter(fn (WeatherCouponRun $run) => $run->rule->target === WeatherCouponRule::TARGET_ALL_MEMBERS || in_array((int) $run->rule->store_id, $storeIds, true))
@@ -185,7 +187,10 @@ class WeatherCouponService
             if ($run->approval_expires_at === null || $run->approval_expires_at->lte($now)) {
                 throw new \DomainException('承認の期限（30分）を過ぎたため、この回は配れません。');
             }
-            $rule = $run->rule()->with('store')->firstOrFail();
+            $rule = $run->rule()->with(['store', 'coupon'])->firstOrFail();
+            if ($rule->coupon?->is_active !== true) {
+                throw new \DomainException('このクーポンは停止中のため配れません。');
+            }
             $date = CarbonImmutable::parse($run->business_date->toDateString());
             [, $closesAt] = $this->businessHours($rule)->windowOn($date);
             if ($now >= $closesAt->subHours($rule->cutoff_hours_before_close)) {
