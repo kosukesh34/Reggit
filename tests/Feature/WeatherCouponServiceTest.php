@@ -255,6 +255,43 @@ class WeatherCouponServiceTest extends TestCase
         $this->assertSame($member->id, MemberCoupon::withoutGlobalScopes()->sole()->member_id);
     }
 
+    public function test_全会員宛てを本部が承認すると選択中の店舗に関係なく全会員に配ること(): void
+    {
+        [$atStore, $atOtherStore, $run] = $this->allMembersRunAwaitingApproval();
+
+        $this->actingAs($this->projectAdmin(), 'admin')
+            ->post('/admin/rain/weather-coupons/runs/'.$run->id.'/approve', ['store_id' => $this->store->id])
+            ->assertSessionHas('success');
+
+        $this->assertEqualsCanonicalizing([$atStore->id, $atOtherStore->id], MemberCoupon::withoutGlobalScopes()->pluck('member_id')->all());
+    }
+
+    public function test_全会員宛てを店舗の担当者が承認すると担当店舗の会員だけに配ること(): void
+    {
+        [$atStore, , $run] = $this->allMembersRunAwaitingApproval();
+
+        $this->actingAs($this->admin(), 'admin')
+            ->post('/admin/rain/weather-coupons/runs/'.$run->id.'/approve')
+            ->assertSessionHas('success');
+
+        $this->assertSame([$atStore->id], MemberCoupon::withoutGlobalScopes()->pluck('member_id')->all());
+    }
+
+    /** @return array{0: Member, 1: Member, 2: WeatherCouponRun} この店舗の会員、別店舗の会員、承認待ちの判定結果 */
+    private function allMembersRunAwaitingApproval(): array
+    {
+        Mail::fake();
+        $atStore = $this->member();
+        $atOtherStore = $this->member(false);
+        $atOtherStore->stores()->attach(Store::where('store_key', 'other')->firstOrFail()->id, ['project_id' => $this->project->id]);
+        $this->forecast([12 => 80, 13 => 80]);
+        $this->rule(['requires_approval' => 1, 'target' => AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS]);
+        $this->runAt('2026-11-02 09:30');
+        $this->travelTo(CarbonImmutable::parse('2026-11-02 09:50'));
+
+        return [$atStore, $atOtherStore, WeatherCouponRun::withoutGlobalScopes()->sole()];
+    }
+
     public function test_期限切れや他店舗の担当者は承認できないこと(): void
     {
         Mail::fake();
