@@ -91,7 +91,9 @@ class ScheduledDeliverySendService
             $owned = fn () => ScheduledDeliveryAttempt::whereKey($claimed->id)->where('attempts', $claimed->attempts);
             try {
                 $currentDelivery = AfterRegistrationDelivery::withoutGlobalScopes()->find($claimed->after_registration_delivery_id);
-                if ($currentDelivery === null || ! $currentDelivery->is_active || ! $currentDelivery->isInPeriod($claimed->scheduled_at)) {
+                // 予定日だけでなく、再送を実行する日も配信期間内であること
+                if ($currentDelivery === null || ! $currentDelivery->is_active
+                    || ! $currentDelivery->isInPeriod($claimed->scheduled_at) || ! $currentDelivery->isInPeriod($now)) {
                     $owned()->delete();
 
                     continue;
