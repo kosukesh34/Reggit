@@ -923,7 +923,7 @@
 
 .coupon-admin .cp-list-card {
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 14px;
     overflow: hidden;
     background: #fff;
 }
@@ -1036,11 +1036,11 @@
 /* —— クーポン作成スタジオ ——
    新規作成・編集で共有するフォームを、入力とプレビューの2カラムに整える。 */
 .coupon-admin {
-    --cp-ink: #14213d;
+    --cp-ink: var(--text-primary);
     --cp-muted: var(--text-secondary);
-    --cp-line: #e5eaf2;
+    --cp-line: var(--border);
     --cp-surface: #ffffff;
-    --cp-soft: #f7f9fc;
+    --cp-soft: var(--bg-secondary);
     --cp-accent: var(--primary);
     --cp-accent-soft: color-mix(in srgb, var(--cp-accent) 9%, #ffffff);
     --cp-accent-line: color-mix(in srgb, var(--cp-accent) 24%, #ffffff);
@@ -1184,7 +1184,7 @@ body[data-page-kind="coupon-edit"] .content-body,
     padding: 5px;
     list-style: none;
     border: 1px solid var(--cp-line);
-    border-radius: 16px;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.9);
     box-shadow: var(--shadow-xs);
 }
@@ -1271,11 +1271,11 @@ body[data-page-kind="coupon-edit"] .content-body,
 
 .cp-card {
     scroll-margin-top: calc(var(--header-height, 60px) + 18px);
-    padding: 26px;
+    padding: 24px;
     border: 1px solid var(--cp-line);
-    border-radius: 20px;
+    border-radius: 14px;
     background: var(--cp-surface);
-    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.045);
+    box-shadow: 0 2px 8px #183d4b05;
 }
 
 .cp-card-head {
@@ -1294,32 +1294,17 @@ body[data-page-kind="coupon-edit"] .content-body,
     width: 46px;
     height: 46px;
     border-radius: 14px;
-    background: #eaf2ff;
+    background: var(--primary-bg);
     color: var(--primary);
     font-size: 17px;
-}
-
-.cp-card-icon--warm {
-    background: #fff4e4;
-    color: #c56a08;
-}
-
-.cp-card-icon--violet {
-    background: #f1edff;
-    color: #6d4bd1;
-}
-
-.cp-card-icon--green {
-    background: #e9f8f1;
-    color: #12815d;
 }
 
 .cp-card-head h2 {
     margin: 0;
     color: var(--cp-ink);
-    font-size: 19px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: var(--letter-spacing-tight);
 }
 
 .cp-card-head div > p:last-child {
@@ -1995,7 +1980,7 @@ body[data-page-kind="coupon-edit"] .content-body,
 .cp-setting-summary {
     padding: 15px;
     border: 1px solid var(--cp-line);
-    border-radius: 16px;
+    border-radius: 14px;
     background: rgba(255, 255, 255, 0.92);
     box-shadow: var(--shadow-xs);
 }
