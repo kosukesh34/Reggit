@@ -112,7 +112,7 @@
 
         <section class="cp-card" id="coupon-benefit" aria-labelledby="coupon-benefit-title">
             <div class="cp-card-head">
-                <span class="cp-card-icon cp-card-icon--warm"><i class="fas fa-tags" aria-hidden="true"></i></span>
+                <span class="cp-card-icon"><i class="fas fa-tags" aria-hidden="true"></i></span>
                 <div>
                     <h2 id="coupon-benefit-title">割引内容</h2>
                     <p>お会計に対して、割合または固定金額で割引できます。</p>
@@ -158,7 +158,7 @@
 
         <section class="cp-card" id="coupon-conditions" aria-labelledby="coupon-conditions-title">
             <div class="cp-card-head">
-                <span class="cp-card-icon cp-card-icon--green"><i class="fas fa-calendar-check" aria-hidden="true"></i></span>
+                <span class="cp-card-icon"><i class="fas fa-calendar-check" aria-hidden="true"></i></span>
                 <div>
                     <h2 id="coupon-conditions-title">利用条件</h2>
                 </div>
