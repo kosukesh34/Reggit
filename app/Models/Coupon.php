@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Coupon\ValueObjects\CouponUsageWindow;
 use App\Enums\CouponApplyConditionDivision;
 use App\Enums\CouponCombineDivision;
 use App\Models\Concerns\BelongsToProject;
@@ -94,7 +95,7 @@ class Coupon extends Model
     protected $fillable = [
         'project_id', 'code', 'name', 'description', 'image_url', 'image_fit', 'design_template', 'theme_color', 'use_display',
         'type', 'value', 'min_order_amount', 'apply_condition_division', 'max_order_amount', 'combine_division',
-        'usage_limit', 'used_count', 'start_at', 'end_at', 'is_active', 'device_once_enabled', 'issue_trigger', 'stamp_card_id',
+        'usage_limit', 'used_count', 'start_at', 'end_at', 'usable_days', 'usable_time_ranges', 'is_active', 'device_once_enabled', 'issue_trigger', 'stamp_card_id',
         'smaregi_coupon_id',
     ];
 
@@ -107,9 +108,16 @@ class Coupon extends Model
         'used_count' => 'integer',
         'start_at' => 'datetime',
         'end_at' => 'datetime',
+        'usable_days' => 'array',
+        'usable_time_ranges' => 'array',
         'is_active' => 'boolean',
         'device_once_enabled' => 'boolean',
     ];
+
+    public function usageWindow(): CouponUsageWindow
+    {
+        return CouponUsageWindow::fromArrays($this->usable_days, $this->usable_time_ranges);
+    }
 
     public function project()
     {

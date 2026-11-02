@@ -26,6 +26,7 @@
             <div class="card-body"><dl class="cp-detail-list">
                 <dt>状態</dt><dd><span class="badge badge-{{ $coupon->is_active ? 'success' : 'danger' }}">{{ $coupon->is_active ? '有効' : '無効' }}</span></dd>
                 <dt>利用期間</dt><dd>{{ $coupon->start_at?->format('Y/m/d') ?? '指定なし' }} ～ {{ $coupon->end_at?->format('Y/m/d') ?? '無期限' }}</dd>
+                <dt>使える曜日・時間帯</dt><dd>{{ $coupon->usageWindow()->label() ?? 'いつでも' }}</dd>
                 <dt>発行条件</dt><dd>{{ \App\Models\Coupon::getIssueTriggerOptions()[$coupon->issue_trigger] ?? '—' }}</dd>
                 <dt>最低注文金額</dt><dd>{{ (float) $coupon->min_order_amount > 0 ? '¥'.number_format((float) $coupon->min_order_amount) : '指定なし' }}</dd>
                 <dt>最高注文金額</dt><dd>{{ $coupon->max_order_amount !== null ? '¥'.number_format((float) $coupon->max_order_amount) : '指定なし' }}</dd>

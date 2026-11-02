@@ -181,6 +181,49 @@
                 </div>
             </div>
 
+            @php
+                $usableDays = array_map('strval', (array) old('usable_days', $coupon?->usable_days ?? []));
+                $usableRanges = array_values((array) old('usable_time_ranges', $coupon?->usable_time_ranges ?? []));
+            @endphp
+            <fieldset class="cp-issue-conditions" aria-describedby="usableDaysHint">
+                <legend class="form-label">使える曜日 <span class="cp-optional">任意</span></legend>
+                <p class="form-text" id="usableDaysHint">選ばなければ毎日使えます。祝日（振替休日を含む）は「祝日」を選んだときだけ使えます。土日が祝日の場合も同じです。</p>
+                <div class="cp-usage-days">
+                    @foreach(['1' => '月', '2' => '火', '3' => '水', '4' => '木', '5' => '金', '6' => '土', '0' => '日', 'holiday' => '祝日'] as $dayValue => $dayLabel)
+                        <label class="checkbox-label"><input type="checkbox" name="usable_days[]" value="{{ $dayValue }}" @checked(in_array((string) $dayValue, $usableDays, true))> {{ $dayLabel }}</label>
+                    @endforeach
+                </div>
+                @error('usable_days')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                @error('usable_days.*')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+            </fieldset>
+
+            <fieldset class="cp-issue-conditions" aria-describedby="usableTimeHint">
+                <legend class="form-label">使える時間帯 <span class="cp-optional">任意</span></legend>
+                <p class="form-text" id="usableTimeHint">追加しなければ一日中使えます。終了時刻は含みません（10:00〜12:00 なら 11:59 まで）。最大5つまで追加できます。</p>
+                <div id="usageTimeRanges" data-next-index="{{ count($usableRanges) }}">
+                    @foreach($usableRanges as $index => $range)
+                        <div class="cp-usage-range">
+                            <input type="time" name="usable_time_ranges[{{ $index }}][start]" class="form-control" value="{{ $range['start'] ?? '' }}" aria-label="開始時刻" required>
+                            <span aria-hidden="true">〜</span>
+                            <input type="time" name="usable_time_ranges[{{ $index }}][end]" class="form-control" value="{{ $range['end'] ?? '' }}" aria-label="終了時刻" required>
+                            <button type="button" class="btn btn-secondary btn-sm" data-remove-range>削除</button>
+                            @error('usable_time_ranges.'.$index.'.start')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                            @error('usable_time_ranges.'.$index.'.end')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                        </div>
+                    @endforeach
+                </div>
+                <template id="usageTimeRangeTemplate">
+                    <div class="cp-usage-range">
+                        <input type="time" name="usable_time_ranges[__INDEX__][start]" class="form-control" aria-label="開始時刻" required>
+                        <span aria-hidden="true">〜</span>
+                        <input type="time" name="usable_time_ranges[__INDEX__][end]" class="form-control" aria-label="終了時刻" required>
+                        <button type="button" class="btn btn-secondary btn-sm" data-remove-range>削除</button>
+                    </div>
+                </template>
+                <button type="button" class="btn btn-secondary btn-sm" id="addUsageTimeRange"><i class="fas fa-plus" aria-hidden="true"></i> 時間帯を追加</button>
+                @error('usable_time_ranges')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+            </fieldset>
+
             <fieldset class="cp-issue-conditions">
                 <legend class="form-label">適用条件区分 <span class="cp-required">必須</span></legend>
                 <div class="cp-choice-grid cp-choice-grid--2">

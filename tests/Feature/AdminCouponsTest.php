@@ -535,6 +535,31 @@ class AdminCouponsTest extends TestCase
         $this->assertSame(CouponCombineDivision::ALLOWED, $coupon->combine_division);
     }
 
+    public function test_create_使える曜日と時間帯を保存でき範囲がおかしければ保存しないこと(): void
+    {
+        config(['smaregi.contract_id' => '']);
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $base = ['code' => 'MORNING', 'name' => '平日午前', 'type' => 'fixed', 'value' => 100, 'is_active' => '1'];
+        $store = fn (array $input) => $this->actingAs($admin, 'admin')->post(route('admin.coupons.store', ['project_key' => $project->project_key]), $base + $input);
+
+        $store(['usable_days' => ['1', 'mon'], 'usable_time_ranges' => [['start' => '12:00', 'end' => '10:00'], ['start' => '', 'end' => '13:00']]])
+            ->assertSessionHasErrors(['usable_days.1', 'usable_time_ranges.0.end', 'usable_time_ranges.1.start']);
+        $store(['usable_time_ranges' => array_fill(0, 6, ['start' => '10:00', 'end' => '11:00'])])->assertSessionHasErrors('usable_time_ranges');
+        $this->assertSame(0, Coupon::where('project_id', $project->id)->count());
+
+        $store(['usable_days' => ['1', '2', '3', '4', '5'], 'usable_time_ranges' => [['start' => '10:00', 'end' => '12:00'], ['start' => '17:00', 'end' => '20:00']]])
+            ->assertSessionHasNoErrors();
+        $coupon = Coupon::where('project_id', $project->id)->sole();
+        $this->assertSame('平日（祝日を除く） 10:00〜12:00、17:00〜20:00', $coupon->usageWindow()->label());
+        $this->actingAs($admin, 'admin')->get(route('admin.coupons.edit', ['project_key' => $project->project_key, 'id' => $coupon->id]))
+            ->assertOk()->assertSee('時間帯を追加')->assertSee('value="17:00"', false);
+
+        $this->actingAs($admin, 'admin')->put(route('admin.coupons.update', ['project_key' => $project->project_key, 'id' => $coupon->id]), $base)
+            ->assertSessionHasNoErrors();
+        $this->assertNull($coupon->fresh()->usageWindow()->label());
+    }
+
     public function test_create_スマレジと同じ発行条件を保存できること(): void
     {
         config(['smaregi.contract_id' => '']);

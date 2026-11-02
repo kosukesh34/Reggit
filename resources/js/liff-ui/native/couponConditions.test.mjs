@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { couponBadges, couponCombineNotice, couponConditionRows } from './couponConditions.ts';
+import { couponBadges, couponCombineNotice, couponConditionRows, couponUsageTimeLabel } from './couponConditions.ts';
 
 test('併用区分・対象商品・最低金額をバッジにする', () => {
   assert.deepEqual(couponBadges({ combine_division: '1', target_products: ['カフェラテ'], min_order_amount: 1000 }), ['併用不可', '対象商品あり', '¥1,000以上']);
@@ -22,4 +22,12 @@ test('バーコード表示の併用注意は併用不可と一部併用可の�
   assert.equal(couponCombineNotice({ combine_division: '2' }), '「併用OK」のクーポンとだけ併用できます');
   assert.equal(couponCombineNotice({ combine_division: '3' }), null);
   assert.equal(couponCombineNotice({}), null);
+});
+
+test('使える日時の制限があればバッジと詳細に出す', () => {
+  const coupon = { usage_time_label: '平日（祝日を除く） 10:00〜12:00' };
+  assert.equal(couponUsageTimeLabel(coupon), '平日（祝日を除く） 10:00〜12:00');
+  assert.deepEqual(couponBadges(coupon), ['日時限定']);
+  assert.deepEqual(couponConditionRows(coupon), [{ label: '使える日時', value: '平日（祝日を除く） 10:00〜12:00に使えます' }]);
+  assert.equal(couponUsageTimeLabel({ usage_time_label: null }), null);
 });

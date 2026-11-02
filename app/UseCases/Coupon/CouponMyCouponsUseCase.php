@@ -4,6 +4,7 @@ namespace App\UseCases\Coupon;
 
 use App\Domain\Coupon\Policies\CouponDisplayStatusPolicy;
 use App\Domain\Settings\Repositories\CouponNotificationSettings;
+use App\Domain\Shared\Calendar\HolidayCalendar;
 use App\Enums\CouponApplyConditionDivision;
 use App\Enums\CouponCombineDivision;
 use App\Models\Coupon;
@@ -17,6 +18,7 @@ class CouponMyCouponsUseCase
     public function __construct(
         private CouponNotificationSettings $shopSettingRepository,
         private CouponDisplayStatusPolicy $couponDisplayStatusPolicy,
+        private HolidayCalendar $holidays,
     ) {}
 
     public function handle(User $user): CouponListView
@@ -31,11 +33,12 @@ class CouponMyCouponsUseCase
         }
 
         $now = now();
+        $isHoliday = $this->holidays->isHoliday($now);
         $coupons = $member->memberCoupons()
             ->with('coupon.targetProducts')
             ->orderBy('issued_at', 'desc')
             ->get()
-            ->map(function ($memberCoupon) use ($now) {
+            ->map(function ($memberCoupon) use ($now, $isHoliday) {
                 $couponName = $memberCoupon->coupon_name_snapshot;
                 if ($couponName === null || $couponName === '') {
                     $couponName = $memberCoupon->coupon?->name ?? '';
@@ -46,6 +49,10 @@ class CouponMyCouponsUseCase
                     $memberCoupon->valid_until,
                     $now,
                 );
+                $usageWindow = $memberCoupon->coupon?->usageWindow();
+                if ($displayStatus === CouponDisplayStatusPolicy::AVAILABLE && $usageWindow !== null && ! $usageWindow->allows($now, $isHoliday)) {
+                    $displayStatus = CouponDisplayStatusPolicy::OUTSIDE_USAGE_TIME;
+                }
 
                 $designTemplate = (string) ($memberCoupon->coupon?->design_template ?? 'classic');
                 $themeColor = $memberCoupon->coupon?->theme_color;
@@ -77,6 +84,7 @@ class CouponMyCouponsUseCase
                     $memberCoupon->coupon?->apply_condition_division === CouponApplyConditionDivision::INCLUDE_TARGET_PRODUCT
                         ? $memberCoupon->coupon->targetProducts->pluck('name')->all()
                         : [],
+                    $usageWindow?->label(),
                 );
             })
             ->all();
