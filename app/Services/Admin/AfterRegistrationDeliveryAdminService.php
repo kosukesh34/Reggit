@@ -6,6 +6,7 @@ use App\Enums\ScheduledDeliveryContentType;
 use App\Enums\ScheduledDeliveryType;
 use App\Models\AfterRegistrationDelivery;
 use App\Services\WeatherCouponService;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class AfterRegistrationDeliveryAdminService
@@ -93,8 +94,9 @@ class AfterRegistrationDeliveryAdminService
             'push_minute' => (int) ($data['push_minute'] ?? 0),
             'params' => $params,
             'is_active' => $this->asBool($data['is_active'] ?? true),
-            'starts_on' => ($data['starts_on'] ?? '') !== '' ? $data['starts_on'] : null,
-            'ends_on' => ($data['ends_on'] ?? '') !== '' ? $data['ends_on'] : null,
+            'starts_at' => ($data['starts_at'] ?? '') !== '' ? $data['starts_at'] : null,
+            // 分までの入力なので、終了日時はその1分の終わり（23:59 → 23:59:59）まで含める
+            'ends_at' => ($data['ends_at'] ?? '') !== '' ? Carbon::parse($data['ends_at'])->setSecond(59) : null,
         ];
     }
 
