@@ -418,4 +418,14 @@ class WeatherCouponServiceTest extends TestCase
         $this->assertSame(2, WeatherCouponRun::withoutGlobalScopes()->sole()->issued_count);
         $this->assertSame(2, CouponDelivery::withoutGlobalScopes()->sole()->issued_count);
     }
+
+    public function test_配信期間の外では雨の日も判定しないこと(): void
+    {
+        $this->member();
+        $this->rule([], ['starts_on' => '2026-11-03']);
+        $this->forecast([12 => 80, 13 => 80], 0);
+
+        $this->assertSame([], $this->runAt('2026-11-02 09:30'));
+        $this->assertSame(0, WeatherCouponRun::withoutGlobalScopes()->count());
+    }
 }

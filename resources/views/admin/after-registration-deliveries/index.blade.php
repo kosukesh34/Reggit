@@ -41,6 +41,7 @@
                     <th>条件</th>
                     <th>内容</th>
                     <th>クーポン</th>
+                    <th>配信期間</th>
                     <th>状態</th>
                     <th class="table-actions-cell">操作</th>
                 </tr>
@@ -58,10 +59,17 @@
                         @endif
                     </td>
                     <td>{{ $d->coupon ? $d->coupon->name : '—' }}</td>
-                    <td>@if($d->is_active)<span class="badge badge-success">有効</span>@else<span class="badge badge-secondary">無効</span>@endif</td>
+                    <td>@if($d->starts_on || $d->ends_on){{ $d->starts_on?->format('Y/m/d') ?? '' }}〜{{ $d->ends_on?->format('Y/m/d') ?? '' }}@else期限なし@endif</td>
+                    @php $status = $d->statusLabel(now()); @endphp
+                    <td><span class="badge {{ $status === '配信中' ? 'badge-success' : 'badge-secondary' }}">{{ $status }}</span></td>
                     <td class="table-actions-cell">
                         <div class="table-actions">
                             <a href="{{ admin_route('admin.after-registration-deliveries.edit', ['id' => $d->id]) }}" class="btn btn-action btn-edit"><i class="fas fa-edit"></i> 編集</a>
+                            @if($d->is_active)
+                                <form action="{{ admin_route('admin.after-registration-deliveries.pause', ['id' => $d->id]) }}" method="POST" class="d-inline">@csrf<button type="submit" class="btn btn-action"><i class="fas fa-pause"></i> 一時停止</button></form>
+                            @else
+                                <form action="{{ admin_route('admin.after-registration-deliveries.resume', ['id' => $d->id]) }}" method="POST" class="d-inline">@csrf<button type="submit" class="btn btn-action"><i class="fas fa-play"></i> 再開</button></form>
+                            @endif
                             <form action="{{ admin_route('admin.after-registration-deliveries.destroy', ['id' => $d->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('削除しますか？');">@csrf @method('DELETE')<button type="submit" class="btn btn-action btn-danger"><i class="fas fa-trash"></i> 削除</button></form>
                         </div>
                     </td>

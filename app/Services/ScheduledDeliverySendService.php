@@ -38,7 +38,7 @@ class ScheduledDeliverySendService
             ->get();
 
         foreach ($deliveries as $delivery) {
-            if (! ScheduledDeliveryType::runsOnCron((string) $delivery->schedule_type)) {
+            if (! ScheduledDeliveryType::runsOnCron((string) $delivery->schedule_type) || ! $delivery->isInPeriod($now)) {
                 continue;
             }
             if (ScheduledDeliveryType::needsClock((string) $delivery->schedule_type)
@@ -91,7 +91,7 @@ class ScheduledDeliverySendService
             $owned = fn () => ScheduledDeliveryAttempt::whereKey($claimed->id)->where('attempts', $claimed->attempts);
             try {
                 $currentDelivery = AfterRegistrationDelivery::withoutGlobalScopes()->find($claimed->after_registration_delivery_id);
-                if ($currentDelivery === null || ! $currentDelivery->is_active) {
+                if ($currentDelivery === null || ! $currentDelivery->is_active || ! $currentDelivery->isInPeriod($claimed->scheduled_at)) {
                     $owned()->delete();
 
                     continue;
@@ -189,7 +189,7 @@ class ScheduledDeliverySendService
     public function sendToMember(AfterRegistrationDelivery $delivery, Member $member, ?Carbon $now = null): bool
     {
         $now ??= now();
-        if (! $delivery->is_active) {
+        if (! $delivery->is_active || ! $delivery->isInPeriod($now)) {
             return false;
         }
         if ((int) $member->project_id !== (int) $delivery->project_id) {
