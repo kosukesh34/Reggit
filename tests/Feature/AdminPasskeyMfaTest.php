@@ -36,6 +36,27 @@ class AdminPasskeyMfaTest extends TestCase
             ->assertSee('パスキー登録');
     }
 
+    public function test_login_ローカル環境で無効にしたときだけパスキーを省くこと(): void
+    {
+        $project = Project::factory()->create(['is_active' => true]);
+        AdminUser::factory()->create([
+            'login_id' => 'store_admin',
+            'password' => 'password',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+        config(['passkeys.admin_required' => false]);
+        $login = fn () => $this->post(route('admin.login.submit'), ['login_id' => 'store_admin', 'password' => 'password']);
+
+        $this->app['env'] = 'production';
+        $login()->assertRedirect(route('admin.passkey.enroll'));
+
+        $this->post(route('admin.logout'));
+        $this->app['env'] = 'local';
+        $login()->assertRedirect(route('admin.dashboard', ['project_key' => $project->project_key]));
+        $this->get(route('admin.dashboard', ['project_key' => $project->project_key]))->assertOk();
+    }
+
     public function test_login_パスキー登録済み時は確認画面へ進むこと(): void
     {
         $project = Project::factory()->create(['is_active' => true]);

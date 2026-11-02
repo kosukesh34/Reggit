@@ -22,6 +22,9 @@ final class AdminPasskeyGate
         Session::put(self::PASSWORD_AUTHENTICATED, true);
         Session::forget(self::PASSKEY_VERIFIED);
         Session::forget(self::REMOTE_ENROLL);
+        if (app()->environment('local') && config('passkeys.admin_required') === false) {
+            Session::put(self::PASSKEY_VERIFIED, true);
+        }
     }
 
     public static function markPasskeyVerified(): void
