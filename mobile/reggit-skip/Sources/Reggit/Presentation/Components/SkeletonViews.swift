@@ -337,7 +337,9 @@ struct ChatSkeletonView: View {
             .background(AppDesign.surface)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #if !os(Android)
         .accessibilityElement(children: .ignore)
+        #endif
         .accessibilityLabel("チャットを読み込み中")
     }
 }

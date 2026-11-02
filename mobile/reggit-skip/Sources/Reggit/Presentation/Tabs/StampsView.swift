@@ -247,7 +247,9 @@ struct StampCardSection: View {
     /// 横にスワイプしてページを切り替える。縦のスクロールを止めないよう simultaneousGesture にする
     private func slotGrid(_ layout: StampLayout, size: CGFloat) -> some View {
         slotPage(layout, size: size)
+            #if !os(Android)
             .contentShape(Rectangle())
+            #endif
             .simultaneousGesture(
                 DragGesture(minimumDistance: 24)
                     .onEnded { value in
@@ -323,7 +325,9 @@ struct StampCardSection: View {
             }
         }
         .frame(width: size, height: size)
+        #if !os(Android)
         .accessibilityElement(children: .ignore)
+        #endif
         .accessibilityLabel("\(slot.position)番目\(slot.filled ? "、押印済み" : "、未押印")\(slot.reward ? "、特典あり" : "")")
     }
 
@@ -371,7 +375,9 @@ struct StampCardSection: View {
                 Divider()
             }
         }
+        #if !os(Android)
         .accessibilityElement(children: .contain)
+        #endif
         .accessibilityLabel("達成特典")
     }
 
@@ -397,7 +403,9 @@ struct StampCardSection: View {
                 .foregroundStyle(AppDesign.ink)
                 .frame(minHeight: 44)
                 .padding(.horizontal, 14)
+                #if !os(Android)
                 .contentShape(Rectangle())
+                #endif
             }
             .buttonStyle(.plain)
             .accessibilityValue(showsHistory ? "開いています" : "閉じています")

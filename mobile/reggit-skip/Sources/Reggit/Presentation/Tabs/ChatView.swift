@@ -137,7 +137,9 @@ final class ChatViewModel {
             var link = AttributedString(candidate)
             if let url = URL(string: candidate), url.host != nil {
                 link.link = url
+                #if !os(Android)
                 link.underlineStyle = .single
+                #endif
             }
             result += link
             rest = tail[end...]
@@ -331,11 +333,18 @@ struct ChatView: View {
                         cardView(card)
                     }
                     if !message.text.isEmpty {
+                        // Android の Text は AttributedString とテキスト選択に未対応のため、本文をそのまま表示する
+                        #if os(Android)
+                        Text(message.text)
+                            .font(.body)
+                            .foregroundStyle(message.isMine ? Color.white : AppDesign.ink)
+                        #else
                         Text(ChatViewModel.linkedText(message.text))
                             .font(.body)
                             .foregroundStyle(message.isMine ? Color.white : AppDesign.ink)
                             .tint(message.isMine ? Color.white : accent)
                             .textSelection(.enabled)
+                        #endif
                     }
                 }
             }
@@ -349,7 +358,9 @@ struct ChatView: View {
                 Spacer(minLength: 48)
             }
         }
+        #if !os(Android)
         .accessibilityElement(children: .combine)
+        #endif
     }
 
     /// 店舗の返信の横に出すお店のロゴ。未設定なら「店」の丸

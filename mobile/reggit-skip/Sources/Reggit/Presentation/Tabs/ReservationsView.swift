@@ -262,7 +262,9 @@ struct ReservationsView: View {
                     Button("空き状況を読み込めませんでした。再読み込み") {
                         Task { await viewModel.loadAvailability() }
                     }
+                    #if !os(Android)
                     .accessibilityHint(Text(message))
+                    #endif
                 } else if let dates = viewModel.availability?.dates, !dates.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
