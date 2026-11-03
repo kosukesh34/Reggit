@@ -646,11 +646,6 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
         return $this->appearanceSettingStore->getAdminSidebarColor($projectId);
     }
 
-    public function getAdminHeaderColor(int $projectId): ?string
-    {
-        return $this->appearanceSettingStore->getAdminHeaderColor($projectId);
-    }
-
     public function getAdminPrimaryColor(int $projectId): ?string
     {
         return $this->appearanceSettingStore->getAdminPrimaryColor($projectId);

@@ -16,7 +16,6 @@ class SettingsAdminDesignRequest extends FormRequest
     {
         return [
             'admin_sidebar_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'admin_header_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'admin_primary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ];
     }
@@ -28,7 +27,6 @@ class SettingsAdminDesignRequest extends FormRequest
         return new UpdateAdminDesignInput(
             projectId: $projectId,
             sidebarColor: (string) ($v['admin_sidebar_color'] ?? ''),
-            headerColor: (string) ($v['admin_header_color'] ?? ''),
             primaryColor: (string) ($v['admin_primary_color'] ?? ''),
         );
     }

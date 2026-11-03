@@ -16,11 +16,6 @@ class AppearanceSettingStore
         return $this->values->getValue('admin_sidebar_color', null, $projectId);
     }
 
-    public function getAdminHeaderColor(?int $projectId = null): ?string
-    {
-        return $this->values->getValue('admin_header_color', null, $projectId);
-    }
-
     public function getStampDefaultImageUrl(?int $projectId = null): ?string
     {
         return $this->values->getValue('stamp_default_image_url', null, $projectId);
