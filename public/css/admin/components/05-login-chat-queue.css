@@ -101,9 +101,8 @@
     border-radius: var(--radius);
 }
 
-/* --primary は白地の文字だとコントラスト不足（約4.0:1）のため濃い方を使う */
 .admin-login-box a:not(.btn) {
-    color: var(--primary-hover);
+    color: var(--primary);
     text-underline-offset: 3px;
 }
 

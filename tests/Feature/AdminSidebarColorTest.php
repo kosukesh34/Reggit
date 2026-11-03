@@ -36,4 +36,21 @@ class AdminSidebarColorTest extends TestCase
             ->assertRedirect()->assertSessionHasNoErrors();
         $this->get(route('admin.settings.admin-design', $params))->assertOk()->assertDontSee('--sidebar-custom-bg:', false);
     }
+
+    public function test_saving_without_accent_color_keeps_standard_accent(): void
+    {
+        $project = Project::firstOrCreate(['project_key' => 'default'], ['name' => 'Default', 'is_active' => true]);
+        $admin = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN, 'project_id' => $project->id]);
+        $this->actingAs($admin, 'admin');
+        $params = ['project_key' => $project->project_key];
+
+        // カラーピッカーは常に値を送るため、送信対象はテキスト欄だけにする
+        $this->get(route('admin.settings.admin-design', $params))->assertOk()
+            ->assertDontSee('type="color" name="admin_primary_color"', false)
+            ->assertSee('name="admin_primary_color" id="admin_primary_color"', false);
+
+        $this->post(route('admin.settings.admin-design.update', $params), ['admin_sidebar_color' => '#00344d', 'admin_primary_color' => ''])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertEmpty(app(AppearanceSettingStore::class)->getAdminPrimaryColor($project->id));
+    }
 }

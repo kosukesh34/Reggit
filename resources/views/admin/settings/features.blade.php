@@ -75,10 +75,14 @@
             <div class="form-group">
                 <label for="admin_primary_color" class="form-label">アクセントカラー</label>
                 <div class="flex-row-gap-8">
-                    <input type="color" name="admin_primary_color" id="admin_primary_color" value="{{ $view->adminPrimaryColor ?? '#2563eb' }}" class="color-input">
-                    <input type="text" class="form-control input-max-200" value="{{ $view->adminPrimaryColor ?? '' }}" placeholder="#2563eb" oninput="document.getElementById('admin_primary_color').value=this.value">
+                    <input type="color" id="admin_primary_color_picker" value="{{ old('admin_primary_color', $view->adminPrimaryColor) ?: '#0074ae' }}" class="color-input" aria-label="アクセントカラーを選択" oninput="document.getElementById('admin_primary_color').value=this.value">
+                    <input type="text" name="admin_primary_color" id="admin_primary_color" class="form-control input-max-200" value="{{ old('admin_primary_color', $view->adminPrimaryColor) }}" placeholder="#0074ae" pattern="#[0-9a-fA-F]{6}" maxlength="7" oninput="if (/^#[0-9a-fA-F]{6}$/.test(this.value)) document.getElementById('admin_primary_color_picker').value=this.value" aria-describedby="admin_primary_color_help">
+                    <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('admin_primary_color').value=''; document.getElementById('admin_primary_color_picker').value='#0074ae'">標準色に戻す</button>
                 </div>
-                <p class="form-text text-muted">ボタン、選択中メニュー、リンク色に使われます。</p>
+                <p id="admin_primary_color_help" class="form-text text-muted">ボタン、選択中メニュー、リンク色に使われます。空欄で保存すると標準色に戻ります。</p>
+                @error('admin_primary_color')
+                    <p class="text-danger" data-setting-error>{{ $message }}</p>
+                @enderror
             </div>
         </div>
     </div>
