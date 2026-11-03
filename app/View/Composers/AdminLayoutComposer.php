@@ -37,12 +37,10 @@ final class AdminLayoutComposer
 
         try {
             $view->with('adminSidebarColor', $this->settings->getAdminSidebarColor($currentProjectId));
-            $view->with('adminHeaderColor', $this->settings->getAdminHeaderColor($currentProjectId));
             $view->with('adminPrimaryColor', $this->settings->getAdminPrimaryColor($currentProjectId));
         } catch (RuntimeException $exception) {
             report($exception);
             $view->with('adminSidebarColor', null);
-            $view->with('adminHeaderColor', null);
             $view->with('adminPrimaryColor', null);
         }
     }

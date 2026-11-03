@@ -47,7 +47,8 @@ class AdminSidebarColorTest extends TestCase
         // カラーピッカーは常に値を送るため、送信対象はテキスト欄だけにする
         $this->get(route('admin.settings.admin-design', $params))->assertOk()
             ->assertDontSee('type="color" name="admin_primary_color"', false)
-            ->assertSee('name="admin_primary_color" id="admin_primary_color"', false);
+            ->assertSee('name="admin_primary_color" id="admin_primary_color"', false)
+            ->assertDontSee('admin_header_color', false);
 
         $this->post(route('admin.settings.admin-design.update', $params), ['admin_sidebar_color' => '#00344d', 'admin_primary_color' => ''])
             ->assertRedirect()->assertSessionHasNoErrors();

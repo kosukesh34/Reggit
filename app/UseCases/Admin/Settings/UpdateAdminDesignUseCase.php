@@ -11,7 +11,7 @@ class UpdateAdminDesignUseCase
 
     public function handle(UpdateAdminDesignInput $input): void
     {
-        foreach (['admin_sidebar_color' => $input->sidebarColor, 'admin_header_color' => $input->headerColor, 'admin_primary_color' => $input->primaryColor] as $key => $color) {
+        foreach (['admin_sidebar_color' => $input->sidebarColor, 'admin_primary_color' => $input->primaryColor] as $key => $color) {
             $this->settings->setValue($key, $color, 'string', $input->projectId);
         }
     }

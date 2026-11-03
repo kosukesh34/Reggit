@@ -11,6 +11,6 @@ class GetAdminDesignSettingsUseCase
 
     public function handle(int $projectId): AdminDesignSettingsView
     {
-        return new AdminDesignSettingsView($this->settings->getAdminSidebarColor($projectId), $this->settings->getAdminHeaderColor($projectId), $this->settings->getAdminPrimaryColor($projectId));
+        return new AdminDesignSettingsView($this->settings->getAdminSidebarColor($projectId), $this->settings->getAdminPrimaryColor($projectId));
     }
 }

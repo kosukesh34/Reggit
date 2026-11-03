@@ -66,13 +66,6 @@
                 @enderror
             </div>
             <div class="form-group">
-                <label for="admin_header_color" class="form-label">ヘッダー背景色</label>
-                <div class="flex-row-gap-8">
-                    <input type="color" name="admin_header_color" id="admin_header_color" value="{{ $view->adminHeaderColor ?? '#ffffff' }}" class="color-input">
-                    <input type="text" class="form-control input-max-200" value="{{ $view->adminHeaderColor ?? '' }}" placeholder="#ffffff" oninput="document.getElementById('admin_header_color').value=this.value">
-                </div>
-            </div>
-            <div class="form-group">
                 <label for="admin_primary_color" class="form-label">アクセントカラー</label>
                 <div class="flex-row-gap-8">
                     <input type="color" id="admin_primary_color_picker" value="{{ old('admin_primary_color', $view->adminPrimaryColor) ?: '#0074ae' }}" class="color-input" aria-label="アクセントカラーを選択" oninput="document.getElementById('admin_primary_color').value=this.value">
