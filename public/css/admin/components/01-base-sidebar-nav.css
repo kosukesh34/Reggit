@@ -11,13 +11,13 @@
 }
 
 :root {
-    /* アクセント（スカイブルー単色） */
-    --primary: #0085c7;
-    --primary-hover: #006fa7;
+    /* アクセント（スカイブルー単色）。白・淡い背景の上の文字でもコントラスト比 4.5:1 以上 */
+    --primary: #0074ae;
+    --primary-hover: #005f8f;
     --primary-light: #209cdb;
     --primary-bg: #edf7fc;
     --primary-bg-hover: #dceffa;
-    --primary-ring: 0 0 0 3px rgba(0, 133, 199, 0.12);
+    --primary-ring: 0 0 0 3px rgba(0, 116, 174, 0.12);
     /* セマンティックカラー */
     --secondary: #64748b;
     --success: #059669;
@@ -40,7 +40,7 @@
     --border-light: #e8edef;
     --text-primary: #4c575e;
     --text-secondary: #606b73;
-    --text-tertiary: #869ba9;
+    --text-tertiary: #647683;
     /* シャドウ（控えめ） */
     --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
     --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
