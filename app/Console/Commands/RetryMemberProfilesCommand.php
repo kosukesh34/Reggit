@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\SmaregiMemberProfileSync;
 use App\Services\Smaregi\SmaregiMemberProfileSyncService;
+use App\Util\LogHelper;
 use Illuminate\Console\Command;
 
 class RetryMemberProfilesCommand extends Command
@@ -14,19 +15,24 @@ class RetryMemberProfilesCommand extends Command
 
     public function handle(SmaregiMemberProfileSyncService $profiles): int
     {
-        $failed = false;
+        $retrying = 0;
         $ids = SmaregiMemberProfileSync::whereNull('delivered_at')->where('retry_at', '<=', now())
             ->where(fn ($query) => $query->whereNull('leased_until')->orWhere('leased_until', '<=', now()))
             ->orderBy('retry_at')->limit(100)->pluck('member_id');
         foreach ($ids as $id) {
             try {
-                $failed = ! $profiles->retryPending((int) $id) || $failed;
+                $retrying += $profiles->retryPending((int) $id) ? 0 : 1;
             } catch (\Throwable $exception) {
                 report($exception);
-                $failed = true;
+                $retrying++;
             }
         }
 
-        return $failed ? self::FAILURE : self::SUCCESS;
+        if ($retrying > 0) {
+            // 再送待ちは次回以降に送り直すので失敗扱いにしない。毎分の定期実行が失敗としてエラー通知を出し続けるため
+            LogHelper::warning('[Smaregi] member profile sync will retry', ['retrying' => $retrying]);
+        }
+
+        return self::SUCCESS;
     }
 }
