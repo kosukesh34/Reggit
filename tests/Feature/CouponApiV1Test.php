@@ -87,6 +87,8 @@ class CouponApiV1Test extends TestCase
 
     public function test_使える曜日と時間帯の外ではグレーアウト用の状態を返し使えないこと(): void
     {
+        // 2026-11-03 は文化の日（火）。作成前に時刻を合わせ、クーポン開始日時（作成日の前日）を判定時刻より前にする
+        $this->travelTo('2026-11-03 10:30');
         $user = User::factory()->create(['line_user_id' => self::LINE_USER_ID, 'project_id' => 1]);
         $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => 1]);
         $coupon = Coupon::factory()->create([
@@ -98,8 +100,6 @@ class CouponApiV1Test extends TestCase
         $memberCoupon = MemberCoupon::factory()->create(['member_id' => $member->id, 'project_id' => 1, 'coupon_id' => $coupon->id, 'status' => MemberCoupon::STATUS_UNUSED, 'valid_until' => now()->addYear()]);
         $api = $this->withoutMiddleware(AuthenticateApiToken::class)->withHeaders(['X-Line-User-Id' => self::LINE_USER_ID]);
 
-        // 2026-11-03 は文化の日（火）
-        $this->travelTo('2026-11-03 10:30');
         $api->get('/api/v1/members/me/coupons')->assertOk()
             ->assertJsonPath('data.coupons.0.status', 'outside_usage_time')
             ->assertJsonPath('data.coupons.0.code', null)
