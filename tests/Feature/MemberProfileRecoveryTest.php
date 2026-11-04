@@ -18,6 +18,7 @@ use App\Util\AdminContext;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use PHPUnit\Framework\Attributes\AfterClass;
 use PHPUnit\Framework\Attributes\BeforeClass;
 use Tests\TestCase;
@@ -339,6 +340,25 @@ class MemberProfileRecoveryTest extends TestCase
         $this->artisan('smaregi:retry-member-profiles')->assertSuccessful();
         $this->assertNotNull($row->fresh()->delivered_at);
         $this->assertNull($user->fresh()->email);
+    }
+
+    public function test_retry_command_succeeds_and_warns_while_smaregi_keeps_failing(): void
+    {
+        $user = $this->user();
+        $api = $this->mock(SmaregiApiService::class);
+        $api->shouldReceive('getContractIdForProject')->andReturn('contract');
+        $api->shouldReceive('clearLastErrorDetail');
+        $api->shouldReceive('getLastErrorDetail')->andReturn('offline');
+        $api->shouldReceive('updateCustomer')->twice()->andReturnNull();
+        app(MemberProfileUpdater::class)->updateProfile($user, ['name' => 'Changed']);
+        $this->travel(2)->minutes();
+        Log::spy();
+
+        // 毎分の定期実行が失敗扱いになると、そのたびにエラー通知が飛ぶ
+        $this->artisan('smaregi:retry-member-profiles')->assertSuccessful();
+
+        Log::shouldHaveReceived('warning')->with('[Smaregi] member profile sync will retry', \Mockery::on(fn (array $context): bool => $context['retrying'] === 1))->once();
+        $this->assertNull(SmaregiMemberProfileSync::findOrFail($user->member->id)->delivered_at);
     }
 
     public function test_failed_email_clear_stays_pending_and_does_not_restore_remote_email(): void
