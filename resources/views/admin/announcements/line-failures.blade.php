@@ -19,7 +19,56 @@
     </div>
 </div>
 
+<div class="card card-mb-16">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-ban"></i> 現在ブロック中のLINEユーザー</h3>
+        @if($blockedUserCount > $blockedUsers->count())
+        <span class="card-header-note">新しい順に{{ $blockedUsers->count() }}人を表示</span>
+        @endif
+    </div>
+    <div class="card-body">
+        @if($blockedUsers->isEmpty())
+        <div class="empty-state">
+            <i class="fas fa-check-circle"></i>
+            <p>ブロック中のLINEユーザーはいません</p>
+        </div>
+        @else
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ブロックした日時</th>
+                        <th>会員</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($blockedUsers as $blockedUser)
+                    @php
+                        $blockedName = trim((string) $blockedUser->name);
+                        $blockedName = $blockedName !== '' ? $blockedName : trim((string) $blockedUser->line_name);
+                    @endphp
+                    <tr>
+                        <td>{{ $blockedUser->line_blocked_at->format('Y/m/d H:i') }}</td>
+                        <td>
+                            @if($blockedUser->member !== null)
+                            <a href="{{ admin_route('admin.members.detail', ['id' => $blockedUser->member->id]) }}"><strong>{{ $blockedName !== '' ? $blockedName : 'ID:'.$blockedUser->member->id }}</strong></a>
+                            @else
+                            {{ $blockedName !== '' ? $blockedName : '名前未取得' }}<small class="text-muted">（会員登録なし）</small>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+    </div>
+</div>
+
 <div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-history"></i> 配信時に送れなかった履歴</h3>
+    </div>
     <div class="card-body">
         @if($failures->isEmpty())
         <div class="empty-state">

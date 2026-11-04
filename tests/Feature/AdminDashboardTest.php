@@ -70,7 +70,10 @@ class AdminDashboardTest extends TestCase
         foreach (range(1, 4) as $i) {
             User::factory()->create(['project_id' => $project->id, 'line_user_id' => 'U'.str_repeat((string) $i, 32)]);
         }
-        LineFollowEvent::create(['project_id' => $project->id, 'type' => LineFollowEvent::TYPE_UNFOLLOW]);
+        // 同じ人が月内に2回ブロックしても1人と数える
+        $blocker = User::query()->where('project_id', $project->id)->value('id');
+        LineFollowEvent::create(['project_id' => $project->id, 'user_id' => $blocker, 'type' => LineFollowEvent::TYPE_UNFOLLOW]);
+        LineFollowEvent::create(['project_id' => $project->id, 'user_id' => $blocker, 'type' => LineFollowEvent::TYPE_UNFOLLOW]);
         LineFollowEvent::create(['project_id' => $project->id, 'type' => LineFollowEvent::TYPE_FOLLOW]);
         LineFollowEvent::create(['project_id' => $project->id, 'type' => LineFollowEvent::TYPE_FOLLOW]);
         Announcement::factory()->create([

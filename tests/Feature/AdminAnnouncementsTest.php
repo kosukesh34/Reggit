@@ -229,13 +229,17 @@ class AdminAnnouncementsTest extends TestCase
         LineDeliveryFailure::create(['project_id' => $project->id, 'member_id' => $errored->id, 'announcement_id' => $announcement->id, 'reason' => LineDeliveryFailure::REASON_ERROR, 'error_message' => '400 Bad Request']);
         $otherMember = Member::factory()->create(['project_id' => $other->id, 'user_id' => User::factory()->create(['project_id' => $other->id, 'name' => '別店舗さん'])->id]);
         LineDeliveryFailure::create(['project_id' => $other->id, 'member_id' => $otherMember->id, 'reason' => LineDeliveryFailure::REASON_BLOCKED]);
+        // 配信前にブロックした人は未送信の履歴がなくても、ブロック中の一覧に出す
+        User::factory()->create(['project_id' => $project->id, 'name' => '配信前ブロック次郎', 'line_blocked_at' => now()]);
+        User::factory()->create(['project_id' => $other->id, 'name' => '別店舗ブロックさん', 'line_blocked_at' => now()]);
         $this->actingAs($this->createAdmin($project), 'admin');
         $route = fn (array $query = []) => route('admin.announcements.line-failures', ['project_key' => $project->project_key, ...$query]);
 
         $this->get($route())->assertOk()
             ->assertSee('ブロック太郎')->assertSee('エラー花子')->assertSee('秋のセール')->assertSee('400 Bad Request')
-            ->assertDontSee('別店舗さん')
-            ->assertSee('現在ブロック中のLINEユーザー：<strong>1人</strong>', false);
+            ->assertSee('配信前ブロック次郎')->assertSee('（会員登録なし）')
+            ->assertDontSee('別店舗さん')->assertDontSee('別店舗ブロックさん')
+            ->assertSee('現在ブロック中のLINEユーザー：<strong>2人</strong>', false);
         $this->get($route(['reason' => LineDeliveryFailure::REASON_BLOCKED]))->assertOk()
             ->assertSee('ブロック太郎')->assertDontSee('エラー花子');
     }

@@ -49,7 +49,8 @@ class AdminDashboardIndexUseCase
             $events = LineFollowEvent::query()
                 ->where('project_id', $projectId)
                 ->whereBetween('created_at', [$start, $end])
-                ->selectRaw('type, count(*) as total')
+                // 同じ人が月内に何度ブロック・解除しても1人と数える。会員未登録（user_id なし）は1件ずつ数える
+                ->selectRaw('type, count(distinct user_id) + sum(user_id is null) as total')
                 ->groupBy('type')
                 ->pluck('total', 'type');
             $blocks = (int) ($events[LineFollowEvent::TYPE_UNFOLLOW] ?? 0);

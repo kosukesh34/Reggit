@@ -301,6 +301,24 @@ class AdminMembersTest extends TestCase
         $edit->assertStatus(200);
     }
 
+    public function test_members_lineでブロック中の会員は一覧と詳細にブロック中と表示すること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $user = User::factory()->create(['project_id' => $project->id, 'name' => 'ブロック太郎', 'line_blocked_at' => '2026-11-04 12:15:00']);
+        $member = Member::factory()->create(['user_id' => $user->id, 'project_id' => $project->id]);
+        $this->actingAs($admin, 'admin');
+
+        $this->get(route('admin.members', ['project_key' => $project->project_key]))
+            ->assertOk()->assertSee('LINEブロック中');
+        $this->get(route('admin.members.detail', ['project_key' => $project->project_key, 'id' => $member->id]))
+            ->assertOk()->assertSee('LINEブロック中（2026/11/04 12:15〜）');
+
+        $user->update(['line_blocked_at' => null]);
+        $this->get(route('admin.members', ['project_key' => $project->project_key]))
+            ->assertOk()->assertDontSee('LINEブロック中');
+    }
+
     public function test_members_detail_閲覧だけではポイント台帳とスマレジを更新しないこと(): void
     {
         $project = $this->createProject();
