@@ -1,19 +1,22 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { useNativeConfig } from "../native/nativeConfig";
 import { NativeState, nativeRequest, nativeDate, useNativeResource } from "../native/NativeResource";
 import { MembershipBarcode } from "../components/membership/MembershipBarcode";
 import { BottomSheet } from "../components/ui/BottomSheet";
-import { MemberRegisterHost } from "../../frontend/features/member/MemberRegisterHost";
-import { startLineLogin, shouldShowAppleWallet, shouldShowGoogleWallet, walletPassUrl, setupWalletButtons } from "../../frontend/features/member/api";
+import { ProfileForm, type ProfileData } from "./ProfilePage";
+import { clearAcquisitionSource, getAcquisitionSource } from "../../shared/utils/acquisitionSource";
+import { getMemberManager, startLineLogin, shouldShowAppleWallet, shouldShowGoogleWallet, walletPassUrl, setupWalletButtons } from "../../frontend/features/member/api";
+import type { MemberPayload } from "../../frontend/features/member/api";
 import { isDemoDataMode } from "../../frontend/demo/demoMode";
 
 type MemberData = {
   is_member?: boolean;
   member?: { member_number?: string; points?: number; user?: { name?: string } };
   user?: { name?: string };
-  profile?: { name?: string };
+  profile?: { name?: string } & Record<string, unknown>;
+  profile_field_settings?: ProfileData["profile_field_settings"];
   show_rank_progress?: boolean;
   member_card_logo_url?: string;
   points?: number;
@@ -28,6 +31,7 @@ type MemberData = {
 type PointHistory = { description?: string; created_at?: string; points?: number };
 export function MembershipPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [profileSuccess, setProfileSuccess] = useState<string>();
   useEffect(() => {
     const success = (location.state as { profileSuccess?: string } | null)?.profileSuccess;
@@ -53,6 +57,19 @@ export function MembershipPage() {
     finally { setWalletBusy(false); }
   }
   const [enlarged, setEnlarged] = useState(false);
+  async function register(payload: Record<string, unknown>) {
+    if (isDemoDataMode()) resource.setData({ ...resource.data, ...payload, is_member: true });
+    else {
+      const lineName = window.__LINE_PROFILE__?.displayName;
+      const member = await nativeRequest<MemberPayload>("/api/members/register", { ...payload, ...(lineName ? { line_name: lineName } : {}), acquisition_source: getAcquisitionSource() });
+      clearAcquisitionSource();
+      // 旧UI側（クーポン等の会員判定）も登録済みとして扱う
+      const manager = getMemberManager();
+      if (manager) { manager.memberData = member; manager._registerFullScreen = false; manager._forcedRegister = false; }
+      document.dispatchEvent(new CustomEvent("liff-member-reload"));
+    }
+    navigate("/membership", { replace: true, state: { profileSuccess: "会員登録が完了しました" } });
+  }
   const data = resource.data;
   useEffect(() => {
     if (!resource.loading && data.is_member && !isDemoDataMode()) setupWalletButtons();
@@ -102,7 +119,7 @@ export function MembershipPage() {
       {memberScreen?.show_rank_progress !== false && data.show_rank_progress !== false && data.points_to_next_rank !== undefined && data.next_rank_label ? <section className="native-rank-progress"><small>次のランクまで</small><strong>あと {data.points_to_next_rank.toLocaleString()}ポイントで{data.next_rank_label}</strong><progress max={points + data.points_to_next_rank} value={points} /></section> : null}
       {memberScreen?.show_point_history !== false ? <section><h2>ポイント履歴</h2>{history.data.transactions?.length ? history.data.transactions.slice(0, 10).map((item, index) => <div className="native-history-row" key={index}><div><strong>{item.description}</strong><small>{nativeDate(item.created_at)}</small></div><b>{Number(item.points) >= 0 ? "+" : ""}{item.points} pt</b></div>) : <p className="native-secondary">ポイントの付与・利用履歴はまだありません</p>}</section> : null}
       {memberScreen?.show_coupon_activity !== false ? <section><h2>最近獲得したクーポン</h2>{runtime.coupons.length ? runtime.coupons.slice(0, 3).map((coupon) => <Link className="native-history-row" to="/coupon" key={coupon.id}><strong>{coupon.title}</strong><i className="fa-solid fa-chevron-right" /></Link>) : <p className="native-secondary">獲得したクーポンはまだありません</p>}</section> : null}
-    </> : window.__LINE_USER_ID__ || isDemoDataMode() ? <MemberRegisterHost mode="register" /> : <div className="native-state"><h2>会員登録</h2><p>LINEでログインすると、会員証をご利用いただけます。</p><button className="native-button" onClick={startLineLogin}>LINEでログイン</button></div>}
+    </> : window.__LINE_USER_ID__ || isDemoDataMode() ? <div className="native-profile"><ProfileForm data={data} registration onSubmit={register} /></div> : <div className="native-state"><h2>会員登録</h2><p>LINEでログインすると、会員証をご利用いただけます。</p><button className="native-button" onClick={startLineLogin}>LINEでログイン</button></div>}
     </NativeState>{profileSuccess ? <div className="native-toast" role="status">{profileSuccess}</div> : null}<BottomSheet open={enlarged} onClose={() => setEnlarged(false)} title="会員コード"><div className="native-member-code-enlarged">{code}</div></BottomSheet>
   </div>;
 }

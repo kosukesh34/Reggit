@@ -51,6 +51,7 @@
 - 共通通信は `ApiClient`、定数は既存の `AppConstants` を使用する。Cookie 認証の更新リクエストには CSRF トークンを送る。
 - React の feature と既存 Manager の責務を分け、画面を移行して検証してから旧処理を削除する。
 - CSS は既存の機能別ファイルへ置き、重複やインラインスタイルを増やさない。LIFF の読み込み元は `_head-assets.blade.php` を確認する。
+- LIFF（LINE）と顧客ネイティブアプリ（`mobile/reggit-skip`）は同じ UI にする。会員登録・プロフィール・会員証などの顧客画面は、見出し・項目の並び・グループ・ボタン文言・遷移をネイティブ側の画面（例: `ProfileEditView`）とそろえる。片方だけ変える場合は、もう片方も同じ PR か続く PR で合わせ、合わせない理由があれば PR に書く。
 - 遷移は `<a>`、操作は `<button>`。`readonly` は意図のある場合だけ使用する。
 - 動的文字列を HTML として挿入しない。`textContent`、React の通常描画、Blade の `{{ }}` を優先する。
 

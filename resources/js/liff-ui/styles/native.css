@@ -382,7 +382,6 @@ progress::-moz-progress-bar { background: var(--skip-accent); }
 .member-btn--primary { background: var(--skip-accent); color: white; }
 .member-btn--secondary { background: var(--skip-surface-muted); }
 .member-form .required { color: var(--skip-danger); }
-.member-register-react-host .loading { padding: 40px 0; text-align: center; }
 .native-member-logo { width: 40px; height: 40px; border-radius: 20px; object-fit: cover; }
 .native-code-fallback { width: 100%; display: flex; flex-direction: column; gap: 8px; text-align: center; }
 .native-code-fallback > strong { font-size: 18px; font-family: monospace; letter-spacing: 1px; }
