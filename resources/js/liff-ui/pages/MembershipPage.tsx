@@ -13,8 +13,6 @@ import { isDemoDataMode } from "../../frontend/demo/demoMode";
 
 type MemberData = {
   is_member?: boolean;
-  /** 未登録でも本人確認済みなら API が返す */
-  user_id?: number;
   member?: { member_number?: string; points?: number; user?: { name?: string } };
   user?: { name?: string };
   profile?: { name?: string } & Record<string, unknown>;
@@ -121,7 +119,7 @@ export function MembershipPage() {
       {memberScreen?.show_rank_progress !== false && data.show_rank_progress !== false && data.points_to_next_rank !== undefined && data.next_rank_label ? <section className="native-rank-progress"><small>次のランクまで</small><strong>あと {data.points_to_next_rank.toLocaleString()}ポイントで{data.next_rank_label}</strong><progress max={points + data.points_to_next_rank} value={points} /></section> : null}
       {memberScreen?.show_point_history !== false ? <section><h2>ポイント履歴</h2>{history.data.transactions?.length ? history.data.transactions.slice(0, 10).map((item, index) => <div className="native-history-row" key={index}><div><strong>{item.description}</strong><small>{nativeDate(item.created_at)}</small></div><b>{Number(item.points) >= 0 ? "+" : ""}{item.points} pt</b></div>) : <p className="native-secondary">ポイントの付与・利用履歴はまだありません</p>}</section> : null}
       {memberScreen?.show_coupon_activity !== false ? <section><h2>最近獲得したクーポン</h2>{runtime.coupons.length ? runtime.coupons.slice(0, 3).map((coupon) => <Link className="native-history-row" to="/coupon" key={coupon.id}><strong>{coupon.title}</strong><i className="fa-solid fa-chevron-right" /></Link>) : <p className="native-secondary">獲得したクーポンはまだありません</p>}</section> : null}
-    </> : window.__LINE_USER_ID__ || data.user_id || isDemoDataMode() ? <div className="native-profile"><ProfileForm data={data} registration onSubmit={register} /></div> : <div className="native-state"><h2>会員登録</h2><p>LINEでログインすると、会員証をご利用いただけます。</p><button className="native-button" onClick={startLineLogin}>LINEでログイン</button></div>}
+    </> : window.__LINE_USER_ID__ || isDemoDataMode() ? <div className="native-profile"><ProfileForm data={data} registration onSubmit={register} /></div> : <div className="native-state"><h2>会員登録</h2><p>LINEでログインすると、会員証をご利用いただけます。</p><button className="native-button" onClick={startLineLogin}>LINEでログイン</button></div>}
     </NativeState>{profileSuccess ? <div className="native-toast" role="status">{profileSuccess}</div> : null}<BottomSheet open={enlarged} onClose={() => setEnlarged(false)} title="会員コード"><div className="native-member-code-enlarged">{code}</div></BottomSheet>
   </div>;
 }

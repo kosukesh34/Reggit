@@ -85,8 +85,10 @@ class LiffBootScreenContractTest extends TestCase
         $gate = (string) file_get_contents($root.'/resources/js/frontend/hooks/useMembershipGate.ts');
         $router = (string) file_get_contents($root.'/resources/js/liff-ui/app/router.tsx');
 
-        $this->assertStringContainsString('window.__LINE_USER_ID__ || data.user_id || isDemoDataMode()', $page);
+        $this->assertStringContainsString('window.__LINE_USER_ID__ || isDemoDataMode()', $page);
         $this->assertStringContainsString('<ProfileForm data={data} registration', $page);
+        // ゲストにも user_id が返るため、登録フォームの表示は LINE の本人確認だけで決める
+        $this->assertStringNotContainsString('data.user_id', $page);
         // プロフィール画面は未登録者にログインを促さず、会員証タブの登録へ送る
         $profile = (string) file_get_contents($root.'/resources/js/liff-ui/pages/ProfilePage.tsx');
         $this->assertStringContainsString('<Navigate to="/membership" replace />', $profile);
