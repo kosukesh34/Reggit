@@ -710,6 +710,7 @@ rsync_to_production() {
     --exclude 'bootstrap/cache/' \
     --exclude 'ios/' \
     --exclude 'mobile/' \
+    --exclude 'slack-app/' \
     --exclude '.cursor/' \
     --exclude '.od-skills/' \
     --exclude '.github/' \
