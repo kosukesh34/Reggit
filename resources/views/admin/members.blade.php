@@ -134,6 +134,9 @@
                         @else
                             <span class="badge badge-info">{{ $channelLabel }}</span>
                         @endif
+                        @if($member->user?->line_blocked_at !== null)
+                            <span class="badge badge-danger">LINEブロック中</span>
+                        @endif
                     </td>
                     <td>{{ number_format($member->points) }}pt</td>
                     <td>
