@@ -45,13 +45,13 @@
       "_react-vendor-CkyZWn16.js"
     ]
   },
-  "_NativeLotteryPage-ddeRiCYB.js": {
-    "file": "assets/NativeLotteryPage-ddeRiCYB.js",
+  "_NativeLotteryPage-Ce1Go2_c.js": {
+    "file": "assets/NativeLotteryPage-Ce1Go2_c.js",
     "name": "NativeLotteryPage",
     "imports": [
       "_rolldown-runtime-hePW80VL.js",
       "_react-vendor-CkyZWn16.js",
-      "_native-C2w2voz2.js",
+      "_native-DwtR4_C1.js",
       "_NativeResource-BAoYOUyg.js"
     ]
   },
@@ -63,6 +63,13 @@
       "_react-vendor-CkyZWn16.js",
       "_AppConfigContext-BQSpUg8x.js",
       "_apiClient-qRhW8tPB.js"
+    ]
+  },
+  "_acquisitionSource-YpX2LSVW.js": {
+    "file": "assets/acquisitionSource-YpX2LSVW.js",
+    "name": "acquisitionSource",
+    "imports": [
+      "_native-DwtR4_C1.js"
     ]
   },
   "_apiClient-qRhW8tPB.js": {
@@ -99,8 +106,12 @@
       "_apiClient-qRhW8tPB.js"
     ]
   },
-  "_native-C2w2voz2.js": {
-    "file": "assets/native-C2w2voz2.js",
+  "_native-Djo3z7SA.css": {
+    "file": "assets/native-Djo3z7SA.css",
+    "src": "_native-Djo3z7SA.css"
+  },
+  "_native-DwtR4_C1.js": {
+    "file": "assets/native-DwtR4_C1.js",
     "name": "native",
     "imports": [
       "_rolldown-runtime-hePW80VL.js",
@@ -121,16 +132,12 @@
       "resources/js/liff-ui/pages/WithdrawPage.tsx",
       "resources/js/liff-ui/pages/FeaturePage.tsx",
       "resources/js/liff-ui/pages/StampIssuePage.tsx",
-      "_NativeLotteryPage-ddeRiCYB.js",
+      "_NativeLotteryPage-Ce1Go2_c.js",
       "resources/js/liff-ui/native/NativeChatPage.tsx"
     ],
     "css": [
-      "assets/native-CZ_vNHuV.css"
+      "assets/native-Djo3z7SA.css"
     ]
-  },
-  "_native-CZ_vNHuV.css": {
-    "file": "assets/native-CZ_vNHuV.css",
-    "src": "_native-CZ_vNHuV.css"
   },
   "_navigation-BbKTTGOp.js": {
     "file": "assets/navigation-BbKTTGOp.js",
@@ -223,7 +230,7 @@
     ]
   },
   "resources/js/frontend/main.tsx": {
-    "file": "assets/main-9uoXuuGE.js",
+    "file": "assets/main-Bt75e4Uf.js",
     "name": "main",
     "src": "resources/js/frontend/main.tsx",
     "isEntry": true,
@@ -234,7 +241,8 @@
       "_app-DS-2S_T8.js",
       "_apiClient-qRhW8tPB.js",
       "_domHelper-BJu42AiZ.js",
-      "_native-C2w2voz2.js",
+      "_native-DwtR4_C1.js",
+      "_acquisitionSource-YpX2LSVW.js",
       "_NativeResource-BAoYOUyg.js",
       "_liffEcho-CV6TVOxl.js",
       "_postalAddressPolicy-DplAgbFX.js",
@@ -242,13 +250,13 @@
     ]
   },
   "resources/js/liff-demo/main.tsx": {
-    "file": "assets/main-BoyOOxaM.js",
+    "file": "assets/main-Bf6B5z5g.js",
     "name": "main",
     "src": "resources/js/liff-demo/main.tsx",
     "isEntry": true,
     "imports": [
       "_react-vendor-CkyZWn16.js",
-      "_native-C2w2voz2.js"
+      "_native-DwtR4_C1.js"
     ]
   },
   "resources/js/liff-ui/native/NativeChatPage.tsx": {
@@ -275,7 +283,7 @@
     ]
   },
   "resources/js/liff-ui/pages/FeaturePage.tsx": {
-    "file": "assets/FeaturePage-DwsYCZQd.js",
+    "file": "assets/FeaturePage-BUzg861V.js",
     "name": "FeaturePage",
     "src": "resources/js/liff-ui/pages/FeaturePage.tsx",
     "isDynamicEntry": true,
@@ -288,23 +296,23 @@
       "_scanner-vendor-SVqs8N5c.js",
       "_apiClient-qRhW8tPB.js",
       "_domHelper-BJu42AiZ.js",
-      "_native-C2w2voz2.js",
+      "_native-DwtR4_C1.js",
       "_NativeResource-BAoYOUyg.js",
       "_liffEcho-CV6TVOxl.js",
-      "_NativeLotteryPage-ddeRiCYB.js",
+      "_NativeLotteryPage-Ce1Go2_c.js",
       "_MembershipBarcode-BFeyX8a9.js",
       "_Card-BlBQOg6v.js"
     ]
   },
   "resources/js/liff-ui/pages/HomePage.tsx": {
-    "file": "assets/HomePage-C6Ql7yw3.js",
+    "file": "assets/HomePage-se9BvBTL.js",
     "name": "HomePage",
     "src": "resources/js/liff-ui/pages/HomePage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_rolldown-runtime-hePW80VL.js",
       "_react-vendor-CkyZWn16.js",
-      "_native-C2w2voz2.js",
+      "_native-DwtR4_C1.js",
       "_NativeResource-BAoYOUyg.js",
       "_MembershipBarcode-BFeyX8a9.js"
     ],
@@ -313,16 +321,18 @@
     ]
   },
   "resources/js/liff-ui/pages/MembershipPage.tsx": {
-    "file": "assets/MembershipPage-2JHtwxOX.js",
+    "file": "assets/MembershipPage-BefuDCzN.js",
     "name": "MembershipPage",
     "src": "resources/js/liff-ui/pages/MembershipPage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_rolldown-runtime-hePW80VL.js",
       "_react-vendor-CkyZWn16.js",
-      "_native-C2w2voz2.js",
+      "_native-DwtR4_C1.js",
+      "_acquisitionSource-YpX2LSVW.js",
       "_NativeResource-BAoYOUyg.js",
-      "_MembershipBarcode-BFeyX8a9.js"
+      "_MembershipBarcode-BFeyX8a9.js",
+      "resources/js/liff-ui/pages/ProfilePage.tsx"
     ]
   },
   "resources/js/liff-ui/pages/MorePage.tsx": {
@@ -336,14 +346,13 @@
     ]
   },
   "resources/js/liff-ui/pages/ProfilePage.tsx": {
-    "file": "assets/ProfilePage-DtehUbI8.js",
+    "file": "assets/ProfilePage-CeRKgFgW.js",
     "name": "ProfilePage",
     "src": "resources/js/liff-ui/pages/ProfilePage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_rolldown-runtime-hePW80VL.js",
       "_react-vendor-CkyZWn16.js",
-      "_native-C2w2voz2.js",
       "_NativeResource-BAoYOUyg.js",
       "_postalAddressPolicy-DplAgbFX.js"
     ]
