@@ -139,6 +139,7 @@ class LineWebhookHandleUseCase
         $user = $this->findUserByLineId($userId);
         $user?->update(['line_blocked_at' => now()]);
         $this->recordFollowEvent($event, LineFollowEvent::TYPE_UNFOLLOW, $user?->id);
+        LogHelper::info('[LINE] unfollow (blocked)', ['user_id' => $user?->id]);
     }
 
     /** 再送された同じイベントは webhookEventId の一意制約で無視する */

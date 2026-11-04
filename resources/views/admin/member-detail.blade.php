@@ -81,6 +81,9 @@
                         @if($channelLabel !== '—')
                         <span class="member-chip">{{ $channelLabel }}</span>
                         @endif
+                        @if($user?->line_blocked_at !== null)
+                        <span class="badge badge-danger">LINEブロック中（{{ $user->line_blocked_at->format('Y/m/d H:i') }}〜）</span>
+                        @endif
                     </div>
                 </div>
                 @if($canManage)
