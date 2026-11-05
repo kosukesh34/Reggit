@@ -23,11 +23,13 @@ API応答の失敗件数を無視して完了扱いにはしない。
 
 決済確定・スタッフの状態変更による通知（顧客アプリの Push、LINE、Kitchen）は、注文と同じトランザクションで
 `order_notification_outbox` にチャネル別の行として保存する。保存後にすぐ送信し、失敗分は
-`orders:send-notifications` を毎分のLaravelスケジューラーで再送する（間隔は上限付きの指数的な遅延）。
+`orders:send-notifications` を毎分のLaravelスケジューラーで1分間隔に再送する。10回失敗した行は
+`delivered_at` を入れて打ち切り、`[OrderOutbox] delivery abandoned` をエラーログに残す（それまでの失敗は warning）。
 注文・イベント・チャネルの一意キーで、確認の再送や完了の連打による重複行を防ぐ。
 処理中の行は5分間のリースで同時送信を防ぎ、期限切れのリースは回収する。
 
-未送信は `delivered_at IS NULL` の行で確認し、`attempts`、`available_at`、`last_error` で失敗の状況を見る。
+再送待ちは `delivered_at IS NULL` の行、打ち切った行は `delivered_at` と `last_error` の両方が入った行で確認し、
+`attempts`、`available_at`、`last_error` で失敗の状況を見る。
 障害中に未送信の行を削除して既読扱いにしない。手動で処理するときは次を実行する。
 
 ```bash
