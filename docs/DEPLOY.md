@@ -15,7 +15,7 @@
 | `DEMO_SEED` | `false`。本番のデモ管理者作成は禁止 |
 | `SESSION_SECURE_COOKIE` | HTTPS 運用では `true` |
 | `LOG_LEVEL` | 通常は `warning` / `error`。調査用詳細ログは必要な期間だけ |
-| `LOG_STACK` | Slack にエラーを通知するなら `daily,slack`。`SLACK_BOT_USER_OAUTH_TOKEN`（`chat:write`）と `SLACK_BOT_USER_DEFAULT_CHANNEL`（チャンネルID）を設定し、ボットをチャンネルに招待する。ローカルと本番は同じチャンネルでよい |
+| `LOG_STACK` | Slack にエラーを通知するなら `daily,slack`。`SLACK_BOT_USER_OAUTH_TOKEN`（`chat:write`）と `SLACK_BOT_USER_DEFAULT_CHANNEL`（チャンネルID）を設定し、ボットをチャンネルに招待する。送るのは本番（`APP_ENV=production`）だけで、ローカルなどでは設定しても送らない |
 | `QUEUE_CONNECTION` | 非同期運用では `database` など。ワーカーを用意する |
 
 seed は既存アカウントのパスワード・ロールを更新しません。既に存在する既定パスワードのアカウントは、この修正だけでは変更されないため運用側で変更します。初期データの seed と通常デプロイを分けます。
