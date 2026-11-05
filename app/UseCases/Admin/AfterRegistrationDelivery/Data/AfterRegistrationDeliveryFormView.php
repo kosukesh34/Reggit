@@ -20,7 +20,7 @@ class AfterRegistrationDeliveryFormView
      * @param  array<string, array{label: string, color: string}>  $rfmSegments
      * @param  list<array<string, mixed>>  $profileFields
      * @param  Collection<int, MemberAudienceGroup>  $audienceGroups
-     * @param  Collection<int, Store>  $weatherStores  雨の日で選べる店舗
+     * @param  Collection<int, Store>  $weatherStores  雨の日・気温で選べる店舗
      */
     public function __construct(
         public readonly Collection $coupons,

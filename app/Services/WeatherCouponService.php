@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 /**
- * スケジュール配信の「雨の日」。雨の予報が出た店舗の会員に、その営業日だけ使えるクーポンやお知らせを配る。
+ * スケジュール配信の「雨の日」「気温」。条件に合う予報が出た店舗の会員に、その営業日だけ使えるクーポンやお知らせを配る。
  * 店舗・閾値・配る相手・承認制は配信の params に持つ。
  */
 class WeatherCouponService
@@ -56,7 +56,7 @@ class WeatherCouponService
     {
         $counts = [];
         AfterRegistrationDelivery::withoutGlobalScopes()
-            ->where('schedule_type', ScheduledDeliveryType::WEATHER_RAIN)
+            ->whereIn('schedule_type', ScheduledDeliveryType::WEATHER_TYPES)
             ->where('is_active', true)
             ->with(['project', 'coupon'])
             ->orderBy('id')
@@ -77,7 +77,7 @@ class WeatherCouponService
     }
 
     /**
-     * 雨の日の設定を保存してよいか確かめる。店舗は選択中の店舗のうち利用中のもの、閾値は店舗の営業時間に収まること。
+     * 雨の日・気温の設定を保存してよいか確かめる。店舗は選択中の店舗のうち利用中のもの、閾値は店舗の営業時間に収まること。
      *
      * @param  array<string, mixed>  $params
      */
@@ -96,7 +96,7 @@ class WeatherCouponService
         }
     }
 
-    /** @return Collection<int, Store> 雨の日の設定で選べる店舗（選択中の店舗のうち利用中のもの） */
+    /** @return Collection<int, Store> 雨の日・気温の設定で選べる店舗（選択中の店舗のうち利用中のもの） */
     public function selectableStores(int $projectId): Collection
     {
         return Store::query()
@@ -123,7 +123,7 @@ class WeatherCouponService
     }
 
     /**
-     * 雨の日の配信を送った営業日のうちに登録した会員にも送る。
+     * 雨の日・気温の配信を送った営業日のうちに登録した会員にも送る。
      * クーポンは発行キーが同じなので、すでに受け取っていれば重ねて配らない。
      */
     public function issueForNewMember(Member $member, CarbonImmutable $now): void
@@ -263,23 +263,32 @@ class WeatherCouponService
 
         $from = $now->max($opensAt);
         $forecasts = $this->weather->hourly((float) $store->latitude, (float) $store->longitude);
-        $maxProbability = collect($forecasts)
-            ->filter(fn ($forecast) => $forecast->at < $closesAt && $forecast->at->addHour() > $from)
-            ->max('precipitationProbability');
-        $rainy = $this->rainyPeriod->isRainy(
-            $forecasts,
-            $from,
-            $closesAt,
-            $delivery->intParam('min_precipitation_probability', 100),
-            $delivery->intParam('min_rain_hours', 24),
-        );
-        if (! $rainy) {
-            $run->update(['status' => WeatherCouponRun::STATUS_NO_RAIN, 'checked_at' => $now, 'max_precipitation_probability' => $maxProbability]);
+        $inWindow = collect($forecasts)->filter(fn ($forecast) => $forecast->at < $closesAt && $forecast->at->addHour() > $from);
+        if ($delivery->schedule_type === ScheduledDeliveryType::WEATHER_TEMPERATURE) {
+            $below = $delivery->param('temperature_condition') === AfterRegistrationDelivery::TEMPERATURE_BELOW;
+            $temperature = $below ? $inWindow->min('temperature') : $inWindow->max('temperature');
+            $threshold = $delivery->intParam('temperature', 0);
+            $met = $temperature !== null && ($below ? $temperature <= $threshold : $temperature >= $threshold);
+            $forecast = ['forecast_temperature' => $temperature !== null ? round($temperature, 1) : null];
+            $notMetStatus = WeatherCouponRun::STATUS_NOT_MET;
+        } else {
+            $met = $this->rainyPeriod->isRainy(
+                $forecasts,
+                $from,
+                $closesAt,
+                $delivery->intParam('min_precipitation_probability', 100),
+                $delivery->intParam('min_rain_hours', 24),
+            );
+            $forecast = ['max_precipitation_probability' => $inWindow->max('precipitationProbability')];
+            $notMetStatus = WeatherCouponRun::STATUS_NO_RAIN;
+        }
+        if (! $met) {
+            $run->update(['status' => $notMetStatus, 'checked_at' => $now] + $forecast);
 
-            return WeatherCouponRun::STATUS_NO_RAIN;
+            return $notMetStatus;
         }
 
-        $run->update(['checked_at' => $now, 'max_precipitation_probability' => $maxProbability, 'error_message' => null]);
+        $run->update(['checked_at' => $now, 'error_message' => null] + $forecast);
         if ((bool) $delivery->param('requires_approval', 1)) {
             $run->update(['status' => WeatherCouponRun::STATUS_AWAITING_APPROVAL, 'approval_expires_at' => $now->addMinutes(self::APPROVAL_MINUTES)]);
             $this->requestApproval($delivery, $store, $run);
@@ -315,7 +324,7 @@ class WeatherCouponService
                     (int) $delivery->project_id,
                     (int) $delivery->coupon_id,
                     $memberIds,
-                    MemberCouponSource::WEATHER_RAIN,
+                    $delivery->schedule_type === ScheduledDeliveryType::WEATHER_TEMPERATURE ? MemberCouponSource::WEATHER_TEMPERATURE : MemberCouponSource::WEATHER_RAIN,
                     $date->toDateString(),
                     $delivery->isCouponOnly() && $delivery->shouldSendNotification(),
                     // 営業日の終わりまで。日をまたぐ営業は翌日の閉店まで
@@ -350,7 +359,9 @@ class WeatherCouponService
         return (int) CouponDelivery::withoutGlobalScopes()->create([
             'project_id' => $delivery->project_id,
             'coupon_id' => $delivery->coupon_id,
-            'delivery_type' => CouponDeliveryType::EVENT_WEATHER_RAIN,
+            'delivery_type' => $delivery->schedule_type === ScheduledDeliveryType::WEATHER_TEMPERATURE
+                ? CouponDeliveryType::EVENT_WEATHER_TEMPERATURE
+                : CouponDeliveryType::EVENT_WEATHER_RAIN,
             'status' => CouponDeliveryStatus::SENT,
             'sent_at' => $now,
             'issued_member_ids' => $memberIds === [] ? null : $memberIds,
@@ -400,8 +411,9 @@ class WeatherCouponService
                 // 宛先が他の担当者に見えないよう、1人ずつ新しいメールを作る
                 Mail::to($email)->send(new WeatherCouponApprovalMail(
                     (string) $store->name,
+                    ScheduledDeliveryType::getLabel((string) $delivery->schedule_type),
                     trim((string) $delivery->title) !== '' ? (string) $delivery->title : (string) $delivery->coupon?->name,
-                    (int) $run->max_precipitation_probability,
+                    $run->setRelation('delivery', $delivery)->forecastLabel(),
                     $run->approval_expires_at->format('n月j日 H:i'),
                     route('admin.weather-coupons.index', ['project_key' => $delivery->project->project_key]),
                 ));
@@ -438,7 +450,7 @@ class WeatherCouponService
             return WeatherCouponRun::query();
         }
         $deliveryIds = AfterRegistrationDelivery::query()
-            ->where('schedule_type', ScheduledDeliveryType::WEATHER_RAIN)
+            ->whereIn('schedule_type', ScheduledDeliveryType::WEATHER_TYPES)
             ->when($projectId !== null, fn ($query) => $query->where('project_id', $projectId))
             ->get()
             ->filter(fn (AfterRegistrationDelivery $delivery) => in_array($delivery->intParam('store_id', 0), $storeIds, true))

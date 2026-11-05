@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Weather\ValueObjects\HourlyForecast;
 use App\Enums\CouponDeliveryType;
+use App\Enums\MemberCouponSource;
 use App\Enums\ScheduledDeliveryContentType;
 use App\Enums\ScheduledDeliveryType;
 use App\Mail\WeatherCouponApprovalMail;
@@ -82,11 +83,31 @@ class WeatherCouponServiceTest extends TestCase
     private function forecast(array $probabilities, int $times = 1): void
     {
         $forecasts = array_map(
-            fn (int $hour, int $probability) => new HourlyForecast(CarbonImmutable::parse('2026-11-02')->setTime($hour, 0), $probability, 1.0),
+            fn (int $hour, int $probability) => new HourlyForecast(CarbonImmutable::parse('2026-11-02')->setTime($hour, 0), $probability, 1.0, 20.0),
             array_keys($probabilities),
             array_values($probabilities),
         );
         $this->mock(OpenWeatherClient::class)->shouldReceive('hourly')->times($times)->andReturn($forecasts);
+    }
+
+    /** @param array<int, float> $temperatures 時 => 気温（2026-11-02） */
+    private function temperatures(array $temperatures): void
+    {
+        $forecasts = array_map(
+            fn (int $hour, float $temperature) => new HourlyForecast(CarbonImmutable::parse('2026-11-02')->setTime($hour, 0), 0, 0.0, $temperature),
+            array_keys($temperatures),
+            array_values($temperatures),
+        );
+        $this->mock(OpenWeatherClient::class)->shouldReceive('hourly')->once()->andReturn($forecasts);
+    }
+
+    /** スケジュール配信の「気温」（初期値は最高気温30℃以上・クーポンのみ・承認なし） */
+    private function temperatureRule(array $params = []): AfterRegistrationDelivery
+    {
+        return $this->rule($params + [
+            'temperature_condition' => AfterRegistrationDelivery::TEMPERATURE_ABOVE,
+            'temperature' => 30,
+        ], ['schedule_type' => ScheduledDeliveryType::WEATHER_TEMPERATURE]);
     }
 
     private function runAt(string $moment): array
@@ -386,7 +407,7 @@ class WeatherCouponServiceTest extends TestCase
             [$this->store->id, 60, 3, 1, 2, 2, AfterRegistrationDelivery::WEATHER_TARGET_STORE_MEMBERS, 1],
             [$delivery->param('store_id'), $delivery->param('min_precipitation_probability'), $delivery->param('min_rain_hours'), $delivery->param('check_hours_before_open'), $delivery->param('cutoff_hours_before_close'), $delivery->param('weekly_limit'), $delivery->param('target'), $delivery->param('requires_approval')],
         );
-        $this->get('/admin/rain/after-registration-deliveries')->assertOk()->assertSee('降水確率60%以上が3時間続く日')->assertSee('雨の日の判定結果');
+        $this->get('/admin/rain/after-registration-deliveries')->assertOk()->assertSee('降水確率60%以上が3時間続く日')->assertSee('天気の判定結果');
         $this->get('/admin/rain/after-registration-deliveries/'.$delivery->id.'/edit')->assertOk()->assertSee('送る前にメールで承認を求める');
 
         $this->put('/admin/rain/after-registration-deliveries/'.$delivery->id, $this->scheduledInput(['weekly_limit' => 5, 'requires_approval' => '0']))
@@ -464,5 +485,64 @@ class WeatherCouponServiceTest extends TestCase
 
         $this->assertSame([], $this->runAt('2026-11-02 09:30'));
         $this->assertSame(0, WeatherCouponRun::withoutGlobalScopes()->count());
+    }
+
+    public function test_営業時間内の最高気温が基準以上なら気温クーポンを配ること(): void
+    {
+        $member = $this->member();
+        $rule = $this->temperatureRule();
+        // 開店（10:00）前の暑さは数えない
+        $this->temperatures([8 => 35.0, 12 => 29.0, 15 => 31.24]);
+
+        $this->assertSame([WeatherCouponRun::STATUS_SENT => 1], $this->runAt('2026-11-02 09:30'));
+
+        $issued = MemberCoupon::withoutGlobalScopes()->sole();
+        $this->assertSame([$member->id, MemberCouponSource::WEATHER_TEMPERATURE], [$issued->member_id, $issued->issue_source_type]);
+        $this->assertSame('2026-11-02 23:59:59', $issued->valid_until->format('Y-m-d H:i:s'));
+        $this->assertSame(CouponDeliveryType::EVENT_WEATHER_TEMPERATURE, CouponDelivery::withoutGlobalScopes()->sole()->delivery_type);
+        $this->assertDatabaseHas('weather_coupon_runs', ['after_registration_delivery_id' => $rule->id, 'status' => 'sent', 'forecast_temperature' => 31.2, 'max_precipitation_probability' => null]);
+    }
+
+    public function test_営業時間内の最低気温が基準以下にならなければ配らないこと(): void
+    {
+        $this->member();
+        $this->temperatureRule(['temperature_condition' => AfterRegistrationDelivery::TEMPERATURE_BELOW, 'temperature' => 5]);
+        $this->temperatures([9 => 2.0, 12 => 6.0, 18 => 5.5]);
+
+        $this->assertSame([WeatherCouponRun::STATUS_NOT_MET => 1], $this->runAt('2026-11-02 09:30'));
+
+        $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
+        $run = WeatherCouponRun::withoutGlobalScopes()->with('delivery')->sole();
+        $this->assertSame([WeatherCouponRun::STATUS_NOT_MET, '最低気温 5.5℃'], [$run->status, $run->forecastLabel()]);
+    }
+
+    public function test_気温の承認メールに判定に使った気温を載せること(): void
+    {
+        Mail::fake();
+        $this->member();
+        $storeAdmin = $this->admin();
+        $this->temperatureRule(['temperature_condition' => AfterRegistrationDelivery::TEMPERATURE_BELOW, 'temperature' => 5, 'requires_approval' => 1]);
+        $this->temperatures([12 => 4.0, 18 => 3.5]);
+
+        $this->assertSame([WeatherCouponRun::STATUS_AWAITING_APPROVAL => 1], $this->runAt('2026-11-02 09:30'));
+
+        Mail::assertSent(WeatherCouponApprovalMail::class, fn ($mail) => $mail->hasTo($storeAdmin->email)
+            && [$mail->typeLabel, $mail->forecast] === ['気温', '最低気温 3.5℃']
+            && $mail->envelope()->subject === '【承認のお願い】'.$this->store->name.' の気温の配信');
+    }
+
+    public function test_スケジュール配信で気温を登録でき気温の条件は必須であること(): void
+    {
+        $this->actingAs($this->projectAdmin(), 'admin');
+        $input = $this->scheduledInput(['schedule_type' => ScheduledDeliveryType::WEATHER_TEMPERATURE, 'temperature_condition' => AfterRegistrationDelivery::TEMPERATURE_BELOW, 'temperature' => -3]);
+
+        $this->post('/admin/rain/after-registration-deliveries', ['temperature' => '', 'temperature_condition' => 'hot'] + $input)
+            ->assertSessionHasErrors(['temperature', 'temperature_condition']);
+        $this->post('/admin/rain/after-registration-deliveries', $input)->assertSessionHasNoErrors()->assertRedirect();
+
+        $delivery = AfterRegistrationDelivery::withoutGlobalScopes()->sole();
+        $this->assertSame([AfterRegistrationDelivery::TEMPERATURE_BELOW, -3, null], [$delivery->param('temperature_condition'), $delivery->param('temperature'), $delivery->param('min_precipitation_probability')]);
+        $this->get('/admin/rain/after-registration-deliveries')->assertOk()->assertSee('最低気温が-3℃以下の日')->assertSee('天気の判定結果');
+        $this->get('/admin/rain/after-registration-deliveries/'.$delivery->id.'/edit')->assertOk()->assertSee('最低気温が基準以下（寒い日）');
     }
 }

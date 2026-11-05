@@ -1,19 +1,19 @@
 @extends('admin.layout')
-@section('title', '雨の日の判定結果')
-@section('page-title', '雨の日の判定結果')
+@section('title', '天気の判定結果')
+@section('page-title', '天気の判定結果')
 @section('content')
 @php $canManage = auth('admin')->user()?->hasPermission('announcements.manage'); @endphp
-<nav class="breadcrumb" aria-label="パンくず"><a href="{{ admin_route('admin.after-registration-deliveries.index') }}">スケジュール配信</a><span class="breadcrumb-sep">/</span><span>雨の日の判定結果</span></nav>
+<nav class="breadcrumb" aria-label="パンくず"><a href="{{ admin_route('admin.after-registration-deliveries.index') }}">スケジュール配信</a><span class="breadcrumb-sep">/</span><span>天気の判定結果</span></nav>
 <div class="card">
-    <div class="card-header"><h2 class="card-title"><i class="fas fa-cloud-rain"></i> 最近の判定結果</h2></div>
+    <div class="card-header"><h2 class="card-title"><i class="fas fa-cloud-sun-rain"></i> 最近の判定結果</h2></div>
     <div class="card-body">
-        <p class="form-text">雨の日の配信は「スケジュール配信」で設定します。承認待ちの配信は、期限までに承認しないと送りません。「今日は配らない」を選ぶと、その日は判定も承認のメールも止まります。</p>
+        <p class="form-text">雨の日・気温の配信は「スケジュール配信」で設定します。承認待ちの配信は、期限までに承認しないと送りません。「今日は配らない」を選ぶと、その日は判定も承認のメールも止まります。</p>
         @if($runs->isEmpty())
             <p>まだ判定結果はありません。</p>
         @else
             <div class="table-responsive">
                 <table class="table">
-                    <thead><tr><th>営業日</th><th>店舗</th><th>配信</th><th>状態</th><th>最大降水確率</th><th>送った人数</th><th>操作</th></tr></thead>
+                    <thead><tr><th>営業日</th><th>店舗</th><th>配信</th><th>状態</th><th>予報</th><th>送った人数</th><th>操作</th></tr></thead>
                     <tbody>
                     @foreach($runs as $run)
                         @php
@@ -30,7 +30,7 @@
                                 {{ \App\Models\WeatherCouponRun::STATUS_LABELS[$status] ?? $status }}
                                 @if($awaiting)<br><small>{{ $run->approval_expires_at->format('H:i') }} まで</small>@endif
                             </td>
-                            <td>{{ $run->max_precipitation_probability !== null ? $run->max_precipitation_probability.'%' : '—' }}</td>
+                            <td>{{ $run->forecastLabel() }}</td>
                             <td>{{ number_format($run->issued_count) }}人</td>
                             <td>
                                 @if($canManage && $awaiting)

@@ -11,14 +11,14 @@ class IssueWeatherCouponsCommand extends Command
 {
     protected $signature = 'coupons:issue-weather';
 
-    protected $description = '雨の予報が出た店舗の会員に雨の日クーポンを配る（15分ごとの実行を推奨）';
+    protected $description = '雨の日・気温の予報が条件に合う店舗の会員にクーポンやお知らせを配る（15分ごとの実行を推奨）';
 
     public function handle(WeatherCouponService $service): int
     {
         $counts = $service->runDue(CarbonImmutable::now());
         $this->info($counts === []
             ? '判定対象のルールはありません'
-            : '雨の日クーポンを判定しました: '.collect($counts)->map(fn (int $count, string $status) => "{$status}={$count}")->implode(' '));
+            : '天気の配信を判定しました: '.collect($counts)->map(fn (int $count, string $status) => "{$status}={$count}")->implode(' '));
 
         return isset($counts[WeatherCouponRun::STATUS_FAILED]) ? self::FAILURE : self::SUCCESS;
     }

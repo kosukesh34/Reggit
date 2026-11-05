@@ -23,6 +23,8 @@ class AfterRegistrationDeliveryRequest extends FormRequest
     /** @return array<string, array<int, mixed>> */
     public function rules(): array
     {
+        $weather = implode(',', ScheduledDeliveryType::WEATHER_TYPES);
+
         return [
             'schedule_type' => ['required', 'string', 'in:'.implode(',', ScheduledDeliveryType::keys())],
             'content_type' => ['required', 'string', 'in:'.implode(',', ScheduledDeliveryContentType::keys())],
@@ -46,14 +48,16 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'day_of_week' => ['nullable', 'integer', 'min:0', 'max:6'],
             'day_of_month' => ['nullable'],
             'last_month_visit_min' => ['nullable', 'integer', 'min:1', 'max:100'],
-            // 雨の日の設定。閾値は初期値を持たず必須。営業時間との整合は保存時に確かめる
-            'store_id' => ['nullable', 'integer', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            // 雨の日・気温の設定。閾値は初期値を持たず必須。営業時間との整合は保存時に確かめる
+            'store_id' => ['nullable', 'integer', 'required_if:schedule_type,'.$weather],
             'min_precipitation_probability' => ['nullable', 'integer', 'between:10,100', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
             'min_rain_hours' => ['nullable', 'integer', 'between:1,24', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
-            'check_hours_before_open' => ['nullable', 'integer', 'between:0,3', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
-            'cutoff_hours_before_close' => ['nullable', 'integer', 'between:0,23', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
-            'weekly_limit' => ['nullable', 'integer', 'between:1,7', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
-            'weather_target' => ['nullable', Rule::in([AfterRegistrationDelivery::WEATHER_TARGET_STORE_MEMBERS, AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS]), 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            'temperature_condition' => ['nullable', Rule::in([AfterRegistrationDelivery::TEMPERATURE_ABOVE, AfterRegistrationDelivery::TEMPERATURE_BELOW]), 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_TEMPERATURE],
+            'temperature' => ['nullable', 'integer', 'between:-20,45', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_TEMPERATURE],
+            'check_hours_before_open' => ['nullable', 'integer', 'between:0,3', 'required_if:schedule_type,'.$weather],
+            'cutoff_hours_before_close' => ['nullable', 'integer', 'between:0,23', 'required_if:schedule_type,'.$weather],
+            'weekly_limit' => ['nullable', 'integer', 'between:1,7', 'required_if:schedule_type,'.$weather],
+            'weather_target' => ['nullable', Rule::in([AfterRegistrationDelivery::WEATHER_TARGET_STORE_MEMBERS, AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS]), 'required_if:schedule_type,'.$weather],
             'requires_approval' => ['nullable', 'boolean'],
             'segment_channel' => ['nullable', Rule::in([MemberChannel::LINE, MemberChannel::APP, MemberChannel::BOTH])],
             'segment_birthday_months' => ['nullable', 'array', 'max:12'],
@@ -136,6 +140,8 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'store_id' => '店舗',
             'min_precipitation_probability' => '降水確率',
             'min_rain_hours' => '雨が続く時間',
+            'temperature_condition' => '気温の条件',
+            'temperature' => '気温',
             'check_hours_before_open' => '判定を始める時刻',
             'cutoff_hours_before_close' => '送る締め切り',
             'weekly_limit' => '週の上限',

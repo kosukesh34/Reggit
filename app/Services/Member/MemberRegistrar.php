@@ -183,7 +183,7 @@ class MemberRegistrar
             ]);
 
             $this->couponIssueService->issueForFirstRegistration($member);
-            // 雨の日クーポンを配った営業日のうちに登録した会員にも配る。失敗しても登録は止めない
+            // 雨の日・気温の配信を送った営業日のうちに登録した会員にも配る。失敗しても登録は止めない
             DB::afterCommit(function () use ($member): void {
                 try {
                     $this->weatherCoupons->issueForNewMember($member, CarbonImmutable::now());

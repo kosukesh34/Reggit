@@ -21,9 +21,9 @@ class OpenWeatherClient
         }
         $lat = round($latitude, 2);
         $lon = round($longitude, 2);
-        $hours = Cache::remember("weather:hourly:{$lat},{$lon}", now()->addMinutes(30), fn (): array => Http::timeout(10)
+        $hours = Cache::remember("weather:hourly:metric:{$lat},{$lon}", now()->addMinutes(30), fn (): array => Http::timeout(10)
             ->retry(2, 500)
-            ->get(self::URL, ['lat' => $lat, 'lon' => $lon, 'exclude' => 'current,minutely,daily,alerts', 'appid' => $key])
+            ->get(self::URL, ['lat' => $lat, 'lon' => $lon, 'exclude' => 'current,minutely,daily,alerts', 'units' => 'metric', 'appid' => $key])
             ->throw()
             ->json('hourly', []));
 
@@ -32,6 +32,7 @@ class OpenWeatherClient
             CarbonImmutable::createFromTimestamp((int) $hour['dt'], config('app.timezone')),
             (int) round(((float) ($hour['pop'] ?? 0)) * 100),
             (float) ($hour['rain']['1h'] ?? 0),
+            (float) $hour['temp'],
         ), array_values($hours));
     }
 }

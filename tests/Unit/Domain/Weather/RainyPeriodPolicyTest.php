@@ -16,7 +16,7 @@ class RainyPeriodPolicyTest extends TestCase
     private function forecasts(array $probabilities): array
     {
         return array_map(
-            fn (int $hour, int $probability) => new HourlyForecast(CarbonImmutable::parse('2026-11-02')->setTime($hour, 0), $probability, 0.0),
+            fn (int $hour, int $probability) => new HourlyForecast(CarbonImmutable::parse('2026-11-02')->setTime($hour, 0), $probability, 0.0, 20.0),
             array_keys($probabilities),
             array_values($probabilities),
         );
