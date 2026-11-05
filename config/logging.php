@@ -24,8 +24,8 @@ return [
         // エラー以上を Slack へ送る。ボットに chat:write を付け、通知先チャンネルに招待しておく
         'slack' => [
             'driver' => 'monolog',
-            // トークン未設定の間は送らない（空トークンで毎回 Slack へ接続しない）
-            'handler' => env('SLACK_BOT_USER_OAUTH_TOKEN') ? SlackHandler::class : NullHandler::class,
+            // 本番だけ送る。トークン未設定の間も送らない（空トークンで毎回 Slack へ接続しない）
+            'handler' => env('APP_ENV', 'production') === 'production' && env('SLACK_BOT_USER_OAUTH_TOKEN') ? SlackHandler::class : NullHandler::class,
             'handler_with' => [
                 'token' => (string) env('SLACK_BOT_USER_OAUTH_TOKEN'),
                 'channel' => (string) env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
