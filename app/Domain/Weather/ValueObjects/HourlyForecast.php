@@ -11,5 +11,7 @@ final class HourlyForecast
         public readonly CarbonImmutable $at,
         public readonly int $precipitationProbability,
         public readonly float $rainMm,
+        /** 気温（℃） */
+        public readonly float $temperature,
     ) {}
 }

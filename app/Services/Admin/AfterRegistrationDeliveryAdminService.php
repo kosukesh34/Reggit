@@ -74,7 +74,7 @@ class AfterRegistrationDeliveryAdminService
         $couponId = isset($data['coupon_id']) ? (int) $data['coupon_id'] : 0;
         $delayMinutes = (int) ($data['delay_minutes'] ?? 0);
         $params = $this->buildParams($scheduleType, $data, $delayMinutes);
-        if ($scheduleType === ScheduledDeliveryType::WEATHER_RAIN) {
+        if (in_array($scheduleType, ScheduledDeliveryType::WEATHER_TYPES, true)) {
             $this->weatherCoupons->assertSettings($projectId, $params);
         }
 
@@ -118,6 +118,7 @@ class AfterRegistrationDeliveryAdminService
             ScheduledDeliveryType::MONTHLY, ScheduledDeliveryType::BIRTHDAY_NEXT_MONTH => ['day_of_month'],
             ScheduledDeliveryType::LAST_MONTH_VISITS => ['day_of_month', 'last_month_visit_min'],
             ScheduledDeliveryType::WEATHER_RAIN => ['store_id', 'min_precipitation_probability', 'min_rain_hours', 'check_hours_before_open', 'cutoff_hours_before_close', 'weekly_limit', 'weather_target', 'requires_approval'],
+            ScheduledDeliveryType::WEATHER_TEMPERATURE => ['store_id', 'temperature_condition', 'temperature', 'check_hours_before_open', 'cutoff_hours_before_close', 'weekly_limit', 'weather_target', 'requires_approval'],
             default => [],
         };
 
@@ -141,7 +142,7 @@ class AfterRegistrationDeliveryAdminService
 
                 continue;
             }
-            if ($key === 'reach_rank') {
+            if ($key === 'reach_rank' || $key === 'temperature_condition') {
                 $params[$key] = (string) $data[$key];
 
                 continue;

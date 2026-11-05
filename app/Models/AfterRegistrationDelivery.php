@@ -18,6 +18,12 @@ class AfterRegistrationDelivery extends Model
 
     public const WEATHER_TARGET_ALL_MEMBERS = 'all_members';
 
+    /** 気温の配信: 営業時間内の最高気温が基準以上 */
+    public const TEMPERATURE_ABOVE = 'above';
+
+    /** 気温の配信: 営業時間内の最低気温が基準以下 */
+    public const TEMPERATURE_BELOW = 'below';
+
     /** @var array<int, string> */
     public const NEW_USER_MINUTE_OPTIONS = [
         0, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300, 360, 480, 600, 720,
@@ -95,9 +101,10 @@ class AfterRegistrationDelivery extends Model
         };
     }
 
-    public function isWeatherRain(): bool
+    /** 天気予報で判定する配信（雨の日・気温） */
+    public function isWeather(): bool
     {
-        return $this->schedule_type === ScheduledDeliveryType::WEATHER_RAIN;
+        return in_array($this->schedule_type, ScheduledDeliveryType::WEATHER_TYPES, true);
     }
 
     public function isCouponOnly(): bool
@@ -156,6 +163,9 @@ class AfterRegistrationDelivery extends Model
             ScheduledDeliveryType::WEEKLY => '毎週'.$this->weekdayLabel($this->intParam('day_of_week', 1)),
             ScheduledDeliveryType::MONTHLY => '毎月'.$this->dayOfMonthLabel($this->param('day_of_month', 1)),
             ScheduledDeliveryType::WEATHER_RAIN => '降水確率'.$this->intParam('min_precipitation_probability', 0).'%以上が'.$this->intParam('min_rain_hours', 0).'時間続く日',
+            ScheduledDeliveryType::WEATHER_TEMPERATURE => $this->param('temperature_condition') === self::TEMPERATURE_BELOW
+                ? '最低気温が'.$this->intParam('temperature', 0).'℃以下の日'
+                : '最高気温が'.$this->intParam('temperature', 0).'℃以上の日',
             ScheduledDeliveryType::LAST_MONTH_VISITS => '前月'.$this->intParam('last_month_visit_min', 1).'回来店以上の人に毎月'.$this->dayOfMonthLabel($this->param('day_of_month', 1)),
             default => ScheduledDeliveryType::getLabel((string) $this->schedule_type),
         };
