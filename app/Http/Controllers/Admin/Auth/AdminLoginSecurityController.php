@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AdminLoginSecurityController extends Controller
@@ -54,5 +55,28 @@ class AdminLoginSecurityController extends Controller
         ])->save();
 
         return back()->with('status', 'ログインセキュリティ設定を保存しました。');
+    }
+
+    public function updateEmail(Request $request): RedirectResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        abort_unless($admin instanceof AdminUser, 403);
+
+        // メールはパスワード再設定・パスキー復旧の宛先なので、乗っ取り防止に現在のパスワードを求める。
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255', Rule::unique('admin_users', 'email')->ignore($admin->id)],
+            'email_current_password' => ['required', 'current_password:admin'],
+        ], [
+            'email.required' => 'メールアドレスを入力してください。',
+            'email.email' => 'メールアドレスの形式が正しくありません。',
+            'email.max' => 'メールアドレスは255文字以内で入力してください。',
+            'email.unique' => 'このメールアドレスは別のアカウントで使われています。',
+            'email_current_password.required' => '現在のパスワードを入力してください。',
+            'email_current_password.current_password' => '現在のパスワードが正しくありません。',
+        ]);
+
+        $admin->forceFill(['email' => $data['email']])->save();
+
+        return back()->with('status', 'メールアドレスを変更しました。');
     }
 }
