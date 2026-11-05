@@ -66,7 +66,8 @@ class ScheduledDeliveryTargetService
             ScheduledDeliveryType::LAST_MONTH_VISITS => $this->onDayOfMonth($delivery, $now)
                 ? $this->lastMonthVisits($projectId, $delivery->intParam('last_month_visit_min', 1), $now)
                 : [],
-            ScheduledDeliveryType::WEATHER_RAIN => $this->weatherRainTargets($projectId, $delivery),
+            ScheduledDeliveryType::WEATHER_RAIN,
+            ScheduledDeliveryType::WEATHER_TEMPERATURE => $this->weatherTargets($projectId, $delivery),
             default => [],
         };
 
@@ -84,7 +85,7 @@ class ScheduledDeliveryTargetService
      * @return list<int>
      */
     /** @return list<int> 店舗の会員（member_stores）か全会員 */
-    private function weatherRainTargets(int $projectId, AfterRegistrationDelivery $delivery): array
+    private function weatherTargets(int $projectId, AfterRegistrationDelivery $delivery): array
     {
         if ($delivery->param('target') === AfterRegistrationDelivery::WEATHER_TARGET_ALL_MEMBERS) {
             return $this->targetRepository->findAllIds($projectId);

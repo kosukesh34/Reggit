@@ -29,6 +29,7 @@ class CouponDeliveryType extends EnumBase
         self::SCHEDULED_DAYS_AFTER_VISIT => '最終来店からN日後（予約）',
         self::EVENT_RANK_UP_ARRIVAL => 'ランクアップ達成配信',
         self::EVENT_WEATHER_RAIN => '雨の日自動配布',
+        self::EVENT_WEATHER_TEMPERATURE => '気温自動配布',
     ];
 
     public const IMMEDIATE_ALL = 'immediate_all';
@@ -75,6 +76,9 @@ class CouponDeliveryType extends EnumBase
 
     /** 雨の日クーポンの自動配布。履歴の表示用で、手動の配布では選べない */
     public const EVENT_WEATHER_RAIN = 'event_weather_rain';
+
+    /** 気温クーポンの自動配布。履歴の表示用で、手動の配布では選べない */
+    public const EVENT_WEATHER_TEMPERATURE = 'event_weather_temperature';
 
     /** @return list<string> */
     public static function scheduledValues(): array

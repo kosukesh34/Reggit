@@ -35,6 +35,12 @@ class ScheduledDeliveryType extends EnumBase
     /** 雨の予報が出た日。判定と送信は coupons:issue-weather が行う */
     public const WEATHER_RAIN = 'weather_rain';
 
+    /** 最高気温・最低気温が基準を超える日。判定と送信は coupons:issue-weather が行う */
+    public const WEATHER_TEMPERATURE = 'weather_temperature';
+
+    /** 天気予報で判定する種類 */
+    public const WEATHER_TYPES = [self::WEATHER_RAIN, self::WEATHER_TEMPERATURE];
+
     /** @var array<string, string> */
     protected static array $values = [
         self::NEW_USER_MINUTES => '新規入会後（分）',
@@ -51,6 +57,7 @@ class ScheduledDeliveryType extends EnumBase
         self::MONTHLY => '月刊配信',
         self::LAST_MONTH_VISITS => '前月来店回数',
         self::WEATHER_RAIN => '雨の日',
+        self::WEATHER_TEMPERATURE => '気温',
     ];
 
     /** @return list<string> */
@@ -71,6 +78,7 @@ class ScheduledDeliveryType extends EnumBase
             self::TOTAL_POINTS,
             self::TOTAL_STAMPS,
             self::WEATHER_RAIN,
+            self::WEATHER_TEMPERATURE,
         ];
     }
 
@@ -96,7 +104,7 @@ class ScheduledDeliveryType extends EnumBase
 
     public static function runsOnCron(string $type): bool
     {
-        return ! in_array($type, [self::NEW_USER_MINUTES, self::RANK_UP_ARRIVAL, self::WEATHER_RAIN], true);
+        return ! in_array($type, [self::NEW_USER_MINUTES, self::RANK_UP_ARRIVAL, ...self::WEATHER_TYPES], true);
     }
 
     public static function needsClock(string $type): bool

@@ -62,7 +62,8 @@ class CouponDeliveryTargetService
             CouponDeliveryType::SCHEDULED_DAYS_AFTER_VISIT => $this->getDaysAfterVisitMemberIds($projectId, $params)->all(),
 
             CouponDeliveryType::EVENT_RANK_UP_ARRIVAL,
-            CouponDeliveryType::EVENT_WEATHER_RAIN => [],
+            CouponDeliveryType::EVENT_WEATHER_RAIN,
+            CouponDeliveryType::EVENT_WEATHER_TEMPERATURE => [],
         };
 
         if ($this->segmentPolicy->requiresPersonalMembers($deliveryType) && $memberIds === []) {

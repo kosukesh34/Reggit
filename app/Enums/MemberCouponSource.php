@@ -18,6 +18,8 @@ class MemberCouponSource extends EnumBase
 
     public const WEATHER_RAIN = 'weather_rain';
 
+    public const WEATHER_TEMPERATURE = 'weather_temperature';
+
     /** @var array<string, string> */
     protected static array $values = [
         self::SMAREGI_TRANSACTION => 'スマレジ取引',
@@ -26,6 +28,7 @@ class MemberCouponSource extends EnumBase
         self::SCHEDULED_DELIVERY => 'スケジュール配信',
         self::RANK_UP => 'ランクアップ',
         self::WEATHER_RAIN => '雨の日クーポン',
+        self::WEATHER_TEMPERATURE => '気温クーポン',
     ];
 
     /** @return list<string> */

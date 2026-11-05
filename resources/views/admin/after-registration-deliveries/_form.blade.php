@@ -150,8 +150,9 @@
                         <label class="form-label" for="last_month_visit_min">前月の最低来店回数</label>
                         <input type="number" name="last_month_visit_min" id="last_month_visit_min" class="form-control" min="1" max="100" value="{{ $param('last_month_visit_min', 1) }}">
                     </div>
-                    <div class="sd-param mb-0" data-types="{{ ScheduledDeliveryType::WEATHER_RAIN }}">
-                        <p class="form-text">店舗の座標の天気予報で、営業時間内に雨が続くと判定した日に送ります。15分ごとに判定し、営業中は1時間ごとに判定し直します。クーポンはその営業日だけ使えます。</p>
+                    <div class="sd-param mb-0" data-types="{{ implode(' ', ScheduledDeliveryType::WEATHER_TYPES) }}">
+                        <p class="form-text sd-param" data-types="{{ ScheduledDeliveryType::WEATHER_RAIN }}">店舗の座標の天気予報で、営業時間内に雨が続くと判定した日に送ります。15分ごとに判定し、営業中は1時間ごとに判定し直します。クーポンはその営業日だけ使えます。</p>
+                        <p class="form-text sd-param" data-types="{{ ScheduledDeliveryType::WEATHER_TEMPERATURE }}">店舗の座標の天気予報で、営業時間内の最高気温・最低気温が条件に合う日に送ります。15分ごとに判定し、営業中は1時間ごとに判定し直します。クーポンはその営業日だけ使えます。</p>
                         <div class="form-group">
                             <label class="form-label" for="store_id">店舗 <span class="ad-required">必須</span></label>
                             <select name="store_id" id="store_id" class="form-control">
@@ -163,14 +164,22 @@
                             <small class="form-text">座標は「利用店舗」で設定します。</small>
                             @error('store_id')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
                         </div>
+                        @php $temperatureCondition = $param('temperature_condition', AfterRegistrationDelivery::TEMPERATURE_ABOVE); @endphp
+                        <fieldset class="form-group sd-param" data-types="{{ ScheduledDeliveryType::WEATHER_TEMPERATURE }}">
+                            <legend class="form-label">気温の条件 <span class="ad-required">必須</span></legend>
+                            <label><input type="radio" name="temperature_condition" value="{{ AfterRegistrationDelivery::TEMPERATURE_ABOVE }}" {{ $temperatureCondition !== AfterRegistrationDelivery::TEMPERATURE_BELOW ? 'checked' : '' }}> 最高気温が基準以上（暑い日）</label>
+                            <label><input type="radio" name="temperature_condition" value="{{ AfterRegistrationDelivery::TEMPERATURE_BELOW }}" {{ $temperatureCondition === AfterRegistrationDelivery::TEMPERATURE_BELOW ? 'checked' : '' }}> 最低気温が基準以下（寒い日）</label>
+                            @error('temperature_condition')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
+                        </fieldset>
                         @foreach([
-                            'min_precipitation_probability' => ['降水確率（%）', 10, 100, '1時間ごとの降水確率がこの値以上の時間を「雨」とします。'],
-                            'min_rain_hours' => ['雨が続く時間（時間）', 1, 24, 'にわか雨で送らないよう、雨がこの時間以上続くときだけ送ります。'],
-                            'check_hours_before_open' => ['判定を始める時刻（開店の何時間前）', 0, 3, ''],
-                            'cutoff_hours_before_close' => ['送る締め切り（閉店の何時間前）', 0, 23, '届いても使う時間がないため、この時刻を過ぎたら送りません。'],
-                            'weekly_limit' => ['週の上限（回）', 1, 7, '月曜〜日曜で数えます。'],
-                        ] as $name => [$label, $min, $max, $hint])
-                            <div class="form-group">
+                            'min_precipitation_probability' => ['降水確率（%）', 10, 100, '1時間ごとの降水確率がこの値以上の時間を「雨」とします。', ScheduledDeliveryType::WEATHER_RAIN],
+                            'min_rain_hours' => ['雨が続く時間（時間）', 1, 24, 'にわか雨で送らないよう、雨がこの時間以上続くときだけ送ります。', ScheduledDeliveryType::WEATHER_RAIN],
+                            'temperature' => ['基準の気温（℃）', -20, 45, '営業時間内の1時間ごとの予報気温で判定します。', ScheduledDeliveryType::WEATHER_TEMPERATURE],
+                            'check_hours_before_open' => ['判定を始める時刻（開店の何時間前）', 0, 3, '', null],
+                            'cutoff_hours_before_close' => ['送る締め切り（閉店の何時間前）', 0, 23, '届いても使う時間がないため、この時刻を過ぎたら送りません。', null],
+                            'weekly_limit' => ['週の上限（回）', 1, 7, '月曜〜日曜で数えます。', null],
+                        ] as $name => [$label, $min, $max, $hint, $onlyType])
+                            <div @class(['form-group', 'sd-param' => $onlyType !== null]) @if($onlyType !== null) data-types="{{ $onlyType }}" @endif>
                                 <label class="form-label" for="{{ $name }}">{{ $label }} <span class="ad-required">必須</span></label>
                                 <input type="number" name="{{ $name }}" id="{{ $name }}" class="form-control" min="{{ $min }}" max="{{ $max }}" value="{{ $param($name) }}">
                                 @if($hint !== '')<small class="form-text">{{ $hint }}</small>@endif
