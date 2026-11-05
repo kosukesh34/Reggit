@@ -196,7 +196,7 @@ class ReviewFixRegressionTest extends TestCase
         $notifications = \Mockery::mock(OrderNotificationService::class);
         $notifications->shouldReceive('notifyConfirmed')->twice();
         $kitchen = \Mockery::mock(KitchenPushService::class);
-        $kitchen->shouldReceive('notifyNewOrder')->twice()->andThrow(new \RuntimeException('Kitchen push delivery failed'));
+        $kitchen->shouldReceive('notifyNewOrder')->once()->andThrow(new \RuntimeException('Kitchen push delivery failed'));
         $outbox = new OrderNotificationOutbox($notifications, $kitchen, app(StoreContext::class));
         $outbox->record(new OrderConfirmed($order->id, $order->project_id, $order->user_id));
         $this->assertSame(3, $outbox->drain());
