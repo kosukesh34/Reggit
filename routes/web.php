@@ -256,6 +256,7 @@ Route::get('/admin/change-password', [AdminPasswordController::class, 'edit'])->
 Route::put('/admin/change-password', [AdminPasswordController::class, 'change'])->middleware(['auth:admin', 'admin.auth.session', 'admin.passkey', 'throttle:5,1'])->name('admin.password.change');
 Route::get('/admin/login-security/current-ip', [AdminLoginSecurityController::class, 'currentIp'])->middleware(['auth:admin', 'admin.auth.session', 'admin.passkey', 'throttle:30,1'])->name('admin.login-security.current-ip');
 Route::put('/admin/login-security', [AdminLoginSecurityController::class, 'update'])->middleware(['auth:admin', 'admin.auth.session', 'admin.passkey', 'throttle:10,1'])->name('admin.login-security.update');
+Route::put('/admin/email', [AdminLoginSecurityController::class, 'updateEmail'])->middleware(['auth:admin', 'admin.auth.session', 'admin.passkey', 'throttle:5,1'])->name('admin.email.update');
 
 Route::get('/admin/login', [AdminLoginController::class, 'show'])->name('admin.login');
 Route::get('/admin/login/form', [AdminLoginController::class, 'showLoginForm'])->name('admin.login.form');

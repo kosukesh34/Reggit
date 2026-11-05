@@ -68,8 +68,40 @@
                            {{ old('login_notify_by_email', auth('admin')->user()->login_notify_by_email) ? 'checked' : '' }}>
                     <label for="login_notify_by_email" class="form-check-label">ログイン時に登録メールへ通知する</label>
                     <span class="form-text d-block">初期状態はオフです。オンにすると、ログイン成功時に登録メールへ通知します。</span>
+                    @php($loginNotifyEmail = auth('admin')->user()->email)
+                    <span class="form-text d-block">通知先（登録メール）:
+                        @if(filled($loginNotifyEmail))
+                            <code data-login-notify-email>{{ $loginNotifyEmail }}</code>
+                        @else
+                            未登録のため通知されません。
+                        @endif
+                        <a href="#admin-email-settings">変更する</a>
+                    </span>
                 </div>
                 <button class="btn btn-primary" type="submit">セキュリティ設定を保存</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card" id="admin-email-settings">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-envelope"></i> 登録メールアドレス</h2>
+        </div>
+        <div class="card-body">
+            <p class="form-section-desc">ログイン通知・パスワード再設定・パスキー復旧のメールはこのアドレスに届きます。</p>
+            <form method="POST" action="{{ route('admin.email.update') }}" class="admin-login-settings-form" data-unsaved-warn>
+                @csrf
+                @method('PUT')
+                <div class="form-group">
+                    <label for="admin_email" class="form-label">メールアドレス</label>
+                    <input class="form-control" id="admin_email" name="email" type="email" maxlength="255" autocomplete="email" required
+                           value="{{ old('email', auth('admin')->user()->email) }}">
+                </div>
+                <div class="form-group">
+                    <label for="email_current_password" class="form-label">現在のパスワード</label>
+                    <input class="form-control" id="email_current_password" name="email_current_password" type="password" autocomplete="current-password" required>
+                </div>
+                <button class="btn btn-primary" type="submit">メールアドレスを変更</button>
             </form>
         </div>
     </div>

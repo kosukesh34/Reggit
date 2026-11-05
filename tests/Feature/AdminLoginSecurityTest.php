@@ -199,6 +199,41 @@ class AdminLoginSecurityTest extends TestCase
         $this->assertFalse($admin->login_notify_by_email);
     }
 
+    public function test_settings_通知先の登録メールが表示されること(): void
+    {
+        $staff = AdminUser::factory()->create(['role' => 'staff', 'email' => 'notify-me@example.test']);
+
+        $this->actingAs($staff, 'admin')
+            ->get(route('admin.passkey.settings'))
+            ->assertOk()
+            ->assertSee('通知先（登録メール）')
+            ->assertSee('notify-me@example.test');
+    }
+
+    public function test_update_email_現在のパスワードで自分の登録メールを変更できること(): void
+    {
+        AdminUser::factory()->create(['email' => 'taken@example.test']);
+        $staff = AdminUser::factory()->create(['role' => 'staff', 'email' => 'old@example.test', 'password' => 'OriginalPass123']);
+        $session = [
+            AdminPasskeyGate::PASSWORD_AUTHENTICATED => true,
+            AdminPasskeyGate::PASSKEY_VERIFIED => true,
+        ];
+
+        $this->actingAs($staff, 'admin')->withSession($session)
+            ->put(route('admin.email.update'), ['email' => 'new@example.test', 'email_current_password' => 'wrong-password'])
+            ->assertSessionHasErrors('email_current_password');
+        $this->actingAs($staff, 'admin')->withSession($session)
+            ->put(route('admin.email.update'), ['email' => 'taken@example.test', 'email_current_password' => 'OriginalPass123'])
+            ->assertSessionHasErrors('email');
+        $this->assertSame('old@example.test', $staff->fresh()->email);
+
+        $this->actingAs($staff, 'admin')->withSession($session)
+            ->put(route('admin.email.update'), ['email' => 'new@example.test', 'email_current_password' => 'OriginalPass123'])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+        $this->assertSame('new@example.test', $staff->fresh()->email);
+    }
+
     public function test_update_不正なip入力が拒否されること(): void
     {
         $admin = AdminUser::factory()->create([
