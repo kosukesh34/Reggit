@@ -190,23 +190,28 @@ class ReviewFixRegressionTest extends TestCase
         $this->assertSame(0, $outbox->drain());
     }
 
-    public function test_outbox_stops_retrying_a_failed_delivery_after_a_day(): void
+    public function test_outbox_retries_every_minute_and_stops_after_ten_failures(): void
     {
         $order = $this->order('confirmed');
         $notifications = \Mockery::mock(OrderNotificationService::class);
         $notifications->shouldReceive('notifyConfirmed')->twice();
         $kitchen = \Mockery::mock(KitchenPushService::class);
-        $kitchen->shouldReceive('notifyNewOrder')->once()->andThrow(new \RuntimeException('Kitchen push delivery failed'));
+        $kitchen->shouldReceive('notifyNewOrder')->times(10)->andThrow(new \RuntimeException('Kitchen push delivery failed'));
         $outbox = new OrderNotificationOutbox($notifications, $kitchen, app(StoreContext::class));
         $outbox->record(new OrderConfirmed($order->id, $order->project_id, $order->user_id));
         $this->assertSame(3, $outbox->drain());
+        for ($i = 2; $i <= 9; $i++) {
+            $this->assertSame(0, $outbox->drain());
+            $this->travel(61)->seconds();
+            $this->assertSame(1, $outbox->drain());
+        }
         $this->assertSame(1, DB::table('order_notification_outbox')->whereNull('delivered_at')->count());
 
-        $this->travel(24)->hours();
+        $this->travel(61)->seconds();
         $this->assertSame(1, $outbox->drain());
-        $this->assertDatabaseHas('order_notification_outbox', ['channel' => 'kitchen', 'attempts' => 2, 'last_error' => 'Kitchen push delivery failed']);
+        $this->assertDatabaseHas('order_notification_outbox', ['channel' => 'kitchen', 'attempts' => 10, 'last_error' => 'Kitchen push delivery failed']);
         $this->assertSame(0, DB::table('order_notification_outbox')->whereNull('delivered_at')->count());
-        $this->travel(2)->hours();
+        $this->travel(61)->seconds();
         $this->assertSame(0, $outbox->drain());
     }
 

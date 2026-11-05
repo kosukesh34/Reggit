@@ -22,7 +22,7 @@ class OrderNotificationOutbox
 {
     private const TABLE = 'order_notification_outbox';
 
-    private const RETRY_HOURS = 24;
+    private const MAX_ATTEMPTS = 10;
 
     public function __construct(
         private OrderNotificationService $notifications,
@@ -102,15 +102,6 @@ class OrderNotificationOutbox
         if ($delivery === null) {
             return;
         }
-        // Notifications are only useful while fresh; stop instead of retrying (and alerting) forever.
-        if (now()->subHours(self::RETRY_HOURS)->gte($delivery->created_at)) {
-            DB::table(self::TABLE)->where('id', $id)->where('lease', $lease)->update([
-                'delivered_at' => now(), 'lease' => null, 'leased_until' => null, 'updated_at' => now(),
-            ]);
-            Log::error('[OrderOutbox] delivery abandoned', ['delivery_id' => $id, 'last_error' => $delivery->last_error]);
-
-            return;
-        }
 
         $previous = AdminContext::getCurrentProject();
         try {
@@ -149,12 +140,18 @@ class OrderNotificationOutbox
                 'delivered_at' => now(), 'lease' => null, 'leased_until' => null, 'last_error' => null, 'updated_at' => now(),
             ]);
         } catch (\Throwable $exception) {
+            // Retry every minute while the notification is still useful, then stop instead of alerting forever.
+            $attempt = $delivery->attempts + 1;
+            $giveUp = $attempt >= self::MAX_ATTEMPTS;
             DB::table(self::TABLE)->where('id', $id)->where('lease', $lease)->update([
                 'lease' => null, 'leased_until' => null,
-                'available_at' => now()->addSeconds(min(3600, 60 * (2 ** min((int) $delivery->attempts, 6)))),
+                'available_at' => now()->addMinute(),
+                'delivered_at' => $giveUp ? now() : null,
                 'last_error' => mb_substr($exception->getMessage(), 0, 1000), 'updated_at' => now(),
             ]);
-            Log::error('[OrderOutbox] delivery failed', ['delivery_id' => $id, 'attempt' => $delivery->attempts + 1]);
+            $giveUp
+                ? Log::error('[OrderOutbox] delivery abandoned', ['delivery_id' => $id, 'attempt' => $attempt])
+                : Log::warning('[OrderOutbox] delivery failed', ['delivery_id' => $id, 'attempt' => $attempt]);
         } finally {
             AdminContext::setCurrentProject($previous);
         }
