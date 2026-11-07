@@ -19,7 +19,7 @@ export default defineConfig({
                         return 'react-vendor';
                     }
 
-                    if (id.includes('qrcode') || id.includes('jsqr') || id.includes('jsbarcode')) {
+                    if (id.includes('qrcode')) {
                         return 'scanner-vendor';
                     }
 

@@ -151,7 +151,7 @@ class WalletPassService
     public function generateForUser(int $userId): ?string
     {
         $projectId = AdminContext::getCurrentProjectId();
-        if ($projectId === null || $projectId === false) {
+        if ($projectId === null) {
             $this->setLastError('プロジェクトが特定できません。');
 
             return null;

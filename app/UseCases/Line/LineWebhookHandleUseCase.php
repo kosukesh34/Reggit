@@ -116,7 +116,7 @@ class LineWebhookHandleUseCase
         $this->recordFollowEvent($event, LineFollowEvent::TYPE_FOLLOW, (int) $user->id);
 
         $profile = $this->lineService->getProfile($userId, $this->channelAccessToken);
-        if ($profile !== null && $profile !== false) {
+        if ($profile !== null) {
             $displayName = trim((string) ($profile['displayName'] ?? ''));
             $updates = [
                 'profile_image_url' => $profile['pictureUrl'] ?? null,

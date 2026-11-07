@@ -74,7 +74,7 @@ def main():
             run(*frontend, 'sh', '-c', 'cp -r /source/. /work/ && npm ci --ignore-scripts', timeout=600)
             # Put Docker flags before the image, not after it.
             offline = frontend[:-1] + ['--network', 'none', frontend[-1]]
-            run(*offline, 'sh', '-c', 'npm run typecheck && npm run lint && '
+            run(*offline, 'sh', '-c', 'npm run typecheck && npm run typecheck:strict && npm run lint && '
                 'npm run test:unit:frontend && npm run build', timeout=900)
             if git('rev-parse', 'HEAD') != head or git('status', '--porcelain'):
                 sys.exit('Local CI refused: checkout changed during verification.')

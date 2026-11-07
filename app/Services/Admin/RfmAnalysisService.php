@@ -3,7 +3,6 @@
 namespace App\Services\Admin;
 
 use App\Enums\MemberStatus;
-use App\Enums\OrderStatus;
 use App\Enums\RfmSegment;
 use App\Models\Member;
 use App\Models\Order;
@@ -127,7 +126,7 @@ class RfmAnalysisService
         $rows = Order::query()
             ->select('user_id', DB::raw('MAX(created_at) as last_order_at'), DB::raw('COUNT(*) as order_count'), DB::raw('SUM(total_amount) as total_amount'))
             ->where('project_id', $projectId)
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->whereIn('user_id', $userIds)
             ->groupBy('user_id')
             ->get();

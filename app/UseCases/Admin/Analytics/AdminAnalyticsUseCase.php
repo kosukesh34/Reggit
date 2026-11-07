@@ -71,7 +71,7 @@ class AdminAnalyticsUseCase
     {
         $ordersCount = (clone $ordersBase)->count();
         $revenue = (clone $ordersBase)
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->sum('total_amount');
         $announcementSummary = $this->buildAnnouncementReadSummary($projectId, $startDate, $endDate);
 
@@ -255,7 +255,7 @@ class AdminAnalyticsUseCase
             $buckets[$bucket['label']] = 0;
         }
 
-        $totals = (clone $ordersBase)->where('status', '!=', OrderStatus::CANCELLED)->pluck('total_amount')->all();
+        $totals = (clone $ordersBase)->notCancelled()->pluck('total_amount')->all();
         foreach ($totals as $total) {
             $value = (float) $total;
             foreach (self::ORDER_VALUE_BUCKETS as $bucket) {

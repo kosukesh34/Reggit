@@ -34,10 +34,10 @@ export function FeaturePage() {
     case "terms": case "privacy": return <NativeLegalPage kind={feature} />;
     case "lottery": return <Navigate to="/designlab" replace />;
     case "menu": case "products": case "mobileOrder": case "dineInOrder": {
-      return <div className="native-screen native-products"><NativeProductsPage dineIn={feature === "dineInOrder"} image="/images/liff/product-placeholder.jpg" storeId={config.project_key ?? "demo"} venueName={stores[0]?.name ?? config.project_name ?? "店舗"} /></div>;
+      return <div className="native-screen native-products"><NativeProductsPage dineIn={feature === "dineInOrder"} storeId={config.project_key ?? "demo"} venueName={stores[0]?.name ?? config.project_name ?? "店舗"} /></div>;
     }
     case "shop": {
-      return <div className="native-screen native-products"><NativeProductsPage dineIn={false} shipping image="/images/liff/product-placeholder.jpg" storeId={config.project_key ?? "demo"} venueName={stores[0]?.name ?? config.project_name ?? "店舗"} /></div>;
+      return <div className="native-screen native-products"><NativeProductsPage dineIn={false} shipping storeId={config.project_key ?? "demo"} venueName={stores[0]?.name ?? config.project_name ?? "店舗"} /></div>;
     }
     default: return <Navigate to="/home" replace />;
   }

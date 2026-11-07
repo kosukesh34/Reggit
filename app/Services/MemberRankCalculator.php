@@ -19,7 +19,7 @@ class MemberRankCalculator
     ) {}
 
     /**
-     * @return array{current_rank: string, current_rank_label: string, current_rank_icon: string|null, current_rank_background: string|null, next_rank: string|null, next_rank_label: string|null, points_to_next_rank: int|null, rank_basis: string, rank_metric: int, rank_aggregation_type: string, days_required_for_next_rank: int|null, days_to_next_rank: int|null}
+     * @return array{current_rank: string, current_rank_label: string, current_rank_icon: string|null, current_rank_background: string|null, current_rank_color?: string|null, next_rank: string|null, next_rank_label: string|null, points_to_next_rank: int|null, rank_basis: string, rank_metric: int, rank_aggregation_type: string, days_required_for_next_rank: int|null, days_to_next_rank: int|null}
      */
     public function getRankInfo(Member $member): array
     {

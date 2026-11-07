@@ -1,39 +1,5 @@
 /** デザイナー／デモ用のサンプルデータ（単一の定義元） */
 
-import { DEMO_COUPON_PRIZES } from './demoCoupons';
-
-const SAMPLE_COUPON_CODES = ['DRINK-FREE-2401', 'DESSERT-20-2401'];
-
-export function buildBuiltinSampleCoupons(): Array<{
-    id: string;
-    coupon_name: string;
-    description: string;
-    status: string;
-    valid_until: string;
-    issued_at: string;
-    image_url: string;
-    code: string;
-    use_display: string;
-    is_sample_preview: true;
-}> {
-    const until = new Date();
-    until.setDate(until.getDate() + 14);
-    const validUntil = until.toISOString();
-    const issuedAt = new Date().toISOString();
-    return DEMO_COUPON_PRIZES.slice(0, 2).map((prize, index) => ({
-        id: `sample-coupon-${index + 1}`,
-        coupon_name: prize.coupon_name,
-        description: prize.description,
-        status: 'available',
-        valid_until: validUntil,
-        issued_at: issuedAt,
-        image_url: prize.image_url,
-        code: SAMPLE_COUPON_CODES[index] ?? `SAMPLE-${index + 1}`,
-        use_display: 'barcode',
-        is_sample_preview: true as const,
-    }));
-}
-
 export function buildBuiltinSampleStampCards(): Array<{
     id: string;
     name: string;
@@ -141,30 +107,6 @@ export function buildBuiltinSampleGallery(): {
     };
 }
 
-export function buildBuiltinSampleQueueEntry(): {
-    id: string;
-    formatted_queue_number: string;
-    status: string;
-    party_size: number;
-    waiting_count: number;
-    ahead_count: number;
-    estimated_wait_minutes: number;
-    line_linked: boolean;
-    is_sample_preview: true;
-} {
-    return {
-        id: 'sample',
-        formatted_queue_number: String(new Date().getDate()) + '12',
-        status: 'waiting',
-        party_size: 2,
-        waiting_count: 5,
-        ahead_count: 3,
-        estimated_wait_minutes: 15,
-        line_linked: true,
-        is_sample_preview: true,
-    };
-}
-
 export function buildBuiltinSampleReservations(): Array<{
     id: number;
     reserved_at: string;
@@ -188,58 +130,4 @@ export function buildBuiltinSampleReservations(): Array<{
             is_sample_preview: true,
         },
     ];
-}
-
-export function buildBuiltinSampleMemberData(): {
-    is_member: true;
-    points: number;
-    current_rank: string;
-    current_rank_label: string;
-    current_rank_color: string;
-    next_rank_label: string;
-    points_to_next_rank: number;
-    days_to_next_rank: number;
-    days_required_for_next_rank: number;
-    show_points_display: boolean;
-    show_rank_progress: boolean;
-    member_card_design: string;
-    member_card_display_type: string;
-    member_card_code_type: string;
-    points_expiry: { expires_at_label: string; points_expiring: number };
-    rank_up_history: Array<{ from_rank_label: string; to_rank_label: string; achieved_at: string }>;
-    user: { name: string };
-    member: { member_number: string; points: number };
-    is_sample_preview: true;
-} {
-    return {
-        is_member: true,
-        points: 2450,
-        current_rank: 'green',
-        current_rank_label: 'GREEN',
-        current_rank_color: '#0E7C66',
-        next_rank_label: 'GOLD',
-        points_to_next_rank: 550,
-        days_to_next_rank: 18,
-        days_required_for_next_rank: 30,
-        show_points_display: true,
-        show_rank_progress: true,
-        member_card_design: 'emblem',
-        member_card_display_type: 'card',
-        member_card_code_type: 'barcode',
-        points_expiry: {
-            expires_at_label: '無期限',
-            points_expiring: 0,
-        },
-        rank_up_history: [
-            { from_rank_label: 'ブロンズ', to_rank_label: 'GREEN', achieved_at: '2025/11/03' },
-        ],
-        user: {
-            name: 'Alex',
-        },
-        member: {
-            member_number: '1234567890123456',
-            points: 2450,
-        },
-        is_sample_preview: true,
-    };
 }

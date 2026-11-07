@@ -75,7 +75,7 @@ class SmaregiInboundCustomerProfileApplier
     }
 
     /**
-     * @param  array<string, string|int|float|bool|array<string, string|int|float|bool|null>|null>  $customer
+     * @param  array<string, mixed>  $customer  スマレジ会員 API の応答（customFields は {no, value} の配列）
      * @return array<string, string|list<string>|null>
      */
     private function profileExtraFromRemoteCustomFields(Member $member, array $customer): array

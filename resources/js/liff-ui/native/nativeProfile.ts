@@ -1,4 +1,13 @@
-import type { ProfileFieldSetting } from '../../frontend/features/member/MemberProfileForm';
+export type ProfileFieldSetting = {
+  key: string;
+  label?: string;
+  required?: boolean;
+  input_type?: string;
+  values?: unknown[];
+  options?: Array<{ value: string; label: string }>;
+  description?: string;
+};
+
 export const fallbackProfileFields: ProfileFieldSetting[] = [{ key: 'name', label: 'お名前', required: true }, { key: 'phone', label: '電話番号', input_type: 'tel' }];
 export const demoProfileFields: ProfileFieldSetting[] = [
   ...fallbackProfileFields.slice(0, 1), { key: 'kana', label: 'お名前（カナ）' }, fallbackProfileFields[1],

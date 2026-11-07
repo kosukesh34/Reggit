@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
 use App\Models\Concerns\BelongsToProject;
 use App\Support\DailySequenceNumber;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -97,6 +99,12 @@ class Order extends Model
     public function pointTransactions(): HasMany
     {
         return $this->hasMany(PointTransaction::class);
+    }
+
+    /** キャンセル以外の注文に絞る（売上・来店回数などの集計対象） */
+    public function scopeNotCancelled(Builder $query): Builder
+    {
+        return $query->where($query->qualifyColumn('status'), '!=', OrderStatus::CANCELLED);
     }
 
     public function formattedOrderNumber(): string

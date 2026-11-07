@@ -34,7 +34,7 @@ export class MemberWalletActions {
 
     setup() {
         const projectKey = (typeof window !== 'undefined' && window.__PROJECT_KEY__) ? window.__PROJECT_KEY__ : '';
-        const appleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
+        const appleBtn = document.querySelector<HTMLButtonElement>('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
         if (appleBtn && appleBtn.getAttribute('data-wallet-bound') !== '1') {
             appleBtn.setAttribute('data-wallet-bound', '1');
             appleBtn.addEventListener('click', (e) => this._onAddToAppleWallet(e, appleBtn, projectKey));
@@ -43,7 +43,7 @@ export class MemberWalletActions {
                 this._prefetchAppleWalletOpenUrl(projectKey);
             }
         }
-        const googleBtn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
+        const googleBtn = document.querySelector<HTMLButtonElement>('.member-card-add-to-wallet-btn[data-google-wallet]');
         if (googleBtn && googleBtn.getAttribute('data-wallet-bound') !== '1') {
             googleBtn.setAttribute('data-wallet-bound', '1');
             googleBtn.addEventListener('click', (e) => this._onAddToGoogleWallet(e, googleBtn, projectKey));
@@ -66,7 +66,7 @@ export class MemberWalletActions {
         return isMobileAppMode() && typeof window.__nativeOpenExternalUrl__ === 'function';
     }
 
-    _setGoogleWalletButtonPreparing(btn, preparing) {
+    _setGoogleWalletButtonPreparing(btn: HTMLButtonElement | null, preparing: boolean) {
         if (!btn) return;
         const label = btn.querySelector('.member-card-add-to-wallet-text');
         if (preparing) {
@@ -84,7 +84,7 @@ export class MemberWalletActions {
         }
     }
 
-    _storeGoogleWalletOpenUrl(openUrl) {
+    _storeGoogleWalletOpenUrl(openUrl: string | null) {
         if (!openUrl) {
             this._googleWalletOpenUrl = null;
             this._googleWalletOpenUrlAt = 0;
@@ -106,11 +106,11 @@ export class MemberWalletActions {
         return this._googleWalletOpenUrl;
     }
 
-    _prefetchGoogleWalletOpenUrl(projectKey) {
+    _prefetchGoogleWalletOpenUrl(projectKey: string) {
         return this._fetchGoogleWalletIssueUrl(projectKey)
             .then((issueUrl) => {
                 const openUrl = resolveGoogleWalletOpenUrl(issueUrl);
-                const btn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
+                const btn = document.querySelector<HTMLButtonElement>('.member-card-add-to-wallet-btn[data-google-wallet]');
                 this._storeGoogleWalletOpenUrl(openUrl);
                 if (btn) {
                     this._setGoogleWalletButtonPreparing(btn, false);
@@ -125,13 +125,13 @@ export class MemberWalletActions {
                 this._debugLog('google_wallet_prefetch_failed', {
                     message: err && err.message ? String(err.message) : 'unknown',
                 });
-                const btn = document.querySelector('.member-card-add-to-wallet-btn[data-google-wallet]');
+                const btn = document.querySelector<HTMLButtonElement>('.member-card-add-to-wallet-btn[data-google-wallet]');
                 if (btn) this._setGoogleWalletButtonPreparing(btn, false);
                 throw err;
             });
     }
 
-    async _fetchGoogleWalletIssueUrl(projectKey) {
+    async _fetchGoogleWalletIssueUrl(projectKey: string): Promise<string> {
         await this.ensureIdentityReady(2500);
         const endpoint = AppConstants.API_ENDPOINTS.MEMBER_GOOGLE_WALLET_URL
             + '?project_key=' + encodeURIComponent(projectKey);
@@ -156,7 +156,7 @@ export class MemberWalletActions {
             && (canUseNativeExternalWallet() || canUseNativeAppleWalletPass());
     }
 
-    _setAppleWalletButtonPreparing(btn, preparing) {
+    _setAppleWalletButtonPreparing(btn: HTMLButtonElement | null, preparing: boolean) {
         if (!btn) return;
         const label = btn.querySelector('.member-card-add-to-wallet-text');
         if (preparing) {
@@ -175,7 +175,7 @@ export class MemberWalletActions {
     }
 
     /** API 発行 URL から .pkpass 直ダウンロード URL（ワンタイム token）を組み立てる */
-    _buildAppleWalletPassDownloadUrl(projectKey, issueUrl) {
+    _buildAppleWalletPassDownloadUrl(projectKey: string, issueUrl: string) {
         const normalized = normalizeExternalUrl(issueUrl);
         if (!normalized) return null;
         try {
@@ -197,7 +197,7 @@ export class MemberWalletActions {
         }
     }
 
-    _getFreshAppleWalletPassDownloadUrl(btn) {
+    _getFreshAppleWalletPassDownloadUrl(btn: HTMLButtonElement | null) {
         if (!btn) return null;
         const downloadUrl = btn.getAttribute('data-wallet-pass-download-url');
         const prefetchedAt = btn.getAttribute('data-wallet-open-url-at');
@@ -209,12 +209,12 @@ export class MemberWalletActions {
         return downloadUrl;
     }
 
-    _getFreshAppleWalletOpenUrl(btn) {
+    _getFreshAppleWalletOpenUrl(btn: HTMLButtonElement | null) {
         if (!btn || !this._isAppleWalletOpenUrlFresh(btn)) return null;
         return btn.getAttribute('data-wallet-open-url');
     }
 
-    _isAppleWalletOpenUrlFresh(btn) {
+    _isAppleWalletOpenUrlFresh(btn: HTMLButtonElement | null) {
         if (!btn) return false;
         const openUrl = btn.getAttribute('data-wallet-open-url');
         const prefetchedAt = btn.getAttribute('data-wallet-open-url-at');
@@ -223,7 +223,7 @@ export class MemberWalletActions {
         return Number.isFinite(age) && age >= 0 && age < MemberWalletActions.WALLET_PASS_PREFETCH_TTL_MS;
     }
 
-    async _handleNativeAppleWalletClick(btn, projectKey) {
+    async _handleNativeAppleWalletClick(btn: HTMLButtonElement, projectKey: string) {
         let passDownloadUrl = this._getFreshAppleWalletPassDownloadUrl(btn);
 
         if (canUseNativeAppleWalletPass() && !passDownloadUrl) {
@@ -246,7 +246,7 @@ export class MemberWalletActions {
         }
 
         if (canUseNativeAppleWalletPass() && passDownloadUrl) {
-            if (window.__nativeAddAppleWalletPass__(passDownloadUrl)) {
+            if (window.__nativeAddAppleWalletPass__?.(passDownloadUrl)) {
                 this._debugLog('apple_wallet_native_passkit_ok', { url_length: passDownloadUrl.length });
                 if (typeof ToastManager !== 'undefined') {
                     ToastManager.success('Apple Wallet に追加します');
@@ -257,7 +257,7 @@ export class MemberWalletActions {
 
         const openUrl = this._getFreshAppleWalletOpenUrl(btn);
         if (canUseNativeExternalWallet() && openUrl) {
-            if (window.__nativeOpenExternalUrl__(openUrl)) {
+            if (window.__nativeOpenExternalUrl__?.(openUrl)) {
                 this._debugLog('apple_wallet_native_safari_ok', { url_length: openUrl.length });
                 if (typeof ToastManager !== 'undefined') {
                     ToastManager.success('Safari で Apple Wallet を開きます。「追加」をタップしてください。');
@@ -288,12 +288,12 @@ export class MemberWalletActions {
      * LIFF では openWindow がユーザータップと同一スタックで呼ばれる必要があるため、
      * 会員証表示時に Safari 用 URL を先に取得してボタンに保持する。
      */
-    _prefetchAppleWalletOpenUrl(projectKey) {
+    _prefetchAppleWalletOpenUrl(projectKey: string) {
         return this._fetchWalletPassIssueUrl(projectKey)
             .then((issueUrl) => {
                 const openUrl = this._resolveAppleWalletSafariUrl(issueUrl);
                 const passDownloadUrl = this._buildAppleWalletPassDownloadUrl(projectKey, issueUrl);
-                const btn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
+                const btn = document.querySelector<HTMLButtonElement>('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
                 if (btn) {
                     const prefetchedAt = String(Date.now());
                     if (openUrl) {
@@ -317,7 +317,7 @@ export class MemberWalletActions {
             })
             .catch((err) => {
                 console.warn('Apple Wallet URL prefetch failed:', err);
-                const btn = document.querySelector('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
+                const btn = document.querySelector<HTMLButtonElement>('.member-card-add-to-wallet-btn[data-wallet-pass-url]');
                 if (btn) this._setAppleWalletButtonPreparing(btn, false);
                 return null;
             });
@@ -327,7 +327,7 @@ export class MemberWalletActions {
      * LINE 内ブラウザ → Safari で開く URL（wallet-add 中間ページ経由）。
      * .pkpass 直リンクは LIFF の openWindow で拒否されることがあるため中間ページを使う。
      */
-    _resolveAppleWalletSafariUrl(issueUrl) {
+    _resolveAppleWalletSafariUrl(issueUrl: string) {
         return this._resolveWalletAddOpenUrl(issueUrl, 'apple');
     }
 
@@ -357,10 +357,10 @@ export class MemberWalletActions {
                     self._debugLog('liff_open_window_ok', Object.assign({}, debugContext || {}, {
                         url_length: normalized.length,
                     }));
-                }).catch(function (err) {
+                }).catch(function (err: unknown) {
                     self._debugLog('liff_open_window_failed', Object.assign({}, debugContext || {}, {
                         reason: 'promise_rejected',
-                        message: err && err.message ? String(err.message) : 'unknown',
+                        message: err instanceof Error && err.message ? err.message : 'unknown',
                     }));
                 });
             } else {
@@ -372,13 +372,13 @@ export class MemberWalletActions {
         } catch (e) {
             this._debugLog('liff_open_window_failed', Object.assign({}, debugContext || {}, {
                 reason: 'sync_throw',
-                message: e && e.message ? String(e.message) : 'unknown',
+                message: e instanceof Error && e.message ? e.message : 'unknown',
             }));
             return false;
         }
     }
 
-    async _fetchWalletPassIssueUrl(projectKey) {
+    async _fetchWalletPassIssueUrl(projectKey: string): Promise<string> {
         await this.ensureIdentityReady(2500);
         const endpoint = AppConstants.API_ENDPOINTS.MEMBER_WALLET_PASS_URL
             + '?project_key=' + encodeURIComponent(projectKey);
@@ -397,7 +397,7 @@ export class MemberWalletActions {
      * API 発行 URL を現在のオリジン・return_url 付きの wallet-add URL に正規化する。
      * サーバー側 APP_URL と LIFF の表示オリジンが異なる場合でも開けるようにする。
      */
-    _resolveWalletAddOpenUrl(issueUrl, type) {
+    _resolveWalletAddOpenUrl(issueUrl: string, type: 'apple' | 'google') {
         if ((type || 'apple') === 'google') {
             return resolveGoogleWalletOpenUrl(issueUrl);
         }
@@ -449,7 +449,7 @@ export class MemberWalletActions {
         }
     }
 
-    async _openExternalUrl(url) {
+    async _openExternalUrl(url: string) {
         const normalized = normalizeExternalUrl(url);
         if (!normalized) {
             console.warn('invalid external url', url);
@@ -487,7 +487,7 @@ export class MemberWalletActions {
         return false;
     }
 
-    _buildWalletAddUrl(walletUrl, type) {
+    _buildWalletAddUrl(walletUrl: string, type: string) {
         const ret = getWalletReturnParams();
         const origin = resolveAppOrigin();
         if (!origin) {
@@ -503,7 +503,7 @@ export class MemberWalletActions {
         return origin + '/wallet-add?' + params.toString();
     }
 
-    _onAddToAppleWallet(e, btn, projectKey) {
+    _onAddToAppleWallet(e: Event, btn: HTMLButtonElement, projectKey: string) {
         e.preventDefault();
         this._debugLog('wallet_add_click', { type: 'apple', is_liff: !!(typeof window !== 'undefined' && window.__IS_LIFF__) });
 
@@ -545,7 +545,7 @@ export class MemberWalletActions {
         this._runAppleWalletDownloadFlow(btn, projectKey);
     }
 
-    async _runAppleWalletDownloadFlow(btn, projectKey) {
+    async _runAppleWalletDownloadFlow(btn: HTMLButtonElement, projectKey: string) {
         const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="member-card-add-to-wallet-loading"><i class="fas fa-spinner fa-spin"></i> 取得中...</span>';
@@ -560,7 +560,7 @@ export class MemberWalletActions {
                 if (!openUrl) {
                     throw new Error('Wallet Pass の URL が不正です');
                 }
-                if (!window.__nativeOpenExternalUrl__(openUrl)) {
+                if (!window.__nativeOpenExternalUrl__?.(openUrl)) {
                     throw new Error('外部ブラウザを開けませんでした');
                 }
                 if (typeof ToastManager !== 'undefined') {
@@ -618,7 +618,7 @@ export class MemberWalletActions {
         }
     }
 
-    async _onAddToGoogleWallet(e, btn, projectKey) {
+    async _onAddToGoogleWallet(e: Event, btn: HTMLButtonElement, projectKey: string) {
         e.preventDefault();
         this._debugLog('wallet_add_click', { type: 'google', is_liff: !!(typeof window !== 'undefined' && window.__IS_LIFF__) });
 
@@ -678,10 +678,10 @@ export class MemberWalletActions {
             window.location.href = openUrl;
         } catch (err) {
             this._debugLog('google_wallet_url_failed', {
-                message: err && err.message ? String(err.message) : 'unknown',
+                message: err instanceof Error && err.message ? err.message : 'unknown',
             });
             if (typeof ToastManager !== 'undefined') {
-                ToastManager.error(err.message || 'Google Wallet の取得に失敗しました');
+                ToastManager.error((err instanceof Error && err.message) || 'Google Wallet の取得に失敗しました');
             }
         } finally {
             btn.disabled = false;

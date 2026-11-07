@@ -115,7 +115,7 @@ class SmaregiInboundOrderRecorder
             ->withoutGlobalScope(ProjectScope::class)
             ->whereKey($orderId)
             ->where('project_id', $projectId)
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->update(['status' => OrderStatus::CANCELLED]);
     }
 

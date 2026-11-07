@@ -8,7 +8,6 @@
   },
   "include": [
     "resources/js/types/strict-globals.d.ts",
-    "resources/js/frontend/member/**/*.ts",
-    "resources/js/frontend/navigation/**/*.ts"
+    "resources/js/frontend/member/**/*.ts"
   ]
 }

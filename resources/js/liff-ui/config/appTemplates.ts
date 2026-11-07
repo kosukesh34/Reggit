@@ -90,7 +90,3 @@ export function templatesByGroup(templates: AppTemplate[]): Array<{ group: Templ
     }))
     .filter((row) => row.items.length > 0);
 }
-
-export function templateThemeLabel(store: StoreAppConfig, presetName?: string): string {
-  return TEMPLATE_META[store.storeId]?.shortName ?? presetName ?? store.brandName;
-}

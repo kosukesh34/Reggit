@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\URL;
 
+/**
+ * @property int $project_id
+ * @property list<string>|null $image_paths
+ */
 class Announcement extends Model
 {
     use BelongsToProject, HasFactory;

@@ -1,6 +1,3 @@
-import { ApiClient } from '../../../shared/utils/apiClient';
-import { AppConstants } from '../../../shared/constants';
-
 export type Announcement = {
     id?: number | string;
     title?: string;
@@ -13,48 +10,3 @@ export type Announcement = {
     is_pinned?: boolean;
     is_read?: boolean;
 };
-
-export function formatPublishedAt(value: string | undefined | null): string {
-    if (value === undefined || value === null || value === '') {
-        return '';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-        return '';
-    }
-
-    return date.toLocaleString('ja-JP', {
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
-function client(): ApiClient {
-    const app = window.app as { apiClient?: ApiClient } | undefined;
-    return app?.apiClient ?? new ApiClient();
-}
-
-export async function fetchAnnouncements(): Promise<Announcement[]> {
-    const result = await client().get(AppConstants.API_ENDPOINTS.ANNOUNCEMENTS);
-    const data = result.success ? (result.data as { announcements?: Announcement[] }) : null;
-    return data && Array.isArray(data.announcements) ? data.announcements : [];
-}
-
-export async function markAnnouncementRead(id: number | string): Promise<void> {
-    try {
-        await client().post(AppConstants.API_ENDPOINTS.ANNOUNCEMENT_READ(id), {});
-    } catch {
-        /* ignore */
-    }
-}
-
-export function openAnnouncementDetail(id: number | string): void {
-    const mgr = (window.app as { announcementManager?: { openDetail?: (id: number | string) => void } } | undefined)
-        ?.announcementManager;
-    if (typeof mgr?.openDetail === 'function') {
-        void mgr.openDetail(id);
-    }
-}

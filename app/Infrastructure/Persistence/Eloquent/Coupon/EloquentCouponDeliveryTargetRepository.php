@@ -3,7 +3,6 @@
 namespace App\Infrastructure\Persistence\Eloquent\Coupon;
 
 use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
-use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\MemberStamp;
@@ -64,7 +63,7 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         $userIdsWithRecentOrders = Order::query()
             ->where('project_id', $projectId)
             ->where('created_at', '>=', $since)
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->distinct()
             ->pluck('user_id');
 
@@ -91,7 +90,7 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         $userIds = Order::query()
             ->where('project_id', $projectId)
             ->whereBetween('created_at', [$start, $end])
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->selectRaw('user_id, SUM(total_amount) as total')
             ->groupBy('user_id')
             ->havingRaw('SUM(total_amount) >= ?', [(string) $minTotalAmount])
@@ -159,7 +158,7 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
 
         $orderCountsSub = Order::query()
             ->where('project_id', $projectId)
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->selectRaw('user_id, COUNT(*) as visit_count')
             ->groupBy('user_id');
 
@@ -283,7 +282,7 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             ->where('project_id', $projectId)
             ->whereHas('user.orders', function ($query) use ($projectId, $productId) {
                 $query->where('project_id', $projectId)
-                    ->where('status', '!=', OrderStatus::CANCELLED)
+                    ->notCancelled()
                     ->whereHas('items', function ($itemQuery) use ($productId) {
                         $itemQuery->where('product_id', $productId);
                     });

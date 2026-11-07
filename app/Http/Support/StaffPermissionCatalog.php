@@ -12,7 +12,7 @@ class StaffPermissionCatalog
         return AdminUserPermission::ALL_PERMISSIONS;
     }
 
-    /** @return array<string, array<string, string>> */
+    /** @return array<string, list<string>> */
     public function groups(): array
     {
         return AdminUserPermission::PERMISSION_GROUPS;

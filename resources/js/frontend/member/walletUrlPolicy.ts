@@ -1,5 +1,3 @@
-export type WalletReturnTarget = 'line' | 'app' | 'web';
-
 export interface LocationLike {
     href?: string;
     origin?: string;

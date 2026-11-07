@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ProfileFieldSetting } from '../../frontend/features/member/MemberProfileForm';
 import { resolvePostalAddress, validatePostalCode, type PostalAddress } from '../../frontend/member/postalAddressPolicy';
-import { profileChoices } from './nativeProfile';
+import { profileChoices, type ProfileFieldSetting } from './nativeProfile';
 
 export type PostalLookup = (code: string) => Promise<{ addresses: unknown[] }>;
 const addressAutocomplete: Record<string, string> = {

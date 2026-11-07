@@ -54,9 +54,7 @@ class MemberWithdrawUseCase
             }
 
             try {
-                if (method_exists($user, 'tokens')) {
-                    $user->tokens()->delete();
-                }
+                $user->tokens()->delete();
             } catch (\Throwable $exception) {
                 LogHelper::warning('[Member] token cleanup skipped', [
                     'project_id' => $projectId,
