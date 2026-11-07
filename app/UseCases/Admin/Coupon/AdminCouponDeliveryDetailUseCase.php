@@ -7,6 +7,7 @@ use App\Enums\CouponDeliveryStatus;
 use App\Enums\CouponDeliveryType;
 use App\Models\CouponDelivery;
 use App\Models\Member;
+use App\Services\Admin\CouponDeliveryDisplay;
 use App\UseCases\Admin\Coupon\Data\AdminCouponDeliveryDetailOutput;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -14,6 +15,7 @@ class AdminCouponDeliveryDetailUseCase
 {
     public function __construct(
         private RankSettings $shopSettingRepository,
+        private CouponDeliveryDisplay $display,
     ) {}
 
     public function handle(int $projectId, int $deliveryId): AdminCouponDeliveryDetailOutput
@@ -73,8 +75,8 @@ class AdminCouponDeliveryDetailUseCase
             (string) ($delivery->coupon?->code ?: '—'),
             $typeOptions[$delivery->delivery_type] ?? (string) $delivery->delivery_type,
             $statusLabels[$status] ?? $status,
-            $this->statusBadgeClass($status),
-            $this->formatTimingLabel($delivery),
+            $this->display->statusBadgeClass($status),
+            $this->display->timingLabel($delivery),
             number_format((int) $delivery->issued_count).'人',
             $targetSummary,
             $members,
@@ -144,35 +146,5 @@ class AdminCouponDeliveryDetailUseCase
         }
 
         return $rankKey;
-    }
-
-    private function formatTimingLabel(CouponDelivery $delivery): string
-    {
-        if ($delivery->status === CouponDeliveryStatus::ACTIVE) {
-            return '有効（昇格時に自動発行）';
-        }
-        if ($delivery->status === CouponDeliveryStatus::SCHEDULED && $delivery->scheduled_at !== null) {
-            return '予約: '.$delivery->scheduled_at->format('Y/m/d H:i');
-        }
-        if ($delivery->sent_at !== null) {
-            return '配信: '.$delivery->sent_at->format('Y/m/d H:i');
-        }
-        if ($delivery->created_at !== null) {
-            return '作成: '.$delivery->created_at->format('Y/m/d H:i');
-        }
-
-        return '—';
-    }
-
-    private function statusBadgeClass(string $status): string
-    {
-        return match ($status) {
-            CouponDeliveryStatus::SENT => 'success',
-            CouponDeliveryStatus::SCHEDULED => 'info',
-            CouponDeliveryStatus::ACTIVE => 'primary',
-            CouponDeliveryStatus::FAILED => 'danger',
-            CouponDeliveryStatus::CANCELLED => 'secondary',
-            default => 'secondary',
-        };
     }
 }

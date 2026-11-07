@@ -291,6 +291,22 @@ class AdminStampsTest extends TestCase
         $this->assertSame(['1' => 'https://example.com/filled.png'], $card->stamp_images);
     }
 
+    public function test_編集画面のプレビューに保存済みのスタンプ画像を渡すこと(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $card = StampCard::factory()->create(['project_id' => $project->id, 'required_stamps' => 5, 'stamp_images' => ['1' => 'https://example.com/filled.png']]);
+
+        $html = $this->actingAs($admin, 'admin')
+            ->get(route('admin.stamps.edit', ['project_key' => $project->project_key, 'id' => $card->id]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('/const stampImages = (\{.*?\});/', $html);
+        preg_match('/const stampImages = (\{.*?\});/', $html, $matches);
+        $this->assertSame(['1' => 'https://example.com/filled.png'], json_decode($matches[1], true));
+    }
+
     public function test_クーポンとガチャの達成特典を保存できること(): void
     {
         $project = $this->createProject();

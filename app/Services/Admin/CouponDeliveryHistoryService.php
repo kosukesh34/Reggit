@@ -12,7 +12,10 @@ use Illuminate\Support\Collection;
 
 class CouponDeliveryHistoryService
 {
-    public function __construct(private AdminMemberIdentifier $memberIdentifier) {}
+    public function __construct(
+        private AdminMemberIdentifier $memberIdentifier,
+        private CouponDeliveryDisplay $display,
+    ) {}
 
     /**
      * @return LengthAwarePaginator<int, array{
@@ -75,8 +78,8 @@ class CouponDeliveryHistoryService
                 'delivery_type_label' => $deliveryTypeOptions[$delivery->delivery_type] ?? (string) $delivery->delivery_type,
                 'status' => $status,
                 'status_label' => $statusLabels[$status] ?? $status,
-                'status_badge' => $this->statusBadgeClass($status),
-                'timing_label' => $this->formatTimingLabel($delivery),
+                'status_badge' => $this->display->statusBadgeClass($status),
+                'timing_label' => $this->display->timingLabel($delivery),
                 'issued_count_label' => number_format((int) $delivery->issued_count).'人',
                 'recipients_label' => $recipients['label'],
                 'recipients_title' => $recipients['title'],
@@ -178,35 +181,5 @@ class CouponDeliveryHistoryService
         $label = implode('、', $shown).' 他'.(count($names) - 3).'名';
 
         return ['label' => $label, 'title' => $full];
-    }
-
-    private function formatTimingLabel(CouponDelivery $delivery): string
-    {
-        if ($delivery->status === CouponDeliveryStatus::ACTIVE) {
-            return '有効（昇格時）';
-        }
-        if ($delivery->status === CouponDeliveryStatus::SCHEDULED && $delivery->scheduled_at !== null) {
-            return '予約: '.$delivery->scheduled_at->format('Y/m/d H:i');
-        }
-        if ($delivery->sent_at !== null) {
-            return '配信: '.$delivery->sent_at->format('Y/m/d H:i');
-        }
-        if ($delivery->created_at !== null) {
-            return '作成: '.$delivery->created_at->format('Y/m/d H:i');
-        }
-
-        return '—';
-    }
-
-    private function statusBadgeClass(string $status): string
-    {
-        return match ($status) {
-            CouponDeliveryStatus::SENT => 'success',
-            CouponDeliveryStatus::SCHEDULED => 'info',
-            CouponDeliveryStatus::ACTIVE => 'primary',
-            CouponDeliveryStatus::FAILED => 'danger',
-            CouponDeliveryStatus::CANCELLED => 'secondary',
-            default => 'secondary',
-        };
     }
 }

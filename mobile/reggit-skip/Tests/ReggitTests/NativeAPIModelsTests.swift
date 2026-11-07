@@ -254,7 +254,8 @@ final class NativeAPIModelsTests: XCTestCase {
               "combine_division": "1",
               "min_order_amount": 1000,
               "max_order_amount": null,
-              "target_products": ["カフェラテ", "スコーン"]
+              "target_products": ["カフェラテ", "スコーン"],
+              "usage_time_label": "平日（祝日を除く） 10:00〜12:00"
             },
             { "id": 5, "coupon_name": "条件なし", "status": "available", "valid_until": "", "use_display": "barcode" }
           ]
@@ -262,9 +263,10 @@ final class NativeAPIModelsTests: XCTestCase {
         """.data(using: .utf8)!
 
         let coupons = try CouponListResponse.parse(json).coupons
-        XCTAssertEqual(coupons[0].conditionBadges, ["併用不可", "対象商品あり", "\(AppFormat.yen(1000))以上"])
-        XCTAssertEqual(coupons[0].conditionRows.map(\.label), ["対象商品", "お会計金額", "併用"])
+        XCTAssertEqual(coupons[0].conditionBadges, ["日時限定", "併用不可", "対象商品あり", "\(AppFormat.yen(1000))以上"])
+        XCTAssertEqual(coupons[0].conditionRows.map(\.label), ["対象商品", "お会計金額", "併用", "使える日時"])
         XCTAssertEqual(coupons[0].conditionRows[0].value, "カフェラテ、スコーンのいずれかを含むお会計で使えます")
+        XCTAssertEqual(coupons[0].conditionRows[3].value, "平日（祝日を除く） 10:00〜12:00に使えます")
         XCTAssertEqual(coupons[0].combineNotice, "このクーポンは他のクーポンと併用できません")
         XCTAssertEqual(coupons[1].conditionBadges, ["併用OK"])
         XCTAssertNil(coupons[1].combineNotice)

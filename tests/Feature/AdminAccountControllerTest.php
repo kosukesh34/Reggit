@@ -56,6 +56,23 @@ class AdminAccountControllerTest extends TestCase
         $this->assertDatabaseHas('admin_users', ['login_id' => 'test_admin']);
     }
 
+    public function test_create_入力エラーで戻っても担当プロジェクトの選択が残ること(): void
+    {
+        $this->loginSystemAdmin();
+        $project = Project::factory()->create();
+
+        // ブラウザ送信と同じく、チェックボックスの値は文字列で届く
+        $this->from('/system-admin/accounts/create')
+            ->followingRedirects()
+            ->post('/system-admin/accounts', [
+                'login_id' => 'test_admin',
+                'role' => AdminUser::ROLE_PROJECT_ADMIN,
+                'project_ids' => [(string) $project->id],
+            ])
+            ->assertOk()
+            ->assertSee('value="'.$project->id.'" checked', false);
+    }
+
     public function test_system_admin_creation_is_rejected(): void
     {
         $this->loginSystemAdmin();

@@ -2,55 +2,17 @@
 
 namespace App\UseCases\Reservation;
 
-use App\Models\Store;
-use App\Models\User;
-use App\Services\ReservationService;
 use App\UseCases\Reservation\Data\ReservationActionOutput;
 use App\UseCases\Reservation\Data\ReservationUpdateInput;
-use App\Util\AdminContext;
-use App\Util\DateUtil;
-use App\Util\StoreContext;
-use Illuminate\Support\Facades\DB;
 
 class ReservationUpdateUseCase
 {
     public function __construct(
-        private ReservationService $reservationService,
-        private ReservationAvailabilityService $availabilityService,
-        private StoreContext $storeContext,
+        private ReservationCapacityLockedWriter $writer,
     ) {}
 
     public function handle(ReservationUpdateInput $input): ReservationActionOutput
     {
-        $reservationPayload = $input->reservationPayload;
-        $reservedAt = DateUtil::nullableCarbon($reservationPayload['reserved_at'])
-            ?->setTimezone(config('app.timezone'));
-        if ($reservedAt === null) {
-            return new ReservationActionOutput(false, null, '予約日時が不正です');
-        }
-
-        return DB::transaction(function () use ($input, $reservedAt, $reservationPayload): ReservationActionOutput {
-            $projectId = AdminContext::requireCurrentProjectId();
-            $user = User::query()->where('project_id', $projectId)->whereKey($input->user->id)
-                ->lockForUpdate()->first();
-            if ($user === null
-                || (int) $user->authentication_version !== (int) $input->user->authentication_version
-                || $user->member()->where('project_id', $projectId)->lockForUpdate()->first() === null) {
-                return new ReservationActionOutput(true, null, null);
-            }
-            $storeId = $this->storeContext->resolveForWrite($projectId);
-            // An existing store row serializes capacity checks, including empty slots.
-            Store::where('project_id', $projectId)->whereKey($storeId)->lockForUpdate()->firstOrFail();
-
-            $availabilityError = $this->availabilityService->getAvailabilityError($reservedAt, $input->reservationId, (int) ($reservationPayload['number_of_people'] ?? 1));
-            if ($availabilityError !== null) {
-                return new ReservationActionOutput(false, null, $availabilityError);
-            }
-
-            $reservationPayload['reserved_at'] = $reservedAt->format('Y-m-d H:i:s');
-            $reservation = $this->reservationService->updateReservation($input->reservationId, $user, $reservationPayload);
-
-            return new ReservationActionOutput(false, $reservation, null);
-        }, 3);
+        return $this->writer->handle($input->user, $input->reservationPayload, $input->reservationId);
     }
 }

@@ -21,12 +21,7 @@ class ReservationUpdateController extends Controller
     public function __invoke(Request $request, int $id)
     {
         try {
-            $validated = $request->validate([
-                'reserved_at' => 'required|date|after:now',
-                'number_of_people' => 'required|integer|min:1|max:'.ReservationRules::MAX_PARTY_SIZE_LIMIT,
-                'notes' => 'nullable|string|max:500',
-                'reservation_course_id' => 'nullable|integer|min:1',
-            ]);
+            $validated = $request->validate(ReservationRules::writeValidationRules());
         } catch (ValidationException $e) {
             return response()->json([
                 'error' => 'バリデーションエラー',

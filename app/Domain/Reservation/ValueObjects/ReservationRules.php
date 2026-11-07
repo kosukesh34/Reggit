@@ -13,6 +13,21 @@ final class ReservationRules
 
     public const MAX_PARTY_SIZE_LIMIT = 99;
 
+    /**
+     * 会員アプリ（LIFF / Api）の予約作成・更新で共通のバリデーション規則。
+     *
+     * @return array<string, string>
+     */
+    public static function writeValidationRules(): array
+    {
+        return [
+            'reserved_at' => 'required|date|after:now',
+            'number_of_people' => 'required|integer|min:1|max:'.self::MAX_PARTY_SIZE_LIMIT,
+            'notes' => 'nullable|string|max:500',
+            'reservation_course_id' => 'nullable|integer|min:1',
+        ];
+    }
+
     /** @param list<string> $timeSlots */
     public function __construct(
         public readonly array $timeSlots,

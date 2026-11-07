@@ -11,6 +11,7 @@ use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberAdminQueryService;
 use App\Services\Admin\MemberSegmentService;
 use App\Services\AnnouncementNotificationService;
+use App\Support\SendNotificationInput;
 use App\UseCases\Admin\Announcement\Data\StoreDeliveryOutput;
 use App\Util\DateUtil;
 use Illuminate\Support\Collection;
@@ -155,7 +156,7 @@ class AdminAnnouncementStoreDeliveryUseCase
             'image_paths' => $validated['image_paths'] ?? null,
             'image_url' => $validated['image_url'] ?? null,
             'is_pinned' => (bool) ($validated['is_pinned'] ?? false),
-            'send_notification' => $this->shouldSendNotification($validated),
+            'send_notification' => SendNotificationInput::fromValidated($validated),
             'expires_at' => $validated['expires_at'] ?? null,
             'delivery_type' => $audienceType,
             'visibility' => 'recipients',
@@ -230,18 +231,5 @@ class AdminAnnouncementStoreDeliveryUseCase
             ->unique()
             ->values()
             ->all();
-    }
-
-    /**
-     * @param  array<string, string|string[]|int|bool|null>  $validated
-     */
-    private function shouldSendNotification(array $validated): bool
-    {
-        if (! array_key_exists('send_notification', $validated)) {
-            return true;
-        }
-        $value = $validated['send_notification'];
-
-        return $value === true || $value === 1 || $value === '1';
     }
 }

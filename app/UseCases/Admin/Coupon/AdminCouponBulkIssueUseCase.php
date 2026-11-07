@@ -8,6 +8,7 @@ use App\Models\Coupon;
 use App\Models\CouponDelivery;
 use App\Services\Admin\CouponDeliveryTargetService;
 use App\Services\Admin\MemberBenefitService;
+use App\Support\SendNotificationInput;
 use App\Util\DateUtil;
 use Illuminate\Support\Facades\DB;
 
@@ -40,7 +41,7 @@ class AdminCouponBulkIssueUseCase
 
         $deliveryType = (string) ($validated['delivery_type'] ?? CouponDeliveryType::IMMEDIATE_ALL);
         $resolved = $this->targetService->resolve($projectId, $deliveryType, $validated);
-        $sendNotification = $this->shouldSendNotification($validated);
+        $sendNotification = SendNotificationInput::fromValidated($validated);
 
         if ($resolved['error'] !== null) {
             throw new \InvalidArgumentException($resolved['error']);
@@ -149,18 +150,5 @@ class AdminCouponBulkIssueUseCase
         ));
 
         return $normalized === [] ? null : $normalized;
-    }
-
-    /**
-     * @param  array<string, string|string[]|int|bool|null>  $validated
-     */
-    private function shouldSendNotification(array $validated): bool
-    {
-        if (! array_key_exists('send_notification', $validated)) {
-            return true;
-        }
-        $value = $validated['send_notification'];
-
-        return $value === true || $value === 1 || $value === '1';
     }
 }
