@@ -155,6 +155,7 @@ class CouponBulkIssueRequest extends FormRequest
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
             'segment_coupon_id' => ['nullable', 'integer', 'min:1'],
             'segment_coupon_status' => ['nullable', Rule::in(MemberSegmentService::HELD_COUPON_STATUSES)],
+            ...MemberSegmentService::inputRules(),
             'segment_more' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_CONDITIONS],
             'segment_more.*' => ['array'],
             'segment_blocks' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_BLOCKS],
@@ -185,6 +186,10 @@ class CouponBulkIssueRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            foreach (MemberSegmentService::invertedRangeErrors($this->all()) as $field => $message) {
+                $validator->errors()->add($field, $message);
+            }
+
             $deliveryType = (string) $this->input('delivery_type', '');
             if (in_array($deliveryType, CouponDeliveryType::stampValues(), true) === false) {
                 return;

@@ -111,6 +111,7 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
             'segment_coupon_id' => ['nullable', 'integer', 'min:1'],
             'segment_coupon_status' => ['nullable', Rule::in(MemberSegmentService::HELD_COUPON_STATUSES)],
+            ...MemberSegmentService::inputRules(),
             'segment_more' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_CONDITIONS],
             'segment_more.*' => ['array'],
             'segment_blocks' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_BLOCKS],
@@ -174,6 +175,10 @@ class AnnouncementDeliveryStoreRequest extends FormRequest
             if ($pointsMin !== null && $pointsMin !== '' && $pointsMax !== null && $pointsMax !== ''
                 && (int) $pointsMin > (int) $pointsMax) {
                 $validator->errors()->add('segment_lifetime_points_max', '累計付与ポイントの上限は下限以上にしてください');
+            }
+
+            foreach (MemberSegmentService::invertedRangeErrors($this->all()) as $field => $message) {
+                $validator->errors()->add($field, $message);
             }
         }];
     }

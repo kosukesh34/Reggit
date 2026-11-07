@@ -4,13 +4,19 @@ namespace App\Services\Admin;
 
 use App\Domain\Settings\Repositories\MemberCardPreviewSettings;
 use App\Domain\Settings\Repositories\ProfileSettings;
+use App\Enums\MemberNotificationPreference;
+use App\Enums\OrderType;
 use App\Enums\RfmSegment;
 use App\Enums\SegmentCombineMode;
+use App\Models\AcquisitionSource;
+use App\Models\Announcement;
 use App\Models\Coupon;
 use App\Models\MemberAudienceGroup;
 use App\Models\MemberTag;
 use App\Models\Product;
 use App\Models\StampCard;
+use App\Models\Store;
+use App\Models\Survey;
 use App\Support\MemberChannel;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,7 +26,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MemberSegmentCriteriaDescriber
 {
-    private const DISPLAY_ORDER = ['groups', 'channel', 'birthday', 'sex', 'rfm', 'tags', 'visits', 'rank', 'points', 'last_visit', 'product', 'held_coupon', 'stamp', 'sales'];
+    private const DISPLAY_ORDER = MemberSegmentService::DISPLAY_ORDER;
 
     public function __construct(
         private MemberCardPreviewSettings $memberCardSettings,
@@ -96,9 +102,21 @@ class MemberSegmentCriteriaDescriber
         if (is_string($criteria['channel'] ?? null)) {
             $lines['channel'] = '登録チャネル：'.(MemberChannel::filterOptions()[$criteria['channel']] ?? $criteria['channel']);
         }
+        if (isset($criteria['registered_from']) || isset($criteria['registered_to'])) {
+            $from = isset($criteria['registered_from']) ? str_replace('-', '/', (string) $criteria['registered_from']) : '';
+            $to = isset($criteria['registered_to']) ? str_replace('-', '/', (string) $criteria['registered_to']) : '';
+            $lines['registered'] = '登録日：'.match (true) {
+                $from !== '' && $to !== '' => "{$from}〜{$to}",
+                $from !== '' => "{$from}以降",
+                default => "{$to}以前",
+            };
+        }
         $months = is_array($criteria['birthday_months'] ?? null) ? $criteria['birthday_months'] : (isset($criteria['birthday_month']) ? [$criteria['birthday_month']] : []);
         if ($months !== []) {
             $lines['birthday'] = '誕生月：'.$this->anyOf(array_map(static fn ($month): string => (int) $month.'月', $months));
+        }
+        if (($range = $this->range($criteria['age_min'] ?? null, $criteria['age_max'] ?? null, '歳')) !== null) {
+            $lines['age'] = '年齢：'.$range;
         }
         if (is_string($criteria['sex'] ?? null)) {
             $lines['sex'] = '性別：'.($criteria['sex'] === '1' ? '男性' : '女性');
@@ -119,6 +137,9 @@ class MemberSegmentCriteriaDescriber
         if (($range = $this->range($criteria['lifetime_points_min'] ?? null, $criteria['lifetime_points_max'] ?? null, 'pt')) !== null) {
             $lines['points'] = '累計付与ポイント：'.$range;
         }
+        if (($range = $this->range($criteria['points_min'] ?? null, $criteria['points_max'] ?? null, 'pt')) !== null) {
+            $lines['point_balance'] = 'ポイント残高：'.$range;
+        }
         if (isset($criteria['last_visit_mode'], $criteria['last_visit_days'])) {
             $days = number_format((int) $criteria['last_visit_days']);
             $lines['last_visit'] = '最終来店：'.match ($criteria['last_visit_mode']) {
@@ -138,6 +159,91 @@ class MemberSegmentCriteriaDescriber
                     'not_issued' => '未配布',
                     default => '未使用',
                 }.'）';
+        }
+        if (isset($criteria['read_announcement_id'], $criteria['read_announcement_status'])) {
+            $title = Announcement::query()->where('project_id', $projectId)->whereKey((int) $criteria['read_announcement_id'])->value('title');
+            $lines['announcement_read'] = 'お知らせ：'.($title === null ? '（削除済み）' : (string) $title)
+                .'（'.($criteria['read_announcement_status'] === 'read' ? '既読' : '未読').'）';
+        }
+        if (is_array($criteria['store_ids'] ?? null)) {
+            $lines['store'] = '利用店舗：'.$this->anyOf($this->names(Store::class, $projectId, $criteria['store_ids']));
+        }
+        if (is_array($criteria['acquisition_source_ids'] ?? null)) {
+            $lines['acquisition'] = '登録経路：'.$this->anyOf($this->names(AcquisitionSource::class, $projectId, $criteria['acquisition_source_ids']));
+        }
+        if (isset($criteria['app_last_used_mode'], $criteria['app_last_used_days'])) {
+            $days = number_format((int) $criteria['app_last_used_days']);
+            $lines['app_last_used'] = 'アプリの利用：'.($criteria['app_last_used_mode'] === 'within_days' ? "{$days}日以内に利用あり" : "{$days}日以上利用なし");
+        }
+        if (isset($criteria['survey_id'], $criteria['survey_status'])) {
+            $title = Survey::query()->where('project_id', $projectId)->whereKey((int) $criteria['survey_id'])->value('title');
+            $lines['survey'] = 'アンケート：'.($title === null ? '（削除済み）' : (string) $title)
+                .'（'.($criteria['survey_status'] === 'answered' ? '回答済み' : '未回答').'）';
+        }
+        if (isset($criteria['reservation_mode'], $criteria['reservation_days'])) {
+            $days = number_format((int) $criteria['reservation_days']);
+            $lines['reservation'] = "予約（直近{$days}日と今後）：".($criteria['reservation_mode'] === 'has' ? 'あり' : 'なし');
+        }
+        if (is_string($criteria['subscription_status'] ?? null)) {
+            $lines['subscription'] = 'サブスク：'.match ($criteria['subscription_status']) {
+                'active' => '継続中',
+                'ended' => '解約済み',
+                default => '加入したことがない',
+            };
+        }
+        if (is_string($criteria['ticket_status'] ?? null)) {
+            $lines['ticket'] = '回数券：'.($criteria['ticket_status'] === 'active' ? '使える回数券あり' : '使える回数券なし');
+        }
+        if (($range = $this->range($criteria['coupon_uses_min'] ?? null, $criteria['coupon_uses_max'] ?? null, '回')) !== null) {
+            $lines['coupon_uses'] = 'クーポン利用回数：'.$range;
+        }
+        if (isset($criteria['rank_changed_days'])) {
+            $lines['rank_changed'] = 'ランク変更：直近'.number_format((int) $criteria['rank_changed_days']).'日以内';
+        }
+        if (is_string($criteria['wallet_status'] ?? null)) {
+            $lines['wallet'] = 'Apple Wallet：'.($criteria['wallet_status'] === 'registered' ? '会員証を追加済み' : '会員証を未追加');
+        }
+        if (isset($criteria['birthday_soon_mode'], $criteria['birthday_soon_days'])) {
+            $days = (int) $criteria['birthday_soon_days'];
+            $lines['birthday_soon'] = '誕生日：'.match (true) {
+                $days === 0 => '今日',
+                $criteria['birthday_soon_mode'] === 'exact' => "ちょうど{$days}日後",
+                default => "今日から{$days}日以内",
+            };
+        }
+        if (($range = $this->range($criteria['lifetime_sales_min'] ?? null, $criteria['lifetime_sales_max'] ?? null, '円')) !== null) {
+            $lines['lifetime_sales'] = '累計購入額：'.$range;
+        }
+        if (is_array($criteria['order_types'] ?? null)) {
+            $lines['order_type'] = '注文の種類：'.$this->anyOf(array_map(static fn ($type): string => OrderType::getLabel((string) $type), $criteria['order_types']));
+        }
+        if (isset($criteria['queue_days'])) {
+            $lines['queue'] = '順番待ち：直近'.number_format((int) $criteria['queue_days']).'日以内に利用';
+        }
+        if (isset($criteria['points_expiring_days'])) {
+            $lines['points_expiring'] = 'ポイント失効：'.$this->soonText((int) $criteria['points_expiring_days']).'に失効予定あり';
+        }
+        if (isset($criteria['coupon_expiring_days'])) {
+            $lines['coupon_expiring'] = 'クーポン期限：'.$this->soonText((int) $criteria['coupon_expiring_days']).'に切れる未使用クーポンあり';
+        }
+        if (is_string($criteria['lottery_status'] ?? null)) {
+            $lines['lottery'] = 'くじ：'.($criteria['lottery_status'] === 'pending' ? '引いていない抽選権あり' : '引いていない抽選権なし');
+        }
+        if (is_string($criteria['nps_category'] ?? null)) {
+            $lines['nps'] = 'アンケートの評価：'.match ($criteria['nps_category']) {
+                'promoter' => '高い（9〜10）',
+                'passive' => '普通（7〜8）',
+                default => '低い（0〜6）',
+            };
+        }
+        if (isset($criteria['line_follow_days'])) {
+            $lines['line_follow'] = 'LINE友だち追加：直近'.number_format((int) $criteria['line_follow_days']).'日以内';
+        }
+        if (is_string($criteria['notification_preference'] ?? null)) {
+            $lines['notification'] = '通知設定：'.MemberNotificationPreference::getLabel($criteria['notification_preference']);
+        }
+        if (is_string($criteria['line_block_status'] ?? null)) {
+            $lines['line_block'] = 'LINE：'.($criteria['line_block_status'] === 'blocked' ? 'ブロック中' : 'ブロックしていない');
         }
         $stamp = array_values(array_filter([
             isset($criteria['stamp_card_id']) ? implode('', $this->names(StampCard::class, $projectId, [$criteria['stamp_card_id']])) : null,
@@ -193,6 +299,11 @@ class MemberSegmentCriteriaDescriber
         }
 
         return $rank;
+    }
+
+    private function soonText(int $days): string
+    {
+        return $days === 0 ? '今日' : "今日から{$days}日以内";
     }
 
     private function range(mixed $min, mixed $max, string $unit): ?string

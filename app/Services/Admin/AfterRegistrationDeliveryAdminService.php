@@ -166,6 +166,7 @@ class AfterRegistrationDeliveryAdminService
                 'segment_period_days', 'segment_condition',
                 'segment_min_amount', 'segment_profile', 'segment_value_mode', 'segment_match_mode',
                 'segment_audience_group_ids', 'segment_more', 'segment_blocks',
+                ...array_keys(MemberSegmentService::inputRules()),
             ] as $key) {
                 if (array_key_exists($key, $data)) {
                     $segmentInput[$key] = $data[$key];
