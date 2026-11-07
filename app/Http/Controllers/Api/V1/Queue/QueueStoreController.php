@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Queue;
 
 use App\Http\Controllers\Api\V1\BaseApiController;
 use App\Services\UserService;
+use App\Support\QueueEntryValidation;
 use App\Support\QueueRequestContext;
 use App\UseCases\Queue\Data\QueueStoreInput;
 use App\UseCases\Queue\QueueStoreUseCase;
@@ -19,11 +20,7 @@ class QueueStoreController extends BaseApiController
 
     public function __invoke(Request $request)
     {
-        $validated = $request->validate([
-            'party_size' => 'required|integer|min:1|max:20',
-            'guest_name' => 'nullable|string|max:255',
-            'guest_phone' => 'nullable|string|max:50',
-        ]);
+        $validated = $request->validate(QueueEntryValidation::storeRules());
 
         try {
             $user = $this->userService->getOrCreateUser($request);

@@ -37,7 +37,7 @@ class SmaregiProductImageImporter
                 return;
             }
 
-            $rows = $this->extractListFromResponse($images, 'images');
+            $rows = SmaregiListResponse::extract($images, 'images');
             foreach ($rows as $row) {
                 if (! is_array($row)) {
                     continue;
@@ -147,19 +147,5 @@ class SmaregiProductImageImporter
             return;
         }
         Storage::disk('public')->delete($directory.$filename);
-    }
-
-    /**
-     * @param  array<int|string, string|int|float|bool|array|null>  $result  API一覧応答
-     * @return array<int|string, string|int|float|bool|array|null>
-     */
-    private function extractListFromResponse(array $result, string $listKey): array
-    {
-        if (array_keys($result) === range(0, count($result) - 1) || $result === []) {
-            return $result;
-        }
-        $list = $result[$listKey] ?? [];
-
-        return is_array($list) ? $list : [];
     }
 }

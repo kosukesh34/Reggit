@@ -54,7 +54,7 @@ class SmaregiProductSyncService
                 throw new \RuntimeException('スマレジAPI（商品一覧）の取得に失敗しました。ログを確認してください。');
             }
 
-            $list = $this->extractListFromResponse($result, 'products');
+            $list = SmaregiListResponse::extract($result, 'products');
             $allRows = array_merge($allRows, $list);
             foreach ($list as $row) {
                 if (! is_array($row)) {
@@ -146,7 +146,7 @@ class SmaregiProductSyncService
                 throw new \RuntimeException('スマレジAPI（商品一覧）の取得に失敗しました。ログを確認してください。');
             }
 
-            $list = $this->extractListFromResponse($result, 'products');
+            $list = SmaregiListResponse::extract($result, 'products');
             $allRows = array_merge($allRows, $list);
             foreach ($list as $row) {
                 if (! is_array($row)) {
@@ -327,7 +327,7 @@ class SmaregiProductSyncService
                 ];
             }
 
-            $list = $this->extractListFromResponse($result, 'products');
+            $list = SmaregiListResponse::extract($result, 'products');
             foreach ($list as $row) {
                 if (! is_array($row)) {
                     continue;
@@ -511,20 +511,6 @@ class SmaregiProductSyncService
             'project_id' => $projectId,
             'smaregi_product_id' => $smaregiProductId,
         ]));
-    }
-
-    /**
-     * @param  array<int|string, string|int|float|bool|array|null>  $result  API一覧応答
-     * @return array<int|string, string|int|float|bool|array|null>
-     */
-    private function extractListFromResponse(array $result, string $listKey): array
-    {
-        if (array_keys($result) === range(0, count($result) - 1) || $result === []) {
-            return $result;
-        }
-        $list = $result[$listKey] ?? [];
-
-        return is_array($list) ? $list : [];
     }
 
     /**

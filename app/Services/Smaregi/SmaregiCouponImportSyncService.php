@@ -47,7 +47,7 @@ class SmaregiCouponImportSyncService
                 throw new \RuntimeException('スマレジAPI（クーポン一覧）の取得に失敗しました。ログ(storage/logs/laravel.log)を確認してください。');
             }
 
-            $list = $this->extractListFromResponse($result, 'coupons');
+            $list = SmaregiListResponse::extract($result, 'coupons');
             foreach ($list as $row) {
                 if (! is_array($row)) {
                     continue;
@@ -329,19 +329,5 @@ class SmaregiCouponImportSyncService
         }
 
         return $attrs;
-    }
-
-    /**
-     * @param  array<int|string, string|int|float|bool|array|null>  $result
-     * @return array<int|string, string|int|float|bool|array|null>
-     */
-    private function extractListFromResponse(array $result, string $listKey): array
-    {
-        if ($result === [] || array_keys($result) === range(0, count($result) - 1)) {
-            return $result;
-        }
-        $list = $result[$listKey] ?? [];
-
-        return is_array($list) ? $list : [];
     }
 }

@@ -343,6 +343,7 @@ class LayerDependencyTest extends TestCase
             'Services/MemberRankMetricCalculator.php',
             'Services/MemberRankSyncService.php',
             'Services/Smaregi/SmaregiCustomerRankAssignmentService.php',
+            'Services/Admin/MemberSegmentFormOptionsService.php',
             'UseCases/Admin/AfterRegistrationDelivery/AdminAfterRegistrationDeliveryCreateUseCase.php',
             'UseCases/Admin/AfterRegistrationDelivery/AdminAfterRegistrationDeliveryEditUseCase.php',
             'UseCases/Admin/Coupon/AdminCouponBulkIssueFormUseCase.php',

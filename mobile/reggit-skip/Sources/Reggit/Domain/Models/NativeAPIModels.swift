@@ -375,6 +375,8 @@ struct CouponItem: Identifiable, Equatable {
     let maxOrderAmount: Int?
     /// 対象商品が含まれる場合のみ使えるクーポンの商品名
     let targetProducts: [String]
+    /// 使える曜日・時間帯。制限なしは空
+    let usageTimeLabel: String
 
     init(
         id: Int,
@@ -390,7 +392,8 @@ struct CouponItem: Identifiable, Equatable {
         combineDivision: String = "3",
         minOrderAmount: Int? = nil,
         maxOrderAmount: Int? = nil,
-        targetProducts: [String] = []
+        targetProducts: [String] = [],
+        usageTimeLabel: String = ""
     ) {
         self.id = id
         self.name = name
@@ -406,11 +409,13 @@ struct CouponItem: Identifiable, Equatable {
         self.minOrderAmount = minOrderAmount
         self.maxOrderAmount = maxOrderAmount
         self.targetProducts = targetProducts
+        self.usageTimeLabel = usageTimeLabel
     }
 
-    /// 一覧のカードに出す利用条件
+    /// 一覧のカードに出す利用条件（LIFF couponConditions.ts と同じ順）
     var conditionBadges: [String] {
         var badges: [String] = []
+        if !usageTimeLabel.isEmpty { badges.append("日時限定") }
         if let badge = combineBadge { badges.append(badge) }
         if !targetProducts.isEmpty { badges.append("対象商品あり") }
         if let min = minOrderAmount { badges.append("\(AppFormat.yen(min))以上") }
@@ -432,6 +437,9 @@ struct CouponItem: Identifiable, Equatable {
         }
         if let detail = combineDetail {
             rows.append(CouponConditionRow(label: "併用", value: detail))
+        }
+        if !usageTimeLabel.isEmpty {
+            rows.append(CouponConditionRow(label: "使える日時", value: "\(usageTimeLabel)に使えます"))
         }
         return rows
     }
@@ -517,7 +525,8 @@ struct CouponListResponse {
                 combineDivision: item["combine_division"] as? String ?? "3",
                 minOrderAmount: Self.positiveAmount(item["min_order_amount"]),
                 maxOrderAmount: Self.positiveAmount(item["max_order_amount"]),
-                targetProducts: item["target_products"] as? [String] ?? []
+                targetProducts: item["target_products"] as? [String] ?? [],
+                usageTimeLabel: (item["usage_time_label"] as? String)?.trimmedNonEmpty ?? ""
             )
         }
         return CouponListResponse(coupons: coupons)

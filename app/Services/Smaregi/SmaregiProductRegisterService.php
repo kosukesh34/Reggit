@@ -199,9 +199,9 @@ class SmaregiProductRegisterService
             return null;
         }
 
-        $list = $this->extractListFromResponse($result, 'categories');
+        $list = SmaregiListResponse::extract($result, 'categories');
         if ($list === []) {
-            $list = $this->extractListFromResponse($result, 'data');
+            $list = SmaregiListResponse::extract($result, 'data');
         }
         $first = $list[0] ?? null;
         if (is_array($first)) {
@@ -296,20 +296,6 @@ class SmaregiProductRegisterService
         }
 
         return $body;
-    }
-
-    /**
-     * @param  array<int|string, string|int|float|bool|array|null>  $result  API一覧応答
-     * @return array<int|string, string|int|float|bool|array|null>
-     */
-    private function extractListFromResponse(array $result, string $listKey): array
-    {
-        if (array_keys($result) === range(0, count($result) - 1) || $result === []) {
-            return $result;
-        }
-        $list = $result[$listKey] ?? [];
-
-        return is_array($list) ? $list : [];
     }
 
     /**
