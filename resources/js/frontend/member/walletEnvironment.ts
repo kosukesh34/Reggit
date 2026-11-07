@@ -94,7 +94,7 @@ export function getLineLiffIdFromMeta() {
 }
 
 /** Wallet 追加後に LINE アプリへ戻るための LIFF エントリ URL */
-export function buildLiffEntryUrl(projectKey) {
+export function buildLiffEntryUrl(projectKey: string) {
     return policyBuildLiffEntryUrl(getLineLiffIdFromMeta(), projectKey);
 }
 
@@ -106,12 +106,12 @@ export function resolveAppOrigin() {
 }
 
 /** API パス（/api/...）を絶対 URL にする */
-export function resolveApiUrl(path) {
+export function resolveApiUrl(path: string) {
     return policyResolveApiUrl(path, resolveAppOrigin());
 }
 
 /** LIFF / Safari 向けに https を優先（ngrok 等で http が混ざるのを防ぐ） */
-export function normalizeExternalUrl(url) {
+export function normalizeExternalUrl(url: unknown) {
     const baseHref = typeof window !== 'undefined' ? window.location.href : undefined;
     return policyNormalizeExternalUrl(url, baseHref);
 }
@@ -120,7 +120,7 @@ export function normalizeExternalUrl(url) {
  * Google Save URL を外部ブラウザで開く URL に正規化する。
  * サーバー短縮 URL（/google-wallet/save/…）と pay.google.com 直リンクの両方に対応。
  */
-export function resolveGoogleWalletOpenUrl(issueUrl) {
+export function resolveGoogleWalletOpenUrl(issueUrl: unknown) {
     const baseHref = typeof window !== 'undefined' ? window.location.href : undefined;
     return policyResolveGoogleWalletOpenUrl(issueUrl, baseHref);
 }
@@ -166,7 +166,7 @@ export function canUseNativeExternalWallet() {
         && typeof window.__nativeOpenExternalUrl__ === 'function';
 }
 
-export function isWalletAddUrl(url) {
+export function isWalletAddUrl(url: unknown) {
     if (!url || typeof url !== 'string') return false;
     try {
         const parsed = new URL(url, typeof window !== 'undefined' && window.location ? window.location.href : undefined);

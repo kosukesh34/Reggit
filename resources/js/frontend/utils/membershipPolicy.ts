@@ -62,29 +62,3 @@ export function isRegistrationFormDismissed(): boolean {
 export function isMembershipRequired(): boolean {
     return getMemberRegistrationMode() === 'force';
 }
-
-export function getGuestRegisterMessage(): { title: string; subtitle: string; buttonLabel: string; buttonClass: string } {
-    const mode = getMemberRegistrationMode();
-    if (mode === 'force') {
-        return {
-            title: '会員パスの発行が必要です',
-            subtitle: '発行すると、アプリの機能をご利用いただけます。',
-            buttonLabel: '会員パスを発行',
-            buttonClass: 'btn-primary',
-        };
-    }
-    if (mode === 'prompt' || mode === 'popup') {
-        return {
-            title: '会員パスを発行できます',
-            subtitle: '発行すると、ポイントやクーポンを店舗で使えます。',
-            buttonLabel: '会員パスを発行',
-            buttonClass: 'btn-primary',
-        };
-    }
-    return {
-        title: 'ゲストで閲覧中',
-        subtitle: '会員パスを発行すると、ポイントやクーポンを店舗で使えます。',
-        buttonLabel: '任意で発行',
-        buttonClass: 'btn-secondary',
-    };
-}

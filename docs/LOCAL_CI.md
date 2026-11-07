@@ -11,7 +11,7 @@
 |---|---|
 | `test`（4分割） | PHP テスト。ファイルを名前順に4分割して並列実行する。MySQL 8.4 はメモリ上（tmpfs）で動かす |
 | `lint` | マージゲート契約テスト（6メソッド・13ケース）、Pint、PHPStan |
-| `frontend` | TypeScript、ESLint、フロントエンド単体テスト、Vite ビルド |
+| `frontend` | TypeScript（通常・strict）、ESLint、フロントエンド単体テスト、Vite ビルド |
 | `main` | 上の全ジョブの成功を確認する集約ジョブ。マージ条件はこの1つ |
 
 - 速度のため、vendor を composer.lock のハッシュでキャッシュし、npm はキャッシュ付きで `npm ci --ignore-scripts` する。

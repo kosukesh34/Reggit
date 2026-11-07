@@ -9,8 +9,3 @@ export interface AppConfigPayload {
 export const appConfig: AppConfigPayload = {
   stores: [...(rawConfig as AppConfigPayload).stores, ...additionalStores],
 };
-
-const configuredStoreId = import.meta.env.VITE_REGGIT_STORE_ID?.trim();
-export const defaultStoreId = appConfig.stores.some((store) => store.storeId === configuredStoreId)
-  ? configuredStoreId as string
-  : appConfig.stores[0]?.storeId ?? "store_cafe";

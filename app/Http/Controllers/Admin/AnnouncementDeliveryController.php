@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\AnnouncementDeliveryStoreRequest;
 use App\Services\Admin\AnnouncementImageStorage;
-use App\Services\Admin\PublicImageStorageService;
 use App\UseCases\Admin\Announcement\AdminAnnouncementAudiencePreviewUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementDeliveryFormUseCase;
 use App\UseCases\Admin\Announcement\AdminAnnouncementSegmentPreviewUseCase;
@@ -25,7 +24,6 @@ class AnnouncementDeliveryController extends AdminBaseController
         private AdminAnnouncementSegmentPreviewUseCase $segmentPreviewUseCase,
         private AdminAnnouncementAudiencePreviewUseCase $audiencePreviewUseCase,
         private AdminMemberSearchByKeywordUseCase $searchMembersUseCase,
-        private PublicImageStorageService $publicImageStorage,
         private AdminMemberAudienceGroupUseCase $audienceGroupUseCase,
     ) {}
 

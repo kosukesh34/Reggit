@@ -24,20 +24,20 @@ class DashboardService
         $lastMonthEnd = now()->subMonth()->endOfMonth();
 
         $todayRevenue = Order::whereDate('created_at', $today)
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->sum('total_amount');
         $yesterdayRevenue = Order::whereDate('created_at', $yesterday)
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->sum('total_amount');
 
         $todayOrders = Order::whereDate('created_at', $today)->count();
         $yesterdayOrders = Order::whereDate('created_at', $yesterday)->count();
 
         $monthRevenue = Order::whereBetween('created_at', [$thisMonthStart, now()])
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->sum('total_amount');
         $lastMonthRevenue = Order::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->sum('total_amount');
 
         $monthNewMembers = Member::whereBetween('created_at', [$thisMonthStart, now()])->count();

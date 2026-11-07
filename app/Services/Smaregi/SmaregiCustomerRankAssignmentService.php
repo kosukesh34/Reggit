@@ -85,6 +85,7 @@ class SmaregiCustomerRankAssignmentService
         $owned = fn () => SmaregiMemberRankSync::whereKey($memberId)
             ->where('request_token', $request->request_token)->where('lease_token', $leaseToken);
         $previousProject = AdminContext::getCurrentProject();
+        $member = null;
         $attempted = false;
         $settled = false;
         try {
@@ -118,9 +119,8 @@ class SmaregiCustomerRankAssignmentService
                 $settled = $owned()->update(['retry_at' => now()->addMinute()]) > 0;
 
                 return false;
-            } else {
-                $settled = $owned()->delete() > 0;
             }
+            $settled = $owned()->delete() > 0;
         } catch (\Throwable $exception) {
             report($exception);
             $settled = $owned()->update(['retry_at' => now()->addMinute()]) > 0;

@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @property int $project_id
+ */
 class Member extends Model
 {
     use BelongsToProject, HasFactory, SoftDeletes;

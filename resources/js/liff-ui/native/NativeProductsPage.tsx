@@ -53,12 +53,11 @@ const categoryLabels: Record<string, string> = {
 interface NativeProductsProps {
   dineIn: boolean;
   shipping?: boolean;
-  image: string;
   storeId: string;
   venueName: string;
 }
 
-export function NativeProductsPage({ dineIn, shipping = false, image, storeId, venueName }: NativeProductsProps) {
+export function NativeProductsPage({ dineIn, shipping = false, storeId, venueName }: NativeProductsProps) {
   const { config: nativeConfig } = useNativeConfig();
   const displayLayout = nativeConfig.products?.display_layout ?? "list_with_image";
   const config: AppCustomization["order"] = { showEarliestPickup: false, showItemImages: displayLayout !== "name_only", ctaPosition: "sticky", catalogLayout: displayLayout === "grid" || displayLayout === "grid_2_columns" ? "cards" : "compact", groupByCategory: true };

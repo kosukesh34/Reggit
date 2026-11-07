@@ -72,6 +72,8 @@ class OrderService
             $totalAmount = OrderLineItem::sumTotal($lineItems);
             $shippingFee = 0;
             $shippingPrefecture = '';
+            $deliveryDate = null;
+            $deliveryTimeSlot = null;
             if ($orderType === OrderType::SHIPPING) {
                 $shippingDetails = $this->shipping->prepare($orderData, $projectId, $totalAmount);
                 $shippingPrefecture = $shippingDetails['prefecture'];

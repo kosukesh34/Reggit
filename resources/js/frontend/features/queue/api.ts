@@ -1,7 +1,4 @@
-import { ApiClient } from '../../../shared/utils/apiClient';
-import { AppConstants } from '../../../shared/constants';
 import { DomHelper } from '../../../shared/utils/domHelper';
-import { buildBuiltinSampleQueueEntry } from '../../demo/sampleData';
 
 export { clearQueueTokenFromUrl, getQueueTokenFromUrl } from '../../../shared/utils/queueToken';
 
@@ -34,126 +31,8 @@ export type QueueEntry = {
     is_sample_preview?: boolean;
 };
 
-function client(): ApiClient {
-    const app = window.app as { apiClient?: ApiClient } | undefined;
-    return app?.apiClient ?? new ApiClient();
-}
-
-export function isQueueMembershipRequired(): boolean {
-    return typeof window !== 'undefined' && window.__QUEUE_REQUIRE_MEMBERSHIP__ === true;
-}
-
-export function isCurrentUserMember(): boolean {
-    const manager = (window.app as {
-        memberManager?: {
-            isMember?: () => boolean;
-            getMemberData?: () => { is_member?: boolean } | null;
-        };
-    } | undefined)?.memberManager;
-    if (manager === undefined) {
-        return false;
-    }
-    if (typeof manager.isMember === 'function') {
-        return manager.isMember() === true;
-    }
-    const data = typeof manager.getMemberData === 'function' ? manager.getMemberData() : null;
-    return !!(data && data.is_member === true);
-}
-
-export async function ensureMemberContextForGate(): Promise<void> {
-    const manager = (window.app as {
-        memberManager?: {
-            ensureIdentityReady?: (maxWaitMs?: number) => Promise<unknown>;
-            resolveLineUserIdForClient?: () => Promise<unknown>;
-            fetchMemberContext?: (options?: { force?: boolean }) => Promise<unknown>;
-            isMember?: () => boolean;
-        };
-    } | undefined)?.memberManager;
-    if (manager === undefined) {
-        return;
-    }
-    if (typeof manager.ensureIdentityReady === 'function') {
-        await manager.ensureIdentityReady(1500);
-    } else if (typeof manager.resolveLineUserIdForClient === 'function' && !window.__LINE_USER_ID__) {
-        await manager.resolveLineUserIdForClient();
-    }
-    if (typeof manager.isMember === 'function' && manager.isMember() === true) {
-        return;
-    }
-    if (typeof manager.fetchMemberContext === 'function') {
-        await manager.fetchMemberContext({ force: true });
-    }
-}
-
-export function getSampleQueueEntry(): QueueEntry {
-    const app = window.app as { getDesignerSampleQueueEntry?: () => QueueEntry } | undefined;
-    if (typeof app?.getDesignerSampleQueueEntry === 'function') {
-        return { ...app.getDesignerSampleQueueEntry(), is_sample_preview: true };
-    }
-    return { ...buildBuiltinSampleQueueEntry(), is_sample_preview: true };
-}
-
-export async function fetchCurrentQueue(): Promise<{ success: true; data: QueueStats } | { success: false; error: string }> {
-    const result = await client().get(AppConstants.API_ENDPOINTS.CURRENT_QUEUE);
-    if (result.success !== true) {
-        return { success: false, error: result.error || '順番待ちの情報を取得できませんでした。' };
-    }
-    return { success: true, data: (result.data || {}) as QueueStats };
-}
-
-export async function fetchQueueByToken(token: string): Promise<{ success: true; data: QueueStats } | { success: false; error: string }> {
-    const endpointBase = `${AppConstants.API_ENDPOINTS.QUEUE_QR}/${encodeURIComponent(token)}`;
-    const lineUserId = typeof window !== 'undefined' && window.__LINE_USER_ID__
-        ? encodeURIComponent(window.__LINE_USER_ID__)
-        : '';
-    const endpoint = lineUserId ? `${endpointBase}?line_user_id=${lineUserId}` : endpointBase;
-    const result = await client().get(endpoint);
-    if (result.success !== true) {
-        return { success: false, error: result.error || '順番待ちの情報を取得できませんでした。' };
-    }
-    return { success: true, data: result.data as QueueStats };
-}
-
-export async function createQueue(partySize: number): Promise<{ success: true; entry: QueueEntry } | { success: false; error: string }> {
-    const result = await client().post(AppConstants.API_ENDPOINTS.QUEUE, { party_size: partySize });
-    if (result.success !== true) {
-        return { success: false, error: result.error || '受付に失敗しました。' };
-    }
-    const entry = (result.data as QueueStats)?.queue_entry;
-    if (entry === undefined || entry === null) {
-        return { success: false, error: '順番待ちの情報を取得できませんでした。' };
-    }
-    return { success: true, entry };
-}
-
-export async function cancelQueue(id: number | string): Promise<{ success: true } | { success: false; error: string }> {
-    const result = await client().post(`${AppConstants.API_ENDPOINTS.QUEUE}/${id}/cancel`, {});
-    if (result.success !== true) {
-        return { success: false, error: result.error || 'キャンセルに失敗しました。' };
-    }
-    return { success: true };
-}
-
 export function formatQueueNumber(value: number | string): string {
     return DomHelper.formatReferenceNumber(value) || String(value);
-}
-
-export function formatUpdatedAt(value: string): string {
-    try {
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) {
-            return value;
-        }
-        return date.toLocaleString('ja-JP', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    } catch {
-        return value;
-    }
 }
 
 export function getStatusInfo(status: string): { label: string; className: string } {
@@ -164,10 +43,4 @@ export function getStatusInfo(status: string): { label: string; className: strin
         cancelled: { label: 'キャンセル', className: 'queue-badge-cancelled' },
     };
     return map[status] || { label: status || '-', className: 'queue-badge-default' };
-}
-
-export function switchToMemberTab(): void {
-    if (typeof window.app?.switchTab === 'function') {
-        window.app.switchTab(AppConstants.TABS.MEMBER);
-    }
 }

@@ -37,7 +37,6 @@ class AdminAuditLogger
         $payload = $this->safePayload($request->all());
 
         $projectId = AdminContext::getCurrentProjectId();
-        $projectId = (is_int($projectId) || $projectId === null) ? $projectId : null;
 
         $route = $request->route();
         $routeName = $route ? $route->getName() : null;

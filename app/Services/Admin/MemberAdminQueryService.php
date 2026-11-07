@@ -4,7 +4,6 @@ namespace App\Services\Admin;
 
 use App\Domain\Settings\Repositories\MemberSettings;
 use App\Enums\MemberVisitSource;
-use App\Enums\OrderStatus;
 use App\Models\Member;
 use App\Models\MemberVisit;
 use App\Models\Order;
@@ -12,6 +11,7 @@ use App\Services\MemberPointsExpiryCalculator;
 use App\Services\MemberRankCalculator;
 use App\Support\AdminMemberIdentifier;
 use App\Util\StrHelper;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /** 管理画面での会員の参照（詳細表示・購買集計・検索・配信対象の会員ID）。 */
@@ -79,11 +79,11 @@ class MemberAdminQueryService
 
         if ($userId !== null) {
             $baseQuery = Order::where('user_id', $userId)
-                ->where('status', '!=', OrderStatus::CANCELLED);
+                ->notCancelled();
             $orderCount = $baseQuery->count();
             $orderRevenue = (float) $baseQuery->sum('total_amount');
             $lastOrder = Order::where('user_id', $userId)
-                ->where('status', '!=', OrderStatus::CANCELLED)
+                ->notCancelled()
                 ->orderByDesc('created_at')
                 ->first();
             $lastOrderAt = $lastOrder?->created_at;
@@ -155,7 +155,7 @@ class MemberAdminQueryService
     }
 
     /**
-     * @return Collection<int, array{id: int, member_number: string, name: string}>
+     * @return Collection<int, array{id: int, display_identifier: string, member_number: string, name: string}>
      */
     public function searchByKeyword(int $projectId, string $keyword, int $limit = 20): Collection
     {
@@ -187,7 +187,7 @@ class MemberAdminQueryService
 
     /**
      * @param  list<string>  $numbers
-     * @return Collection<int, array{id: int, member_number: string, name: string}>
+     * @return Collection<int, array{id: int, display_identifier: string, member_number: string, name: string}>
      */
     public function findByMemberNumbers(int $projectId, array $numbers): Collection
     {

@@ -14,8 +14,6 @@ import { buildProfilePayload } from '../member/profilePayload';
 import { renderProfileForm } from '../member/profileFormRenderer';
 import { resolvePostalAddress, validatePostalCode } from '../member/postalAddressPolicy';
 
-declare const liff: any;
-
 export class MemberManager {
     apiClient: any;
     orderManager: any;
@@ -578,7 +576,6 @@ export class MemberManager {
         this._updateMemberScreenUrl('register', false);
         this._forcedRegister = getMemberRegistrationMode() === 'force';
         this._registerFullScreen = true;
-        this._emitMemberReactEvent('liff-member-open-register', { forced: this._forcedRegister });
     }
 
     render(data) {
@@ -635,7 +632,6 @@ export class MemberManager {
         }
         this._registerFullScreen = false;
         this._profileEditFullScreen = true;
-        this._emitMemberReactEvent('liff-member-open-edit');
     }
 
     closeProfileEdit(options: any = {}) {
@@ -784,7 +780,6 @@ export class MemberManager {
             this._registerFullScreen = true;
             this._forcedRegister = options.forced === true;
             this._profileEditFullScreen = false;
-            this._emitMemberReactEvent('liff-member-open-register', { forced: this._forcedRegister });
             return;
         }
         const container = (options.into as HTMLElement | undefined) || this.getContainer();

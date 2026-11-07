@@ -15,7 +15,7 @@ class CouponDeliveryHistoryService
     public function __construct(private AdminMemberIdentifier $memberIdentifier) {}
 
     /**
-     * @return list<array{
+     * @return LengthAwarePaginator<int, array{
      *     id: int,
      *     coupon_name: string,
      *     coupon_code: string,

@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $project_id
+ */
 class StampCard extends Model
 {
     use BelongsToProject, HasFactory;
@@ -38,7 +41,7 @@ class StampCard extends Model
         ];
     }
 
-    /** @var array<string> */
+    /** @return array<string, string> */
     public static function getLayoutOptions(): array
     {
         return [

@@ -222,7 +222,7 @@ class EloquentOrderRepository implements OrderRepository
             ->where('user_id', $userId)
             ->where('project_id', $projectId)
             ->whereNull('smaregi_points_synced_at')
-            ->where('status', '!=', OrderStatus::CANCELLED)
+            ->notCancelled()
             ->where(fn ($query) => $query->where('payment_method', '!=', PaymentMethod::STRIPE)
                 ->orWhere('status', '!=', OrderStatus::PENDING))
             ->where(function ($query): void {

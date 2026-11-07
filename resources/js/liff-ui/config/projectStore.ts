@@ -1,6 +1,6 @@
 import { appConfig } from './appConfig';
 import { isLinkTabType, type FeatureConfig, type FeatureType, type QuickAction, type StoreAppConfig, type TabConfig, type TabType } from '../types/app';
-import { createDefaultCustomization, MEMBER_CRM_STORE_ID } from './customization';
+import { MEMBER_CRM_STORE_ID } from './customization';
 import type { AppCustomizationPatch, MembershipTemplate } from '../types/customization';
 
 function headerTitle(): string {
@@ -341,8 +341,4 @@ export function readServerCustomizationPatch(_storeId: string): AppCustomization
     return withLegacyOrderSetting(raw as AppCustomizationPatch);
   }
   return undefined;
-}
-
-export function defaultCustomizationForProject(): ReturnType<typeof createDefaultCustomization> {
-  return createDefaultCustomization(buildProjectStore());
 }

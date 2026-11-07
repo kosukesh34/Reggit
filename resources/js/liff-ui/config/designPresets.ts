@@ -22,5 +22,3 @@ export const designPresets: DesignPresetDefinition[] = [
   { id: "izakaya", name: "居酒屋", description: "夜営業・席予約・テーブル注文を中心にした和食酒場向け構成", palette: ["#171c24", "#d48b34", "#f1ece3"] },
   { id: "fastfood", name: "ファストフード", description: "注文とクーポンを迷わず使えるチェーン店向け構成", palette: ["#c62424", "#ffc93d", "#fff7e8"] },
 ];
-
-export const designPresetMap = Object.fromEntries(designPresets.map((preset) => [preset.id, preset])) as Record<DesignPreset, DesignPresetDefinition>;

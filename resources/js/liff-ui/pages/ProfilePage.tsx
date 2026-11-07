@@ -3,8 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useRuntimeData } from "../context/RuntimeDataContext";
 import { NativeRequestError, NativeState, nativeRequest, useNativeResource } from "../native/NativeResource";
 import { isDemoDataMode } from "../../frontend/demo/demoMode";
-import type { ProfileFieldSetting } from "../../frontend/features/member/MemberProfileForm";
-import { demoProfileFields, fallbackProfileFields, profileChoices, validateProfile } from "../native/nativeProfile";
+import { demoProfileFields, fallbackProfileFields, profileChoices, validateProfile, type ProfileFieldSetting } from "../native/nativeProfile";
 import { NativeAddressFields, type PostalLookup } from "../native/NativeAddressFields";
 import { validatePostalCode } from "../../frontend/member/postalAddressPolicy";
 

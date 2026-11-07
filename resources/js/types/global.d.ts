@@ -3,7 +3,6 @@ import type { ApiClient } from '../shared/utils/apiClient';
 import type { DomHelper } from '../shared/utils/domHelper';
 import type { ToastManager } from '../shared/utils/toast';
 import type { ConfirmDialog } from '../shared/utils/confirmDialog';
-import type { TooltipManager } from '../shared/utils/tooltip';
 
 export {};
 
@@ -18,19 +17,6 @@ type LiffLike = {
     getFriendship?: () => Promise<{ friendFlag: boolean }>;
     requestFriendship?: () => Promise<void>;
     openWindow?: (params: { url: string; external?: boolean }) => void;
-};
-
-type QRCodeCtor = new (
-    container: HTMLElement,
-    options: {
-        text: string;
-        width?: number;
-        height?: number;
-        colorDark?: string;
-        colorLight?: string;
-    }
-) => {
-    makeCode?: (text: string) => void;
 };
 
 type StripePaymentCtor = new () => {
@@ -50,7 +36,6 @@ type AppLike = {
     deviceManager?: import('../frontend/managers/DeviceManager').DeviceManager;
     switchTab?: (tab: string) => void | Promise<void>;
     currentTab?: string;
-    pageRouter?: import('../frontend/navigation/LiffPageRouter').LiffPageRouter;
     layoutManager?: LayoutManagerLike;
     loadProducts?: () => void | Promise<void>;
     loadOrdersTab?: () => void | Promise<void>;
@@ -121,8 +106,6 @@ declare global {
         __mobileOrderLog?: (eventName: string, payload?: Record<string, unknown>) => void;
         __nativeOpenTab__?: (tabKey: string, options?: { couponReceived?: boolean; [key: string]: unknown }) => boolean;
         __clientDebugLog?: (eventName: string, payload?: Record<string, unknown>) => void;
-        JsBarcode?: (target: string | SVGElement | HTMLCanvasElement, text: string, options?: Record<string, unknown>) => void;
-        QRCode?: QRCodeCtor;
         liff?: LiffLike;
         LiffLayoutBlocks?: { premium?: Record<string, (...args: any[]) => string> };
         StripePayment?: StripePaymentCtor;
@@ -132,6 +115,5 @@ declare global {
         DomHelper?: typeof DomHelper;
         ToastManager?: typeof ToastManager;
         ConfirmDialog?: typeof ConfirmDialog;
-        TooltipManager?: typeof TooltipManager;
     }
 }

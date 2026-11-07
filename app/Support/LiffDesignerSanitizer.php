@@ -30,9 +30,6 @@ class LiffDesignerSanitizer
     /** 外部Webページタブ（管理者がURLを設定するカスタムタブ）のキー */
     public const LINK_MENU_TABS = ['link_1', 'link_2', 'link_3'];
 
-    /** 外部Webページタブの表示方法 */
-    private const LINK_MENU_OPEN_MODES = ['embed', 'external'];
-
     /** 詳細ページレイアウト（タブと並列） */
     private const ALLOWED_DETAIL_KEYS = [
         'announcement_detail',

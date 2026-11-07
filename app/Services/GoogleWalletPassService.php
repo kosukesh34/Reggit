@@ -239,7 +239,7 @@ class GoogleWalletPassService
     public function createSaveUrlForUserId(int $userId): ?string
     {
         $projectId = AdminContext::getCurrentProjectId();
-        if ($projectId === null || $projectId === false) {
+        if ($projectId === null) {
             Log::info('google-wallet createSaveUrlForUserId: no project in context', ['user_id' => $userId]);
 
             return null;

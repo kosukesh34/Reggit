@@ -26,7 +26,7 @@ class AnalysisSummaryController extends BaseApiController
         try {
             $startDate = Carbon::createFromFormat('!Y-m-d', $start);
             $endDate = Carbon::createFromFormat('!Y-m-d', $end);
-            if ($startDate === false || $endDate === false || $startDate->format('Y-m-d') !== $start || $endDate->format('Y-m-d') !== $end || $startDate->gt($endDate) || $startDate->diffInDays($endDate) > 366) {
+            if ($startDate === null || $endDate === null || $startDate->format('Y-m-d') !== $start || $endDate->format('Y-m-d') !== $end || $startDate->gt($endDate) || $startDate->diffInDays($endDate) > 366) {
                 return $this->error('期間は366日以内の正しい日付で指定してください', 422);
             }
         } catch (\Throwable) {

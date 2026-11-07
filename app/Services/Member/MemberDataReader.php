@@ -2,6 +2,7 @@
 
 namespace App\Services\Member;
 
+use App\Domain\Settings\Repositories\MemberCardSettings;
 use App\Domain\Settings\Repositories\MemberSettings;
 use App\Enums\MemberNotificationPreference;
 use App\Enums\ProfileCustomFieldInputType;
@@ -27,6 +28,7 @@ class MemberDataReader
         private SmaregiCustomerPointsInboundSyncService $smaregiCustomerPointsInboundSyncService,
         private MemberRankCalculator $rankCalculator,
         private MemberSettings $shopSettingRepository,
+        private MemberCardSettings $memberCardSettings,
         private MemberPointsExpiryCalculator $expiryCalculator,
         private MemberRegistrationRecovery $registrationRecovery,
         private MemberPointLedger $pointLedger,
@@ -123,7 +125,7 @@ class MemberDataReader
             'is_member' => false,
             'user_id' => (int) $user->id,
             'message' => '会員登録がまだです',
-            'show_member_card_for_guest' => $this->shopSettingRepository->getShowMemberCardForGuest($projectId),
+            'show_member_card_for_guest' => $this->memberCardSettings->getShowMemberCardForGuest($projectId),
             'member_registration_mode' => $this->shopSettingRepository->getMemberRegistrationMode($projectId),
             'profile_field_settings' => $profileFormFields,
             'profile_image_enabled' => self::profileImageEnabled($profileSettings),

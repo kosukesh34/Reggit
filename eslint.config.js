@@ -28,7 +28,8 @@ export default tseslint.config(
       'prefer-const': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-this-alias': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
+      // 使われないコードの蓄積を防ぐ。意図的に使わない引数・変数は _ で始める
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
     },
   },
 );
