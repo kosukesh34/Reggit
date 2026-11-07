@@ -32,6 +32,17 @@ export function conditionSentence(label: string, operator: SegmentConditionOpera
     return `${label}は ${value}`;
 }
 
+/** 以上・以下の2つの入力を「3〜10回」「3回以上」のような文にする */
+function rangeText(min: string, max: string, unit: string): string {
+    if (min !== '' && max !== '') return `${formattedNumber(min)}〜${formattedNumber(max)}${unit}`;
+    if (min !== '') return `${formattedNumber(min)}${unit}以上`;
+    return max !== '' ? `${formattedNumber(max)}${unit}以下` : '';
+}
+
+function dateText(value: string): string {
+    return value.replace(/-/g, '/');
+}
+
 function conditionItemHasValue(item: HTMLElement): boolean {
     // 初期値だけのフィールドで「条件あり」と誤判定しない
     if (item.dataset.condition === 'sales') {
@@ -133,12 +144,43 @@ export function bindConditionPicker(form: HTMLFormElement): void {
     const firstTarget: ConditionTarget = { list, button: addButton, prefix: '' };
     let target = firstTarget;
 
+    const search = menu.querySelector<HTMLInputElement>('#segmentConditionSearch');
+    const searchEmpty = menu.querySelector<HTMLElement>('#segmentConditionSearchEmpty');
     const showGroup = (group: string): void => {
+        if (search) search.value = '';
+        if (searchEmpty) searchEmpty.hidden = true;
         groupButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.menuGroup === group)));
         fieldButtons.forEach((button) => {
             if (button.parentElement) button.parentElement.hidden = button.dataset.group !== group;
         });
     };
+    // 検索中はセクションをまたいで、名前か別名（data-keywords）に一致する条件だけを出す
+    const filterFields = (query: string): void => {
+        const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        if (words.length === 0) {
+            showGroup(activeGroup()?.dataset.menuGroup ?? groupButtons[0]?.dataset.menuGroup ?? '');
+            return;
+        }
+        groupButtons.forEach((button) => button.setAttribute('aria-pressed', 'false'));
+        let matched = 0;
+        fieldButtons.forEach((button) => {
+            const haystack = `${button.textContent ?? ''} ${button.dataset.keywords ?? ''}`.toLowerCase();
+            const hit = words.every((word) => haystack.includes(word));
+            if (button.parentElement) button.parentElement.hidden = !hit;
+            if (hit) matched++;
+        });
+        if (searchEmpty) searchEmpty.hidden = matched > 0;
+    };
+    search?.addEventListener('input', () => filterFields(search.value));
+    search?.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowDown' && event.key !== 'Enter') return;
+        event.preventDefault();
+        // メニュー全体の上下キー移動に渡すと、1件目を飛ばして2件目へ移ってしまう
+        event.stopPropagation();
+        const first = visibleFields()[0];
+        if (event.key === 'Enter') first?.click();
+        else first?.focus();
+    });
 
     // 同じ種類の条件・まとまり2以降の条件の複製元（値を入れる前の状態）
     const templates = new Map(Array.from(pool.querySelectorAll<HTMLElement>('[data-condition]'))
@@ -183,7 +225,7 @@ export function bindConditionPicker(form: HTMLFormElement): void {
         menu.hidden = false;
         next.button.setAttribute('aria-expanded', 'true');
         showGroup(groupButtons[0]?.dataset.menuGroup ?? '');
-        groupButtons[0]?.focus();
+        (search ?? groupButtons[0])?.focus();
     };
 
     const addCard = (key: string, focus: boolean, into: ConditionTarget, extra = false): HTMLElement | null => {
@@ -347,7 +389,8 @@ export function bindConditionPicker(form: HTMLFormElement): void {
     groupButtons.forEach((button) => {
         const select = (): void => showGroup(button.dataset.menuGroup ?? '');
         button.addEventListener('click', select);
-        button.addEventListener('mouseenter', select);
+        // 検索中にマウスが通っただけで検索結果を消さない
+        button.addEventListener('mouseenter', () => { if ((search?.value.trim() ?? '') === '') select(); });
         button.addEventListener('focus', select);
         button.addEventListener('keydown', (event) => {
             if (event.key !== 'ArrowRight') return;
@@ -475,8 +518,23 @@ function scopedConditionChips(form: HTMLFormElement, { id, name }: SegmentScope)
     const groupLabels = checkedOptionLabels(name('segment_audience_group_ids[]'));
     add('保存したグループ', listOperator(groupLabels.length), groupLabels.join('、'), () => clearNamed(form, name('segment_audience_group_ids[]')));
     add('登録チャネル', '=', selectedOptionText(id('segment_channel')), () => clearIds([id('segment_channel')]));
+    const registeredFrom = dateText(fieldValue(id('segment_registered_from')));
+    const registeredTo = dateText(fieldValue(id('segment_registered_to')));
+    add('登録日', '=', registeredFrom !== '' && registeredTo !== ''
+        ? `${registeredFrom}〜${registeredTo}`
+        : registeredFrom !== '' ? `${registeredFrom}以降` : registeredTo !== '' ? `${registeredTo}以前` : '', () => clearIds([id('segment_registered_from'), id('segment_registered_to')]));
+    const acquisitionLabels = checkedOptionLabels(name('segment_acquisition_source_ids[]'));
+    add('登録経路', listOperator(acquisitionLabels.length), acquisitionLabels.join('、'), () => clearNamed(form, name('segment_acquisition_source_ids[]')));
+    const storeLabels = checkedOptionLabels(name('segment_store_ids[]'));
+    add('利用店舗', listOperator(storeLabels.length), storeLabels.join('、'), () => clearNamed(form, name('segment_store_ids[]')));
     const birthdayMonths = checkedValues(name('segment_birthday_months[]')).map((month) => `${month}月`);
     add('誕生月', listOperator(birthdayMonths.length), birthdayMonths.join('、'), () => clearNamed(form, name('segment_birthday_months[]')));
+    const birthdaySoonMode = fieldValue(id('segment_birthday_soon_mode'));
+    const birthdaySoonDays = fieldValue(id('segment_birthday_soon_days'));
+    add('誕生日', '=', birthdaySoonMode === '' ? '' : birthdaySoonDays === '0'
+        ? '今日'
+        : birthdaySoonMode === 'exact' ? `ちょうど${birthdaySoonDays}日後` : `今日から${birthdaySoonDays}日以内`, () => clearIds([id('segment_birthday_soon_mode')]));
+    add('年齢', '=', rangeText(fieldValue(id('segment_age_min')), fieldValue(id('segment_age_max')), '歳'), () => clearIds([id('segment_age_min'), id('segment_age_max')]));
     add('性別', '=', selectedOptionText(id('segment_sex')), () => clearIds([id('segment_sex')]));
     const rfmLabels = checkedOptionLabels(name('segment_rfm_segments[]'));
     add('RFMセグメント', listOperator(rfmLabels.length), rfmLabels.join('、'), () => clearNamed(form, name('segment_rfm_segments[]')));
@@ -495,6 +553,7 @@ function scopedConditionChips(form: HTMLFormElement, { id, name }: SegmentScope)
     add('累計付与ポイント', '=', pointsMin !== '' && pointsMax !== ''
         ? `${formattedNumber(pointsMin)}〜${formattedNumber(pointsMax)}pt`
         : pointsMin !== '' ? `${formattedNumber(pointsMin)}pt以上` : pointsMax !== '' ? `${formattedNumber(pointsMax)}pt以下` : '', () => clearIds([id('segment_lifetime_points_min'), id('segment_lifetime_points_max')]));
+    add('ポイント残高', '=', rangeText(fieldValue(id('segment_points_min')), fieldValue(id('segment_points_max')), 'pt'), () => clearIds([id('segment_points_min'), id('segment_points_max')]));
 
     const lastVisitMode = fieldValue(id('segment_last_visit_mode'));
     const lastVisitDays = fieldValue(id('segment_last_visit_days'));
@@ -507,7 +566,18 @@ function scopedConditionChips(form: HTMLFormElement, { id, name }: SegmentScope)
         add('最終来店', '=', `${formattedNumber(lastVisitDays)}日後`, clearLastVisit);
     }
 
+    const reservationMode = fieldValue(id('segment_reservation_mode'));
+    add(
+        `予約（直近${formattedNumber(fieldValue(id('segment_reservation_days')))}日と今後）`,
+        '=',
+        reservationMode === '' ? '' : selectedOptionText(id('segment_reservation_mode')),
+        () => clearIds([id('segment_reservation_mode')]),
+    );
+    add('順番待ち', '=', selectedOptionText(id('segment_queue_days')), () => clearIds([id('segment_queue_days')]));
     add('購入商品', '=', selectedOptionText(id('segment_product_id')), () => clearIds([id('segment_product_id')]));
+    const orderTypeLabels = checkedOptionLabels(name('segment_order_types[]'));
+    add('注文の種類', listOperator(orderTypeLabels.length), orderTypeLabels.join('、'), () => clearNamed(form, name('segment_order_types[]')));
+    add('累計購入額', '=', rangeText(fieldValue(id('segment_lifetime_sales_min')), fieldValue(id('segment_lifetime_sales_max')), '円'), () => clearIds([id('segment_lifetime_sales_min'), id('segment_lifetime_sales_max')]));
     const heldCouponName = selectedOptionText(id('segment_coupon_id'));
     const heldCouponStatusLabel = selectedOptionText(id('segment_coupon_status'));
     add(
@@ -515,6 +585,30 @@ function scopedConditionChips(form: HTMLFormElement, { id, name }: SegmentScope)
         '=',
         heldCouponName !== '' && heldCouponStatusLabel !== '' ? `${heldCouponName}（${heldCouponStatusLabel}）` : '',
         () => clearIds([id('segment_coupon_id'), id('segment_coupon_status')]),
+    );
+    add('ランク変更', '=', selectedOptionText(id('segment_rank_changed_days')), () => clearIds([id('segment_rank_changed_days')]));
+    add('ポイント', '=', selectedOptionText(id('segment_points_expiring_days')), () => clearIds([id('segment_points_expiring_days')]));
+    add('クーポン', '=', selectedOptionText(id('segment_coupon_expiring_days')), () => clearIds([id('segment_coupon_expiring_days')]));
+    add('くじ', '=', selectedOptionText(id('segment_lottery_status')), () => clearIds([id('segment_lottery_status')]));
+    add('アンケートの評価', '=', selectedOptionText(id('segment_nps_category')), () => clearIds([id('segment_nps_category')]));
+    add('LINE友だち追加', '=', selectedOptionText(id('segment_line_follow_days')), () => clearIds([id('segment_line_follow_days')]));
+    add('LINE', '=', selectedOptionText(id('segment_line_block_status')), () => clearIds([id('segment_line_block_status')]));
+    add('通知設定', '=', selectedOptionText(id('segment_notification_preference')), () => clearIds([id('segment_notification_preference')]));
+    add('クーポン利用回数', '=', rangeText(fieldValue(id('segment_coupon_uses_min')), fieldValue(id('segment_coupon_uses_max')), '回'), () => clearIds([id('segment_coupon_uses_min'), id('segment_coupon_uses_max')]));
+    add('回数券', '=', selectedOptionText(id('segment_ticket_status')), () => clearIds([id('segment_ticket_status')]));
+    add('サブスク', '=', selectedOptionText(id('segment_subscription_status')), () => clearIds([id('segment_subscription_status')]));
+    const surveyTitle = selectedOptionText(id('segment_survey_id'));
+    add('アンケート', '=', surveyTitle === '' ? '' : `${surveyTitle}（${selectedOptionText(id('segment_survey_status'))}）`, () => clearIds([id('segment_survey_id')]));
+    const appMode = fieldValue(id('segment_app_last_used_mode'));
+    const appDays = formattedNumber(fieldValue(id('segment_app_last_used_days')));
+    add('アプリの利用', '=', appMode === 'within_days' ? `${appDays}日以内に利用あり` : appMode === 'inactive_days' ? `${appDays}日以上利用なし` : '', () => clearIds([id('segment_app_last_used_mode')]));
+    add('Apple Wallet', '=', selectedOptionText(id('segment_wallet_status')), () => clearIds([id('segment_wallet_status')]));
+    const announcementTitle = selectedOptionText(id('segment_announcement_id'));
+    add(
+        'お知らせ',
+        '=',
+        announcementTitle === '' ? '' : `${announcementTitle}（${fieldValue(id('segment_announcement_status')) === 'read' ? '既読' : '未読'}）`,
+        () => clearIds([id('segment_announcement_id')]),
     );
     if (field<HTMLInputElement>(id('event_rank_up'))?.checked === true) {
         add('ランクアップ達成', '=', selectedOptionText(id('segment_rank')) || '対象ランクを指定', () => clearIds([id('event_rank_up'), id('segment_rank')]));
@@ -588,6 +682,15 @@ export function renderSegmentConditionSummary(form: HTMLFormElement, isSegment: 
     });
 }
 
+/** 1つの値で条件になる入力（日数・状態など初期値を持つ補助の入力は含めない） */
+const NEW_SEGMENT_FIELDS = [
+    'segment_reservation_mode', 'segment_rank_changed_days', 'segment_coupon_uses_min', 'segment_coupon_uses_max',
+    'segment_ticket_status', 'segment_subscription_status', 'segment_survey_id', 'segment_app_last_used_mode',
+    'segment_wallet_status', 'segment_birthday_soon_mode', 'segment_lifetime_sales_min', 'segment_lifetime_sales_max',
+    'segment_queue_days', 'segment_points_expiring_days', 'segment_coupon_expiring_days', 'segment_lottery_status',
+    'segment_nps_category', 'segment_line_follow_days', 'segment_line_block_status', 'segment_notification_preference',
+];
+
 export function segmentParams(form: HTMLFormElement): URLSearchParams {
     const params = new URLSearchParams();
     [
@@ -595,6 +698,9 @@ export function segmentParams(form: HTMLFormElement): URLSearchParams {
         'segment_lifetime_points_min', 'segment_lifetime_points_max', 'segment_last_visit_mode',
         'segment_last_visit_days', 'segment_sex', 'segment_rank', 'segment_product_id',
         'segment_coupon_id', 'segment_coupon_status',
+        'segment_announcement_id', 'segment_announcement_status', 'segment_registered_from', 'segment_registered_to',
+        'segment_age_min', 'segment_age_max', 'segment_points_min', 'segment_points_max',
+        ...NEW_SEGMENT_FIELDS, 'segment_reservation_days', 'segment_app_last_used_days', 'segment_survey_status', 'segment_birthday_soon_days',
         'segment_period_days', 'segment_min_amount',
         'stamp_card_id', 'stamp_count_min',
     ].forEach((id) => {
@@ -605,6 +711,9 @@ export function segmentParams(form: HTMLFormElement): URLSearchParams {
     checkedValues('segment_tag_ids[]').forEach((value) => params.append('segment_tag_ids[]', value));
     checkedValues('segment_rfm_segments[]').forEach((value) => params.append('segment_rfm_segments[]', value));
     checkedValues('segment_audience_group_ids[]').forEach((value) => params.append('segment_audience_group_ids[]', value));
+    checkedValues('segment_store_ids[]').forEach((value) => params.append('segment_store_ids[]', value));
+    checkedValues('segment_acquisition_source_ids[]').forEach((value) => params.append('segment_acquisition_source_ids[]', value));
+    checkedValues('segment_order_types[]').forEach((value) => params.append('segment_order_types[]', value));
     form.querySelectorAll<HTMLInputElement>('input[name^="segment_value_mode["]').forEach((input) => {
         if (input.checked && !input.disabled) params.append(input.name, input.value);
     });
@@ -646,11 +755,17 @@ export function hasSegmentCriteria(form: HTMLFormElement): boolean {
         'segment_lifetime_points_min', 'segment_lifetime_points_max', 'segment_last_visit_mode',
         'segment_sex', 'segment_rank', 'segment_product_id',
         'segment_coupon_id', 'segment_coupon_status',
+        'segment_announcement_id', 'segment_registered_from', 'segment_registered_to',
+        'segment_age_min', 'segment_age_max', 'segment_points_min', 'segment_points_max',
+        ...NEW_SEGMENT_FIELDS,
     ].some((id) => (field<HTMLInputElement | HTMLSelectElement>(id)?.value || '').trim() !== '')
         || checkedValues('segment_birthday_months[]').length > 0
         || checkedValues('segment_tag_ids[]').length > 0
         || checkedValues('segment_rfm_segments[]').length > 0
         || checkedValues('segment_audience_group_ids[]').length > 0
+        || checkedValues('segment_store_ids[]').length > 0
+        || checkedValues('segment_acquisition_source_ids[]').length > 0
+        || checkedValues('segment_order_types[]').length > 0
         || (document.querySelector<HTMLInputElement>('input[name="segment_condition"]:checked')?.value || '') !== ''
         || field<HTMLInputElement>('event_rank_up')?.checked === true
         || (field<HTMLInputElement | HTMLSelectElement>('stamp_card_id')?.value || '').trim() !== ''

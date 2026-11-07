@@ -6,10 +6,19 @@ use App\Enums\MemberVisitSource;
 use App\Enums\OrderStatus;
 use App\Enums\SegmentCombineMode;
 use App\Infrastructure\Persistence\Eloquent\Coupon\EloquentCouponDeliveryTargetRepository;
+use App\Models\AcquisitionSource;
+use App\Models\Announcement;
+use App\Models\AnnouncementRead;
 use App\Models\Coupon;
+use App\Models\CouponRedemption;
+use App\Models\LineFollowEvent;
 use App\Models\Member;
 use App\Models\MemberAudienceGroup;
 use App\Models\MemberCoupon;
+use App\Models\MemberLotteryEntitlement;
+use App\Models\MemberRankHistory;
+use App\Models\MemberSubscription;
+use App\Models\MemberTicket;
 use App\Models\MemberVisit;
 use App\Models\MemberVisitItem;
 use App\Models\Order;
@@ -17,13 +26,21 @@ use App\Models\OrderItem;
 use App\Models\PointTransaction;
 use App\Models\Product;
 use App\Models\Project;
+use App\Models\QueueEntry;
+use App\Models\Reservation;
+use App\Models\Store;
+use App\Models\Survey;
+use App\Models\SurveyResponse;
 use App\Models\User;
 use App\Models\UserDevice;
+use App\Models\WalletPassRegistration;
 use App\Services\Admin\CouponAdminService;
 use App\Services\Admin\MemberSegmentCriteriaDescriber;
 use App\Services\Admin\MemberSegmentService;
+use App\Services\Member\MemberPointLedger;
 use App\Services\Smaregi\SmaregiCouponSyncService;
 use App\Support\MemberChannel;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\Support\GrantsMemberPoints;
@@ -732,5 +749,312 @@ class MemberSegmentAndChannelTest extends TestCase
         ]);
 
         $this->assertSame([$neverMember->id], $ids->all());
+    }
+
+    public function test_お知らせの既読と未読で会員を絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $reader = Member::factory()->create(['project_id' => $project->id]);
+        $unreadRecipient = Member::factory()->create(['project_id' => $project->id]);
+        $notRecipient = Member::factory()->create(['project_id' => $project->id]);
+        $targeted = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '秋の新作',
+            'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+            'target_member_ids' => [$reader->id, $unreadRecipient->id],
+        ]);
+        $broadcast = Announcement::factory()->create(['project_id' => $project->id, 'target_member_ids' => null]);
+        foreach ([$targeted, $broadcast] as $announcement) {
+            AnnouncementRead::create([
+                'project_id' => $project->id,
+                'announcement_id' => $announcement->id,
+                'user_id' => $reader->user_id,
+                'read_at' => now(),
+            ]);
+        }
+
+        $segment = app(MemberSegmentService::class);
+        $ids = fn (int $announcementId, string $status): array => $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput([
+            'segment_announcement_id' => (string) $announcementId,
+            'segment_announcement_status' => $status,
+        ]) ?? [])->all();
+
+        $this->assertEqualsCanonicalizing([$reader->id], $ids($targeted->id, 'read'));
+        // 宛先に入っていない会員は「未読」に含めない
+        $this->assertEqualsCanonicalizing([$unreadRecipient->id], $ids($targeted->id, 'unread'));
+        $this->assertEqualsCanonicalizing([$unreadRecipient->id, $notRecipient->id], $ids($broadcast->id, 'unread'));
+        $this->assertNull($segment->buildCriteriaFromInput(['segment_announcement_id' => (string) $targeted->id, 'segment_announcement_status' => 'other']));
+        $this->assertSame(
+            ['お知らせ：秋の新作（未読）'],
+            app(MemberSegmentCriteriaDescriber::class)->describe($project->id, ['read_announcement_id' => $targeted->id, 'read_announcement_status' => 'unread']),
+        );
+    }
+
+    public function test_登録日と年齢とポイント残高で会員を絞り込めること(): void
+    {
+        $this->travelTo(Carbon::parse('2026-06-15 12:00:00'));
+        $project = $this->createProject();
+        $old = Member::factory()->create(['project_id' => $project->id, 'created_at' => '2025-12-31 23:59:59', 'birthday' => '2006-06-15', 'points' => 100]);
+        $recent = Member::factory()->create(['project_id' => $project->id, 'created_at' => '2026-01-01 00:00:00', 'birthday' => '2006-06-16', 'points' => 500]);
+        $noBirthday = Member::factory()->create(['project_id' => $project->id, 'created_at' => '2026-03-31 23:59:59', 'birthday' => null, 'points' => 3000]);
+
+        $segment = app(MemberSegmentService::class);
+        $ids = fn (array $input): array => $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput($input) ?? [])->all();
+
+        $this->assertEqualsCanonicalizing([$recent->id, $noBirthday->id], $ids(['segment_registered_from' => '2026-01-01']));
+        $this->assertEqualsCanonicalizing([$old->id, $recent->id], $ids(['segment_registered_to' => '2026-01-01']));
+        $this->assertEqualsCanonicalizing([$noBirthday->id], $ids(['segment_registered_from' => '2026-03-31', 'segment_registered_to' => '2026-03-31']));
+        // 2006-06-15 生まれは今日で20歳、2006-06-16 生まれはまだ19歳
+        $this->assertEqualsCanonicalizing([$old->id], $ids(['segment_age_min' => '20']));
+        $this->assertEqualsCanonicalizing([$recent->id], $ids(['segment_age_max' => '19']));
+        $this->assertEqualsCanonicalizing([$recent->id, $noBirthday->id], $ids(['segment_points_min' => '500']));
+        $this->assertEqualsCanonicalizing([$old->id, $recent->id], $ids(['segment_points_min' => '100', 'segment_points_max' => '500']));
+        $this->assertNull($segment->buildCriteriaFromInput(['segment_registered_from' => '2026-02-30']));
+
+        $this->assertSame(
+            ['登録日：2026/01/01以降', 'かつ 年齢：20〜29歳', 'かつ ポイント残高：500pt以上'],
+            app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $segment->buildCriteriaFromInput([
+                'segment_points_min' => '500',
+                'segment_age_min' => '20',
+                'segment_age_max' => '29',
+                'segment_registered_from' => '2026-01-01',
+            ])),
+        );
+    }
+
+    public function test_店舗_登録経路_アプリ利用_アンケート_予約_サブスク_回数券_クーポン利用_ランク変更_walletで絞り込めること(): void
+    {
+        $project = $this->createProject();
+        $member = fn (): Member => Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+        ]);
+        $a = $member();
+        $b = $member();
+        $c = $member();
+        $segment = app(MemberSegmentService::class);
+        $ids = fn (array $input): array => $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput($input) ?? [])->all();
+
+        $storeA = Store::create(['project_id' => $project->id, 'store_key' => 'seg-a', 'name' => '渋谷店']);
+        $a->stores()->attach($storeA->id, ['project_id' => $project->id]);
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_store_ids' => [(string) $storeA->id]]));
+
+        $flyer = AcquisitionSource::create(['project_id' => $project->id, 'name' => 'チラシ', 'code' => 'flyer']);
+        $b->forceFill(['acquisition_source_id' => $flyer->id])->save();
+        $this->assertEqualsCanonicalizing([$b->id], $ids(['segment_acquisition_source_ids' => [(string) $flyer->id]]));
+
+        foreach ([[$a, now()->subDays(3)], [$b, now()->subDays(60)]] as [$owner, $usedAt]) {
+            UserDevice::create(['project_id' => $project->id, 'user_id' => $owner->user_id, 'platform' => 'ios', 'device_identifier' => 'dev-'.$owner->id, 'last_used_at' => $usedAt]);
+        }
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_app_last_used_mode' => 'within_days', 'segment_app_last_used_days' => '30']));
+        // アプリを入れていない $c は「利用なし」に含めない
+        $this->assertEqualsCanonicalizing([$b->id], $ids(['segment_app_last_used_mode' => 'inactive_days', 'segment_app_last_used_days' => '30']));
+        $this->assertNull($segment->buildCriteriaFromInput(['segment_app_last_used_mode' => 'within_days', 'segment_app_last_used_days' => '45']));
+
+        $survey = Survey::create(['project_id' => $project->id, 'title' => '満足度調査', 'questions' => []]);
+        SurveyResponse::create(['project_id' => $project->id, 'survey_id' => $survey->id, 'member_id' => $a->id, 'answered_at' => now()]);
+        SurveyResponse::create(['project_id' => $project->id, 'survey_id' => $survey->id, 'member_id' => $b->id, 'invited_at' => now()]);
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_survey_id' => (string) $survey->id, 'segment_survey_status' => 'answered']));
+        $this->assertEqualsCanonicalizing([$b->id, $c->id], $ids(['segment_survey_id' => (string) $survey->id, 'segment_survey_status' => 'unanswered']));
+
+        foreach ([[$a, 'confirmed', now()->addDay()], [$b, 'cancelled', now()->subDay()]] as $index => [$owner, $status, $reservedAt]) {
+            Reservation::create(['project_id' => $project->id, 'user_id' => $owner->user_id, 'store_id' => $storeA->id, 'reservation_number' => 'SEG-'.$index, 'reserved_at' => $reservedAt, 'status' => $status]);
+        }
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_reservation_mode' => 'has', 'segment_reservation_days' => '30']));
+        $this->assertEqualsCanonicalizing([$b->id, $c->id], $ids(['segment_reservation_mode' => 'none', 'segment_reservation_days' => '30']));
+
+        foreach ([[$a, 'active'], [$b, 'canceled']] as [$owner, $status]) {
+            MemberSubscription::create(['project_id' => $project->id, 'member_id' => $owner->id, 'payment_setting_id' => 1, 'stripe_subscription_id' => 'sub_'.$owner->id, 'name' => '月額', 'status' => $status]);
+        }
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_subscription_status' => 'active']));
+        $this->assertEqualsCanonicalizing([$b->id], $ids(['segment_subscription_status' => 'ended']));
+        $this->assertEqualsCanonicalizing([$c->id], $ids(['segment_subscription_status' => 'none']));
+
+        foreach ([[$a, 5, 2, null], [$b, 2, 2, null], [$c, 5, 0, now()->subDay()]] as [$owner, $total, $used, $expiresAt]) {
+            $order = Order::create(['project_id' => $project->id, 'user_id' => $owner->user_id, 'store_id' => $storeA->id, 'order_number' => 'TICKET-'.$owner->id, 'order_type' => 'takeout', 'total_amount' => 1000, 'status' => 'completed']);
+            $item = OrderItem::create(['project_id' => $project->id, 'order_id' => $order->id, 'product_id' => Product::factory()->create(['project_id' => $project->id])->id, 'quantity' => 1, 'price' => 1000]);
+            MemberTicket::create(['project_id' => $project->id, 'member_id' => $owner->id, 'order_id' => $order->id, 'order_item_id' => $item->id, 'name' => '回数券', 'total_uses' => $total, 'used_count' => $used, 'expires_at' => $expiresAt]);
+        }
+        // $b は使い切り、$c は期限切れ
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_ticket_status' => 'active']));
+        $this->assertEqualsCanonicalizing([$b->id, $c->id], $ids(['segment_ticket_status' => 'none']));
+
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        foreach ([$a, $a, $b] as $owner) {
+            CouponRedemption::create(['project_id' => $project->id, 'store_id' => $storeA->id, 'coupon_id' => $coupon->id, 'member_id' => $owner->id, 'used_at' => now()]);
+        }
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_coupon_uses_min' => '2']));
+        $this->assertEqualsCanonicalizing([$c->id], $ids(['segment_coupon_uses_max' => '0']));
+
+        MemberRankHistory::create(['project_id' => $project->id, 'member_id' => $a->id, 'to_rank' => 'gold', 'to_rank_label' => 'ゴールド', 'achieved_at' => now()->subDays(5)]);
+        MemberRankHistory::create(['project_id' => $project->id, 'member_id' => $b->id, 'to_rank' => 'gold', 'to_rank_label' => 'ゴールド', 'achieved_at' => now()->subDays(40)]);
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_rank_changed_days' => '30']));
+
+        WalletPassRegistration::create(['project_id' => $project->id, 'member_id' => $c->id, 'pass_type_identifier' => 'pass.test', 'serial_number' => 'S1', 'device_library_identifier' => 'D1', 'push_token' => 'T1']);
+        $this->assertEqualsCanonicalizing([$c->id], $ids(['segment_wallet_status' => 'registered']));
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], $ids(['segment_wallet_status' => 'not_registered']));
+
+        $this->assertSame(
+            ['登録経路：チラシ', 'かつ 利用店舗：渋谷店', 'かつ 予約（直近30日と今後）：あり', 'かつ サブスク：継続中', 'かつ アンケート：満足度調査（未回答）', 'かつ Apple Wallet：会員証を未追加'],
+            app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $segment->buildCriteriaFromInput([
+                'segment_wallet_status' => 'not_registered',
+                'segment_survey_id' => (string) $survey->id,
+                'segment_survey_status' => 'unanswered',
+                'segment_subscription_status' => 'active',
+                'segment_reservation_mode' => 'has',
+                'segment_reservation_days' => '30',
+                'segment_store_ids' => [(string) $storeA->id],
+                'segment_acquisition_source_ids' => [(string) $flyer->id],
+            ])),
+        );
+    }
+
+    public function test_誕生日_購入_順番待ち_失効_くじ_評価_line_通知の条件で絞り込めること(): void
+    {
+        $this->travelTo(Carbon::parse('2026-02-25 10:00:00'));
+        $project = $this->createProject();
+        $member = fn (array $user = [], array $attributes = []): Member => Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id, ...$user])->id,
+            'birthday' => null,
+            ...$attributes,
+        ]);
+        $a = $member(['line_user_id' => $this->validLineUserId('a')], ['birthday' => '1990-02-28', 'notification_preference' => 'all']);
+        $b = $member(['line_user_id' => $this->validLineUserId('b'), 'line_blocked_at' => now()], ['birthday' => '2000-02-29', 'notification_preference' => 'none']);
+        $c = $member([], ['birthday' => '1995-03-05', 'notification_preference' => 'coupon_only']);
+        $segment = app(MemberSegmentService::class);
+        $ids = fn (array $input): array => $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput($input) ?? [])->all();
+
+        // 2026 年はうるう年でないため、2/29 生まれは 2/28 に含める
+        $this->assertEqualsCanonicalizing([$a->id, $b->id], $ids(['segment_birthday_soon_mode' => 'exact', 'segment_birthday_soon_days' => '3']));
+        $this->assertEqualsCanonicalizing([$a->id, $b->id, $c->id], $ids(['segment_birthday_soon_mode' => 'within', 'segment_birthday_soon_days' => '14']));
+        $this->assertSame([], $ids(['segment_birthday_soon_mode' => 'within', 'segment_birthday_soon_days' => '0']));
+
+        foreach ([[$a, 'pos', 20000, 'completed'], [$a, 'mobile', 15000, 'completed'], [$b, 'mobile', 50000, 'cancelled']] as $index => [$owner, $type, $amount, $status]) {
+            Order::create(['project_id' => $project->id, 'user_id' => $owner->user_id, 'order_number' => 'LTV-'.$index, 'order_type' => $type, 'total_amount' => $amount, 'status' => $status]);
+        }
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_lifetime_sales_min' => '30000']));
+        $this->assertEqualsCanonicalizing([$b->id, $c->id], $ids(['segment_lifetime_sales_max' => '0']));
+        // キャンセルした注文は数えない
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_order_types' => ['mobile']]));
+        $this->assertNull($segment->buildCriteriaFromInput(['segment_order_types' => ['unknown']]));
+
+        QueueEntry::create(['project_id' => $project->id, 'member_id' => $c->id, 'status' => 'entered', 'queue_number' => 1]);
+        QueueEntry::create(['project_id' => $project->id, 'user_id' => $b->user_id, 'status' => 'cancelled', 'queue_number' => 2]);
+        $this->assertEqualsCanonicalizing([$c->id], $ids(['segment_queue_days' => '7']));
+
+        $a->forceFill(['points' => 100])->save();
+        $b->forceFill(['points' => 50])->save();
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $a->id, 'type' => 'earned', 'points' => 100, 'expires_at' => now()->addDays(2)]);
+        // $b は期限の近い 100pt を先に使っているので、残りの 50pt（期限なし）は失効しない
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $b->id, 'type' => 'earned', 'points' => 100, 'expires_at' => now()->addDays(2)]);
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $b->id, 'type' => 'earned', 'points' => 50]);
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $b->id, 'type' => 'used', 'points' => -100]);
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_points_expiring_days' => '3']));
+        $this->assertSame([], $ids(['segment_points_expiring_days' => '0']));
+        // 今日が期限のポイントは今日の終わりまで使えるので「今日中に失効」に入る
+        $c->forceFill(['points' => 10])->save();
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $c->id, 'type' => 'earned', 'points' => 10, 'expires_at' => now()->toDateString()]);
+        $this->assertSame([$c->id], $ids(['segment_points_expiring_days' => '0']));
+
+        $coupon = Coupon::factory()->create(['project_id' => $project->id]);
+        foreach ([[$a, 'unused', now()->addDays(2)], [$b, 'used', now()->addDays(2)], [$c, 'unused', now()->addDays(20)]] as [$owner, $status, $validUntil]) {
+            MemberCoupon::factory()->create(['project_id' => $project->id, 'member_id' => $owner->id, 'coupon_id' => $coupon->id, 'status' => $status, 'valid_until' => $validUntil]);
+        }
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_coupon_expiring_days' => '3']));
+        $this->assertEqualsCanonicalizing([$a->id, $c->id], $ids(['segment_coupon_expiring_days' => '30']));
+
+        foreach ([[$a, false, null], [$b, true, null], [$c, false, now()->subDay()]] as $index => [$owner, $done, $expiresAt]) {
+            MemberLotteryEntitlement::create(['project_id' => $project->id, 'member_id' => $owner->id, 'reward_type' => 'coupon', 'source_type' => 'test', 'source_id' => $index, 'is_done' => $done, 'expires_at' => $expiresAt]);
+        }
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_lottery_status' => 'pending']));
+        $this->assertEqualsCanonicalizing([$b->id, $c->id], $ids(['segment_lottery_status' => 'none']));
+
+        $oldSurvey = Survey::create(['project_id' => $project->id, 'title' => '前回のNPS', 'questions' => []]);
+        $survey = Survey::create(['project_id' => $project->id, 'title' => 'NPS', 'questions' => []]);
+        foreach ([[$oldSurvey, $a, 3, now()->subDays(10)], [$survey, $a, 10, now()->subDay()], [$survey, $b, 5, now()->subDay()]] as [$answered, $owner, $score, $answeredAt]) {
+            SurveyResponse::create(['project_id' => $project->id, 'survey_id' => $answered->id, 'member_id' => $owner->id, 'nps_score' => $score, 'answered_at' => $answeredAt]);
+        }
+        // $a は最新の回答（10）で判定する
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_nps_category' => 'promoter']));
+        $this->assertEqualsCanonicalizing([$b->id], $ids(['segment_nps_category' => 'detractor']));
+
+        foreach ([[$a, 3], [$b, 40]] as [$owner, $daysAgo]) {
+            (new LineFollowEvent)->forceFill(['project_id' => $project->id, 'user_id' => $owner->user_id, 'type' => LineFollowEvent::TYPE_FOLLOW, 'created_at' => now()->subDays($daysAgo)])->save();
+        }
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_line_follow_days' => '7']));
+
+        $this->assertEqualsCanonicalizing([$b->id], $ids(['segment_line_block_status' => 'blocked']));
+        // LINE 連携のない $c はどちらにも入らない
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_line_block_status' => 'not_blocked']));
+        $this->assertEqualsCanonicalizing([$a->id], $ids(['segment_notification_preference' => 'all']));
+        $this->assertEqualsCanonicalizing([$b->id], $ids(['segment_notification_preference' => 'none']));
+
+        $this->assertSame(
+            ['誕生日：ちょうど3日後', 'かつ ポイント失効：今日に失効予定あり', 'かつ 注文の種類：モバイル注文', 'かつ くじ：引いていない抽選権あり', 'かつ 累計購入額：30,000円以上', 'かつ アンケートの評価：低い（0〜6）', 'かつ 通知設定：通知をすべて受け取らない'],
+            app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $segment->buildCriteriaFromInput([
+                'segment_notification_preference' => 'none',
+                'segment_nps_category' => 'detractor',
+                'segment_lottery_status' => 'pending',
+                'segment_points_expiring_days' => '0',
+                'segment_lifetime_sales_min' => '30000',
+                'segment_order_types' => ['mobile'],
+                'segment_birthday_soon_mode' => 'exact',
+                'segment_birthday_soon_days' => '3',
+            ])),
+        );
+    }
+
+    public function test_ポイント台帳のまとめ計算が会員ごとの計算と同じ結果になること(): void
+    {
+        $project = $this->createProject();
+        $members = Member::factory()->count(3)->create(['project_id' => $project->id]);
+        $rows = [
+            [$members[0], 'earned', 100, now()->addDays(2)],
+            [$members[0], 'earned', 30, null],
+            [$members[0], 'used', -50, null],
+            [$members[1], 'earned', 80, now()->subDay()],
+            [$members[1], 'earned', 20, now()->addDays(10)],
+        ];
+        foreach ($rows as [$member, $type, $points, $expiresAt]) {
+            PointTransaction::create(['project_id' => $project->id, 'member_id' => $member->id, 'type' => $type, 'points' => $points, 'expires_at' => $expiresAt]);
+        }
+        $ledger = app(MemberPointLedger::class);
+
+        $bulk = $ledger->balancesFor($members->pluck('id')->all());
+
+        foreach ($members->take(2) as $member) {
+            $this->assertEquals($ledger->balance($member), $bulk[$member->id]);
+        }
+        // 台帳がない会員は結果に含めない（失効予定なしと同じ扱い）
+        $this->assertArrayNotHasKey($members[2]->id, $bulk);
+    }
+
+    public function test_既存の条件の結合順は新しい条件を足しても変わらないこと(): void
+    {
+        // 条件ごとの「かつ／または」は表示順に結合するため、保存済みの条件の結果を変えないよう既存の順を保つ
+        $legacy = ['groups', 'channel', 'birthday', 'sex', 'rfm', 'tags', 'visits', 'rank', 'points', 'last_visit', 'product', 'held_coupon', 'stamp', 'sales'];
+
+        $this->assertSame($legacy, array_values(array_intersect(MemberSegmentService::DISPLAY_ORDER, $legacy)));
+    }
+
+    public function test_範囲の下限が上限より大きい条件を入力エラーにできること(): void
+    {
+        $this->assertSame([
+            'segment_registered_to' => '登録日の終わりは始まり以降の日付にしてください',
+            'segment_age_max' => '年齢の上限は下限以上にしてください',
+            'segment_lifetime_sales_max' => '累計購入額の上限は下限以上にしてください',
+        ], MemberSegmentService::invertedRangeErrors([
+            'segment_registered_from' => '2026-05-01',
+            'segment_registered_to' => '2026-04-30',
+            'segment_age_min' => '40',
+            'segment_age_max' => '20',
+            'segment_points_min' => '100',
+            'segment_points_max' => '100',
+            'segment_coupon_uses_min' => '3',
+            'segment_coupon_uses_max' => '',
+            'segment_lifetime_sales_min' => '50000',
+            'segment_lifetime_sales_max' => '10000',
+        ]));
     }
 }

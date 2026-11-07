@@ -3,13 +3,33 @@
 namespace App\Infrastructure\Persistence\Eloquent\Coupon;
 
 use App\Domain\Coupon\Repositories\CouponDeliveryTargetRepository;
+use App\Enums\MemberNotificationPreference;
+use App\Enums\QueueStatus;
+use App\Enums\ReservationStatus;
+use App\Models\Announcement;
+use App\Models\AnnouncementRead;
+use App\Models\CouponRedemption;
+use App\Models\LineFollowEvent;
 use App\Models\Member;
 use App\Models\MemberCoupon;
+use App\Models\MemberLotteryEntitlement;
+use App\Models\MemberRankHistory;
 use App\Models\MemberStamp;
+use App\Models\MemberSubscription;
+use App\Models\MemberTicket;
 use App\Models\Order;
+use App\Models\PointTransaction;
 use App\Models\Product;
+use App\Models\QueueEntry;
+use App\Models\Reservation;
+use App\Models\Scopes\StoreAccessScope;
+use App\Models\Survey;
+use App\Models\SurveyResponse;
+use App\Models\WalletPassRegistration;
 use App\Support\MemberChannel;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepository
 {
@@ -385,6 +405,385 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
             ->map(fn ($id) => (int) $id)
             ->values()
             ->all();
+    }
+
+    public function findIdsByAnnouncementRead(int $projectId, int $announcementId, string $status): array
+    {
+        $announcement = Announcement::query()->where('project_id', $projectId)->find($announcementId);
+        if ($announcement === null || ! in_array($status, ['read', 'unread'], true)) {
+            return [];
+        }
+
+        $readerUserIds = AnnouncementRead::query()
+            ->where('project_id', $projectId)
+            ->where('announcement_id', $announcementId)
+            ->select('user_id');
+        $query = Member::query()->where('project_id', $projectId);
+        if ($status === 'read') {
+            $query->whereIn('user_id', $readerUserIds);
+        } else {
+            // 宛先を記録した配信は宛先の中だけで未読を数える（届いていない会員を未読にしない）
+            if (is_array($announcement->target_member_ids)) {
+                $query->whereIntegerInRaw('id', array_map('intval', $announcement->target_member_ids));
+            }
+            $query->where(fn ($q) => $q->whereNull('user_id')->orWhereNotIn('user_id', $readerUserIds));
+        }
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByRegisteredDate(int $projectId, ?string $from, ?string $to): array
+    {
+        $query = Member::query()->where('project_id', $projectId);
+        if ($from !== null) {
+            $query->where('created_at', '>=', Carbon::parse($from)->startOfDay());
+        }
+        if ($to !== null) {
+            $query->where('created_at', '<=', Carbon::parse($to)->endOfDay());
+        }
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByAge(int $projectId, ?int $min, ?int $max): array
+    {
+        $today = Carbon::today();
+        $query = Member::query()->where('project_id', $projectId)->whereNotNull('birthday');
+        if ($min !== null) {
+            $query->whereDate('birthday', '<=', $today->copy()->subYears($min));
+        }
+        if ($max !== null) {
+            // max 歳以下 = (max + 1) 歳の誕生日をまだ迎えていない
+            $query->whereDate('birthday', '>', $today->copy()->subYears($max + 1));
+        }
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByPointBalance(int $projectId, ?int $min, ?int $max): array
+    {
+        $query = Member::query()->where('project_id', $projectId);
+        if ($min !== null) {
+            $query->where('points', '>=', $min);
+        }
+        if ($max !== null) {
+            $query->where('points', '<=', $max);
+        }
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByStores(int $projectId, array $storeIds): array
+    {
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->whereHas('stores', fn ($query) => $query->whereIn('stores.id', array_map('intval', $storeIds))));
+    }
+
+    public function findIdsByAppLastUsed(int $projectId, string $mode, int $days): array
+    {
+        $boundary = Carbon::today()->subDays($days);
+        $usedWithin = fn ($query) => $query->where('project_id', $projectId)->where('last_used_at', '>=', $boundary);
+        $query = Member::query()->where('project_id', $projectId);
+        if ($mode === 'within_days') {
+            $query->whereHas('user.devices', $usedWithin);
+        } else {
+            // 端末を持たない（LINE だけの）会員は「アプリを使っていない」に含めない
+            $query->whereHas('user.devices', fn ($devices) => $devices->where('project_id', $projectId))
+                ->whereDoesntHave('user.devices', $usedWithin);
+        }
+
+        return $this->ids($query);
+    }
+
+    public function findIdsBySurveyResponse(int $projectId, int $surveyId, string $status): array
+    {
+        if (! Survey::query()->where('project_id', $projectId)->whereKey($surveyId)->exists()) {
+            return [];
+        }
+        $answered = SurveyResponse::query()
+            ->where('project_id', $projectId)
+            ->where('survey_id', $surveyId)
+            ->whereNotNull('answered_at')
+            ->select('member_id');
+        $query = Member::query()->where('project_id', $projectId);
+        $status === 'answered' ? $query->whereIn('id', $answered) : $query->whereNotIn('id', $answered);
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByReservation(int $projectId, string $mode, int $days): array
+    {
+        $userIds = Reservation::query()
+            ->where('project_id', $projectId)
+            ->where('status', '!=', ReservationStatus::CANCELLED)
+            ->where('reserved_at', '>=', Carbon::today()->subDays($days))
+            ->whereNotNull('user_id')
+            ->select('user_id');
+        $query = Member::query()->where('project_id', $projectId);
+        if ($mode === 'has') {
+            $query->whereIn('user_id', $userIds);
+        } else {
+            $query->where(fn ($q) => $q->whereNull('user_id')->orWhereNotIn('user_id', $userIds));
+        }
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByAcquisitionSources(int $projectId, array $sourceIds): array
+    {
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->whereIn('acquisition_source_id', array_map('intval', $sourceIds)));
+    }
+
+    public function findIdsBySubscriptionStatus(int $projectId, string $status): array
+    {
+        $subscribers = MemberSubscription::query()->where('project_id', $projectId)->select('member_id');
+        $active = (clone $subscribers)->whereNotIn('status', MemberSubscription::ENDED_STATUSES);
+        $query = Member::query()->where('project_id', $projectId);
+        match ($status) {
+            'active' => $query->whereIn('id', $active),
+            'ended' => $query->whereIn('id', $subscribers)->whereNotIn('id', $active),
+            default => $query->whereNotIn('id', $subscribers),
+        };
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByTicketStatus(int $projectId, string $status): array
+    {
+        // MemberTicket::status() が active になる条件と同じ
+        $usable = MemberTicket::query()
+            ->where('project_id', $projectId)
+            ->whereNull('revoked_at')
+            ->where(fn ($q) => $q->whereNull('total_uses')->orWhereColumn('used_count', '<', 'total_uses'))
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->select('member_id');
+        $query = Member::query()->where('project_id', $projectId);
+        $status === 'active' ? $query->whereIn('id', $usable) : $query->whereNotIn('id', $usable);
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByCouponUseCount(int $projectId, ?int $min, ?int $max): array
+    {
+        $uses = CouponRedemption::query()
+            ->where('project_id', $projectId)
+            ->whereNotNull('member_id')
+            ->selectRaw('member_id, COUNT(*) as use_count')
+            ->groupBy('member_id');
+        $query = Member::query()
+            ->where('members.project_id', $projectId)
+            ->leftJoinSub($uses, 'coupon_uses', 'coupon_uses.member_id', '=', 'members.id');
+        if ($min !== null) {
+            $query->whereRaw('COALESCE(coupon_uses.use_count, 0) >= ?', [$min]);
+        }
+        if ($max !== null) {
+            $query->whereRaw('COALESCE(coupon_uses.use_count, 0) <= ?', [$max]);
+        }
+
+        return $query->pluck('members.id')->map(fn ($id) => (int) $id)->values()->all();
+    }
+
+    public function findIdsByRankChangedWithin(int $projectId, int $days): array
+    {
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->whereIn('id', MemberRankHistory::query()
+                ->where('project_id', $projectId)
+                ->where('achieved_at', '>=', Carbon::today()->subDays($days))
+                ->select('member_id')));
+    }
+
+    public function findIdsByWalletStatus(int $projectId, string $status): array
+    {
+        $registered = WalletPassRegistration::query()->where('project_id', $projectId)->select('member_id');
+        $query = Member::query()->where('project_id', $projectId);
+        $status === 'registered' ? $query->whereIn('id', $registered) : $query->whereNotIn('id', $registered);
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByBirthdaySoon(int $projectId, string $mode, int $days): array
+    {
+        $today = Carbon::today();
+        $dates = $mode === 'exact'
+            ? [$today->copy()->addDays($days)]
+            : array_map(fn (int $offset) => $today->copy()->addDays($offset), range(0, $days));
+        $monthDays = [];
+        foreach ($dates as $date) {
+            $monthDays[] = [$date->month, $date->day];
+            // うるう年でない年は 2/29 生まれを 2/28 に祝う
+            if ($date->month === 2 && $date->day === 28 && ! $date->isLeapYear()) {
+                $monthDays[] = [2, 29];
+            }
+        }
+
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->whereNotNull('birthday')
+            ->where(function ($query) use ($monthDays): void {
+                foreach ($monthDays as [$month, $day]) {
+                    $query->orWhere(fn ($q) => $q->whereMonth('birthday', $month)->whereDay('birthday', $day));
+                }
+            }));
+    }
+
+    public function findIdsByLifetimeSales(int $projectId, ?int $min, ?int $max): array
+    {
+        // 売上条件・RFM と同じく、キャンセル以外の注文の合計（POS 会計も注文として入る）
+        $sales = Order::query()
+            ->where('project_id', $projectId)
+            ->notCancelled()
+            ->whereNotNull('user_id')
+            ->selectRaw('user_id, SUM(total_amount) as total_sales')
+            ->groupBy('user_id');
+        $query = Member::query()
+            ->where('members.project_id', $projectId)
+            ->leftJoinSub($sales, 'lifetime_sales', 'lifetime_sales.user_id', '=', 'members.user_id');
+        if ($min !== null) {
+            $query->whereRaw('COALESCE(lifetime_sales.total_sales, 0) >= ?', [$min]);
+        }
+        if ($max !== null) {
+            $query->whereRaw('COALESCE(lifetime_sales.total_sales, 0) <= ?', [$max]);
+        }
+
+        return $query->pluck('members.id')->map(fn ($id) => (int) $id)->values()->all();
+    }
+
+    public function findIdsByOrderTypes(int $projectId, array $orderTypes): array
+    {
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->whereIn('user_id', Order::query()
+                ->where('project_id', $projectId)
+                ->notCancelled()
+                ->whereIn('order_type', $orderTypes)
+                ->whereNotNull('user_id')
+                ->select('user_id')));
+    }
+
+    public function findIdsByQueueWithin(int $projectId, int $days): array
+    {
+        $entries = QueueEntry::query()
+            ->where('project_id', $projectId)
+            ->where('status', '!=', QueueStatus::CANCELLED)
+            ->where('created_at', '>=', Carbon::today()->subDays($days));
+
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->where(fn ($query) => $query
+                ->whereIn('id', (clone $entries)->whereNotNull('member_id')->select('member_id'))
+                ->orWhereIn('user_id', (clone $entries)->whereNotNull('user_id')->select('user_id'))));
+    }
+
+    public function findIdsWithPointsExpiringCandidates(int $projectId, int $days): array
+    {
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->where('points', '>', 0)
+            ->whereIn('id', PointTransaction::query()
+                ->withoutGlobalScope(StoreAccessScope::class)
+                ->where('project_id', $projectId)
+                ->where('points', '>', 0)
+                // expires_at は日付の列で、その日の終わりまで使える（PointLedgerBalanceCalculator と同じ）
+                ->whereBetween('expires_at', [Carbon::today()->toDateString(), Carbon::today()->addDays($days)->toDateString()])
+                ->select('member_id')));
+    }
+
+    public function findIdsByCouponExpiring(int $projectId, int $days): array
+    {
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->whereIn('id', MemberCoupon::query()
+                ->where('project_id', $projectId)
+                ->where('status', MemberCoupon::STATUS_UNUSED)
+                ->whereBetween('valid_until', [now(), Carbon::today()->addDays($days)->endOfDay()])
+                ->select('member_id')));
+    }
+
+    public function findIdsByLotteryStatus(int $projectId, string $status): array
+    {
+        // MemberWalletSummaryService の「未抽選の数」と同じ条件
+        $pending = MemberLotteryEntitlement::query()
+            ->where('project_id', $projectId)
+            ->where('is_done', false)
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->select('member_id');
+        $query = Member::query()->where('project_id', $projectId);
+        $status === 'pending' ? $query->whereIn('id', $pending) : $query->whereNotIn('id', $pending);
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByNpsCategory(int $projectId, string $category): array
+    {
+        [$low, $high] = match ($category) {
+            'promoter' => [9, 10],
+            'passive' => [7, 8],
+            default => [0, 6],
+        };
+        // 会員ごとに最新の NPS 回答だけを見る（別名を使うため、グローバルスコープのない DB::table で組む）
+        $latest = DB::table('survey_responses as r')
+            ->where('r.project_id', $projectId)
+            ->whereNotNull('r.nps_score')
+            ->whereNotNull('r.answered_at')
+            ->whereNotExists(fn ($newer) => $newer->selectRaw('1')
+                ->from('survey_responses as newer')
+                ->whereColumn('newer.member_id', 'r.member_id')
+                ->whereNotNull('newer.nps_score')
+                ->where(fn ($order) => $order->whereColumn('newer.answered_at', '>', 'r.answered_at')
+                    ->orWhere(fn ($tie) => $tie->whereColumn('newer.answered_at', 'r.answered_at')->whereColumn('newer.id', '>', 'r.id'))))
+            ->whereBetween('r.nps_score', [$low, $high])
+            ->select('r.member_id');
+
+        return $this->ids(Member::query()->where('project_id', $projectId)->whereIn('id', $latest));
+    }
+
+    public function findIdsByLineFollowWithin(int $projectId, int $days): array
+    {
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->whereIn('user_id', LineFollowEvent::query()
+                ->where('project_id', $projectId)
+                ->where('type', LineFollowEvent::TYPE_FOLLOW)
+                ->where('created_at', '>=', Carbon::today()->subDays($days))
+                ->whereNotNull('user_id')
+                ->select('user_id')));
+    }
+
+    public function findIdsByNotificationPreference(int $projectId, string $preference): array
+    {
+        $query = Member::query()->where('project_id', $projectId);
+        if ($preference === MemberNotificationPreference::ALL) {
+            // 未設定・不明な値は「すべて受け取る」として扱う（MemberNotificationPreference::normalize と同じ）
+            $query->where(fn ($q) => $q->whereNull('notification_preference')
+                ->orWhereNotIn('notification_preference', [MemberNotificationPreference::COUPON_ONLY, MemberNotificationPreference::NONE]));
+        } else {
+            $query->where('notification_preference', $preference);
+        }
+
+        return $this->ids($query);
+    }
+
+    public function findIdsByLineBlockStatus(int $projectId, string $status): array
+    {
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->whereHas('user', function ($user) use ($status): void {
+                $user->whereRaw('line_user_id REGEXP ?', ['^U[0-9a-fA-F]{32}$']);
+                $status === 'blocked' ? $user->whereNotNull('line_blocked_at') : $user->whereNull('line_blocked_at');
+            }));
+    }
+
+    /**
+     * @param  Builder<Member>  $query
+     * @return list<int>
+     */
+    private function ids($query): array
+    {
+        return $query->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
     }
 
     public function countAll(int $projectId): int

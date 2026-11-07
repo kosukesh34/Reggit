@@ -286,8 +286,9 @@ class AdminAnnouncementsTest extends TestCase
             ]));
 
         $response->assertStatus(200);
-        $response->assertSee('セグメントのみ');
-        $response->assertDontSee('一斉のみ');
+        // 条件ビルダーの「お知らせの既読」の選択肢にも題名が出るため、一覧の行（<strong>）で確かめる
+        $response->assertSee('<strong>セグメントのみ</strong>', false);
+        $response->assertDontSee('<strong>一斉のみ</strong>', false);
     }
 
     public function test_announcements_一覧で条件指定の配信条件を確認できること(): void
@@ -352,9 +353,9 @@ class AdminAnnouncementsTest extends TestCase
             ]));
 
         $response->assertStatus(200);
-        $response->assertSee('夏のキャンペーン');
+        $response->assertSee('<strong>夏のキャンペーン</strong>', false);
         $response->assertSee('2026/07/10 10:00');
-        $response->assertDontSee('冬のキャンペーン');
+        $response->assertDontSee('<strong>冬のキャンペーン</strong>', false);
     }
 
     public function test_delivery_form_shows_saved_custom_profile_fields_for_the_current_project(): void
@@ -872,6 +873,68 @@ class AdminAnnouncementsTest extends TestCase
         $this->assertSame('line', $announcement->segment_criteria['channel'] ?? null);
         $this->assertSame([7, 8], $announcement->segment_criteria['birthday_months'] ?? null);
         $this->assertSame([$tag->id], $announcement->segment_criteria['tag_ids'] ?? null);
+    }
+
+    public function test_store_delivery_前回のお知らせを未読の会員に配信できること(): void
+    {
+        $project = $this->createDistributionProject();
+        $admin = $this->createAdmin($project);
+        $reader = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
+        $unread = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
+        $previous = Announcement::factory()->create([
+            'project_id' => $project->id,
+            'title' => '前回のセール告知',
+            'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+            'target_member_ids' => [$reader->id, $unread->id],
+            'sent_at' => now()->subDay(),
+        ]);
+        AnnouncementRead::create([
+            'project_id' => $project->id,
+            'announcement_id' => $previous->id,
+            'user_id' => $reader->user_id,
+            'read_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('data-menu-field="announcement_read"', false)
+            ->assertSee('id="segmentConditionSearch"', false)
+            ->assertSee('data-menu-field="wallet"', false)
+            ->assertSee('前回のセール告知');
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.announcements.delivery.store', ['project_key' => $project->project_key]), [
+                'title' => 'セール最終日',
+                'body' => '本文',
+                'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+                'segment_announcement_id' => (string) $previous->id,
+                'segment_announcement_status' => 'unread',
+                'is_pinned' => 0,
+            ])
+            ->assertRedirect(route('admin.announcements', ['project_key' => $project->project_key]));
+
+        $announcement = Announcement::where('title', 'セール最終日')->firstOrFail();
+        $this->assertSame([$unread->id], $announcement->target_member_ids);
+        $this->assertSame('unread', $announcement->segment_criteria['read_announcement_status'] ?? null);
+    }
+
+    public function test_store_delivery_範囲の下限が上限より大きいと入力エラーになること(): void
+    {
+        $project = $this->createDistributionProject();
+        $admin = $this->createAdmin($project);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.announcements.delivery.store', ['project_key' => $project->project_key]), [
+                'title' => '年齢指定',
+                'body' => '本文',
+                'delivery_type' => Announcement::DELIVERY_TYPE_SEGMENT,
+                'segment_age_min' => '40',
+                'segment_age_max' => '20',
+                'is_pinned' => 0,
+            ])
+            ->assertSessionHasErrors(['segment_age_max' => '年齢の上限は下限以上にしてください']);
+        $this->assertDatabaseMissing('announcements', ['title' => '年齢指定']);
     }
 
     public function test_store_delivery_rfmセグメントで配信できること(): void

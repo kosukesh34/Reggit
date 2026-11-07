@@ -125,6 +125,7 @@ use App\Util\StoreContext;
 use App\Util\TenantContext;
 use App\View\Composers\AdminLayoutComposer;
 use App\View\Composers\FrontendShellComposer;
+use App\View\Composers\SegmentOptionsComposer;
 use App\View\Composers\SegmentRankOptionsComposer;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\DB;
@@ -278,6 +279,7 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('admin.layout', AdminLayoutComposer::class);
         View::composer('admin.partials._delivery_segment_filters', SegmentRankOptionsComposer::class);
+        View::composer('admin.partials._delivery_segment_filters', SegmentOptionsComposer::class);
         View::composer(['index', 'frontend.line', 'frontend.native', 'frontend.shop', 'frontend.shop-login'], FrontendShellComposer::class);
 
         Event::listen(PasskeyRegistered::class, function (PasskeyRegistered $event): void {
