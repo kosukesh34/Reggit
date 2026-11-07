@@ -16,6 +16,9 @@ class MemberPointLedger
 {
     public const POINTS_LEDGER_BACKFILL_DESCRIPTION = 'ポイント残高の整合';
 
+    /** 残高の計算に使う台帳の列 */
+    private const LEDGER_COLUMNS = ['type', 'points', 'expires_at', 'order_id', 'created_at'];
+
     public function __construct(
         private PointLedgerBalanceCalculator $calculator,
         private OrderSettings $orderSettings,
@@ -30,17 +33,53 @@ class MemberPointLedger
         if ($forUpdate) {
             $query->lockForUpdate();
         }
-        $transactions = $query
-            ->get(['type', 'points', 'expires_at', 'order_id', 'created_at'])
-            ->map(fn (PointTransaction $transaction): array => [
+
+        return $this->calculator->calculate($this->ledgerRows($query->get(self::LEDGER_COLUMNS)), now());
+    }
+
+    /**
+     * 複数会員の balance() をまとめて求める。会員ごとに台帳を読む代わりに、500人分ずつ1回の問い合わせで読む。
+     *
+     * @param  list<int>  $memberIds
+     * @return array<int, array{balance: int, expires_at: ?\DateTimeImmutable, points_expiring: int, has_transactions: bool}>
+     */
+    public function balancesFor(array $memberIds): array
+    {
+        $balances = [];
+        foreach (array_chunk($memberIds, 500) as $chunk) {
+            $transactionsByMember = PointTransaction::query()
+                ->withoutGlobalScope(StoreAccessScope::class)
+                ->withoutGlobalScope(ProjectScope::class)
+                ->whereIntegerInRaw('member_id', $chunk)
+                ->orderBy('member_id')->orderBy('created_at')->orderBy('id')
+                ->get(['member_id', ...self::LEDGER_COLUMNS])
+                ->groupBy('member_id');
+            foreach ($transactionsByMember as $memberId => $transactions) {
+                $balances[(int) $memberId] = $this->calculator->calculate($this->ledgerRows($transactions), now());
+            }
+        }
+
+        return $balances;
+    }
+
+    /**
+     * @param  iterable<PointTransaction>  $transactions
+     * @return list<array{type: string, points: int, expires_at: mixed, order_id: mixed, created_at: mixed}>
+     */
+    private function ledgerRows(iterable $transactions): array
+    {
+        $rows = [];
+        foreach ($transactions as $transaction) {
+            $rows[] = [
                 'type' => $transaction->type,
                 'points' => $transaction->points,
                 'expires_at' => $transaction->expires_at,
                 'order_id' => $transaction->order_id,
                 'created_at' => $transaction->created_at,
-            ])->all();
+            ];
+        }
 
-        return $this->calculator->calculate($transactions, now());
+        return $rows;
     }
 
     public function total(Member $member, bool $forUpdate = false): int

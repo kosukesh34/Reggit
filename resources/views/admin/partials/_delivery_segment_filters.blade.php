@@ -32,36 +32,87 @@
                             <div class="ad-cond-list" id="segmentConditionRows"></div>
                             <div class="ad-cond-add">
                                 <button type="button" class="ad-cond-add-btn" id="segmentAddCondition" aria-expanded="false" aria-controls="segmentConditionMenu"><i class="fas fa-plus" aria-hidden="true"></i>条件を追加</button>
+                                @php
+                                    // 条件メニューのセクション。keywords は検索で拾う別名
+                                    $conditionMenu = [
+                                        'attribute' => ['会員の属性', [
+                                            'channel' => ['登録チャネル', 'LINE アプリ'],
+                                            'registered' => ['登録日', '入会日 新規'],
+                                            'acquisition' => ['登録経路', '流入 チラシ QR', count($segmentAcquisitionOptions ?? []) > 0],
+                                            'store' => ['利用店舗', '店舗 お店', count($segmentStoreOptions ?? []) > 1],
+                                            'birthday' => ['誕生月', '誕生日 バースデー'],
+                                            'birthday_soon' => ['誕生日が近い', '誕生日 バースデー 記念日'],
+                                            'age' => ['年齢', '年代 誕生日'],
+                                            'sex' => ['性別', '男性 女性'],
+                                            'tags' => ['会員タグ', 'タグ'],
+                                            'rfm' => ['RFMセグメント', '優良 休眠 分析'],
+                                        ]],
+                                        'visit' => ['来店・購入', [
+                                            'visits' => ['来店回数', '回数'],
+                                            'last_visit' => ['最終来店', '休眠 来店なし'],
+                                            'reservation' => ['予約', '予約あり 予約なし'],
+                                            'queue' => ['順番待ちの利用', '順番待ち 行列 受付'],
+                                            'product' => ['購入した商品', '商品 メニュー'],
+                                            'order_type' => ['注文の種類', 'テイクアウト モバイル 店内 POS 配送 回数券 サブスク'],
+                                            'sales' => ['売上', '購入額 未購入'],
+                                            'lifetime_sales' => ['累計購入額', '購入額 売上 総額 LTV'],
+                                        ]],
+                                        'rank' => ['ランク・ポイント', [
+                                            'rank' => ['会員ランク', 'ランク'],
+                                            'rank_changed' => ['ランク変更', 'ランクアップ 昇格'],
+                                            'points' => ['累計付与ポイント', 'ポイント'],
+                                            'point_balance' => ['ポイント残高', 'ポイント 残高'],
+                                            'points_expiring' => ['ポイントの失効予定', 'ポイント 失効 期限'],
+                                        ]],
+                                        'benefit' => ['クーポン・特典', [
+                                            'held_coupon' => ['保有クーポン', 'クーポン 未使用 使用済み'],
+                                            'coupon_expiring' => ['クーポンの期限が近い', 'クーポン 期限 失効'],
+                                            'coupon_uses' => ['クーポン利用回数', 'クーポン 使った'],
+                                            'stamp' => ['スタンプ', 'スタンプカード', $isCouponDelivery],
+                                            'ticket' => ['回数券', 'チケット'],
+                                            'subscription' => ['サブスク', '定期 月額 継続 解約'],
+                                            'lottery' => ['くじの抽選権', 'くじ 抽選 ガチャ'],
+                                        ]],
+                                        'engagement' => ['お知らせ・アプリ', [
+                                            'announcement_read' => ['お知らせの既読', '未読 既読 お知らせ', count($segmentAnnouncementOptions ?? []) > 0],
+                                            'survey' => ['アンケートの回答', 'アンケート 回答 未回答', count($segmentSurveyOptions ?? []) > 0],
+                                            'nps' => ['アンケートの評価（NPS）', 'アンケート 評価 満足度 NPS 口コミ'],
+                                            'app_last_used' => ['アプリの利用', 'アプリ 最終ログイン 起動'],
+                                            'wallet' => ['Apple Wallet', 'ウォレット 会員証'],
+                                            'line_follow' => ['LINE友だち追加日', 'LINE 友だち 追加 新規'],
+                                            'line_block' => ['LINEブロック', 'LINE ブロック 解除'],
+                                            'notification' => ['通知設定', '通知 受け取らない 配信停止'],
+                                        ]],
+                                    ];
+                                @endphp
                                 <div class="ad-cond-menu" id="segmentConditionMenu" hidden>
+                                    <div class="ad-cond-menu-search">
+                                        <i class="fas fa-search" aria-hidden="true"></i>
+                                        <input type="search" id="segmentConditionSearch" placeholder="条件を検索（例：誕生日、クーポン）" aria-label="条件を検索" autocomplete="off">
+                                    </div>
                                     <ul class="ad-cond-menu-groups">
-                                        <li><button type="button" data-menu-group="attribute">属性<i class="fas fa-chevron-right" aria-hidden="true"></i></button></li>
-                                        <li><button type="button" data-menu-group="visit">来店・購入<i class="fas fa-chevron-right" aria-hidden="true"></i></button></li>
+                                        @foreach($conditionMenu as $groupKey => [$groupLabel])
+                                            <li><button type="button" data-menu-group="{{ $groupKey }}">{{ $groupLabel }}<i class="fas fa-chevron-right" aria-hidden="true"></i></button></li>
+                                        @endforeach
                                         @if(count($view->profileFields ?? []) > 0)
                                             <li><button type="button" data-menu-group="profile">プロフィール<i class="fas fa-chevron-right" aria-hidden="true"></i></button></li>
                                         @endif
                                     </ul>
                                     <ul class="ad-cond-menu-fields">
-                                        <li><button type="button" data-menu-field="channel" data-group="attribute">登録チャネル</button></li>
-                                        <li><button type="button" data-menu-field="birthday" data-group="attribute">誕生月</button></li>
-                                        <li><button type="button" data-menu-field="sex" data-group="attribute">性別</button></li>
-                                        <li><button type="button" data-menu-field="rfm" data-group="attribute">RFMセグメント</button></li>
-                                        <li><button type="button" data-menu-field="tags" data-group="attribute">会員タグ</button></li>
-                                        <li><button type="button" data-menu-field="visits" data-group="visit">来店回数</button></li>
-                                        <li><button type="button" data-menu-field="rank" data-group="visit">会員ランク</button></li>
-                                        <li><button type="button" data-menu-field="points" data-group="visit">累計付与ポイント</button></li>
-                                        <li><button type="button" data-menu-field="last_visit" data-group="visit">最終来店</button></li>
-                                        <li><button type="button" data-menu-field="product" data-group="visit">購入した商品</button></li>
-                                        <li><button type="button" data-menu-field="held_coupon" data-group="visit">保有クーポン</button></li>
-                                        <li><button type="button" data-menu-field="sales" data-group="visit">売上</button></li>
-                                        @if($isCouponDelivery)
-                                            <li><button type="button" data-menu-field="stamp" data-group="visit">スタンプ</button></li>
-                                        @endif
+                                        @foreach($conditionMenu as $groupKey => [, $fields])
+                                            @foreach($fields as $fieldKey => $field)
+                                                @if($field[2] ?? true)
+                                                    <li><button type="button" data-menu-field="{{ $fieldKey }}" data-group="{{ $groupKey }}" data-keywords="{{ $field[1] }}">{{ $field[0] }}</button></li>
+                                                @endif
+                                            @endforeach
+                                        @endforeach
                                         @foreach(($view->profileFields ?? []) as $profileField)
                                             @if(($profileField['key'] ?? '') !== '')
-                                                <li><button type="button" data-menu-field="profile-{{ $profileField['key'] }}" data-group="profile">{{ $profileField['label'] ?? $profileField['key'] }}</button></li>
+                                                <li><button type="button" data-menu-field="profile-{{ $profileField['key'] }}" data-group="profile" data-keywords="プロフィール">{{ $profileField['label'] ?? $profileField['key'] }}</button></li>
                                             @endif
                                         @endforeach
                                     </ul>
+                                    <p class="ad-cond-menu-empty" id="segmentConditionSearchEmpty" role="status" aria-live="polite" hidden>一致する条件がありません</p>
                                 </div>
                             </div>
                             <template id="segmentConditionRowTemplate">
@@ -102,6 +153,10 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="registered" hidden>
+                                <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_registered_from" class="form-label">登録日（この日から）</label></div><input type="date" name="segment_registered_from" id="segment_registered_from" class="form-control segment-filter" value="{{ $segmentOld('segment_registered_from') }}"></div>
+                                <div class="form-group mb-0"><label for="segment_registered_to" class="form-label">登録日（この日まで）</label><input type="date" name="segment_registered_to" id="segment_registered_to" class="form-control segment-filter" value="{{ $segmentOld('segment_registered_to') }}"></div>
+                            </div>
                             <fieldset class="ad-multi-filter mb-0 ad-condition-item" data-condition="birthday" hidden>
                                 <legend class="form-label">誕生月</legend>
                                 <div class="ad-multi-filter-options ad-multi-filter-options--months">
@@ -110,6 +165,28 @@
                                     @endfor
                                 </div>
                             </fieldset>
+                            <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="age" hidden>
+                                <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_age_min" class="form-label">年齢（以上）</label></div><input type="number" name="segment_age_min" id="segment_age_min" class="form-control segment-filter" value="{{ $segmentOld('segment_age_min') }}" min="0" max="150" placeholder="例：20"></div>
+                                <div class="form-group mb-0"><label for="segment_age_max" class="form-label">年齢（以下）</label><input type="number" name="segment_age_max" id="segment_age_max" class="form-control segment-filter" value="{{ $segmentOld('segment_age_max') }}" min="0" max="150" placeholder="例：39"></div>
+                                <p class="ad-field-help">誕生日が登録されている会員だけが対象です</p>
+                            </div>
+                            <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="birthday_soon" hidden>
+                                <div class="form-group mb-0">
+                                    <div class="ad-filter-label"><label for="segment_birthday_soon_mode" class="form-label">誕生日が近い</label></div>
+                                    <select name="segment_birthday_soon_mode" id="segment_birthday_soon_mode" class="form-control segment-filter">
+                                        <option value="">指定しない</option>
+                                        <option value="within" @selected($segmentOld('segment_birthday_soon_mode') === 'within')>今日からN日以内</option>
+                                        <option value="exact" @selected($segmentOld('segment_birthday_soon_mode') === 'exact')>ちょうどN日後</option>
+                                    </select>
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label for="segment_birthday_soon_days" class="form-label">日数</label>
+                                    <select name="segment_birthday_soon_days" id="segment_birthday_soon_days" class="form-control segment-filter" data-ignore-empty="1">
+                                        @foreach(\App\Services\Admin\MemberSegmentService::SOON_DAYS as $days)<option value="{{ $days }}" @selected((string) $segmentOld('segment_birthday_soon_days', '7') === (string) $days)>{{ $days === 0 ? '今日' : $days.'日' }}</option>@endforeach
+                                    </select>
+                                </div>
+                                <p class="ad-field-help">毎日のスケジュール配信では「ちょうどN日後」にすると同じ人に重ねて届きません</p>
+                            </div>
                             <div class="form-group mb-0 ad-condition-item" data-condition="sex" hidden>
                                 <div class="ad-filter-label"><label for="segment_sex" class="form-label">性別</label></div>
                                 <select name="segment_sex" id="segment_sex" class="form-control segment-filter">
@@ -139,6 +216,21 @@
                                     @include('admin.partials._segment_value_mode', ['name' => 'segment_value_mode[tags]', 'target' => 'segment_tag_ids[]', 'caption' => '選んだタグの組み合わせ', 'current' => $segmentOld('segment_value_mode.tags')])
                                 @endif
                             </fieldset>
+                            @foreach([
+                                'acquisition' => ['登録経路', 'segment_acquisition_source_ids', $segmentAcquisitionOptions ?? []],
+                                'store' => ['利用店舗', 'segment_store_ids', $segmentStoreOptions ?? []],
+                                'order_type' => ['注文の種類（キャンセル以外の注文が1回でもある）', 'segment_order_types', \App\Enums\OrderType::getValues()],
+                            ] as $conditionKey => [$conditionLabel, $inputName, $choices])
+                                @php $selectedChoices = collect((array) $segmentOld($inputName, []))->map(fn ($value) => (string) $value); @endphp
+                                <fieldset class="ad-multi-filter ad-filter-group-wide mb-0 ad-condition-item" data-condition="{{ $conditionKey }}" hidden>
+                                    <legend class="form-label">{{ $conditionLabel }} <small>いずれかに当てはまる会員</small></legend>
+                                    <div class="ad-multi-filter-options">
+                                        @foreach($choices as $choiceId => $choiceLabel)
+                                            <label><input type="checkbox" name="{{ $inputName }}[]" value="{{ $choiceId }}" data-label="{{ $choiceLabel }}" class="segment-filter" @checked($selectedChoices->contains((string) $choiceId))><span>{{ $choiceLabel }}</span></label>
+                                        @endforeach
+                                    </div>
+                                </fieldset>
+                            @endforeach
                         </div>
                         </div>
 
@@ -167,6 +259,10 @@
                                 <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="points" hidden>
                                     <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label></div><input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_points_min') }}" min="0" placeholder="例：1000"></div>
                                     <div class="form-group mb-0"><label for="segment_lifetime_points_max" class="form-label">累計付与ポイント（以下）</label><input type="number" name="segment_lifetime_points_max" id="segment_lifetime_points_max" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_points_max') }}" min="0" placeholder="例：5000"></div>
+                                </div>
+                                <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="point_balance" hidden>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_points_min" class="form-label">ポイント残高（以上）</label></div><input type="number" name="segment_points_min" id="segment_points_min" class="form-control segment-filter" value="{{ $segmentOld('segment_points_min') }}" min="0" placeholder="例：500"></div>
+                                    <div class="form-group mb-0"><label for="segment_points_max" class="form-label">ポイント残高（以下）</label><input type="number" name="segment_points_max" id="segment_points_max" class="form-control segment-filter" value="{{ $segmentOld('segment_points_max') }}" min="0" placeholder="例：3000"></div>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="last_visit" hidden>
                                     <div class="form-group mb-0">
@@ -218,6 +314,128 @@
                                         </select>
                                     </div>
                                 </div>
+                                <div class="ad-filter-grid ad-condition-item" data-condition="announcement_read" hidden>
+                                    <div class="form-group mb-0">
+                                        <div class="ad-filter-label"><label for="segment_announcement_id" class="form-label">お知らせ</label></div>
+                                        @php $selectedAnnouncementId = (string) $segmentOld('segment_announcement_id', ''); @endphp
+                                        <select name="segment_announcement_id" id="segment_announcement_id" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            @foreach($segmentAnnouncementOptions ?? [] as $announcementId => $announcementLabel)
+                                                <option value="{{ $announcementId }}" @selected($selectedAnnouncementId === (string) $announcementId)>{{ $announcementLabel }}</option>
+                                            @endforeach
+                                            {{-- 一覧に出ない古いお知らせを選んで保存した条件も選択を保つ --}}
+                                            @if($selectedAnnouncementId !== '' && ! array_key_exists((int) $selectedAnnouncementId, $segmentAnnouncementOptions ?? []))
+                                                <option value="{{ $selectedAnnouncementId }}" selected>選択済みのお知らせ（ID: {{ $selectedAnnouncementId }}）</option>
+                                            @endif
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label for="segment_announcement_status" class="form-label">既読状態</label>
+                                        <select name="segment_announcement_status" id="segment_announcement_status" class="form-control segment-filter" data-ignore-empty="1">
+                                            <option value="unread" @selected($segmentOld('segment_announcement_status', 'unread') === 'unread')>未読（届いたがまだ開いていない）</option>
+                                            <option value="read" @selected($segmentOld('segment_announcement_status') === 'read')>既読</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="reservation" hidden>
+                                    <div class="form-group mb-0">
+                                        <div class="ad-filter-label"><label for="segment_reservation_mode" class="form-label">予約</label></div>
+                                        <select name="segment_reservation_mode" id="segment_reservation_mode" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            <option value="has" @selected($segmentOld('segment_reservation_mode') === 'has')>予約あり</option>
+                                            <option value="none" @selected($segmentOld('segment_reservation_mode') === 'none')>予約なし</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label for="segment_reservation_days" class="form-label">対象期間（直近と今後の予約）</label>
+                                        <select name="segment_reservation_days" id="segment_reservation_days" class="form-control segment-filter" data-ignore-empty="1">@foreach(\App\Services\Admin\MemberSegmentService::PERIOD_DAYS as $days)<option value="{{ $days }}" @selected((int) $segmentOld('segment_reservation_days', 90) === $days)>{{ $days }}日</option>@endforeach</select>
+                                    </div>
+                                    <p class="ad-field-help">キャンセルした予約は数えません</p>
+                                </div>
+                                <div class="form-group mb-0 ad-condition-item" data-condition="rank_changed" hidden>
+                                    <div class="ad-filter-label"><label for="segment_rank_changed_days" class="form-label">ランクが変わった時期</label></div>
+                                    <select name="segment_rank_changed_days" id="segment_rank_changed_days" class="form-control segment-filter">
+                                        <option value="">指定しない</option>
+                                        @foreach(\App\Services\Admin\MemberSegmentService::PERIOD_DAYS as $days)<option value="{{ $days }}" @selected((int) $segmentOld('segment_rank_changed_days') === $days)>直近{{ $days }}日以内</option>@endforeach
+                                    </select>
+                                </div>
+                                <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="coupon_uses" hidden>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_coupon_uses_min" class="form-label">クーポン利用回数（以上）</label></div><input type="number" name="segment_coupon_uses_min" id="segment_coupon_uses_min" class="form-control segment-filter" value="{{ $segmentOld('segment_coupon_uses_min') }}" min="0" placeholder="例：1"></div>
+                                    <div class="form-group mb-0"><label for="segment_coupon_uses_max" class="form-label">クーポン利用回数（以下）</label><input type="number" name="segment_coupon_uses_max" id="segment_coupon_uses_max" class="form-control segment-filter" value="{{ $segmentOld('segment_coupon_uses_max') }}" min="0" placeholder="例：0"></div>
+                                </div>
+                                @foreach([
+                                    'ticket' => ['回数券', 'segment_ticket_status', ['active' => '使える回数券を持っている', 'none' => '使える回数券を持っていない']],
+                                    'subscription' => ['サブスク', 'segment_subscription_status', ['active' => '継続中', 'ended' => '解約済み（今は継続なし）', 'none' => '加入したことがない']],
+                                    'wallet' => ['Apple Wallet', 'segment_wallet_status', ['registered' => '会員証を追加済み', 'not_registered' => '会員証を未追加']],
+                                    'lottery' => ['くじの抽選権', 'segment_lottery_status', ['pending' => 'まだ引いていない抽選権がある', 'none' => '引いていない抽選権がない']],
+                                    'nps' => ['アンケートの評価（最新の回答）', 'segment_nps_category', ['promoter' => '高い（9〜10）', 'passive' => '普通（7〜8）', 'detractor' => '低い（0〜6）']],
+                                    'line_block' => ['LINEブロック（LINE連携済みの会員）', 'segment_line_block_status', ['blocked' => 'ブロック中', 'not_blocked' => 'ブロックしていない']],
+                                    'notification' => ['通知設定', 'segment_notification_preference', \App\Enums\MemberNotificationPreference::getValues()],
+                                ] as $conditionKey => [$conditionLabel, $inputName, $choices])
+                                    <div class="form-group mb-0 ad-condition-item" data-condition="{{ $conditionKey }}" hidden>
+                                        <div class="ad-filter-label"><label for="{{ $inputName }}" class="form-label">{{ $conditionLabel }}</label></div>
+                                        <select name="{{ $inputName }}" id="{{ $inputName }}" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            @foreach($choices as $choiceValue => $choiceLabel)
+                                                <option value="{{ $choiceValue }}" @selected($segmentOld($inputName) === $choiceValue)>{{ $choiceLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endforeach
+                                <div class="ad-filter-grid ad-condition-item" data-condition="survey" hidden>
+                                    <div class="form-group mb-0">
+                                        <div class="ad-filter-label"><label for="segment_survey_id" class="form-label">アンケート</label></div>
+                                        <select name="segment_survey_id" id="segment_survey_id" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            @foreach($segmentSurveyOptions ?? [] as $surveyId => $surveyTitle)
+                                                <option value="{{ $surveyId }}" @selected((string) $segmentOld('segment_survey_id') === (string) $surveyId)>{{ $surveyTitle }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label for="segment_survey_status" class="form-label">回答状況</label>
+                                        <select name="segment_survey_status" id="segment_survey_status" class="form-control segment-filter" data-ignore-empty="1">
+                                            <option value="unanswered" @selected($segmentOld('segment_survey_status', 'unanswered') === 'unanswered')>未回答</option>
+                                            <option value="answered" @selected($segmentOld('segment_survey_status') === 'answered')>回答済み</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="app_last_used" hidden>
+                                    <div class="form-group mb-0">
+                                        <div class="ad-filter-label"><label for="segment_app_last_used_mode" class="form-label">アプリの利用</label></div>
+                                        <select name="segment_app_last_used_mode" id="segment_app_last_used_mode" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            <option value="within_days" @selected($segmentOld('segment_app_last_used_mode') === 'within_days')>N日以内に利用あり</option>
+                                            <option value="inactive_days" @selected($segmentOld('segment_app_last_used_mode') === 'inactive_days')>N日以上利用なし</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label for="segment_app_last_used_days" class="form-label">日数</label>
+                                        <select name="segment_app_last_used_days" id="segment_app_last_used_days" class="form-control segment-filter" data-ignore-empty="1">@foreach(\App\Services\Admin\MemberSegmentService::PERIOD_DAYS as $days)<option value="{{ $days }}" @selected((int) $segmentOld('segment_app_last_used_days', 30) === $days)>{{ $days }}日</option>@endforeach</select>
+                                    </div>
+                                    <p class="ad-field-help">スマホアプリを入れている会員が対象です（LINE だけの会員は含みません）</p>
+                                </div>
+                                <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="lifetime_sales" hidden>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_lifetime_sales_min" class="form-label">累計購入額（円・以上）</label></div><input type="number" name="segment_lifetime_sales_min" id="segment_lifetime_sales_min" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_sales_min') }}" min="0" step="1" placeholder="例：30000"></div>
+                                    <div class="form-group mb-0"><label for="segment_lifetime_sales_max" class="form-label">累計購入額（円・以下）</label><input type="number" name="segment_lifetime_sales_max" id="segment_lifetime_sales_max" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_sales_max') }}" min="0" step="1" placeholder="例：100000"></div>
+                                    <p class="ad-field-help">キャンセル以外の注文（POS会計を含む）の合計です</p>
+                                </div>
+                                @foreach([
+                                    'queue' => ['順番待ちの利用', 'segment_queue_days', \App\Services\Admin\MemberSegmentService::PERIOD_DAYS, '直近%d日以内に利用'],
+                                    'line_follow' => ['LINE友だち追加日', 'segment_line_follow_days', \App\Services\Admin\MemberSegmentService::PERIOD_DAYS, '直近%d日以内に追加'],
+                                    'points_expiring' => ['ポイントの失効予定', 'segment_points_expiring_days', \App\Services\Admin\MemberSegmentService::SOON_DAYS, '今日から%d日以内に失効'],
+                                    'coupon_expiring' => ['クーポンの期限が近い', 'segment_coupon_expiring_days', \App\Services\Admin\MemberSegmentService::SOON_DAYS, '今日から%d日以内に期限切れ'],
+                                ] as $conditionKey => [$conditionLabel, $inputName, $dayChoices, $dayFormat])
+                                    <div class="form-group mb-0 ad-condition-item" data-condition="{{ $conditionKey }}" hidden>
+                                        <div class="ad-filter-label"><label for="{{ $inputName }}" class="form-label">{{ $conditionLabel }}</label></div>
+                                        <select name="{{ $inputName }}" id="{{ $inputName }}" class="form-control segment-filter">
+                                            <option value="">指定しない</option>
+                                            @foreach($dayChoices as $days)
+                                                <option value="{{ $days }}" @selected((string) $segmentOld($inputName) === (string) $days)>{{ $days === 0 ? str_replace('今日から%d日以内に', '今日中に', $dayFormat) : sprintf($dayFormat, $days) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endforeach
                                 <div class="ad-sales-filter ad-condition-item" data-condition="sales" hidden>
                                     <div class="form-group mb-0">
                                         <label for="segment_period_days" class="form-label">売上の対象期間</label>
