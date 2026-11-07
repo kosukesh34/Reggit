@@ -614,7 +614,7 @@ class MemberSegmentService
         }
 
         if (isset($criteria['points_min']) || isset($criteria['points_max'])) {
-            $add('point_balance', $this->targetRepository->findIdsByPointBalance(
+            $add('point_balance', $this->memberIdsByPointBalance(
                 $projectId,
                 isset($criteria['points_min']) ? (int) $criteria['points_min'] : null,
                 isset($criteria['points_max']) ? (int) $criteria['points_max'] : null,
@@ -827,6 +827,25 @@ class MemberSegmentService
         }
 
         return $resolved;
+    }
+
+    /**
+     * 今のポイント残高（会員アプリに出る値と同じ MemberPointLedger の計算）で絞り込む。
+     * members.points は失効しても減らないことがあるため、台帳がある会員は台帳から求め、台帳がない会員だけ列の値を使う。
+     * 下限があるときは「付与の合計が下限以上」の会員だけを台帳で計算し、読む量を抑える。
+     *
+     * @return list<int>
+     */
+    private function memberIdsByPointBalance(int $projectId, ?int $min, ?int $max): array
+    {
+        $ids = $this->targetRepository->findIdsWithoutPointLedgerByPoints($projectId, $min, $max);
+        foreach ($this->pointLedger->balancesFor($this->targetRepository->findIdsWithPointLedger($projectId, $min)) as $memberId => $balance) {
+            if (($min === null || $balance['balance'] >= $min) && ($max === null || $balance['balance'] <= $max)) {
+                $ids[] = $memberId;
+            }
+        }
+
+        return $ids;
     }
 
     /**

@@ -21,6 +21,7 @@ use App\Models\MemberCoupon;
 use App\Models\MemberTag;
 use App\Models\Order;
 use App\Models\Project;
+use App\Models\Survey;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Services\Admin\AnnouncementAudienceService;
@@ -917,6 +918,24 @@ class AdminAnnouncementsTest extends TestCase
         $announcement = Announcement::where('title', 'セール最終日')->firstOrFail();
         $this->assertSame([$unread->id], $announcement->target_member_ids);
         $this->assertSame('unread', $announcement->segment_criteria['read_announcement_status'] ?? null);
+    }
+
+    public function test_お知らせを見る権限がない管理者には会員一覧の条件にお知らせとアンケートの題名を出さないこと(): void
+    {
+        $project = $this->createDistributionProject();
+        Announcement::factory()->create(['project_id' => $project->id, 'title' => '社外秘のキャンペーン']);
+        Survey::create(['project_id' => $project->id, 'title' => '社外秘のアンケート', 'questions' => []]);
+        $staff = $this->createAdmin($project);
+        $staff->forceFill(['role' => 'staff'])->save();
+        $staff->permissions()->create(['permission' => 'members.view']);
+
+        $this->actingAs($staff, 'admin')
+            ->get(route('admin.members', ['project_key' => $project->project_key]))
+            ->assertOk()
+            ->assertSee('id="segmentConditionSearch"', false)
+            ->assertDontSee('社外秘のキャンペーン')
+            ->assertDontSee('社外秘のアンケート')
+            ->assertDontSee('data-menu-field="announcement_read"', false);
     }
 
     public function test_store_delivery_範囲の下限が上限より大きいと入力エラーになること(): void

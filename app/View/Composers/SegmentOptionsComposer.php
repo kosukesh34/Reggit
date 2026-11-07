@@ -24,10 +24,12 @@ final class SegmentOptionsComposer
             return;
         }
 
+        // お知らせ・アンケートの題名は、それを見る権限（どちらも announcements.view）がある管理者にだけ出す
+        $canViewAnnouncements = auth('admin')->user()?->hasPermission('announcements.view') === true;
         $storeContext = app(StoreContext::class);
         $visibleStoreIds = $storeContext->bound ? $storeContext->visibleStoreIds : null;
         $view->with([
-            'segmentAnnouncementOptions' => Announcement::query()
+            'segmentAnnouncementOptions' => ! $canViewAnnouncements ? [] : Announcement::query()
                 ->where('project_id', $projectId)
                 ->where('delivery_status', Announcement::DELIVERY_STATUS_SENT)
                 // 予約リマインドなど1人宛ての自動お知らせは数が多く、既読で絞り込む意味もないため出さない
@@ -40,7 +42,7 @@ final class SegmentOptionsComposer
                     (int) $announcement->id => trim($announcement->sent_at?->format('Y/m/d').' '.$announcement->title),
                 ])
                 ->all(),
-            'segmentSurveyOptions' => Survey::query()->where('project_id', $projectId)->orderByDesc('id')->pluck('title', 'id')->all(),
+            'segmentSurveyOptions' => ! $canViewAnnouncements ? [] : Survey::query()->where('project_id', $projectId)->orderByDesc('id')->pluck('title', 'id')->all(),
             'segmentAcquisitionOptions' => AcquisitionSource::query()->where('project_id', $projectId)->orderBy('id')->pluck('name', 'id')->all(),
             // 店舗管理者には担当店舗だけを出す（null は全店舗を見られる管理者）
             'segmentStoreOptions' => Store::query()

@@ -460,9 +460,11 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         return $this->ids($query);
     }
 
-    public function findIdsByPointBalance(int $projectId, ?int $min, ?int $max): array
+    public function findIdsWithoutPointLedgerByPoints(int $projectId, ?int $min, ?int $max): array
     {
-        $query = Member::query()->where('project_id', $projectId);
+        $query = Member::query()
+            ->where('project_id', $projectId)
+            ->whereNotIn('id', $this->ledgerTransactions($projectId)->select('member_id'));
         if ($min !== null) {
             $query->where('points', '>=', $min);
         }
@@ -471,6 +473,26 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         }
 
         return $this->ids($query);
+    }
+
+    public function findIdsWithPointLedger(int $projectId, ?int $minEarned): array
+    {
+        $members = $this->ledgerTransactions($projectId)->select('member_id')->groupBy('member_id');
+        if ($minEarned !== null) {
+            $members->havingRaw('SUM(CASE WHEN points > 0 THEN points ELSE 0 END) >= ?', [$minEarned]);
+        }
+
+        return $this->ids(Member::query()->where('project_id', $projectId)->whereIn('id', $members));
+    }
+
+    /**
+     * MemberPointLedger と同じく、店舗で絞らない会員共通の台帳。
+     *
+     * @return Builder<PointTransaction>
+     */
+    private function ledgerTransactions(int $projectId): Builder
+    {
+        return PointTransaction::query()->withoutGlobalScope(StoreAccessScope::class)->where('project_id', $projectId);
     }
 
     public function findIdsByStores(int $projectId, array $storeIds): array
@@ -680,12 +702,10 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
 
     public function findIdsWithPointsExpiringCandidates(int $projectId, int $days): array
     {
+        // members.points は失効しても減らないことがあるため見ない。残っているかは台帳の計算で決める
         return $this->ids(Member::query()
             ->where('project_id', $projectId)
-            ->where('points', '>', 0)
-            ->whereIn('id', PointTransaction::query()
-                ->withoutGlobalScope(StoreAccessScope::class)
-                ->where('project_id', $projectId)
+            ->whereIn('id', $this->ledgerTransactions($projectId)
                 ->where('points', '>', 0)
                 // expires_at は日付の列で、その日の終わりまで使える（PointLedgerBalanceCalculator と同じ）
                 ->whereBetween('expires_at', [Carbon::today()->toDateString(), Carbon::today()->addDays($days)->toDateString()])

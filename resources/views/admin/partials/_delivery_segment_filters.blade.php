@@ -74,7 +74,7 @@
                                             'lottery' => ['くじの抽選権', 'くじ 抽選 ガチャ'],
                                         ]],
                                         'engagement' => ['お知らせ・アプリ', [
-                                            'announcement_read' => ['お知らせの既読', '未読 既読 お知らせ'],
+                                            'announcement_read' => ['お知らせの既読', '未読 既読 お知らせ', count($segmentAnnouncementOptions ?? []) > 0],
                                             'survey' => ['アンケートの回答', 'アンケート 回答 未回答', count($segmentSurveyOptions ?? []) > 0],
                                             'nps' => ['アンケートの評価（NPS）', 'アンケート 評価 満足度 NPS 口コミ'],
                                             'app_last_used' => ['アプリの利用', 'アプリ 最終ログイン 起動'],

@@ -123,11 +123,18 @@ interface CouponDeliveryTargetRepository
     public function findIdsByAge(int $projectId, ?int $min, ?int $max): array;
 
     /**
-     * 現在のポイント残高で絞り込む。
+     * ポイント台帳がない（移行前の）会員を members.points の残高で絞り込む。台帳がある会員の残高は台帳から求める。
      *
      * @return list<int>
      */
-    public function findIdsByPointBalance(int $projectId, ?int $min, ?int $max): array;
+    public function findIdsWithoutPointLedgerByPoints(int $projectId, ?int $min, ?int $max): array;
+
+    /**
+     * ポイント台帳がある会員。$minEarned を指定すると、付与の合計がそれ以上の会員だけ（残高は付与の合計を超えない）。
+     *
+     * @return list<int>
+     */
+    public function findIdsWithPointLedger(int $projectId, ?int $minEarned): array;
 
     /**
      * 指定店舗のいずれかに所属する会員。
@@ -236,7 +243,7 @@ interface CouponDeliveryTargetRepository
     public function findIdsByQueueWithin(int $projectId, int $days): array;
 
     /**
-     * 今日から N 日後までに期限が来るポイント付与を持つ会員の候補（使用済みかどうかは見ていない）。
+     * 今日から N 日後までに期限が来るポイント付与を持つ会員の候補（使用済みかどうか・members.points は見ていない）。
      *
      * @return list<int>
      */

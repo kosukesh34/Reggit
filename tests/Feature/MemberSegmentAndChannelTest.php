@@ -1057,4 +1057,27 @@ class MemberSegmentAndChannelTest extends TestCase
             'segment_lifetime_sales_max' => '10000',
         ]));
     }
+
+    public function test_ポイント残高と失効予定は失効で古くなったmembers_pointsではなく台帳で判定すること(): void
+    {
+        $this->travelTo(Carbon::parse('2026-06-15 12:00:00'));
+        $project = $this->createProject();
+        // 台帳では 300pt が失効済みで残高 0pt、members.points は 300 のまま
+        $expired = Member::factory()->create(['project_id' => $project->id]);
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $expired->id, 'type' => 'earned', 'points' => 300, 'expires_at' => '2026-06-01']);
+        $expired->forceFill(['points' => 300])->save();
+        // 台帳では 50pt が明日失効、members.points は 0 のまま
+        $staleZero = Member::factory()->create(['project_id' => $project->id]);
+        PointTransaction::create(['project_id' => $project->id, 'member_id' => $staleZero->id, 'type' => 'earned', 'points' => 50, 'expires_at' => '2026-06-16']);
+        $staleZero->forceFill(['points' => 0])->save();
+        // 台帳がない移行前の会員は members.points を使う
+        $legacy = Member::factory()->create(['project_id' => $project->id, 'points' => 500]);
+
+        $segment = app(MemberSegmentService::class);
+        $ids = fn (array $input): array => $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput($input) ?? [])->all();
+
+        $this->assertEqualsCanonicalizing([$legacy->id], $ids(['segment_points_min' => '100']));
+        $this->assertEqualsCanonicalizing([$expired->id, $staleZero->id], $ids(['segment_points_max' => '50']));
+        $this->assertEqualsCanonicalizing([$staleZero->id], $ids(['segment_points_expiring_days' => '3']));
+    }
 }
