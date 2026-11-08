@@ -9,6 +9,7 @@ use App\Models\Coupon;
 use App\Models\LineDeliveryFailure;
 use App\Models\Member;
 use App\Models\Project;
+use App\Services\Line\LineFlexMessage;
 use App\Services\Line\LineService;
 use App\Support\LiffTabUrlBuilder;
 use App\Support\MemberChannel;
@@ -311,50 +312,18 @@ class AnnouncementNotificationService
     {
         $displayTitle = $title !== '' ? $title : 'お知らせ';
         $bodyContents = [
-            ['type' => 'text', 'text' => $displayTitle, 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755', 'wrap' => true],
+            LineFlexMessage::title($displayTitle) + ['wrap' => true],
         ];
         if ($body !== '') {
             $bodyContents[] = ['type' => 'text', 'text' => $body, 'wrap' => true, 'size' => 'sm'];
         }
 
-        $bubble = [
-            'type' => 'bubble',
-            'body' => [
-                'type' => 'box',
-                'layout' => 'vertical',
-                'spacing' => 'md',
-                'contents' => $bodyContents,
-            ],
-            'footer' => [
-                'type' => 'box',
-                'layout' => 'vertical',
-                'contents' => [[
-                    'type' => 'button',
-                    'style' => 'primary',
-                    'height' => 'sm',
-                    'action' => [
-                        'type' => 'uri',
-                        'label' => $buttonLabel,
-                        'uri' => $announcementsUrl,
-                    ],
-                    'color' => '#06C755',
-                ]],
-            ],
-        ];
-        if ($imageUrl !== null) {
-            $bubble['hero'] = [
-                'type' => 'image',
-                'url' => $imageUrl,
-                'size' => 'full',
-                'aspectRatio' => '20:13',
-                'aspectMode' => 'fit',
-            ];
-        }
-
-        return [
-            'type' => 'flex',
-            'altText' => $displayTitle,
-            'contents' => $bubble,
-        ];
+        return LineFlexMessage::withButton(
+            $displayTitle,
+            $bodyContents,
+            $buttonLabel,
+            $announcementsUrl,
+            $imageUrl !== null ? LineFlexMessage::hero($imageUrl, 'fit') : [],
+        );
     }
 }

@@ -203,7 +203,7 @@
                     <td><a href="{{ admin_route('admin.orders.detail', ['id' => $order->id]) }}">{{ $order->formattedOrderNumber() }}</a></td>
                     <td>¥{{ number_format($order->total_amount) }}</td>
                     <td>
-                        <span class="badge badge-{{ $order->status === \App\Enums\OrderStatus::COMPLETED ? 'success' : ($order->status === \App\Enums\OrderStatus::PENDING ? 'warning' : ($order->status === \App\Enums\OrderStatus::CANCELLED ? 'danger' : 'info')) }}">
+                        <span class="badge badge-{{ \App\Enums\OrderStatus::badgeColor($order->status) }}">
                             {{ \App\Enums\OrderStatus::getLabel($order->status) }}
                         </span>
                     </td>

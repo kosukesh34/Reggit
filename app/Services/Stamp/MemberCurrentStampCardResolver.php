@@ -39,8 +39,8 @@ class MemberCurrentStampCardResolver
         return null;
     }
 
-    /** @return Collection<int, StampCard> */
-    private function activeCards(int $projectId): Collection
+    /** @return Collection<int, StampCard> 有効期限内の公開中カード */
+    public function activeCards(int $projectId): Collection
     {
         $today = now()->startOfDay();
 
@@ -58,9 +58,9 @@ class MemberCurrentStampCardResolver
     /**
      * @param  Collection<int, StampCard>  $cards
      * @param  Collection<int, MemberStamp>  $memberStamps
-     * @return Collection<int, StampCard>
+     * @return Collection<int, StampCard> 前のカードを達成済みのものだけ（該当なしなら全件）
      */
-    private function visibleCards(Collection $cards, Collection $memberStamps): Collection
+    public function visibleCards(Collection $cards, Collection $memberStamps): Collection
     {
         $completedIds = [];
         foreach ($memberStamps as $stampCardId => $memberStamp) {

@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\QueueEntry as QueueEntryModel;
 use App\Models\User;
 use App\Services\DeviceService;
+use App\Services\Line\LineFlexMessage;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
 use App\Support\MemberChannel;
@@ -140,53 +141,31 @@ class QueueQrStatusUseCase
                 'is_liff_host' => str_contains($uri, 'liff.line.me'),
             ]);
 
-            $flex = [
-                'type' => 'flex',
-                'altText' => '順番待ちのアプリ連携が完了しました',
-                'contents' => [
-                    'type' => 'bubble',
-                    'header' => [
+            $flex = LineFlexMessage::withButton(
+                '順番待ちのアプリ連携が完了しました',
+                [
+                    ['type' => 'text', 'text' => '順番待ちのアプリ連携が完了しました。', 'wrap' => true, 'size' => 'sm'],
+                    [
                         'type' => 'box',
-                        'layout' => 'vertical',
+                        'layout' => 'baseline',
                         'contents' => [
-                            ['type' => 'text', 'text' => '連携完了', 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755'],
-                            ['type' => 'text', 'text' => $projectName, 'size' => 'sm', 'color' => '#666666', 'margin' => 'sm'],
+                            ['type' => 'text', 'text' => '受付番号', 'size' => 'sm', 'color' => '#777777', 'flex' => 2],
+                            ['type' => 'text', 'text' => 'No.'.$queueNo, 'size' => 'md', 'weight' => 'bold', 'flex' => 3],
                         ],
                     ],
-                    'body' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'spacing' => 'md',
-                        'contents' => [
-                            ['type' => 'text', 'text' => '順番待ちのアプリ連携が完了しました。', 'wrap' => true, 'size' => 'sm'],
-                            [
-                                'type' => 'box',
-                                'layout' => 'baseline',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => '受付番号', 'size' => 'sm', 'color' => '#777777', 'flex' => 2],
-                                    ['type' => 'text', 'text' => 'No.'.$queueNo, 'size' => 'md', 'weight' => 'bold', 'flex' => 3],
-                                ],
-                            ],
-                            ['type' => 'text', 'text' => '店舗が呼び出すと、通知が届きます。', 'wrap' => true, 'size' => 'xs', 'color' => '#666666'],
-                        ],
-                    ],
-                    'footer' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'contents' => [[
-                            'type' => 'button',
-                            'style' => 'primary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'uri',
-                                'label' => '待ち状況を確認',
-                                'uri' => $uri,
-                            ],
-                            'color' => '#06C755',
-                        ]],
-                    ],
+                    ['type' => 'text', 'text' => '店舗が呼び出すと、通知が届きます。', 'wrap' => true, 'size' => 'xs', 'color' => '#666666'],
                 ],
-            ];
+                '待ち状況を確認',
+                $uri,
+                ['header' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'contents' => [
+                        LineFlexMessage::title('連携完了'),
+                        ['type' => 'text', 'text' => $projectName, 'size' => 'sm', 'color' => '#666666', 'margin' => 'sm'],
+                    ],
+                ]],
+            );
 
             $this->lineService->pushMessage(
                 $lineUserId,

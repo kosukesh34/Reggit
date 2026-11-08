@@ -198,27 +198,13 @@ class LiffSettingsService
      */
     public function syncMembershipTemplateFromDesign(string $design, int $projectId): void
     {
-        $template = MemberCardDesignMap::templateForDesign($design);
-        if ($template === null) {
+        if (MemberCardDesignMap::templateForDesign($design) === null) {
             return;
         }
 
         $settings = $this->getTabSettings($projectId);
         $global = isset($settings['_global']) && is_array($settings['_global']) ? $settings['_global'] : [];
-        $customization = $global['app_customization'] ?? [];
-        if (is_string($customization)) {
-            $decoded = json_decode($customization, true);
-            $customization = is_array($decoded) ? $decoded : [];
-        }
-        if (! is_array($customization)) {
-            $customization = [];
-        }
-        $membership = isset($customization['membership']) && is_array($customization['membership'])
-            ? $customization['membership']
-            : [];
-        $membership['template'] = $template;
-        $customization['membership'] = $membership;
-        $global['app_customization'] = $customization;
+        $global = MemberCardDesignMap::withTemplate($global, $design);
         $global['member_card_design'] = $design;
         $settings['_global'] = $global;
         $this->setTabSettings($settings, $projectId);

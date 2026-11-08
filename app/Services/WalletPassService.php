@@ -162,30 +162,8 @@ class WalletPassService
 
             return null;
         }
-        $data = $this->memberData->getMemberData($user);
-        if (! isset($data['is_member']) || $data['is_member'] === false || ! isset($data['member']) || $data['member'] === null) {
-            $this->setLastError('会員情報が見つかりません。');
 
-            return null;
-        }
-        $member = $data['member'];
-        if (! ($member instanceof Member)) {
-            $this->setLastError('会員データが不正です。');
-
-            return null;
-        }
-        $project = AdminContext::getCurrentProject();
-        $organizationName = $project !== null ? $project->name : config('app.name', 'Reggit');
-        $barcodeMessage = $member->member_number ?? (string) $member->id;
-        $serialNumber = 'member-'.(string) $member->id;
-        $extraFields = [
-            'points' => $data['points'] ?? $this->pointLedger->total($member),
-            'rank_label' => $data['current_rank_label'] ?? $member->rank ?? '',
-            'rank_key' => $data['current_rank'] ?? $member->rank ?? 'bronze',
-            'appearance' => $this->memberCardAppearanceService->resolveForMember($member),
-        ];
-
-        return $this->buildMembershipPass($barcodeMessage, $organizationName, $serialNumber, $extraFields, (int) $projectId, $member);
+        return $this->generateFromUser($user);
     }
 
     public function generateForMember(Member $member): ?string
