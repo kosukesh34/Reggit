@@ -7,10 +7,10 @@ use App\Util\EnumBase;
 class OrderStatus extends EnumBase
 {
     protected static array $values = [
-        'pending' => '未対応',
-        'confirmed' => '確定',
+        'pending' => '未処理',
+        'confirmed' => '確認済み',
         'preparing' => '準備中',
-        'ready' => '受け取り可能',
+        'ready' => '準備完了',
         'shipped' => '発送済み',
         'completed' => '完了',
         'cancelled' => 'キャンセル',
@@ -29,4 +29,15 @@ class OrderStatus extends EnumBase
     public const COMPLETED = 'completed';
 
     public const CANCELLED = 'cancelled';
+
+    /** 管理画面のバッジ色（badge-*） */
+    public static function badgeColor(string $value): string
+    {
+        return match ($value) {
+            self::PENDING => 'warning',
+            self::COMPLETED => 'success',
+            self::CANCELLED => 'danger',
+            default => 'info',
+        };
+    }
 }

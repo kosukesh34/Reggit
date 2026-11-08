@@ -8,6 +8,8 @@ use App\Models\Member;
 use App\Models\UserDevice;
 use App\Util\LogHelper;
 use GuzzleHttp\Client;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class PushNotificationService
 {
@@ -99,17 +101,9 @@ class PushNotificationService
         ?string $collapseId = null,
         ?int $badge = null
     ): array {
-        $tokens = UserDevice::query()
+        $tokens = self::pushTokens(UserDevice::query()
             ->where('project_id', $projectId)
-            ->where('user_id', $userId)
-            ->whereNotNull('push_token')
-            ->where('push_token', '!=', '')
-            ->pluck('push_token')
-            ->map(fn ($token) => trim((string) $token))
-            ->filter(fn ($token) => $token !== '')
-            ->unique()
-            ->values()
-            ->all();
+            ->where('user_id', $userId));
 
         if ($tokens === []) {
             return ['target_tokens' => 0, 'sent' => 0, 'failed' => 0, 'skipped' => 0];
@@ -211,9 +205,7 @@ class PushNotificationService
     private function resolveTargetTokens(Announcement $announcement): array
     {
         $query = UserDevice::query()
-            ->where('project_id', (int) $announcement->project_id)
-            ->whereNotNull('push_token')
-            ->where('push_token', '!=', '');
+            ->where('project_id', (int) $announcement->project_id);
 
         $hasTargetSnapshot = is_array($announcement->target_member_ids);
         $targetMemberIds = $hasTargetSnapshot
@@ -246,7 +238,21 @@ class PushNotificationService
         }
         $query->whereIn('user_id', $userIds);
 
-        return $query->pluck('push_token')
+        return self::pushTokens($query);
+    }
+
+    /**
+     * 端末クエリから、空でない重複なしのプッシュトークンを取り出す。
+     *
+     * @param  Builder<covariant Model>  $devices  push_token 列を持つ端末テーブルのクエリ
+     * @return list<string>
+     */
+    public static function pushTokens(Builder $devices): array
+    {
+        return $devices
+            ->whereNotNull('push_token')
+            ->where('push_token', '!=', '')
+            ->pluck('push_token')
             ->map(fn ($token) => trim((string) $token))
             ->filter(fn ($token) => $token !== '')
             ->unique()

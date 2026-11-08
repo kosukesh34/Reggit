@@ -101,26 +101,8 @@
                     <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
                     <td>{{ $order->payment_brand_label }}</td>
                     <td>
-                        @php
-                            $statusLabels = [
-                                'pending' => '未処理',
-                                'confirmed' => '確認済み',
-                                'preparing' => '準備中',
-                                'ready' => '準備完了',
-                                'completed' => '完了',
-                                'cancelled' => 'キャンセル',
-                            ];
-                            $statusColors = [
-                                'pending' => 'warning',
-                                'confirmed' => 'info',
-                                'preparing' => 'info',
-                                'ready' => 'info',
-                                'completed' => 'success',
-                                'cancelled' => 'danger',
-                            ];
-                        @endphp
-                        <span class="badge badge-{{ $statusColors[$order->status] ?? 'info' }}">
-                            {{ $statusLabels[$order->status] ?? $order->status }}
+                        <span class="badge badge-{{ \App\Enums\OrderStatus::badgeColor($order->status) }}">
+                            {{ \App\Enums\OrderStatus::getLabel($order->status) }}
                         </span>
                     </td>
                     <td>{{ $order->created_at->format('Y/m/d H:i') }}</td>

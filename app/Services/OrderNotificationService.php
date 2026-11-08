@@ -7,6 +7,7 @@ use App\Enums\OrderType;
 use App\Mail\ShopOrderMail;
 use App\Models\Order;
 use App\Models\Project;
+use App\Services\Line\LineFlexMessage;
 use App\Services\Line\LineService;
 use App\Services\Shop\ShopOperations;
 use App\Support\LiffTabUrlBuilder;
@@ -238,40 +239,18 @@ class OrderNotificationService
 
         try {
             $ordersUrl = $this->liffTabUrls->build($projectId, $projectKey, 'orders');
-            $flex = [
-                'type' => 'flex',
-                'altText' => $title.($refNumber !== '' ? '（'.($order->order_type === OrderType::SHIPPING ? '注文番号' : '引換番号').': '.$refNumber.'）' : ''),
-                'contents' => [
-                    'type' => 'bubble',
-                    'body' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'spacing' => 'md',
-                        'contents' => array_values(array_filter([
-                            ['type' => 'text', 'text' => $title, 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755'],
-                            ['type' => 'text', 'text' => $body, 'wrap' => true, 'size' => 'sm'],
-                            $refNumber !== ''
-                                ? ['type' => 'text', 'text' => $refNumber, 'wrap' => true, 'size' => 'xxl', 'weight' => 'bold', 'align' => 'center']
-                                : null,
-                        ])),
-                    ],
-                    'footer' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'contents' => [[
-                            'type' => 'button',
-                            'style' => 'primary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'uri',
-                                'label' => '注文履歴を見る',
-                                'uri' => $ordersUrl,
-                            ],
-                            'color' => '#06C755',
-                        ]],
-                    ],
-                ],
-            ];
+            $flex = LineFlexMessage::withButton(
+                $title.($refNumber !== '' ? '（'.($order->order_type === OrderType::SHIPPING ? '注文番号' : '引換番号').': '.$refNumber.'）' : ''),
+                array_values(array_filter([
+                    LineFlexMessage::title($title),
+                    ['type' => 'text', 'text' => $body, 'wrap' => true, 'size' => 'sm'],
+                    $refNumber !== ''
+                        ? ['type' => 'text', 'text' => $refNumber, 'wrap' => true, 'size' => 'xxl', 'weight' => 'bold', 'align' => 'center']
+                        : null,
+                ])),
+                '注文履歴を見る',
+                $ordersUrl,
+            );
             $this->lineService->pushMessage(
                 $lineUserId,
                 $flex,

@@ -8,6 +8,7 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberCoupon;
 use App\Models\Project;
+use App\Services\Line\LineFlexMessage;
 use App\Services\Line\LineService;
 use App\Support\LiffTabUrlBuilder;
 use App\Support\MemberChannel;
@@ -221,48 +222,16 @@ class CouponNotificationService
         string $couponsUrl,
         ?string $imageUrl
     ): array {
-        $bubble = [
-            'type' => 'bubble',
-            'body' => [
-                'type' => 'box',
-                'layout' => 'vertical',
-                'spacing' => 'md',
-                'contents' => [
-                    ['type' => 'text', 'text' => $title, 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755'],
-                    ['type' => 'text', 'text' => $body, 'wrap' => true, 'size' => 'sm'],
-                    ['type' => 'text', 'text' => $couponName, 'wrap' => true, 'size' => 'md', 'weight' => 'bold'],
-                ],
+        return LineFlexMessage::withButton(
+            $title,
+            [
+                LineFlexMessage::title($title),
+                ['type' => 'text', 'text' => $body, 'wrap' => true, 'size' => 'sm'],
+                ['type' => 'text', 'text' => $couponName, 'wrap' => true, 'size' => 'md', 'weight' => 'bold'],
             ],
-            'footer' => [
-                'type' => 'box',
-                'layout' => 'vertical',
-                'contents' => [[
-                    'type' => 'button',
-                    'style' => 'primary',
-                    'height' => 'sm',
-                    'action' => [
-                        'type' => 'uri',
-                        'label' => 'クーポンを見る',
-                        'uri' => $couponsUrl,
-                    ],
-                    'color' => '#06C755',
-                ]],
-            ],
-        ];
-        if ($imageUrl !== null) {
-            $bubble['hero'] = [
-                'type' => 'image',
-                'url' => $imageUrl,
-                'size' => 'full',
-                'aspectRatio' => '20:13',
-                'aspectMode' => 'cover',
-            ];
-        }
-
-        return [
-            'type' => 'flex',
-            'altText' => $title,
-            'contents' => $bubble,
-        ];
+            'クーポンを見る',
+            $couponsUrl,
+            $imageUrl !== null ? LineFlexMessage::hero($imageUrl, 'cover') : [],
+        );
     }
 }

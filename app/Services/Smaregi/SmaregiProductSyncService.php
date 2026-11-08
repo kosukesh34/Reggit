@@ -31,70 +31,13 @@ class SmaregiProductSyncService
      */
     public function sync(int $projectId): array
     {
-        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-        $contractId = is_string($contractId) ? trim($contractId) : '';
-        if ($contractId === '') {
-            throw new \RuntimeException('スマレジの契約IDが設定されていません。設定画面で契約を紐付けてください。');
-        }
+        $contractId = $this->requireContractId($projectId);
 
-        $created = 0;
-        $updated = 0;
-        $failed = 0;
-        $errors = [];
-        $page = 1;
-        $allRows = [];
-        $smaregiProductIds = [];
-
-        do {
-            $result = $this->smaregiApi->request($contractId, 'GET', 'pos/products', [
-                'limit' => self::LIMIT,
-                'page' => $page,
-            ]);
-            if ($result === null) {
-                throw new \RuntimeException('スマレジAPI（商品一覧）の取得に失敗しました。ログを確認してください。');
-            }
-
-            $list = SmaregiListResponse::extract($result, 'products');
-            $allRows = array_merge($allRows, $list);
-            foreach ($list as $row) {
-                if (! is_array($row)) {
-                    continue;
-                }
-                if ((string) ($row['division'] ?? '0') === '2') {
-                    continue;
-                }
-                $productId = $row['productId'] ?? null;
-                if ($productId === null || $productId === '') {
-                    continue;
-                }
-                $smaregiProductIds[(string) $productId] = true;
-                try {
-                    $attrs = $this->mapSmaregiProductToAttributes($row);
-                    $product = $this->upsertProductFromSmaregi($projectId, (string) $productId, $attrs);
-                    if ($product->wasRecentlyCreated) {
-                        $created++;
-                    } else {
-                        $updated++;
-                    }
-                } catch (\Throwable $e) {
-                    $failed++;
-                    $errors[] = sprintf('productId %s: %s', $productId, $e->getMessage());
-                    Log::warning('[Smaregi] product sync failed', [
-                        'project_id' => $projectId,
-                        'smaregi_product_id' => $productId,
-                        'message' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            $page++;
-        } while (count($list) === self::LIMIT);
-
-        $this->images->import($projectId, $contractId, $smaregiProductIds);
-
-        $optionResult = $this->productOptionSync->sync($projectId, $contractId, $allRows);
-        $failed += $optionResult['failed'];
-        $errors = array_merge($errors, $optionResult['errors']);
+        $pulled = $this->pullFromSmaregi($projectId, $contractId);
+        $created = $pulled['created'];
+        $updated = $pulled['updated'];
+        $failed = $pulled['failed'];
+        $errors = $pulled['errors'];
 
         $this->productDeduplication->deduplicateForProject($projectId);
 
@@ -116,80 +59,20 @@ class SmaregiProductSyncService
      */
     public function fullSync(int $projectId): array
     {
-        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
-        $contractId = is_string($contractId) ? trim($contractId) : '';
-        if ($contractId === '') {
-            throw new \RuntimeException('スマレジの契約IDが設定されていません。設定画面で契約を紐付けてください。');
-        }
+        $contractId = $this->requireContractId($projectId);
 
         if (! $this->smaregiProductRegister->hasSmaregiContract($projectId)) {
             throw new \RuntimeException('スマレジ契約が紐づいていません。完全同期には契約の紐付けが必要です。');
         }
 
-        $created = 0;
-        $updated = 0;
+        $pulled = $this->pullFromSmaregi($projectId, $contractId);
+        $created = $pulled['created'];
+        $updated = $pulled['updated'];
+        $failed = $pulled['failed'];
+        $errors = $pulled['errors'];
+        $smaregiProductIds = $pulled['product_ids'];
+        $smaregiProductNames = $pulled['product_names'];
         $pushedToSmaregi = 0;
-        $failed = 0;
-        $errors = [];
-        $smaregiProductIds = [];
-        $smaregiProductNames = [];
-        $allRows = [];
-
-        // 1. スマレジ → DB: スマレジの全商品を取得して DB に反映し、スマレジ側の productId 一覧を保持
-        $page = 1;
-        do {
-            $result = $this->smaregiApi->request($contractId, 'GET', 'pos/products', [
-                'limit' => self::LIMIT,
-                'page' => $page,
-            ]);
-            if ($result === null) {
-                throw new \RuntimeException('スマレジAPI（商品一覧）の取得に失敗しました。ログを確認してください。');
-            }
-
-            $list = SmaregiListResponse::extract($result, 'products');
-            $allRows = array_merge($allRows, $list);
-            foreach ($list as $row) {
-                if (! is_array($row)) {
-                    continue;
-                }
-                if ((string) ($row['division'] ?? '0') === '2') {
-                    continue;
-                }
-                $productId = $row['productId'] ?? null;
-                if ($productId === null || $productId === '') {
-                    continue;
-                }
-                $smaregiProductIds[(string) $productId] = true;
-                $productName = trim((string) ($row['productName'] ?? ''));
-                if ($productName !== '' && ! isset($smaregiProductNames[$productName])) {
-                    $smaregiProductNames[$productName] = (string) $productId;
-                }
-                try {
-                    $attrs = $this->mapSmaregiProductToAttributes($row);
-                    $product = $this->upsertProductFromSmaregi($projectId, (string) $productId, $attrs);
-                    if ($product->wasRecentlyCreated) {
-                        $created++;
-                    } else {
-                        $updated++;
-                    }
-                } catch (\Throwable $e) {
-                    $failed++;
-                    $errors[] = sprintf('productId %s: %s', $productId, $e->getMessage());
-                    Log::warning('[Smaregi] product sync failed', [
-                        'project_id' => $projectId,
-                        'smaregi_product_id' => $productId,
-                        'message' => $e->getMessage(),
-                    ]);
-                }
-            }
-            $page++;
-        } while (count($list) === self::LIMIT);
-
-        $this->images->import($projectId, $contractId, $smaregiProductIds);
-
-        $optionResult = $this->productOptionSync->sync($projectId, $contractId, $allRows);
-        $failed += $optionResult['failed'];
-        $errors = array_merge($errors, $optionResult['errors']);
 
         // 2. DB → スマレジ: DB にありスマレジにない商品をスマレジに登録
         // 部門が取得できない場合は登録を試みずスキップする（失敗0で完了させる）
@@ -288,6 +171,98 @@ class SmaregiProductSyncService
             'stock_synced' => $stockSync['synced'],
             'failed' => $failed,
             'errors' => $errors,
+        ];
+    }
+
+    private function requireContractId(int $projectId): string
+    {
+        $contractId = $this->smaregiApi->getContractIdForProject($projectId);
+        $contractId = is_string($contractId) ? trim($contractId) : '';
+        if ($contractId === '') {
+            throw new \RuntimeException('スマレジの契約IDが設定されていません。設定画面で契約を紐付けてください。');
+        }
+
+        return $contractId;
+    }
+
+    /**
+     * スマレジ → DB: スマレジの全商品を取り込み、画像とオプションも反映する。
+     *
+     * @return array{created: int, updated: int, failed: int, errors: list<string>, product_ids: array<string, true>, product_names: array<string, string>}
+     */
+    private function pullFromSmaregi(int $projectId, string $contractId): array
+    {
+        $created = 0;
+        $updated = 0;
+        $failed = 0;
+        $errors = [];
+        $page = 1;
+        $allRows = [];
+        $smaregiProductIds = [];
+        $smaregiProductNames = [];
+
+        do {
+            $result = $this->smaregiApi->request($contractId, 'GET', 'pos/products', [
+                'limit' => self::LIMIT,
+                'page' => $page,
+            ]);
+            if ($result === null) {
+                throw new \RuntimeException('スマレジAPI（商品一覧）の取得に失敗しました。ログを確認してください。');
+            }
+
+            $list = SmaregiListResponse::extract($result, 'products');
+            $allRows = array_merge($allRows, $list);
+            foreach ($list as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                if ((string) ($row['division'] ?? '0') === '2') {
+                    continue;
+                }
+                $productId = $row['productId'] ?? null;
+                if ($productId === null || $productId === '') {
+                    continue;
+                }
+                $smaregiProductIds[(string) $productId] = true;
+                $productName = trim((string) ($row['productName'] ?? ''));
+                if ($productName !== '' && ! isset($smaregiProductNames[$productName])) {
+                    $smaregiProductNames[$productName] = (string) $productId;
+                }
+                try {
+                    $attrs = $this->mapSmaregiProductToAttributes($row);
+                    $product = $this->upsertProductFromSmaregi($projectId, (string) $productId, $attrs);
+                    if ($product->wasRecentlyCreated) {
+                        $created++;
+                    } else {
+                        $updated++;
+                    }
+                } catch (\Throwable $e) {
+                    $failed++;
+                    $errors[] = sprintf('productId %s: %s', $productId, $e->getMessage());
+                    Log::warning('[Smaregi] product sync failed', [
+                        'project_id' => $projectId,
+                        'smaregi_product_id' => $productId,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $page++;
+        } while (count($list) === self::LIMIT);
+
+        $this->images->import($projectId, $contractId, $smaregiProductIds);
+
+        $optionResult = $this->productOptionSync->sync($projectId, $contractId, $allRows);
+        $failed += $optionResult['failed'];
+        $errors = array_merge($errors, $optionResult['errors']);
+
+        return [
+            'created' => $created,
+            'updated' => $updated,
+            'failed' => $failed,
+            'errors' => $errors,
+            'product_ids' => $smaregiProductIds,
+            'product_names' => $smaregiProductNames,
         ];
     }
 

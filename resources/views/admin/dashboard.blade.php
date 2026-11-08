@@ -189,7 +189,7 @@
                     </td>
                     <td><strong>¥{{ number_format($order->total_amount) }}</strong></td>
                     <td>
-                        <span class="badge badge-{{ $order->status === 'completed' ? 'success' : ($order->status === 'pending' ? 'warning' : ($order->status === 'cancelled' ? 'danger' : 'info')) }}">
+                        <span class="badge badge-{{ \App\Enums\OrderStatus::badgeColor($order->status) }}">
                             {{ \App\Enums\OrderStatus::getLabel($order->status) }}
                         </span>
                     </td>

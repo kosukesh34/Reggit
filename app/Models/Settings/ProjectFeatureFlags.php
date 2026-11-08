@@ -2,6 +2,7 @@
 
 namespace App\Models\Settings;
 
+use App\Domain\Settings\ShopSettingKeys;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -68,26 +69,6 @@ class ProjectFeatureFlags extends Model
     /** @return array<string, mixed> */
     public static function getDefaultAttributes(): array
     {
-        return [
-            'feature_home_enabled' => true,
-            'feature_orders_enabled' => true,
-            'feature_reservations_enabled' => true,
-            'feature_queue_enabled' => true,
-            'feature_stamps_enabled' => true,
-            'feature_coupons_enabled' => true,
-            'feature_members_enabled' => true,
-            'feature_announcements_enabled' => true,
-            'feature_payments_enabled' => true,
-            'feature_gallery_enabled' => true,
-            'feature_shop_enabled' => false,
-            'feature_tickets_enabled' => false,
-            'feature_surveys_enabled' => true,
-            'feature_popups_enabled' => true,
-            'feature_chat_enabled' => false,
-            'feature_chat_liff_enabled' => false,
-            'feature_gacha_enabled' => false,
-            'feature_scratch_enabled' => false,
-            'feature_roulette_enabled' => false,
-        ];
+        return ShopSettingKeys::FEATURE_FLAGS;
     }
 }

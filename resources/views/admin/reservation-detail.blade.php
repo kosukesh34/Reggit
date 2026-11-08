@@ -69,22 +69,8 @@
             <div class="info-item">
                 <div class="info-label">ステータス</div>
                 <div class="info-value">
-                    @php
-                        $statusLabels = [
-                            'pending' => '予約待ち',
-                            'confirmed' => '確認済み',
-                            'completed' => '完了',
-                            'cancelled' => 'キャンセル',
-                        ];
-                        $statusColors = [
-                            'pending' => 'warning',
-                            'confirmed' => 'info',
-                            'completed' => 'success',
-                            'cancelled' => 'danger',
-                        ];
-                    @endphp
-                    <span class="badge badge-{{ $statusColors[$reservation->status] ?? 'info' }}">
-                        {{ $statusLabels[$reservation->status] ?? $reservation->status }}
+                    <span class="badge badge-{{ \App\Enums\ReservationStatus::badgeColor($reservation->status) }}">
+                        {{ \App\Enums\ReservationStatus::getLabel($reservation->status) }}
                     </span>
                 </div>
             </div>

@@ -29,15 +29,7 @@ class SendFcmTestCommand extends Command
         $title = $this->option('title') ?: 'テスト通知';
         $body = $this->option('body') ?: 'これは FCM テストです';
 
-        $tokens = UserDevice::query()
-            ->whereNotNull('push_token')
-            ->where('push_token', '!=', '')
-            ->pluck('push_token')
-            ->map(fn ($t) => trim((string) $t))
-            ->filter(fn ($t) => $t !== '')
-            ->unique()
-            ->values()
-            ->all();
+        $tokens = PushNotificationService::pushTokens(UserDevice::query());
 
         $this->info("送信内容: タイトル={$title}, 本文={$body}");
         $this->info('配信先: '.count($tokens).' 件');

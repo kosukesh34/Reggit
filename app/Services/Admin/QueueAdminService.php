@@ -9,6 +9,7 @@ use App\Enums\QueueStatus;
 use App\Models\Project;
 use App\Models\QueueCallLog;
 use App\Models\QueueEntry;
+use App\Services\Line\LineFlexMessage;
 use App\Services\Line\LineService;
 use App\Services\PushNotificationService;
 use App\Support\QueueLiffUrlBuilder;
@@ -199,37 +200,15 @@ class QueueAdminService
                 (string) ($entry->qr_token ?? ''),
                 (int) $entry->id
             );
-            $flex = [
-                'type' => 'flex',
-                'altText' => $message,
-                'contents' => [
-                    'type' => 'bubble',
-                    'body' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'spacing' => 'md',
-                        'contents' => [
-                            ['type' => 'text', 'text' => '順番のお知らせ', 'weight' => 'bold', 'size' => 'lg', 'color' => '#06C755'],
-                            ['type' => 'text', 'text' => $message, 'wrap' => true, 'size' => 'sm'],
-                        ],
-                    ],
-                    'footer' => [
-                        'type' => 'box',
-                        'layout' => 'vertical',
-                        'contents' => [[
-                            'type' => 'button',
-                            'style' => 'primary',
-                            'height' => 'sm',
-                            'action' => [
-                                'type' => 'uri',
-                                'label' => '待ち状況を確認',
-                                'uri' => $liffUri,
-                            ],
-                            'color' => '#06C755',
-                        ]],
-                    ],
+            $flex = LineFlexMessage::withButton(
+                $message,
+                [
+                    LineFlexMessage::title('順番のお知らせ'),
+                    ['type' => 'text', 'text' => $message, 'wrap' => true, 'size' => 'sm'],
                 ],
-            ];
+                '待ち状況を確認',
+                $liffUri,
+            );
             LogHelper::info('[Queue] call notification liff url built', [
                 'queue_id' => $entry->id,
                 'project_key' => $projectKey,

@@ -53,6 +53,36 @@ final class MemberCardDesignMap
         return self::DESIGN_TO_TEMPLATE[$design] ?? null;
     }
 
+    /**
+     * LIFF 設定 _global の app_customization.membership.template を会員証デザインに合わせる。
+     *
+     * @param  array<string, mixed>  $global
+     * @return array<string, mixed>
+     */
+    public static function withTemplate(array $global, string $design): array
+    {
+        $template = self::templateForDesign($design);
+        if ($template === null) {
+            return $global;
+        }
+        $customization = $global['app_customization'] ?? [];
+        if (is_string($customization)) {
+            $decoded = json_decode($customization, true);
+            $customization = is_array($decoded) ? $decoded : [];
+        }
+        if (! is_array($customization)) {
+            $customization = [];
+        }
+        $membership = isset($customization['membership']) && is_array($customization['membership'])
+            ? $customization['membership']
+            : [];
+        $membership['template'] = $template;
+        $customization['membership'] = $membership;
+        $global['app_customization'] = $customization;
+
+        return $global;
+    }
+
     public static function designForTemplate(string $template): ?string
     {
         return self::TEMPLATE_TO_DESIGN[$template] ?? null;

@@ -167,25 +167,7 @@ class LiffSettingStore
         $global['member_card_display_type'] = $this->memberCardSettingStore->getMemberCardDisplayType($projectId);
         $global['member_card_code_type'] = $this->memberCardSettingStore->getMemberCardCodeType($projectId);
 
-        $template = MemberCardDesignMap::templateForDesign($design);
-        if ($template !== null) {
-            $customization = $global['app_customization'] ?? [];
-            if (is_string($customization)) {
-                $decoded = json_decode($customization, true);
-                $customization = is_array($decoded) ? $decoded : [];
-            }
-            if (! is_array($customization)) {
-                $customization = [];
-            }
-            $membership = isset($customization['membership']) && is_array($customization['membership'])
-                ? $customization['membership']
-                : [];
-            $membership['template'] = $template;
-            $customization['membership'] = $membership;
-            $global['app_customization'] = $customization;
-        }
-
-        $settings['_global'] = $global;
+        $settings['_global'] = MemberCardDesignMap::withTemplate($global, $design);
 
         return $settings;
     }

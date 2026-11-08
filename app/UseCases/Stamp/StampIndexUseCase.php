@@ -7,6 +7,7 @@ use App\Enums\StampCycleMode;
 use App\Models\MemberStamp;
 use App\Models\StampCard;
 use App\Models\User;
+use App\Services\Stamp\MemberCurrentStampCardResolver;
 use App\UseCases\Stamp\Data\StampCardView;
 use App\UseCases\Stamp\Data\StampListView;
 use App\Util\AdminContext;
@@ -16,6 +17,7 @@ class StampIndexUseCase
 {
     public function __construct(
         private StampSettings $shopSettingRepository,
+        private MemberCurrentStampCardResolver $stampCards,
     ) {}
 
     public function handle(User $user): StampListView
@@ -38,19 +40,11 @@ class StampIndexUseCase
             );
         }
 
-        $today = now()->startOfDay();
-        $cards = StampCard::query()
-            ->where('project_id', $member->project_id)
-            ->where('is_active', true)
-            ->where(function ($q) use ($today) {
-                $q->whereNull('valid_until')->orWhere('valid_until', '>=', $today);
-            })
-            ->orderBy('name')
-            ->get();
+        $cards = $this->stampCards->activeCards($projectId);
 
         $memberStamps = $member->memberStamps()->with('stampCard')->get()->keyBy('stamp_card_id');
         $defaultImageUrl = $this->shopSettingRepository->getStampDefaultImageUrl($member->project_id);
-        $visibleCards = $this->visibleCards($cards, $memberStamps);
+        $visibleCards = $this->stampCards->visibleCards($cards, $memberStamps);
 
         $stampCards = $visibleCards->map(function (StampCard $card) use ($memberStamps, $cards) {
             return $this->toCardView($card, $memberStamps->get($card->id), $cards);
@@ -59,42 +53,6 @@ class StampIndexUseCase
         })->values()->all();
 
         return new StampListView($stampCards, $defaultImageUrl, false);
-    }
-
-    /**
-     * @param  Collection<int, StampCard>  $cards
-     * @param  Collection<int, MemberStamp>  $memberStamps
-     * @return Collection<int, StampCard>
-     */
-    private function visibleCards(Collection $cards, Collection $memberStamps): Collection
-    {
-        $completedIds = [];
-        foreach ($memberStamps as $stampCardId => $memberStamp) {
-            if ($memberStamp->completed_at !== null) {
-                $completedIds[(int) $stampCardId] = true;
-            }
-        }
-
-        $visible = $cards->filter(function (StampCard $card) use ($cards, $completedIds) {
-            $predecessors = $cards->filter(
-                static fn (StampCard $candidate): bool => (int) ($candidate->next_stamp_card_id ?? 0) === (int) $card->id
-            );
-            if ($predecessors->isEmpty()) {
-                return true;
-            }
-            foreach ($predecessors as $predecessor) {
-                if (isset($completedIds[(int) $predecessor->id])) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
-        if ($visible->isEmpty() && $cards->isNotEmpty()) {
-            return $cards->values();
-        }
-
-        return $visible->values();
     }
 
     /**

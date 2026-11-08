@@ -50,28 +50,8 @@
             <div class="info-item">
                 <div class="info-label">ステータス</div>
                 <div class="info-value">
-                    @php
-                        $statusLabels = [
-                            'pending' => '未処理',
-                            'confirmed' => '確認済み',
-                            'preparing' => '準備中',
-                            'ready' => '準備完了',
-                            'shipped' => '発送済み',
-                            'completed' => '完了',
-                            'cancelled' => 'キャンセル',
-                        ];
-                        $statusColors = [
-                            'pending' => 'warning',
-                            'confirmed' => 'info',
-                            'preparing' => 'info',
-                            'ready' => 'info',
-                            'shipped' => 'info',
-                            'completed' => 'success',
-                            'cancelled' => 'danger',
-                        ];
-                    @endphp
-                    <span class="badge badge-{{ $statusColors[$order->status] ?? 'info' }}">
-                        {{ $statusLabels[$order->status] ?? $order->status }}
+                    <span class="badge badge-{{ \App\Enums\OrderStatus::badgeColor($order->status) }}">
+                        {{ \App\Enums\OrderStatus::getLabel($order->status) }}
                     </span>
                 </div>
             </div>

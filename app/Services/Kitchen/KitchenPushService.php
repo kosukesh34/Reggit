@@ -23,17 +23,9 @@ class KitchenPushService
             return;
         }
 
-        $tokens = KitchenDevice::query()
+        $tokens = PushNotificationService::pushTokens(KitchenDevice::query()
             ->where('project_id', $projectId)
-            ->where('store_id', $order->store_id)
-            ->whereNotNull('push_token')
-            ->where('push_token', '!=', '')
-            ->pluck('push_token')
-            ->map(fn ($token) => trim((string) $token))
-            ->filter(fn ($token) => $token !== '')
-            ->unique()
-            ->values()
-            ->all();
+            ->where('store_id', $order->store_id));
 
         if ($tokens === []) {
             LogHelper::info('[Kitchen] push skipped (no devices)', [

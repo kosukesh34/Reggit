@@ -22,22 +22,8 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><i class="fas fa-edit"></i> 予約情報</h3>
-        @php
-            $statusLabels = [
-                'pending' => '予約待ち',
-                'confirmed' => '確認済み',
-                'completed' => '完了',
-                'cancelled' => 'キャンセル',
-            ];
-            $statusColors = [
-                'pending' => 'warning',
-                'confirmed' => 'info',
-                'completed' => 'success',
-                'cancelled' => 'danger',
-            ];
-        @endphp
-        <span class="badge badge-{{ $statusColors[$reservation->status] ?? 'info' }}">
-            {{ $statusLabels[$reservation->status] ?? $reservation->status }}
+        <span class="badge badge-{{ \App\Enums\ReservationStatus::badgeColor($reservation->status) }}">
+            {{ \App\Enums\ReservationStatus::getLabel($reservation->status) }}
         </span>
     </div>
     <div class="card-body">
