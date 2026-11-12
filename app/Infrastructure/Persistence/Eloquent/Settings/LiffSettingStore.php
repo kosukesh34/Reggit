@@ -87,7 +87,8 @@ class LiffSettingStore
     {
         $defaults = collect($this->defaultFrontendMenuItems())->keyBy('tab');
         $fallback = (string) ($defaults->get($tab)['icon'] ?? 'fa-circle');
-        if ($icon === '') {
+        // fa-circle は旧デザイナーが全タブに保存していた仮アイコンのため、未設定と同じ扱いにする。
+        if ($icon === '' || $icon === 'fa-circle') {
             return $fallback;
         }
 
