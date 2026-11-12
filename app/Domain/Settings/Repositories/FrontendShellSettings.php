@@ -20,16 +20,6 @@ interface FrontendShellSettings
 
     public function getOrderMode(int $projectId): string;
 
-    public function getLiffTabLayouts(int $projectId): array;
-
-    public function defaultLiffTabLayouts(): array;
-
-    public function getLiffDetailLayouts(int $projectId): array;
-
-    public function defaultLiffDetailLayouts(): array;
-
-    public function getLiffCustomCss(int $projectId): string;
-
     public function getLiffTabSettings(int $projectId): array;
 
     public function getLineLiffId(int $projectId): string;

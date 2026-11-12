@@ -8,7 +8,6 @@ use App\Enums\ScheduledDeliveryType;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AfterRegistrationDelivery extends Model
 {
@@ -78,11 +77,6 @@ class AfterRegistrationDelivery extends Model
         return $this->belongsTo(Coupon::class);
     }
 
-    public function sends(): HasMany
-    {
-        return $this->hasMany(ScheduledDeliverySend::class, 'after_registration_delivery_id');
-    }
-
     /** 配信期間（開始日時・終了日時を含む）内か。未設定の側は制限しない */
     public function isInPeriod(\DateTimeInterface $at): bool
     {
@@ -142,15 +136,6 @@ class AfterRegistrationDelivery extends Model
         $value = (is_array($this->params) ? $this->params : [])[$key] ?? null;
 
         return is_numeric($value) ? (float) $value : null;
-    }
-
-    public function summaryLabel(): string
-    {
-        $type = (string) $this->schedule_type;
-        $name = ScheduledDeliveryType::getLabel($type);
-        $category = ScheduledDeliveryCategory::getLabel((string) $this->category);
-
-        return $category.' / '.$name.' / '.$this->detailLabel();
     }
 
     public function detailLabel(): string

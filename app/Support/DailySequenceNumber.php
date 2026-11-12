@@ -28,14 +28,6 @@ final class DailySequenceNumber
         return self::datePrefix($date).$seq;
     }
 
-    /** 画面表示用（通番から）。例: 201 */
-    public static function formatDisplay(int $seq, ?CarbonInterface $date = null): string
-    {
-        $day = (int) ($date ?? today())->format('j');
-
-        return $day.$seq;
-    }
-
     /** 保存値を表示用に変換。例: 202604201 → 201 */
     public static function formatStoredForDisplay(?string $stored): string
     {

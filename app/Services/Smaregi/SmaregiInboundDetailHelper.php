@@ -63,17 +63,4 @@ final class SmaregiInboundDetailHelper
             'unitPrice' => NumberHelper::parseMoney($detail['salesPrice'] ?? $detail['price'] ?? 0) ?? 0.0,
         ];
     }
-
-    /**
-     * @param  array<string, string|int|float|bool|array|null>  $detail
-     */
-    public static function resolveLineAmount(array $detail, float $unitPrice, int $quantity): float
-    {
-        $lineAmount = NumberHelper::parseMoney($detail['unitDiscountedSum'] ?? $detail['unitNonDiscountSum'] ?? null);
-        if ($lineAmount !== null) {
-            return $lineAmount;
-        }
-
-        return $unitPrice * $quantity;
-    }
 }

@@ -54,9 +54,7 @@ class AppConfigApiTest extends TestCase
                 'liff_url',
                 'friend_add_url',
             ],
-            'liff_tab_layouts',
             'liff_tab_settings',
-            'liff_detail_layouts',
         ]);
     }
 
@@ -78,37 +76,6 @@ class AppConfigApiTest extends TestCase
         $this->assertIsArray($global);
         $this->assertArrayHasKey('require_membership', $global);
         $this->assertTrue((bool) $global['require_membership']);
-    }
-
-    public function test_app_config_のdetail_layoutsに深い遷移キーが含まれること(): void
-    {
-        $project = Project::firstOrCreate(
-            ['project_key' => 'default'],
-            ['name' => 'テスト店舗', 'description' => 'Test', 'is_active' => true]
-        );
-        $project->update(['name' => 'テスト店舗', 'is_active' => true]);
-
-        $response = $this->getJson('/api/v1/app-config?project_key=default');
-
-        $response->assertOk();
-        $layouts = $response->json('liff_detail_layouts');
-        $this->assertIsArray($layouts);
-        foreach ([
-            'announcement_detail',
-            'product_detail',
-            'coupon_detail',
-            'gallery_detail',
-            'stamp_detail',
-            'order_cart',
-            'order_confirm',
-            'order_complete',
-            'reservation_new',
-            'reservation_confirm',
-            'reservation_complete',
-        ] as $key) {
-            $this->assertArrayHasKey($key, $layouts);
-            $this->assertIsArray($layouts[$key]);
-        }
     }
 
     public function test_app_config_に初回案内用のポイントとランクが含まれること(): void

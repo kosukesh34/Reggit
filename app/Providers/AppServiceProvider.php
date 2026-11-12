@@ -23,7 +23,6 @@ use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Domain\Settings\Repositories\FrontendShellSettings;
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
-use App\Domain\Settings\Repositories\KitchenAccessSettings;
 use App\Domain\Settings\Repositories\LiffDesignerSettings;
 use App\Domain\Settings\Repositories\LineAdminSettings;
 use App\Domain\Settings\Repositories\LineConnectionSettings;
@@ -183,7 +182,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FeatureSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(FrontendShellSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(HomeSettingsRepository::class, EloquentShopSettingRepository::class);
-        $this->app->bind(KitchenAccessSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(LiffDesignerSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(LineAdminSettings::class, EloquentShopSettingRepository::class);
         $this->app->bind(LineConnectionSettings::class, EloquentShopSettingRepository::class);

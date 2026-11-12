@@ -155,11 +155,6 @@ class Member extends Model
         return $this->hasMany(MemberRankHistory::class);
     }
 
-    public function queueEntries(): HasMany
-    {
-        return $this->hasMany(QueueEntry::class);
-    }
-
     public function getTotalStamps(): int
     {
         return (int) $this->memberStamps()

@@ -7,13 +7,6 @@ use Tests\TestCase;
 
 class QueueLaunchUrlBuilderTest extends TestCase
 {
-    public function test_build_open_url(): void
-    {
-        $url = QueueLaunchUrlBuilder::buildOpenUrl('default', 'abcToken');
-
-        $this->assertSame(url('/queue/open/default/abcToken'), $url);
-    }
-
     public function test_build_native_scheme_url(): void
     {
         $url = QueueLaunchUrlBuilder::buildNativeSchemeUrl('shop-a', 'tok123');

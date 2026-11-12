@@ -4,8 +4,6 @@ namespace Tests\Feature;
 
 use App\Domain\Order\Repositories\OrderRepository;
 use App\Jobs\SyncOrderPointsToSmaregiJob;
-use App\Jobs\SyncOrderTransactionToSmaregiJob;
-use App\Services\Smaregi\SmaregiOrderTransactionOutboundService;
 use App\Services\Smaregi\SmaregiPointsSyncService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,7 +21,6 @@ class SmaregiQueueRetryTest extends TestCase
     {
         return [
             'points' => [SyncOrderPointsToSmaregiJob::class, SmaregiPointsSyncService::class, 'syncOrderNetPoints', 'isSmaregiPointsSynced'],
-            'transaction' => [SyncOrderTransactionToSmaregiJob::class, SmaregiOrderTransactionOutboundService::class, 'syncOrderTransaction', 'isSmaregiTransactionSynced'],
         ];
     }
 

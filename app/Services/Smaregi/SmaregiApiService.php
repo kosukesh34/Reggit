@@ -124,12 +124,6 @@ class SmaregiApiService
         return $this->request($contractId, 'GET', 'pos/terminals', $query);
     }
 
-    /** 商品一覧を取得（pos.products:read スコープ必要） */
-    public function getProducts(string $contractId): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/products');
-    }
-
     /**
      * 会員一覧を取得（pos.customers:read スコープ必要）
      *
@@ -321,12 +315,6 @@ class SmaregiApiService
         return null;
     }
 
-    /** 取引一覧取得（pos.transactions:read） */
-    public function getTransactions(string $contractId, array $query = []): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/transactions', $query);
-    }
-
     /** 取引1件取得（pos.transactions:read） */
     public function getTransaction(string $contractId, string $transactionId, bool $withDetails = false): ?array
     {
@@ -361,52 +349,16 @@ class SmaregiApiService
         return $this->request($contractId, 'POST', 'pos/transactions/layaways', $body);
     }
 
-    /** 取引更新（pos.transactions:write） */
-    public function updateTransaction(string $contractId, string $transactionId, array $body): ?array
-    {
-        return $this->request($contractId, 'PATCH', 'pos/transactions/'.$transactionId, $body);
-    }
-
     /** 部門一覧取得（pos.products:read）。公式APIは pos/categories */
     public function getDepartments(string $contractId, array $query = []): ?array
     {
         return $this->request($contractId, 'GET', 'pos/categories', $query);
     }
 
-    /** 部門1件取得（pos.products:read） */
-    public function getDepartment(string $contractId, string $departmentId): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/categories/'.$departmentId);
-    }
-
     /** 部門登録（pos.products:write） */
     public function createDepartment(string $contractId, array $body): ?array
     {
         return $this->request($contractId, 'POST', 'pos/categories', $body);
-    }
-
-    /** 部門更新（pos.products:write） */
-    public function updateDepartment(string $contractId, string $departmentId, array $body): ?array
-    {
-        return $this->request($contractId, 'PATCH', 'pos/categories/'.$departmentId, $body);
-    }
-
-    /** 部門削除（pos.products:write） */
-    public function deleteDepartment(string $contractId, string $departmentId): ?array
-    {
-        return $this->request($contractId, 'DELETE', 'pos/categories/'.$departmentId);
-    }
-
-    /** 部門グループ一覧取得（pos.products:read）。公式APIは pos/category_groups */
-    public function getCategoryGroups(string $contractId, array $query = []): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/category_groups', $query);
-    }
-
-    /** 商品1件取得（pos.products:read） */
-    public function getProduct(string $contractId, string $productId): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/products/'.$productId);
     }
 
     /** 商品登録（pos.products:write） */
@@ -443,12 +395,6 @@ class SmaregiApiService
         return $this->request($contractId, 'DELETE', 'pos/products/'.$productId.'/image');
     }
 
-    /** 在庫一覧取得（pos.stock:read） */
-    public function getStocks(string $contractId, array $query = []): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/stock', $query);
-    }
-
     /** 在庫更新（pos.stock:write） */
     public function updateStock(string $contractId, string $productId, array $body): ?array
     {
@@ -477,30 +423,6 @@ class SmaregiApiService
     public function deleteCustomerRank(string $contractId, string $rank): ?array
     {
         return $this->request($contractId, 'DELETE', 'pos/customer_ranks/'.$rank);
-    }
-
-    /** 店舗登録（pos.stores:write） */
-    public function createStore(string $contractId, array $body): ?array
-    {
-        return $this->request($contractId, 'POST', 'pos/stores', $body);
-    }
-
-    /** 店舗更新（pos.stores:write） */
-    public function updateStore(string $contractId, string $storeId, array $body): ?array
-    {
-        return $this->request($contractId, 'PATCH', 'pos/stores/'.$storeId, $body);
-    }
-
-    /** 店舗削除（pos.stores:write） */
-    public function deleteStore(string $contractId, string $storeId): ?array
-    {
-        return $this->request($contractId, 'DELETE', 'pos/stores/'.$storeId);
-    }
-
-    /** 支払方法一覧取得（pos.transactions:read） */
-    public function getPaymentMethods(string $contractId, array $query = []): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/payment-methods', $query);
     }
 
     /** クーポン一覧取得（pos.transactions:read） */
@@ -549,18 +471,6 @@ class SmaregiApiService
     public function deleteCoupon(string $contractId, string $couponId): ?array
     {
         return $this->request($contractId, 'DELETE', 'pos/coupons/'.$couponId);
-    }
-
-    /** スタッフ一覧取得（pos.staffs:read） */
-    public function getStaffs(string $contractId, array $query = []): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/staffs', $query);
-    }
-
-    /** 店舗1件取得（pos.stores:read） */
-    public function getStore(string $contractId, string $storeId): ?array
-    {
-        return $this->request($contractId, 'GET', 'pos/stores/'.$storeId);
     }
 
     /**

@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { appConfig } from '../config/appConfig';
-import { createDefaultCustomization, memberCrmNavigationTabs, MEMBER_CRM_HEADER, MEMBER_CRM_HOME, MEMBER_CRM_STORE_ID, resolveAppExperience } from '../config/customization';
+import { createDefaultCustomization, memberCrmNavigationTabs, MEMBER_CRM_HEADER, MEMBER_CRM_HOME, MEMBER_CRM_STORE_ID } from '../config/customization';
 import { buildProjectStore, readServerCustomizationPatch } from '../config/projectStore';
-import { themeMap } from '../themes/themes';
 import type { StoreAppConfig } from '../types/app';
-import type { AppCustomization, AppCustomizationPatch, AppExperienceId, CouponStatus } from '../types/customization';
+import type { AppCustomization, AppCustomizationPatch, CouponStatus } from '../types/customization';
 
 const customizationStorageKey = isDesignShowcaseMode() ? 'reggit-demo-customization-v1' : 'reggit-app-customization-v4';
 const showcaseStoreStorageKey = 'reggit-showcase-store-id-v2';
@@ -18,16 +17,8 @@ interface PersistedCustomizations {
 }
 
 interface AppConfigContextValue {
-  stores: StoreAppConfig[];
   activeStore: StoreAppConfig;
-  setActiveStoreId: (storeId: string) => void;
-  activeThemeId: string;
-  setActiveThemeId: (themeId: string) => void;
   customization: AppCustomization;
-  experienceId: AppExperienceId;
-  getStoreCustomization: (storeId: string) => AppCustomization;
-  updateCustomization: (patch: AppCustomizationPatch) => void;
-  resetCustomization: () => void;
 }
 
 const AppConfigContext = createContext<AppConfigContextValue | null>(null);
@@ -113,11 +104,7 @@ function readShowcaseStoreId(stores: StoreAppConfig[]): string {
   return fallback;
 }
 
-function resolveStores(isAdminStudio: boolean): StoreAppConfig[] {
-  if (isAdminStudio) {
-    const projectStore = buildProjectStore();
-    return [projectStore, ...appConfig.stores.filter((store) => store.storeId !== projectStore.storeId)];
-  }
+function resolveStores(): StoreAppConfig[] {
   if (isDesignShowcaseMode()) {
     const showcase = appConfig.stores.find((store) => store.storeId === SHOWCASE_DEFAULT_STORE_ID);
     return showcase !== undefined ? [showcase] : appConfig.stores.slice(0, 1);
@@ -156,29 +143,16 @@ function loadInitialCustomizations(stores: StoreAppConfig[]): Record<string, App
   return Object.fromEntries(stores.map((store) => [store.storeId, mergeCustomization(store, byStore[store.storeId])]));
 }
 
-export function AppConfigProvider({ children, isAdminStudio = false }: { children: ReactNode; isAdminStudio?: boolean }) {
-  const stores = useMemo(() => resolveStores(isAdminStudio), [isAdminStudio]);
-  const isDesignerEmbedPreview = !isAdminStudio && window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
-  const [activeStoreId, setActiveStoreId] = useState(() => {
-    if (!isAdminStudio && isDesignShowcaseMode()) {
+export function AppConfigProvider({ children }: { children: ReactNode }) {
+  const stores = useMemo(() => resolveStores(), []);
+  const isDesignerEmbedPreview = window.__IS_DESIGNER_EMBED_PREVIEW__ === true;
+  const [activeStoreId] = useState(() => {
+    if (isDesignShowcaseMode()) {
       return readShowcaseStoreId(stores);
     }
     return stores[0]?.storeId ?? 'default';
   });
   const [customizations, setCustomizations] = useState<Record<string, AppCustomization>>(() => loadInitialCustomizations(stores));
-  const [activeThemeId, setActiveThemeId] = useState(() => {
-    const loaded = loadInitialCustomizations(stores);
-    const initialStoreId = !isAdminStudio && isDesignShowcaseMode()
-      ? readShowcaseStoreId(stores)
-      : (stores[0]?.storeId ?? 'default');
-    const store = stores.find((item) => item.storeId === initialStoreId) ?? stores[0];
-    const savedTheme = store !== undefined ? loaded[store.storeId]?.themeId : undefined;
-    if (savedTheme !== undefined && themeMap[savedTheme] !== undefined) {
-      return savedTheme;
-    }
-    return themeMap[store?.themeId ?? 'minimal-light']?.id ?? 'minimal-light';
-  });
-
   useEffect(() => {
     if (isDesignerEmbedPreview) {
       return;
@@ -192,7 +166,7 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
   }, [customizations, isDesignerEmbedPreview]);
 
   useEffect(() => {
-    if (isAdminStudio || isDesignerEmbedPreview || !isDesignShowcaseMode()) {
+    if (isDesignerEmbedPreview || !isDesignShowcaseMode()) {
       return;
     }
     try {
@@ -200,7 +174,7 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
     } catch {
       return;
     }
-  }, [activeStoreId, isAdminStudio, isDesignerEmbedPreview]);
+  }, [activeStoreId, isDesignerEmbedPreview]);
 
   useEffect(() => {
     if (!isDesignerEmbedPreview) {
@@ -220,9 +194,6 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
         return;
       }
       const next = mergeCustomization(previewStore, patch);
-      if (typeof next.themeId === 'string' && themeMap[next.themeId] !== undefined) {
-        setActiveThemeId(next.themeId);
-      }
       setCustomizations((current) => ({
         ...current,
         [previewStore.storeId]: next,
@@ -243,81 +214,12 @@ export function AppConfigProvider({ children, isAdminStudio = false }: { childre
   const customization = activeStore !== undefined
     ? (customizations[activeStore.storeId] ?? createDefaultCustomization(activeStore))
     : createDefaultCustomization(buildProjectStore());
-  const experienceId = activeStore !== undefined
-    ? resolveAppExperience(activeStore, customization)
-    : customization.experienceId;
-
   const value = useMemo<AppConfigContextValue>(() => {
     if (activeStore === undefined) {
       throw new Error('店舗設定がありません');
     }
-    return {
-      stores,
-      activeStore,
-      setActiveStoreId: (storeId: string) => {
-        setActiveStoreId(storeId);
-        const nextStore = stores.find((store) => store.storeId === storeId);
-        if (nextStore === undefined) {
-          return;
-        }
-        const saved = customizations[storeId] ?? createDefaultCustomization(nextStore);
-        const nextTheme = saved.themeId ?? nextStore.themeId;
-        if (themeMap[nextTheme] !== undefined) {
-          setActiveThemeId(nextTheme);
-        }
-      },
-      activeThemeId,
-      setActiveThemeId,
-      customization,
-      experienceId,
-      getStoreCustomization: (storeId: string) => {
-        const store = stores.find((item) => item.storeId === storeId) ?? activeStore;
-        return customizations[storeId] ?? createDefaultCustomization(store);
-      },
-      updateCustomization: (patch) => {
-        if (typeof patch.themeId === 'string' && themeMap[patch.themeId] !== undefined) {
-          setActiveThemeId(patch.themeId);
-        }
-        setCustomizations((current) => {
-          const currentCustomization = current[activeStore.storeId] ?? createDefaultCustomization(activeStore);
-          return {
-            ...current,
-            [activeStore.storeId]: {
-              ...currentCustomization,
-              ...patch,
-              colors: { ...currentCustomization.colors, ...patch.colors },
-              appearance: { ...currentCustomization.appearance, ...patch.appearance },
-              brand: { ...currentCustomization.brand, ...patch.brand },
-              home: { ...currentCustomization.home, ...patch.home },
-              header: {
-                ...currentCustomization.header,
-                ...patch.header,
-                rightButton: {
-                  ...currentCustomization.header.rightButton,
-                  ...patch.header?.rightButton,
-                },
-              },
-              coupon: { ...currentCustomization.coupon, ...patch.coupon },
-              order: { ...currentCustomization.order, ...patch.order },
-              membership: { ...currentCustomization.membership, ...patch.membership },
-              stamp: { ...currentCustomization.stamp, ...patch.stamp },
-              navigation: { ...currentCustomization.navigation, ...patch.navigation },
-            },
-          };
-        });
-      },
-      resetCustomization: () => {
-        const next = createDefaultCustomization(activeStore);
-        if (typeof next.themeId === 'string' && themeMap[next.themeId] !== undefined) {
-          setActiveThemeId(next.themeId);
-        }
-        setCustomizations((current) => ({
-          ...current,
-          [activeStore.storeId]: next,
-        }));
-      },
-    };
-  }, [activeStore, activeThemeId, customization, customizations, experienceId, stores]);
+    return { activeStore, customization };
+  }, [activeStore, customization]);
 
   return <AppConfigContext.Provider value={value}>{children}</AppConfigContext.Provider>;
 }

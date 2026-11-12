@@ -76,21 +76,6 @@ class PlanFeatures
         return false;
     }
 
-    /**
-     * @return list<string>
-     */
-    public static function featuresForPlan(string $plan): array
-    {
-        $planIndex = self::resolvePlanIndex($plan);
-        $features = [];
-
-        for ($i = 0; $i <= $planIndex; $i++) {
-            $features = array_merge($features, self::TIER_FEATURES[self::PLAN_TIERS[$i]]);
-        }
-
-        return array_values(array_unique($features));
-    }
-
     private static function resolvePlanIndex(string $plan): int
     {
         $planIndex = array_search($plan, self::PLAN_TIERS, true);

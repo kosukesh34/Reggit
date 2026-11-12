@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\CouponDeliveryType;
 use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,11 +40,6 @@ class CouponDelivery extends Model
     protected $attributes = [
         'send_notification' => true,
     ];
-
-    public function isScheduledType(): bool
-    {
-        return CouponDeliveryType::isScheduled((string) $this->delivery_type);
-    }
 
     public function coupon(): BelongsTo
     {

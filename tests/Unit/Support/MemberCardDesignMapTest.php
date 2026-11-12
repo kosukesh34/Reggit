@@ -20,7 +20,5 @@ class MemberCardDesignMapTest extends TestCase
         $this->assertSame('simple', MemberCardDesignMap::templateForDesign('compact'));
         $this->assertSame('ticket', MemberCardDesignMap::templateForDesign('ticket'));
         $this->assertSame('wallet', MemberCardDesignMap::templateForDesign('wallet'));
-        $this->assertSame('ticket', MemberCardDesignMap::designForTemplate('ticket'));
-        $this->assertSame('wallet', MemberCardDesignMap::designForTemplate('wallet'));
     }
 }

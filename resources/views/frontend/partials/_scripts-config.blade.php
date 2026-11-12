@@ -11,8 +11,6 @@
         'friendAddUrl' => $lineFriendAddUrl ?? null,
     ];
     $isDemoFixedUi = isset($isFixedUi) && $isFixedUi === true;
-    $scriptLiffTabLayouts = $isDemoFixedUi ? [] : ($liffTabLayouts ?? []);
-    $scriptLiffDetailLayouts = $isDemoFixedUi ? [] : ($liffDetailLayouts ?? []);
     $scriptLiffTabSettings = $isDemoFixedUi ? [] : ($liffTabSettings ?? []);
     $flags = $featureFlags ?? [];
     // LINE 内のチャットは「チャット」と「チャット（LINE 内にも表示）」の両方がオンのときだけ出す
@@ -71,8 +69,6 @@
     window.__GOOGLE_WALLET_ADD_BUTTON_IMAGE__ = "/images/add-to-google-wallet-logo.png";
     window.__ORDER_MODE__ = @json($orderMode ?? \App\Domain\Settings\ShopSettingKeys::ORDER_MODE_BOTH);
     window.__LINE_FRIEND_ADD_URL__ = @json($lineFriendAddUrl ?? '');
-    window.__LIFF_TAB_LAYOUTS__ = @json($scriptLiffTabLayouts);
-    window.__LIFF_DETAIL_LAYOUTS__ = @json($scriptLiffDetailLayouts);
     window.__LIFF_TAB_SETTINGS__ = @json($scriptLiffTabSettings);
     window.__FEATURE_FLAGS__ = @json($featureFlags ?? []);
     window.__QUEUE_REQUIRE_MEMBERSHIP__ = {{ ($queueRequireMembership ?? false) ? 'true' : 'false' }};

@@ -40,16 +40,6 @@ class MemberLotteryEntitlement extends Model
         return $this->belongsTo(Member::class);
     }
 
-    public function wonCoupon(): BelongsTo
-    {
-        return $this->belongsTo(Coupon::class, 'won_coupon_id');
-    }
-
-    public function memberCoupon(): BelongsTo
-    {
-        return $this->belongsTo(MemberCoupon::class, 'member_coupon_id');
-    }
-
     public function isPlayable(): bool
     {
         if ($this->is_done === true) {

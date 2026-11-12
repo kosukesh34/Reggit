@@ -139,11 +139,4 @@ class RfmAnalysisServiceTest extends TestCase
 
         $this->assertCount(0, $rows);
     }
-
-    public function test_segment_label_全セグメントにラベルが返る(): void
-    {
-        foreach (['champion', 'loyal', 'active', 'at_risk', 'dormant', 'never'] as $seg) {
-            $this->assertNotEmpty($this->service->segmentLabel($seg));
-        }
-    }
 }

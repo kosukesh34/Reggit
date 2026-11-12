@@ -24,9 +24,4 @@ final class NativeApp
     {
         return self::urlScheme().'://';
     }
-
-    public static function orderTypeMobileLabel(): string
-    {
-        return (string) config('native_app.order_type_mobile_label', 'Reggit');
-    }
 }

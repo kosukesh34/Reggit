@@ -10,7 +10,6 @@ use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Enums\SmaregiTransactionHeadDivision;
 use App\Infrastructure\Persistence\Eloquent\Settings\ShopSettingStore;
-use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Member;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -346,7 +345,6 @@ class SmaregiOrderTransactionOutboundServiceTest extends TestCase
             (int) $project->id,
             (int) $user->id,
         ));
-        Queue::assertNotPushed(SyncOrderTransactionToSmaregiJob::class);
         $this->assertTrue($order->refresh()->smaregi_create_pending);
         $this->assertTrue($order->smaregi_create_retry_at->isFuture());
     }

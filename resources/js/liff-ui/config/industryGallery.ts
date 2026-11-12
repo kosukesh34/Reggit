@@ -1,5 +1,4 @@
 import type { CouponItem, FeatureConfig, FeatureType, MemberProfile, NewsItem, StoreAppConfig, StoreSummary, TabType } from "../types/app";
-import type { ThemeConfig } from "../types/theme";
 
 /**
  * ヒーロー画像は Unsplash License（https://unsplash.com/license）で取得し public/images に配置。
@@ -90,34 +89,6 @@ export interface IndustryGalleryTemplate {
   hours: string;
   access: string;
 }
-
-export const industryBlockLabels: Record<IndustryBlockType, string> = {
-  hero: "メインビジュアル",
-  products: "商品一覧",
-  lookbook: "ルックブック",
-  flyer: "デジタルチラシ",
-  recipe: "レシピ提案",
-  menu: "メニュー",
-  mobileOrder: "モバイルオーダー",
-  stamp: "スタンプカード",
-  memberCard: "デジタル会員証",
-  queue: "順番待ち",
-  reservation: "予約",
-  staff: "スタッフ紹介",
-  medicalCard: "診察券",
-  schedule: "スケジュール",
-  activity: "活動記録",
-  roomKey: "デジタルルームキー",
-  facilityGuide: "施設案内",
-  serviceProgress: "依頼進捗",
-  petProfile: "ペットプロフィール",
-  vaccination: "予防接種記録",
-  ticket: "デジタルチケット",
-  event: "イベント",
-  map: "施設マップ",
-  coupon: "クーポン",
-  news: "お知らせ",
-};
 
 const off: FeatureConfig = {
   membership: false,
@@ -396,28 +367,6 @@ export const industryGalleryStores: StoreAppConfig[] = industryGalleryTemplates.
     shadow: "small",
   },
 }));
-
-export const industryGalleryThemes: ThemeConfig[] = industryGalleryTemplates.map((template) => {
-  const isDark = template.style === "active" || template.style === "neon";
-  return {
-    id: template.themeId,
-    name: template.name,
-    colors: {
-      primary: template.primary,
-      secondary: template.accent,
-      accent: template.accent,
-      background: template.background,
-      surface: template.surface,
-      elevated: template.surface,
-      textPrimary: template.text,
-      textSecondary: isDark ? "rgba(255,255,255,0.62)" : "#5A6B78",
-      border: isDark ? "rgba(255,255,255,0.12)" : template.accent,
-    },
-    radius: { button: Math.max(4, template.radius - 6), card: template.radius, image: template.radius },
-    typography: { headingWeight: template.style === "editorial" ? 600 : 700, bodyWeight: 500 },
-    appearance: { cardStyle: isDark ? "flat" : "border", buttonStyle: "solid", iconStyle: "outline", density: "compact" },
-  };
-});
 
 export function industryGalleryMemberProfiles(): Record<string, MemberProfile> {
   return Object.fromEntries(industryGalleryTemplates.map((template) => [template.storeId, {

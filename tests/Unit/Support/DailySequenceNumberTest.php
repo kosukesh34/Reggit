@@ -15,10 +15,6 @@ class DailySequenceNumberTest extends TestCase
         $this->assertSame('202604201', DailySequenceNumber::build(1, $date));
         $this->assertSame('2026042020', DailySequenceNumber::build(20, $date));
         $this->assertSame('202604202022', DailySequenceNumber::build(2022, $date));
-
-        $this->assertSame('201', DailySequenceNumber::formatDisplay(1, $date));
-        $this->assertSame('2020', DailySequenceNumber::formatDisplay(20, $date));
-        $this->assertSame('202022', DailySequenceNumber::formatDisplay(2022, $date));
     }
 
     public function test_format_stored_for_displayが日と通番を返すこと(): void

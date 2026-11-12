@@ -35,19 +35,6 @@ final class MemberCardDesignMap
         'logo_center' => 'pass',
     ];
 
-    /** @var array<string, string> */
-    private const TEMPLATE_TO_DESIGN = [
-        'classic' => 'default',
-        'simple' => 'compact',
-        'ticket' => 'ticket',
-        'minimal' => 'minimal_line',
-        'split' => 'split_banner',
-        'barcodeFocus' => 'logo_header',
-        'pointFocus' => 'logo_top',
-        'wallet' => 'wallet',
-        'pass' => 'emblem',
-    ];
-
     public static function templateForDesign(string $design): ?string
     {
         return self::DESIGN_TO_TEMPLATE[$design] ?? null;
@@ -81,11 +68,6 @@ final class MemberCardDesignMap
         $global['app_customization'] = $customization;
 
         return $global;
-    }
-
-    public static function designForTemplate(string $template): ?string
-    {
-        return self::TEMPLATE_TO_DESIGN[$template] ?? null;
     }
 
     public static function isValidDesign(string $design): bool

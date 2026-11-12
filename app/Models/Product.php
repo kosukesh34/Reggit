@@ -52,11 +52,6 @@ class Product extends Model
         return $this->belongsTo(Project::class);
     }
 
-    public function orderItems()
-    {
-        return $this->hasMany(OrderItem::class);
-    }
-
     public function optionGroups(): HasMany
     {
         return $this->hasMany(ProductOptionGroup::class)->orderBy('sort_order')->with('options');

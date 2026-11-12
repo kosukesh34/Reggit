@@ -48,14 +48,4 @@ class OrderSettingStore
     {
         $this->values->setValue('order_ready_line_notify_enabled', $enabled, 'boolean', $projectId);
     }
-
-    public function getKitchenAccessToken(?int $projectId = null): string
-    {
-        return trim((string) $this->values->getValue('kitchen_access_token', '', $projectId));
-    }
-
-    public function setKitchenAccessToken(?string $token, ?int $projectId = null): void
-    {
-        $this->values->setValue('kitchen_access_token', $token !== null ? trim($token) : '', 'string', $projectId);
-    }
 }

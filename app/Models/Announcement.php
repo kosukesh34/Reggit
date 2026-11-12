@@ -165,11 +165,6 @@ class Announcement extends Model
         return $this->hasMany(AnnouncementRead::class);
     }
 
-    public function deliveryCoupon(): BelongsTo
-    {
-        return $this->belongsTo(Coupon::class, 'delivery_coupon_id');
-    }
-
     /** @var array<string, string> */
     protected $casts = [
         'image_paths' => 'array',

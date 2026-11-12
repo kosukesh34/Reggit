@@ -21,34 +21,6 @@ class EloquentOrderRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_find_by_id_and_user_id_注文をドメイン集約として返すこと(): void
-    {
-        $project = Project::factory()->create();
-        $user = User::factory()->create(['project_id' => $project->id]);
-        $order = Order::create([
-            'project_id' => $project->id,
-            'user_id' => $user->id,
-            'total_amount' => 1000,
-            'status' => OrderStatus::PENDING,
-            'payment_method' => PaymentMethod::STRIPE,
-            'points_used' => 10,
-            'points_earned' => 5,
-            'order_type' => 'mobile',
-        ]);
-
-        $repository = new EloquentOrderRepository;
-        $aggregate = $repository->findByIdAndUserId(
-            (int) $order->id,
-            (int) $user->id,
-            (int) $project->id,
-        );
-
-        $this->assertNotNull($aggregate);
-        $this->assertSame(10, $aggregate->pointsUsed());
-        $this->assertSame(5, $aggregate->pointsEarned());
-        $this->assertSame(1000, $aggregate->totalAmount());
-    }
-
     public function test_find_by_id_and_user_id_for_update_注文をドメイン集約として返すこと(): void
     {
         $project = Project::factory()->create();

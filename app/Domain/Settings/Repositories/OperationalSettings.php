@@ -2,7 +2,7 @@
 
 namespace App\Domain\Settings\Repositories;
 
-interface OperationalSettings extends KitchenAccessSettings, OrderNotificationSettings, ProfileSettings, ReservationSettings, SettingValueWriter
+interface OperationalSettings extends OrderNotificationSettings, ProfileSettings, ReservationSettings, SettingValueWriter
 {
     /** @return array{start: string, end: string} */
     public function getBusinessHours(int $projectId): array;

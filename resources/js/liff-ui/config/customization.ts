@@ -1,6 +1,6 @@
 import { isLinkTabType, type StoreAppConfig, type TabType } from "../types/app";
 import { isIndustryGalleryStoreId, resolveIndustryGalleryTemplate } from "./industryGallery";
-import type { AppCustomization, AppCustomizationPatch, AppExperienceId, DesignPreset, HomeLayout } from "../types/customization";
+import type { AppCustomization, AppExperienceId, DesignPreset } from "../types/customization";
 
 export const SIMPLE_HOME_STORE_ID = "store_simple_home";
 export const MEMBER_CRM_STORE_ID = "store_member_crm";
@@ -24,13 +24,6 @@ export function experienceIdForStore(store: StoreAppConfig): AppExperienceId {
     return "industry-gallery";
   }
   return STORE_EXPERIENCE[store.storeId] ?? THEME_EXPERIENCE[store.themeId] ?? "standard";
-}
-
-export function resolveAppExperience(store: StoreAppConfig, customization: AppCustomization): AppExperienceId {
-  if (customization.experienceId !== undefined) {
-    return customization.experienceId;
-  }
-  return experienceIdForStore(store);
 }
 
 const SIMPLE_HOME_HOME: AppCustomization["home"] = {
@@ -144,36 +137,6 @@ function galleryHome(store: StoreAppConfig): Partial<AppCustomization["home"]> {
   return { blocks: [...resolveIndustryGalleryTemplate(store.storeId).blocks] };
 }
 
-const clearedColors: AppCustomization["colors"] = {
-  primary: undefined,
-  secondary: undefined,
-  accent: undefined,
-  background: undefined,
-  surface: undefined,
-  textPrimary: undefined,
-  textSecondary: undefined,
-};
-
-export function appTemplatePatch(store: StoreAppConfig): AppCustomizationPatch {
-  const base = createDefaultCustomization(store);
-  return {
-    designPreset: base.designPreset,
-    appTemplateId: store.storeId,
-    experienceId: experienceIdForStore(store),
-    themeId: store.themeId,
-    colors: clearedColors,
-    appearance: base.appearance,
-    brand: base.brand,
-    home: base.home,
-    header: base.header,
-    coupon: base.coupon,
-    order: base.order,
-    membership: base.membership,
-    stamp: base.stamp,
-    navigation: base.navigation,
-  };
-}
-
 export const defaultCustomization: AppCustomization = {
   designPreset: "editorial",
   experienceId: "standard",
@@ -260,13 +223,6 @@ export const defaultCustomization: AppCustomization = {
   },
 };
 
-export function resolveHomeLayout(value: string | undefined): HomeLayout {
-  if (value === "wallet" || value === "magazine" || value === "minimal" || value === "crm") {
-    return value;
-  }
-  return "standard";
-}
-
 const storePresetMap: Record<string, DesignPreset> = {
   store_cafe: "editorial",
   store_apparel: "minimal",
@@ -332,57 +288,6 @@ const GALLERY_EXPERIENCE = {
   stampStyle: "squares" as const,
   stampGoal: 10,
 };
-
-const designPresetExperienceMap: Record<DesignPreset, (typeof storeExperienceMap)[string]> = {
-  editorial: storeExperienceMap.store_cafe,
-  bold: storeExperienceMap.store_market,
-  airy: storeExperienceMap.store_flower,
-  minimal: storeExperienceMap.store_apparel,
-  luxury: storeExperienceMap.store_member_crm,
-  pop: storeExperienceMap.store_pets,
-  natural: storeExperienceMap.store_bakery,
-  monochrome: storeExperienceMap.store_clinic,
-  glass: storeExperienceMap.store_hotel,
-  neo: storeExperienceMap.store_fitness,
-  restaurant: storeExperienceMap.store_dining,
-  izakaya: storeExperienceMap.store_izakaya,
-  fastfood: storeExperienceMap.store_fastfood,
-};
-
-/** デザインプリセット選択時に色だけでなく配置も切り替える */
-export function designPresetLayoutPatch(designPreset: DesignPreset): AppCustomizationPatch {
-  const experience = designPresetExperienceMap[designPreset] ?? storeExperienceMap.store_cafe;
-  return {
-    designPreset,
-    colors: {
-      primary: undefined,
-      secondary: undefined,
-      accent: undefined,
-      background: undefined,
-      surface: undefined,
-      textPrimary: undefined,
-      textSecondary: undefined,
-    },
-    appearance: { buttonStyle: experience.buttonStyle, density: experience.density },
-    home: {
-      primaryActionPlacement: experience.primaryActionPlacement,
-      quickActionColumns: experience.quickActionColumns,
-      ...(designPreset === "luxury" ? { layout: "crm" as const } : {}),
-    },
-    membership: {
-      template: experience.membershipTemplate,
-      alignment: experience.membershipTemplate === "pass" || experience.membershipTemplate === "pointFocus" || experience.membershipTemplate === "simple" || experience.membershipTemplate === "wallet" ? "center" : "left",
-    },
-    stamp: { style: experience.stampStyle, goal: experience.stampGoal },
-    navigation: {
-      position: experience.navigationPosition,
-      emphasizeCenterTab: experience.emphasizeCenterTab,
-    },
-    order: {
-      ctaPosition: designPreset === "fastfood" ? "sticky" : "inline",
-    },
-  };
-}
 
 export const MEMBER_CRM_HEADER: AppCustomization["header"] = {
   showLogo: false,
@@ -472,11 +377,3 @@ export function createDefaultCustomization(store: StoreAppConfig): AppCustomizat
   };
 }
 
-export function resolveAppBrand(store: StoreAppConfig, customization: AppCustomization): { appName: string; heroImage: string } {
-  const appName = customization.brand?.appName?.trim();
-  const heroImage = customization.brand?.heroImage?.trim();
-  return {
-    appName: appName !== undefined && appName !== "" ? appName : store.heroTitle || store.storeName,
-    heroImage: heroImage !== undefined && heroImage !== "" ? heroImage : store.home.heroImage,
-  };
-}

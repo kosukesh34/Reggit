@@ -83,11 +83,4 @@ class DashboardService
             ->limit($limit)
             ->get();
     }
-
-    public function getRecentReservations(int $limit = 10): Collection
-    {
-        return Reservation::orderByDesc('reserved_at')
-            ->limit($limit)
-            ->get();
-    }
 }
