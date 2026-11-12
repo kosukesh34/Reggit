@@ -40,7 +40,9 @@ class LineWebhookHandleUseCase
 
         $signature = $input->signature;
         $body = $input->body;
-        $projectId = $this->projectResolver->resolveProjectId($body, $signature);
+        $projectId = $input->projectKey !== null
+            ? $this->projectResolver->resolveProjectIdByKey($input->projectKey, $body, $signature)
+            : $this->projectResolver->resolveProjectId($body, $signature);
         if ($projectId === null) {
             LogHelper::warning('[LINE] invalid signature');
 

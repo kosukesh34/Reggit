@@ -4,7 +4,7 @@
 
 ## LINE
 
-`LINE_CHANNEL_ACCESS_TOKEN`、`LINE_CHANNEL_SECRET`、`LINE_LIFF_ID` を設定します。プロジェクト別の LINE / LIFF 設定がある場合は管理画面の値を使います。LIFF のエンドポイントは `{APP_URL}/liff/{project_key}`、Webhook は `{APP_URL}/api/line/webhook` です。
+`LINE_CHANNEL_ACCESS_TOKEN`、`LINE_CHANNEL_SECRET`、`LINE_LIFF_ID` を設定します。プロジェクト別の LINE / LIFF 設定がある場合は管理画面の値を使います。LIFF のエンドポイントは `{APP_URL}/liff/{project_key}`、Webhook は `{APP_URL}/api/line/webhook/{project_key}` です（旧 URL `{APP_URL}/api/line/webhook` も全店舗の Secret で照合して受け付けます）。
 
 本番の顧客本人確認は `X-Line-Id-Token` を検証して行います。LINE のユーザーIDを送るだけでは認証できません。署名・本人確認の実装は `LineIdTokenVerifier`、`LineIdentityPolicy`、LINE Webhook 関連 Service を参照します。
 

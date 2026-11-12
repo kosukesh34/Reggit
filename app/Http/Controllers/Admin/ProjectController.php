@@ -54,7 +54,7 @@ class ProjectController extends Controller
                 'has_line_channel_access_token' => trim((string) $this->shopSettingRepository->getValue('line_channel_access_token', '', (int) $project->id)) !== '' ? '1' : '',
                 'has_line_channel_secret' => trim((string) $this->shopSettingRepository->getValue('line_channel_secret', '', (int) $project->id)) !== '' ? '1' : '',
                 'liff_entry_url' => url('/liff/'.$project->project_key),
-                'line_webhook_url' => url('/api/line/webhook'),
+                'line_webhook_url' => url('/api/line/webhook/'.$project->project_key),
                 'frontend_header_text' => (string) ($this->shopSettingRepository->getFrontendHeaderText((int) $project->id) ?? ''),
                 'frontend_logo_url' => (string) ($this->shopSettingRepository->getFrontendLogoUrl((int) $project->id) ?? ''),
                 'smaregi_contract_id' => (string) ($this->shopSettingRepository->getValue('smaregi_contract_id', '', (int) $project->id) ?? ''),

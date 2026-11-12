@@ -8,5 +8,6 @@ class LineWebhookInput
         public readonly bool $isGet,
         public readonly ?string $signature,
         public readonly string $body,
+        public readonly ?string $projectKey = null,
     ) {}
 }

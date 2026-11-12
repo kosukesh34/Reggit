@@ -18,6 +18,7 @@ class LineWebhookInputFactory
             $request->isMethod('GET'),
             $signature,
             $request->getContent(),
+            $request->route('project_key'),
         );
     }
 }

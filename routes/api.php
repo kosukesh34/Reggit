@@ -100,6 +100,7 @@ use App\Http\Middleware\CheckApiProject;
 use Illuminate\Support\Facades\Route;
 
 Route::match(['get', 'post'], '/line/webhook', [LineWebhookController::class, 'handle']);
+Route::match(['get', 'post'], '/line/webhook/{project_key}', [LineWebhookController::class, 'handle']);
 
 Route::post('/store-app/login', [StoreAppAuthController::class, 'login'])->middleware('throttle:admin-login');
 Route::post('/store-app/logout', [StoreAppAuthController::class, 'logout'])->middleware('auth:sanctum');

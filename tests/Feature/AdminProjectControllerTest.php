@@ -155,7 +155,7 @@ class AdminProjectControllerTest extends TestCase
 
         $this->get('/system-admin/projects/'.$project->id.'/edit')->assertOk()
             ->assertSee('LINE接続・通知API')
-            ->assertSee(url('/api/line/webhook'))
+            ->assertSee(url('/api/line/webhook/'.$project->project_key))
             ->assertSee(url('/liff/'.$project->project_key))
             ->assertDontSee('kept-token');
 
