@@ -216,9 +216,7 @@ class AppConfigService
                 'liff_url' => $repo->getLineLiffUrl($projectId),
                 'friend_add_url' => $repo->getLineFriendAddUrl($projectId),
             ],
-            'liff_tab_layouts' => $repo->getLiffTabLayouts($projectId),
             'liff_tab_settings' => $repo->getLiffTabSettings($projectId),
-            'liff_detail_layouts' => $repo->getLiffDetailLayouts($projectId),
             'queue_require_membership' => $repo->getQueueRequireMembership($projectId),
             'member_registration_mode' => $repo->getMemberRegistrationMode($projectId),
         ];

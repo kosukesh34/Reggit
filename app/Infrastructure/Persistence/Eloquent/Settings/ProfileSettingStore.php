@@ -33,11 +33,6 @@ class ProfileSettingStore
         ];
     }
 
-    public function isSmaregiLinkedProfileField(string $key): bool
-    {
-        return in_array($key, ShopSettingKeys::PROFILE_SMAREGI_LINKED_KEYS, true);
-    }
-
     /** プロフィール項目設定を取得（会員登録・編集フォームの表示とバリデーションに使用） */
     public function getProfileFieldSettings(?int $projectId = null): array
     {

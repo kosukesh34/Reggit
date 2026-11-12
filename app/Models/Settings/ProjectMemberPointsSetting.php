@@ -19,7 +19,6 @@ class ProjectMemberPointsSetting extends Model
         'point_earn_rate',
         'points_per_order',
         'stamp_earn_per_amount',
-        'order_stamp_card_id',
         'points_valid_days',
     ];
 

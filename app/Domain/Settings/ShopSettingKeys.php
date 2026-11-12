@@ -89,9 +89,4 @@ class ShopSettingKeys
         'mail_receive_flag',
         'customer_store_id',
     ];
-
-    public static function isSmaregiLinkedProfileField(string $key): bool
-    {
-        return in_array($key, self::PROFILE_SMAREGI_LINKED_KEYS, true);
-    }
 }

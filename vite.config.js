@@ -23,10 +23,6 @@ export default defineConfig({
                         return 'scanner-vendor';
                     }
 
-                    if (id.includes('date-fns')) {
-                        return 'date-vendor';
-                    }
-
                     return 'vendor';
                 },
             },

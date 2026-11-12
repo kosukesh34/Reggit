@@ -59,14 +59,4 @@ final class AdminLoginIpAllowlist
 
         return IpUtils::checkIp($ip, $entries);
     }
-
-    public static function normalizeForStorage(?string $raw): ?string
-    {
-        $entries = self::parse($raw);
-        if ($entries === []) {
-            return null;
-        }
-
-        return implode("\n", $entries);
-    }
 }

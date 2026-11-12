@@ -11,10 +11,6 @@ interface ReservationRepository
 
     public function findById(int $reservationId, int $projectId): ?Reservation;
 
-    public function findByIdAndUserId(int $reservationId, int $userId, int $projectId): ?Reservation;
-
-    public function findByIdAndUserIdOrFail(int $reservationId, int $userId, int $projectId): Reservation;
-
     public function persistPending(PendingReservation $pending): int;
 
     /**

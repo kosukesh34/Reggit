@@ -168,12 +168,6 @@ class AdminUser extends Authenticatable implements PasskeyUser
         return $this->hasMany(AdminUserPermission::class);
     }
 
-    /** 作成者 */
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'created_by_id');
-    }
-
     // ── プロジェクトアクセス ──
 
     /** アクセス可能なプロジェクトID一覧 */

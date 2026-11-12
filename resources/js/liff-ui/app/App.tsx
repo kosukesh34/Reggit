@@ -6,16 +6,14 @@ import { NativeNavigationProvider } from '../native/NativeNavigation';
 import { AppRouter } from './router';
 
 export function App({
-  isAdminStudio = false,
   checkout = null,
   initialNativeConfig,
 }: {
-  isAdminStudio?: boolean;
   checkout?: ReactNode;
   initialNativeConfig?: NativeConfig;
 }) {
   return (
-    <AppConfigProvider isAdminStudio={isAdminStudio}>
+    <AppConfigProvider>
       <NativeConfigProvider initialConfig={initialNativeConfig}>
         <RuntimeDataProvider>
           <NativeNavigationProvider><AppRouter /></NativeNavigationProvider>

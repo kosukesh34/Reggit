@@ -11,7 +11,6 @@ use App\Domain\Settings\Repositories\CouponNotificationSettings;
 use App\Domain\Settings\Repositories\FeatureSettings;
 use App\Domain\Settings\Repositories\FrontendShellSettings;
 use App\Domain\Settings\Repositories\HomeSettingsRepository;
-use App\Domain\Settings\Repositories\KitchenAccessSettings;
 use App\Domain\Settings\Repositories\LiffDesignerSettings;
 use App\Domain\Settings\Repositories\LineAdminSettings;
 use App\Domain\Settings\Repositories\LineConnectionSettings;
@@ -31,11 +30,10 @@ use App\Domain\Settings\Repositories\ReservationSettings;
 use App\Domain\Settings\Repositories\SmaregiSettings;
 use App\Domain\Settings\Repositories\StampSettings;
 use App\Domain\Settings\Repositories\WalletSettings;
-use App\Domain\Settings\ShopSettingKeys;
 use App\Models\Settings\ProjectBusinessSetting;
 use App\Models\Store;
 
-class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, BusinessHoursSettings, CouponNotificationSettings, FeatureSettings, FrontendShellSettings, HomeSettingsRepository, KitchenAccessSettings, LiffDesignerSettings, LineAdminSettings, LineConnectionSettings, MemberCardPreviewSettings, MemberCardSettings, MemberCodeSettings, MemberSettings, OperationalSettings, OrderNotificationSettings, OrderSettings, ProfileSettings, ProjectSettings, QueueAdminSettings, QueueSettings, RankSettings, ReservationSettings, SmaregiSettings, StampSettings, WalletSettings
+class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfigSettings, BusinessHoursSettings, CouponNotificationSettings, FeatureSettings, FrontendShellSettings, HomeSettingsRepository, LiffDesignerSettings, LineAdminSettings, LineConnectionSettings, MemberCardPreviewSettings, MemberCardSettings, MemberCodeSettings, MemberSettings, OperationalSettings, OrderNotificationSettings, OrderSettings, ProfileSettings, ProjectSettings, QueueAdminSettings, QueueSettings, RankSettings, ReservationSettings, SmaregiSettings, StampSettings, WalletSettings
 {
     public function __construct(
         private ShopSettingStore $values,
@@ -236,16 +234,6 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
         $this->orderSettingStore->setOrderReadyLineNotifyEnabled($enabled, $projectId);
     }
 
-    public function getKitchenAccessToken(int $projectId): string
-    {
-        return $this->orderSettingStore->getKitchenAccessToken($projectId);
-    }
-
-    public function setKitchenAccessToken(?string $token, int $projectId): void
-    {
-        $this->orderSettingStore->setKitchenAccessToken($token, $projectId);
-    }
-
     // ── LINE / LIFF ──
 
     public function getLineLiffId(int $projectId): string
@@ -310,36 +298,6 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
 
     // ── LIFF デザイナー ──
 
-    public function getLiffTabLayouts(int $projectId): array
-    {
-        return $this->liffSettingStore->getLiffTabLayouts($projectId);
-    }
-
-    public function setLiffTabLayouts(array $layouts, int $projectId): void
-    {
-        $this->liffSettingStore->setLiffTabLayouts($layouts, $projectId);
-    }
-
-    public function getLiffDetailLayouts(int $projectId): array
-    {
-        return $this->liffSettingStore->getLiffDetailLayouts($projectId);
-    }
-
-    public function setLiffDetailLayouts(array $layouts, int $projectId): void
-    {
-        $this->liffSettingStore->setLiffDetailLayouts($layouts, $projectId);
-    }
-
-    public function getLiffCustomCss(int $projectId): string
-    {
-        return $this->liffSettingStore->getLiffCustomCss($projectId);
-    }
-
-    public function setLiffCustomCss(string $css, int $projectId): void
-    {
-        $this->liffSettingStore->setLiffCustomCss($css, $projectId);
-    }
-
     public function getLiffTabSettings(int $projectId): array
     {
         return $this->liffSettingStore->getLiffTabSettings($projectId);
@@ -348,46 +306,6 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
     public function setLiffTabSettings(array $settings, int $projectId): void
     {
         $this->liffSettingStore->setLiffTabSettings($settings, $projectId);
-    }
-
-    public function getLiffSavedScreens(int $projectId): array
-    {
-        return $this->liffSettingStore->getLiffSavedScreens($projectId);
-    }
-
-    public function setLiffSavedScreens(array $screens, int $projectId): void
-    {
-        $this->liffSettingStore->setLiffSavedScreens($screens, $projectId);
-    }
-
-    public function liffSavedScreensMax(): int
-    {
-        return ShopSettingKeys::LIFF_SAVED_SCREENS_MAX;
-    }
-
-    public function defaultLiffDesignerTemplates(): array
-    {
-        return $this->liffSettingStore->defaultLiffDesignerTemplates();
-    }
-
-    public function defaultLiffTabLayouts(): array
-    {
-        return $this->liffSettingStore->defaultLiffTabLayouts();
-    }
-
-    public function defaultLiffDetailLayouts(): array
-    {
-        return $this->liffSettingStore->defaultLiffDetailLayouts();
-    }
-
-    public function defaultLiffTabSettings(): array
-    {
-        return $this->liffSettingStore->defaultLiffTabSettings();
-    }
-
-    public function ensureLiffTabLayouts(array $layouts): array
-    {
-        return $this->liffSettingStore->ensureLiffTabLayouts($layouts);
     }
 
     // ── フロントメニュー ──
@@ -471,11 +389,6 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
         return (int) $this->memberRankSettingStore->getStampEarnPerAmountForRank($projectId, $rankKey);
     }
 
-    public function getOrderStampCardId(int $projectId): ?int
-    {
-        return $this->memberRankSettingStore->getOrderStampCardId($projectId);
-    }
-
     public function getUseStamps(int $projectId): bool
     {
         return $this->memberRankSettingStore->getUseStamps($projectId);
@@ -521,11 +434,6 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
     public function getIsRankDownEnabled(int $projectId): bool
     {
         return $this->memberRankSettingStore->getIsRankDownEnabled($projectId);
-    }
-
-    public function defaultMemberRankSettings(): array
-    {
-        return $this->memberRankSettingStore->defaultMemberRankSettings();
     }
 
     // ── 会員証 ──
@@ -622,11 +530,6 @@ class EloquentShopSettingRepository implements AdminAppearanceSettings, AppConfi
     public function setProfileFieldSettings(array $settings, int $projectId): void
     {
         $this->profileSettingStore->setProfileFieldSettings($settings, $projectId);
-    }
-
-    public function defaultProfileFieldSettings(): array
-    {
-        return $this->profileSettingStore->defaultProfileFieldSettings();
     }
 
     public function getMemberRegistrationMode(int $projectId): string

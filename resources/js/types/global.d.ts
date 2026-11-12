@@ -70,7 +70,6 @@ declare global {
         __nativeSetPushToken?: (token: string | null | undefined) => void;
         __nativeOpenExternalUrl__?: (url: string) => boolean;
         __nativeAddAppleWalletPass__?: (url: string) => boolean;
-        __LIFF_DETAIL_LAYOUTS__?: Record<string, unknown[]>;
         __PROJECT_KEY__?: string;
         __REVERB_APP_KEY__?: string;
         __REVERB_WS_HOST__?: string;
@@ -89,7 +88,6 @@ declare global {
         __MEMBER_REGISTRATION_MODE__?: 'optional' | 'popup' | 'prompt' | 'force' | string;
         __FRONTEND_MENU__?: Array<{ tab: string; label?: string; icon?: string; url?: string; open?: string }>;
         __FRONTEND_HEADER__?: { title?: string; logoUrl?: string | null; friendAddUrl?: string | null };
-        __LIFF_TAB_LAYOUTS__?: Record<string, unknown[]>;
         __LIFF_TAB_SETTINGS__?: Record<string, unknown>;
         __IS_DESIGNER_EMBED_PREVIEW__?: boolean;
         __COUPON_FORM_PREVIEW__?: boolean;

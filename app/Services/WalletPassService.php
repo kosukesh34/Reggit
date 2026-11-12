@@ -11,7 +11,6 @@ use App\Services\AppleWallet\PassPackager;
 use App\Services\Member\MemberDataReader;
 use App\Services\Member\MemberPointLedger;
 use App\Util\AdminContext;
-use App\Util\LogHelper;
 use App\Util\StrHelper;
 use Illuminate\Support\Facades\File;
 
@@ -46,30 +45,6 @@ class WalletPassService
         }
 
         return $this->getUnavailabilityReasons() === [];
-    }
-
-    /**
-     * エンドユーザー向けの短いメッセージ（サーバーパス等は含めない）。
-     *
-     * @return array<int, string>
-     */
-    public function getPublicUnavailabilityMessages(): array
-    {
-        $reasons = $this->getUnavailabilityReasons();
-        if ($reasons === []) {
-            $lastError = $this->getLastError();
-            if ($lastError !== null && $lastError !== '') {
-                LogHelper::warning('[WalletPass] generation failed', ['error' => $lastError]);
-
-                return ['会員証の生成に失敗しました。しばらくしてから再度お試しください。'];
-            }
-
-            return ['会員証の生成に失敗しました。しばらくしてから再度お試しください。'];
-        }
-
-        LogHelper::warning('[WalletPass] unavailable', ['reasons' => $reasons]);
-
-        return ['Apple Wallet を現在ご利用いただけません。しばらくしてから再度お試しください。'];
     }
 
     private function setLastError(string $message): void

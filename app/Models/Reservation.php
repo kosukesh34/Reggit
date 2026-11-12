@@ -90,16 +90,6 @@ class Reservation extends Model
         return $this->exists ? parent::save($options) : DB::transaction(fn () => parent::save($options), 3);
     }
 
-    public function isPending(): bool
-    {
-        return $this->status === ReservationStatus::PENDING;
-    }
-
-    public function isConfirmed(): bool
-    {
-        return $this->status === ReservationStatus::CONFIRMED;
-    }
-
     public function isCancelled(): bool
     {
         return $this->status === ReservationStatus::CANCELLED;

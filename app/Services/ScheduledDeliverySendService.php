@@ -158,12 +158,6 @@ class ScheduledDeliverySendService
         return $count;
     }
 
-    /** @return array{sent: int, failed: int} */
-    public function sendToMatchingMembers(AfterRegistrationDelivery $delivery, Carbon $now): array
-    {
-        return $this->sendToMemberIds($delivery, $now, $this->targetService->memberIds($delivery, $now));
-    }
-
     /**
      * @param  list<int>  $memberIds
      * @return array{sent: int, failed: int}

@@ -30,14 +30,4 @@ class CustomerStoreProfile
 
         return $data;
     }
-
-    public function fromSmaregi(int $projectId, string $externalId): ?int
-    {
-        if ($externalId === '') {
-            return null;
-        }
-        $id = Store::where('project_id', $projectId)->where('smaregi_store_id', $externalId)->value('id');
-
-        return $id === null ? null : (int) $id;
-    }
 }

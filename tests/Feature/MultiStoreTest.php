@@ -87,7 +87,7 @@ class MultiStoreTest extends TestCase
         $this->project->update(['plan' => 'premium']);
         $this->actingAs($this->admin(), 'admin');
         foreach (['profile', 'ranks', 'existing-member-link', 'existing-member-link/connect',
-            'liff-connection', 'liff-designer', 'advanced', 'menu', 'home', 'app-design/branding',
+            'liff-connection', 'advanced', 'menu', 'home', 'app-design/branding',
             'admin-design', 'app-design/member-card', 'features', 'coupons', 'lottery',
             'announcements', 'member-code', 'wallet', 'payments'] as $setting) {
             $this->post('/admin/brand/settings/'.$setting)->assertForbidden();

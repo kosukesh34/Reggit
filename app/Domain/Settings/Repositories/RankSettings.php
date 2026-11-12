@@ -9,9 +9,6 @@ interface RankSettings extends MemberCardPreviewSettings, SettingValueReader, Se
 
     public function getIsRankDownEnabled(int $projectId): bool;
 
-    /** @return list<array<string, mixed>> */
-    public function defaultMemberRankSettings(): array;
-
     public function getPointEarnRate(int $projectId): int;
 
     public function getPointEarnRateForRank(int $projectId, ?string $rankKey): int;

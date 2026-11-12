@@ -76,11 +76,6 @@ final class SmaregiInboundTransaction
         return $this->kind === SmaregiInboundTransactionKind::RETURN;
     }
 
-    public function isSale(): bool
-    {
-        return $this->kind === SmaregiInboundTransactionKind::SALE;
-    }
-
     public function isSkip(): bool
     {
         return $this->kind === SmaregiInboundTransactionKind::SKIP;

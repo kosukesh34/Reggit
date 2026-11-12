@@ -2,11 +2,6 @@
 
 namespace App\Support;
 
-use App\Support\LiffAppStudio\Layouts\LoyaltyLayouts;
-use App\Support\LiffAppStudio\Layouts\OrderLayouts;
-use App\Support\LiffAppStudio\Screens;
-use App\Support\LiffAppStudio\Suites;
-
 /**
  * Reggit App Studio テンプレートカタログ。
  *
@@ -290,37 +285,5 @@ class LiffAppStudioTemplates
         }
 
         return $settings;
-    }
-
-    /** @return array<string, array<int, array<string, mixed>>> */
-    public static function defaultLayouts(): array
-    {
-        $layouts = LoyaltyLayouts::layouts();
-        $layouts['products'] = OrderLayouts::layouts()['products'];
-
-        return $layouts;
-    }
-
-    /** @return array<string, string> */
-    public static function onboardingMap(): array
-    {
-        return [
-            'restaurant' => 'rg-suite-loyalty',
-            'cafe' => 'rg-suite-cafe',
-            'fastfood' => 'rg-suite-order',
-            'salon' => 'rg-suite-salon',
-            'retail' => 'rg-suite-retail',
-            'fitness' => 'rg-suite-loyalty',
-            'clinic' => 'rg-suite-clinic',
-            'sweets' => 'rg-suite-sweets',
-            'bakery' => 'rg-suite-sweets',
-            'souvenir' => 'rg-suite-sweets',
-        ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    public static function catalog(): array
-    {
-        return array_merge(Suites::all(), Screens::all());
     }
 }

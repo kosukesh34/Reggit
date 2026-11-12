@@ -14,7 +14,4 @@
     @if(\App\Support\PlanFeatures::hasFeature((string) ($currentProject->plan ?? \App\Enums\ProjectPlan::NORMAL), \App\Support\PlanFeatures::WALLET))
         <a href="{{ admin_route('admin.settings.wallet') }}" @if($activeDesign === 'wallet') aria-current="page" @endif>Wallet会員証</a>
     @endif
-    @if(auth('admin')->user()->hasPermission('liff_designer.manage') && \App\Support\PlanFeatures::hasFeature((string) ($currentProject->plan ?? \App\Enums\ProjectPlan::NORMAL), \App\Support\PlanFeatures::LIFF_DESIGNER_ADVANCED))
-        <a href="{{ admin_route('admin.settings.liff-designer') }}" @if($activeDesign === 'advanced') aria-current="page" @endif>LINEアプリの詳細デザイン</a>
-    @endif
 </nav>

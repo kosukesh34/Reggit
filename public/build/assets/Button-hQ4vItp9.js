@@ -1,0 +1,1 @@
+import{C as e}from"./react-vendor-CNE4kG-j.js";var t=e();function n({children:e,className:n=``,variant:r=`solid`,size:i=`md`,ariaLabel:a,...o}){let s=[`button`,`button--${r}`,`button--${i}`,n].filter(Boolean).join(` `);return(0,t.jsx)(`button`,{className:s,"aria-label":a,...o,children:e})}export{n as t};

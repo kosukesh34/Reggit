@@ -164,11 +164,6 @@ class RfmAnalysisService
         return RfmSegment::DORMANT;
     }
 
-    public function segmentLabel(string $segment): string
-    {
-        return RfmSegment::getLabel($segment);
-    }
-
     public function segmentColor(string $segment): string
     {
         $map = [

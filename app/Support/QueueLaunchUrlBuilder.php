@@ -7,14 +7,6 @@ namespace App\Support;
  */
 class QueueLaunchUrlBuilder
 {
-    public static function buildOpenUrl(string $projectKey, string $token): string
-    {
-        $projectKey = ProjectKey::require($projectKey);
-        $token = trim($token);
-
-        return url('/queue/open/'.$projectKey.'/'.$token);
-    }
-
     public static function buildNativeSchemeUrl(string $projectKey, string $token): string
     {
         $projectKey = ProjectKey::require($projectKey);
@@ -24,16 +16,5 @@ class QueueLaunchUrlBuilder
             'project_key' => $projectKey,
             'queue_token' => $token,
         ]);
-    }
-
-    public static function buildNativeWebUrl(string $projectKey, string $token): string
-    {
-        $projectKey = ProjectKey::require($projectKey);
-        $token = trim($token);
-
-        return url('/liff/'.$projectKey.'?'.http_build_query([
-            'tab' => 'queue',
-            'queue_token' => $token,
-        ]));
     }
 }

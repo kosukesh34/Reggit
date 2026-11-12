@@ -48,11 +48,4 @@ class MemberRankCalculator
 
         return $info;
     }
-
-    public function resolveCurrentRank(Member $member): string
-    {
-        $info = $this->getRankInfo($member);
-
-        return (string) ($info['current_rank'] ?? $member->rank ?? 'bronze');
-    }
 }

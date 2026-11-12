@@ -3,7 +3,6 @@
 namespace App\Services\Admin;
 
 use App\Models\Announcement;
-use App\Models\AnnouncementRead;
 use App\Util\DateUtil;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -155,39 +154,6 @@ class AnnouncementAdminService
     public function findOrFail(int $id): Announcement
     {
         return Announcement::findOrFail($id);
-    }
-
-    /**
-     * @return list<array{member_id: int|null, member_name: string, member_number: string, read_at: string}>
-     */
-    public function getReadsForAnnouncement(int $announcementId): array
-    {
-        $reads = AnnouncementRead::query()
-            ->where('announcement_id', $announcementId)
-            ->with(['user.member'])
-            ->orderByDesc('read_at')
-            ->orderByDesc('id')
-            ->get();
-
-        $rows = [];
-        foreach ($reads as $read) {
-            $user = $read->user;
-            $member = $user?->member;
-            $rows[] = [
-                'member_id' => $member !== null ? (int) $member->id : null,
-                'member_name' => $user !== null && trim((string) $user->name) !== ''
-                    ? (string) $user->name
-                    : '—',
-                'member_number' => $member !== null && trim((string) $member->member_number) !== ''
-                    ? (string) $member->member_number
-                    : '—',
-                'read_at' => $read->read_at !== null
-                    ? $read->read_at->format('Y/m/d H:i')
-                    : '—',
-            ];
-        }
-
-        return $rows;
     }
 
     public function update(int $id, array $data): Announcement

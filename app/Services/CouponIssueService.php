@@ -99,11 +99,6 @@ class CouponIssueService
         }, 3);
     }
 
-    public function issueIfEligible(Member $member, Coupon $coupon): void
-    {
-        $this->issueCouponsToMember($member, collect([$coupon]));
-    }
-
     public function issueForStampGrant(
         Member $member,
         Coupon $coupon,

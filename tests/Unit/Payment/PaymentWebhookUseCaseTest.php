@@ -7,7 +7,6 @@ use App\Domain\Shared\DomainEventDispatcher\DomainEventDispatcher;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Jobs\SyncOrderPointsToSmaregiJob;
-use App\Jobs\SyncOrderTransactionToSmaregiJob;
 use App\Models\Order;
 use App\Models\Project;
 use App\Models\User;
@@ -71,7 +70,6 @@ class PaymentWebhookUseCaseTest extends TestCase
             DailySequenceNumber::build(1),
             $fresh->order_number
         );
-        Queue::assertNotPushed(SyncOrderTransactionToSmaregiJob::class);
         $this->assertTrue($order->refresh()->smaregi_create_pending);
         $this->assertSame(now()->addSeconds(20)->toDateTimeString(), $order->smaregi_create_retry_at->toDateTimeString());
         Queue::assertPushed(SyncOrderPointsToSmaregiJob::class);
@@ -164,7 +162,6 @@ class PaymentWebhookUseCaseTest extends TestCase
         $this->assertTrue($result);
         $this->assertSame(OrderStatus::CONFIRMED, $order->fresh()->status);
         $this->assertSame(DailySequenceNumber::build(1), $order->fresh()->order_number);
-        Queue::assertNotPushed(SyncOrderTransactionToSmaregiJob::class);
         $this->assertTrue($order->refresh()->smaregi_create_pending);
         $this->assertSame(now()->addSeconds(20)->toDateTimeString(), $order->smaregi_create_retry_at->toDateTimeString());
         Queue::assertPushed(SyncOrderPointsToSmaregiJob::class);

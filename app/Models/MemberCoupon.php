@@ -6,7 +6,6 @@ use App\Models\Concerns\BelongsToProject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class MemberCoupon extends Model
 {
@@ -61,16 +60,6 @@ class MemberCoupon extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
-    }
-
-    public function redemption(): HasOne
-    {
-        return $this->hasOne(CouponRedemption::class);
-    }
-
-    public function isUnused(): bool
-    {
-        return $this->status === self::STATUS_UNUSED;
     }
 
     public function isUsed(): bool

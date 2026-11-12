@@ -39,7 +39,7 @@ class MemberCouponDeletionTest extends TestCase
         DB::statement('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         DB::beginTransaction();
         try {
-            $this->assertTrue(MemberCoupon::findOrFail($issued->id)->isUnused());
+            $this->assertSame(MemberCoupon::STATUS_UNUSED, MemberCoupon::findOrFail($issued->id)->status);
             $writer->table('member_coupons')->where('id', $issued->id)->update([
                 'status' => MemberCoupon::STATUS_USED, 'used_at' => now(),
             ]);
@@ -48,7 +48,7 @@ class MemberCouponDeletionTest extends TestCase
                 'member_id' => $member->id, 'member_coupon_id' => $issued->id,
                 'used_at' => now(), 'created_at' => now(), 'updated_at' => now(),
             ]);
-            $this->assertTrue(MemberCoupon::findOrFail($issued->id)->isUnused(), 'The outer transaction still has its old snapshot.');
+            $this->assertSame(MemberCoupon::STATUS_UNUSED, MemberCoupon::findOrFail($issued->id)->status, 'The outer transaction still has its old snapshot.');
             $rejected = false;
             try {
                 app(MemberBenefitService::class)->deleteMemberCoupon($member, (int) $issued->id);

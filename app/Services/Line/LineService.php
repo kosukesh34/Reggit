@@ -30,11 +30,6 @@ class LineService
         ]);
     }
 
-    public function verifySignature(string $body, ?string $signature): bool
-    {
-        return $this->verifySignatureWithSecret($body, $signature, $this->channelSecret);
-    }
-
     public function verifySignatureWithSecret(string $body, ?string $signature, ?string $secret): bool
     {
         if ($signature === null || $signature === '') {
@@ -161,32 +156,11 @@ class LineService
         ];
     }
 
-    public function createFlexMessage(string $altText, array $contents): array
-    {
-        return [
-            'type' => 'flex',
-            'altText' => $altText,
-            'contents' => $contents,
-        ];
-    }
-
     public function createTextMessage(string $text): array
     {
         return [
             'type' => 'text',
             'text' => $text,
-        ];
-    }
-
-    /** @param array<int, array<string, mixed>> $items */
-    public function createQuickReplyMessage(string $text, array $items): array
-    {
-        return [
-            'type' => 'text',
-            'text' => $text,
-            'quickReply' => [
-                'items' => $items,
-            ],
         ];
     }
 

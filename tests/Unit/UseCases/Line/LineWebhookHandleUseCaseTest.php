@@ -83,7 +83,6 @@ class LineWebhookHandleUseCaseTest extends TestCase
 
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('verifySignatureWithSecret')->andReturn(false);
-        $line->shouldReceive('verifySignature')->never();
         $line->shouldReceive('getProfile')->never();
         $line->shouldReceive('replyMessage')->never();
 
@@ -230,7 +229,6 @@ class LineWebhookHandleUseCaseTest extends TestCase
         $line = Mockery::mock(LineService::class);
         $line->shouldReceive('verifySignatureWithSecret')
             ->andReturnUsing(static fn (string $body, ?string $signature, ?string $secret): bool => $secret === $matchingSecret);
-        $line->shouldReceive('verifySignature')->never();
 
         return $line;
     }

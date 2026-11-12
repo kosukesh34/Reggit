@@ -7,7 +7,6 @@ use App\Domain\Reservation\Repositories\ReservationRepository;
 use App\Domain\Reservation\ValueObjects\PendingReservation;
 use App\Enums\ReservationStatus;
 use App\Models\Reservation as ReservationModel;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -35,31 +34,6 @@ class EloquentReservationRepository implements ReservationRepository
         }
 
         return ReservationMapper::toDomain($model);
-    }
-
-    public function findByIdAndUserId(int $reservationId, int $userId, int $projectId): ?ReservationAggregate
-    {
-        $model = ReservationModel::query()
-            ->where('id', $reservationId)
-            ->where('user_id', $userId)
-            ->where('project_id', $projectId)
-            ->first();
-
-        if ($model === null) {
-            return null;
-        }
-
-        return ReservationMapper::toDomain($model);
-    }
-
-    public function findByIdAndUserIdOrFail(int $reservationId, int $userId, int $projectId): ReservationAggregate
-    {
-        $aggregate = $this->findByIdAndUserId($reservationId, $userId, $projectId);
-        if ($aggregate === null) {
-            throw (new ModelNotFoundException)->setModel(ReservationModel::class, [$reservationId]);
-        }
-
-        return $aggregate;
     }
 
     public function persistPending(PendingReservation $pending): int

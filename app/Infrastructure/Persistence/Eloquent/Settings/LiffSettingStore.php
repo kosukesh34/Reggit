@@ -119,31 +119,6 @@ class LiffSettingStore
         $this->values->setValue('frontend_menu_items', $items, 'json', $projectId);
     }
 
-    public function defaultLiffDesignerTemplates(): array
-    {
-        return ShopSettingLiffDefaults::defaultLiffDesignerTemplates();
-    }
-
-    public function getLiffTabLayouts(?int $projectId = null): array
-    {
-        $layouts = $this->values->getValue('liff_tab_layouts', null, $projectId);
-        if (! is_array($layouts) || $layouts === []) {
-            return ShopSettingLiffDefaults::defaultLiffTabLayouts();
-        }
-
-        return ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
-    }
-
-    public function getLiffCustomCss(?int $projectId = null): string
-    {
-        return (string) $this->values->getValue('liff_custom_css', '', $projectId);
-    }
-
-    public function setLiffCustomCss(string $css, ?int $projectId = null): void
-    {
-        $this->values->setValue('liff_custom_css', $css, 'string', $projectId);
-    }
-
     public function getLiffTabSettings(?int $projectId = null): array
     {
         $settings = $this->values->getValue('liff_tab_settings', null, $projectId);
@@ -176,76 +151,5 @@ class LiffSettingStore
     public function setLiffTabSettings(array $settings, ?int $projectId = null): void
     {
         $this->values->setValue('liff_tab_settings', $settings, 'json', $projectId);
-    }
-
-    public function setLiffTabLayouts(array $layouts, ?int $projectId = null): void
-    {
-        $this->values->setValue('liff_tab_layouts', ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts), 'json', $projectId);
-    }
-
-    /**
-     * @return array<string, array<int, array<string, mixed>>>
-     */
-    public function getLiffDetailLayouts(?int $projectId = null): array
-    {
-        $layouts = $this->values->getValue('liff_detail_layouts', null, $projectId);
-        if (! is_array($layouts) || $layouts === []) {
-            return ShopSettingLiffDefaults::defaultLiffDetailLayouts();
-        }
-
-        return ShopSettingLiffDefaults::ensureLiffDetailLayouts($layouts);
-    }
-
-    /**
-     * @param  array<string, mixed>  $layouts
-     */
-    public function setLiffDetailLayouts(array $layouts, ?int $projectId = null): void
-    {
-        $this->values->setValue('liff_detail_layouts', ShopSettingLiffDefaults::ensureLiffDetailLayouts($layouts), 'json', $projectId);
-    }
-
-    public function getLiffSavedScreens(?int $projectId = null): array
-    {
-        $screens = $this->values->getValue('liff_saved_screens', [], $projectId);
-
-        return is_array($screens) ? $screens : [];
-    }
-
-    public function setLiffSavedScreens(array $screens, ?int $projectId = null): void
-    {
-        $this->values->setValue('liff_saved_screens', $screens, 'json', $projectId);
-    }
-
-    public function defaultLiffTabLayouts(): array
-    {
-        return ShopSettingLiffDefaults::defaultLiffTabLayouts();
-    }
-
-    /**
-     * @return array<string, array<int, array<string, mixed>>>
-     */
-    public function defaultLiffDetailLayouts(): array
-    {
-        return ShopSettingLiffDefaults::defaultLiffDetailLayouts();
-    }
-
-    /**
-     * 保存済みレイアウトをタブ単位で正規化する。
-     *
-     * ルール:
-     * - タブが空ならデフォルトレイアウトを採用
-     * - 既存ブロックは順序を変えずに維持する
-     *
-     * @param  array<string, mixed>  $layouts
-     * @return array<string, array<int, array<string, mixed>>>
-     */
-    public function ensureLiffTabLayouts(array $layouts): array
-    {
-        return ShopSettingLiffDefaults::ensureLiffTabLayouts($layouts);
-    }
-
-    public function defaultLiffTabSettings(): array
-    {
-        return ShopSettingLiffDefaults::defaultLiffTabSettings();
     }
 }

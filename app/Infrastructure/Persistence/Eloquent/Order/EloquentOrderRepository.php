@@ -44,34 +44,9 @@ class EloquentOrderRepository implements OrderRepository
         return OrderMapper::toDomain($model);
     }
 
-    public function findByPrimaryKey(int $orderId): ?OrderAggregate
-    {
-        $model = $this->newQuery()->whereKey($orderId)->first();
-        if ($model === null) {
-            return null;
-        }
-
-        return OrderMapper::toDomain($model);
-    }
-
     public function findByPrimaryKeyForUpdate(int $orderId): ?OrderAggregate
     {
         $model = $this->newQuery()->whereKey($orderId)->lockForUpdate()->first();
-        if ($model === null) {
-            return null;
-        }
-
-        return OrderMapper::toDomain($model);
-    }
-
-    public function findByIdAndUserId(int $orderId, int $userId, int $projectId): ?OrderAggregate
-    {
-        $model = $this->newQuery()
-            ->where('id', $orderId)
-            ->where('user_id', $userId)
-            ->where('project_id', $projectId)
-            ->first();
-
         if ($model === null) {
             return null;
         }

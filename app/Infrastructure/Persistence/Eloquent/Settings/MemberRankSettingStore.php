@@ -29,18 +29,6 @@ class MemberRankSettingStore
         return (int) $this->values->getValue('stamp_earn_per_amount', 0, $projectId);
     }
 
-    /** 注文時にスタンプを付与するスタンプカードID（nullで付与しない） */
-    public function getOrderStampCardId(?int $projectId = null): ?int
-    {
-        $v = $this->values->getValue('order_stamp_card_id', null, $projectId);
-        if ($v === null || $v === '') {
-            return null;
-        }
-        $id = (int) $v;
-
-        return $id > 0 ? $id : null;
-    }
-
     public function getPointsValidDays(?int $projectId = null): int
     {
         return (int) $this->values->getValue('points_valid_days', 365, $projectId);

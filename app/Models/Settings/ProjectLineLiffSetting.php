@@ -25,26 +25,16 @@ class ProjectLineLiffSetting extends Model
         'line_channel_access_token',
         'line_channel_secret',
         'line_friend_add_url',
-        'liff_builder_blocks',
-        'liff_tab_layouts',
-        'liff_detail_layouts',
         'liff_tab_settings',
-        'liff_saved_screens',
-        'liff_custom_css',
         'order_mode',
         'order_line_notify_enabled',
         'order_ready_line_notify_enabled',
-        'kitchen_access_token',
         'frontend_menu_items',
     ];
 
     /** @var array<string, string> */
     protected $casts = [
-        'liff_builder_blocks' => 'array',
-        'liff_tab_layouts' => 'array',
-        'liff_detail_layouts' => 'array',
         'liff_tab_settings' => 'array',
-        'liff_saved_screens' => 'array',
         'frontend_menu_items' => 'array',
         'order_line_notify_enabled' => 'boolean',
         'order_ready_line_notify_enabled' => 'boolean',
@@ -68,7 +58,6 @@ class ProjectLineLiffSetting extends Model
             'order_mode' => 'both',
             'order_line_notify_enabled' => true,
             'order_ready_line_notify_enabled' => true,
-            'kitchen_access_token' => null,
         ];
     }
 }
