@@ -153,7 +153,7 @@ interface CouponDeliveryTargetRepository
     public function findIdsByUsedStores(int $projectId, array $storeIds): array;
 
     /**
-     * アプリ（端末）の最終利用で絞り込む。inactive_days は端末を持つ会員のうち N 日以上使っていない会員。
+     * スマホアプリ・LINE（LIFF）の最終利用で絞り込む。inactive_days は一度でも開いた記録がある会員のうち N 日以上使っていない会員。
      *
      * @param  string  $mode  within_days|inactive_days
      * @return list<int>

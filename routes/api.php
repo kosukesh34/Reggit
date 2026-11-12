@@ -37,6 +37,7 @@ use App\Http\Controllers\DeviceSessionController;
 use App\Http\Controllers\Diagnostics\ClientDebugController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\LineWebhookController;
+use App\Http\Controllers\Member\AppLaunchController;
 use App\Http\Controllers\Member\ExistingMemberLinkController;
 use App\Http\Controllers\Member\GoogleWalletUrlController;
 use App\Http\Controllers\Member\LiffBroadcastAuthController;
@@ -315,6 +316,7 @@ Route::middleware(['web', 'bind.project'])->group(function () {
     Route::post('/members/existing-link', [ExistingMemberLinkController::class, 'store'])->middleware('throttle:10,1');
     Route::post('/members/existing-link/confirm', [ExistingMemberLinkController::class, 'confirm'])->middleware('throttle:10,1');
     Route::post('/members/session/clear', [MemberSessionClearController::class, '__invoke']);
+    Route::post('/app-launch', AppLaunchController::class)->middleware('throttle:30,1');
     Route::post('/devices/register', DeviceRegisterController::class);
     Route::get('/devices/session', DeviceSessionController::class);
     Route::get('/members/points', [MemberPointsController::class, '__invoke']);

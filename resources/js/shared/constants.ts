@@ -30,6 +30,7 @@ export const AppConstants = {
         MEMBERS_TRANSFER_CODE: `${API_BASE}/members/transfer-code`,
         MEMBERS_TRANSFER: `${API_BASE}/members/transfer`,
         MEMBERS_SESSION_CLEAR: `${API_BASE}/members/session/clear`,
+        APP_LAUNCH: `${API_BASE}/app-launch`,
         DEVICE_REGISTER: `${API_BASE}/devices/register`,
         DEVICE_SESSION: `${API_BASE}/devices/session`,
         POSTAL_CODE: `${API_BASE}/postal-code`,

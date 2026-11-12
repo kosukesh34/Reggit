@@ -48,6 +48,7 @@ class User extends Authenticatable implements PasskeyUser
     protected $casts = [
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'last_app_launched_at' => 'datetime',
         'line_blocked_at' => 'datetime',
         'authentication_version' => 'integer',
     ];
