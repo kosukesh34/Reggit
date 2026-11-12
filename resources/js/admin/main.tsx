@@ -131,7 +131,7 @@ function navigationToMenuItems(customization: AppCustomization): Array<Record<st
       items.push({
         tab: legacyTab,
         label: tabLabelMap[tab].slice(0, 12),
-        icon: 'fa-circle',
+        // icon は送らず、サーバー側でタブごとの既定アイコンを補う。
         order: items.length,
         enabled: true,
       });

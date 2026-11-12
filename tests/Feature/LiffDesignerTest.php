@@ -197,6 +197,42 @@ class LiffDesignerTest extends TestCase
         $this->assertNotContains('products', array_column($visible, 'tab'));
     }
 
+    public function test_liff_designer_仮アイコンや未設定のタブは既定アイコンで表示されること(): void
+    {
+        $project = Project::firstOrCreate(
+            ['project_key' => 'default'],
+            ['name' => 'Default Project', 'description' => 'Test', 'is_active' => true, 'plan' => 'premium']
+        );
+
+        $admin = AdminUser::create([
+            'login_id' => 'admin_menu_icon',
+            'email' => 'admin_menu_icon@example.com',
+            'password' => 'password',
+            'name' => 'Admin Menu Icon',
+            'role' => AdminUser::ROLE_ADMIN,
+            'project_id' => $project->id,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.settings.liff-designer.update', ['project_key' => $project->project_key]), [
+                'layouts_json' => json_encode(['home' => []]),
+                'menu_items_json' => json_encode([
+                    ['tab' => 'home', 'label' => 'ホーム', 'icon' => 'fa-circle', 'enabled' => true],
+                    ['tab' => 'stamps', 'label' => 'スタンプ', 'enabled' => true],
+                    ['tab' => 'reservations', 'label' => '予約', 'icon' => 'fa-calendar-days', 'enabled' => true],
+                ]),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $raw = app(ShopSettingStore::class)->getValue('frontend_menu_items', null, $project->id);
+        $this->assertSame(['fa-circle', 'fa-stamp', 'fa-calendar-days'], array_column($raw, 'icon'));
+
+        $icons = array_column(app(LiffSettingStore::class)->getFrontendMenuItems($project->id), 'icon', 'tab');
+        $this->assertSame('fa-house', $icons['home']);
+        $this->assertSame('fa-stamp', $icons['stamps']);
+        $this->assertSame('fa-calendar-days', $icons['reservations']);
+    }
+
     public function test_liff_designer_ブロックデザイン設定を保存できること(): void
     {
         $project = Project::firstOrCreate(
