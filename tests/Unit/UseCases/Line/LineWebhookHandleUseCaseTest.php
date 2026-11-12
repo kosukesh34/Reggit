@@ -159,6 +159,65 @@ class LineWebhookHandleUseCaseTest extends TestCase
         $this->assertSame(1, LineFollowEvent::query()->where('project_id', $project->id)->count());
     }
 
+    public function test_project_key付きurlはその店舗のsecretだけで判定し他店舗と同じsecretでも受け付けること(): void
+    {
+        $projectA = Project::factory()->create(['project_key' => 'shop-key-a', 'is_active' => true]);
+        $projectB = Project::factory()->create(['project_key' => 'shop-key-b', 'is_active' => true]);
+        app(LineSettingStore::class)->setLineChannelSecret('shared-secret', (int) $projectA->id);
+        app(LineSettingStore::class)->setLineChannelSecret('shared-secret', (int) $projectB->id);
+        $lineUserId = 'U00000000000000000000000000000055';
+        $userA = User::factory()->create(['project_id' => $projectA->id, 'line_user_id' => $lineUserId]);
+        $userB = User::factory()->create(['project_id' => $projectB->id, 'line_user_id' => $lineUserId]);
+
+        $result = $this->makeUseCase($this->mockLineService('shared-secret'))
+            ->handle($this->unfollowInput($lineUserId, 'shop-key-b'));
+
+        $this->assertSame(200, $result['status']);
+        $this->assertNull($userA->fresh()->line_blocked_at);
+        $this->assertNotNull($userB->fresh()->line_blocked_at);
+    }
+
+    public function test_project_key付きurlで他店舗のsecretによる署名や未知のkeyは401にすること(): void
+    {
+        $projectA = Project::factory()->create(['project_key' => 'shop-key-c', 'is_active' => true]);
+        $projectB = Project::factory()->create(['project_key' => 'shop-key-d', 'is_active' => true]);
+        app(LineSettingStore::class)->setLineChannelSecret('secret-c', (int) $projectA->id);
+        app(LineSettingStore::class)->setLineChannelSecret('secret-d', (int) $projectB->id);
+        $lineUserId = 'U00000000000000000000000000000066';
+        $userA = User::factory()->create(['project_id' => $projectA->id, 'line_user_id' => $lineUserId]);
+        $useCase = $this->makeUseCase($this->mockLineService('secret-d'));
+
+        $this->assertSame(401, $useCase->handle($this->unfollowInput($lineUserId, 'shop-key-c'))['status']);
+        $this->assertSame(401, $useCase->handle($this->unfollowInput($lineUserId, 'no-such-key'))['status']);
+        $this->assertNull($userA->fresh()->line_blocked_at);
+    }
+
+    public function test_project_key付きurlのルートで実際の署名を検証してブロックを記録すること(): void
+    {
+        $project = Project::factory()->create(['project_key' => 'shop-route', 'is_active' => true]);
+        app(LineSettingStore::class)->setLineChannelSecret('secret-route', (int) $project->id);
+        $lineUserId = 'U00000000000000000000000000000077';
+        $user = User::factory()->create(['project_id' => $project->id, 'line_user_id' => $lineUserId]);
+        $body = $this->unfollowInput($lineUserId, null)->body;
+        $send = fn (string $secret) => $this->call('POST', '/api/line/webhook/shop-route', [], [], [], [
+            'HTTP_X_LINE_SIGNATURE' => base64_encode(hash_hmac('sha256', $body, $secret, true)),
+            'CONTENT_TYPE' => 'application/json',
+        ], $body);
+
+        $send('wrong-secret')->assertStatus(401);
+        $this->assertNull($user->fresh()->line_blocked_at);
+
+        $send('secret-route')->assertOk();
+        $this->assertNotNull($user->fresh()->line_blocked_at);
+    }
+
+    private function unfollowInput(string $lineUserId, ?string $projectKey): LineWebhookInput
+    {
+        return new LineWebhookInput(false, 'sig', json_encode([
+            'events' => [['type' => 'unfollow', 'source' => ['userId' => $lineUserId]]],
+        ], JSON_THROW_ON_ERROR), $projectKey);
+    }
+
     private function makeUseCase(LineService $line): LineWebhookHandleUseCase
     {
         $resolver = new LineWebhookProjectResolver($line, app(LineConnectionSettings::class));

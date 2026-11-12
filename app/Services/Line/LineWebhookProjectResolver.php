@@ -12,6 +12,17 @@ class LineWebhookProjectResolver
         private LineConnectionSettings $shopSettingRepository,
     ) {}
 
+    /** project_key 付き URL では、その店舗の Secret だけで署名を確かめる */
+    public function resolveProjectIdByKey(string $projectKey, string $body, ?string $signature): ?int
+    {
+        $projectId = Project::query()
+            ->where('project_key', $projectKey)
+            ->where('is_active', true)
+            ->value('id');
+
+        return $projectId !== null && $this->verifies((int) $projectId, $body, $signature) ? (int) $projectId : null;
+    }
+
     public function resolveProjectId(string $body, ?string $signature): ?int
     {
         $matchedId = null;
@@ -21,11 +32,7 @@ class LineWebhookProjectResolver
             ->get(['id']);
         foreach ($projects as $project) {
             $projectId = (int) $project->id;
-            $secret = trim($this->shopSettingRepository->getLineChannelSecret($projectId));
-            if ($secret === '') {
-                continue;
-            }
-            if ($this->lineService->verifySignatureWithSecret($body, $signature, $secret) !== true) {
+            if (! $this->verifies($projectId, $body, $signature)) {
                 continue;
             }
             if ($matchedId !== null && $matchedId !== $projectId) {
@@ -35,5 +42,12 @@ class LineWebhookProjectResolver
         }
 
         return $matchedId;
+    }
+
+    private function verifies(int $projectId, string $body, ?string $signature): bool
+    {
+        $secret = trim($this->shopSettingRepository->getLineChannelSecret($projectId));
+
+        return $secret !== '' && $this->lineService->verifySignatureWithSecret($body, $signature, $secret) === true;
     }
 }
