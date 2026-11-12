@@ -78,7 +78,7 @@
                                             'announcement_read' => ['お知らせの既読', '未読 既読 お知らせ', count($segmentAnnouncementOptions ?? []) > 0],
                                             'survey' => ['アンケートの回答', 'アンケート 回答 未回答', count($segmentSurveyOptions ?? []) > 0],
                                             'nps' => ['アンケートの評価（NPS）', 'アンケート 評価 満足度 NPS 口コミ'],
-                                            'app_last_used' => ['アプリの利用', 'アプリ 最終ログイン 起動'],
+                                            'app_last_used' => ['アプリの利用', 'アプリ LINE LIFF 最終ログイン 起動'],
                                             'wallet' => ['Apple Wallet', 'ウォレット 会員証'],
                                             'line_follow' => ['LINE友だち追加日', 'LINE 友だち 追加 新規'],
                                             'line_block' => ['LINEブロック', 'LINE ブロック 解除'],
@@ -415,7 +415,7 @@
                                         <label for="segment_app_last_used_days" class="form-label">日数</label>
                                         <select name="segment_app_last_used_days" id="segment_app_last_used_days" class="form-control segment-filter" data-ignore-empty="1">@foreach(\App\Services\Admin\MemberSegmentService::PERIOD_DAYS as $days)<option value="{{ $days }}" @selected((int) $segmentOld('segment_app_last_used_days', 30) === $days)>{{ $days }}日</option>@endforeach</select>
                                     </div>
-                                    <p class="ad-field-help">スマホアプリを入れている会員が対象です（LINE だけの会員は含みません）</p>
+                                    <p class="ad-field-help">スマホアプリまたは LINE で開いた日時で判定します。一度も開いた記録がない会員は「利用なし」に含めません</p>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="lifetime_sales" hidden>
                                     <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_lifetime_sales_min" class="form-label">累計購入額（円・以上）</label></div><input type="number" name="segment_lifetime_sales_min" id="segment_lifetime_sales_min" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_sales_min') }}" min="0" step="1" placeholder="例：30000"></div>

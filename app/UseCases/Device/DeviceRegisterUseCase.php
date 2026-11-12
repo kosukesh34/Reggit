@@ -18,6 +18,8 @@ class DeviceRegisterUseCase
         $hasPushToken = is_string($pushTokenRaw) && trim($pushTokenRaw) !== '';
 
         $device = $this->deviceService->register($input->user, $input->payload, $input->deviceToken);
+        // ネイティブアプリは起動時にこの登録を呼ぶ
+        $input->user->forceFill(['last_app_launched_at' => now()])->save();
 
         $savedTokenLen = $device->push_token !== null && $device->push_token !== ''
             ? strlen($device->push_token)

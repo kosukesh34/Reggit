@@ -1,4 +1,5 @@
 import { ApiClient } from '../shared/utils/apiClient';
+import { AppConstants } from '../shared/constants';
 import { DeviceManager } from './managers/DeviceManager';
 import { MemberManager } from './managers/MemberManager';
 import { OrderManager } from './managers/OrderManager';
@@ -52,6 +53,8 @@ class LiffServices {
         this.deviceManager.init();
         await this.memberManager.ensureIdentityReady();
         if (window.__LINE_USER_ID__) this.apiClient.persistLineUserId(window.__LINE_USER_ID__);
+        // ネイティブアプリ内の画面は端末登録で起動を記録済み
+        if (window.__LINE_USER_ID__ && !window.__MOBILE_APP_MODE__) void this.apiClient.post(AppConstants.API_ENDPOINTS.APP_LAUNCH, {}).catch(() => undefined);
         this.memberManager.preload(null);
         this.refreshCurrentTab();
     }

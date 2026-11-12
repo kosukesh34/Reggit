@@ -529,14 +529,19 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
     public function findIdsByAppLastUsed(int $projectId, string $mode, int $days): array
     {
         $boundary = Carbon::today()->subDays($days);
-        $usedWithin = fn ($query) => $query->where('project_id', $projectId)->where('last_used_at', '>=', $boundary);
+        // スマホアプリの端末の利用と、LINE（LIFF）を含む起動の記録の新しいほうで判定する
+        $usedWithin = fn ($query) => $query
+            ->whereHas('user', fn ($user) => $user->where('last_app_launched_at', '>=', $boundary))
+            ->orWhereHas('user.devices', fn ($devices) => $devices->where('project_id', $projectId)->where('last_used_at', '>=', $boundary));
         $query = Member::query()->where('project_id', $projectId);
         if ($mode === 'within_days') {
-            $query->whereHas('user.devices', $usedWithin);
+            $query->where($usedWithin);
         } else {
-            // 端末を持たない（LINE だけの）会員は「アプリを使っていない」に含めない
-            $query->whereHas('user.devices', fn ($devices) => $devices->where('project_id', $projectId))
-                ->whereDoesntHave('user.devices', $usedWithin);
+            // 一度も開いた記録がない会員は「使っていない」に含めない
+            $query->where(fn ($opened) => $opened
+                ->whereHas('user', fn ($user) => $user->whereNotNull('last_app_launched_at'))
+                ->orWhereHas('user.devices', fn ($devices) => $devices->where('project_id', $projectId)))
+                ->whereNot($usedWithin);
         }
 
         return $this->ids($query);
