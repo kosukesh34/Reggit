@@ -55,6 +55,10 @@ export function createDeliveryReview(options: DeliveryReviewOptions): {
         const scheduledLabel = formatDateTime(options.scheduledAt?.value || '');
         setText('deliveryReviewAudienceLabel', options.audienceText());
         setText('deliveryReviewTiming', options.isScheduled() ? scheduledLabel : '今すぐ');
+        setText('deliveryReviewContentTitle', field<HTMLInputElement>('title')?.value.trim() ?? '');
+        setText('deliveryReviewContentBody', field<HTMLTextAreaElement>('body')?.value.trim() || '本文なし');
+        const imageCount = field<HTMLInputElement>('ann_image')?.files?.length ?? 0;
+        setText('deliveryReviewContentImages', imageCount > 0 ? `画像 ${imageCount}枚` : '画像なし');
         const reviewResolveRow = field<HTMLElement>('deliveryReviewResolveRow');
         if (reviewResolveRow) reviewResolveRow.hidden = !options.canChooseResolveMode();
         setText('deliveryReviewResolve', options.resolveModeText());

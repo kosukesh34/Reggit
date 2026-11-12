@@ -2,6 +2,7 @@ import { createMemberDetail, renderAudienceRows } from './delivery/audienceTable
 import { createDeliveryReview } from './delivery/deliveryReview';
 import { fetchJson, field, setBlockEnabled, setText } from './delivery/dom';
 import { createMemberPicker } from './delivery/memberPicker';
+import { initMessagePreview } from './delivery/messagePreview';
 import {
     bindConditionPicker,
     hasSegmentCriteria,
@@ -417,6 +418,7 @@ function initAnnouncementDelivery(): void {
     syncCoupon();
     updateCounter(titleInput, 'announcementTitleCounter', 200);
     updateCounter(bodyInput, 'announcementBodyCounter', 5000);
+    initMessagePreview(form, selectedCoupons);
 }
 
 export function bootstrapAnnouncementDelivery(): void {

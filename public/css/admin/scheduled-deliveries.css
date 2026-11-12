@@ -56,7 +56,7 @@
 
 .scheduled-delivery-admin .sd-type-grid {
     display: grid;
-    grid-template-columns: minmax(0, 420px);
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 8px;
 }
 
@@ -110,11 +110,9 @@
 }
 
 .scheduled-delivery-admin .ad-choice-check {
-    width: auto;
-    height: auto;
-    padding: 2px 0;
-    font-size: 12px;
-    font-weight: 700;
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
 }
 
 .scheduled-delivery-admin .sd-params:has(.sd-param:not(.is-hidden)) {
@@ -179,6 +177,7 @@
     }
 }
 
+.sd-audience-panel.is-hidden,
 .sd-param.is-hidden,
 #scheduleTypeCondition.is-hidden,
 #scheduleTypeReservation.is-hidden,
@@ -195,4 +194,187 @@
 body[data-page-kind="scheduled-delivery-form"] .ad-header-submit:focus-visible {
     outline: 3px solid var(--primary, var(--ad-primary));
     outline-offset: 2px;
+}
+
+/* 送る相手：全会員・絞り込み・顧客指定 */
+.scheduled-delivery-admin .sd-audience-types {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.scheduled-delivery-admin .sd-audience-panel {
+    margin-top: 14px;
+}
+
+.scheduled-delivery-admin .sd-label-help {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.scheduled-delivery-admin .sd-label-help .admin-help {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+}
+
+.scheduled-delivery-admin #target_member_numbers {
+    max-width: 420px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@media (max-width: 620px) {
+    .scheduled-delivery-admin .sd-audience-types {
+        grid-template-columns: 1fr;
+    }
+}
+
+.scheduled-delivery-admin #sd-content .ad-delivery-fieldset {
+    margin-bottom: 14px;
+}
+
+/* 雨の日・気温：4つの手順に分け、数値は文章の中で入力する */
+.scheduled-delivery-admin .sd-params:has(.sd-weather:not(.is-hidden)) {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.scheduled-delivery-admin .sd-weather:not(.is-hidden) {
+    display: grid;
+    gap: 12px;
+}
+
+.scheduled-delivery-admin .sd-weather-lead {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.scheduled-delivery-admin .sd-weather-lead i {
+    margin-right: 4px;
+    color: var(--ad-primary, var(--primary));
+}
+
+.scheduled-delivery-admin .sd-weather-step {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+    border: 1px solid var(--ad-line, #e5e8ef);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.scheduled-delivery-admin .sd-weather-step h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 2px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.scheduled-delivery-admin .sd-weather-step h3 span {
+    display: grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--ad-primary, var(--primary));
+    color: #fff;
+    font-size: 12px;
+}
+
+.scheduled-delivery-admin .sd-weather-step .form-text {
+    margin: 0;
+}
+
+.scheduled-delivery-admin .sd-sentence {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 2.6;
+}
+
+.scheduled-delivery-admin .sd-params .sd-inline-input {
+    display: inline-block;
+    width: 84px;
+    min-height: 36px;
+    margin: 0 4px;
+    text-align: right;
+    vertical-align: middle;
+}
+
+.scheduled-delivery-admin .sd-radio-cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 220px));
+    gap: 8px;
+}
+
+.scheduled-delivery-admin .sd-radio-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--ad-line, #e5e8ef);
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.scheduled-delivery-admin .sd-radio-card input {
+    position: absolute;
+    opacity: 0;
+}
+
+.scheduled-delivery-admin .sd-radio-card i {
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.scheduled-delivery-admin .sd-radio-card span {
+    display: flex;
+    flex-direction: column;
+}
+
+.scheduled-delivery-admin .sd-radio-card strong {
+    font-size: 14px;
+}
+
+.scheduled-delivery-admin .sd-radio-card small {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.scheduled-delivery-admin .sd-radio-card:has(input:checked) {
+    border-color: var(--ad-primary, var(--primary));
+    background: var(--ad-primary-soft, var(--primary-bg));
+}
+
+.scheduled-delivery-admin .sd-radio-card:has(input:checked) i {
+    color: var(--ad-primary, var(--primary));
+}
+
+.scheduled-delivery-admin .sd-radio-card:has(input:focus-visible) {
+    outline: 3px solid var(--ad-primary, var(--primary));
+    outline-offset: 2px;
+}
+
+.scheduled-delivery-admin .sd-weather:has(input[name="temperature_condition"][value="below"]:checked) .sd-temp-above,
+.scheduled-delivery-admin .sd-weather:not(:has(input[name="temperature_condition"][value="below"]:checked)) .sd-temp-below {
+    display: none;
+}
+
+.scheduled-delivery-admin .sd-approval {
+    max-width: 420px;
+    margin-top: 4px;
+}
+
+@media (max-width: 620px) {
+    .scheduled-delivery-admin .sd-radio-cards {
+        grid-template-columns: 1fr;
+    }
 }

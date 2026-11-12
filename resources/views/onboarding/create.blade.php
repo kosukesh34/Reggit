@@ -7,6 +7,7 @@
     <title>プロジェクト作成 - Reggit</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/admin/admin.css') }}">
+    @vite(['resources/js/admin/helpTipsStandalone.ts'])
 </head>
 <body class="admin-login-page onboarding-page">
     <div class="onboarding-shell">

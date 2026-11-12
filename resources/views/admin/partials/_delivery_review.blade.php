@@ -14,6 +14,14 @@
         </header>
 
         <div class="ad-review-body" id="deliveryReviewBody">
+            @unless($isCouponDelivery)
+                <section class="ad-review-card ad-review-content">
+                    <h3><i class="fas fa-bullhorn" aria-hidden="true"></i> お知らせの内容</h3>
+                    <strong id="deliveryReviewContentTitle"></strong>
+                    <p id="deliveryReviewContentBody"></p>
+                    <small id="deliveryReviewContentImages"></small>
+                </section>
+            @endunless
             <div class="ad-review-grid">
                 <section class="ad-review-card">
                     <h3><i class="fas fa-paper-plane" aria-hidden="true"></i> 配信設定</h3>

@@ -8,13 +8,18 @@ use App\Models\AfterRegistrationDelivery;
 use App\Services\WeatherCouponService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 
 class AfterRegistrationDeliveryAdminService
 {
     public function __construct(
         private MemberSegmentService $memberSegmentService,
         private WeatherCouponService $weatherCoupons,
+        private MemberAdminQueryService $memberQuery,
     ) {}
+
+    /** 顧客指定で一度に入力できる件数（会員番号の検索上限と同じ） */
+    public const MAX_TARGET_MEMBERS = 500;
 
     /** @return Collection<int, AfterRegistrationDelivery> */
     public function getListByProject(int $projectId): Collection
@@ -73,7 +78,7 @@ class AfterRegistrationDeliveryAdminService
         $contentType = (string) ($data['content_type'] ?? ScheduledDeliveryContentType::ANNOUNCEMENT);
         $couponId = isset($data['coupon_id']) ? (int) $data['coupon_id'] : 0;
         $delayMinutes = (int) ($data['delay_minutes'] ?? 0);
-        $params = $this->buildParams($scheduleType, $data, $delayMinutes);
+        $params = $this->buildParams($projectId, $scheduleType, $data, $delayMinutes);
         if (in_array($scheduleType, ScheduledDeliveryType::WEATHER_TYPES, true)) {
             $this->weatherCoupons->assertSettings($projectId, $params);
         }
@@ -104,7 +109,7 @@ class AfterRegistrationDeliveryAdminService
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private function buildParams(string $scheduleType, array $data, int $delayMinutes): array
+    private function buildParams(int $projectId, string $scheduleType, array $data, int $delayMinutes): array
     {
         $allowed = match ($scheduleType) {
             ScheduledDeliveryType::NEW_USER_MINUTES => ['delay_minutes'],
@@ -117,7 +122,7 @@ class AfterRegistrationDeliveryAdminService
             ScheduledDeliveryType::WEEKLY => ['day_of_week'],
             ScheduledDeliveryType::MONTHLY, ScheduledDeliveryType::BIRTHDAY_NEXT_MONTH => ['day_of_month'],
             ScheduledDeliveryType::LAST_MONTH_VISITS => ['day_of_month', 'last_month_visit_min'],
-            ScheduledDeliveryType::WEATHER_RAIN => ['store_id', 'min_precipitation_probability', 'min_rain_hours', 'check_hours_before_open', 'cutoff_hours_before_close', 'weekly_limit', 'weather_target', 'requires_approval'],
+            ScheduledDeliveryType::WEATHER_RAIN => ['store_id', 'min_precipitation_probability', 'min_rain_mm', 'min_rain_hours', 'check_hours_before_open', 'cutoff_hours_before_close', 'weekly_limit', 'weather_target', 'requires_approval'],
             ScheduledDeliveryType::WEATHER_TEMPERATURE => ['store_id', 'temperature_condition', 'temperature', 'check_hours_before_open', 'cutoff_hours_before_close', 'weekly_limit', 'weather_target', 'requires_approval'],
             default => [],
         };
@@ -147,6 +152,11 @@ class AfterRegistrationDeliveryAdminService
 
                 continue;
             }
+            if ($key === 'min_rain_mm') {
+                $params[$key] = round((float) $data[$key], 1);
+
+                continue;
+            }
             if ($key === 'day_of_month') {
                 $params[$key] = $data[$key] === 'last_day' ? 'last_day' : (int) $data[$key];
 
@@ -155,7 +165,20 @@ class AfterRegistrationDeliveryAdminService
             $params[$key] = (int) $data[$key];
         }
 
+        // 送る相手：全会員は絞り込みなし、顧客指定は会員を固定する。未指定（旧フォーム）は従来どおり条件を見る
+        $audience = (string) ($data['audience_type'] ?? 'segment');
+        if ($audience === 'all') {
+            return $params;
+        }
+        if ($audience === 'members') {
+            return [...$params, ...$this->targetMembers($projectId, (string) ($data['target_member_numbers'] ?? ''))];
+        }
+
         $criteria = $this->memberSegmentService->buildCriteriaFromInput($data);
+        // 「絞り込み」を選んだのに条件がないまま保存すると全会員に送ってしまうので止める
+        if ($criteria === null && ($data['audience_type'] ?? null) === 'segment') {
+            throw ValidationException::withMessages(['audience_type' => '絞り込みの条件を1つ以上追加してください。']);
+        }
         if (is_array($criteria)) {
             $segmentInput = [];
             foreach ([
@@ -177,6 +200,35 @@ class AfterRegistrationDeliveryAdminService
         }
 
         return $params;
+    }
+
+    /**
+     * 入力された会員番号（会員ID）を会員に変換する。見つからない番号があれば保存しない。
+     *
+     * @return array{target_member_ids: list<int>, target_member_numbers: list<string>}
+     */
+    private function targetMembers(int $projectId, string $input): array
+    {
+        $numbers = array_values(array_unique(array_filter(preg_split('/[\s,、]+/u', trim($input)) ?: [])));
+        if ($numbers === []) {
+            throw ValidationException::withMessages(['target_member_numbers' => '配信する顧客を1人以上入力してください。']);
+        }
+        if (count($numbers) > self::MAX_TARGET_MEMBERS) {
+            throw ValidationException::withMessages(['target_member_numbers' => '顧客指定は'.self::MAX_TARGET_MEMBERS.'人までです。']);
+        }
+        $members = $this->memberQuery->findByMemberNumbers($projectId, $numbers);
+        // DB の照合順序は大文字・小文字を区別しないので、比べるときもそろえる
+        $missing = array_values(array_udiff($numbers, $members->pluck('display_identifier')->all(), 'strcasecmp'));
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'target_member_numbers' => '見つからない会員があります：'.implode('、', array_slice($missing, 0, 10)).(count($missing) > 10 ? ' ほか'.(count($missing) - 10).'件' : ''),
+            ]);
+        }
+
+        return [
+            'target_member_ids' => $members->pluck('id')->map(fn ($id): int => (int) $id)->values()->all(),
+            'target_member_numbers' => $members->pluck('display_identifier')->map(fn ($number): string => (string) $number)->values()->all(),
+        ];
     }
 
     private function asBool(mixed $value): bool

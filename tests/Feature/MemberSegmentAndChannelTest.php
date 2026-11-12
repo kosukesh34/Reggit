@@ -812,7 +812,7 @@ class MemberSegmentAndChannelTest extends TestCase
         $this->assertNull($segment->buildCriteriaFromInput(['segment_registered_from' => '2026-02-30']));
 
         $this->assertSame(
-            ['登録日：2026/01/01以降', 'かつ 年齢：20〜29歳', 'かつ ポイント残高：500pt以上'],
+            ['登録日：2026/01/01以降', 'かつ 年齢：20〜29歳', 'かつ 保有ポイント：500pt以上'],
             app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $segment->buildCriteriaFromInput([
                 'segment_points_min' => '500',
                 'segment_age_min' => '20',
@@ -820,6 +820,39 @@ class MemberSegmentAndChannelTest extends TestCase
                 'segment_registered_from' => '2026-01-01',
             ])),
         );
+    }
+
+    public function test_利用した店舗はその店舗で来店や購入の記録がある会員だけに絞り込むこと(): void
+    {
+        $project = $this->createProject();
+        $member = fn (): Member => Member::factory()->create([
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+        ]);
+        [$visited, $ordered, $reserved, $queued, $ticketUser, $cancelled, $onlyLinked] = [$member(), $member(), $member(), $member(), $member(), $member(), $member()];
+        $store = Store::create(['project_id' => $project->id, 'store_key' => 'used-a', 'name' => '天神店']);
+        $other = Store::create(['project_id' => $project->id, 'store_key' => 'used-b', 'name' => '博多店']);
+        $segment = app(MemberSegmentService::class);
+        $ids = fn (array $storeIds): array => $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput(['segment_used_store_ids' => $storeIds]) ?? [])->all();
+
+        MemberVisit::create(['project_id' => $project->id, 'store_id' => $store->id, 'member_id' => $visited->id, 'visited_at' => now(), 'source' => MemberVisitSource::SMAREGI]);
+        $order = fn (Member $owner, string $status, Store $at): Order => Order::create(['project_id' => $project->id, 'user_id' => $owner->user_id, 'store_id' => $at->id, 'order_number' => 'USED-'.$owner->id.'-'.$at->id, 'order_type' => 'takeout', 'total_amount' => 500, 'status' => $status]);
+        $order($ordered, 'completed', $store);
+        $order($cancelled, OrderStatus::CANCELLED, $store);
+        Reservation::create(['project_id' => $project->id, 'user_id' => $reserved->user_id, 'store_id' => $store->id, 'reservation_number' => 'USED-R', 'reserved_at' => now()->subDay(), 'status' => 'completed']);
+        Reservation::create(['project_id' => $project->id, 'user_id' => $cancelled->user_id, 'store_id' => $store->id, 'reservation_number' => 'USED-R2', 'reserved_at' => now()->addDay(), 'status' => 'confirmed']);
+        QueueEntry::create(['project_id' => $project->id, 'store_id' => $store->id, 'member_id' => $queued->id, 'queue_number' => 1, 'party_size' => 1, 'status' => 'entered']);
+        $ticketOrder = $order($ticketUser, 'completed', $other);
+        $item = OrderItem::create(['project_id' => $project->id, 'order_id' => $ticketOrder->id, 'product_id' => Product::factory()->create(['project_id' => $project->id])->id, 'quantity' => 1, 'price' => 500]);
+        $ticket = MemberTicket::create(['project_id' => $project->id, 'member_id' => $ticketUser->id, 'order_id' => $ticketOrder->id, 'order_item_id' => $item->id, 'name' => '回数券', 'total_uses' => 5, 'used_count' => 1]);
+        $ticket->uses()->create(['project_id' => $project->id, 'store_id' => $store->id, 'used_at' => now()]);
+        // 入会店舗などで紐づいているだけの会員は「店舗の会員」には入るが、「利用した店舗」には入らない
+        $onlyLinked->stores()->syncWithoutDetaching([$store->id => ['project_id' => $project->id]]);
+
+        $this->assertEqualsCanonicalizing([$visited->id, $ordered->id, $reserved->id, $queued->id, $ticketUser->id], $ids([(string) $store->id]));
+        $this->assertEqualsCanonicalizing([$ticketUser->id], $ids([(string) $other->id]));
+        $this->assertContains($onlyLinked->id, $segment->getMemberIds($project->id, $segment->buildCriteriaFromInput(['segment_store_ids' => [(string) $store->id]]) ?? [])->all());
+        $this->assertSame(['利用した店舗：天神店'], app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $segment->buildCriteriaFromInput(['segment_used_store_ids' => [(string) $store->id]]) ?? []));
     }
 
     public function test_店舗_登録経路_アプリ利用_アンケート_予約_サブスク_回数券_クーポン利用_ランク変更_walletで絞り込めること(): void
@@ -895,7 +928,7 @@ class MemberSegmentAndChannelTest extends TestCase
         $this->assertEqualsCanonicalizing([$a->id, $b->id], $ids(['segment_wallet_status' => 'not_registered']));
 
         $this->assertSame(
-            ['登録経路：チラシ', 'かつ 利用店舗：渋谷店', 'かつ 予約（直近30日と今後）：あり', 'かつ サブスク：継続中', 'かつ アンケート：満足度調査（未回答）', 'かつ Apple Wallet：会員証を未追加'],
+            ['流入経路：チラシ', 'かつ 店舗の会員：渋谷店', 'かつ 予約（直近30日と今後）：あり', 'かつ サブスク：継続中', 'かつ アンケート：満足度調査（未回答）', 'かつ Apple Wallet：会員証を未追加'],
             app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $segment->buildCriteriaFromInput([
                 'segment_wallet_status' => 'not_registered',
                 'segment_survey_id' => (string) $survey->id,
@@ -991,7 +1024,7 @@ class MemberSegmentAndChannelTest extends TestCase
         $this->assertEqualsCanonicalizing([$b->id], $ids(['segment_notification_preference' => 'none']));
 
         $this->assertSame(
-            ['誕生日：ちょうど3日後', 'かつ ポイント失効：今日に失効予定あり', 'かつ 注文の種類：モバイル注文', 'かつ くじ：引いていない抽選権あり', 'かつ 累計購入額：30,000円以上', 'かつ アンケートの評価：低い（0〜6）', 'かつ 通知設定：通知をすべて受け取らない'],
+            ['誕生日：ちょうど3日後', 'かつ ポイント失効：今日に失効予定あり', 'かつ 注文の種類：モバイル注文', 'かつ 購入特典ゲーム：未使用のプレイ権あり', 'かつ 累計購入額：30,000円以上', 'かつ アンケートの評価：低い（0〜6）', 'かつ 通知設定：通知をすべて受け取らない'],
             app(MemberSegmentCriteriaDescriber::class)->describe($project->id, $segment->buildCriteriaFromInput([
                 'segment_notification_preference' => 'none',
                 'segment_nps_category' => 'detractor',

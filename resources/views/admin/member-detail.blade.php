@@ -488,7 +488,7 @@
             @if(session('transfer_code'))
             <p>会員ID: {{ session('transfer_member_id') }}</p>
             <p class="page-header-title">{{ session('transfer_code') }}</p>
-            <p class="form-text">有効期限: {{ session('transfer_expires_at') }}。会員IDとコードの両方が必要です。この画面を離れると再表示できません。</p>
+            <p data-help-visible class="form-text">有効期限: {{ session('transfer_expires_at') }}。会員IDとコードの両方が必要です。この画面を離れると再表示できません。</p>
             @endif
             <p class="form-text">機種変更した会員へ、会員IDと30分で1回だけ使えるコードを発行します。</p>
             @error('transfer')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror

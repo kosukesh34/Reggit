@@ -136,6 +136,16 @@ class WeatherCouponServiceTest extends TestCase
         $this->assertDatabaseHas('weather_coupon_runs', ['after_registration_delivery_id' => $rule->id, 'status' => 'sent', 'coupon_delivery_id' => $delivery->id, 'max_precipitation_probability' => 80]);
     }
 
+    public function test_雨量の基準に届かない雨では配らないこと(): void
+    {
+        $this->member();
+        $this->rule(['min_rain_mm' => 3.0]);
+        $this->forecast([12 => 80, 13 => 70]); // 予報の雨量は1時間 1.0mm
+
+        $this->assertSame([WeatherCouponRun::STATUS_NO_RAIN => 1], $this->runAt('2026-11-02 09:30'));
+        $this->assertSame(0, MemberCoupon::withoutGlobalScopes()->count());
+    }
+
     public function test_雨でなければ配らず1時間は判定し直さないこと(): void
     {
         $this->member();
@@ -418,6 +428,24 @@ class WeatherCouponServiceTest extends TestCase
         $this->assertSame(0, AfterRegistrationDelivery::withoutGlobalScopes()->count());
     }
 
+    public function test_雨の日は雨量を任意で設定でき空欄なら保存しないこと(): void
+    {
+        $this->actingAs($this->projectAdmin(), 'admin');
+
+        $this->post('/admin/rain/after-registration-deliveries', $this->scheduledInput(['min_rain_mm' => '0.05']))
+            ->assertSessionHasErrors('min_rain_mm');
+        $this->post('/admin/rain/after-registration-deliveries', $this->scheduledInput(['min_rain_mm' => '1.5']))
+            ->assertSessionHasNoErrors();
+        $delivery = AfterRegistrationDelivery::withoutGlobalScopes()->sole();
+        $this->assertSame(1.5, $delivery->floatParam('min_rain_mm'));
+        $this->get('/admin/rain/after-registration-deliveries')->assertSee('降水確率60%以上・雨量1.5mm以上が3時間続く日');
+        $this->get('/admin/rain/after-registration-deliveries/'.$delivery->id.'/edit')->assertSee('name="min_rain_mm" id="min_rain_mm" class="form-control sd-inline-input" min="0.1" max="50" step="0.1" value="1.5"', false);
+
+        $this->put('/admin/rain/after-registration-deliveries/'.$delivery->id, $this->scheduledInput(['min_rain_mm' => '']))
+            ->assertSessionHasNoErrors();
+        $this->assertNull($delivery->fresh()->floatParam('min_rain_mm'));
+    }
+
     public function test_雨の日の閾値は必須で営業時間に収まらなければ保存しないこと(): void
     {
         $this->actingAs($this->projectAdmin(), 'admin');
@@ -543,6 +571,9 @@ class WeatherCouponServiceTest extends TestCase
         $delivery = AfterRegistrationDelivery::withoutGlobalScopes()->sole();
         $this->assertSame([AfterRegistrationDelivery::TEMPERATURE_BELOW, -3, null], [$delivery->param('temperature_condition'), $delivery->param('temperature'), $delivery->param('min_precipitation_probability')]);
         $this->get('/admin/rain/after-registration-deliveries')->assertOk()->assertSee('最低気温が-3℃以下の日')->assertSee('天気の判定結果');
-        $this->get('/admin/rain/after-registration-deliveries/'.$delivery->id.'/edit')->assertOk()->assertSee('最低気温が基準以下（寒い日）');
+        $this->get('/admin/rain/after-registration-deliveries/'.$delivery->id.'/edit')->assertOk()
+            ->assertSeeInOrder(['天気を見る店舗', '送る日の条件', '送る時間帯', '回数と対象の会員'])
+            ->assertSee('value="'.AfterRegistrationDelivery::TEMPERATURE_BELOW.'" checked', false)
+            ->assertSee('value="-3"', false);
     }
 }

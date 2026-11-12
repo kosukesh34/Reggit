@@ -486,3 +486,27 @@ textarea.form-control {
         min-width: 32px;
     }
 }
+
+/* 補足説明を「?」に置き換えたあとの元の文（読み上げ用に残す） */
+.form-text.is-help-source {
+    display: none !important;
+}
+
+/* 項目名・見出しの横に付ける小さな「?」 */
+.admin-help--inline {
+    display: inline-grid;
+    width: 24px;
+    height: 24px;
+    margin-left: 6px;
+    padding: 0;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.admin-help--inline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}

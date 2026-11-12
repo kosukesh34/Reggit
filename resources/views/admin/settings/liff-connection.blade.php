@@ -55,7 +55,7 @@
                 <label for="line_channel_access_token" class="form-label">チャネルアクセストークン @if(!$view->hasChannelAccessToken)<span class="text-danger">*</span>@endif</label>
                 <input type="password" name="line_channel_access_token" id="line_channel_access_token" class="form-control" value="{{ old('line_channel_access_token') }}" maxlength="1024" autocomplete="new-password" @if(!$view->hasChannelAccessToken) required @endif placeholder="{{ $view->hasChannelAccessToken ? '変更する場合のみ入力' : 'Messaging API のチャネルアクセストークン' }}">
                 @if($view->hasChannelAccessToken)
-                    <p class="form-text text-muted">登録済みです。変更する場合のみ再入力してください。</p>
+                    <p data-help-visible class="form-text text-muted">登録済みです。変更する場合のみ再入力してください。</p>
                 @endif
                 @error('line_channel_access_token')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
             </div>
@@ -63,7 +63,7 @@
                 <label for="line_channel_secret" class="form-label">チャネルシークレット</label>
                 <input type="password" name="line_channel_secret" id="line_channel_secret" class="form-control" value="{{ old('line_channel_secret') }}" maxlength="255" autocomplete="new-password" placeholder="{{ $view->hasChannelSecret ? '変更する場合のみ入力' : 'Messaging API のチャネルシークレット（任意）' }}">
                 @if($view->hasChannelSecret)
-                    <p class="form-text text-muted">登録済みです。変更する場合のみ再入力してください。</p>
+                    <p data-help-visible class="form-text text-muted">登録済みです。変更する場合のみ再入力してください。</p>
                 @endif
                 @error('line_channel_secret')<span class="invalid-feedback d-block">{{ $message }}</span>@enderror
             </div>

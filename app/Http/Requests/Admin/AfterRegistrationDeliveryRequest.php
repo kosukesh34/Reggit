@@ -51,6 +51,8 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             // 雨の日・気温の設定。閾値は初期値を持たず必須。営業時間との整合は保存時に確かめる
             'store_id' => ['nullable', 'integer', 'required_if:schedule_type,'.$weather],
             'min_precipitation_probability' => ['nullable', 'integer', 'between:10,100', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
+            // 1時間あたりの雨量（mm）。空欄なら雨量は見ない
+            'min_rain_mm' => ['nullable', 'numeric', 'decimal:0,1', 'between:0.1,50'],
             'min_rain_hours' => ['nullable', 'integer', 'between:1,24', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_RAIN],
             'temperature_condition' => ['nullable', Rule::in([AfterRegistrationDelivery::TEMPERATURE_ABOVE, AfterRegistrationDelivery::TEMPERATURE_BELOW]), 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_TEMPERATURE],
             'temperature' => ['nullable', 'integer', 'between:-20,45', 'required_if:schedule_type,'.ScheduledDeliveryType::WEATHER_TEMPERATURE],
@@ -77,6 +79,8 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'segment_product_id' => ['nullable', 'integer', 'min:1'],
             'segment_coupon_id' => ['nullable', 'integer', 'min:1'],
             'segment_coupon_status' => ['nullable', Rule::in(MemberSegmentService::HELD_COUPON_STATUSES)],
+            'audience_type' => ['nullable', Rule::in(['all', 'segment', 'members'])],
+            'target_member_numbers' => ['nullable', 'string', 'max:20000'],
             ...MemberSegmentService::inputRules(),
             'segment_more' => ['nullable', 'array', 'max:'.MemberSegmentService::MAX_EXTRA_CONDITIONS],
             'segment_more.*' => ['array'],
@@ -143,13 +147,14 @@ class AfterRegistrationDeliveryRequest extends FormRequest
             'ends_at' => '終了日時',
             'store_id' => '店舗',
             'min_precipitation_probability' => '降水確率',
+            'min_rain_mm' => '雨量',
             'min_rain_hours' => '雨が続く時間',
             'temperature_condition' => '気温の条件',
             'temperature' => '気温',
             'check_hours_before_open' => '判定を始める時刻',
             'cutoff_hours_before_close' => '送る締め切り',
             'weekly_limit' => '週の上限',
-            'weather_target' => '送る相手',
+            'weather_target' => '対象の会員',
         ];
     }
 }

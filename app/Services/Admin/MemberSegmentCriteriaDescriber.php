@@ -135,10 +135,10 @@ class MemberSegmentCriteriaDescriber
             $lines['rank'] = '会員ランク：'.$this->rankLabel($projectId, $criteria['rank']);
         }
         if (($range = $this->range($criteria['lifetime_points_min'] ?? null, $criteria['lifetime_points_max'] ?? null, 'pt')) !== null) {
-            $lines['points'] = '累計付与ポイント：'.$range;
+            $lines['points'] = '累計ポイント：'.$range;
         }
         if (($range = $this->range($criteria['points_min'] ?? null, $criteria['points_max'] ?? null, 'pt')) !== null) {
-            $lines['point_balance'] = 'ポイント残高：'.$range;
+            $lines['point_balance'] = '保有ポイント：'.$range;
         }
         if (isset($criteria['last_visit_mode'], $criteria['last_visit_days'])) {
             $days = number_format((int) $criteria['last_visit_days']);
@@ -166,10 +166,13 @@ class MemberSegmentCriteriaDescriber
                 .'（'.($criteria['read_announcement_status'] === 'read' ? '既読' : '未読').'）';
         }
         if (is_array($criteria['store_ids'] ?? null)) {
-            $lines['store'] = '利用店舗：'.$this->anyOf($this->names(Store::class, $projectId, $criteria['store_ids']));
+            $lines['store'] = '店舗の会員：'.$this->anyOf($this->names(Store::class, $projectId, $criteria['store_ids']));
+        }
+        if (is_array($criteria['used_store_ids'] ?? null)) {
+            $lines['used_store'] = '利用した店舗：'.$this->anyOf($this->names(Store::class, $projectId, $criteria['used_store_ids']));
         }
         if (is_array($criteria['acquisition_source_ids'] ?? null)) {
-            $lines['acquisition'] = '登録経路：'.$this->anyOf($this->names(AcquisitionSource::class, $projectId, $criteria['acquisition_source_ids']));
+            $lines['acquisition'] = '流入経路：'.$this->anyOf($this->names(AcquisitionSource::class, $projectId, $criteria['acquisition_source_ids']));
         }
         if (isset($criteria['app_last_used_mode'], $criteria['app_last_used_days'])) {
             $days = number_format((int) $criteria['app_last_used_days']);
@@ -227,7 +230,7 @@ class MemberSegmentCriteriaDescriber
             $lines['coupon_expiring'] = 'クーポン期限：'.$this->soonText((int) $criteria['coupon_expiring_days']).'に切れる未使用クーポンあり';
         }
         if (is_string($criteria['lottery_status'] ?? null)) {
-            $lines['lottery'] = 'くじ：'.($criteria['lottery_status'] === 'pending' ? '引いていない抽選権あり' : '引いていない抽選権なし');
+            $lines['lottery'] = '購入特典ゲーム：'.($criteria['lottery_status'] === 'pending' ? '未使用のプレイ権あり' : '未使用のプレイ権なし');
         }
         if (is_string($criteria['nps_category'] ?? null)) {
             $lines['nps'] = 'アンケートの評価：'.match ($criteria['nps_category']) {

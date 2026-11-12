@@ -186,7 +186,10 @@ class AdminAnnouncementsTest extends TestCase
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
             ->assertOk()
             ->assertSeeInOrder(['今月のLINEメッセージ送信数', '1,234通', '5,000通', '3,766通'])
-            ->assertSee('"lineQuota":{"used":1234,"limit":5000}', false);
+            ->assertSee('"lineQuota":{"used":1234,"limit":5000}', false)
+            // 右側の届き方プレビューは LINE とアプリを切り替えられる
+            ->assertSee('data-preview-tab="line"', false)
+            ->assertSee('data-preview-pane="app" hidden', false);
         Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer project-token'));
     }
 
@@ -200,7 +203,10 @@ class AdminAnnouncementsTest extends TestCase
         $this->actingAs($this->createAdmin($project), 'admin')
             ->get(route('admin.announcements.delivery.create', ['project_key' => $project->project_key]))
             ->assertOk()
-            ->assertDontSee('今月のLINEメッセージ送信数');
+            ->assertDontSee('今月のLINEメッセージ送信数')
+            // LINE を使わない店舗にはアプリの見え方だけを出す
+            ->assertDontSee('data-preview-tab="line"', false)
+            ->assertSee('data-preview-pane="app"', false);
         Http::assertNothingSent();
     }
 

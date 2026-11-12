@@ -156,7 +156,7 @@
                     <div class="stamp-visual-subsection">
                         <label class="form-label">個別スタンプ画像</label>
                         @if($isEdit)
-                            <p class="form-text text-muted">押す前と押したあとの画像を、全スタンプを並べて設定できます。設定済み: 押す前 {{ count($existingStampEmptyImages) }}件・押したあと {{ count($existingStampImages) }}件</p>
+                            <p data-help-visible class="form-text text-muted">押す前と押したあとの画像を、全スタンプを並べて設定できます。設定済み: 押す前 {{ count($existingStampEmptyImages) }}件・押したあと {{ count($existingStampImages) }}件</p>
                             <a href="{{ admin_route('admin.stamps.images', ['id' => $stampCard->id]) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-images"></i> スタンプ画像を設定</a>
                         @else
                             <p class="form-text text-muted">押す前と押したあとの画像は、追加したあとに開く「スタンプ画像」の画面で、全スタンプを並べて設定できます。</p>

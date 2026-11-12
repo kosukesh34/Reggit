@@ -4,13 +4,13 @@
 @import url('components/01b-alerts-cards-buttons.css?v=passkey-hidden1');
 @import url('components/02-main-tables.css');
 @import url('components/03-tables-forms-dashboard.css');
-@import url('components/04-forms-pages.css');
+@import url('components/04-forms-pages.css?v=help-tips1');
 @import url('components/05-login-chat-queue.css');
 @import url('components/06-reservation-queue-enhanced.css');
 @import url('components/07-dashboard-member-enhancements.css');
 @import url('components/08-ui-polish.css');
 @import url('components/09-chrome-hub.css?v=settings-design9');
-@import url('components/10-image-upload.css');
+@import url('components/10-image-upload.css?v=ann-images1');
 @import url('components/11-member-detail.css?v=member-detail5');
 @import url('components/12-help-manual.css');
 @import url('components/13-smaregi-theme.css');

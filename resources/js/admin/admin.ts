@@ -1,4 +1,5 @@
 import { ConfirmDialog } from '../shared/utils/confirmDialog';
+import { initHelpTips } from './helpTips';
 import { ToastManager } from '../shared/utils/toast';
 import {
     formsHaveUnsavedChanges,
@@ -7,7 +8,6 @@ import {
     UNSAVED_LEAVE_MESSAGE,
 } from './unsavedFormGuard';
 
-type TooltipHost = HTMLElement & { _tooltip?: HTMLElement | null };
 
 let isLeavingAdminPage = false;
 
@@ -56,46 +56,6 @@ function initDeleteConfirmations(): void {
                 form.submit();
             }
         });
-    });
-}
-
-function showTooltip(element: TooltipHost): void {
-    if (element._tooltip) element._tooltip.remove();
-    const tooltip = document.createElement('div');
-    tooltip.className = 'tooltip';
-    tooltip.setAttribute('role', 'tooltip');
-    tooltip.textContent = element.dataset.tooltip || '';
-    document.body.appendChild(tooltip);
-
-    const rect = element.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    let top = rect.top - tooltipRect.height - 8;
-    let left = rect.left;
-    if (top < 8) top = rect.bottom + 8;
-    if (left + tooltipRect.width > window.innerWidth - 8) {
-        left = Math.max(8, window.innerWidth - tooltipRect.width - 8);
-    }
-    tooltip.style.top = `${top}px`;
-    tooltip.style.left = `${left}px`;
-    tooltip.classList.add('show');
-    element._tooltip = tooltip;
-}
-
-function hideTooltip(element: TooltipHost): void {
-    element._tooltip?.remove();
-    element._tooltip = null;
-}
-
-function initTooltips(): void {
-    document.querySelectorAll<HTMLElement>('[data-tooltip]').forEach((el) => {
-        const element = el as TooltipHost;
-        if (!element.hasAttribute('tabindex') && element.tagName !== 'BUTTON' && element.tagName !== 'A') {
-            element.tabIndex = 0;
-        }
-        element.addEventListener('mouseenter', () => showTooltip(element));
-        element.addEventListener('mouseleave', () => hideTooltip(element));
-        element.addEventListener('focus', () => showTooltip(element));
-        element.addEventListener('blur', () => hideTooltip(element));
     });
 }
 
@@ -407,7 +367,7 @@ export function bootstrapAdminCommon(): void {
 
     const run = (): void => {
         initDeleteConfirmations();
-        initTooltips();
+        initHelpTips();
         initFormValidation();
         initUnsavedChangesWarning();
         initStoreSwitcher();
