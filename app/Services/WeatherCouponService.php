@@ -278,6 +278,7 @@ class WeatherCouponService
                 $closesAt,
                 $delivery->intParam('min_precipitation_probability', 100),
                 $delivery->intParam('min_rain_hours', 24),
+                $delivery->floatParam('min_rain_mm'),
             );
             $forecast = ['max_precipitation_probability' => $inWindow->max('precipitationProbability')];
             $notMetStatus = WeatherCouponRun::STATUS_NO_RAIN;

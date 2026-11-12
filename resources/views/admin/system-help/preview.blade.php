@@ -8,7 +8,7 @@
 
     <a class="btn btn-primary" href="{{ route('system-admin.help-articles.edit', ['id' => $article->id]) }}">この記事を編集</a>
 </div>
-<p class="form-text">{{ $article->is_published ? '公開中' : '下書き' }}の記事です。店舗ヘルプと同じ表示で確認できます。</p>
+<p data-help-visible class="form-text">{{ $article->is_published ? '公開中' : '下書き' }}の記事です。店舗ヘルプと同じ表示で確認できます。</p>
 <div class="card"><div class="card-body">
     <article class="help-manual">
         <h1>{{ $article->title }}</h1>

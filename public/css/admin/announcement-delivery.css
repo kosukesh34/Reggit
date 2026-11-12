@@ -3833,3 +3833,90 @@ details.ad-segment-details[hidden] {
 [data-line-message-quota] .info-value {
     color: #fff;
 }
+
+/* お知らせ配信：番号付きの見出しと、右側の「会員への届き方」プレビュー */
+.ad-studio--steps {
+    grid-template-areas: "main" "aside" "actions";
+}
+.ad-studio--steps > .ad-studio-main { grid-area: main; counter-reset: ad-step; }
+.ad-studio--steps > .ad-studio-aside { grid-area: aside; }
+.ad-studio--steps > .ad-delivery-actions { grid-area: actions; }
+.ad-studio--steps .ad-studio-main > .andel-card { counter-increment: ad-step; }
+.ad-step-title,
+.ad-studio--steps .ad-studio-main > .andel-card > .ad-delivery-fieldset > legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 16px;
+    color: var(--ad-ink);
+    font-size: 17px;
+    font-weight: 700;
+}
+.ad-step-title::before,
+.ad-studio--steps .ad-studio-main > .andel-card > .ad-delivery-fieldset > legend::before {
+    content: counter(ad-step);
+    display: grid;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--ad-primary);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+}
+.ad-studio--steps .ad-expiry-option { grid-column: 1 / -1; min-height: 0; }
+.ad-studio--steps .ad-expiry-option .form-group { margin-bottom: 0; }
+
+@media (min-width: 1100px) {
+    .ad-studio--steps {
+        grid-template-columns: minmax(0, 1fr) 320px;
+        grid-template-areas: "main aside" "actions aside";
+    }
+    .ad-studio--steps > .ad-studio-aside {
+        position: sticky;
+        top: 140px;
+        align-self: start;
+    }
+}
+
+.ad-studio--steps .ad-preview-panel { width: 100%; max-width: 360px; margin: 0 auto; }
+.ad-studio--steps .ad-preview-head { gap: 8px; padding: 0 2px 12px; color: var(--ad-ink); font-size: 14px; font-weight: 700; letter-spacing: 0; }
+.ad-preview-tabs { display: inline-flex; padding: 3px; border-radius: 999px; background: #e6eaf0; }
+.ad-preview-tabs button { padding: 5px 11px; border: 0; border-radius: 999px; background: transparent; color: var(--ad-muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+.ad-preview-tabs button[aria-pressed="true"] { background: #fff; color: var(--ad-ink); box-shadow: 0 1px 3px #0000001f; }
+.ad-preview-tabs button:focus-visible { outline: 2px solid var(--ad-primary); outline-offset: 1px; }
+.ad-studio--steps .ad-phone-preview { min-height: 460px; }
+.ad-studio--steps .ad-phone-bar strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.ad-line-talk { display: grid; gap: 8px; min-height: 410px; align-content: start; padding: 14px 12px; background: #8cabd9; }
+.ad-line-bubble { overflow: hidden; border-radius: 16px; background: #fff; }
+.ad-line-text { padding: 12px 14px 4px; }
+.ad-line-text strong { display: block; color: #111; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+.ad-line-text p,
+.ad-studio--steps .ad-preview-content > p { display: -webkit-box; margin: 6px 0 0; overflow: hidden; color: #555; font-size: 13px; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 5; }
+.ad-line-button { display: block; margin: 8px 12px 12px; padding: 9px; border-radius: 8px; background: #06c755; color: #fff; font-size: 13px; font-weight: 700; text-align: center; }
+.ad-preview-off { margin: 0; padding: 10px 12px; border-radius: 10px; background: #ffffffd9; color: #4b5563; font-size: 12px; }
+.ad-studio--steps .ad-preview-media { position: relative; }
+.ad-studio--steps .ad-preview-media img { object-fit: contain; background: #f3f4f6; }
+.ad-studio--steps .ad-preview-media > .ad-preview-more { position: absolute; right: 8px; bottom: 8px; display: block; width: auto; height: auto; padding: 2px 8px; border-radius: 999px; background: #000000a6; color: #fff; font-size: 11px; font-weight: 700; }
+.ad-studio--steps .ad-preview-media > .ad-preview-more[hidden] { display: none; }
+.ad-push-banner { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 10px; margin: 10px 12px 0; padding: 10px 12px; border-radius: 14px; background: #fffffff2; box-shadow: 0 4px 14px #1b243714; }
+.ad-push-icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 8px; background: var(--ad-primary); color: #fff; font-size: 13px; }
+.ad-push-banner > span:last-child { display: flex; min-width: 0; flex-direction: column; }
+.ad-push-banner small { color: var(--ad-muted); font-size: 11px; }
+.ad-push-banner strong { overflow: hidden; color: #111; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.ad-studio--steps .ad-preview-content h3 { font-size: 15px; }
+.ad-studio--steps .ad-preview-badges span { font-size: 11px; }
+.ad-studio--steps .ad-preview-coupon strong { font-size: 13px; }
+.ad-studio--steps .ad-preview-coupon small { font-size: 11px; }
+.ad-studio--steps .is-placeholder { color: #9ca3af; font-weight: 500; }
+.ad-preview-note { margin: 10px 2px 0; color: var(--ad-muted); font-size: 11px; line-height: 1.5; }
+
+/* 最終確認：hidden の行を確実に隠し、項目名を折り返さない */
+.ad-review-card dl > div[hidden] { display: none; }
+.ad-review-card dl > div { grid-template-columns: max-content minmax(0, 1fr); }
+.ad-review-content { margin-bottom: 14px; }
+.ad-review-content > strong { display: block; color: var(--ad-ink); font-size: 17px; overflow-wrap: anywhere; }
+.ad-review-content > p { display: -webkit-box; margin: 6px 0; overflow: hidden; color: #4b5563; font-size: 14px; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.ad-review-content > small { color: var(--ad-muted); font-size: 12px; }

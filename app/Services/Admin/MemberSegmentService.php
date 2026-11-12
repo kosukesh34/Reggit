@@ -69,7 +69,7 @@ class MemberSegmentService
      * 保存済みの条件の結果を変えないよう、既存の groups〜sales の相対順は変えずに新しい条件を差し込む。
      */
     public const DISPLAY_ORDER = [
-        'groups', 'channel', 'registered', 'acquisition', 'store', 'birthday', 'birthday_soon', 'age', 'sex', 'rfm', 'tags',
+        'groups', 'channel', 'registered', 'acquisition', 'store', 'used_store', 'birthday', 'birthday_soon', 'age', 'sex', 'rfm', 'tags',
         'visits', 'rank', 'rank_changed', 'points', 'point_balance', 'points_expiring',
         'last_visit', 'reservation', 'queue', 'product', 'order_type',
         'held_coupon', 'coupon_expiring', 'coupon_uses', 'stamp', 'ticket', 'subscription', 'lottery',
@@ -99,6 +99,8 @@ class MemberSegmentService
             'segment_points_max' => ['nullable', 'integer', 'min:0'],
             'segment_store_ids' => ['nullable', 'array'],
             'segment_store_ids.*' => ['integer', 'min:1', 'distinct'],
+            'segment_used_store_ids' => ['nullable', 'array'],
+            'segment_used_store_ids.*' => ['integer', 'min:1', 'distinct'],
             'segment_acquisition_source_ids' => ['nullable', 'array'],
             'segment_acquisition_source_ids.*' => ['integer', 'min:1', 'distinct'],
             'segment_app_last_used_mode' => $in(self::APP_LAST_USED_MODES),
@@ -357,7 +359,7 @@ class MemberSegmentService
         if ($orderTypes !== []) {
             $criteria['order_types'] = $orderTypes;
         }
-        foreach (['store_ids', 'acquisition_source_ids'] as $key) {
+        foreach (['store_ids', 'used_store_ids', 'acquisition_source_ids'] as $key) {
             $ids = $this->normalizeIntList($input['segment_'.$key] ?? []);
             if ($ids !== []) {
                 $criteria[$key] = $ids;
@@ -623,6 +625,9 @@ class MemberSegmentService
 
         if (is_array($criteria['store_ids'] ?? null)) {
             $add('store', $this->targetRepository->findIdsByStores($projectId, $criteria['store_ids']));
+        }
+        if (is_array($criteria['used_store_ids'] ?? null)) {
+            $add('used_store', $this->targetRepository->findIdsByUsedStores($projectId, $criteria['used_store_ids']));
         }
         if (is_array($criteria['acquisition_source_ids'] ?? null)) {
             $add('acquisition', $this->targetRepository->findIdsByAcquisitionSources($projectId, $criteria['acquisition_source_ids']));

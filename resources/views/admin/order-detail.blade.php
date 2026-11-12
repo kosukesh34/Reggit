@@ -158,7 +158,7 @@
             @if($shopOrdersMode && $order->payment_method === 'stripe' && ! in_array($order->status, ['pending', 'cancelled'], true) && $order->refunded_at === null)
             <div class="status-selector">
                 <h4><i class="fas fa-undo"></i> 返金</h4>
-                <p class="form-text">Stripe で全額（¥{{ number_format((int) $order->total_amount) }}）を返金し、注文をキャンセルにします。在庫と利用ポイントを戻し、獲得ポイントを取り消して、お客様へメールで知らせます。元に戻せません。</p>
+                <p data-help-visible class="form-text">Stripe で全額（¥{{ number_format((int) $order->total_amount) }}）を返金し、注文をキャンセルにします。在庫と利用ポイントを戻し、獲得ポイントを取り消して、お客様へメールで知らせます。元に戻せません。</p>
                 @if($order->smaregi_transaction_head_id)
                     <p class="form-text"><strong>スマレジの取引（ID: {{ $order->smaregi_transaction_head_id }}）は自動では取り消されません。返金後にスマレジで取消・返品の処理をしてください。</strong></p>
                 @endif

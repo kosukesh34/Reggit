@@ -17,6 +17,7 @@ use App\Models\MemberRankHistory;
 use App\Models\MemberStamp;
 use App\Models\MemberSubscription;
 use App\Models\MemberTicket;
+use App\Models\MemberVisit;
 use App\Models\Order;
 use App\Models\PointTransaction;
 use App\Models\Product;
@@ -500,6 +501,29 @@ class EloquentCouponDeliveryTargetRepository implements CouponDeliveryTargetRepo
         return $this->ids(Member::query()
             ->where('project_id', $projectId)
             ->whereHas('stores', fn ($query) => $query->whereIn('stores.id', array_map('intval', $storeIds))));
+    }
+
+    public function findIdsByUsedStores(int $projectId, array $storeIds): array
+    {
+        $storeIds = array_map('intval', $storeIds);
+        $orders = Order::query()->where('project_id', $projectId)->notCancelled()->whereIn('store_id', $storeIds)->whereNotNull('user_id')->select('user_id');
+        $reservations = Reservation::query()->where('project_id', $projectId)->where('status', ReservationStatus::COMPLETED)->whereIn('store_id', $storeIds)->whereNotNull('user_id')->select('user_id');
+        $queue = QueueEntry::query()->where('project_id', $projectId)->where('status', QueueStatus::ENTERED)->whereIn('store_id', $storeIds);
+        $tickets = MemberTicket::query()->where('project_id', $projectId)
+            ->whereHas('uses', fn ($uses) => $uses->whereIn('store_id', $storeIds)->whereNull('cancelled_at'))
+            ->select('member_id');
+
+        $visits = MemberVisit::query()->where('project_id', $projectId)->whereIn('store_id', $storeIds)->select('member_id');
+
+        return $this->ids(Member::query()
+            ->where('project_id', $projectId)
+            ->where(fn ($query) => $query
+                ->whereIn('id', $visits)
+                ->orWhereIn('user_id', $orders)
+                ->orWhereIn('user_id', $reservations)
+                ->orWhereIn('id', (clone $queue)->whereNotNull('member_id')->select('member_id'))
+                ->orWhereIn('user_id', (clone $queue)->whereNotNull('user_id')->select('user_id'))
+                ->orWhereIn('id', $tickets)));
     }
 
     public function findIdsByAppLastUsed(int $projectId, string $mode, int $days): array

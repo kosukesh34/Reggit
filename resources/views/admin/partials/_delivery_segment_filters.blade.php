@@ -38,8 +38,8 @@
                                         'attribute' => ['会員の属性', [
                                             'channel' => ['登録チャネル', 'LINE アプリ'],
                                             'registered' => ['登録日', '入会日 新規'],
-                                            'acquisition' => ['登録経路', '流入 チラシ QR', count($segmentAcquisitionOptions ?? []) > 0],
-                                            'store' => ['利用店舗', '店舗 お店', count($segmentStoreOptions ?? []) > 1],
+                                            'acquisition' => ['流入経路', '登録経路 流入 チラシ QR', count($segmentAcquisitionOptions ?? []) > 0],
+                                            'store' => ['店舗の会員', '店舗 お店 入会店舗 ご利用店舗', count($segmentStoreOptions ?? []) > 1],
                                             'birthday' => ['誕生月', '誕生日 バースデー'],
                                             'birthday_soon' => ['誕生日が近い', '誕生日 バースデー 記念日'],
                                             'age' => ['年齢', '年代 誕生日'],
@@ -48,6 +48,7 @@
                                             'rfm' => ['RFMセグメント', '優良 休眠 分析'],
                                         ]],
                                         'visit' => ['来店・購入', [
+                                            'used_store' => ['利用した店舗', '店舗 お店 利用店舗 来店 購入', count($segmentStoreOptions ?? []) > 0],
                                             'visits' => ['来店回数', '回数'],
                                             'last_visit' => ['最終来店', '休眠 来店なし'],
                                             'reservation' => ['予約', '予約あり 予約なし'],
@@ -60,8 +61,8 @@
                                         'rank' => ['ランク・ポイント', [
                                             'rank' => ['会員ランク', 'ランク'],
                                             'rank_changed' => ['ランク変更', 'ランクアップ 昇格'],
-                                            'points' => ['累計付与ポイント', 'ポイント'],
-                                            'point_balance' => ['ポイント残高', 'ポイント 残高'],
+                                            'points' => ['累計ポイント', 'ポイント 付与'],
+                                            'point_balance' => ['保有ポイント', 'ポイント 残高'],
                                             'points_expiring' => ['ポイントの失効予定', 'ポイント 失効 期限'],
                                         ]],
                                         'benefit' => ['クーポン・特典', [
@@ -71,7 +72,7 @@
                                             'stamp' => ['スタンプ', 'スタンプカード', $isCouponDelivery],
                                             'ticket' => ['回数券', 'チケット'],
                                             'subscription' => ['サブスク', '定期 月額 継続 解約'],
-                                            'lottery' => ['くじの抽選権', 'くじ 抽選 ガチャ'],
+                                            'lottery' => ['購入特典ゲームのプレイ権', 'くじ 抽選 ガチャ ゲーム'],
                                         ]],
                                         'engagement' => ['お知らせ・アプリ', [
                                             'announcement_read' => ['お知らせの既読', '未読 既読 お知らせ', count($segmentAnnouncementOptions ?? []) > 0],
@@ -217,8 +218,9 @@
                                 @endif
                             </fieldset>
                             @foreach([
-                                'acquisition' => ['登録経路', 'segment_acquisition_source_ids', $segmentAcquisitionOptions ?? []],
-                                'store' => ['利用店舗', 'segment_store_ids', $segmentStoreOptions ?? []],
+                                'acquisition' => ['流入経路', 'segment_acquisition_source_ids', $segmentAcquisitionOptions ?? []],
+                                'store' => ['店舗の会員（入会した店舗・関わりのある店舗）', 'segment_store_ids', $segmentStoreOptions ?? []],
+                                'used_store' => ['利用した店舗（来店・注文・予約・順番待ち・回数券の利用が1回でもある）', 'segment_used_store_ids', $segmentStoreOptions ?? []],
                                 'order_type' => ['注文の種類（キャンセル以外の注文が1回でもある）', 'segment_order_types', \App\Enums\OrderType::getValues()],
                             ] as $conditionKey => [$conditionLabel, $inputName, $choices])
                                 @php $selectedChoices = collect((array) $segmentOld($inputName, []))->map(fn ($value) => (string) $value); @endphp
@@ -257,12 +259,12 @@
                                     </div>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="points" hidden>
-                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_lifetime_points_min" class="form-label">累計付与ポイント（以上）</label></div><input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_points_min') }}" min="0" placeholder="例：1000"></div>
-                                    <div class="form-group mb-0"><label for="segment_lifetime_points_max" class="form-label">累計付与ポイント（以下）</label><input type="number" name="segment_lifetime_points_max" id="segment_lifetime_points_max" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_points_max') }}" min="0" placeholder="例：5000"></div>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_lifetime_points_min" class="form-label">累計ポイント（以上）</label></div><input type="number" name="segment_lifetime_points_min" id="segment_lifetime_points_min" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_points_min') }}" min="0" placeholder="例：1000"></div>
+                                    <div class="form-group mb-0"><label for="segment_lifetime_points_max" class="form-label">累計ポイント（以下）</label><input type="number" name="segment_lifetime_points_max" id="segment_lifetime_points_max" class="form-control segment-filter" value="{{ $segmentOld('segment_lifetime_points_max') }}" min="0" placeholder="例：5000"></div>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="point_balance" hidden>
-                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_points_min" class="form-label">ポイント残高（以上）</label></div><input type="number" name="segment_points_min" id="segment_points_min" class="form-control segment-filter" value="{{ $segmentOld('segment_points_min') }}" min="0" placeholder="例：500"></div>
-                                    <div class="form-group mb-0"><label for="segment_points_max" class="form-label">ポイント残高（以下）</label><input type="number" name="segment_points_max" id="segment_points_max" class="form-control segment-filter" value="{{ $segmentOld('segment_points_max') }}" min="0" placeholder="例：3000"></div>
+                                    <div class="form-group mb-0"><div class="ad-filter-label"><label for="segment_points_min" class="form-label">保有ポイント（以上）</label></div><input type="number" name="segment_points_min" id="segment_points_min" class="form-control segment-filter" value="{{ $segmentOld('segment_points_min') }}" min="0" placeholder="例：500"></div>
+                                    <div class="form-group mb-0"><label for="segment_points_max" class="form-label">保有ポイント（以下）</label><input type="number" name="segment_points_max" id="segment_points_max" class="form-control segment-filter" value="{{ $segmentOld('segment_points_max') }}" min="0" placeholder="例：3000"></div>
                                 </div>
                                 <div class="ad-filter-grid ad-filter-grid--2 ad-condition-item" data-condition="last_visit" hidden>
                                     <div class="form-group mb-0">
@@ -367,7 +369,7 @@
                                     'ticket' => ['回数券', 'segment_ticket_status', ['active' => '使える回数券を持っている', 'none' => '使える回数券を持っていない']],
                                     'subscription' => ['サブスク', 'segment_subscription_status', ['active' => '継続中', 'ended' => '解約済み（今は継続なし）', 'none' => '加入したことがない']],
                                     'wallet' => ['Apple Wallet', 'segment_wallet_status', ['registered' => '会員証を追加済み', 'not_registered' => '会員証を未追加']],
-                                    'lottery' => ['くじの抽選権', 'segment_lottery_status', ['pending' => 'まだ引いていない抽選権がある', 'none' => '引いていない抽選権がない']],
+                                    'lottery' => ['購入特典ゲームのプレイ権', 'segment_lottery_status', ['pending' => 'まだ使っていないプレイ権がある', 'none' => '使っていないプレイ権がない']],
                                     'nps' => ['アンケートの評価（最新の回答）', 'segment_nps_category', ['promoter' => '高い（9〜10）', 'passive' => '普通（7〜8）', 'detractor' => '低い（0〜6）']],
                                     'line_block' => ['LINEブロック（LINE連携済みの会員）', 'segment_line_block_status', ['blocked' => 'ブロック中', 'not_blocked' => 'ブロックしていない']],
                                     'notification' => ['通知設定', 'segment_notification_preference', \App\Enums\MemberNotificationPreference::getValues()],

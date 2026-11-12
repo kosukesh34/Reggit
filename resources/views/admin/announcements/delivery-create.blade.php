@@ -35,10 +35,6 @@
         'segment_lifetime_points_max', 'segment_last_visit_mode', 'segment_rank',
         'segment_product_id', 'segment_coupon_id', 'segment_coupon_status', 'segment_condition',
     ])->contains(fn ($field) => filled(old($field)));
-    $announcementPreviewBaseUrl = admin_front_url();
-    $announcementPreviewUrl = $announcementPreviewBaseUrl !== null
-        ? $announcementPreviewBaseUrl.(str_contains($announcementPreviewBaseUrl, '?') ? '&' : '?').'designer_live_preview=1&designer_embed=1&announcement_form_preview=1#/announcements'
-        : null;
     $lineAccountName = (string) (($currentProject ?? null)?->name ?? '店舗公式アカウント');
 @endphp
 
@@ -58,7 +54,7 @@
         </div>
         <div class="card-body">
             @if($view->lineMessageQuota === null)
-            <p class="form-text">送信数を取得できませんでした。LINE接続設定のチャネルアクセストークンを確認してください。</p>
+            <p data-help-visible class="form-text">送信数を取得できませんでした。LINE接続設定のチャネルアクセストークンを確認してください。</p>
             @else
             @php
                 $quota = $view->lineMessageQuota;
@@ -94,9 +90,10 @@
 
         <form action="{{ admin_route('admin.announcements.delivery.store') }}" method="POST" id="deliveryForm" enctype="multipart/form-data">
         @csrf
-        <div class="ad-studio">
+        <div class="ad-studio ad-studio--steps">
             <div class="ad-studio-main">
-                <div class="andel-card" role="region" id="delivery-content" aria-label="お知らせの内容">
+                <div class="andel-card" role="region" id="delivery-content" aria-labelledby="deliveryContentHeading">
+                    <h2 class="ad-step-title" id="deliveryContentHeading">お知らせの内容</h2>
                     <div class="form-group">
                         <div class="ad-label-row">
                             <label for="title" class="form-label">タイトル <span class="ad-required">必須</span></label>
@@ -124,7 +121,8 @@
                 @include('admin.partials._delivery_audience')
                 @include('admin.partials._delivery_timing')
 
-                <div class="andel-card" role="region" id="delivery-coupon" aria-label="クーポン設定">
+                <div class="andel-card" role="region" id="delivery-coupon" aria-labelledby="deliveryCouponHeading">
+                    <h2 class="ad-step-title" id="deliveryCouponHeading">クーポン <span class="ad-optional">任意</span></h2>
                     @if(($view->coupons ?? collect())->isEmpty())
                         <div class="ad-empty-coupon">
                             <span><i class="fas fa-ticket-alt" aria-hidden="true"></i></span>
@@ -135,7 +133,7 @@
                         <label class="ad-pin-option">
                             <input type="checkbox" id="attachCoupon" {{ $hasSelectedCoupon ? 'checked' : '' }}>
                             <span class="ad-pin-icon" aria-hidden="true"><i class="fas fa-ticket-alt"></i></span>
-                            <span><strong>クーポンを配布する</strong></span>
+                            <span><strong>クーポンを配布する</strong><small>お知らせと一緒にクーポンを届けます</small></span>
                             <span class="ad-check-ui" aria-hidden="true"><i class="fas fa-check"></i></span>
                         </label>
                         <div class="ad-coupon-panel" id="couponPanel" {{ $hasSelectedCoupon ? '' : 'hidden' }}>
@@ -147,15 +145,9 @@
                     @endif
                 </div>
 
-                <div class="andel-card" role="region" id="delivery-options" aria-label="掲載設定">
+                <div class="andel-card" role="region" id="delivery-options" aria-labelledby="deliveryOptionsHeading">
+                    <h2 class="ad-step-title" id="deliveryOptionsHeading">通知と掲載</h2>
                     <div class="ad-option-grid">
-                        <label class="ad-pin-option">
-                            <input type="hidden" name="is_pinned" value="0">
-                            <input type="checkbox" name="is_pinned" id="is_pinned" value="1" {{ old('is_pinned') ? 'checked' : '' }}>
-                            <span class="ad-pin-icon"><i class="fas fa-thumbtack" aria-hidden="true"></i></span>
-                            <span><strong>お知らせを固定表示</strong><small>一覧の上部に優先して表示します</small></span>
-                            <span class="ad-check-ui"><i class="fas fa-check" aria-hidden="true"></i></span>
-                        </label>
                         @php
                             $notifyOld = old('send_notification');
                             $isNotify = $notifyOld === null
@@ -167,6 +159,13 @@
                             <input type="checkbox" name="send_notification" id="send_notification" value="1" {{ $isNotify ? 'checked' : '' }}>
                             <span class="ad-pin-icon"><i class="fas fa-bell" aria-hidden="true"></i></span>
                             <span><strong>LINE・Push通知を送る</strong><small>オフにするとアプリ内掲載のみになります</small></span>
+                            <span class="ad-check-ui"><i class="fas fa-check" aria-hidden="true"></i></span>
+                        </label>
+                        <label class="ad-pin-option">
+                            <input type="hidden" name="is_pinned" value="0">
+                            <input type="checkbox" name="is_pinned" id="is_pinned" value="1" {{ old('is_pinned') ? 'checked' : '' }}>
+                            <span class="ad-pin-icon"><i class="fas fa-thumbtack" aria-hidden="true"></i></span>
+                            <span><strong>お知らせを固定表示</strong><small>一覧の上部に優先して表示します</small></span>
                             <span class="ad-check-ui"><i class="fas fa-check" aria-hidden="true"></i></span>
                         </label>
                         <div class="ad-expiry-option">
@@ -192,6 +191,8 @@
                     </div>
                     <p class="ad-submit-note"><i class="fas fa-circle-info" aria-hidden="true"></i> 確認画面で内容を最終チェックしてから配信します</p>
             </div>
+
+            @include('admin.announcements._message_preview')
         </div>
 
         @include('admin.partials._delivery_review')

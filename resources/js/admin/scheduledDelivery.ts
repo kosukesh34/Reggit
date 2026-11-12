@@ -107,9 +107,18 @@ function initScheduledDeliveryForm(): void {
         }
         setSelected('content_type', contentType);
         setSelected('category', category);
+
+        // 送る相手。選んでいない側の入力はサーバーが無視するので、表示だけ切り替える
+        const audience = selected('audience_type') || 'all';
+        document.querySelectorAll<HTMLElement>('.sd-audience-panel').forEach((panel) => {
+            panel.classList.toggle('is-hidden', panel.dataset.audience !== audience);
+        });
+        const memberNumbers = document.getElementById('target_member_numbers') as HTMLTextAreaElement | null;
+        if (memberNumbers) memberNumbers.required = audience === 'members';
+        setSelected('audience_type', audience);
     }
 
-    document.querySelectorAll('input[name="category"], input[name="schedule_type"], input[name="content_type"]').forEach((input) => {
+    document.querySelectorAll('input[name="category"], input[name="schedule_type"], input[name="content_type"], input[name="audience_type"]').forEach((input) => {
         input.addEventListener('change', sync);
     });
     sync();

@@ -90,6 +90,10 @@
       "assets/app-C0FtYSQa.css"
     ]
   },
+  "_helpTips-DYdxIlem.js": {
+    "file": "assets/helpTips-DYdxIlem.js",
+    "name": "helpTips"
+  },
   "_liffEcho-CeL6U00B.js": {
     "file": "assets/liffEcho-CeL6U00B.js",
     "name": "liffEcho",
@@ -190,8 +194,17 @@
       "_ChatView-D_7V2uYY.js"
     ]
   },
+  "resources/js/admin/helpTipsStandalone.ts": {
+    "file": "assets/helpTipsStandalone-C9-OMmpN.js",
+    "name": "helpTipsStandalone",
+    "src": "resources/js/admin/helpTipsStandalone.ts",
+    "isEntry": true,
+    "imports": [
+      "_helpTips-DYdxIlem.js"
+    ]
+  },
   "resources/js/admin/main.tsx": {
-    "file": "assets/main-BjbyTtXt.js",
+    "file": "assets/main-8n2BjmI3.js",
     "name": "main",
     "src": "resources/js/admin/main.tsx",
     "isEntry": true,
@@ -202,6 +215,7 @@
       "_AppConfigContext-DI_nTpqL.js",
       "_Button-CarRJTYZ.js",
       "_navigation-BbKTTGOp.js",
+      "_helpTips-DYdxIlem.js",
       "_scanner-vendor-SVqs8N5c.js",
       "_realtime-vendor-DiPNkYHo.js"
     ],

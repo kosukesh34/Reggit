@@ -136,6 +136,14 @@ class AfterRegistrationDelivery extends Model
         return (int) $this->param($key, $default);
     }
 
+    /** 小数で保存する設定（雨量 mm）。未設定なら null */
+    public function floatParam(string $key): ?float
+    {
+        $value = (is_array($this->params) ? $this->params : [])[$key] ?? null;
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
     public function summaryLabel(): string
     {
         $type = (string) $this->schedule_type;
@@ -162,7 +170,9 @@ class AfterRegistrationDelivery extends Model
             ScheduledDeliveryType::BIRTHDAY_NEXT_MONTH => '毎月'.$this->dayOfMonthLabel($this->param('day_of_month', 1)).'に来月誕生日の人',
             ScheduledDeliveryType::WEEKLY => '毎週'.$this->weekdayLabel($this->intParam('day_of_week', 1)),
             ScheduledDeliveryType::MONTHLY => '毎月'.$this->dayOfMonthLabel($this->param('day_of_month', 1)),
-            ScheduledDeliveryType::WEATHER_RAIN => '降水確率'.$this->intParam('min_precipitation_probability', 0).'%以上が'.$this->intParam('min_rain_hours', 0).'時間続く日',
+            ScheduledDeliveryType::WEATHER_RAIN => '降水確率'.$this->intParam('min_precipitation_probability', 0).'%以上'
+                .($this->floatParam('min_rain_mm') !== null ? '・雨量'.$this->floatParam('min_rain_mm').'mm以上' : '')
+                .'が'.$this->intParam('min_rain_hours', 0).'時間続く日',
             ScheduledDeliveryType::WEATHER_TEMPERATURE => $this->param('temperature_condition') === self::TEMPERATURE_BELOW
                 ? '最低気温が'.$this->intParam('temperature', 0).'℃以下の日'
                 : '最高気温が'.$this->intParam('temperature', 0).'℃以上の日',

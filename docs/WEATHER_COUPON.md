@@ -22,6 +22,7 @@
 |---|---|---|
 | 店舗 | 選択中の店舗のうち利用中のもの | この店舗の座標の天気予報と営業時間で判定する |
 | 降水確率（雨の日） | 10〜100% | 1時間ごとの降水確率がこの値以上の時間を「雨」とする |
+| 雨量（雨の日・任意） | 0.1〜50mm（小数1桁）／空欄 | 1時間あたりの予報雨量がこの値以上の時間だけ「雨」とする。空欄なら降水確率だけで判定する |
 | 雨が続く時間（雨の日） | 1時間〜営業時間の長さ | 雨がこの時間以上続くときだけ送る（にわか雨を除く） |
 | 気温の条件（気温） | 最高気温が基準以上 / 最低気温が基準以下 | 暑い日に送るか、寒い日に送るか |
 | 基準の気温（気温） | -20〜45℃（整数） | 判定範囲の1時間ごとの予報気温の最高（以上）か最低（以下）と比べる。続く時間は見ない |
@@ -31,7 +32,7 @@
 | 送る相手 | その店舗の会員 / 全会員 | 店舗の会員は `member_stores` の紐づき（入会店舗と、来店・注文などで関わった店舗）。セグメントを指定するとさらに絞り込む |
 | 承認 | 送る前にメールで承認を求める（初期値） / 自動で送る | |
 
-設定は `after_registration_deliveries.params` に保存する（`store_id` / `check_hours_before_open` / `cutoff_hours_before_close` / `weekly_limit` / `target` / `requires_approval`。雨の日は `min_precipitation_probability` / `min_rain_hours`、気温は `temperature_condition`（`above` / `below`）/ `temperature`）。
+設定は `after_registration_deliveries.params` に保存する（`store_id` / `check_hours_before_open` / `cutoff_hours_before_close` / `weekly_limit` / `target` / `requires_approval`。雨の日は `min_precipitation_probability` / `min_rain_mm`（任意・小数）/ `min_rain_hours`、気温は `temperature_condition`（`above` / `below`）/ `temperature`）。
 
 ## 判定
 

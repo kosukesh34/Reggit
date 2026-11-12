@@ -145,6 +145,14 @@ interface CouponDeliveryTargetRepository
     public function findIdsByStores(int $projectId, array $storeIds): array;
 
     /**
+     * その店舗で来店・購入の記録がある会員（来店記録〈レジ・手入力を含む〉・キャンセル以外の注文・来店済みの予約・入店済みの順番待ち・取り消していない回数券の利用）
+     *
+     * @param  list<int>  $storeIds
+     * @return list<int>
+     */
+    public function findIdsByUsedStores(int $projectId, array $storeIds): array;
+
+    /**
      * アプリ（端末）の最終利用で絞り込む。inactive_days は端末を持つ会員のうち N 日以上使っていない会員。
      *
      * @param  string  $mode  within_days|inactive_days

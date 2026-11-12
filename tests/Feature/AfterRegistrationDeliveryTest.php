@@ -17,6 +17,8 @@ use App\Models\Project;
 use App\Models\ScheduledDeliverySend;
 use App\Models\User;
 use App\Services\ScheduledDeliverySendService;
+use App\Services\ScheduledDeliveryTargetService;
+use App\Support\AdminMemberIdentifier;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -97,6 +99,77 @@ class AfterRegistrationDeliveryTest extends TestCase
             'title' => '登録後お知らせ',
             'is_active' => true,
         ]);
+    }
+
+    public function test_送る相手は全会員なら絞り込み条件を保存せず顧客指定なら会員を固定すること(): void
+    {
+        $project = $this->createProject();
+        $admin = $this->createAdmin($project);
+        $target = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id]);
+        $identifier = app(AdminMemberIdentifier::class)->value($target);
+        $store = route('admin.after-registration-deliveries.store', ['project_key' => $project->project_key]);
+        $input = [
+            'schedule_type' => ScheduledDeliveryType::WEEKLY,
+            'content_type' => ScheduledDeliveryContentType::ANNOUNCEMENT,
+            'day_of_week' => 1,
+            'title' => '週次のお知らせ',
+            'segment_sex' => '1',
+        ];
+        $this->actingAs($admin, 'admin');
+
+        $this->post($store, $input + ['audience_type' => 'all'])->assertSessionHasNoErrors();
+        $this->assertArrayNotHasKey('segment_criteria', AfterRegistrationDelivery::query()->latest('id')->firstOrFail()->params);
+
+        $this->post($store, $input + ['audience_type' => 'members', 'target_member_numbers' => $identifier."\nNOPE999"])
+            ->assertSessionHasErrors(['target_member_numbers' => '見つからない会員があります：NOPE999']);
+        $this->post($store, $input + ['audience_type' => 'members', 'target_member_numbers' => ' '])
+            ->assertSessionHasErrors('target_member_numbers');
+
+        $this->post($store, $input + ['audience_type' => 'members', 'target_member_numbers' => $identifier])->assertSessionHasNoErrors();
+        $params = AfterRegistrationDelivery::query()->latest('id')->firstOrFail()->params;
+        $this->assertSame([(int) $target->id], $params['target_member_ids']);
+        $this->assertSame([$identifier], $params['target_member_numbers']);
+        $this->assertArrayNotHasKey('segment_criteria', $params);
+    }
+
+    public function test_絞り込みを選んで条件がなければ保存せず顧客指定は大文字小文字を区別しないこと(): void
+    {
+        $project = $this->createProject();
+        $this->actingAs($this->createAdmin($project), 'admin');
+        $member = Member::factory()->create(['project_id' => $project->id, 'user_id' => User::factory()->create(['project_id' => $project->id])->id, 'member_number' => 'Mabc0001']);
+        $store = route('admin.after-registration-deliveries.store', ['project_key' => $project->project_key]);
+        $input = ['schedule_type' => ScheduledDeliveryType::WEEKLY, 'content_type' => ScheduledDeliveryContentType::ANNOUNCEMENT, 'day_of_week' => 1, 'title' => '週次'];
+
+        $this->post($store, $input + ['audience_type' => 'segment'])
+            ->assertSessionHasErrors(['audience_type' => '絞り込みの条件を1つ以上追加してください。']);
+        $this->assertSame(0, AfterRegistrationDelivery::query()->count());
+
+        $this->post($store, $input + ['audience_type' => 'members', 'target_member_numbers' => 'MABC0001'])->assertSessionHasNoErrors();
+        $params = AfterRegistrationDelivery::query()->sole()->params;
+        $this->assertSame([[(int) $member->id], ['Mabc0001']], [$params['target_member_ids'], $params['target_member_numbers']]);
+    }
+
+    public function test_顧客指定の配信は指定した会員にだけ送ること(): void
+    {
+        $now = Carbon::parse('2026-11-16 10:00:00'); // 月曜
+        $project = $this->createProject();
+        $members = Member::factory()->count(2)->sequence(fn () => [
+            'project_id' => $project->id,
+            'user_id' => User::factory()->create(['project_id' => $project->id])->id,
+        ])->create();
+        $delivery = AfterRegistrationDelivery::create([
+            'project_id' => $project->id,
+            'category' => ScheduledDeliveryCategory::RESERVATION,
+            'schedule_type' => ScheduledDeliveryType::WEEKLY,
+            'content_type' => ScheduledDeliveryContentType::ANNOUNCEMENT,
+            'title' => '指定会員へ',
+            'push_hour' => 10,
+            'push_minute' => 0,
+            'params' => ['day_of_week' => 1, 'target_member_ids' => [(int) $members[1]->id]],
+            'is_active' => true,
+        ]);
+
+        $this->assertSame([(int) $members[1]->id], app(ScheduledDeliveryTargetService::class)->memberIds($delivery, $now));
     }
 
     public function test_store_クーポンのみの予約配信を追加できること(): void

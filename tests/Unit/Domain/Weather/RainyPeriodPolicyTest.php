@@ -35,6 +35,23 @@ class RainyPeriodPolicyTest extends TestCase
         );
     }
 
+    public function test_雨量の基準があれば雨量も基準以上の時間だけ数えること(): void
+    {
+        $day = CarbonImmutable::parse('2026-11-02');
+        $forecasts = [
+            new HourlyForecast($day->setTime(12, 0), 80, 2.0, 20.0),
+            new HourlyForecast($day->setTime(13, 0), 80, 0.5, 20.0),
+            new HourlyForecast($day->setTime(14, 0), 80, 1.0, 20.0),
+        ];
+        $policy = new RainyPeriodPolicy;
+        [$from, $to] = [$day->setTime(10, 0), $day->setTime(22, 0)];
+
+        $this->assertTrue($policy->isRainy($forecasts, $from, $to, 50, 2));
+        // 13時は 0.5mm で 1mm に届かないため、雨が途切れる
+        $this->assertFalse($policy->isRainy($forecasts, $from, $to, 50, 2, 1.0));
+        $this->assertTrue($policy->isRainy($forecasts, $from, $to, 50, 2, 0.5));
+    }
+
     public function test_基準以上が指定時間続けば雨と判定すること(): void
     {
         $this->assertTrue($this->isRainy([12 => 60, 13 => 50]));

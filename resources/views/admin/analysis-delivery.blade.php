@@ -32,7 +32,7 @@
             <form action="{{ admin_route('admin.analysis-deliveries.token') }}" method="POST" class="mb-3">
                 @csrf
                 <button type="submit" class="btn btn-secondary">分析専用トークンを発行・再発行</button>
-                <span class="form-text">再発行すると従来の分析専用トークンは失効します。有効期限は90日です。</span>
+                <span data-help-visible class="form-text">再発行すると従来の分析専用トークンは失効します。有効期限は90日です。</span>
             </form>
             @foreach($analysisTokens as $token)
                 <form action="{{ admin_route('admin.analysis-deliveries.token.revoke', ['token' => $token->id]) }}" method="POST" class="mb-2">

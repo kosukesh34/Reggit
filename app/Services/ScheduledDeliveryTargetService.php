@@ -71,6 +71,11 @@ class ScheduledDeliveryTargetService
             default => [],
         };
 
+        $targetIds = $delivery->params['target_member_ids'] ?? null;
+        if (is_array($targetIds) && $targetIds !== []) {
+            return array_values(array_intersect($memberIds, array_map('intval', $targetIds)));
+        }
+
         $criteria = $delivery->params['segment_criteria'] ?? null;
         if (! is_array($criteria) || $criteria === []) {
             return $memberIds;
