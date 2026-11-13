@@ -61,11 +61,7 @@ const targets = {
   gallery: card('画像追加'),
   'app-contact': page => page.getByRole('button', { name: 'メニューを開く', exact: true }),
   'app-more': page => page.locator('.native-more'),
-  'system-help': page => page.getByRole('link', { name: 'ヘルプ記事を書く' }),
   onboarding: card('基本情報'),
-  'system-projects': card('プロジェクト一覧'),
-  'system-accounts': card('プロジェクト管理者一覧'),
-  'system-notices': page => page.getByRole('link', { name: 'お知らせを作成' }),
   'product-ticket': page => page.locator('label[for="ticket_enabled"]').locator('..'),
   'shop-legal': page => page.getByRole('heading', { name: '特定商取引法に基づく表記', exact: true }),
   'features-chat': page => page.locator('label.checkbox-label').filter({ has: page.getByText('チャット', { exact: true }) }),
@@ -77,13 +73,13 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
 const page = await context.newPage();
 await mkdir('public/images/help', { recursive: true });
-async function login(system = false) {
+async function login() {
   await context.clearCookies();
-  await page.goto(`${base}${system ? '/system-admin/login' : '/admin/login'}`);
-  await page.locator('#login_id').fill(system ? 'demo_sys' : 'demo_proj');
-  await page.locator('#password').fill(system ? 'DemoSys#2026' : 'DemoProj#2026');
+  await page.goto(`${base}/admin/login`);
+  await page.locator('#login_id').fill('demo_proj');
+  await page.locator('#password').fill('DemoProj#2026');
   await page.getByRole('button', { name: 'ログイン', exact: true }).click();
-  await page.waitForURL(url => system ? url.pathname === '/system-admin/projects' : url.pathname.endsWith('/dashboard'), { waitUntil: 'domcontentloaded' });
+  await page.waitForURL(url => url.pathname.endsWith('/dashboard'), { waitUntil: 'domcontentloaded' });
 }
 try {
   await login();
@@ -92,11 +88,7 @@ try {
   const unique = [...new Map(Object.values(guides).map(g => [g.image, g])).values()].filter(g => !only || only.includes(g.image));
   const missing = unique.filter(g => !targets[g.image]).map(g => g.image);
   if (missing.length) throw new Error(`No highlight target: ${missing.join(', ')}`);
-  for (const guide of unique.filter(g => !g.path.startsWith('system:'))) {
-    await capture(guide, prefix);
-  }
-  await login(true);
-  for (const guide of unique.filter(g => g.path.startsWith('system:'))) {
+  for (const guide of unique) {
     await capture(guide, prefix);
   }
 } finally {
@@ -109,8 +101,7 @@ async function capture(guide, prefix) {
   const mobile = guide.path.startsWith('app:');
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
   const path = mobile ? `/demo/liff#${guide.path.slice(4)}`
-    : guide.path.startsWith('system:') ? `/system-admin${guide.path.slice(7)}`
-      : ['/admin/login', '/onboarding'].includes(guide.path) ? guide.path : `${prefix}${guide.path}`;
+    : ['/admin/login', '/onboarding'].includes(guide.path) ? guide.path : `${prefix}${guide.path}`;
   if (guide.path === '/admin/login') await context.clearCookies();
   const response = await page.goto(`${base}${path}`);
   if (response && response.status() >= 400) throw new Error(`${path}: HTTP ${response.status()}`);

@@ -50,6 +50,16 @@ class PublicHelpTest extends TestCase
             ->assertDontSee('{project_key}');
     }
 
+    public function test_help_has_no_system_admin_articles(): void
+    {
+        foreach (['system-projects', 'system-accounts', 'system-notices', 'help-management'] as $slug) {
+            $this->get('/help/'.$slug)->assertNotFound();
+        }
+        foreach ((new HelpArticleSeeder)->articles() as $article) {
+            $this->assertStringNotContainsString('システム管理', json_encode($article, JSON_UNESCAPED_UNICODE), $article['slug']);
+        }
+    }
+
     public function test_unpublished_and_unknown_articles_are_not_public(): void
     {
         HelpArticle::where('slug', 'existing-member-link')->update(['is_published' => false]);
