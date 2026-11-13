@@ -47,6 +47,24 @@ class HelpMarkdownTest extends TestCase
         }
     }
 
+    public function test_links_allow_only_smaregi_official_help_as_external_site(): void
+    {
+        $renderer = new HelpMarkdown;
+        $this->assertStringContainsString(
+            '<a href="https://help.smaregi.jp/hc/ja/articles/202423816" rel="external noopener">取引をキャンセルする</a>',
+            $renderer->toHtml('[取引をキャンセルする](https://help.smaregi.jp/hc/ja/articles/202423816)'),
+        );
+        foreach ([
+            'http://help.smaregi.jp/hc/ja/articles/1',
+            'https://help.smaregi.jp.example.com/hc/ja/articles/1',
+            'https://help.smaregi.jp/hc/ja/articles/1?x="onclick="alert(1)',
+            'https://help.smaregi.jp/hc/ja/articles/abc',
+            'https://example.com/hc/ja/articles/1',
+        ] as $url) {
+            $this->assertStringNotContainsString('<a ', $renderer->toHtml('[外部]('.$url.')'), $url);
+        }
+    }
+
     public function test_htmlを逃がして見出しと箇条書きにすること(): void
     {
         $html = (new HelpMarkdown)->toHtml("## 見出し\n\n<script>alert(1)</script>\n\n- **太字**の項目\n");
@@ -61,7 +79,9 @@ class HelpMarkdownTest extends TestCase
     {
         $renderer = new HelpMarkdown;
         $html = $renderer->toHtml('![画面](/images/help/help-members.png)');
-        $this->assertStringContainsString('<img src="/images/help/help-members.png"', $html);
+        $version = filemtime(public_path('images/help/help-members.png'));
+        $this->assertStringContainsString('<img src="/images/help/help-members.png?v='.$version.'"', $html);
+        $this->assertStringContainsString('<img src="/images/help/missing-image.png"', $renderer->toHtml('![画面](/images/help/missing-image.png)'));
         $this->assertStringNotContainsString('<img', $renderer->toHtml('![画面](javascript:alert(1))'));
         $this->assertStringNotContainsString('<img', $renderer->toHtml('![画面](https://example.com/a.png)'));
     }

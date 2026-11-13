@@ -6,6 +6,7 @@
 <article class="lp-container public-help help-manual">
     <h1>ヘルプ・使い方</h1>
     <p class="help-lead">会員・注文・予約・特典などの操作を、画面画像と詳しい手順で確認できます。どなたでもログインなしで読めます。</p>
+    <p class="public-help-note">言葉の意味は<a href="{{ route('help.show', ['slug' => 'glossary']) }}">用語集</a>、スマレジ側の操作は<a href="{{ route('help.show', ['slug' => 'smaregi-official-help']) }}">スマレジ公式ヘルプの参照先</a>で確認できます。</p>
     <form class="help-search" method="GET" action="{{ route('help.index') }}" role="search">
         <label for="help-q">知りたい機能を検索</label>
         <input id="help-q" type="search" name="q" value="{{ $query }}" maxlength="200" placeholder="例：既存会員連携、予約、クーポン">

@@ -133,7 +133,7 @@ class SystemHelpArticleTest extends TestCase
             ->assertOk()->assertSee(route('system-admin.help-articles.show-preview', ['id' => $article->id]));
         $this->get(route('system-admin.help-articles.show-preview', ['id' => $article->id]))
             ->assertOk()->assertSee($article->title)->assertSee('下書き')
-            ->assertSee('<img src="/images/help/help-members.png"', false);
+            ->assertSee('<img src="/images/help/help-members.png?v=', false);
         $this->assertFalse($article->fresh()->is_published);
         $store = AdminUser::factory()->create(['role' => AdminUser::ROLE_ADMIN]);
         $this->actingAs($store, 'admin')->get(route('system-admin.help-articles.show-preview', ['id' => $article->id]))->assertForbidden();

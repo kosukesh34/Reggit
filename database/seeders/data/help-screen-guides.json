@@ -278,5 +278,29 @@
   "entry-qr-guide": {
     "path": "/qr-codes",
     "image": "qr-codes"
+  },
+  "tickets-subscriptions": {
+    "path": "/products/create",
+    "image": "product-ticket"
+  },
+  "shop-guide": {
+    "path": "/settings/shop",
+    "image": "shop-legal"
+  },
+  "chat-guide": {
+    "path": "/settings/features",
+    "image": "features-chat"
+  },
+  "survey-guide": {
+    "path": "/surveys",
+    "image": "surveys"
+  },
+  "promo-popup-guide": {
+    "path": "/promo-popups",
+    "image": "promo-popups"
+  },
+  "acquisition-qr-guide": {
+    "path": "/qr-codes",
+    "image": "acquisition-qr"
   }
 }
