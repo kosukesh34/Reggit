@@ -1,5 +1,7 @@
 import { chromium } from '@playwright/test';
+import { highlight } from './help-capture-frame.mjs';
 const base = process.env.HELP_BASE_URL ?? 'http://127.0.0.1:8080';
+if (!['127.0.0.1', 'localhost'].includes(new URL(base).hostname)) throw new Error('Capture requires a local demo environment');
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
 await page.goto(`${base}/admin/login`);
@@ -12,10 +14,7 @@ async function capture(name, path, target, prepare) {
   await page.goto(`${base}${path}`);
   if (prepare) await prepare();
   await page.evaluate(() => document.fonts.ready);
-  const el = target();
-  await el.waitFor({ state: 'visible' });
-  await el.scrollIntoViewIfNeeded();
-  await el.evaluate(node => { node.style.boxShadow = 'inset 0 0 0 4px #e11d48'; });
+  await highlight(page, target());
   console.log(`Capturing ${name}: ${page.url()}`);
   await page.screenshot({ path: `public/images/help/${name}.png` });
 }
@@ -27,8 +26,8 @@ await capture('help-coupons', `${prefix}/coupons`, () => page.getByRole('link', 
 await capture('help-coupon-delivery', `${prefix}/coupons/bulk-issue`, () => page.locator('input[name="delivery_type"]').first().locator('..'));
 await capture('help-analytics', `${prefix}/analytics`, () => page.locator('input[type="date"]').first().locator('..'));
 await capture('help-analysis-delivery', `${prefix}/analysis-deliveries`, () => page.getByRole('button', { name: '全員に今すぐ配信' }));
-await capture('help-settings', `${prefix}/settings`, () => page.getByRole('link', { name: /ホーム・メニュー|ホーム設定/ }).first());
-await capture('help-home-settings', `${prefix}/settings/home`, () => page.getByRole('tab', { name: 'ヘッダー', exact: true }));
+await capture('help-settings', `${prefix}/settings`, () => page.getByRole('link', { name: /^アプリデザイン/ }).first());
+await capture('help-home-settings', `${prefix}/settings/home`, () => page.getByRole('tab', { name: 'ホーム', exact: true }));
 await page.setViewportSize({ width: 390, height: 844 });
 await capture('help-app-more', '/demo/liff', () => page.getByRole('button', { name: /メニュー/ }).first());
 await page.setViewportSize({ width: 1440, height: 1000 });
@@ -43,9 +42,9 @@ await capture('help-coupon-review', `${prefix}/coupons/bulk-issue`, () => page.l
   await page.locator('#deliverySubmitButton').click();
 });
 await capture('help-coupon-history', `${prefix}/coupons`, () => page.getByRole('heading', { name: /配布履歴/ }).locator('..').locator('..'));
-await capture('help-home-header', `${prefix}/settings/home`, () => page.locator('#panel-header'), async () => page.getByRole('tab', { name: 'ヘッダー', exact: true }).click());
-await capture('help-home-footer', `${prefix}/settings/home`, () => page.locator('#panel-footer'), async () => page.getByRole('tab', { name: 'フッター', exact: true }).click());
-await capture('help-home-menu', `${prefix}/settings/home`, () => page.locator('#panel-menu'), async () => page.getByRole('tab', { name: 'メニュー', exact: true }).click());
+await capture('help-home-header', `${prefix}/settings/home`, () => page.getByRole('tab', { name: 'ヘッダー', exact: true }), async () => page.getByRole('tab', { name: 'ヘッダー', exact: true }).click());
+await capture('help-home-footer', `${prefix}/settings/home`, () => page.getByRole('tab', { name: 'フッター', exact: true }), async () => page.getByRole('tab', { name: 'フッター', exact: true }).click());
+await capture('help-home-menu', `${prefix}/settings/home`, () => page.getByRole('tab', { name: 'メニュー', exact: true }), async () => page.getByRole('tab', { name: 'メニュー', exact: true }).click());
 await capture('help-home-images', `${prefix}/settings/app-design/branding`, () => page.locator('#home_images').locator('..'), async () => page.getByRole('tab', { name: 'ホーム・ヘッダー', exact: true }).click());
 await capture('help-existing-settings', `${prefix}/settings/existing-member-link`, () => page.locator('[name="identifier_fields[]"]').first().locator('..').locator('..'));
 await capture('help-member-coupons', new URL(memberLink, base).pathname, () => page.locator('#member-history-coupons'), async () => page.locator('#member-history-tab-coupons').click());

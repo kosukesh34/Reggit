@@ -1,5 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import { readFile, mkdir, access } from 'node:fs/promises';
+import { highlight } from './help-capture-frame.mjs';
 
 const base = process.env.HELP_BASE_URL ?? 'http://127.0.0.1:8091';
 if (!['127.0.0.1', 'localhost'].includes(new URL(base).hostname)) throw new Error('Capture requires a local demo environment');
@@ -65,6 +66,12 @@ const targets = {
   'system-projects': card('プロジェクト一覧'),
   'system-accounts': card('プロジェクト管理者一覧'),
   'system-notices': page => page.getByRole('link', { name: 'お知らせを作成' }),
+  'product-ticket': page => page.locator('label[for="ticket_enabled"]').locator('..'),
+  'shop-legal': page => page.getByRole('heading', { name: '特定商取引法に基づく表記', exact: true }),
+  'features-chat': page => page.locator('label.checkbox-label').filter({ has: page.getByText('チャット', { exact: true }) }),
+  surveys: page => page.getByRole('link', { name: 'アンケートを作成' }).first(),
+  'promo-popups': page => page.getByRole('link', { name: 'ポップアップを作成' }).first(),
+  'acquisition-qr': card('経路を追加', '.eg-card'),
 };
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
@@ -116,28 +123,7 @@ async function capture(guide, prefix) {
     Promise.all([...document.images].map(img => img.complete ? undefined : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }))),
     new Promise(resolve => setTimeout(resolve, 5000)),
   ]));
-  const target = targets[guide.image](page);
-  await target.waitFor({ state: 'visible' });
-  await target.evaluate(node => {
-    const fits = node.getBoundingClientRect().height < window.innerHeight - 140;
-    node.style.scrollMarginTop = '140px';
-    node.style.scrollMarginBottom = '24px';
-    node.scrollIntoView({ block: fits ? 'nearest' : 'start' });
-  });
-  await page.waitForTimeout(300);
-  await target.evaluate(node => {
-    const rect = node.getBoundingClientRect();
-    const pad = 6;
-    const top = Math.max(rect.top - pad, 2);
-    const left = Math.max(rect.left - pad, 2);
-    // LIFF screens change only the hash, so remove the frame left by the previous capture.
-    document.getElementById('help-capture-frame')?.remove();
-    const frame = document.createElement('div');
-    frame.id = 'help-capture-frame';
-    frame.setAttribute('aria-hidden', 'true');
-    frame.style.cssText = `position:fixed;z-index:2147483647;pointer-events:none;box-sizing:border-box;border:4px solid #e11d48;border-radius:8px;top:${top}px;left:${left}px;width:${Math.min(rect.right + pad, window.innerWidth - 2) - left}px;height:${Math.min(rect.bottom + pad, window.innerHeight - 2) - top}px`;
-    document.body.append(frame);
-  });
+  await highlight(page, targets[guide.image](page));
   await page.screenshot({ path: `public/images/help/guide-${guide.image}.png` });
   console.log(`Captured guide-${guide.image}`);
   if (guide.path === '/admin/login') await login();

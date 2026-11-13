@@ -35,7 +35,10 @@ final class HelpMarkdown
                 continue;
             }
             if (preg_match('~^!\[([^\]]*)\]\((/images/help/[a-zA-Z0-9_-]+\.png)\)$~', $line, $matches) === 1) {
-                $html .= $this->closeList($list).'<figure class="help-shot"><a class="help-shot__frame" href="'.$matches[2].'" target="_blank" rel="noopener" aria-label="画面画像を拡大する"><img src="'.$matches[2].'" alt="'.$matches[1].'" loading="lazy"><span class="help-shot__zoom">画像を拡大 ↗</span></a><figcaption>'.$matches[1].'</figcaption></figure>';
+                // 画像は CDN で長期キャッシュされるため、撮り直しが反映されるよう更新日時を付ける。
+                $mtime = @filemtime(public_path(ltrim($matches[2], '/')));
+                $src = $matches[2].($mtime === false ? '' : '?v='.$mtime);
+                $html .= $this->closeList($list).'<figure class="help-shot"><a class="help-shot__frame" href="'.$src.'" target="_blank" rel="noopener" aria-label="画面画像を拡大する"><img src="'.$src.'" alt="'.$matches[1].'" loading="lazy"><span class="help-shot__zoom">画像を拡大 ↗</span></a><figcaption>'.$matches[1].'</figcaption></figure>';
 
                 continue;
             }
@@ -93,6 +96,10 @@ final class HelpMarkdown
 
         return preg_replace_callback('~(?<!!)\[([^\]\n]+)\]\(([^)\s]+)\)~', function (array $matches) use ($public): string {
             $url = html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            // 外部リンクはスマレジ公式ヘルプの記事・カテゴリ・セクションだけを許可する。
+            if (preg_match('~^https://help\.smaregi\.jp/hc/ja(?:/(?:articles|categories|sections)/[0-9]+)?$~D', $url) === 1) {
+                return '<a href="'.$url.'" rel="external noopener">'.$matches[1].'</a>';
+            }
             if (preg_match('~^/(?!/)[a-zA-Z0-9/_?&=.%#{}+\~-]*$~D', $url) !== 1) {
                 return $matches[0];
             }

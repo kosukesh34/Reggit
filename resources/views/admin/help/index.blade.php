@@ -5,7 +5,7 @@
 
 @section('content')
 <article class="help-manual">
-    <div class="page-header"><h1 class="page-header-title">ヘルプ</h1><p class="page-header-desc">使い方は実際の画面と赤枠、よくある質問は文章で確認できます。</p></div>
+    <div class="page-header"><h1 class="page-header-title">ヘルプ</h1><p class="page-header-desc">使い方は実際の画面と赤枠、よくある質問は文章で確認できます。言葉の意味は<a href="{{ admin_route('admin.help.show', ['slug' => 'glossary']) }}">用語集</a>、スマレジ側の操作は<a href="{{ admin_route('admin.help.show', ['slug' => 'smaregi-official-help']) }}">スマレジ公式ヘルプの参照先</a>で確認できます。</p></div>
     <form class="help-search" method="GET" action="{{ admin_route('admin.help') }}">
         <label for="help-q">ヘルプを検索</label>
         <input id="help-q" type="search" name="q" value="{{ $query }}" placeholder="例: 引き継ぎ、失敗、キャンセル" autocomplete="off">

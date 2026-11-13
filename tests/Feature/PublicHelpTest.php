@@ -25,6 +25,19 @@ class PublicHelpTest extends TestCase
         $this->assertGuest('admin');
     }
 
+    public function test_index_links_glossary_and_articles_link_smaregi_official_help(): void
+    {
+        $this->get('/help')->assertOk()
+            ->assertSee(route('help.show', ['slug' => 'glossary']), false)
+            ->assertSee(route('help.show', ['slug' => 'smaregi-official-help']), false);
+        $this->get('/help/smaregi-official-help')->assertOk()
+            ->assertSee('<a href="https://help.smaregi.jp/hc/ja/articles/202423896" rel="external noopener">会員販売をする</a>', false)
+            ->assertSee('href="/help/faq-points-smaregi"', false);
+        $this->get('/help/rewards-cancellation')->assertOk()
+            ->assertSee('href="https://help.smaregi.jp/hc/ja/articles/202423816"', false);
+        $this->get('/help?q='.urlencode('Webhook'))->assertOk()->assertSee('用語集：ヘルプでよく使う言葉');
+    }
+
     public function test_guests_can_search_body_text_and_follow_public_related_guides(): void
     {
         $this->get('/help?q='.urlencode('合算'))->assertOk()
