@@ -251,25 +251,9 @@
     "path": "app:/more",
     "image": "app-more"
   },
-  "help-management": {
-    "path": "system:/help-articles",
-    "image": "system-help"
-  },
   "onboarding-guide": {
     "path": "/onboarding",
     "image": "onboarding"
-  },
-  "system-projects": {
-    "path": "system:/projects",
-    "image": "system-projects"
-  },
-  "system-accounts": {
-    "path": "system:/accounts",
-    "image": "system-accounts"
-  },
-  "system-notices": {
-    "path": "system:/notices",
-    "image": "system-notices"
   },
   "native-session": {
     "path": "app:/membership",
